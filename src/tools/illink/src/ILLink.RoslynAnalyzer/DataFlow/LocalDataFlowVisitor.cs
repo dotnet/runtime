@@ -705,14 +705,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // Accessing property for reading is really a call to the getter
             // The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
             TValue instanceValue = Visit(operation.Instance, state);
-            IMethodSymbol? getMethod = operation.Property.GetGetMethod();
+            IMethodSymbol getMethod = operation.Property.GetGetMethod()!;
+            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+            // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+            if (getMethod.HasExtensionParameterOnType())
+            {
+                arguments.Add(instanceValue);
+                instanceValue = TopValue;
+            }
 
             // Property may be an indexer, in which case there will be one or more index arguments
-            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
             foreach (var val in operation.Arguments)
                 arguments.Add(Visit(val, state));
 
-            return HandleMethodCallHelper(getMethod!, instanceValue, arguments.ToImmutableArray(), operation, state);
+            return HandleMethodCallHelper(getMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
         }
 
         public override TValue VisitEventReference(IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
