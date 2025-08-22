@@ -418,6 +418,7 @@ internal sealed class Xcode
             {
                 // Interpreter-FIXME: CoreCLR on iOS currently supports only static linking.
                 // The build system needs to be updated to conditionally initialize the compiler at runtime based on an environment variable.
+                // Tracking issue: https://github.com/dotnet/runtime/issues/119006
                 string[] staticLibs = Directory.GetFiles(workspace, "*.a");
                 foreach (string lib in staticLibs)
                 {
