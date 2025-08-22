@@ -40,10 +40,10 @@ internal static partial class Interop
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct UNICODE_INTPTR_STRING
+    internal unsafe struct UNICODE_INTPTR_STRING
     {
         internal ushort Length;
         internal ushort MaxLength;
-        internal IntPtr Buffer;
+        internal ushort* Buffer;
     }
 }

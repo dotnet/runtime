@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using static Interop.Crypt32;
@@ -338,7 +339,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 fixed (byte* pValue = &value[0])
                 {
-                    string? valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
+                    string? valueAsString = Utf16StringMarshaller.ConvertToManaged((ushort*)pValue);
                     return valueAsString;
                 }
             }

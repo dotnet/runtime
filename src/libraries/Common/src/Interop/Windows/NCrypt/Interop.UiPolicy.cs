@@ -10,13 +10,13 @@ internal static partial class Interop
     internal static partial class NCrypt
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct NCRYPT_UI_POLICY
+        internal unsafe struct NCRYPT_UI_POLICY
         {
             public int dwVersion;
             public CngUIProtectionLevels dwFlags;
-            public IntPtr pszCreationTitle;
-            public IntPtr pszFriendlyName;
-            public IntPtr pszDescription;
+            public ushort* pszCreationTitle;
+            public ushort* pszFriendlyName;
+            public ushort* pszDescription;
         }
     }
 }
