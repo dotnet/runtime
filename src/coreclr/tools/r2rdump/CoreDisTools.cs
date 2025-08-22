@@ -132,14 +132,9 @@ namespace R2RDump
         private int _addInstructionTarget;
 
         /// <summary>
-        /// RISC-V: temporary address register for combos like "auipc temp, hi20; jalr/addi/ld rd, temp, lo12"
+        /// RISC-V: temporary address for combos like "auipc temp, hi20; jalr/addi/ld rd, temp, lo12"
         /// </summary>
-        private uint _addressRegister;
-
-        /// <summary>
-        /// RISC-V: temporary address value for combos like "auipc temp, hi20; jalr/addi/ld rd, temp, lo12"
-        /// </summary>
-        private int _addressValue;
+        private (uint Register, int Value) _address;
 
         /// <summary>
         /// Indentation of instruction mnemonics.
@@ -1237,18 +1232,18 @@ namespace R2RDump
             Debug.Assert((instrSize == 4) == ((instr & 0b11) == 0b11), "instruction size mismatch");
 
             // Lookup cell name for auipc + jalr/ld/addi
-            if (AnalyzeRiscV64Auipc(instr, ref _addressRegister, out int imm))
+            if (AnalyzeRiscV64Auipc(instr, ref _address.Register, out int imm))
             {
-                _addressValue = rtf.StartAddress + rtfOffset + imm;
+                _address.Value = rtf.StartAddress + rtfOffset + imm;
                 return;
             }
-            else if (_addressRegister != 0 && AnalyzeRiscV64Itype(instr, _addressRegister, out imm))
+            else if (_address.Register != 0 && AnalyzeRiscV64Itype(instr, _address.Register, out imm))
             {
-                _addressValue += imm;
-                if (TryGetImportCellName(_addressValue, out string name) && !string.IsNullOrWhiteSpace(name))
+                _address.Value += imm;
+                if (TryGetImportCellName(_address.Value, out string name) && !string.IsNullOrWhiteSpace(name))
                     instruction = $"{instruction} // {name}";
             }
-            _addressRegister = 0;
+            _address.Register = 0;
         }
 
         /// <summary>
