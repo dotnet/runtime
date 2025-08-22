@@ -27,7 +27,7 @@ jobs:
   lock:
     runs-on: ubuntu-latest
     # Only run the locking job for scheduled runs and manual dispatch, not for reopened events
-    if: ${{ github.repository_owner == 'dotnet' && github.event_name != 'issues' && github.event_name != 'pull_request_target' }}
+    if: ${{ github.repository_owner == 'dotnet' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     steps:
       - name: Checkout Actions
         uses: actions/checkout@v5
