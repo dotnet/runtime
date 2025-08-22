@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.ProviderBase
 {
@@ -54,7 +55,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal string PtrToStringUni(int offset)
+        internal unsafe string PtrToStringUni(int offset)
         {
             offset += BaseOffset;
             Validate(offset, 2);
@@ -68,7 +69,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
-                value = Marshal.PtrToStringUni(ptr);
+                value = Utf16StringMarshaller.ConvertToManaged((ushort*)ptr);
                 Validate(offset, (2 * (value!.Length + 1)));
             }
             finally
@@ -82,7 +83,7 @@ namespace System.Data.ProviderBase
             return value;
         }
 
-        internal string PtrToStringUni(int offset, int length)
+        internal unsafe string PtrToStringUni(int offset, int length)
         {
             offset += BaseOffset;
             Validate(offset, 2 * length);
@@ -96,7 +97,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
-                value = Marshal.PtrToStringUni(ptr, length);
+                value = new string((char*)ptr, 0, length);
             }
             finally
             {
