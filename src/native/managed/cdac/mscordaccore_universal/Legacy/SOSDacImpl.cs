@@ -1199,6 +1199,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (methodDescPtr == TargetPointer.Null)
                 throw new ArgumentException();
 
+            _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDescPtr); // validation
             *ppMD = methodDescPtr.ToClrDataAddress(_target);
         }
         catch (System.Exception ex)

@@ -348,6 +348,10 @@ string GetFrameName(TargetPointer frameIdentifier);
 ```
 
 `GetMethodDescPtr` returns the method desc pointer associated with a Frame. If not applicable, it returns TargetPointer.Null.
+* For FramedMethodFrame and most of its subclasses the methoddesc is accessible as a pointer field on the object (MethodDescPtr). The two exceptions are PInvokeCalliFrame (no valid method desc) and StubDispatchFrame.
+  * StubDispatchFrame's MD may be either found on MethodDescPtr, or if this field is null, we look it up using a method table (RepresentativeMTPtr) and MT slot (RepresentativeSlot).
+* InlinedCallFrame also has a field from which we draw the method desc; however, we must first do some validation that the data in this field is valid.
+* MD is not applicable for other types of frames.
 ```csharp
 TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```

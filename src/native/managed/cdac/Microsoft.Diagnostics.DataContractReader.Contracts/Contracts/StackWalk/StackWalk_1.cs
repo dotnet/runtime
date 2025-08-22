@@ -207,63 +207,7 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
     {
-        Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
-        FrameIterator.FrameType frameType = FrameIterator.GetFrameType(_target, frame.Identifier);
-        switch (frameType)
-        {
-            case FrameIterator.FrameType.FramedMethodFrame:
-            case FrameIterator.FrameType.DynamicHelperFrame:
-            case FrameIterator.FrameType.ExternalMethodFrame:
-            case FrameIterator.FrameType.PrestubMethodFrame:
-            case FrameIterator.FrameType.CallCountingHelperFrame:
-            case FrameIterator.FrameType.CLRToCOMMethodFrame:
-            case FrameIterator.FrameType.InterpreterFrame:
-                Data.FramedMethodFrame framedMethodFrame = _target.ProcessedData.GetOrAdd<FramedMethodFrame>(frame.Address);
-                return framedMethodFrame.MethodDescPtr;
-            case FrameIterator.FrameType.PInvokeCalliFrame:
-                return TargetPointer.Null;
-            case FrameIterator.FrameType.StubDispatchFrame:
-                Data.StubDispatchFrame stubDispatchFrame = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frame.Address);
-                if (stubDispatchFrame.MethodDescPtr != TargetPointer.Null)
-                {
-                    return stubDispatchFrame.MethodDescPtr;
-                }
-                else if (stubDispatchFrame.RepresentativeMTPtr != TargetPointer.Null)
-                {
-                    IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                    TypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
-                    return rtsContract.GetMethodDescForSlot(mtHandle, (ushort)stubDispatchFrame.RepresentativeSlot);
-                }
-                else
-                {
-                    return TargetPointer.Null;
-                }
-            case FrameIterator.FrameType.InlinedCallFrame:
-                Data.InlinedCallFrame inlinedCallFrame = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
-                if (InlinedCallFrameHasActiveCall(inlinedCallFrame) && InlinedCallFrameHasFunction(inlinedCallFrame))
-                    return inlinedCallFrame.Datum & ~(ulong)(_target.PointerSize - 1);
-                else
-                    return TargetPointer.Null;
-            default:
-                return TargetPointer.Null;
-        }
-    }
-
-    private bool InlinedCallFrameHasFunction(InlinedCallFrame frame)
-    {
-        if (_target.PointerSize == 4)
-        {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
-        }
-        else
-        {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
-        }
-    }
-
-    private static bool InlinedCallFrameHasActiveCall(InlinedCallFrame frame)
-    {
-        return frame.CallerReturnAddress != TargetPointer.Null;
+        return FrameIterator.GetMethodDescPtr(framePtr, _target);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)
