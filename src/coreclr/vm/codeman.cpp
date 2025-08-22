@@ -1184,10 +1184,12 @@ void EEJitManager::SetCpuInfo()
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n"));
-#elif defined(TARGET_APPLE_MOBILE_SIMULATOR)
-        // iOS and tvOS simulators don't have required instruction sets
 #elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_APPLE))
+#if defined(FEATURE_INTERPRETER)
+        // Hardware intrinsics are disabled in CoreCLR interpreter: https://github.com/dotnet/runtime/issues/117948
+#else
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n"));
+#endif
 #elif defined(TARGET_ARM64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n"));
 #else
