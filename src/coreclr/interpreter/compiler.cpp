@@ -3876,6 +3876,8 @@ retry_emit:
 
                     // Now we generate an LDIND_O to get the actual string out of the ref
                     AddIns(INTOP_LDIND_O);
+                    // LDIND offset
+                    m_pLastNewIns->data[0] = 0;
                     m_pLastNewIns->SetSVar(tempVar);
                     m_pStackPointer--;
                 }
