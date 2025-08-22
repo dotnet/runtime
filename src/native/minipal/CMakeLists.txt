@@ -16,12 +16,6 @@ set(SOURCES
     log.c
 )
 
-# Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
-# Setting limits in Browser/WASI doesn't make sense
-if(CLR_CMAKE_TARGET_LINUX_MUSL OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
-endif()
-
 # Provide an object library for scenarios where we ship static libraries
 include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 

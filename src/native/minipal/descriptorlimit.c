@@ -13,7 +13,11 @@
 
 bool minipal_increase_descriptor_limit(void)
 {
-#if HAVE_RESOURCE_H && !defined(DONT_SET_RLIMIT_NOFILE)
+#if TARGET_WASM
+    // WebAssembly cannot set limits
+#elif TARGET_LINUX_MUSL
+    // Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+#elif HAVE_RESOURCE_H
     struct rlimit rlp;
     int result;
 
@@ -38,6 +42,6 @@ bool minipal_increase_descriptor_limit(void)
     {
         return false;
     }
-#endif // HAVE_RESOURCE_H && !DONT_SET_RLIMIT_NOFILE
+#endif
     return true;
 }
