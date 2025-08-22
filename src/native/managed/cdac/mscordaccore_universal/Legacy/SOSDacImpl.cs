@@ -58,8 +58,6 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess? _legacyProcess;
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
-    private readonly int _genericModeBlockFieldSize;
-    private readonly int _genericModeCharFieldCount;
     private enum CorTokenType: uint
     {
         mdtTypeRef = 0x01000000,
@@ -103,8 +101,6 @@ internal sealed unsafe partial class SOSDacImpl
 
             _legacyEnumMemory = legacyObj as ICLRDataEnumMemoryRegions;
         }
-        _genericModeBlockFieldSize = 255;
-        _genericModeCharFieldCount = 11;
     }
 
     #region ISOSDacInterface
