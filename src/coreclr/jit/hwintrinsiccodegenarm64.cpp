@@ -790,7 +790,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             case NI_Sve2_ConvertToSingleOdd:
                             case NI_Sve2_ConvertToSingleOddRoundToOdd:
-                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                emitInsMovPrfxHelper(targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg);
                                 break;
 
                             default:
@@ -820,23 +820,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                         }
                     }
-                    // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
-                    // so the `insEmbMask` operation can be merged on top of it.
                     else if (targetReg != falseReg)
                     {
+                        // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
+                        // so the `insEmbMask` operation can be merged on top of it.
 
-                        if ((intrinEmbMask.id == NI_Sve2_ConvertToSingleOdd) ||
-                            (intrinEmbMask.id == NI_Sve2_ConvertToSingleOddRoundToOdd))
-                        {
-                            // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
-                            // `embMaskOp1Reg`. Thus, we need to perform move before the operation, and then "sel" to
-                            // select the active lanes.
-                            GetEmitter()->emitIns_Mov(INS_fmov, EA_4BYTE, targetReg, embMaskOp1Reg, /* canSkip */ true);
-                            emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
-                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
-                                                          falseReg, opt);
-                        }
-                        else if (falseReg != embMaskOp1Reg)
+                        if (falseReg != embMaskOp1Reg)
                         {
                             // At the point, targetReg != embMaskOp1Reg != falseReg
                             if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))

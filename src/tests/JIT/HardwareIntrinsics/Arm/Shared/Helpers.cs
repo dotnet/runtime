@@ -4330,8 +4330,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static float ConvertToSingleRoundToOdd(double val)
         {
-            float floatVal = (float)val;
-
             float f = (float)val;
 
             // If val is NaN or Inf there’s nothing else to do
