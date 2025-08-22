@@ -1,0 +1,24 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.IO.Compression;
+using System.Globalization;
+using System.Threading.Tasks;
+using System.Resources;
+using System.Runtime.InteropServices.JavaScript;
+
+public partial class ZipArchiveInteropTest
+{
+    [JSExport]
+    public static void Run()
+    {
+        using var zipFileStream = new MemoryStream();
+        using var zipArchive = new ZipArchive(zipFileStream, ZipArchiveMode.Create);
+
+        var entry = zipArchive.CreateEntry("sample.txt");
+        entry.Open().WriteAsync(Encoding.UTF8.GetBytes("Sample text content"));
+
+        TestOutput.WriteLine("Zip file created successfully.");
+    }
+}
