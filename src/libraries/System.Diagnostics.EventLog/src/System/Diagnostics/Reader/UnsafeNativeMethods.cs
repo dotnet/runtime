@@ -106,10 +106,7 @@ namespace Microsoft.Win32
             public short Milliseconds;
         }
 
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
-#pragma warning disable 618 // System.Core still uses SecurityRuleSet.Level1
-        [SecurityCritical(SecurityCriticalScope.Everything)]
-#pragma warning restore 618
+        [StructLayout(LayoutKind.Explicit)]
         internal struct EvtVariant
         {
             [FieldOffset(0)]
