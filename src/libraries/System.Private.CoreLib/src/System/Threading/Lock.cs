@@ -29,6 +29,7 @@ namespace System.Threading
         // appears to place struct fields after fields of other types, in which case there can be a greater chance that
         // _owningThreadId is not in the same cache line as _state.
         private uint _owningThreadId;
+        private ulong _owningOsThreadId;
 
         private uint _state; // see State for layout
         private uint _recursionCount;
@@ -235,6 +236,7 @@ namespace System.Threading
                 Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
                 Debug.Assert(_recursionCount == 0);
                 _owningThreadId = currentThreadId.Id;
+                _owningOsThreadId = OwningOSThreadIdHolder.Current.Id;
                 return currentThreadId;
             }
 
@@ -287,6 +289,7 @@ namespace System.Threading
             if (_recursionCount == 0)
             {
                 _owningThreadId = 0;
+                _owningOsThreadId = 0;
 
                 State state = State.Unlock(this);
                 if (state.HasAnyWaiters)
@@ -463,6 +466,7 @@ namespace System.Threading
             Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
             Debug.Assert(_recursionCount == 0);
             _owningThreadId = currentThreadId.Id;
+            _owningOsThreadId = OwningOSThreadIdHolder.Current.Id;
             return currentThreadId;
 
         Wait:
@@ -555,6 +559,7 @@ namespace System.Threading
                     Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
                     Debug.Assert(_recursionCount == 0);
                     _owningThreadId = currentThreadId.Id;
+                    _owningOsThreadId = OwningOSThreadIdHolder.Current.Id;
 
                     if (areContentionEventsEnabled)
                     {
@@ -1266,6 +1271,69 @@ namespace System.Threading
             Locked,
             Spin,
             Wait
+        }
+
+        private struct OwningOSThreadIdHolder
+        {
+#if TARGET_OSX
+            [ThreadStatic]
+            private static ulong t_threadId;
+
+            private ulong _id;
+
+            public OwningOSThreadIdHolder(ulong id) => _id = id;
+            public ulong Id => _id;
+#else
+            [ThreadStatic]
+            private static uint t_threadId;
+
+            private uint _id;
+
+            public OwningOSThreadIdHolder(uint id) => _id = id;
+            public uint Id => _id;
+#endif
+
+            private bool IsInitialized => _id != 0;
+            public static OwningOSThreadIdHolder Current
+            {
+                get
+                {
+                    OwningOSThreadIdHolder id = new(t_threadId);
+                    if (!id.IsInitialized)
+                    {
+                        id.InitializeForCurrentThread();
+                    }
+                    return id;
+                }
+            }
+
+            private void InitializeForCurrentThread()
+            {
+                Debug.Assert(!IsInitialized);
+                Debug.Assert(t_threadId == 0);
+
+#if TARGET_WINDOWS
+                uint id = (uint)Interop.Kernel32.GetCurrentThreadId();
+#elif TARGET_OSX
+                ulong id = Interop.Sys.GetUInt64OSThreadId();
+#else
+                uint id = Interop.Sys.TryGetUInt32OSThreadId();
+                if (id == unchecked((uint)-1))
+                {
+                    id = (uint)Environment.CurrentManagedThreadId;
+                    Debug.Assert(id != 0);
+                }
+                else
+#endif
+
+                if (id == 0)
+                {
+                    id--;
+                }
+
+                t_threadId = _id = id;
+                Debug.Assert(IsInitialized);
+            }
         }
     }
 }
