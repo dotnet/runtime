@@ -189,49 +189,7 @@ namespace System.Linq
         {
             Requires.NotNull(items, nameof(items));
 
-            int i = 0;
-            if (items.TryGetCount(out int count))
-            {
-                if (immutableArray.Length != count)
-                {
-                    return false;
-                }
-
-                if (items is IList<TDerived> itemList)
-                {
-                    comparer ??= EqualityComparer<TBase>.Default;
-
-                    for (i = 0; i < count; i++)
-                    {
-                        if (!comparer.Equals(immutableArray[i], itemList[i]))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-            }
-
-            comparer ??= EqualityComparer<TBase>.Default;
-
-            int n = immutableArray.Length;
-            foreach (TDerived item in items)
-            {
-                if (i == n)
-                {
-                    return false;
-                }
-
-                if (!comparer.Equals(immutableArray[i], item))
-                {
-                    return false;
-                }
-
-                i++;
-            }
-
-            return i == n;
+            return immutableArray.array!.SequenceEqual((IEnumerable<TBase>)items, comparer);
         }
 
         /// <summary>
