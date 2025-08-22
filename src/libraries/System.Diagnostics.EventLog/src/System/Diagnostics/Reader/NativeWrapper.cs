@@ -352,129 +352,138 @@ namespace System.Diagnostics.Eventing.Reader
 
         public static object EvtGetEventInfo(EventLogHandle handle, UnsafeNativeMethods.EvtEventPropertyId enumType)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetEventInfo(handle, enumType, 0, IntPtr.Zero, out bufferNeeded);
-                int error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
+
+                try
                 {
-                    if (error != Interop.Errors.ERROR_SUCCESS
-                        && error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetEventInfo(handle, enumType, 0, null, out bufferNeeded);
+                    int error = Marshal.GetLastWin32Error();
+                    if (!status)
                     {
+                        if (error != Interop.Errors.ERROR_SUCCESS
+                            && error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        {
+                            EventLogException.Throw(error);
+                        }
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetEventInfo(handle, enumType, bufferNeeded, pBuffer, out bufferNeeded);
+                    error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(error);
+
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
                     }
                 }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetEventInfo(handle, enumType, bufferNeeded, buffer, out bufferNeeded);
-                error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(error);
-
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
             }
         }
 
         public static object EvtGetQueryInfo(EventLogHandle handle, UnsafeNativeMethods.EvtQueryPropertyId enumType)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded = 0;
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetQueryInfo(handle, enumType, 0, IntPtr.Zero, ref bufferNeeded);
-                int error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded = 0;
+                try
                 {
-                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetQueryInfo(handle, enumType, 0, null, ref bufferNeeded);
+                    int error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetQueryInfo(handle, enumType, bufferNeeded, pBuffer, ref bufferNeeded);
+                    error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetQueryInfo(handle, enumType, bufferNeeded, buffer, ref bufferNeeded);
-                error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(error);
 
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
         public static object EvtGetPublisherMetadataProperty(EventLogHandle pmHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId thePropertyId)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, 0, IntPtr.Zero, out bufferNeeded);
-                int error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
+
+                try
                 {
-                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, 0, null, out bufferNeeded);
+                    int error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, bufferNeeded, pBuffer, out bufferNeeded);
+                    error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, bufferNeeded, buffer, out bufferNeeded);
-                error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(error);
 
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
         internal static EventLogHandle EvtGetPublisherMetadataPropertyHandle(EventLogHandle pmHandle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId thePropertyId)
         {
-            IntPtr buffer = IntPtr.Zero;
-            try
+            unsafe
             {
-                int bufferNeeded;
-                bool status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, 0, IntPtr.Zero, out bufferNeeded);
-                int error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                try
                 {
-                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    int bufferNeeded;
+                    bool status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, 0, null, out bufferNeeded);
+                    int error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, bufferNeeded, pBuffer, out bufferNeeded);
+                    error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetPublisherMetadataProperty(pmHandle, thePropertyId, 0, bufferNeeded, buffer, out bufferNeeded);
-                error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(error);
 
-                //
-                // note: there is a case where returned variant does have allocated native resources
-                // associated with (e.g. ConfigArrayHandle).  If PtrToStructure throws, then we would
-                // leak that resource - fortunately PtrToStructure only throws InvalidArgument which
-                // is a logic error - not a possible runtime condition here.  Other System exceptions
-                // shouldn't be handled anyhow and the application will terminate.
-                //
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToSafeHandle(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    return ConvertToSafeHandle(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
@@ -523,99 +532,104 @@ namespace System.Diagnostics.Eventing.Reader
 
         public static object EvtGetObjectArrayProperty(EventLogHandle objArrayHandle, int index, int thePropertyId)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetObjectArrayProperty(objArrayHandle, thePropertyId, index, 0, 0, IntPtr.Zero, out bufferNeeded);
-                int error = Marshal.GetLastWin32Error();
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
 
-                if (!status)
+                try
                 {
-                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
-                        EventLogException.Throw(error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetObjectArrayProperty(objArrayHandle, thePropertyId, index, 0, bufferNeeded, buffer, out bufferNeeded);
-                error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(error);
+                    bool status = UnsafeNativeMethods.EvtGetObjectArrayProperty(objArrayHandle, thePropertyId, index, 0, 0, null, out bufferNeeded);
+                    int error = Marshal.GetLastWin32Error();
 
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    if (!status)
+                    {
+                        if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetObjectArrayProperty(objArrayHandle, thePropertyId, index, 0, bufferNeeded, pBuffer, out bufferNeeded);
+                    error = Marshal.GetLastWin32Error();
+                    if (!status)
+                        EventLogException.Throw(error);
+
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
         public static object EvtGetEventMetadataProperty(EventLogHandle handle, UnsafeNativeMethods.EvtEventMetadataPropertyId enumType)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetEventMetadataProperty(handle, enumType, 0, 0, IntPtr.Zero, out bufferNeeded);
-                int win32Error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
+
+                try
                 {
-                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetEventMetadataProperty(handle, enumType, 0, 0, null, out bufferNeeded);
+                    int win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(win32Error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetEventMetadataProperty(handle, enumType, 0, bufferNeeded, pBuffer, out bufferNeeded);
+                    win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(win32Error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetEventMetadataProperty(handle, enumType, 0, bufferNeeded, buffer, out bufferNeeded);
-                win32Error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(win32Error);
 
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
         public static object EvtGetChannelConfigProperty(EventLogHandle handle, UnsafeNativeMethods.EvtChannelConfigPropertyId enumType)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetChannelConfigProperty(handle, enumType, 0, 0, IntPtr.Zero, out bufferNeeded);
-                int win32Error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
+
+                try
                 {
-                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetChannelConfigProperty(handle, enumType, 0, 0, null, out bufferNeeded);
+                    int win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(win32Error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetChannelConfigProperty(handle, enumType, 0, bufferNeeded, pBuffer, out bufferNeeded);
+                    win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(win32Error);
-                }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetChannelConfigProperty(handle, enumType, 0, bufferNeeded, buffer, out bufferNeeded);
-                win32Error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(win32Error);
 
-                //
-                // note: there is a case where returned variant does have allocated native resources
-                // associated with (e.g. ConfigArrayHandle).  If PtrToStructure throws, then we would
-                // leak that resource - fortunately PtrToStructure only throws InvalidArgument which
-                // is a logic error - not a possible runtime condition here.  Other System exceptions
-                // shouldn't be handled anyhow and the application will terminate.
-                //
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                    return ConvertToObject(*pBuffer);
+                }
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
@@ -759,31 +773,34 @@ namespace System.Diagnostics.Eventing.Reader
 
         public static object EvtGetLogInfo(EventLogHandle handle, UnsafeNativeMethods.EvtLogPropertyId enumType)
         {
-            IntPtr buffer = IntPtr.Zero;
-            int bufferNeeded;
-
-            try
+            unsafe
             {
-                bool status = UnsafeNativeMethods.EvtGetLogInfo(handle, enumType, 0, IntPtr.Zero, out bufferNeeded);
-                int win32Error = Marshal.GetLastWin32Error();
-                if (!status)
+                UnsafeNativeMethods.EvtVariant* pBuffer = null;
+                int bufferNeeded;
+
+                try
                 {
-                    if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    bool status = UnsafeNativeMethods.EvtGetLogInfo(handle, enumType, 0, null, out bufferNeeded);
+                    int win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
+                    {
+                        if (win32Error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                            EventLogException.Throw(win32Error);
+                    }
+                    pBuffer = (UnsafeNativeMethods.EvtVariant*)Marshal.AllocHGlobal((int)bufferNeeded);
+                    status = UnsafeNativeMethods.EvtGetLogInfo(handle, enumType, bufferNeeded, pBuffer, out bufferNeeded);
+                    win32Error = Marshal.GetLastWin32Error();
+                    if (!status)
                         EventLogException.Throw(win32Error);
+                    return ConvertToObject(*pBuffer);
                 }
-                buffer = Marshal.AllocHGlobal((int)bufferNeeded);
-                status = UnsafeNativeMethods.EvtGetLogInfo(handle, enumType, bufferNeeded, buffer, out bufferNeeded);
-                win32Error = Marshal.GetLastWin32Error();
-                if (!status)
-                    EventLogException.Throw(win32Error);
-
-                UnsafeNativeMethods.EvtVariant varVal = Marshal.PtrToStructure<UnsafeNativeMethods.EvtVariant>(buffer);
-                return ConvertToObject(varVal);
-            }
-            finally
-            {
-                if (buffer != IntPtr.Zero)
-                    Marshal.FreeHGlobal(buffer);
+                finally
+                {
+                    if (pBuffer is not null)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    }
+                }
             }
         }
 
@@ -1127,7 +1144,7 @@ namespace System.Diagnostics.Eventing.Reader
             return new string(buffer, 0, len);
         }
 
-        private static object ConvertToObject(UnsafeNativeMethods.EvtVariant val)
+        private static unsafe object ConvertToObject(UnsafeNativeMethods.EvtVariant val)
         {
             switch (val.Type)
             {
@@ -1164,13 +1181,18 @@ namespace System.Diagnostics.Eventing.Reader
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeSid:
                     return (val.SidVal == IntPtr.Zero) ? null : new SecurityIdentifier(val.SidVal);
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeGuid:
-                    return (val.GuidReference == IntPtr.Zero) ? Guid.Empty : Marshal.PtrToStructure<Guid>(val.GuidReference);
+#if NET
+                    return (val.GuidReference == IntPtr.Zero) ? Guid.Empty : new Guid(MemoryMarshal.CreateReadOnlySpan(ref *(byte*)val.GuidReference, sizeof(Guid)));
+#else
+                    Debug.Assert(BitConverter.IsLittleEndian);
+                    return (val.GuidReference == IntPtr.Zero) ? Guid.Empty : *(Guid*)val.GuidReference;
+#endif
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeEvtHandle:
                     return ConvertToSafeHandle(val);
                 case (int)(int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeFileTime:
                     return DateTime.FromFileTime((long)val.FileTime);
                 case (int)(int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeSysTime:
-                    UnsafeNativeMethods.SystemTime sysTime = Marshal.PtrToStructure<UnsafeNativeMethods.SystemTime>(val.SystemTime);
+                    UnsafeNativeMethods.SystemTime sysTime = *(UnsafeNativeMethods.SystemTime*)val.SystemTime;
                     return new DateTime(sysTime.Year, sysTime.Month, sysTime.Day, sysTime.Hour, sysTime.Minute, sysTime.Second, sysTime.Milliseconds);
                 case (int)(int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeSizeT:
                     return val.SizeT;
