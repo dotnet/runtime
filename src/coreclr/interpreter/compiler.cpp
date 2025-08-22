@@ -2848,6 +2848,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetDVar(pThisStackInfo->var);
             }
         }
+
+        if (InterpConfig.InterpHaltOnCall().contains(m_compHnd, resolvedCallToken.hMethod, resolvedCallToken.hClass, nullptr))
+            assert(!"HaltOnCall");
     }
 
     if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
@@ -5315,7 +5318,7 @@ retry_emit:
                 int byrefOfTypedRefVar = m_pStackPointer[-1].var;
                 m_pLastNewIns->SetDVar(byrefOfTypedRefVar);
                 m_pStackPointer--;
-                
+
                 AddIns(GetStindForType(InterpTypeByRef));
                 m_pLastNewIns->data[0] = OFFSETOF__CORINFO_TypedReference__dataPtr;
                 m_pLastNewIns->SetSVars2(byrefOfTypedRefVar, addressVar);
@@ -5380,7 +5383,7 @@ retry_emit:
                         m_pLastNewIns->data[2] = 0;
                         m_pLastNewIns->SetSVar(typedByRefVar);
                         m_pLastNewIns->SetDVar(classHandleVar);
-                        
+
                         AddIns(INTOP_CALL_HELPER_P_S);
                         m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
                         m_pLastNewIns->SetSVar(classHandleVar);
