@@ -64,6 +64,7 @@ ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativ
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
 ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);
+ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread (void);
 ICALL_EXPORT void ves_icall_System_ArgIterator_Setup (MonoArgIterator*, char*, char*);
 ICALL_EXPORT MonoType* ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator*, MonoTypedRef*);

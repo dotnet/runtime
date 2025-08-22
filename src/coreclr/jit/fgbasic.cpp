@@ -1182,8 +1182,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_AVX2_TrailingZeroCount:
                             case NI_AVX2_X64_LeadingZeroCount:
                             case NI_AVX2_X64_TrailingZeroCount:
-                            case NI_SSE42_PopCount:
-                            case NI_SSE42_X64_PopCount:
+                            case NI_X86Base_PopCount:
+                            case NI_X86Base_X64_PopCount:
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
@@ -1483,18 +1483,54 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
                             case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_E:
+                            case NI_Vector64_get_Epsilon:
+                            case NI_Vector64_get_NaN:
+                            case NI_Vector64_get_NegativeInfinity:
+                            case NI_Vector64_get_NegativeOne:
+                            case NI_Vector64_get_NegativeZero:
                             case NI_Vector64_get_One:
+                            case NI_Vector64_get_Pi:
+                            case NI_Vector64_get_PositiveInfinity:
+                            case NI_Vector64_get_Tau:
                             case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
                             case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_E:
+                            case NI_Vector128_get_Epsilon:
+                            case NI_Vector128_get_NaN:
+                            case NI_Vector128_get_NegativeInfinity:
+                            case NI_Vector128_get_NegativeOne:
+                            case NI_Vector128_get_NegativeZero:
                             case NI_Vector128_get_One:
+                            case NI_Vector128_get_Pi:
+                            case NI_Vector128_get_PositiveInfinity:
+                            case NI_Vector128_get_Tau:
                             case NI_Vector128_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_E:
+                            case NI_Vector256_get_Epsilon:
+                            case NI_Vector256_get_NaN:
+                            case NI_Vector256_get_NegativeInfinity:
+                            case NI_Vector256_get_NegativeOne:
+                            case NI_Vector256_get_NegativeZero:
                             case NI_Vector256_get_One:
+                            case NI_Vector256_get_Pi:
+                            case NI_Vector256_get_PositiveInfinity:
+                            case NI_Vector256_get_Tau:
                             case NI_Vector256_get_Zero:
                             case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_E:
+                            case NI_Vector512_get_Epsilon:
+                            case NI_Vector512_get_NaN:
+                            case NI_Vector512_get_NegativeInfinity:
+                            case NI_Vector512_get_NegativeOne:
+                            case NI_Vector512_get_NegativeZero:
                             case NI_Vector512_get_One:
+                            case NI_Vector512_get_Pi:
+                            case NI_Vector512_get_PositiveInfinity:
+                            case NI_Vector512_get_Tau:
                             case NI_Vector512_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
@@ -3741,30 +3777,31 @@ void Compiler::fgFindBasicBlocks()
         }
         else
         {
-            HBtab->ebdTyp = clause.ClassToken;
-
-            /* Set bbCatchTyp as appropriate */
-
+            // Set ebdTyp and bbCatchTyp as appropriate
+            //
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->bbCatchTyp = BBCT_FINALLY;
+                HBtab->ebdTyp        = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->bbCatchTyp = BBCT_FAULT;
+                    HBtab->ebdTyp        = 0;
                 }
                 else
                 {
-                    hndBegBB->bbCatchTyp = clause.ClassToken;
-
                     // These values should be non-zero value that will
                     // not collide with real tokens for bbCatchTyp
                     if (clause.ClassToken == 0)
                     {
                         BADCODE("Exception catch type is Null");
                     }
+
+                    hndBegBB->bbCatchTyp = clause.ClassToken;
+                    HBtab->ebdTyp        = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);

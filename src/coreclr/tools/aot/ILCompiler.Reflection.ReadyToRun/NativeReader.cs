@@ -39,7 +39,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 throw new ArgumentOutOfRangeException(nameof(start), "Start index is out of bounds");
 
             _backingStream.Seek(start, SeekOrigin.Begin);
-            _backingStream.Read(buffer);
+            _backingStream.ReadExactly(buffer);
             start += buffer.Length;
         }
 

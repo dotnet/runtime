@@ -1,2 +1,6 @@
 <Project>
+  <PropertyGroup>
+    <!-- Workaround: https://github.com/dotnet/runtime/issues/118967-->
+    <AttachWeakETagToCompressedAssetsDuringDevelopment>true</AttachWeakETagToCompressedAssetsDuringDevelopment>
+  </PropertyGroup>
 </Project>

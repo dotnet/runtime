@@ -9,12 +9,6 @@
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
-    <!-- Override the compiler version with a private build that supports runtime-async -->
-    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25259.6</MicrosoftNetCompilersToolsetVersion>
-    <RoslynCompilerType>Custom</RoslynCompilerType>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
   </PropertyGroup>
 
