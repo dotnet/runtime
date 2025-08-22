@@ -1902,8 +1902,8 @@ namespace System.Diagnostics.Tracing
                     }
                     else if (dataType == typeof(Guid))
                     {
-                        Debug.Assert(size == sizeof(Guid));
-                        decoded = new Guid(new ReadOnlySpan<byte>(ref *(byte*)dataPointer, sizeof(Guid)));
+                        Debug.Assert(size == 16);
+                        decoded = *(Guid*)dataPointer;
                     }
                     else
                     {
