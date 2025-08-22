@@ -2064,147 +2064,98 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region ToString
-        internal static string ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, string typeName)
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
+        /// </summary>
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
+        public static string ToString<T>(this in TensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
+            => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
+
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
         {
-            if (!maximumLengths.IsEmpty)
+            if (maximumLengths.Length != tensor.Rank)
             {
-                ArgumentOutOfRangeException.ThrowIfNotEqual(maximumLengths.Length, tensor.Rank);
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(tensor));
             }
 
-            var sb = new StringBuilder(typeName);
-
-            sb.Append('<');
-            sb.Append(typeof(T).Name);
-            sb.Append('>');
-
-            sb.Append('[');
-            sb.AppendJoin(", ", tensor.Lengths);
-            sb.Append(']');
-
-            if (!maximumLengths.IsEmpty)
-            {
-                sb.AppendLine(" {");
-
-                if (tensor.Rank == 1)
-                {
-                    nint length = nint.Min(tensor.Lengths[0], maximumLengths[0]);
-                    ToString(tensor, length, sb, indentLevel: 1);
-                    sb.AppendLine();
-                }
-                else
-                {
-                    ToString(tensor, maximumLengths, sb);
-                }
-
-                sb.Append('}');
-            }
+            StringBuilder sb = new();
+            ToString(in tensor, maximumLengths, sb);
             return sb.ToString();
         }
 
-        private static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, StringBuilder sb, int indentLevel = 0)
+        internal static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, StringBuilder sb, int indentLevel = 0)
         {
-            nint length = nint.Min(tensor.Lengths[0], maximumLengths[0]);
+            Debug.Assert(maximumLengths.Length != tensor.Rank);
 
-            if (indentLevel != 0)
-            {
-                if (tensor.Rank != 1)
-                {
-                    sb.Append(' ', indentLevel * 2);
-                    sb.AppendLine("[");
-                }
-                else
-                {
-                    ToString(tensor, length, sb, indentLevel);
-                    return;
-                }
-            }
-
-            if (length != 0)
-            {
-                TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
-
-                ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref tensor._reference, tmpShape);
-                ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
-
-                for (nint i = 1; i < length; i++)
-                {
-                    sb.AppendLine(",");
-                    tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
-                    ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
-                }
-
-                if (length != tensor.Lengths[0])
-                {
-                    sb.AppendLine(",");
-                    sb.Append(' ', (indentLevel + 1) * 2);
-                    sb.Append("..");
-                }
-                sb.AppendLine();
-            }
-            else
-            {
-                sb.Append(' ', (indentLevel + 1) * 2);
-                sb.AppendLine("..");
-            }
-            sb.Append(' ', indentLevel * 2);
-
-            if (indentLevel != 0)
-            {
-                sb.Append(']');
-            }
-        }
-
-        private static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, nint length, StringBuilder sb, int indentLevel)
-        {
             sb.Append(' ', indentLevel * 2);
             sb.Append('[');
 
-            if (length != 0)
+            if (tensor.Rank != 0)
             {
-                sb.Append(tensor._reference);
+                nint length = nint.Max(tensor.Lengths[0], maximumLengths[0]);
 
-                for (nint i = 1; i < length; i++)
+                if (tensor.Rank != 1)
                 {
-                    sb.Append(", ");
-                    sb.Append(Unsafe.Add(ref tensor._reference, i));
+                    string separator = string.Empty;
+
+                    for (nint i = 0; i < length; i++)
+                    {
+                        sb.AppendLine(separator);
+
+                        TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
+                        ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
+                        ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
+
+                        separator = ",";
+                    }
+
+                    if (length != tensor.Lengths[0])
+                    {
+                        sb.AppendLine(separator);
+                        sb.Append(' ', indentLevel * 2);
+                        sb.AppendLine("...");
+                    }
                 }
-
-                if (length != tensor.Lengths[0])
+                else
                 {
-                    sb.Append(", ..");
+                    string separator = " ";
+
+                    for (nint i = 0; i < length; i++)
+                    {
+                        sb.Append(separator);
+                        sb.Append(Unsafe.Add(ref tensor._reference, i));
+                        separator = ", ";
+                    }
+
+                    if (length != tensor.Lengths[0])
+                    {
+                        sb.Append(separator);
+                        sb.Append("...");
+                    }
+
+                    sb.Append(separator);
                 }
             }
-            else
-            {
-                sb.Append("..");
-            }
-
             sb.Append(']');
         }
 
-        private static StringBuilder AppendJoin<T>(this StringBuilder sb, string separator, ReadOnlySpan<T> values)
-        {
-            if (values.IsEmpty)
-            {
-                return sb;
-            }
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="Tensor{T}"/>."/>
+        /// </summary>
+        /// <param name="tensor">The <see cref="Span{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
+        public static string ToString<T>(this Tensor<T> tensor, ReadOnlySpan<nint> maximumLengths)
+            => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
 
-            if (values[0] is not null)
-            {
-                sb.Append(values[0]);
-            }
-
-            for (int i = 1; i < values.Length; i++)
-            {
-                sb.Append(separator);
-
-                if (values[i] is not null)
-                {
-                    sb.Append(values[i]);
-                }
-            }
-            return sb;
-        }
         #endregion
 
         #region Transpose
