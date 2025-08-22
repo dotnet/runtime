@@ -125,7 +125,6 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 
 MANAGED_RUNTIME_EXPORT(GetRuntimeException)
 MANAGED_RUNTIME_EXPORT(RuntimeFailFast)
-MANAGED_RUNTIME_EXPORT(ThreadEntryPoint)
 MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
