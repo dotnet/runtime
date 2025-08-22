@@ -151,7 +151,15 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+#if NATIVEAOT
+            // We only support this intrinsic when it occurs within a well-defined IL sequence.
+            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
+            // For any other purpose, the API is currently unsupported.
+            // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
+            => throw new PlatformNotSupportedException();
+#else
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+#endif
 
 
         // The following intrinsics return true if input is a compile-time constant

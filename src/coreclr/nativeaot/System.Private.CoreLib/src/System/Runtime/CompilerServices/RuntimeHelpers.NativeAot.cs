@@ -27,18 +27,6 @@ namespace System.Runtime.CompilerServices
             throw new PlatformNotSupportedException();
         }
 
-        private static unsafe ref byte GetSpanDataFrom(
-            RuntimeFieldHandle fldHandle,
-            RuntimeTypeHandle targetTypeHandle,
-            out int count)
-        {
-            // We only support this intrinsic when it occurs within a well-defined IL sequence.
-            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
-            // For any other purpose, the API is currently unsupported.
-            // https://github.com/dotnet/corert/issues/364
-            throw new PlatformNotSupportedException();
-        }
-
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
