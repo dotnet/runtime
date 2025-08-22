@@ -57,7 +57,18 @@ namespace System.IO.Tests
         [Fact]
         public static void NegativeOneBufferSize_ShouldNotThrowException()
         {
-            StreamReader streamReaderTest = new StreamReader("path", Encoding.UTF8, true, -1);
+            string testfile = Path.GetTempFileName();
+            try
+            {
+                using (var sr = new StreamReader(testfile, Encoding.UTF8, true, -1))
+                {
+                    Assert.NotNull(sr);
+                }
+            }
+            finally
+            {
+                File.Delete(testfile);
+            }
         }
 
         [Fact]

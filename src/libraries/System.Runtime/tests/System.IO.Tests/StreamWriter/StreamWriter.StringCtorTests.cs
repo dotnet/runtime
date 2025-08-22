@@ -44,7 +44,18 @@ namespace System.IO.Tests
         [Fact]
         public static void NegativeOneBufferSize_ShouldNotThrowException()
         {
-            StreamWriter streamWriterTest = new StreamWriter("path", false, Encoding.UTF8, -1);
+            string testfile = Path.GetTempFileName();
+            try
+            {
+                using (StreamWriter sw = new StreamWriter("path", false, Encoding.UTF8, -1))
+                {
+                    Assert.NotNull(sw);
+                }
+            }
+            finally
+            {
+                File.Delete(testfile);
+            }
         }
 
         [Fact]
