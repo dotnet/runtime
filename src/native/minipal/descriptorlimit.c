@@ -7,6 +7,8 @@
 #include <sys/resource.h>
 #endif
 
+#include <limits.h>
+
 #include "descriptorlimit.h"
 
 bool minipal_increase_descriptor_limit(void)
