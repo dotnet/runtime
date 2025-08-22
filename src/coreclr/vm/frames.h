@@ -2203,10 +2203,10 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains MethodDesc ptr or
+    // m_Datum contains PInvokeMethodDesc ptr or
     // - on 64 bit host: CALLI target address (if lowest bit is set)
     // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
+    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
     // - bit 1 set indicates invoking new exception handling helpers
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
