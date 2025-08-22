@@ -651,9 +651,6 @@ HRESULT EEConfig::sync()
         {
             fTieredCompilation = false;
         }
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
-        fTieredCompilation = false;
-#endif
     }
 #endif
 

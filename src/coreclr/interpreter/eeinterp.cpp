@@ -85,8 +85,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#if defined(TARGET_WASM) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
-        // interpret everything on wasm and apple mobile
+#ifdef TARGET_WASM
+        // interpret everything on wasm
         doInterpret = true;
 #else
         // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule
