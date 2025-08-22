@@ -21484,18 +21484,21 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTree* op2Dup = fgMakeMultiUse(op2ToDup);
 
                 assert(!varTypeIsArithmetic(op1Dup));
-                op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseJitType, simdSize);
+                op1Dup =
+                    gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1, TYP_I_IMPL), simdBaseJitType, simdSize);
 
                 if (!varTypeIsArithmetic(op2Dup))
                 {
-                    op2Dup = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1), simdBaseJitType, simdSize);
+                    op2Dup = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1, TYP_I_IMPL), simdBaseJitType,
+                                                     simdSize);
                 }
 
                 // upper = op1.GetElement(1) * op2.GetElement(1)
                 GenTree* upper = gtNewOperNode(GT_MUL, TYP_LONG, op1Dup, op2Dup);
 
                 // return Vector128.Create(lower, upper)
-                return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseJitType, simdSize);
+                return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1, TYP_I_IMPL), upper, simdBaseJitType,
+                                                simdSize);
             }
 #endif // !TARGET_XARCH && !TARGET_ARM64
             unreached();
@@ -23270,6 +23273,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
     var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
     assert(varTypeIsArithmetic(simdBaseType));
+    assert(op2->TypeIs(TYP_I_IMPL));
 
 #if defined(TARGET_XARCH)
     if (op2->IsIntegralConst(0))
@@ -27748,6 +27752,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsArithmetic(op3));
+    assert(op2->TypeIs(TYP_I_IMPL));
 
 #if defined(TARGET_XARCH)
     assert(!varTypeIsLong(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_X86Base_X64));

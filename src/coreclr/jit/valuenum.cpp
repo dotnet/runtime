@@ -8383,15 +8383,15 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             case NI_Vector512_GetElement:
 #endif
             {
-                var_types simdType = TypeOfVN(arg0VN);
-                int32_t   index    = GetConstantInt32(arg1VN);
+                var_types     simdType = TypeOfVN(arg0VN);
+                target_size_t index    = ConstantValue<target_size_t>(arg1VN);
 
-                if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(simdType), baseType))
+                if (index >= GenTreeVecCon::ElementCount(genTypeSize(simdType), baseType))
                 {
                     // Nothing to fold for out of range indexes
                     break;
                 }
-                return EvaluateSimdGetElement(this, simdType, baseType, arg0VN, index);
+                return EvaluateSimdGetElement(this, simdType, baseType, arg0VN, static_cast<int32_t>(index));
             }
 
 #if defined(TARGET_ARM64)
@@ -9325,9 +9325,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 break;
             }
 
-            int32_t index = GetConstantInt32(arg1VN);
+            target_size_t index = ConstantValue<target_size_t>(arg1VN);
 
-            if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
+            if (index >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
             {
                 // Nothing to fold for out of range indexes
                 break;
@@ -9345,7 +9345,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     value = GetConstantDouble(arg2VN);
                 }
-                return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
+                return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, static_cast<int32_t>(index),
+                                                       value);
             }
             else
             {
@@ -9360,7 +9361,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     value = GetConstantInt32(arg2VN);
                 }
-                return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
+                return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, static_cast<int32_t>(index),
+                                                       value);
             }
         }
 

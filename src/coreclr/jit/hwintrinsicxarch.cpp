@@ -1573,11 +1573,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     op1 = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, 8);
 
-                    GenTree* idx  = gtNewIconNode(2, TYP_INT);
+                    GenTree* idx  = gtNewIconNode(2, TYP_I_IMPL);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
                     op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
 
-                    idx     = gtNewIconNode(3, TYP_INT);
+                    idx     = gtNewIconNode(3, TYP_I_IMPL);
                     zero    = gtNewZeroConNode(TYP_FLOAT);
                     retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
 
@@ -1601,7 +1601,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     op1 = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, 12);
 
-                    GenTree* idx  = gtNewIconNode(3, TYP_INT);
+                    GenTree* idx  = gtNewIconNode(3, TYP_I_IMPL);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
                     retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
                     break;
@@ -2704,6 +2704,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
+
+            op2 = gtFoldExpr(impImplicitIorI4Cast(op2, TYP_I_IMPL, /* zeroExtend */ true));
 
             retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
@@ -4145,6 +4147,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* valueOp  = impPopStack().val;
             GenTree* indexOp  = impPopStack().val;
             GenTree* vectorOp = impSIMDPopStack();
+
+            indexOp = gtFoldExpr(impImplicitIorI4Cast(indexOp, TYP_I_IMPL, /* zeroExtend */ true));
 
             retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize);
             break;
