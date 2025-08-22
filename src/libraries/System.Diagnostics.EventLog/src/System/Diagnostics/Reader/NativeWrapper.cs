@@ -1181,12 +1181,7 @@ namespace System.Diagnostics.Eventing.Reader
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeSid:
                     return (val.SidVal == IntPtr.Zero) ? null : new SecurityIdentifier(val.SidVal);
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeGuid:
-#if NET
-                    return (val.GuidReference == IntPtr.Zero) ? Guid.Empty : new Guid(MemoryMarshal.CreateReadOnlySpan(ref *(byte*)val.GuidReference, sizeof(Guid)));
-#else
-                    Debug.Assert(BitConverter.IsLittleEndian);
                     return (val.GuidReference == IntPtr.Zero) ? Guid.Empty : *(Guid*)val.GuidReference;
-#endif
                 case (int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeEvtHandle:
                     return ConvertToSafeHandle(val);
                 case (int)(int)UnsafeNativeMethods.EvtVariantType.EvtVarTypeFileTime:
