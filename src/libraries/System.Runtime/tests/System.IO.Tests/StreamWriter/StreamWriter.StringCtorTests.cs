@@ -47,7 +47,7 @@ namespace System.IO.Tests
             string testfile = Path.GetTempFileName();
             try
             {
-                using (StreamWriter sw = new StreamWriter("path", false, Encoding.UTF8, -1))
+                using (StreamWriter sw = new StreamWriter(testfile, false, Encoding.UTF8, -1))
                 {
                     Assert.NotNull(sw);
                 }
