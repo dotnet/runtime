@@ -59,7 +59,7 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    private enum CorTokenType: uint
+    private enum CorTokenType : uint
     {
         mdtTypeRef = 0x01000000,
         mdtTypeDef = 0x02000000,
@@ -1308,8 +1308,28 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodDescTransparencyData(ClrDataAddress methodDesc, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescTransparencyData(methodDesc, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetMethodDescTransparencyData(ClrDataAddress methodDesc, DacpMethodDescTransparencyData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || data is null)
+                throw new ArgumentException();
+
+            // Called for validation
+            _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDesc.ToTargetPointer(_target));
+
+            // Zero memory
+            *data = default;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
     int ISOSDacInterface.GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data)
     {
         if (mt == 0 || data == null)
@@ -1590,8 +1610,28 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodTableTransparencyData(mt, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (mt == 0 || data is null)
+                throw new ArgumentException();
+
+            // Called for validation
+            _target.Contracts.RuntimeTypeSystem.GetTypeHandle(mt.ToTargetPointer(_target));
+
+            // Zero memory
+            *data = default;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
     int ISOSDacInterface.GetModule(ClrDataAddress addr, out IXCLRDataModule? mod)
     {
         mod = default;

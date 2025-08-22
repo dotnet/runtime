@@ -243,6 +243,20 @@ internal struct DacpMethodDescData
 
 }
 
+internal struct DacpMethodDescTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
+internal struct DacpMethodTableTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 internal unsafe partial interface ISOSEnum
@@ -320,7 +334,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodDescFromToken(ClrDataAddress moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
     [PreserveSig]
-    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, /*struct DacpMethodDescTransparencyData*/ void* data);
+    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, DacpMethodDescTransparencyData* data);
 
     // JIT Data
     [PreserveSig]
@@ -358,7 +372,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data);
     [PreserveSig]
-    int GetMethodTableTransparencyData(ClrDataAddress mt, /*struct DacpMethodTableTransparencyData*/ void* data);
+    int GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data);
 
     // EEClass
     [PreserveSig]
