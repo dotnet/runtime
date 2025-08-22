@@ -11985,14 +11985,10 @@ emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 static void
 emit_got (MonoAotCompile *acfg)
 {
-	char symbol [MAX_SYMBOL_SIZE];
-
 	if (acfg->aot_opts.llvm_only)
 		return;
 
 	/* Don't make GOT global so accesses to it don't need relocations */
-	sprintf (symbol, "%s", acfg->got_symbol);
-
 #ifdef TARGET_MACH
 	emit_unset_mode (acfg);
 	fprintf (acfg->fp, ".section __DATA, __bss\n");
@@ -12004,16 +12000,15 @@ emit_got (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
 	if (acfg->aot_opts.write_symbols)
-		emit_local_symbol (acfg, symbol, "got_end", FALSE);
-	emit_label (acfg, symbol);
+		emit_local_symbol (acfg, acfg->got_symbol, "got_end", FALSE);
+	emit_label (acfg, acfg->got_symbol);
 	if (acfg->llvm)
 		emit_info_symbol (acfg, "jit_got", FALSE);
 	if (acfg->got_offset > 0)
 		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (target_mgreg_t)));
 #endif
 
-	sprintf (symbol, "got_end");
-	emit_label (acfg, symbol);
+	emit_label (acfg, "got_end");
 }
 
 typedef struct GlobalsTableEntry {
