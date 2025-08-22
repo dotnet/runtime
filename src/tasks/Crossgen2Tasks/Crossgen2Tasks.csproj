@@ -9,10 +9,17 @@
     <!-- Bring in references for these assemblies which are provided by the SDK.
          We do this to avoid bringing the package closure for assemblies we don't use here. -->
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/netstandard2.0" />
+
+    <!-- Revert this after the next VMR re-bootstrap: https://github.com/dotnet/dotnet/issues/1985 -->
+
+    <!-- <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/net8.0" />
+    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" />
+    <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/net8.0" />
+    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/net8.0" /> -->
+    <PackageReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" />
+    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+    <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
+    <PackageReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.NET.CrossGen.targets">
