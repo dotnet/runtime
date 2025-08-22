@@ -5513,8 +5513,8 @@ retry_emit:
                         if (m_pStackPointer[-1].type == StackTypeI4)
                         {
                             // The localloc instruction allocates size (type native unsigned int or U4) bytes from the local dynamic memory pool ...
-                            // So the size is currently U4 and needs to be promoted to I8
-                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                            // So the size is currently U4 and needs to be promoted to U8
+                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
                             m_pStackPointer[-1].type = StackTypeI8;
                         }
 #endif
