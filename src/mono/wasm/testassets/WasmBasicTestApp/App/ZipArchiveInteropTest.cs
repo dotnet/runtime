@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.Resources;
 using System.Runtime.InteropServices.JavaScript;
+using System.Text;
 
 public partial class ZipArchiveInteropTest
 {
