@@ -138,7 +138,11 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
-extern "C" void ThreadEntryPoint();
+#if defined(_WIN32)
+extern "C" int ThreadEntryPoint(void* pContext);
+#else
+extern "C" size_t ThreadEntryPoint(void* pContext);
+#endif
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
