@@ -28,72 +28,54 @@ namespace System.Threading
 
         internal static void SleepInternal(int millisecondsTimeout)
         {
-            Debug.Assert(millisecondsTimeout >= -1);
+            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
 
             CheckForPendingInterrupt();
 
-            if (millisecondsTimeout == 0)
-            {
-                UninterruptibleSleep0();
-                return;
-            }
-
             Thread currentThread = CurrentThread;
-            if (millisecondsTimeout == -1)
+            if (millisecondsTimeout == Timeout.Infinite)
             {
                 // Infinite wait - use alertable wait
                 currentThread.SetWaitSleepJoinState();
-                try
+                uint result;
+                while (true)
                 {
-                    uint result;
-                    while (true)
+                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                     {
-                        result = Interop.Kernel32.SleepEx(uint.MaxValue, true);
-                        if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                        {
-                            break;
-                        }
-                        CheckForPendingInterrupt();
+                        break;
                     }
+                    CheckForPendingInterrupt();
                 }
-                finally
-                {
-                    currentThread.ClearWaitSleepJoinState();
-                }
+
+                currentThread.ClearWaitSleepJoinState();
             }
             else
             {
                 // Timed wait - use alertable wait
                 currentThread.SetWaitSleepJoinState();
                 long startTime = Environment.TickCount64;
-                try
+                while (true)
                 {
-                    uint result;
-                    while (true)
+                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                     {
-                        result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
-                        if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                        {
-                            break;
-                        }
-                        // Check if this was our interrupt APC
-                        CheckForPendingInterrupt();
-                        // Handle APC completion by adjusting timeout and retrying
-                        long currentTime = Environment.TickCount64;
-                        long elapsed = currentTime - startTime;
-                        if (elapsed >= millisecondsTimeout)
-                        {
-                            result = Interop.Kernel32.WAIT_TIMEOUT;
-                            break;
-                        }
-                        millisecondsTimeout -= (int)elapsed;
-                        startTime = currentTime;
+                        break;
                     }
+                    // Check if this was our interrupt APC
+                    CheckForPendingInterrupt();
+                    // Handle APC completion by adjusting timeout and retrying
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
                 }
-                finally
-                {
-                    currentThread.ClearWaitSleepJoinState();
-                }
+
+                currentThread.ClearWaitSleepJoinState();
             }
         }
 
@@ -234,53 +216,47 @@ namespace System.Threading
                 {
                     Thread currentThread = CurrentThread;
                     currentThread.SetWaitSleepJoinState();
-                    try
+                    uint result;
+                    if (millisecondsTimeout == Timeout.Infinite)
                     {
-                        uint result;
-                        if (millisecondsTimeout == -1)
+                        // Infinite wait
+                        while (true)
                         {
-                            // Infinite wait
-                            while (true)
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), Timeout.UnsignedInfinite, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                             {
-                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), uint.MaxValue, Interop.BOOL.TRUE);
-                                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                                {
-                                    break;
-                                }
-                                // Check if this was our interrupt APC
-                                CheckForPendingInterrupt();
+                                break;
                             }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
                         }
-                        else
-                        {
-                            long startTime = Environment.TickCount64;
-                            while (true)
-                            {
-                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                                {
-                                    break;
-                                }
-                                // Check if this was our interrupt APC
-                                CheckForPendingInterrupt();
-                                // Handle APC completion by adjusting timeout and retrying
-                                long currentTime = Environment.TickCount64;
-                                long elapsed = currentTime - startTime;
-                                if (elapsed >= millisecondsTimeout)
-                                {
-                                    result = Interop.Kernel32.WAIT_TIMEOUT;
-                                    break;
-                                }
-                                millisecondsTimeout -= (int)elapsed;
-                                startTime = currentTime;
-                            }
-                        }
-                        return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                     }
-                    finally
+                    else
                     {
-                        currentThread.ClearWaitSleepJoinState();
+                        long startTime = Environment.TickCount64;
+                        while (true)
+                        {
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                            {
+                                break;
+                            }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
+                            // Handle APC completion by adjusting timeout and retrying
+                            long currentTime = Environment.TickCount64;
+                            long elapsed = currentTime - startTime;
+                            if (elapsed >= millisecondsTimeout)
+                            {
+                                result = Interop.Kernel32.WAIT_TIMEOUT;
+                                break;
+                            }
+                            millisecondsTimeout -= (int)elapsed;
+                            startTime = currentTime;
+                        }
                     }
+                    currentThread.ClearWaitSleepJoinState();
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                 }
             }
             finally
@@ -545,6 +521,7 @@ namespace System.Threading
         {
             if (RuntimeImports.RhCheckAndClearPendingInterrupt())
             {
+                CurrentThread.ClearWaitSleepJoinState();
                 throw new ThreadInterruptedException();
             }
         }

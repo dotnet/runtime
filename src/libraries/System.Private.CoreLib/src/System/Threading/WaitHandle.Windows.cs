@@ -56,56 +56,46 @@ namespace System.Threading
             }
 
             int result;
-            try
+
+            Thread.CheckForPendingInterrupt();
+
+            while (true)
             {
-#if !MONO
-                // Check for thread interrupt when APC completion occurs
-                Thread.CheckForPendingInterrupt();
-#endif
-
-                while (true)
-                {
 #if NATIVEAOT
-                    if (reentrantWait)
-                    {
-                        Debug.Assert(!waitAll);
-                        result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
-                    }
-                    else
-                    {
-                        result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                    }
-#else
+                if (reentrantWait)
+                {
+                    Debug.Assert(!waitAll);
+                    result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
+                }
+                else
+                {
                     result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                }
+#else
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
 
-                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                        break;
+                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    break;
 
-#if !MONO
-                    // Check for thread interrupt when APC completion occurs
-                    Thread.CheckForPendingInterrupt();
-#endif
+                Thread.CheckForPendingInterrupt();
 
-                    // Handle APC completion by adjusting timeout and retrying
-                    if (millisecondsTimeout != -1)
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != Timeout.Infinite)
+                {
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
                     {
-                        long currentTime = Environment.TickCount64;
-                        long elapsed = currentTime - startTime;
-                        if (elapsed >= millisecondsTimeout)
-                        {
-                            result = Interop.Kernel32.WAIT_TIMEOUT;
-                            break;
-                        }
-                        millisecondsTimeout -= (int)elapsed;
-                        startTime = currentTime;
+                        result = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
                     }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
                 }
             }
-            finally
-            {
-                currentThread.ClearWaitSleepJoinState();
-            }
+
+            currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
             {
@@ -150,10 +140,7 @@ namespace System.Threading
                 startTime = Environment.TickCount64;
             }
 
-#if !MONO
-            // Check for thread interrupt when APC completion occurs
             Thread.CheckForPendingInterrupt();
-#endif
 
             // Signal the object and wait for the first time
             int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
@@ -161,10 +148,7 @@ namespace System.Threading
             // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
             while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
             {
-#if !MONO
-                // Check for thread interrupt when APC completion occurs
                 Thread.CheckForPendingInterrupt();
-#endif
 
                 if (millisecondsTimeout != -1)
                 {
