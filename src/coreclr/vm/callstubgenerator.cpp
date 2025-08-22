@@ -1693,7 +1693,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         //  automatically do alignment of the stack offset themselves when updating the stack offset,
         //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
         int alignedArgSize = m_interpreterToNative
-            ? (unalignedArgSize + 7) & ~7
+            ? ALIGN_UP(unalignedArgSize, 8)
             : unalignedArgSize;
 
         if (argLocDesc.m_cGenReg == 1)
