@@ -52,6 +52,11 @@ namespace System.Threading
         // Boolean value indicates whether the instance has been disposed.
         private readonly StrongBox<bool> m_lockObjAndDisposed;
 
+        // Indicates whether some thread is executing within the lock region.
+        // In WaitUntilCountOrTimeoutAsync, the lock might be acquired even if the thread is holding it.
+        // Therefore, increment and decrement this counter as the locks are acquired and released.
+        private volatile int m_inLockRegion;
+
         // Act as the semaphore wait handle, it's lazily initialized if needed, the first WaitHandle call initialize it
         // and wait an release sets and resets it respectively as long as it is not null
         private volatile ManualResetEvent? m_waitHandle;
@@ -111,6 +116,7 @@ namespace System.Threading
                     // lock the count to avoid multiple threads initializing the handle if it is null
                     lock (m_lockObjAndDisposed)
                     {
+                        Interlocked.Increment(ref m_inLockRegion);
                         if (m_threadsTryingFastPathCount > 0)
                         {
                             SpinUntilFastPathFinishes();
@@ -118,6 +124,7 @@ namespace System.Threading
                         // The initial state for the wait handle is true if the count is greater than zero
                         // false otherwise
                         m_waitHandle ??= new ManualResetEvent(m_currentCount != 0);
+                        Interlocked.Decrement(ref m_inLockRegion);
                     }
                 }
 
@@ -326,7 +333,7 @@ namespace System.Threading
         private bool TryWaitFastPath()
         {
             bool result = false;
-            if (!Monitor.IsEntered(m_lockObjAndDisposed) && m_waitHandle is null)
+            if (m_inLockRegion == 0 && m_waitHandle is null)
             {
                 Interlocked.Increment(ref m_threadsTryingFastPathCount);
                 // It's possible that the lock is taken by now, don't attempt the fast path in that case.
@@ -334,9 +341,9 @@ namespace System.Threading
                 // If the lock is taken after checking this condition, because m_threadsTryingFastPathCount is already greater than 0,
                 // the thread holding the lock wouldn't start its operations.
                 // If the wait handle is not null, we have to follow the slow path taking the lock to avoid race conditions.
-                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, did its work and released it
+                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, done its work and released it
                 // before this thread updated m_threadsTryingFastPathCount.
-                if (!Monitor.IsEntered(m_lockObjAndDisposed) && m_waitHandle is null)
+                if (m_inLockRegion == 0 && m_waitHandle is null)
                 {
                     int currentCount = m_currentCount;
                     if (currentCount > 0 &&
@@ -431,6 +438,8 @@ namespace System.Threading
                     }
                 }
                 Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
+                Interlocked.Increment(ref m_inLockRegion);
+
                 if (m_threadsTryingFastPathCount > 0)
                 {
                     SpinUntilFastPathFinishes();
@@ -500,6 +509,7 @@ namespace System.Threading
                 {
                     m_waitCount--;
                     Monitor.Exit(m_lockObjAndDisposed);
+                    Interlocked.Decrement(ref m_inLockRegion);
                 }
 
                 // Unregister the cancellation callback.
@@ -756,6 +766,7 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
+                Interlocked.Increment(ref m_inLockRegion);
                 if (m_threadsTryingFastPathCount > 0)
                 {
                     SpinUntilFastPathFinishes();
@@ -765,10 +776,12 @@ namespace System.Threading
                 {
                     --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
+                    Interlocked.Decrement(ref m_inLockRegion);
                     return Task.FromResult(true);
                 }
                 else if (millisecondsTimeout == 0)
                 {
+                    Interlocked.Decrement(ref m_inLockRegion);
                     // No counts, if timeout is zero fail fast
                     return Task.FromResult(false);
                 }
@@ -779,9 +792,11 @@ namespace System.Threading
                 {
                     Debug.Assert(m_currentCount == 0, "m_currentCount should never be negative");
                     TaskNode asyncWaiter = CreateAndAddAsyncWaiter();
-                    return (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
+                    Task<bool> result = (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
                         asyncWaiter :
                         WaitUntilCountOrTimeoutAsync(asyncWaiter, millisecondsTimeout, cancellationToken);
+                    Interlocked.Decrement(ref m_inLockRegion);
+                    return result;
                 }
             }
         }
@@ -872,6 +887,7 @@ namespace System.Threading
             // we no longer hold the lock.  As such, acquire it.
             lock (m_lockObjAndDisposed)
             {
+                Interlocked.Increment(ref m_inLockRegion);
                 if (m_threadsTryingFastPathCount > 0)
                 {
                     SpinUntilFastPathFinishes();
@@ -882,8 +898,10 @@ namespace System.Threading
                 if (RemoveAsyncWaiter(asyncWaiter))
                 {
                     cancellationToken.ThrowIfCancellationRequested(); // cancellation occurred
+                    Interlocked.Decrement(ref m_inLockRegion);
                     return false; // timeout occurred
                 }
+                Interlocked.Decrement(ref m_inLockRegion);
             }
 
             // The waiter had already been removed, which means it's already completed or is about to
@@ -909,7 +927,7 @@ namespace System.Threading
         private int TryReleaseFastPath(int releaseCount)
         {
             int result = -1;
-            if (!Monitor.IsEntered(m_lockObjAndDisposed) && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
+            if (m_inLockRegion == 0 && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
             {
                 Interlocked.Increment(ref m_threadsTryingFastPathCount);
                 // It's possible that the lock is taken by now, don't attempt the fast path in that case.
@@ -918,9 +936,9 @@ namespace System.Threading
                 // the thread holding the lock wouldn't start its operations.
                 // The wait handle and async head need to be null and wait count to be zero to take the fast path.
                 // Otherwise we have to follow the slow path taking the lock to avoid race conditions.
-                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, did its work and released it
+                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, done its work and released it
                 // before this thread updated m_threadsTryingFastPathCount.
-                if (!Monitor.IsEntered(m_lockObjAndDisposed) && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
+                if (m_inLockRegion == 0 && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
                 {
                     int currentCount = m_currentCount;
                     if (m_maxCount - currentCount >= releaseCount &&
@@ -965,6 +983,7 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
+                Interlocked.Increment(ref m_inLockRegion);
                 if (m_threadsTryingFastPathCount > 0)
                 {
                     SpinUntilFastPathFinishes();
@@ -1033,6 +1052,7 @@ namespace System.Threading
                 {
                     m_waitHandle.Set();
                 }
+                Interlocked.Decrement(ref m_inLockRegion);
             }
 
             // And return the count
