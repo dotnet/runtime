@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 namespace System.Diagnostics.Tracing
@@ -86,28 +87,28 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
         private unsafe struct EventPipeProviderConfigurationNative
         {
-            private char* m_pProviderName;
+            private ushort* m_pProviderName;
             private ulong m_keywords;
             private uint m_loggingLevel;
-            private char* m_pFilterData;
+            private ushort* m_pFilterData;
 
             internal static void MarshalToNative(EventPipeProviderConfiguration managed, ref EventPipeProviderConfigurationNative native)
             {
-                native.m_pProviderName = (char*)Marshal.StringToCoTaskMemUni(managed.ProviderName);
+                native.m_pProviderName = Utf16StringMarshaller.ConvertToUnmanaged(managed.ProviderName);
                 native.m_keywords = managed.Keywords;
                 native.m_loggingLevel = managed.LoggingLevel;
-                native.m_pFilterData = (char*)Marshal.StringToCoTaskMemUni(managed.FilterData);
+                native.m_pFilterData = Utf16StringMarshaller.ConvertToUnmanaged(managed.FilterData);
             }
 
             internal void Release()
             {
                 if (m_pProviderName != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pProviderName);
+                    Utf16StringMarshaller.Free(m_pProviderName);
                 }
                 if (m_pFilterData != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pFilterData);
+                    Utf16StringMarshaller.Free(m_pFilterData);
                 }
             }
         }
