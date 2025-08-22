@@ -1140,19 +1140,39 @@ void InterpCompiler::BuildEHInfo()
 
     INTERP_DUMP("EH info:\n");
 
-    if (m_methodInfo->EHcount == 0)
+    unsigned int nativeEHCount = 0;
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+
+        m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+        if (m_ppOffsetToBB[clause.TryOffset] != NULL)
+        {
+            nativeEHCount++;
+        }
+    }
+
+    if (nativeEHCount == 0)
     {
         INTERP_DUMP("  None\n");
         return;
     }
 
-    m_compHnd->setEHcount(m_methodInfo->EHcount);
+    m_compHnd->setEHcount(nativeEHCount);
+
+    unsigned int nativeEHIndex = 0;
     for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
         CORINFO_EH_CLAUSE clause;
         CORINFO_EH_CLAUSE nativeClause;
 
         m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+
+        if (m_ppOffsetToBB[clause.TryOffset] == NULL)
+        {
+            INTERP_DUMP("  Unreachable try region at IL offset %x\n", clause.TryOffset);
+            continue;
+        }
 
         int32_t tryStartNativeOffset;
         int32_t tryEndNativeOffset;
@@ -1188,7 +1208,7 @@ void InterpCompiler::BuildEHInfo()
             nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
         }
 
-        m_compHnd->setEHinfo(i, &nativeClause);
+        m_compHnd->setEHinfo(nativeEHIndex++, &nativeClause);
 
         INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
         if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
@@ -1221,7 +1241,7 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
 
     bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
 
     return pMethod;
 }
@@ -2903,7 +2923,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (ctorType != InterpTypeO)
         {
             vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
-            PushTypeVT(resolvedCallToken.hClass, vtsize);
+            if (ctorType == InterpTypeVT)
+            {
+                PushTypeVT(resolvedCallToken.hClass, vtsize);
+            }
+            else
+            {
+                // For VT types with a specific InterpType, push that instead
+                PushInterpType(ctorType, NULL);
+            }
             PushInterpType(InterpTypeByRef, NULL);
         }
         else
@@ -3084,7 +3112,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(INTOP_CALLI);
+                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
                 m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
                 m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
             }
@@ -3101,6 +3129,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
                     AddIns(INTOP_CALLDELEGATE);
+                }
+                else if (tailcall)
+                {
+                    assert(!isPInvoke && !isMarshaledPInvoke);
+                    AddIns(INTOP_CALL_TAIL);
                 }
                 else
                 {
@@ -3138,14 +3171,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(INTOP_CALLI);
+            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
             m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
             m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
             // Traditional virtual call. In theory we could optimize this to using the vtable
-            AddIns(INTOP_CALLVIRT);
+            AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             break;
 
@@ -3173,13 +3206,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(INTOP_CALLI);
+                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
                 m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
                 m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
             }
             else
             {
-                AddIns(INTOP_CALLVIRT);
+                AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
             break;
@@ -3402,7 +3435,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
         }
         default:
             // TODO
-            assert(0);
+            assert(!"Unsupported (yet) static field accessor");
             break;
     }
 
@@ -5620,6 +5653,10 @@ DO_LDFTN:
             {
                 int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
                 int32_t target = (opcode == CEE_LEAVE) ? ilOffset + 5 + *(int32_t*)(m_ip + 1) : (ilOffset + 2 + (int8_t)m_ip[1]);
+                if (target < 0 || target >= m_ILCodeSize)
+                {
+                    BADCODE("Invalid leave target");
+                }
                 InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
 
                 m_pStackPointer = m_pStackBase;

@@ -359,74 +359,31 @@ jobs:
           - jitstress_random_2
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
         ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
           - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
           - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_nobmi1
-          - jitstress_isas_x86_nobmi2
-          - jitstress_isas_x86_nofma
-          - jitstress_isas_x86_nohwintrinsic
-          - jitstress_isas_x86_nolzcnt
-          - jitstress_isas_x86_nopclmulqdq
-          - jitstress_isas_x86_nopopcnt
-          - jitstress_isas_x86_nosse
-          - jitstress_isas_x86_nosse2
-          - jitstress_isas_x86_nosse3
-          - jitstress_isas_x86_nosse3_4
-          - jitstress_isas_x86_nosse41
-          - jitstress_isas_x86_nosse42
-          - jitstress_isas_x86_nossse3
           - jitstress_isas_x86_vectort128
           - jitstress_isas_x86_vectort512
           - jitstress_isas_x86_noavx512_vectort128
-          - jitstress_isas_1_x86_noaes
+          - jitstress_isas_1_x86_evex
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
           - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_nobmi1
-          - jitstress_isas_1_x86_nobmi2
-          - jitstress_isas_1_x86_nofma
-          - jitstress_isas_1_x86_nohwintrinsic
-          - jitstress_isas_1_x86_nolzcnt
-          - jitstress_isas_1_x86_nopclmulqdq
-          - jitstress_isas_1_x86_nopopcnt
-          - jitstress_isas_1_x86_nosse
-          - jitstress_isas_1_x86_nosse2
-          - jitstress_isas_1_x86_nosse3
-          - jitstress_isas_1_x86_nosse3_4
-          - jitstress_isas_1_x86_nosse41
-          - jitstress_isas_1_x86_nosse42
-          - jitstress_isas_1_x86_nossse3
-          - jitstress_isas_2_x86_noaes
+          - jitstress_isas_1_x86_vectort128
+          - jitstress_isas_1_x86_vectort512
+          - jitstress_isas_1_x86_noavx512_vectort128
+          - jitstress_isas_2_x86_evex
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
           - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_nobmi1
-          - jitstress_isas_2_x86_nobmi2
-          - jitstress_isas_2_x86_nofma
-          - jitstress_isas_2_x86_nohwintrinsic
-          - jitstress_isas_2_x86_nolzcnt
-          - jitstress_isas_2_x86_nopclmulqdq
-          - jitstress_isas_2_x86_nopopcnt
-          - jitstress_isas_2_x86_nosse
-          - jitstress_isas_2_x86_nosse2
-          - jitstress_isas_2_x86_nosse3
-          - jitstress_isas_2_x86_nosse3_4
-          - jitstress_isas_2_x86_nosse41
-          - jitstress_isas_2_x86_nosse42
-          - jitstress_isas_2_x86_nossse3
+          - jitstress_isas_2_x86_vectort128
+          - jitstress_isas_2_x86_vectort512
+          - jitstress_isas_2_x86_noavx512_vectort128
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
           - jitstress_isas_x86_evex
