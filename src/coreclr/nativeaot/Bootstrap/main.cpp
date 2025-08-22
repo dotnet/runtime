@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stddef.h>
 
 #if defined(DEBUG) && defined(_WIN32)
 #include <process.h>
