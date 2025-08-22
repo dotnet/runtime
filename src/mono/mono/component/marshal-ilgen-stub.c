@@ -43,7 +43,7 @@ stub_emit_marshal_ilgen (EmitMarshalContext* m, int argnum, MonoType* t,
 	case MONO_TYPE_U8:
 	case MONO_TYPE_FNPTR:
 		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
-	default:
+	default: {
 		MonoClass *klass = m_type_data_get_klass_unchecked (t); // aka MONO_TYPE_ 17
 		if (m_class_is_enumtype (klass) == 1)
 			return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -51,6 +51,7 @@ stub_emit_marshal_ilgen (EmitMarshalContext* m, int argnum, MonoType* t,
 		emit_throw_exception (lightweight_cb, m->mb, "System", "ApplicationException",
 			g_strdup("Cannot marshal nonblittlable types without marshal-ilgen."));
 		break;
+	}
 	}
 
 	return 0;
