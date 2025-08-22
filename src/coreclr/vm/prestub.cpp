@@ -375,31 +375,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pConfig->MayUsePrecompiledCode())
     {
-#ifdef FEATURE_READYTORUN
-        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
-        {
-            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
-            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
-            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
-            {
-                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
-                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
-                {
-                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
-                    {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != (PCODE)NULL)
-                        {
-                            LOG_USING_R2R_CODE(this);
-                            pConfig->SetNativeCode(pCode, &pCode);
-                        }
-                    }
-                }
-            }
-        }
-#endif // FEATURE_READYTORUN
-
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -2279,8 +2254,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsPInvoke())
     {
-        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
         {
+            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
             // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
@@ -2944,7 +2920,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
-    BinderMethodID managedHelperId = fUnbox ? 
+    BinderMethodID managedHelperId = fUnbox ?
         METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
         METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
 
