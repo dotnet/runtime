@@ -17,6 +17,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
+using System.Xml.Serialization;
 using Xunit;
 using System.Runtime.Serialization.Tests;
 using System.Runtime.CompilerServices;
@@ -4552,5 +4553,59 @@ public static partial class DataContractSerializerTests
         var deserializedDesktopObject = DeserializeString<T>(desktopPayload, settings: settings);
         Assert.NotNull(deserializedDesktopObject);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
+    }
+
+    [Fact]
+    public static void DCS_DateTimeOffsetInIXmlSerializableContainer()
+    {
+        // Test for regression - DateTimeOffset deserialization should work correctly when DataContractSerializer
+        // is used within IXmlSerializable.ReadXml() method, ensuring DateTime.Kind is handled properly
+        var originalDate = new DateTimeOffset(2025, 4, 17, 22, 45, 0, TimeSpan.FromHours(-4));
+        var container = new DateTimeOffsetIXmlSerializableContainer { Date = originalDate };
+        
+        var serializer = new DataContractSerializer(typeof(DateTimeOffsetIXmlSerializableContainer));
+        
+        // Serialize
+        string serialized;
+        using (var ms = new MemoryStream())
+        {
+            serializer.WriteObject(ms, container);
+            serialized = Encoding.UTF8.GetString(ms.ToArray());
+        }
+        
+        // Deserialize
+        DateTimeOffsetIXmlSerializableContainer deserialized;
+        using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(serialized)))
+        {
+            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
+        }
+        
+        // Verify the DateTimeOffset was correctly preserved
+        Assert.Equal(originalDate, deserialized.Date);
+        Assert.Equal(originalDate.DateTime, deserialized.Date.DateTime);
+        Assert.Equal(originalDate.Offset, deserialized.Date.Offset);
+        Assert.Equal(originalDate.UtcDateTime, deserialized.Date.UtcDateTime);
+    }
+    
+    // Test type for DateTimeOffset IXmlSerializable scenario
+    public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
+    {
+        public DateTimeOffset Date { get; set; }
+        
+        public XmlSchema GetSchema() => null;
+        
+        public void WriteXml(XmlWriter writer)
+        {
+            var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+            innerSerializer.WriteObject(writer, Date);
+        }
+        
+        public void ReadXml(XmlReader reader)
+        {
+            var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+            reader.ReadStartElement();
+            Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
+            reader.ReadEndElement();
+        }
     }
 }
