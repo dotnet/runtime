@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
 #include <process.h>
@@ -229,6 +230,8 @@ int main(int argc, char* argv[])
     int initval = InitializeRuntime();
     if (initval != 0)
         return initval;
+
+    minipal_increase_descriptor_limit();
 
 #if defined(DEBUG) && defined(_WIN32)
     // work around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640

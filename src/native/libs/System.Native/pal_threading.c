@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_errno.h"
 #include "pal_threading.h"
 
 #include <limits.h>

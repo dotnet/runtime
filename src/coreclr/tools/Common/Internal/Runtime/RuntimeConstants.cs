@@ -64,14 +64,6 @@ namespace Internal.Runtime
         public const ushort ContextFromFirstInterface = 2;
     }
 
-    internal enum RuntimeHelperKind
-    {
-        AllocateObject,
-        IsInst,
-        CastClass,
-        AllocateArray,
-    }
-
     /// <summary>
     /// Constants that describe the bits of the Flags field of MethodFixupCell.
     /// </summary>

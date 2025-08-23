@@ -345,6 +345,7 @@ struct VASigCookie
     // so please keep this field first
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pPInvokeILStub;         // will be use if target is PInvoke (tag == 0)
+    PTR_MethodDesc  pMethodDesc;            // Only non-null if this is a PInvoke method
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;
@@ -357,7 +358,7 @@ struct VASigCookie
 // allocation cost and allow proper bookkeeping.
 //
 
-struct VASigCookieBlock
+struct VASigCookieBlock final
 {
     enum {
 #ifdef _DEBUG
@@ -368,7 +369,7 @@ struct VASigCookieBlock
     };
 
     VASigCookieBlock    *m_Next;
-    UINT                 m_numcookies;
+    UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
@@ -1397,9 +1398,9 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+    VASigCookie *GetVASigCookie(Signature vaSignature, MethodDesc* pMD, const SigTypeContext* typeContext);
 private:
-    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, MethodDesc* pMD, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
