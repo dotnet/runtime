@@ -1121,6 +1121,16 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     {
         m_next = g_controllers;
         g_controllers = this;
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (DebuggerController::GetProcessingDetach())
+        {
+            // If we are detaching, we need to increment the active dispatched exceptions
+            // so that we can send the detach complete message when we are done.
+            int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions();
+            LOG((LF_CORDB, LL_INFO10000, "DC::DC %p incrementing ActiveDispatchedExceptions=%d\n", this, cActiveDispatchedExceptions));
+        }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
     }
 }
 
@@ -1174,24 +1184,46 @@ DebuggerController::~DebuggerController()
     }
     CONTRACTL_END;
 
-    ControllerLockHolder lockController;
+    bool sendDetachComplete = false;
+    {
+        ControllerLockHolder lockController;
 
-    _ASSERTE(m_eventQueuedCount == 0);
+        _ASSERTE(m_eventQueuedCount == 0);
 
-    DisableAll();
+        DisableAll();
 
-    //
-    // Remove controller from list
-    //
+        //
+        // Remove controller from list
+        //
 
-    DebuggerController **c;
+        DebuggerController **c;
 
-    c = &g_controllers;
-    while (*c != this)
-        c = &(*c)->m_next;
+        c = &g_controllers;
+        while (*c != this)
+            c = &(*c)->m_next;
 
-    *c = m_next;
+        *c = m_next;
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (DebuggerController::GetProcessingDetach())
+        {
+            int cActiveDispatchedExceptions = DebuggerController::DecrementActiveDispatchedExceptions();
+            LOG((LF_CORDB, LL_INFO10000, "DC::~DC %p decrementing ActiveDispatchedExceptions=%d\n", this, cActiveDispatchedExceptions));
+
+            if (cActiveDispatchedExceptions == 0)
+            {
+                DebuggerController::SetProcessingDetach(FALSE);
+                sendDetachComplete = true;
+            }
+        }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+    }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (sendDetachComplete && g_pDebugger != NULL)
+    {
+        g_pDebugger->SendDetachComplete();
+    }
+#endif
 }
 
 // void DebuggerController::Delete()
@@ -2702,14 +2734,6 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         // !!! check result
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
         skip = new (interopsafe) DebuggerPatchSkip(thread, patch);
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        if (DebuggerController::GetProcessingDetach())
-        {
-            DebuggerController::IncrementActiveDispatchedExceptions();
-            int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions(); // increment twice - once for debugger patch skip, the second SetIP back to original location
-            LOG((LF_CORDB, LL_INFO10000, "DebuggerPatchSkip allocated, incrementing ActiveDispatchedExceptions - cActiveDispatchedExceptions=%d\n", cActiveDispatchedExceptions));
-        }
-#endif
         TRACE_ALLOC(skip);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
@@ -3071,6 +3095,15 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     }
     _ASSERTE(g_patches != NULL);
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    {
+        int cDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions();
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Incremented Exception Count = %d\n", cDispatchedExceptions));
+    }
+
+    bool isProcessingDetach = DebuggerController::GetProcessingDetach();
+#endif
+
     CrstHolderWithState lockController(&g_criticalSection);
 
     TADDR originalAddress = 0;
@@ -3135,6 +3168,15 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     // we don't accidentally use what will (98% of the time) appear to be a valid value.
     address = (CORDB_ADDRESS_TYPE *)(UINT_PTR)0xAABBCCFF;
 #endif //_DEBUG
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (DebuggerController::GetProcessingDetach() && IsInUsedAction(used))
+    {
+        int cDispatchedFlares = DebuggerController::IncrementDispatchedFlares();
+        isProcessingDetach = true;
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Incremented Flare Count = %d\n", cDispatchedFlares));
+    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     if (dcq.dcqGetCount()> 0)
     {
@@ -3236,6 +3278,14 @@ Exit:
 
     lockController.Release();
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (DebuggerController::GetProcessingDetach() && IsInUsedAction(used) && !isProcessingDetach)
+    {
+        int cDispatchedFlares = DebuggerController::IncrementDispatchedFlares();
+        isProcessingDetach = true;
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Incremented Flare Count = %d\n", cDispatchedFlares));
+    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     // We pulse the GC mode here too cooperate w/ a thread trying to suspend the runtime. If we didn't pulse
     // the GC, the odds of catching this thread in interruptible code may be very small (since this filter
@@ -3261,6 +3311,43 @@ Exit:
         }
 
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (DebuggerController::GetProcessingDetach() && IsInUsedAction(used) && !isProcessingDetach)
+    {
+        int cDispatchedFlares = DebuggerController::IncrementDispatchedFlares();
+        isProcessingDetach = true;
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Incremented Flare Count = %d\n", cDispatchedFlares));
+    }
+
+    if (DebuggerController::GetProcessingDetach())
+    {
+        lockController.Acquire();
+
+        int cDispatchedExceptions = DebuggerController::DecrementActiveDispatchedExceptions();
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Decrement Exception Count = %d\n", cDispatchedExceptions));
+
+        int cDispatchedFlares = DebuggerController::GetDispatchedFlares();
+        _ASSERTE(cDispatchedFlares >= 0);
+        _ASSERTE(cDispatchedExceptions >= 0);
+
+        if (cDispatchedExceptions == 0)
+        {
+            DebuggerController::SetProcessingDetach(FALSE);
+            lockController.Release();
+
+            if (g_pDebugger != NULL)
+            {
+                g_pDebugger->SendDetachComplete();
+            }
+        }
+    }
+    else
+    {
+        int cDispatchedExceptions = DebuggerController::DecrementActiveDispatchedExceptions();
+        LOG((LF_CORDB|LF_ENC, LL_INFO10000, "DC::DPOSS Decrement Exception Count = %d\n", cDispatchedExceptions));
+    }
+#endif
 
     RETURN used;
 }
