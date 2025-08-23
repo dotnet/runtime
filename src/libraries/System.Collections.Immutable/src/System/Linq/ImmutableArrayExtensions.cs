@@ -187,9 +187,39 @@ namespace System.Linq
         /// <typeparam name="TBase">The type of element contained by the collection.</typeparam>
         public static bool SequenceEqual<TDerived, TBase>(this ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer = null) where TDerived : TBase
         {
-            Requires.NotNull(items, nameof(items));
+            if (items is ICollection<TBase> itemsCol)
+            {
+                immutableArray.ThrowNullRefIfNotInitialized();
+                return immutableArray.array!.SequenceEqual(itemsCol, comparer);
+            }
 
-            return immutableArray.array!.SequenceEqual((IEnumerable<TBase>)items, comparer);
+            return Impl(immutableArray, items, comparer);
+
+            static bool Impl(ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer)
+            {
+                Requires.NotNull(items, nameof(items));
+
+                comparer ??= EqualityComparer<TBase>.Default;
+
+                int i = 0;
+                int n = immutableArray.Length;
+                foreach (TDerived item in items)
+                {
+                    if (i == n)
+                    {
+                        return false;
+                    }
+
+                    if (!comparer.Equals(immutableArray[i], item))
+                    {
+                        return false;
+                    }
+
+                    i++;
+                }
+
+                return i == n;
+            }
         }
 
         /// <summary>
