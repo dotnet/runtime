@@ -177,23 +177,23 @@ Again:
         return NULL;
 
 #ifdef _DEBUG
-        if (g_pConfig->GetGCStressLevel() > 1)
-        {
-            // Throttle finalizing to one item per msec, or so, when running GC stress.
-            // This is to prevent cases where finalizers rearm themselves and
-            // do allocations or whatever else that triggers GC under stress.
-            // As a result couple of such things can occupy finalizer loop continuously
-            // while rearming and finalizing the same objects, which adds little
-            // to the coverage, but makes everything else move slower.
-            // NOTE: under GC stress most allocations of finalizable objects
-            //       would trigger a GC, thus 1 item/msec should not be too slow for
-            //       regular not re-arming finalizables.
-            GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
-            GetFinalizerThread()->EnablePreemptiveGC();
-            ClrSleepEx(1, false);
-            GetFinalizerThread()->DisablePreemptiveGC();
-            GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
-        }
+    if (g_pConfig->GetGCStressLevel() > 1)
+    {
+        // Throttle finalizing to one item per msec, or so, when running GC stress.
+        // This is to prevent cases where finalizers rearm themselves and
+        // do allocations or whatever else that triggers GC under stress.
+        // As a result couple of such things can occupy finalizer loop continuously
+        // while rearming and finalizing the same objects, which adds little
+        // to the coverage, but makes everything else move slower.
+        // NOTE: under GC stress most allocations of finalizable objects
+        //       would trigger a GC, thus 1 item/msec should not be too slow for
+        //       regular not re-arming finalizables.
+        GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
+        GetFinalizerThread()->EnablePreemptiveGC();
+        ClrSleepEx(1, false);
+        GetFinalizerThread()->DisablePreemptiveGC();
+        GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
+    }
 #endif //_DEBUG
 
     OBJECTREF obj = ObjectToOBJECTREF(GCHeapUtilities::GetGCHeap()->GetNextFinalizable());
