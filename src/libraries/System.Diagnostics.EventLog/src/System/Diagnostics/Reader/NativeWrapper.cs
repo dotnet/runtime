@@ -773,7 +773,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             unsafe
             {
-                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, (UnsafeNativeMethods.EvtVariant*)null, out int bufferNeeded, out int propCount);
+                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, default(UnsafeNativeMethods.EvtVariant*), out int bufferNeeded, out int propCount);
                 if (!status)
                 {
                     int error = Marshal.GetLastWin32Error();
@@ -869,7 +869,7 @@ namespace System.Diagnostics.Eventing.Reader
             unsafe
             {
                 UnsafeNativeMethods.EvtRenderFlags flag = UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues;
-                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, null, out int bufferNeeded, out int propCount);
+                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, default(UnsafeNativeMethods.EvtVariant*), out int bufferNeeded, out int propCount);
                 if (!status)
                 {
                     int error = Marshal.GetLastWin32Error();
@@ -897,7 +897,7 @@ namespace System.Diagnostics.Eventing.Reader
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(pVar);
+                    Marshal.FreeHGlobal((IntPtr)pVar);
                 }
             }
         }

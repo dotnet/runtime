@@ -751,12 +751,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool EvtFormatMessage(
+        internal static partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
-                             EvtVariant* values,
+                             EvtStringVariant[] values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
                              Span<char> buffer,
