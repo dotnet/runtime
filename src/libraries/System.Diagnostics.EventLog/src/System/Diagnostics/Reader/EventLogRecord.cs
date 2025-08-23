@@ -387,8 +387,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public override string ToXml()
         {
-            char[] renderBuffer = GC.AllocateUninitializedArray<char>(2000);
-            return NativeWrapper.EvtRenderXml(EventLogHandle.Zero, Handle, renderBuffer);
+            return NativeWrapper.EvtRenderXml(EventLogHandle.Zero, Handle);
         }
 
         protected override void Dispose(bool disposing)

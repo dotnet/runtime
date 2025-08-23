@@ -673,26 +673,15 @@ namespace Microsoft.Win32
                                 string[] valuePaths,
                             EvtRenderContextFlags flags);
 
-        [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
                             EvtRenderFlags flags,
-                            int buffSize,
-                            [Out] char[]? buffer,
-                            out int buffUsed,
-                            out int propCount);
-
-        [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtRender(
-                            EventLogHandle context,
-                            EventLogHandle eventHandle,
-                            EvtRenderFlags flags,
-                            int buffSize,
+                            uint buffSize,
                             IntPtr buffer,
-                            out int buffUsed,
+                            out uint buffUsed,
                             out int propCount);
 
 #if NET
