@@ -38,7 +38,7 @@ namespace System.Runtime
     {
         GetRuntimeException = 0,
         FailFast = 1,
-        // UnhandledExceptionHandler = 2, // unused
+        ThreadEntryPoint = 2,
         AppendExceptionStackFrame = 3,
         // unused = 4,
         GetSystemArrayEEType = 5,

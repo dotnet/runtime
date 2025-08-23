@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stddef.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -139,10 +140,16 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
+#if defined(_WIN32)
+extern "C" int ThreadEntryPoint(void* pContext);
+#else
+extern "C" size_t ThreadEntryPoint(void* pContext);
+#endif
+
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
-    nullptr, // &UnhandledExceptionHandler,
+    (pfn)&ThreadEntryPoint,
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     nullptr, // &CheckStaticClassConstruction,
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
