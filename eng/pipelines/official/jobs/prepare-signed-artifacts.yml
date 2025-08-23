@@ -36,7 +36,7 @@ jobs:
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@1
 
-  - task: MicroBuildSigningPlugin@2
+  - task: MicroBuildSigningPlugin@4
     displayName: Install MicroBuild plugin for Signing
     inputs:
       signType: $(SignType)
