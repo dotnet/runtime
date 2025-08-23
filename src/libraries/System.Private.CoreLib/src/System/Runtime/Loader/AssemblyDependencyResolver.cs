@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -35,39 +37,32 @@ namespace System.Runtime.Loader
         {
             ArgumentNullException.ThrowIfNull(componentAssemblyPath);
 
-            string? assemblyPathsList = null;
-            string? nativeSearchPathsList = null;
-            string? resourceSearchPathsList = null;
             int returnCode = 0;
 
-            StringBuilder errorMessage = new StringBuilder();
+            ThreadLocalState state = new ThreadLocalState();
+            Debug.Assert(t_threadLocalState == null); // Re-entrant calls should not happen
+            t_threadLocalState = state;
             try
             {
-                // Setup error writer for this thread. This makes the hostpolicy redirect all error output
-                // to the writer specified. Have to store the previous writer to set it back once this is done.
-                var errorWriter = new Interop.HostPolicy.corehost_error_writer_fn(message => errorMessage.AppendLine(Marshal.PtrToStringAuto(message)));
-
-                IntPtr errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
-                IntPtr previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(errorWriterPtr);
-
-                try
+                unsafe
                 {
-                    // Call hostpolicy to do the actual work of finding .deps.json, parsing it and extracting
-                    // information from it.
-                    returnCode = Interop.HostPolicy.corehost_resolve_component_dependencies(
-                        componentAssemblyPath,
-                        (assemblyPaths, nativeSearchPaths, resourceSearchPaths) =>
-                        {
-                            assemblyPathsList = Marshal.PtrToStringAuto(assemblyPaths);
-                            nativeSearchPathsList = Marshal.PtrToStringAuto(nativeSearchPaths);
-                            resourceSearchPathsList = Marshal.PtrToStringAuto(resourceSearchPaths);
-                        });
-                }
-                finally
-                {
-                    // Reset the error write to the one used before
-                    Interop.HostPolicy.corehost_set_error_writer(previousErrorWriterPtr);
-                    GC.KeepAlive(errorWriter);
+                    // Setup error writer for this thread. This makes the hostpolicy redirect all error output
+                    // to the writer specified. Have to store the previous writer to set it back once this is done.
+                    var previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(&ErrorWriterCallback);
+
+                    try
+                    {
+                        // Call hostpolicy to do the actual work of finding .deps.json, parsing it and extracting
+                        // information from it.
+                        returnCode = Interop.HostPolicy.corehost_resolve_component_dependencies(componentAssemblyPath, &ResolveComponentDependenciesCallback);
+                    }
+                    finally
+                    {
+                        // Reset the error write to the one used before
+                        Interop.HostPolicy.corehost_set_error_writer(previousErrorWriterPtr);
+                        // Clear thread-local state
+                        t_threadLocalState = null;
+                    }
                 }
             }
             catch (EntryPointNotFoundException entryPointNotFoundException)
@@ -86,10 +81,10 @@ namespace System.Runtime.Loader
                     SR.AssemblyDependencyResolver_FailedToResolveDependencies,
                     componentAssemblyPath,
                     returnCode,
-                    errorMessage));
+                    state.ErrorMessage));
             }
 
-            string[] assemblyPaths = SplitPathsList(assemblyPathsList);
+            string[] assemblyPaths = SplitPathsList(state.AssemblyPathsList);
 
             // Assembly simple names are case insensitive per the runtime behavior
             // (see SimpleNameToFileNameMapTraits for the TPA lookup hash).
@@ -101,8 +96,8 @@ namespace System.Runtime.Loader
                 _assemblyPaths.TryAdd(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
             }
 
-            _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);
-            _resourceSearchPaths = SplitPathsList(resourceSearchPathsList);
+            _nativeSearchPaths = SplitPathsList(state.NativeSearchPathsList);
+            _resourceSearchPaths = SplitPathsList(state.ResourceSearchPathsList);
 
             _assemblyDirectorySearchPaths = [Path.GetDirectoryName(componentAssemblyPath)!];
         }
@@ -199,6 +194,36 @@ namespace System.Runtime.Loader
             {
                 return pathsList.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
             }
+        }
+
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+        private static void ResolveComponentDependenciesCallback(nint assemblyPaths, nint nativeSearchPaths, nint resourceSearchPaths)
+        {
+            ThreadLocalState? state = t_threadLocalState;
+            Debug.Assert(state != null);
+            state.AssemblyPathsList = Marshal.PtrToStringAuto(assemblyPaths);
+            state.NativeSearchPathsList = Marshal.PtrToStringAuto(nativeSearchPaths);
+            state.ResourceSearchPathsList = Marshal.PtrToStringAuto(resourceSearchPaths);
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+        private static void ErrorWriterCallback(nint message)
+        {
+            ThreadLocalState? state = t_threadLocalState;
+            Debug.Assert(state != null);
+            state.ErrorMessage ??= new StringBuilder();
+            state.ErrorMessage.AppendLine(Marshal.PtrToStringAuto(message));
+        }
+#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
+
+        [ThreadStatic]
+        private static ThreadLocalState? t_threadLocalState;
+
+        private sealed class ThreadLocalState
+        {
+            public StringBuilder? ErrorMessage;
+            public string? AssemblyPathsList, NativeSearchPathsList, ResourceSearchPathsList;
         }
     }
 }
