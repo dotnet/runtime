@@ -3027,6 +3027,10 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
+
+#if !defined(DACCESS_COMPILE) && defined(OUT_OF_PROCESS_SETTHREADCONTEXT)
+    void SendDetachComplete();
+#endif
 };
 
 
