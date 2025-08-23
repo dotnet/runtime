@@ -499,7 +499,7 @@ namespace Microsoft.Win32
                             EvtQueryPropertyId propertyId,
                             int bufferSize,
                             EvtVariant* buffer,
-                            ref int bufferRequired);
+                            out int bufferRequired);
 
         // PUBLISHER METADATA
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
@@ -683,12 +683,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtRender(
+        internal static unsafe partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
                             EvtRenderFlags flags,
                             int buffSize,
-                            IntPtr buffer,
+                            EvtVariant* buffer,
                             out int buffUsed,
                             out int propCount);
 
@@ -751,28 +751,29 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtFormatMessage(
+        internal static unsafe partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
-                             EvtStringVariant[] values,
+                             EvtVariant* values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
                              Span<char> buffer,
                              out int bufferUsed);
 
-        [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
+
+        [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtFormatMessageBuffer(
+        internal static unsafe partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
-                             IntPtr values,
+                             EvtVariant* values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
-                             IntPtr buffer,
+                             ushort* buffer,
                              out int bufferUsed);
 
         // SESSION
