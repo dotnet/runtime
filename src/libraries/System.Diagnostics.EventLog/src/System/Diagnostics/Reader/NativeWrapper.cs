@@ -472,44 +472,47 @@ namespace System.Diagnostics.Eventing.Reader
         // implies UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId flag.
         public static string EvtFormatMessage(EventLogHandle handle, uint msgId)
         {
-            int bufferNeeded;
-            Span<char> emptyBuffer = [ '\0' ]; // issue: https://github.com/dotnet/runtime/issues/100198
-            bool status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, 0, emptyBuffer, out bufferNeeded);
-            int error = Marshal.GetLastWin32Error();
-
-            // ERROR_EVT_UNRESOLVED_VALUE_INSERT and its cousins are commonly returned for raw message text.
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
-                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
-                        && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
+            unsafe
             {
-                if (IsNotFoundCase(error))
+                int bufferNeeded;
+                Span<char> emptyBuffer = ['\0']; // issue: https://github.com/dotnet/runtime/issues/100198
+                bool status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, 0, emptyBuffer, out bufferNeeded);
+                int error = Marshal.GetLastWin32Error();
+
+                // ERROR_EVT_UNRESOLVED_VALUE_INSERT and its cousins are commonly returned for raw message text.
+                if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                            && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
+                            && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
                 {
-                    return null;
+                    if (IsNotFoundCase(error))
+                    {
+                        return null;
+                    }
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        EventLogException.Throw(error);
                 }
-                if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+
+                char[] buffer = new char[bufferNeeded];
+                status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, bufferNeeded, buffer, out bufferNeeded);
+                error = Marshal.GetLastWin32Error();
+
+                if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
+                            && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
+                            && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
+                {
+                    if (IsNotFoundCase(error))
+                    {
+                        return null;
+                    }
                     EventLogException.Throw(error);
-            }
-
-            char[] buffer = new char[bufferNeeded];
-            status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, bufferNeeded, buffer, out bufferNeeded);
-            error = Marshal.GetLastWin32Error();
-
-            if (!status && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_VALUE_INSERT
-                        && error != UnsafeNativeMethods.ERROR_EVT_UNRESOLVED_PARAMETER_INSERT
-                        && error != UnsafeNativeMethods.ERROR_EVT_MAX_INSERTS_REACHED)
-            {
-                if (IsNotFoundCase(error))
-                {
-                    return null;
                 }
-                EventLogException.Throw(error);
+
+                int len = bufferNeeded - 1; // buffer includes null terminator
+                if (len <= 0)
+                    return string.Empty;
+
+                return new string(buffer, 0, len);
             }
-
-            int len = bufferNeeded - 1; // buffer includes null terminator
-            if (len <= 0)
-                return string.Empty;
-
-            return new string(buffer, 0, len);
         }
 
         public static object EvtGetObjectArrayProperty(EventLogHandle objArrayHandle, int index, int thePropertyId)
@@ -770,7 +773,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             unsafe
             {
-                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, null, out int bufferNeeded, out int propCount);
+                bool status = UnsafeNativeMethods.EvtRender(contextHandle, eventHandle, flag, 0, (UnsafeNativeMethods.EvtVariant*)null, out int bufferNeeded, out int propCount);
                 if (!status)
                 {
                     int error = Marshal.GetLastWin32Error();
