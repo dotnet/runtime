@@ -335,6 +335,117 @@
       <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
+    <ItemGroup>
+      <!-- versions -->
+      <_WasmPropRequiresFullNativeRebuild Include="_KnownWebAssemblySdkPackVersion=$(_KnownWebAssemblySdkPackVersion)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_MonoWorkloadRuntimePackPackageVersion=$(_MonoWorkloadRuntimePackPackageVersion)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_RuntimePackInWorkloadVersionCurrent=$(_RuntimePackInWorkloadVersionCurrent)" />
+      <_WasmPropRequiresFullNativeRebuild Include="DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)" />
+      <_WasmPropRequiresFullNativeRebuild Include="DOTNET_ROOT=$(DOTNET_ROOT)" />
+      <_WasmPropRequiresFullNativeRebuild Include="RuntimeEmccVersionRaw=$(RuntimeEmccVersionRaw)" />
+      <_WasmPropRequiresFullNativeRebuild Include="TargetFrameworkVersion=$(TargetFrameworkVersion)" />
+
+      <!-- IL trimming -->
+      <_WasmPropRequiresFullNativeRebuild Include="_ExtraTrimmerArgs=$(_ExtraTrimmerArgs)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EnableAggressiveTrimming=$(EnableAggressiveTrimming)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EnableDiagnostics=$(EnableDiagnostics)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EventSourceSupport=$(EventSourceSupport)" />
+      <_WasmPropRequiresFullNativeRebuild Include="InvariantGlobalization=$(InvariantGlobalization)" />
+      <_WasmPropRequiresFullNativeRebuild Include="InvariantTimezone=$(InvariantTimezone)" />
+      <_WasmPropRequiresFullNativeRebuild Include="MetricsSupport=$(MetricsSupport)" />
+      <_WasmPropRequiresFullNativeRebuild Include="PublishTrimmed=$(PublishTrimmed)" />
+
+      <!-- IL trimming features: items+values -->
+      <_WasmItemRequiresFullNativeRebuild Include="@(RuntimeHostConfigurationOption->'%(Identity)=%(Value)')" />
+
+      <!-- mono components -->
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableExceptionHandling=$(WasmEnableExceptionHandling)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableSIMD=$(WasmEnableSIMD)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableThreads=$(WasmEnableThreads)" />
+
+      <!-- debugging and profiling -->
+      <_WasmPropRequiresFullNativeRebuild Include="DebugSymbols=$(DebugSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmDebugLevel=$(WasmDebugLevel)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEmitSourceMap=$(WasmEmitSourceMap)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEmitSymbolMap=$(WasmEmitSymbolMap)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmNativeDebugSymbols=$(WasmNativeDebugSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmNativeStrip=$(WasmNativeStrip)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmPerformanceInstrumentation=$(WasmPerformanceInstrumentation)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmProfilers=$(WasmProfilers)" />
+
+      <!-- AOT -->
+      <_WasmPropRequiresFullNativeRebuild Include="RunAOTCompilation=$(RunAOTCompilation)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmDedup=$(WasmDedup)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmLinkIcalls=$(WasmLinkIcalls)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmStripAOTAssemblies=$(WasmStripAOTAssemblies)" />
+
+      <!-- compiler -->
+      <_WasmPropRequiresFullNativeRebuild Include="EmccCompileOptimizationFlag=$(EmccCompileOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccExtraCFlags=$(EmccExtraCFlags)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccFlags=$(EmccFlags)" />
+
+      <!-- linker -->
+      <_WasmPropRequiresFullNativeRebuild Include="EmccEnableAssertions=$(EmccEnableAssertions)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccEnvironment=$(EmccEnvironment)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccExtraLDFlags=$(EmccExtraLDFlags)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccLinkOptimizationFlag=$(EmccLinkOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccMaximumHeapSize=$(EmccMaximumHeapSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccStackSize=$(EmccStackSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmAllowUndefinedSymbols=$(WasmAllowUndefinedSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmBitcodeCompileOptimizationFlag=$(WasmBitcodeCompileOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmIncludeFullIcuData=$(WasmIncludeFullIcuData)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmInitialHeapSize=$(WasmInitialHeapSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmSingleFileBundle=$(WasmSingleFileBundle)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmSkipMissingAssemblies=$(WasmSkipMissingAssemblies)" />
+
+    </ItemGroup>
+
+    <!-- FIXME: ideally we would also compute hash of the TrimmerRootDescriptor files -->
+    <Hash ItemsToHash="@(_MonoComponent);
+                       @(_WasmItemRequiresFullNativeRebuild);
+                       @(_WasmPropRequiresFullNativeRebuild);
+                       @(EmccExportedFunction);
+                       @(EmccExportedLibraryFunction);
+                       @(EmccExportedRuntimeMethod);
+                       @(GenerateRuntimeConfigurationFilesInputs);
+                       @(LinkerArg);
+                       @(MonoAotCrossCompiler);
+                       @(NativeFileReference);
+                       @(TrimmerRootDescriptor);
+                       @(WasmAssembliesToBundle);
+                       @(WasmNativeAsset);
+                       ">
+      <Output TaskParameter="HashResult" PropertyName="_WasmNativePropertiesCurrentHash" />
+    </Hash>
+
+    <ItemGroup>
+      <!-- cleanup -->
+      <_WasmPropRequiresFullNativeRebuild Remove="@(_WasmPropRequiresFullNativeRebuild)" />
+      <_WasmItemRequiresFullNativeRebuild Remove="@(_WasmItemRequiresFullNativeRebuild)" />
+    </ItemGroup>
+
+    <ReadLinesFromFile File="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" Condition="Exists('$(IntermediateOutputPath)WasmNativePropertiesHash.stamp')">
+      <Output TaskParameter="Lines" PropertyName="_WasmNativePropertiesPreviousHash" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <_WasmNativePropertiesDiffer Condition="'$(_WasmNativePropertiesPreviousHash)' != '$(_WasmNativePropertiesCurrentHash)'">true</_WasmNativePropertiesDiffer>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(_WasmIntermediateOutputPath)" 
+      Condition="Exists('$(_WasmIntermediateOutputPath)') and ('$(_WasmNativePropertiesDiffer)' == 'true')"
+    />
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
+
+    <WriteLinesToFile Lines="$(_WasmNativePropertiesCurrentHash)"
+      Condition="'$(_WasmNativePropertiesDiffer)' == 'true'"
+      File="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" 
+      Overwrite="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" />
+    </ItemGroup>
+
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
 
@@ -761,12 +872,12 @@
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')" />
+
     <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="!Exists($(_WasmRuntimeICallTablePath))" />
     <ItemGroup>
       <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
     </ItemGroup>
-
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
 
     <ManagedToNativeGenerator
       Assemblies="@(_WasmAssembliesInternal);$(_MscorlibPath)"
