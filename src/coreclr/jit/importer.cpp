@@ -10114,7 +10114,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 ssize_t  profiledValue = 0;
                                 uint32_t likelihood    = 0;
                                 if (pickProfiledValue(opcodeOffs, &likelihood, &profiledValue) && (likelihood >= 50) &&
-                                    ((uint32_t)profiledValue <= UINT_MAX))
+                                    ((uint32_t)profiledValue <= INT_MAX))
                                 {
                                     assert(FitsIn<int>(profiledValue));
 
