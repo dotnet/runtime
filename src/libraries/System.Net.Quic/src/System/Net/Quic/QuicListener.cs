@@ -366,7 +366,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* listener, void* context, QUIC_LISTENER_EVENT* listenerEvent)
     {

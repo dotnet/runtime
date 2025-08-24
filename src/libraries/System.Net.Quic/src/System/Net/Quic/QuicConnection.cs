@@ -777,7 +777,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* connection, void* context, QUIC_CONNECTION_EVENT* connectionEvent)
     {
