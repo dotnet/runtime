@@ -3947,10 +3947,7 @@ namespace System.Numerics
             min.AssertValid();
             max.AssertValid();
 
-            if (min > max)
-            {
-                ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
 
             if (value < min)
             {
@@ -3962,12 +3959,6 @@ namespace System.Numerics
             }
 
             return value;
-
-            [DoesNotReturn]
-            static void ThrowMinMaxException<T>(T min, T max)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
-            }
         }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
