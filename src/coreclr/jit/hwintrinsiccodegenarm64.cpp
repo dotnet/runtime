@@ -722,6 +722,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             assert(intrin.op3->IsVectorZero());
                             break;
 
+                        case NI_Sve2_ConvertToSingleOdd:
+                        case NI_Sve2_ConvertToSingleOddRoundToOdd:
+                            embOpt = INS_OPTS_D_TO_S;
+                            break;
+
                         default:
                             break;
                     }
@@ -781,6 +786,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt), targetReg,
                                                           embMaskOp1Reg, /* canSkip */ true);
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                break;
+
+                            case NI_Sve2_ConvertToSingleOdd:
+                            case NI_Sve2_ConvertToSingleOddRoundToOdd:
+                                emitInsMovPrfxHelper(targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg);
                                 break;
 
                             default:
