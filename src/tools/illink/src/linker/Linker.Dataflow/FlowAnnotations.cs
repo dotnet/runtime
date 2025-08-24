@@ -490,9 +490,9 @@ namespace ILLink.Shared.TrimAnalysis
                     case Code.Stsfld when write:
                     case Code.Stfld when write:
 
-                        if (foundReference != null)
+                        if (foundReference != null && foundReference != instruction.Operand)
                         {
-                            // This writes/reads multiple fields - can't guess which one is the backing store.
+                            // This writes/reads multiple different fields - can't guess which one is the backing store.
                             // Return failure.
                             found = null;
                             return false;

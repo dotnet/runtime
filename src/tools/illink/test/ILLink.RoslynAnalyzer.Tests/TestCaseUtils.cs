@@ -61,11 +61,14 @@ namespace ILLink.RoslynAnalyzer.Tests
             Assert.True(File.Exists(testPath), $"{testPath} should exist");
             var tree = SyntaxFactory.ParseSyntaxTree(
                 SourceText.From(File.OpenRead(testPath), Encoding.UTF8),
+                new CSharpParseOptions(languageVersion: LanguageVersion.Preview),
                 path: testPath);
 
             var testDependenciesSource = GetTestDependencies(testCaseDir, tree)
                 .Where(f => Path.GetExtension(f) == ".cs")
-                .Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(File.OpenRead(f))));
+                .Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(
+                    File.OpenRead(f)),
+                    new CSharpParseOptions(languageVersion: LanguageVersion.Preview)));
             var additionalFiles = GetAdditionalFiles(rootSourceDir, tree);
 
             var (comp, model, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation(
