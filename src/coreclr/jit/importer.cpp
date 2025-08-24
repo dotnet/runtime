@@ -10098,9 +10098,68 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
-                        op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+                        op1 = gtNewLclHeapNode(op2, opcodeOffs);
+
+                        // Do we have a profile for this non-constant localloc?
+                        // if so, emit "size == profiledValue ? LCLHEAP(profiledValue) : LCLHEAP(size)" tree.
+                        //
+                        // We don't need that optimization if SkipInitLocals is set as even non-constant locallocs
+                        // are cheap in that case, we only want to speed up zeroing.
+                        //
+                        if (info.compInitMem && !op2->IsIntegralConst())
+                        {
+                            // Consuming the existing profile (optimizing)
+                            if (opts.IsOptimizedWithProfile())
+                            {
+                                ssize_t  profiledValue = 0;
+                                uint32_t likelihood    = 0;
+                                if (pickProfiledValue(opcodeOffs, &likelihood, &profiledValue) && (likelihood >= 50) &&
+                                    profiledValue >= 0 && profiledValue <= getUnrollThreshold(UnrollKind::Memset))
+                                {
+                                    assert(FitsIn<int>(profiledValue));
+
+                                    GenTree* sizeNode          = op2;
+                                    GenTree* clonedSizeNode    = impCloneExpr(sizeNode, &sizeNode, CHECK_SPILL_ALL,
+                                                                              nullptr DEBUGARG("spilling sizeNode"));
+                                    GenTree* profiledValueNode = gtNewIconNode(profiledValue, op2->TypeGet());
+                                    GenTree* fallback          = gtNewLclHeapNode(clonedSizeNode, opcodeOffs);
+                                    fallback->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+
+                                    GenTree* fastpath;
+                                    if (profiledValue == 0)
+                                    {
+                                        // Just nullptr
+                                        fastpath = gtNewIconNode(0, TYP_I_IMPL);
+                                    }
+                                    else
+                                    {
+                                        // NOTE: we don't want to convert the fastpath stackalloc to a local like we
+                                        // normally do, because it will be an additional overhead for the fallback path
+                                        // (a redundant local to clear).
+                                        fastpath = gtNewLclHeapNode(profiledValueNode, opcodeOffs);
+                                    }
+
+                                    // TODO: Specify weights for the branches in the Qmark node.
+                                    GenTreeColon* colon =
+                                        new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, fastpath, fallback);
+                                    GenTreeOp* cond =
+                                        gtNewOperNode(GT_EQ, TYP_INT, sizeNode, gtCloneExpr(profiledValueNode));
+                                    GenTreeQmark* qmark = gtNewQmarkNode(TYP_I_IMPL, cond, colon);
+
+                                    // QMARK has to be a root node
+                                    unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
+                                    impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
+                                    op1 = gtNewLclvNode(tmp, qmark->TypeGet());
+                                }
+                            }
+                            // Instrumenting LCLHEAP for value profile
+                            else if (opts.IsInstrumented() && !compIsForInlining())
+                            {
+                                JITDUMP("\n ... marking [%06u] in " FMT_BB " for value profile instrumentation\n",
+                                        dspTreeID(op1), compCurBB->bbNum);
+                                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+                            }
+                        }
 
                         // Ensure we have stack security for this method.
                         setNeedsGSSecurityCookie();

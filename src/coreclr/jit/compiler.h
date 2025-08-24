@@ -2983,6 +2983,8 @@ public:
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
+    GenTreeOpWithILOffset* gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset = 0);
+
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
                                 GenTree*   op1  = nullptr,
@@ -7492,6 +7494,8 @@ public:
     {
         optMethodFlags |= OMF_HAS_STACK_ARRAY;
     }
+
+    bool pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue);
 
     void pickGDV(GenTreeCall*           call,
                  IL_OFFSET              ilOffset,

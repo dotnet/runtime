@@ -1690,37 +1690,10 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
         return call;
     }
 
-    const unsigned    MaxLikelyValues = 8;
-    LikelyValueRecord likelyValues[MaxLikelyValues];
-    UINT32            valuesCount =
-        getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
-
-    JITDUMP("%u likely values:\n", valuesCount)
-    for (UINT32 i = 0; i < valuesCount; i++)
+    ssize_t  profiledValue = 0;
+    uint32_t likelihood    = 0;
+    if (pickProfiledValue(ilOffset, &likelihood, &profiledValue) && (likelihood >= 50))
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
-    }
-
-    // For now, we only do a single guess, but it's pretty straightforward to
-    // extend it to support multiple guesses.
-    LikelyValueRecord likelyValue = likelyValues[0];
-#if DEBUG
-    // Re-use JitRandomGuardedDevirtualization for stress-testing.
-    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
-    {
-        CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-
-        valuesCount            = 1;
-        likelyValue.value      = random->Next(256);
-        likelyValue.likelihood = 100;
-    }
-#endif
-
-    // TODO: Tune the likelihood threshold, for now it's 50%
-    if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
-    {
-        const ssize_t profiledValue = likelyValue.value;
-
         unsigned argNum   = 0;
         ssize_t  minValue = 0;
         ssize_t  maxValue = 0;
@@ -6976,6 +6949,58 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
     call->SetFatPointerCandidate();
     SpillRetExprHelper helper(this);
     helper.StoreRetExprResultsInArgs(call);
+}
+
+//------------------------------------------------------------------------
+// pickProfiledValue: Use profile information to pick a value candidate for the given IL offset.
+//
+// Arguments:
+//    ilOffset    - exact IL offset of the call
+//    pLikelihood - [out] likelihood of the picked value
+//    pValue      - [out] the picked value
+//
+// Return Value:
+//    true if a value was picked, false otherwise
+//
+bool Compiler::pickProfiledValue(IL_OFFSET ilOffset, uint32_t* pLikelihood, ssize_t* pValue)
+{
+#if DEBUG
+    const unsigned MaxLikelyValues = 8;
+#else
+    const unsigned MaxLikelyValues = 1;
+#endif
+
+    LikelyValueRecord likelyValues[MaxLikelyValues];
+    UINT32 valuesCount = getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData,
+                                         static_cast<int>(ilOffset));
+
+    LikelyValueRecord likelyValue = likelyValues[0];
+#if DEBUG
+    JITDUMP("%u likely values:\n", valuesCount);
+    for (UINT32 i = 0; i < valuesCount; i++)
+    {
+        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+    }
+
+    // Re-use JitRandomGuardedDevirtualization for stress-testing.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+        valuesCount            = 1;
+        likelyValue.value      = random->Next(256);
+        likelyValue.likelihood = 100;
+    }
+#endif
+
+    if (valuesCount < 1)
+    {
+        return false;
+    }
+
+    *pValue      = likelyValue.value;
+    *pLikelihood = likelyValue.likelihood;
+    return true;
 }
 
 //------------------------------------------------------------------------

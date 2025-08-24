@@ -3178,6 +3178,41 @@ struct GenTreeOp : public GenTreeUnOp
 #endif
 };
 
+struct GenTreeOpWithILOffset : public GenTreeOp
+{
+private:
+    IL_OFFSET gtILOffset;
+
+public:
+    IL_OFFSET GetILOffset() const
+    {
+        return gtILOffset;
+    }
+
+    void SetILOffset(IL_OFFSET ilOffset)
+    {
+        gtILOffset = ilOffset;
+    }
+
+    GenTreeOpWithILOffset(genTreeOps         oper,
+                          var_types          type,
+                          GenTree*           op1,
+                          GenTree*           op2,
+                          IL_OFFSET ilOffset DEBUGARG(bool largeNode = false))
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(largeNode))
+        , gtILOffset(ilOffset)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeOpWithILOffset()
+        : GenTreeOp()
+        , gtILOffset(0)
+    {
+    }
+#endif
+};
+
 struct GenTreeVal : public GenTree
 {
     size_t gtVal1;
