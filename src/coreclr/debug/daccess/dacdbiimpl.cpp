@@ -1141,7 +1141,8 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
         codeInfo.GetMethodRegionInfo(&methodRegionInfo);
 
         // now get the rest of the region information
-        pCodeInfo->m_rgCodeRegions[kHot].cbSize = (ULONG)methodRegionInfo.hotSize;
+        pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
+                                               (ULONG)methodRegionInfo.hotSize);
         pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress),
                                                (ULONG)methodRegionInfo.coldSize);
         _ASSERTE(pCodeInfo->IsValid());
