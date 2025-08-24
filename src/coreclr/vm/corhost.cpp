@@ -608,12 +608,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (u16_strcmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
-        {
-            extern void ParseDefaultStackSize(LPCWSTR value);
-            ParseDefaultStackSize(pPropertyValues[i]);
-        }
-        else
         if (u16_strcmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
         {
             extern void ParseUseEntryPointFilter(LPCWSTR value);
