@@ -2940,7 +2940,9 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
             DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
 
             // If the IL Stub is a P/Invoke stub, set the CodeHeader's MethodDesc
-            // to be the real target method and not the stub.
+            // to be the real target method and not the stub. This adjustment makes
+            // the stub frame show up with the P/Invoke method identity in stack
+            // traces without any special handling in the stackwalker.
             if (pDMD->IsPInvokeStub())
                 pMDTarget = pDMD->GetILStubResolver()->GetStubTargetMethodDesc();
         }
