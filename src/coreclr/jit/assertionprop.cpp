@@ -5121,49 +5121,44 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     {
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
     }
-    if (type != TYP_BYREF)
+
+    if ((type != TYP_I_IMPL) && (type != TYP_BYREF))
     {
         return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
     }
 
+    target_ssize_t offset;
+    vnStore->PeelOffsets(&vn, &offset);
+    // Ignore the accumulated offset, it can't convert heap pointer to non-heap or vice versa anyway (it's UB).
+
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        if (funcApp.m_func == VNF_PtrToArrElem)
+        switch (funcApp.m_func)
         {
-            // Check whether the array is on the heap
-            ValueNum arrayVN = funcApp.m_args[1];
-            return GetWriteBarrierForm(comp, arrayVN);
-        }
-        if (funcApp.m_func == VNF_PtrToLoc)
-        {
-            // Pointer to a local
-            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-        }
-        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
-        {
-            // Boxed static - always on the heap
-            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
-        }
-        if (funcApp.m_func == VNFunc(GT_ADD))
-        {
-            // Check arguments of the GT_ADD
-            // To make it conservative, we require one of the arguments to be a constant, e.g.:
-            //
-            //   addressOfLocal + cns    -> NoBarrier
-            //   cns + addressWithinHeap -> BarrierUnchecked
-            //
-            // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
-            // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
-            //
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
-            {
+            case VNF_JitNewLclArr:
+            case VNF_JitReadyToRunNewLclArr:
+                // NOTE: this relies on fgExpandStackArrayAllocations phase to always expand these allocators
+                // TODO: add some debug checks for that.
+                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+
+            case VNF_PtrToArrElem:
+                // Check whether the array is on the heap
                 return GetWriteBarrierForm(comp, funcApp.m_args[1]);
-            }
-            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
-            {
-                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
-            }
+
+            case VNF_PtrToLoc:
+                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+
+            case VNF_PtrToStatic:
+                if (vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+                {
+                    // Boxed static - always on the heap
+                    return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+                }
+                break;
+
+            default:
+                break;
         }
     }
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
