@@ -22,33 +22,33 @@ namespace SharedLibrary
             s_setterThread.Start();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveInt", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "ReturnsPrimitiveInt")]
         public static int ReturnsPrimitiveInt()
         {
             s_setterThread.Join();
             return s_primitiveInt;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveBool", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "ReturnsPrimitiveBool")]
         public static bool ReturnsPrimitiveBool()
         {
             return true;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveChar", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "ReturnsPrimitiveChar")]
         public static char ReturnsPrimitiveChar()
         {
             return 'a';
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "EnsureManagedClassLoaders", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "EnsureManagedClassLoaders")]
         public static void EnsureManagedClassLoaders()
         {
             Random random = new Random();
             random.Next();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleExceptionHandling", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "CheckSimpleExceptionHandling")]
         public static int CheckSimpleExceptionHandling()
         {
             int result = 10;
@@ -91,7 +91,7 @@ namespace SharedLibrary
             new ClassWithFinalizer();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleGCCollect", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "CheckSimpleGCCollect")]
         public static int CheckSimpleGCCollect()
         {
             string myString = string.Format("Hello {0}", "world");

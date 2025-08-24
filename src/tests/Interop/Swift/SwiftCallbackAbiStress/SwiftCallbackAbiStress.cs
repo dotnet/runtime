@@ -34,11 +34,11 @@ public unsafe class SwiftCallbackAbiStress
         public float F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func01fs5Int32VAEs5Int16V_AEs6UInt64Vs6UInt16VAA5F0_S0VAA0K3_S1Vs5UInt8VAA0K3_S2VtXE_tF")]
     private static extern int SwiftCallbackFunc0(delegate* unmanaged[Swift]<short, int, ulong, ushort, F0_S0, F0_S1, byte, F0_S2, SwiftSelf, int> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static int SwiftCallbackFunc0Callback(short a0, int a1, ulong a2, ushort a3, F0_S0 a4, F0_S1 a5, byte a6, F0_S2 a7, SwiftSelf self)
     {
         try
@@ -132,11 +132,11 @@ public unsafe class SwiftCallbackAbiStress
         public F1_S5_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func11fs5UInt8VAEs5Int64V_Sds4Int8VAA5F1_S0VAA0J3_S1VAA0J3_S2VAeigA0J3_S3VSuAA0J3_S4VAA0J3_S5VSitXE_tF")]
     private static extern byte SwiftCallbackFunc1(delegate* unmanaged[Swift]<long, double, sbyte, F1_S0, F1_S1, F1_S2, byte, sbyte, long, F1_S3, nuint, F1_S4, F1_S5, nint, SwiftSelf, byte> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static byte SwiftCallbackFunc1Callback(long a0, double a1, sbyte a2, F1_S0 a3, F1_S1 a4, F1_S2 a5, byte a6, sbyte a7, long a8, F1_S3 a9, nuint a10, F1_S4 a11, F1_S5 a12, nint a13, SwiftSelf self)
     {
         try
@@ -231,11 +231,11 @@ public unsafe class SwiftCallbackAbiStress
         public F2_S3_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func21fs4Int8VAeA5F2_S0V_AA0H3_S1VAA0H3_S2VSfs6UInt64VAA0H3_S3VtXE_tF")]
     private static extern sbyte SwiftCallbackFunc2(delegate* unmanaged[Swift]<F2_S0, F2_S1, F2_S2, float, ulong, F2_S3, SwiftSelf, sbyte> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static sbyte SwiftCallbackFunc2Callback(F2_S0 a0, F2_S1 a1, F2_S2 a2, float a3, ulong a4, F2_S3 a5, SwiftSelf self)
     {
         try
@@ -341,11 +341,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func31fAA6F3_RetVAeA0G3_S0V_Sfs6UInt16VAA0G3_S1VAIs5Int32VAA0G3_S2VSiAA0G3_S3VAA0G3_S4VtXE_tF")]
     private static extern F3_Ret SwiftCallbackFunc3(delegate* unmanaged[Swift]<F3_S0, float, ushort, F3_S1, ushort, int, F3_S2, nint, F3_S3, F3_S4, SwiftSelf, F3_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F3_Ret SwiftCallbackFunc3Callback(F3_S0 a0, float a1, ushort a2, F3_S1 a3, ushort a4, int a5, F3_S2 a6, nint a7, F3_S3 a8, F3_S4 a9, SwiftSelf self)
     {
         try
@@ -435,11 +435,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func41fAA6F4_RetVAESd_AA0G3_S0Vs5UInt8Vs5Int32Vs6UInt32VtXE_tF")]
     private static extern F4_Ret SwiftCallbackFunc4(delegate* unmanaged[Swift]<double, F4_S0, byte, int, uint, SwiftSelf, F4_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F4_Ret SwiftCallbackFunc4Callback(double a0, F4_S0 a1, byte a2, int a3, uint a4, SwiftSelf self)
     {
         try
@@ -544,11 +544,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func51fAA6F5_RetVAEs5UInt8V_s5Int16Vs6UInt64VS2uAkgA0G3_S0Vs4Int8VAoA0G3_S1VAA0G3_S2VAA0G3_S3VSdAA0G3_S4Vs6UInt16VS2fAYtXE_tF")]
     private static extern F5_Ret SwiftCallbackFunc5(delegate* unmanaged[Swift]<byte, short, ulong, nuint, nuint, ulong, byte, F5_S0, sbyte, sbyte, F5_S1, F5_S2, F5_S3, double, F5_S4, ushort, float, float, ushort, SwiftSelf, F5_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F5_Ret SwiftCallbackFunc5Callback(byte a0, short a1, ulong a2, nuint a3, nuint a4, ulong a5, byte a6, F5_S0 a7, sbyte a8, sbyte a9, F5_S1 a10, F5_S2 a11, F5_S3 a12, double a13, F5_S4 a14, ushort a15, float a16, float a17, ushort a18, SwiftSelf self)
     {
         try
@@ -672,11 +672,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func61fAA6F6_RetVAESf_AA0G3_S0Vs5Int64Vs4Int8Vs6UInt16VSuAMs6UInt64VAA0G3_S1Vs5Int16VAA0G3_S2VAA0G3_S3VAMtXE_tF")]
     private static extern F6_Ret SwiftCallbackFunc6(delegate* unmanaged[Swift]<float, F6_S0, long, sbyte, ushort, nuint, ushort, ulong, F6_S1, short, F6_S2, F6_S3, ushort, SwiftSelf, F6_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F6_Ret SwiftCallbackFunc6Callback(float a0, F6_S0 a1, long a2, sbyte a3, ushort a4, nuint a5, ushort a6, ulong a7, F6_S1 a8, short a9, F6_S2 a10, F6_S3 a11, ushort a12, SwiftSelf self)
     {
         try
@@ -744,11 +744,11 @@ public unsafe class SwiftCallbackAbiStress
         public uint F2;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func71fs6UInt16VAEs5Int64V_s5UInt8VSdAeA5F7_S0VAISds6UInt32VAA0J3_S1Vs5Int32VAQSis5Int16VAESis6UInt64VAiStXE_tF")]
     private static extern ushort SwiftCallbackFunc7(delegate* unmanaged[Swift]<long, byte, double, ushort, F7_S0, byte, double, uint, F7_S1, int, int, nint, short, ushort, nint, ulong, byte, short, SwiftSelf, ushort> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ushort SwiftCallbackFunc7Callback(long a0, byte a1, double a2, ushort a3, F7_S0 a4, byte a5, double a6, uint a7, F7_S1 a8, int a9, int a10, nint a11, short a12, ushort a13, nint a14, ulong a15, byte a16, short a17, SwiftSelf self)
     {
         try
@@ -843,11 +843,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func81fAA6F8_RetVAeA0G3_S0V_AA0G3_S1VtXE_tF")]
     private static extern F8_Ret SwiftCallbackFunc8(delegate* unmanaged[Swift]<F8_S0, F8_S1, SwiftSelf, F8_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F8_Ret SwiftCallbackFunc8Callback(F8_S0 a0, F8_S1 a1, SwiftSelf self)
     {
         try
@@ -971,11 +971,11 @@ public unsafe class SwiftCallbackAbiStress
         public double F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func91fs6UInt16VAEs4Int8V_s5UInt8Vs5Int64VAA5F9_S0VAA0K3_S1VAA0K3_S2VSdAA0K3_S3VAA0K3_S4VSdAA0K3_S5VAA0K3_S6VtXE_tF")]
     private static extern ushort SwiftCallbackFunc9(delegate* unmanaged[Swift]<sbyte, byte, long, F9_S0, F9_S1, F9_S2, double, F9_S3, F9_S4, double, F9_S5, F9_S6, SwiftSelf, ushort> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ushort SwiftCallbackFunc9Callback(sbyte a0, byte a1, long a2, F9_S0 a3, F9_S1 a4, F9_S2 a5, double a6, F9_S3 a7, F9_S4 a8, double a9, F9_S5 a10, F9_S6 a11, SwiftSelf self)
     {
         try
@@ -1041,11 +1041,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func101fAA7F10_RetVAEs5Int16VXE_tF")]
     private static extern F10_Ret SwiftCallbackFunc10(delegate* unmanaged[Swift]<short, SwiftSelf, F10_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F10_Ret SwiftCallbackFunc10Callback(short a0, SwiftSelf self)
     {
         try
@@ -1130,11 +1130,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func111fAA7F11_RetVAEs6UInt32V_Sus6UInt64Vs5Int16VAA0G3_S0VSfs4Int8Vs6UInt16VAA0G3_S1VAGs5Int64VAgA0G3_S2VtXE_tF")]
     private static extern F11_Ret SwiftCallbackFunc11(delegate* unmanaged[Swift]<uint, nuint, ulong, short, F11_S0, float, sbyte, ushort, F11_S1, uint, long, uint, F11_S2, SwiftSelf, F11_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F11_Ret SwiftCallbackFunc11Callback(uint a0, nuint a1, ulong a2, short a3, F11_S0 a4, float a5, sbyte a6, ushort a7, F11_S1 a8, uint a9, long a10, uint a11, F11_S2 a12, SwiftSelf self)
     {
         try
@@ -1224,11 +1224,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func121fAA7F12_RetVAeA0G3_S0V_s5Int16Vs6UInt64VAA0G3_S1Vs4Int8VtXE_tF")]
     private static extern F12_Ret SwiftCallbackFunc12(delegate* unmanaged[Swift]<F12_S0, short, ulong, F12_S1, sbyte, SwiftSelf, F12_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F12_Ret SwiftCallbackFunc12Callback(F12_S0 a0, short a1, ulong a2, F12_S1 a3, sbyte a4, SwiftSelf self)
     {
         try
@@ -1312,11 +1312,11 @@ public unsafe class SwiftCallbackAbiStress
         public nint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func131fS2dAA6F13_S0V_s5Int32VSis6UInt16VSuAA0G3_S1VAA0G3_S2VSiSds4Int8VSfSiAA0G3_S3VSuAA0G3_S4VtXE_tF")]
     private static extern double SwiftCallbackFunc13(delegate* unmanaged[Swift]<F13_S0, int, nint, ushort, nuint, F13_S1, F13_S2, nint, double, sbyte, float, nint, F13_S3, nuint, F13_S4, SwiftSelf, double> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static double SwiftCallbackFunc13Callback(F13_S0 a0, int a1, nint a2, ushort a3, nuint a4, F13_S1 a5, F13_S2 a6, nint a7, double a8, sbyte a9, float a10, nint a11, F13_S3 a12, nuint a13, F13_S4 a14, SwiftSelf self)
     {
         try
@@ -1379,11 +1379,11 @@ public unsafe class SwiftCallbackAbiStress
         public ulong F1;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func141fs5Int64VA2E_AA6F14_S0Vs4Int8Vs6UInt64VAA0H3_S1VSitXE_tF")]
     private static extern long SwiftCallbackFunc14(delegate* unmanaged[Swift]<long, F14_S0, sbyte, ulong, F14_S1, nint, SwiftSelf, long> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static long SwiftCallbackFunc14Callback(long a0, F14_S0 a1, sbyte a2, ulong a3, F14_S1 a4, nint a5, SwiftSelf self)
     {
         try
@@ -1449,11 +1449,11 @@ public unsafe class SwiftCallbackAbiStress
         public double F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func151fS2is5UInt8V_s6UInt16Vs6UInt64VAIs4Int8VSuSdSfSiAA6F15_S0VAA0K3_S1VAgA0K3_S2VAeA0K3_S3VtXE_tF")]
     private static extern nint SwiftCallbackFunc15(delegate* unmanaged[Swift]<byte, ushort, ulong, ulong, sbyte, nuint, double, float, nint, F15_S0, F15_S1, ushort, F15_S2, byte, F15_S3, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc15Callback(byte a0, ushort a1, ulong a2, ulong a3, sbyte a4, nuint a5, double a6, float a7, nint a8, F15_S0 a9, F15_S1 a10, ushort a11, F15_S2 a12, byte a13, F15_S3 a14, SwiftSelf self)
     {
         try
@@ -1546,11 +1546,11 @@ public unsafe class SwiftCallbackAbiStress
         public int F3;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func161fs4Int8VAeA6F16_S0V_s5Int16VSfAA0H3_S1VAA0H3_S2Vs6UInt64VAA0H3_S3VSutXE_tF")]
     private static extern sbyte SwiftCallbackFunc16(delegate* unmanaged[Swift]<F16_S0, short, float, F16_S1, F16_S2, ulong, F16_S3, nuint, SwiftSelf, sbyte> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static sbyte SwiftCallbackFunc16Callback(F16_S0 a0, short a1, float a2, F16_S1 a3, F16_S2 a4, ulong a5, F16_S3 a6, nuint a7, SwiftSelf self)
     {
         try
@@ -1628,11 +1628,11 @@ public unsafe class SwiftCallbackAbiStress
         public uint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func171fS2ds6UInt32V_AA6F17_S0VAA0H3_S1VSds6UInt64VAA0H3_S2VtXE_tF")]
     private static extern double SwiftCallbackFunc17(delegate* unmanaged[Swift]<uint, F17_S0, F17_S1, double, ulong, F17_S2, SwiftSelf, double> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static double SwiftCallbackFunc17Callback(uint a0, F17_S0 a1, F17_S1 a2, double a3, ulong a4, F17_S2 a5, SwiftSelf self)
     {
         try
@@ -1712,11 +1712,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func181fAA7F18_RetVAeA0G3_S0V_AA0G3_S1VAA0G3_S2VSus6UInt32Vs5Int64Vs5Int16VSdtXE_tF")]
     private static extern F18_Ret SwiftCallbackFunc18(delegate* unmanaged[Swift]<F18_S0, F18_S1, F18_S2, nuint, uint, long, short, double, SwiftSelf, F18_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F18_Ret SwiftCallbackFunc18Callback(F18_S0 a0, F18_S1 a1, F18_S2 a2, nuint a3, uint a4, long a5, short a6, double a7, SwiftSelf self)
     {
         try
@@ -1817,11 +1817,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func191fAA7F19_RetVAEs5Int64V_s5UInt8VAA0G3_S0VSiAA0G3_S1Vs5Int32VAOSus6UInt64VAA0G3_S2Vs6UInt16VAA0G3_S3Vs4Int8VAGtXE_tF")]
     private static extern F19_Ret SwiftCallbackFunc19(delegate* unmanaged[Swift]<long, byte, F19_S0, nint, F19_S1, int, int, nuint, ulong, F19_S2, ushort, F19_S3, sbyte, long, SwiftSelf, F19_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F19_Ret SwiftCallbackFunc19Callback(long a0, byte a1, F19_S0 a2, nint a3, F19_S1 a4, int a5, int a6, nuint a7, ulong a8, F19_S2 a9, ushort a10, F19_S3 a11, sbyte a12, long a13, SwiftSelf self)
     {
         try
@@ -1928,11 +1928,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func201fAA7F20_RetVAeA0G3_S0V_AA0G3_S1VS2fs4Int8VAA0G3_S2VSftXE_tF")]
     private static extern F20_Ret SwiftCallbackFunc20(delegate* unmanaged[Swift]<F20_S0, F20_S1, float, float, sbyte, F20_S2, float, SwiftSelf, F20_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F20_Ret SwiftCallbackFunc20Callback(F20_S0 a0, F20_S1 a1, float a2, float a3, sbyte a4, F20_S2 a5, float a6, SwiftSelf self)
     {
         try
@@ -2004,11 +2004,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func211fAA7F21_RetVAEs5Int32V_s5Int16VAA0G3_S0VAgA0G3_S1Vs5Int64Vs6UInt32VAOs5UInt8Vs6UInt16VtXE_tF")]
     private static extern F21_Ret SwiftCallbackFunc21(delegate* unmanaged[Swift]<int, short, F21_S0, int, F21_S1, long, uint, long, byte, ushort, SwiftSelf, F21_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F21_Ret SwiftCallbackFunc21Callback(int a0, short a1, F21_S0 a2, int a3, F21_S1 a4, long a5, uint a6, long a7, byte a8, ushort a9, SwiftSelf self)
     {
         try
@@ -2114,11 +2114,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func221fAA7F22_RetVAEs5Int32V_AA0G3_S0VAA0G3_S1VAA0G3_S2VAA0G3_S3Vs4Int8VAA0G3_S4Vs5UInt8Vs6UInt16Vs5Int64VAA0G3_S5VAYSfAA0G3_S6VAWtXE_tF")]
     private static extern F22_Ret SwiftCallbackFunc22(delegate* unmanaged[Swift]<int, F22_S0, F22_S1, F22_S2, F22_S3, sbyte, F22_S4, byte, ushort, long, F22_S5, long, float, F22_S6, ushort, SwiftSelf, F22_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F22_Ret SwiftCallbackFunc22Callback(int a0, F22_S0 a1, F22_S1 a2, F22_S2 a3, F22_S3 a4, sbyte a5, F22_S4 a6, byte a7, ushort a8, long a9, F22_S5 a10, long a11, float a12, F22_S6 a13, ushort a14, SwiftSelf self)
     {
         try
@@ -2183,11 +2183,11 @@ public unsafe class SwiftCallbackAbiStress
         public nint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func231fS2dSu_s5UInt8Vs4Int8VA2eA6F23_S0VSuAA0I3_S1VSdtXE_tF")]
     private static extern double SwiftCallbackFunc23(delegate* unmanaged[Swift]<nuint, byte, sbyte, byte, byte, F23_S0, nuint, F23_S1, double, SwiftSelf, double> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static double SwiftCallbackFunc23Callback(nuint a0, byte a1, sbyte a2, byte a3, byte a4, F23_S0 a5, nuint a6, F23_S1 a7, double a8, SwiftSelf self)
     {
         try
@@ -2274,11 +2274,11 @@ public unsafe class SwiftCallbackAbiStress
         public byte F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func241fS2fs5Int32V_SuAA6F24_S0Vs6UInt16VAA0H3_S1Vs4Int8VAA0H3_S2Vs6UInt64VAqA0H3_S3VSdAA0H3_S4VtXE_tF")]
     private static extern float SwiftCallbackFunc24(delegate* unmanaged[Swift]<int, nuint, F24_S0, ushort, F24_S1, sbyte, F24_S2, ulong, ulong, F24_S3, double, F24_S4, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc24Callback(int a0, nuint a1, F24_S0 a2, ushort a3, F24_S1 a4, sbyte a5, F24_S2 a6, ulong a7, ulong a8, F24_S3 a9, double a10, F24_S4 a11, SwiftSelf self)
     {
         try
@@ -2379,11 +2379,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func251fAA7F25_RetVAeA0G3_S0V_s6UInt16VSuAA0G3_S1Vs5Int16VAA0G3_S2Vs6UInt64VA2qA0G3_S3VAA0G3_S4VtXE_tF")]
     private static extern F25_Ret SwiftCallbackFunc25(delegate* unmanaged[Swift]<F25_S0, ushort, nuint, F25_S1, short, F25_S2, ulong, ulong, ulong, F25_S3, F25_S4, SwiftSelf, F25_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F25_Ret SwiftCallbackFunc25Callback(F25_S0 a0, ushort a1, nuint a2, F25_S1 a3, short a4, F25_S2 a5, ulong a6, ulong a7, ulong a8, F25_S3 a9, F25_S4 a10, SwiftSelf self)
     {
         try
@@ -2479,11 +2479,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func261fAA7F26_RetVAEs4Int8V_s5UInt8Vs6UInt32VAA0G3_S0VAA0G3_S1VAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F26_Ret SwiftCallbackFunc26(delegate* unmanaged[Swift]<sbyte, byte, uint, F26_S0, F26_S1, F26_S2, F26_S3, SwiftSelf, F26_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F26_Ret SwiftCallbackFunc26Callback(sbyte a0, byte a1, uint a2, F26_S0 a3, F26_S1 a4, F26_S2 a5, F26_S3 a6, SwiftSelf self)
     {
         try
@@ -2566,11 +2566,11 @@ public unsafe class SwiftCallbackAbiStress
         public F27_S3_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func271fS2fs6UInt64V_s5UInt8VAA6F27_S0VA2gA0I3_S1Vs5Int32VAA0I3_S2VSis6UInt32VAA0I3_S3VtXE_tF")]
     private static extern float SwiftCallbackFunc27(delegate* unmanaged[Swift]<ulong, byte, F27_S0, byte, byte, F27_S1, int, F27_S2, nint, uint, F27_S3, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc27Callback(ulong a0, byte a1, F27_S0 a2, byte a3, byte a4, F27_S1 a5, int a6, F27_S2 a7, nint a8, uint a9, F27_S3 a10, SwiftSelf self)
     {
         try
@@ -2666,11 +2666,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func281fAA7F28_RetVAEs6UInt32V_s6UInt16Vs4Int8VAkISfAA0G3_S0VSds6UInt64VAA0G3_S1VAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F28_Ret SwiftCallbackFunc28(delegate* unmanaged[Swift]<uint, ushort, sbyte, sbyte, ushort, float, F28_S0, double, ulong, F28_S1, F28_S2, F28_S3, SwiftSelf, F28_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F28_Ret SwiftCallbackFunc28Callback(uint a0, ushort a1, sbyte a2, sbyte a3, ushort a4, float a5, F28_S0 a6, double a7, ulong a8, F28_S1 a9, F28_S2 a10, F28_S3 a11, SwiftSelf self)
     {
         try
@@ -2785,11 +2785,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func291fAA7F29_RetVAeA0G3_S0V_Sis6UInt64Vs5UInt8Vs5Int64VAKSiAA0G3_S1Vs5Int32Vs4Int8VAkiA0G3_S2VAA0G3_S3Vs5Int16VAA0G3_S4Vs6UInt32VtXE_tF")]
     private static extern F29_Ret SwiftCallbackFunc29(delegate* unmanaged[Swift]<F29_S0, nint, ulong, byte, long, byte, nint, F29_S1, int, sbyte, byte, ulong, F29_S2, F29_S3, short, F29_S4, uint, SwiftSelf, F29_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F29_Ret SwiftCallbackFunc29Callback(F29_S0 a0, nint a1, ulong a2, byte a3, long a4, byte a5, nint a6, F29_S1 a7, int a8, sbyte a9, byte a10, ulong a11, F29_S2 a12, F29_S3 a13, short a14, F29_S4 a15, uint a16, SwiftSelf self)
     {
         try
@@ -2876,11 +2876,11 @@ public unsafe class SwiftCallbackAbiStress
         public sbyte F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func301fS2fAA6F30_S0V_AA0G3_S1VAA0G3_S2VAA0G3_S3VSitXE_tF")]
     private static extern float SwiftCallbackFunc30(delegate* unmanaged[Swift]<F30_S0, F30_S1, F30_S2, F30_S3, nint, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc30Callback(F30_S0 a0, F30_S1 a1, F30_S2 a2, F30_S3 a3, nint a4, SwiftSelf self)
     {
         try
@@ -2958,11 +2958,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func311fAA7F31_RetVAeA0G3_S0V_SdtXE_tF")]
     private static extern F31_Ret SwiftCallbackFunc31(delegate* unmanaged[Swift]<F31_S0, double, SwiftSelf, F31_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F31_Ret SwiftCallbackFunc31Callback(F31_S0 a0, double a1, SwiftSelf self)
     {
         try
@@ -3013,11 +3013,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func321fAA7F32_RetVAEs6UInt16V_s5Int16VtXE_tF")]
     private static extern F32_Ret SwiftCallbackFunc32(delegate* unmanaged[Swift]<ushort, short, SwiftSelf, F32_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F32_Ret SwiftCallbackFunc32Callback(ushort a0, short a1, SwiftSelf self)
     {
         try
@@ -3097,11 +3097,11 @@ public unsafe class SwiftCallbackAbiStress
         public F33_S3_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func331fS2uAA6F33_S0V_SfAA0G3_S1Vs6UInt32VSis4Int8VAKSfs5UInt8VSfAkA0G3_S2VSiAA0G3_S3VSiAItXE_tF")]
     private static extern nuint SwiftCallbackFunc33(delegate* unmanaged[Swift]<F33_S0, float, F33_S1, uint, nint, sbyte, sbyte, float, byte, float, sbyte, F33_S2, nint, F33_S3, nint, uint, SwiftSelf, nuint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nuint SwiftCallbackFunc33Callback(F33_S0 a0, float a1, F33_S1 a2, uint a3, nint a4, sbyte a5, sbyte a6, float a7, byte a8, float a9, sbyte a10, F33_S2 a11, nint a12, F33_S3 a13, nint a14, uint a15, SwiftSelf self)
     {
         try
@@ -3164,11 +3164,11 @@ public unsafe class SwiftCallbackAbiStress
         public nuint F1;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func341fs6UInt16VAEs6UInt32V_AA6F34_S0VSus5Int16VtXE_tF")]
     private static extern ushort SwiftCallbackFunc34(delegate* unmanaged[Swift]<uint, F34_S0, nuint, short, SwiftSelf, ushort> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ushort SwiftCallbackFunc34Callback(uint a0, F34_S0 a1, nuint a2, short a3, SwiftSelf self)
     {
         try
@@ -3246,11 +3246,11 @@ public unsafe class SwiftCallbackAbiStress
         public F35_S2_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func351fs6UInt64VAEs5UInt8V_s4Int8VSfs5Int64VSiAA6F35_S0VAA0K3_S1VAA0K3_S2VtXE_tF")]
     private static extern ulong SwiftCallbackFunc35(delegate* unmanaged[Swift]<byte, sbyte, float, long, nint, F35_S0, F35_S1, F35_S2, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc35Callback(byte a0, sbyte a1, float a2, long a3, nint a4, F35_S0 a5, F35_S1 a6, F35_S2 a7, SwiftSelf self)
     {
         try
@@ -3298,11 +3298,11 @@ public unsafe class SwiftCallbackAbiStress
         public nuint F3;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func361fS2iSu_SdSus5UInt8Vs5Int64VAA6F36_S0Vs4Int8VtXE_tF")]
     private static extern nint SwiftCallbackFunc36(delegate* unmanaged[Swift]<nuint, double, nuint, byte, long, F36_S0, sbyte, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc36Callback(nuint a0, double a1, nuint a2, byte a3, long a4, F36_S0 a5, sbyte a6, SwiftSelf self)
     {
         try
@@ -3384,11 +3384,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func371fAA7F37_RetVAEs6UInt64V_AA0G3_S0VSds6UInt16VAA0G3_S1VAA0G3_S2VtXE_tF")]
     private static extern F37_Ret SwiftCallbackFunc37(delegate* unmanaged[Swift]<ulong, F37_S0, double, ushort, F37_S1, F37_S2, SwiftSelf, F37_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F37_Ret SwiftCallbackFunc37Callback(ulong a0, F37_S0 a1, double a2, ushort a3, F37_S1 a4, F37_S2 a5, SwiftSelf self)
     {
         try
@@ -3452,11 +3452,11 @@ public unsafe class SwiftCallbackAbiStress
         public uint F2;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func381fS2dAA6F38_S0V_AA0G3_S1VSds5Int16Vs4Int8Vs6UInt32VAISfSiSfAMs5UInt8VSdAKtXE_tF")]
     private static extern double SwiftCallbackFunc38(delegate* unmanaged[Swift]<F38_S0, F38_S1, double, short, sbyte, uint, short, float, nint, float, uint, byte, double, sbyte, SwiftSelf, double> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static double SwiftCallbackFunc38Callback(F38_S0 a0, F38_S1 a1, double a2, short a3, sbyte a4, uint a5, short a6, float a7, nint a8, float a9, uint a10, byte a11, double a12, sbyte a13, SwiftSelf self)
     {
         try
@@ -3548,11 +3548,11 @@ public unsafe class SwiftCallbackAbiStress
         public nint F2;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func391fS2iAA6F39_S0V_Sus6UInt32VSdAA0G3_S1VAA0G3_S2Vs4Int8VAA0G3_S3Vs5Int32Vs6UInt64Vs5UInt8VtXE_tF")]
     private static extern nint SwiftCallbackFunc39(delegate* unmanaged[Swift]<F39_S0, nuint, uint, double, F39_S1, F39_S2, sbyte, F39_S3, int, ulong, byte, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc39Callback(F39_S0 a0, nuint a1, uint a2, double a3, F39_S1 a4, F39_S2 a5, sbyte a6, F39_S3 a7, int a8, ulong a9, byte a10, SwiftSelf self)
     {
         try
@@ -3636,11 +3636,11 @@ public unsafe class SwiftCallbackAbiStress
         public double F3;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func401fS2uAA6F40_S0V_s6UInt32Vs5UInt8VAA0G3_S1VAA0G3_S2Vs6UInt64VSuAOSis6UInt16VAgA0G3_S3VSutXE_tF")]
     private static extern nuint SwiftCallbackFunc40(delegate* unmanaged[Swift]<F40_S0, uint, byte, F40_S1, F40_S2, ulong, nuint, ulong, nint, ushort, uint, F40_S3, nuint, SwiftSelf, nuint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nuint SwiftCallbackFunc40Callback(F40_S0 a0, uint a1, byte a2, F40_S1 a3, F40_S2 a4, ulong a5, nuint a6, ulong a7, nint a8, ushort a9, uint a10, F40_S3 a11, nuint a12, SwiftSelf self)
     {
         try
@@ -3710,11 +3710,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func411fAA7F41_RetVAeA0G3_S0VXE_tF")]
     private static extern F41_Ret SwiftCallbackFunc41(delegate* unmanaged[Swift]<F41_S0, SwiftSelf, F41_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F41_Ret SwiftCallbackFunc41Callback(F41_S0 a0, SwiftSelf self)
     {
         try
@@ -3763,11 +3763,11 @@ public unsafe class SwiftCallbackAbiStress
         public uint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func421fS2is5Int32V_s6UInt32VAA6F42_S0VSfs5UInt8VAA0I3_S1VtXE_tF")]
     private static extern nint SwiftCallbackFunc42(delegate* unmanaged[Swift]<int, uint, F42_S0, float, byte, F42_S1, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc42Callback(int a0, uint a1, F42_S0 a2, float a3, byte a4, F42_S1 a5, SwiftSelf self)
     {
         try
@@ -3825,11 +3825,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func431fAA7F43_RetVAeA0G3_S0V_AA0G3_S1VtXE_tF")]
     private static extern F43_Ret SwiftCallbackFunc43(delegate* unmanaged[Swift]<F43_S0, F43_S1, SwiftSelf, F43_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F43_Ret SwiftCallbackFunc43Callback(F43_S0 a0, F43_S1 a1, SwiftSelf self)
     {
         try
@@ -3925,11 +3925,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func441fAA7F44_RetVAESd_AA0G3_S0VAA0G3_S1VAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F44_Ret SwiftCallbackFunc44(delegate* unmanaged[Swift]<double, F44_S0, F44_S1, F44_S2, F44_S3, SwiftSelf, F44_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F44_Ret SwiftCallbackFunc44Callback(double a0, F44_S0 a1, F44_S1 a2, F44_S2 a3, F44_S3 a4, SwiftSelf self)
     {
         try
@@ -4013,11 +4013,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func451fAA7F45_RetVAeA0G3_S0V_AA0G3_S1Vs5UInt8VtXE_tF")]
     private static extern F45_Ret SwiftCallbackFunc45(delegate* unmanaged[Swift]<F45_S0, F45_S1, byte, SwiftSelf, F45_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F45_Ret SwiftCallbackFunc45Callback(F45_S0 a0, F45_S1 a1, byte a2, SwiftSelf self)
     {
         try
@@ -4071,11 +4071,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func461fAA7F46_RetVAESi_Sus6UInt16VAGs5Int64VtXE_tF")]
     private static extern F46_Ret SwiftCallbackFunc46(delegate* unmanaged[Swift]<nint, nuint, ushort, ushort, long, SwiftSelf, F46_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F46_Ret SwiftCallbackFunc46Callback(nint a0, nuint a1, ushort a2, ushort a3, long a4, SwiftSelf self)
     {
         try
@@ -4169,11 +4169,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func471fAA7F47_RetVAESi_Sfs6UInt32VAA0G3_S0VAA0G3_S1Vs6UInt16VSfS2iS2us5Int16VAA0G3_S2VAA0G3_S3VAA0G3_S4VtXE_tF")]
     private static extern F47_Ret SwiftCallbackFunc47(delegate* unmanaged[Swift]<nint, float, uint, F47_S0, F47_S1, ushort, float, nint, nint, nuint, nuint, short, F47_S2, F47_S3, F47_S4, SwiftSelf, F47_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F47_Ret SwiftCallbackFunc47Callback(nint a0, float a1, uint a2, F47_S0 a3, F47_S1 a4, ushort a5, float a6, nint a7, nint a8, nuint a9, nuint a10, short a11, F47_S2 a12, F47_S3 a13, F47_S4 a14, SwiftSelf self)
     {
         try
@@ -4249,11 +4249,11 @@ public unsafe class SwiftCallbackAbiStress
         public nuint F4;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func481fs5Int64VAEs4Int8V_s5Int16VAIs6UInt32VAA6F48_S0VAkA0K3_S1Vs5Int32VAQs6UInt16VAeKtXE_tF")]
     private static extern long SwiftCallbackFunc48(delegate* unmanaged[Swift]<sbyte, short, short, uint, F48_S0, uint, F48_S1, int, int, ushort, long, uint, SwiftSelf, long> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static long SwiftCallbackFunc48Callback(sbyte a0, short a1, short a2, uint a3, F48_S0 a4, uint a5, F48_S1 a6, int a7, int a8, ushort a9, long a10, uint a11, SwiftSelf self)
     {
         try
@@ -4332,11 +4332,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func491fAA7F49_RetVAeA0G3_S0V_s5Int64VtXE_tF")]
     private static extern F49_Ret SwiftCallbackFunc49(delegate* unmanaged[Swift]<F49_S0, long, SwiftSelf, F49_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F49_Ret SwiftCallbackFunc49Callback(F49_S0 a0, long a1, SwiftSelf self)
     {
         try
@@ -4429,11 +4429,11 @@ public unsafe class SwiftCallbackAbiStress
         public F50_S5_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func501fs5UInt8VAeA6F50_S0V_AA0H3_S1VAeA0H3_S2Vs5Int32Vs6UInt64Vs4Int8VAQSfAA0H3_S3VAA0H3_S4VAA0H3_S5VSftXE_tF")]
     private static extern byte SwiftCallbackFunc50(delegate* unmanaged[Swift]<F50_S0, F50_S1, byte, F50_S2, int, ulong, sbyte, sbyte, float, F50_S3, F50_S4, F50_S5, float, SwiftSelf, byte> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static byte SwiftCallbackFunc50Callback(F50_S0 a0, F50_S1 a1, byte a2, F50_S2 a3, int a4, ulong a5, sbyte a6, sbyte a7, float a8, F50_S3 a9, F50_S4 a10, F50_S5 a11, float a12, SwiftSelf self)
     {
         try
@@ -4508,11 +4508,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func511fAA7F51_RetVAEs5Int16V_SuAA0G3_S0Vs6UInt64VtXE_tF")]
     private static extern F51_Ret SwiftCallbackFunc51(delegate* unmanaged[Swift]<short, nuint, F51_S0, ulong, SwiftSelf, F51_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F51_Ret SwiftCallbackFunc51Callback(short a0, nuint a1, F51_S0 a2, ulong a3, SwiftSelf self)
     {
         try
@@ -4580,11 +4580,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func521fAA7F52_RetVAESi_AA0G3_S0Vs5Int16VAiA0G3_S1VtXE_tF")]
     private static extern F52_Ret SwiftCallbackFunc52(delegate* unmanaged[Swift]<nint, F52_S0, short, short, F52_S1, SwiftSelf, F52_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F52_Ret SwiftCallbackFunc52Callback(nint a0, F52_S0 a1, short a2, short a3, F52_S1 a4, SwiftSelf self)
     {
         try
@@ -4722,11 +4722,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func531fAA7F53_RetVAeA0G3_S0V_s5UInt8Vs5Int64VAA0G3_S1VAA0G3_S2VAA0G3_S3VAkA0G3_S4VAA0G3_S5VAA0G3_S6VtXE_tF")]
     private static extern F53_Ret SwiftCallbackFunc53(delegate* unmanaged[Swift]<F53_S0, byte, long, F53_S1, F53_S2, F53_S3, long, F53_S4, F53_S5, F53_S6, SwiftSelf, F53_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F53_Ret SwiftCallbackFunc53Callback(F53_S0 a0, byte a1, long a2, F53_S1 a3, F53_S2 a4, F53_S3 a5, long a6, F53_S4 a7, F53_S5 a8, F53_S6 a9, SwiftSelf self)
     {
         try
@@ -4844,11 +4844,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func541fAA7F54_RetVAEs6UInt16V_AA0G3_S0VSfAA0G3_S1Vs5Int64Vs5Int32VAA0G3_S2VAA0G3_S3VAA0G3_S4VSfAA0G3_S5VtXE_tF")]
     private static extern F54_Ret SwiftCallbackFunc54(delegate* unmanaged[Swift]<ushort, F54_S0, float, F54_S1, long, int, F54_S2, F54_S3, F54_S4, float, F54_S5, SwiftSelf, F54_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F54_Ret SwiftCallbackFunc54Callback(ushort a0, F54_S0 a1, float a2, F54_S1 a3, long a4, int a5, F54_S2 a6, F54_S3 a7, F54_S4 a8, float a9, F54_S5 a10, SwiftSelf self)
     {
         try
@@ -4953,11 +4953,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func551fAA7F55_RetVAeA0G3_S0V_s5Int64VAA0G3_S1Vs4Int8VAA0G3_S2VSftXE_tF")]
     private static extern F55_Ret SwiftCallbackFunc55(delegate* unmanaged[Swift]<F55_S0, long, F55_S1, sbyte, F55_S2, float, SwiftSelf, F55_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F55_Ret SwiftCallbackFunc55Callback(F55_S0 a0, long a1, F55_S1 a2, sbyte a3, F55_S2 a4, float a5, SwiftSelf self)
     {
         try
@@ -5003,11 +5003,11 @@ public unsafe class SwiftCallbackAbiStress
         public double F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func561fs6UInt32VAeA6F56_S0VXE_tF")]
     private static extern uint SwiftCallbackFunc56(delegate* unmanaged[Swift]<F56_S0, SwiftSelf, uint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static uint SwiftCallbackFunc56Callback(F56_S0 a0, SwiftSelf self)
     {
         try
@@ -5083,11 +5083,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func571fAA7F57_RetVAEs4Int8V_Sus6UInt32Vs5Int64Vs6UInt64Vs5Int16VAkA0G3_S0VAA0G3_S1VAA0G3_S2VtXE_tF")]
     private static extern F57_Ret SwiftCallbackFunc57(delegate* unmanaged[Swift]<sbyte, nuint, uint, long, ulong, short, long, F57_S0, F57_S1, F57_S2, SwiftSelf, F57_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F57_Ret SwiftCallbackFunc57Callback(sbyte a0, nuint a1, uint a2, long a3, ulong a4, short a5, long a6, F57_S0 a7, F57_S1 a8, F57_S2 a9, SwiftSelf self)
     {
         try
@@ -5160,11 +5160,11 @@ public unsafe class SwiftCallbackAbiStress
         public F58_S2_S0 F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func581fS2is6UInt64V_s4Int8VSiAA6F58_S0VAA0I3_S1Vs5Int64VAA0I3_S2Vs5Int32VtXE_tF")]
     private static extern nint SwiftCallbackFunc58(delegate* unmanaged[Swift]<ulong, sbyte, nint, F58_S0, F58_S1, long, F58_S2, int, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc58Callback(ulong a0, sbyte a1, nint a2, F58_S0 a3, F58_S1 a4, long a5, F58_S2 a6, int a7, SwiftSelf self)
     {
         try
@@ -5200,11 +5200,11 @@ public unsafe class SwiftCallbackAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func591fs6UInt64VAEs6UInt16V_s5Int64VSitXE_tF")]
     private static extern ulong SwiftCallbackFunc59(delegate* unmanaged[Swift]<ushort, long, nint, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc59Callback(ushort a0, long a1, nint a2, SwiftSelf self)
     {
         try
@@ -5247,11 +5247,11 @@ public unsafe class SwiftCallbackAbiStress
         public int F1;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func601fs6UInt64VAESf_Sds5Int64Vs6UInt16VS2fAA6F60_S0Vs5Int16VAA0J3_S1VAmGtXE_tF")]
     private static extern ulong SwiftCallbackFunc60(delegate* unmanaged[Swift]<float, double, long, ushort, float, float, F60_S0, short, F60_S1, short, long, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc60Callback(float a0, double a1, long a2, ushort a3, float a4, float a5, F60_S0 a6, short a7, F60_S1 a8, short a9, long a10, SwiftSelf self)
     {
         try
@@ -5344,11 +5344,11 @@ public unsafe class SwiftCallbackAbiStress
         public nint F1;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func611fs6UInt32VA2E_AeA6F61_S0VAA0H3_S1VAA0H3_S2Vs4Int8Vs5Int16VAA0H3_S3Vs5Int32VAEtXE_tF")]
     private static extern uint SwiftCallbackFunc61(delegate* unmanaged[Swift]<uint, uint, F61_S0, F61_S1, F61_S2, sbyte, short, F61_S3, int, uint, SwiftSelf, uint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static uint SwiftCallbackFunc61Callback(uint a0, uint a1, F61_S0 a2, F61_S1 a3, F61_S2 a4, sbyte a5, short a6, F61_S3 a7, int a8, uint a9, SwiftSelf self)
     {
         try
@@ -5414,11 +5414,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func621fAA7F62_RetVAeA0G3_S0VXE_tF")]
     private static extern F62_Ret SwiftCallbackFunc62(delegate* unmanaged[Swift]<F62_S0, SwiftSelf, F62_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F62_Ret SwiftCallbackFunc62Callback(F62_S0 a0, SwiftSelf self)
     {
         try
@@ -5455,11 +5455,11 @@ public unsafe class SwiftCallbackAbiStress
         public nint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func631fS2fAA6F63_S0V_s5Int16VtXE_tF")]
     private static extern float SwiftCallbackFunc63(delegate* unmanaged[Swift]<F63_S0, short, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc63Callback(F63_S0 a0, short a1, SwiftSelf self)
     {
         try
@@ -5536,11 +5536,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func641fAA7F64_RetVAEs4Int8V_AA0G3_S0VAA0G3_S1VSuAA0G3_S2VtXE_tF")]
     private static extern F64_Ret SwiftCallbackFunc64(delegate* unmanaged[Swift]<sbyte, F64_S0, F64_S1, nuint, F64_S2, SwiftSelf, F64_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F64_Ret SwiftCallbackFunc64Callback(sbyte a0, F64_S0 a1, F64_S1 a2, nuint a3, F64_S2 a4, SwiftSelf self)
     {
         try
@@ -5622,11 +5622,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func651fAA7F65_RetVAeA0G3_S0V_s5Int16VSdSuAA0G3_S1Vs6UInt64VAA0G3_S2VSiAA0G3_S3Vs5Int32Vs5Int64Vs6UInt32VSdtXE_tF")]
     private static extern F65_Ret SwiftCallbackFunc65(delegate* unmanaged[Swift]<F65_S0, short, double, nuint, F65_S1, ulong, F65_S2, nint, F65_S3, int, long, uint, double, SwiftSelf, F65_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F65_Ret SwiftCallbackFunc65Callback(F65_S0 a0, short a1, double a2, nuint a3, F65_S1 a4, ulong a5, F65_S2 a6, nint a7, F65_S3 a8, int a9, long a10, uint a11, double a12, SwiftSelf self)
     {
         try
@@ -5706,11 +5706,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func661fAA7F66_RetVAEs5Int64VXE_tF")]
     private static extern F66_Ret SwiftCallbackFunc66(delegate* unmanaged[Swift]<long, SwiftSelf, F66_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F66_Ret SwiftCallbackFunc66Callback(long a0, SwiftSelf self)
     {
         try
@@ -5783,11 +5783,11 @@ public unsafe class SwiftCallbackAbiStress
         public float F3;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func671fs5Int32VAESd_AA6F67_S0VSfAA0H3_S1Vs5Int16VSuAA0H3_S2Vs6UInt16VS2uAA0H3_S3Vs6UInt64VtXE_tF")]
     private static extern int SwiftCallbackFunc67(delegate* unmanaged[Swift]<double, F67_S0, float, F67_S1, short, nuint, F67_S2, ushort, nuint, nuint, F67_S3, ulong, SwiftSelf, int> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static int SwiftCallbackFunc67Callback(double a0, F67_S0 a1, float a2, F67_S1 a3, short a4, nuint a5, F67_S2 a6, ushort a7, nuint a8, nuint a9, F67_S3 a10, ulong a11, SwiftSelf self)
     {
         try
@@ -5899,11 +5899,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func681fAA7F68_RetVAEs5UInt8V_Sfs5Int32VSiAA0G3_S0Vs5Int16VSiAISiAA0G3_S1VSdAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F68_Ret SwiftCallbackFunc68(delegate* unmanaged[Swift]<byte, float, int, nint, F68_S0, short, nint, int, nint, F68_S1, double, F68_S2, F68_S3, SwiftSelf, F68_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F68_Ret SwiftCallbackFunc68Callback(byte a0, float a1, int a2, nint a3, F68_S0 a4, short a5, nint a6, int a7, nint a8, F68_S1 a9, double a10, F68_S2 a11, F68_S3 a12, SwiftSelf self)
     {
         try
@@ -6003,11 +6003,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func691fAA7F69_RetVAeA0G3_S0V_Sis5Int32VAA0G3_S1Vs6UInt32Vs4Int8VAA0G3_S2VSiAA0G3_S3VAA0G3_S4VtXE_tF")]
     private static extern F69_Ret SwiftCallbackFunc69(delegate* unmanaged[Swift]<F69_S0, nint, int, F69_S1, uint, sbyte, F69_S2, nint, F69_S3, F69_S4, SwiftSelf, F69_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F69_Ret SwiftCallbackFunc69Callback(F69_S0 a0, nint a1, int a2, F69_S1 a3, uint a4, sbyte a5, F69_S2 a6, nint a7, F69_S3 a8, F69_S4 a9, SwiftSelf self)
     {
         try
@@ -6107,11 +6107,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func701fAA7F70_RetVAEs5Int16V_s5UInt8VSis6UInt32VAA0G3_S0Vs5Int32VAA0G3_S1VAA0G3_S2VAA0G3_S3Vs5Int64VAOs6UInt16VS2iSuAA0G3_S4VtXE_tF")]
     private static extern F70_Ret SwiftCallbackFunc70(delegate* unmanaged[Swift]<short, byte, nint, uint, F70_S0, int, F70_S1, F70_S2, F70_S3, long, int, ushort, nint, nint, nuint, F70_S4, SwiftSelf, F70_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F70_Ret SwiftCallbackFunc70Callback(short a0, byte a1, nint a2, uint a3, F70_S0 a4, int a5, F70_S1 a6, F70_S2 a7, F70_S3 a8, long a9, int a10, ushort a11, nint a12, nint a13, nuint a14, F70_S4 a15, SwiftSelf self)
     {
         try
@@ -6182,11 +6182,11 @@ public unsafe class SwiftCallbackAbiStress
         public long F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func711fs6UInt64VAeA6F71_S0V_AA0H3_S1VtXE_tF")]
     private static extern ulong SwiftCallbackFunc71(delegate* unmanaged[Swift]<F71_S0, F71_S1, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc71Callback(F71_S0 a0, F71_S1 a1, SwiftSelf self)
     {
         try
@@ -6238,11 +6238,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func721fAA7F72_RetVAeA0G3_S0V_s5Int64Vs4Int8VtXE_tF")]
     private static extern F72_Ret SwiftCallbackFunc72(delegate* unmanaged[Swift]<F72_S0, long, sbyte, SwiftSelf, F72_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F72_Ret SwiftCallbackFunc72Callback(F72_S0 a0, long a1, sbyte a2, SwiftSelf self)
     {
         try
@@ -6320,11 +6320,11 @@ public unsafe class SwiftCallbackAbiStress
         public uint F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func731fs4Int8VAESd_SfAA6F73_S0Vs5Int64VAA0H3_S1VAA0H3_S2Vs5Int16VSdAEs5Int32VAiA0H3_S3VSus6UInt64VAqA0H3_S4Vs5UInt8VAA0H3_S5VtXE_tF")]
     private static extern sbyte SwiftCallbackFunc73(delegate* unmanaged[Swift]<double, float, F73_S0, long, F73_S1, F73_S2, short, double, sbyte, int, long, F73_S3, nuint, ulong, int, F73_S4, byte, F73_S5, SwiftSelf, sbyte> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static sbyte SwiftCallbackFunc73Callback(double a0, float a1, F73_S0 a2, long a3, F73_S1 a4, F73_S2 a5, short a6, double a7, sbyte a8, int a9, long a10, F73_S3 a11, nuint a12, ulong a13, int a14, F73_S4 a15, byte a16, F73_S5 a17, SwiftSelf self)
     {
         try
@@ -6393,11 +6393,11 @@ public unsafe class SwiftCallbackAbiStress
         public float F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func741fs5Int64VAeA6F74_S0V_AA0H3_S1Vs5Int16VtXE_tF")]
     private static extern long SwiftCallbackFunc74(delegate* unmanaged[Swift]<F74_S0, F74_S1, short, SwiftSelf, long> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static long SwiftCallbackFunc74Callback(F74_S0 a0, F74_S1 a1, short a2, SwiftSelf self)
     {
         try
@@ -6485,11 +6485,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func751fAA7F75_RetVAEs4Int8V_A2gA0G3_S0VAA0G3_S1VAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F75_Ret SwiftCallbackFunc75(delegate* unmanaged[Swift]<sbyte, sbyte, sbyte, F75_S0, F75_S1, F75_S2, F75_S3, SwiftSelf, F75_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F75_Ret SwiftCallbackFunc75Callback(sbyte a0, sbyte a1, sbyte a2, F75_S0 a3, F75_S1 a4, F75_S2 a5, F75_S3 a6, SwiftSelf self)
     {
         try
@@ -6581,11 +6581,11 @@ public unsafe class SwiftCallbackAbiStress
         public double F1;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func761fs6UInt64VAEs5UInt8V_AA6F76_S0Vs4Int8VAA0I3_S1VAA0I3_S2VAA0I3_S3Vs6UInt32VAA0I3_S4VAgA0I3_S5VSds5Int16VtXE_tF")]
     private static extern ulong SwiftCallbackFunc76(delegate* unmanaged[Swift]<byte, F76_S0, sbyte, F76_S1, F76_S2, F76_S3, uint, F76_S4, byte, F76_S5, double, short, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc76Callback(byte a0, F76_S0 a1, sbyte a2, F76_S1 a3, F76_S2 a4, F76_S3 a5, uint a6, F76_S4 a7, byte a8, F76_S5 a9, double a10, short a11, SwiftSelf self)
     {
         try
@@ -6675,11 +6675,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func771fAA7F77_RetVAESd_AA0G3_S0VAA0G3_S1VAA0G3_S2Vs6UInt32VtXE_tF")]
     private static extern F77_Ret SwiftCallbackFunc77(delegate* unmanaged[Swift]<double, F77_S0, F77_S1, F77_S2, uint, SwiftSelf, F77_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F77_Ret SwiftCallbackFunc77Callback(double a0, F77_S0 a1, F77_S1 a2, F77_S2 a3, uint a4, SwiftSelf self)
     {
         try
@@ -6766,11 +6766,11 @@ public unsafe class SwiftCallbackAbiStress
         public ulong F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func781fS2ds6UInt64V_AA6F78_S0VAeA0H3_S1VAA0H3_S2Vs5Int32VAEs5Int64VAA0H3_S3VS2fs6UInt16VAA0H3_S4VSdtXE_tF")]
     private static extern double SwiftCallbackFunc78(delegate* unmanaged[Swift]<ulong, F78_S0, ulong, F78_S1, F78_S2, int, ulong, long, F78_S3, float, float, ushort, F78_S4, double, SwiftSelf, double> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static double SwiftCallbackFunc78Callback(ulong a0, F78_S0 a1, ulong a2, F78_S1 a3, F78_S2 a4, int a5, ulong a6, long a7, F78_S3 a8, float a9, float a10, ushort a11, F78_S4 a12, double a13, SwiftSelf self)
     {
         try
@@ -6845,11 +6845,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func791fAA7F79_RetVAeA0G3_S0V_SftXE_tF")]
     private static extern F79_Ret SwiftCallbackFunc79(delegate* unmanaged[Swift]<F79_S0, float, SwiftSelf, F79_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F79_Ret SwiftCallbackFunc79Callback(F79_S0 a0, float a1, SwiftSelf self)
     {
         try
@@ -6912,11 +6912,11 @@ public unsafe class SwiftCallbackAbiStress
         public ulong F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func801fS2fs6UInt64V_Sis5Int32Vs5Int16VSuAA6F80_S0VAISis4Int8VAGs6UInt32VAA0J3_S1VAA0J3_S2VAEtXE_tF")]
     private static extern float SwiftCallbackFunc80(delegate* unmanaged[Swift]<ulong, nint, int, short, nuint, F80_S0, short, nint, sbyte, int, uint, F80_S1, F80_S2, ulong, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc80Callback(ulong a0, nint a1, int a2, short a3, nuint a4, F80_S0 a5, short a6, nint a7, sbyte a8, int a9, uint a10, F80_S1 a11, F80_S2 a12, ulong a13, SwiftSelf self)
     {
         try
@@ -6979,11 +6979,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func811fAA7F81_RetVAEs5UInt8V_s6UInt32VAgA0G3_S0Vs4Int8VtXE_tF")]
     private static extern F81_Ret SwiftCallbackFunc81(delegate* unmanaged[Swift]<byte, uint, byte, F81_S0, sbyte, SwiftSelf, F81_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F81_Ret SwiftCallbackFunc81Callback(byte a0, uint a1, byte a2, F81_S0 a3, sbyte a4, SwiftSelf self)
     {
         try
@@ -7067,11 +7067,11 @@ public unsafe class SwiftCallbackAbiStress
         public ulong F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func821fS2fs5Int64V_AA6F82_S0Vs5Int16Vs4Int8Vs6UInt32VAA0H3_S1Vs5Int32VAeKSdAA0H3_S2VAA0H3_S3VAA0H3_S4VtXE_tF")]
     private static extern float SwiftCallbackFunc82(delegate* unmanaged[Swift]<long, F82_S0, short, sbyte, uint, F82_S1, int, long, sbyte, double, F82_S2, F82_S3, F82_S4, SwiftSelf, float> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static float SwiftCallbackFunc82Callback(long a0, F82_S0 a1, short a2, sbyte a3, uint a4, F82_S1 a5, int a6, long a7, sbyte a8, double a9, F82_S2 a10, F82_S3 a11, F82_S4 a12, SwiftSelf self)
     {
         try
@@ -7134,11 +7134,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func831fAA7F83_RetVAEs4Int8V_AA0G3_S0Vs5Int16VtXE_tF")]
     private static extern F83_Ret SwiftCallbackFunc83(delegate* unmanaged[Swift]<sbyte, F83_S0, short, SwiftSelf, F83_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F83_Ret SwiftCallbackFunc83Callback(sbyte a0, F83_S0 a1, short a2, SwiftSelf self)
     {
         try
@@ -7221,11 +7221,11 @@ public unsafe class SwiftCallbackAbiStress
         public int F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func841fS2is5Int32V_AA6F84_S0VAA0H3_S1VSdAEs5Int16VSdAA0H3_S2VAA0H3_S3VSdAA0H3_S4VAA0H3_S5VAA0H3_S6VAA0H3_S7VSutXE_tF")]
     private static extern nint SwiftCallbackFunc84(delegate* unmanaged[Swift]<int, F84_S0, F84_S1, double, int, short, double, F84_S2, F84_S3, double, F84_S4, F84_S5, F84_S6, F84_S7, nuint, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc84Callback(int a0, F84_S0 a1, F84_S1 a2, double a3, int a4, short a5, double a6, F84_S2 a7, F84_S3 a8, double a9, F84_S4 a10, F84_S5 a11, F84_S6 a12, F84_S7 a13, nuint a14, SwiftSelf self)
     {
         try
@@ -7339,11 +7339,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func851fAA7F85_RetVAeA0G3_S0V_AA0G3_S1Vs6UInt32VAA0G3_S2Vs5Int64VAA0G3_S3VAoA0G3_S4Vs6UInt16Vs5UInt8Vs5Int32VAkYSfAA0G3_S5VAOtXE_tF")]
     private static extern F85_Ret SwiftCallbackFunc85(delegate* unmanaged[Swift]<F85_S0, F85_S1, uint, F85_S2, long, F85_S3, long, F85_S4, ushort, byte, int, uint, int, float, F85_S5, long, SwiftSelf, F85_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F85_Ret SwiftCallbackFunc85Callback(F85_S0 a0, F85_S1 a1, uint a2, F85_S2 a3, long a4, F85_S3 a5, long a6, F85_S4 a7, ushort a8, byte a9, int a10, uint a11, int a12, float a13, F85_S5 a14, long a15, SwiftSelf self)
     {
         try
@@ -7446,11 +7446,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func861fAA7F86_RetVAESf_s5Int16VSiAGSfAA0G3_S0VAA0G3_S1VAA0G3_S2VSis6UInt32VS2uSfs5Int64VAA0G3_S3VSutXE_tF")]
     private static extern F86_Ret SwiftCallbackFunc86(delegate* unmanaged[Swift]<float, short, nint, short, float, F86_S0, F86_S1, F86_S2, nint, uint, nuint, nuint, float, long, F86_S3, nuint, SwiftSelf, F86_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F86_Ret SwiftCallbackFunc86Callback(float a0, short a1, nint a2, short a3, float a4, F86_S0 a5, F86_S1 a6, F86_S2 a7, nint a8, uint a9, nuint a10, nuint a11, float a12, long a13, F86_S3 a14, nuint a15, SwiftSelf self)
     {
         try
@@ -7515,11 +7515,11 @@ public unsafe class SwiftCallbackAbiStress
         public float F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func871fs6UInt64VAESf_SiAA6F87_S0VAA0H3_S1VtXE_tF")]
     private static extern ulong SwiftCallbackFunc87(delegate* unmanaged[Swift]<float, nint, F87_S0, F87_S1, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc87Callback(float a0, nint a1, F87_S0 a2, F87_S1 a3, SwiftSelf self)
     {
         try
@@ -7599,11 +7599,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func881fAA7F88_RetVAeA0G3_S0V_AA0G3_S1VSfSuSfSiAA0G3_S2Vs6UInt64VAA0G3_S3VAMtXE_tF")]
     private static extern F88_Ret SwiftCallbackFunc88(delegate* unmanaged[Swift]<F88_S0, F88_S1, float, nuint, float, nint, F88_S2, ulong, F88_S3, ulong, SwiftSelf, F88_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F88_Ret SwiftCallbackFunc88Callback(F88_S0 a0, F88_S1 a1, float a2, nuint a3, float a4, nint a5, F88_S2 a6, ulong a7, F88_S3 a8, ulong a9, SwiftSelf self)
     {
         try
@@ -7683,11 +7683,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func891fAA7F89_RetVAeA0G3_S0VXE_tF")]
     private static extern F89_Ret SwiftCallbackFunc89(delegate* unmanaged[Swift]<F89_S0, SwiftSelf, F89_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F89_Ret SwiftCallbackFunc89Callback(F89_S0 a0, SwiftSelf self)
     {
         try
@@ -7778,11 +7778,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func901fAA7F90_RetVAEs5Int64V_SfAA0G3_S0Vs6UInt32Vs6UInt16VAA0G3_S1VAA0G3_S2VAA0G3_S3VAA0G3_S4VtXE_tF")]
     private static extern F90_Ret SwiftCallbackFunc90(delegate* unmanaged[Swift]<long, float, F90_S0, uint, ushort, F90_S1, F90_S2, F90_S3, F90_S4, SwiftSelf, F90_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F90_Ret SwiftCallbackFunc90Callback(long a0, float a1, F90_S0 a2, uint a3, ushort a4, F90_S1 a5, F90_S2 a6, F90_S3 a7, F90_S4 a8, SwiftSelf self)
     {
         try
@@ -7892,11 +7892,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func911fAA7F91_RetVAeA0G3_S0V_s5Int16Vs6UInt32VSdAA0G3_S1Vs5Int64Vs6UInt64VSfAA0G3_S2VSiAA0G3_S3VtXE_tF")]
     private static extern F91_Ret SwiftCallbackFunc91(delegate* unmanaged[Swift]<F91_S0, short, uint, double, F91_S1, long, ulong, float, F91_S2, nint, F91_S3, SwiftSelf, F91_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F91_Ret SwiftCallbackFunc91Callback(F91_S0 a0, short a1, uint a2, double a3, F91_S1 a4, long a5, ulong a6, float a7, F91_S2 a8, nint a9, F91_S3 a10, SwiftSelf self)
     {
         try
@@ -7988,11 +7988,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func921fAA7F92_RetVAEs6UInt32V_s5Int64VAA0G3_S0VSis5UInt8VAA0G3_S1VAA0G3_S2VAMSis5Int32VtXE_tF")]
     private static extern F92_Ret SwiftCallbackFunc92(delegate* unmanaged[Swift]<uint, long, F92_S0, nint, byte, F92_S1, F92_S2, byte, nint, int, SwiftSelf, F92_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F92_Ret SwiftCallbackFunc92Callback(uint a0, long a1, F92_S0 a2, nint a3, byte a4, F92_S1 a5, F92_S2 a6, byte a7, nint a8, int a9, SwiftSelf self)
     {
         try
@@ -8062,11 +8062,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func931fAA7F93_RetVAESu_s6UInt16VSdAA0G3_S0VAA0G3_S1VtXE_tF")]
     private static extern F93_Ret SwiftCallbackFunc93(delegate* unmanaged[Swift]<nuint, ushort, double, F93_S0, F93_S1, SwiftSelf, F93_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F93_Ret SwiftCallbackFunc93Callback(nuint a0, ushort a1, double a2, F93_S0 a3, F93_S1 a4, SwiftSelf self)
     {
         try
@@ -8157,11 +8157,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func941fAA7F94_RetVAeA0G3_S0V_s5Int16VAA0G3_S1VAA0G3_S2VAA0G3_S3VSfAA0G3_S4Vs6UInt32VAA0G3_S5VAItXE_tF")]
     private static extern F94_Ret SwiftCallbackFunc94(delegate* unmanaged[Swift]<F94_S0, short, F94_S1, F94_S2, F94_S3, float, F94_S4, uint, F94_S5, short, SwiftSelf, F94_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F94_Ret SwiftCallbackFunc94Callback(F94_S0 a0, short a1, F94_S1 a2, F94_S2 a3, F94_S3 a4, float a5, F94_S4 a6, uint a7, F94_S5 a8, short a9, SwiftSelf self)
     {
         try
@@ -8259,11 +8259,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func951fAA7F95_RetVAeA0G3_S0V_SuAA0G3_S1VAA0G3_S2VtXE_tF")]
     private static extern F95_Ret SwiftCallbackFunc95(delegate* unmanaged[Swift]<F95_S0, nuint, F95_S1, F95_S2, SwiftSelf, F95_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F95_Ret SwiftCallbackFunc95Callback(F95_S0 a0, nuint a1, F95_S1 a2, F95_S2 a3, SwiftSelf self)
     {
         try
@@ -8323,11 +8323,11 @@ public unsafe class SwiftCallbackAbiStress
         public float F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func961fs6UInt64VAEs6UInt32V_AA6F96_S0VSfAe2gA0I3_S1VAA0I3_S2Vs5Int64VtXE_tF")]
     private static extern ulong SwiftCallbackFunc96(delegate* unmanaged[Swift]<uint, F96_S0, float, ulong, uint, uint, F96_S1, F96_S2, long, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc96Callback(uint a0, F96_S0 a1, float a2, ulong a3, uint a4, uint a5, F96_S1 a6, F96_S2 a7, long a8, SwiftSelf self)
     {
         try
@@ -8423,11 +8423,11 @@ public unsafe class SwiftCallbackAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func971fAA7F97_RetVAeA0G3_S0V_AA0G3_S1VAA0G3_S2VAA0G3_S3VtXE_tF")]
     private static extern F97_Ret SwiftCallbackFunc97(delegate* unmanaged[Swift]<F97_S0, F97_S1, F97_S2, F97_S3, SwiftSelf, F97_Ret> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static F97_Ret SwiftCallbackFunc97Callback(F97_S0 a0, F97_S1 a1, F97_S2 a2, F97_S3 a3, SwiftSelf self)
     {
         try
@@ -8470,11 +8470,11 @@ public unsafe class SwiftCallbackAbiStress
         public int F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func981fS2iSf_s6UInt16VAA6F98_S0VAEtXE_tF")]
     private static extern nint SwiftCallbackFunc98(delegate* unmanaged[Swift]<float, ushort, F98_S0, ushort, SwiftSelf, nint> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static nint SwiftCallbackFunc98Callback(float a0, ushort a1, F98_S0 a2, ushort a3, SwiftSelf self)
     {
         try
@@ -8526,11 +8526,11 @@ public unsafe class SwiftCallbackAbiStress
         public byte F0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB6Func991fs6UInt64VAEs5Int64V_SuSfs6UInt16VAA6F99_S0Vs5UInt8VSfAMs4Int8VAA0J3_S1VAA0J3_S2VtXE_tF")]
     private static extern ulong SwiftCallbackFunc99(delegate* unmanaged[Swift]<long, nuint, float, ushort, F99_S0, byte, float, byte, sbyte, F99_S1, F99_S2, SwiftSelf, ulong> func, void* funcContext);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static ulong SwiftCallbackFunc99Callback(long a0, nuint a1, float a2, ushort a3, F99_S0 a4, byte a5, float a6, byte a7, sbyte a8, F99_S1 a9, F99_S2 a10, SwiftSelf self)
     {
         try

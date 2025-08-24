@@ -205,15 +205,15 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPI
             {
 
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl)])}}
                 {{VirtualMethodIndex(0)}}
                 void Method();
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(1)}}
                 void Method1();
 
                 [SuppressGCTransition]
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(2)}}
                 void Method2();
 

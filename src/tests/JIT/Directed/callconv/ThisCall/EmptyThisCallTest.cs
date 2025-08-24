@@ -45,7 +45,7 @@ public unsafe class EmptyThisCallTest
         return 100;
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static int Foo(void* a)
     {
         return 0;
