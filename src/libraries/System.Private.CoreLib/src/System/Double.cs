@@ -162,6 +162,8 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
+        internal static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
@@ -1242,6 +1244,12 @@ namespace System
             if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+                result = (double)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
                 result = (double)actualValue;
                 return true;
             }
