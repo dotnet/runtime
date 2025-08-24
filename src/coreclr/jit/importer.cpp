@@ -10114,7 +10114,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 ssize_t  profiledValue = 0;
                                 uint32_t likelihood    = 0;
                                 if (pickProfiledValue(opcodeOffs, &likelihood, &profiledValue) && (likelihood >= 50) &&
-                                    profiledValue >= 0 && profiledValue <= getUnrollThreshold(UnrollKind::Memset))
+                                    profiledValue >= 0 && profiledValue <= (ssize_t)getUnrollThreshold(UnrollKind::Memset))
                                 {
                                     assert(FitsIn<int>(profiledValue));
 
