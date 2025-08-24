@@ -109,8 +109,6 @@
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
       <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ')</_CoreClrBuildCommand>
-      <_CoreClrBuildCommand Condition="'$(TargetsBrowser)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">call &quot;$([MSBuild]::NormalizePath('$(RepoRoot)src/mono/browser/emsdk', 'emsdk_env.cmd'))&quot; &amp;&amp; $(_CoreClrBuildCommand)</_CoreClrBuildCommand>
-      <_CoreClrBuildCommand Condition="'$(TargetsBrowser)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">bash -c 'source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; $(_CoreClrBuildCommand)'</_CoreClrBuildCommand>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->

@@ -21,10 +21,6 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
-        usepthreads|-usepthreads)
-            __usePThreads=1
-            ;;
-
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -48,36 +44,11 @@ __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
 __icuDir=""
-__usePThreads=0
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-if [[ "$__TargetOS" == browser ]]; then
-    if [[ -z "$EMSDK_PATH" ]]; then
-        if [[ -d "$__RepoRootDir"/src/mono/browser/emsdk/ ]]; then
-            export EMSDK_PATH="$__RepoRootDir"/src/mono/browser/emsdk/
-        else
-            echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
-            exit 1
-        fi
-    fi
-    source "$EMSDK_PATH"/emsdk_env.sh
-    export CLR_CC=$(which emcc)
-elif [[ "$__TargetOS" == wasi ]]; then
-    if [[ -z "$WASI_SDK_PATH" ]]; then
-        if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk ]]; then
-            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
-        else
-            echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
-            exit 1
-        fi
-    fi
-    export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
-    export CLR_CC="$WASI_SDK_PATH"bin/clang
-    export TARGET_BUILD_ARCH=wasm
-    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake $__CMakeArgs"
-elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
+if [[ "$__TargetOS" == browser || "$__TargetOS" == wasi || "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
@@ -158,7 +129,6 @@ fi
 if [[ -n "$__icuDir" ]]; then
     __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
 fi
-__CMakeArgs="-DCMAKE_USE_PTHREADS=$__usePThreads $__CMakeArgs"
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"
