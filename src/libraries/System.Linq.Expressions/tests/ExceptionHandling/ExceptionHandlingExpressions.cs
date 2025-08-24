@@ -1584,5 +1584,35 @@ namespace System.Linq.Expressions.Tests
             CatchBlock e7 = Expression.Catch(Expression.Parameter(typeof(Exception), "ex"), Expression.Empty(), Expression.Constant(true));
             Assert.Equal("catch (Exception ex) { ... }", e7.ToString());
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TryCatchInOrElse(bool useInterpreter)
+        {
+            var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
+                Expression.OrElse(
+                    Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                    Expression.TryCatch(
+                        Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                        Expression.Catch(
+                            typeof(System.Data.SqlTypes.SqlTypeException),
+                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False)))));
+            var func = expr.Compile(preferInterpretation: useInterpreter);
+            Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TryCatchInAndAlso(bool useInterpreter)
+        {
+            var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
+                Expression.AndAlso(
+                    Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                    Expression.TryCatch(
+                        Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                        Expression.Catch(
+                            typeof(System.Data.SqlTypes.SqlTypeException),
+                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False)))));
+            var func = expr.Compile(preferInterpretation: useInterpreter);
+            Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
+        }
     }
 }
