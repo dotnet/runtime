@@ -805,10 +805,16 @@ namespace System
                     Debug.Assert(base1E9Buffer[iuDst] < TenPowMaxPartial);
 
                     // Use X86Base.DivRem when stable
-                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
+
+                    // The logic is hard-coded because method calls in Tier-0 are slow.
+                    //    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
+                    //    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
+                    //    uCarry = (uint)quo;
+                    //    base1E9Buffer[iuDst] = (uint)rem;
+                    ulong uuRes = ((ulong)base1E9Buffer[iuDst] << 32) | uCarry;
+                    ulong quo = uuRes / TenPowMaxPartial;
+                    base1E9Buffer[iuDst] = (uint)(uuRes - quo * TenPowMaxPartial);
                     uCarry = (uint)quo;
-                    base1E9Buffer[iuDst] = (uint)rem;
                 }
                 if (uCarry != 0)
                 {
