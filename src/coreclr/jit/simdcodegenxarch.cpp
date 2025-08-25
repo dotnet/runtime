@@ -88,22 +88,11 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
         // Store upper 4 bytes
         emit->emitInsStoreInd(INS_movss, EA_4BYTE, treeNode);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
+    else
     {
         // Extract and store upper 4 bytes
         GenTreeStoreInd storeInd = storeIndirForm(TYP_SIMD16, addr, data);
         emit->emitIns_A_R_I(INS_extractps, EA_16BYTE, &storeInd, dataReg, 2);
-    }
-    else
-    {
-        regNumber tmpReg = internalRegisters.GetSingle(treeNode);
-
-        // Extract upper 4 bytes from data
-        emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-        data->SetRegNum(tmpReg);
-
-        // Store upper 4 bytes
-        emit->emitInsStoreInd(INS_movss, EA_4BYTE, treeNode);
     }
 }
 
@@ -133,15 +122,11 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
         return;
     }
 
-    emitter*  emit     = GetEmitter();
-    regNumber tgtReg   = treeNode->GetRegNum();
-    bool      useSse42 = compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42);
+    emitter*  emit   = GetEmitter();
+    regNumber tgtReg = treeNode->GetRegNum();
 
-    if (useSse42)
-    {
-        // Load lower 8 bytes
-        emit->emitInsLoadInd(INS_movsd_simd, EA_8BYTE, tgtReg, treeNode);
-    }
+    // Load lower 8 bytes
+    emit->emitInsLoadInd(INS_movsd_simd, EA_8BYTE, tgtReg, treeNode);
 
     // Update the addr node to offset by 8
 
@@ -164,41 +149,9 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     treeNode->Addr() = addr;
 
-    if (useSse42)
-    {
-        // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
-        GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
-        emit->emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, &indir, 0x28, INS_OPTS_NONE);
-    }
-    else
-    {
-        // Load upper 4 bytes to lower half of tgtReg
-        emit->emitInsLoadInd(INS_movss, EA_4BYTE, tgtReg, treeNode);
-
-        // Move upper 4 bytes to upper half of tgtReg
-        emit->emitIns_R_R(INS_movlhps, EA_16BYTE, tgtReg, tgtReg);
-
-        // Revert the addr node to the original offset
-        // Doing it this way saves us a register and produces smaller code
-
-        if (treeNode->isIndirAddrMode())
-        {
-            GenTreeAddrMode* addrMode = addr->AsAddrMode();
-            addrMode->SetOffset(addrMode->Offset() - 8);
-        }
-        else if (addr->IsCnsIntOrI() && addr->isContained())
-        {
-            GenTreeIntConCommon* icon = addr->AsIntConCommon();
-            icon->SetIconValue(icon->IconValue() - 8);
-        }
-        else
-        {
-            unreached();
-        }
-
-        // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
-        emit->emitInsLoadInd(INS_movlps, EA_16BYTE, tgtReg, treeNode);
-    }
+    // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
+    GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
+    emit->emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, &indir, 0x28, INS_OPTS_NONE);
 
     genProduceReg(treeNode);
 }
@@ -288,20 +241,10 @@ void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigne
         // Store upper 4 bytes
         emit->emitIns_S_R(INS_movss, EA_4BYTE, dataReg, lclNum, offset + 8);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
+    else
     {
         // Extract and store upper 4 bytes
         emit->emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, offset + 8, dataReg, 2);
-    }
-    else
-    {
-        regNumber tmpReg = internalRegisters.GetSingle(store);
-
-        // Extract upper 4 bytes from data
-        emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-
-        // Store upper 4 bytes
-        emit->emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, lclNum, offset + 8);
     }
 }
 
@@ -317,25 +260,11 @@ void CodeGen::genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsign
 {
     emitter* emit = GetEmitter();
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
-        emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
+    // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
+    emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
 
-        // Load and insert upper 4 byte, 0x20 inserts to index 2 and 0x8 zeros index 3
-        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, lclNum, offset + 8, 0x28, INS_OPTS_NONE);
-    }
-    else
-    {
-        // Load upper 4 bytes to lower half of tgtReg
-        emit->emitIns_R_S(INS_movss, EA_4BYTE, tgtReg, lclNum, offset + 8);
-
-        // Move upper 4 bytes to upper half of tgtReg
-        emit->emitIns_R_R(INS_movlhps, EA_16BYTE, tgtReg, tgtReg);
-
-        // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
-        emit->emitIns_R_S(INS_movlps, EA_16BYTE, tgtReg, lclNum, offset);
-    }
+    // Load and insert upper 4 byte, 0x20 inserts to index 2 and 0x8 zeros index 3
+    emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, lclNum, offset + 8, 0x28, INS_OPTS_NONE);
 }
 
 #ifdef TARGET_X86
@@ -524,26 +453,12 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
 {
     assert(genIsValidFloatReg(tgtReg));
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
-        // COUNT_D: 0b11   - Insert into element 3
-        // COUNT_S: 0b11   - Insert from element 3
+    // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
+    // COUNT_D: 0b11   - Insert into element 3
+    // COUNT_S: 0b11   - Insert from element 3
 
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8),
-                                           INS_OPTS_NONE);
-    }
-    else
-    {
-        // Preserve element 0, 1, and 2; Zero element 3
-        simd16_t constValue;
-        constValue.u32[0]                  = 0xFFFFFFFF;
-        constValue.u32[1]                  = 0xFFFFFFFF;
-        constValue.u32[2]                  = 0xFFFFFFFF;
-        constValue.u32[3]                  = 0x00000000;
-        CORINFO_FIELD_HANDLE zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
-        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0, INS_OPTS_NONE);
-    }
+    GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8),
+                                       INS_OPTS_NONE);
 }
 
 #endif // FEATURE_SIMD

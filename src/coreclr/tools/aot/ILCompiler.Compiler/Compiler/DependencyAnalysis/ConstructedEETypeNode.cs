@@ -28,6 +28,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
+            if (_type.IsIDynamicInterfaceCastable)
+            {
+                dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
+            }
+
             // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
