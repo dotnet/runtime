@@ -42,7 +42,10 @@ namespace System.Runtime.Serialization
                 switch (value.UtcDateTime.Kind)
                 {
                     case DateTimeKind.Unspecified:
-                        return new DateTimeOffset(value.UtcDateTime, new TimeSpan(0, value.OffsetMinutes, 0));
+                        // The UtcDateTime field semantically represents UTC time regardless of Kind,
+                        // so treat it as UTC and convert to the target offset
+                        DateTimeOffset unspecifiedAsUtc = new DateTimeOffset(value.UtcDateTime, TimeSpan.Zero);
+                        return unspecifiedAsUtc.ToOffset(new TimeSpan(0, value.OffsetMinutes, 0));
 
                     //DateTimeKind.Utc and DateTimeKind.Local
                     //Read in deserialized DateTime portion of the DateTimeOffsetAdapter and convert DateTimeKind to Unspecified.
