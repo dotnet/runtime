@@ -5,7 +5,7 @@ using System;
 using System.Numerics;
 using Xunit;
 
-public class Runtime_118377
+public class Runtime_119008
 {
     [Fact]
     public static void TestEntryPoint()
