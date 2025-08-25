@@ -64,7 +64,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             ExtensionMembers.ExtensionMembersStaticMethodRequires();
         }
 
-        [UnexpectedWarning("IL2072", "ExtensionMembersProperty", "RequiresPublicMethods", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2072", "ExtensionMembersProperty", "RequiresPublicMethods")]
         static void TestExtensionProperty()
         {
             var instance = GetWithFields();
@@ -75,7 +75,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [ExpectedWarning("IL2072", "GetWithMethods", "ExtensionMembersPropertyMismatch")]
         [ExpectedWarning("IL2072", "GetWithMethods", "ExtensionMembersPropertyMismatch")]
         [ExpectedWarning("IL2072", "ExtensionMembersPropertyMismatch", "RequiresPublicFields")]
-        [ExpectedWarning("IL2072", "ExtensionMembersPropertyMismatch", "GetWithFields", Tool.Analyzer, "")]
         static void TestExtensionPropertyMismatch()
         {
             var instance = GetWithMethods();
@@ -150,14 +149,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 get => ExtensionMembersDataFlow.GetWithMethods();
 
-                [UnexpectedWarning("IL2067", "value", "RequiresPublicMethods", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2067", "value", "RequiresPublicMethods")]
                 set => value.RequiresPublicMethods();
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersPropertyMismatch
             {
-                [ExpectedWarning("IL2073", "GetWithFields", Tool.Analyzer, "")]
                 get => ExtensionMembersDataFlow.GetWithFields();
 
                 [ExpectedWarning("IL2067", "value", "RequiresPublicFields")]
