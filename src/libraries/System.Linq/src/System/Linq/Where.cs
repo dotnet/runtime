@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using static System.Linq.Utilities;
 
 namespace System.Linq
@@ -42,9 +43,9 @@ namespace System.Linq
                 return new ArrayWhereIterator<TSource>(array, predicate);
             }
 
-            if (source is List<TSource> list)
+            if (source.GetType() == typeof(List<TSource>))
             {
-                return new ListWhereIterator<TSource>(list, predicate);
+                return new ListWhereIterator<TSource>(Unsafe.As<List<TSource>>(source), predicate);
             }
 
             return new IEnumerableWhereIterator<TSource>(source, predicate);

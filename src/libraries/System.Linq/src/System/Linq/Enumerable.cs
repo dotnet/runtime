@@ -55,7 +55,7 @@ namespace System.Linq
             {
                 span = Unsafe.As<TSource[]>(source);
             }
-            else if (source.GetType() == typeof(List<TSource>))
+            else if (source.GetType() == typeof(List<TSource>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
             {
                 span = CollectionsMarshal.AsSpan(Unsafe.As<List<TSource>>(source));
             }
