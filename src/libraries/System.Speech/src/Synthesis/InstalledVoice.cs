@@ -101,7 +101,7 @@ namespace System.Speech.Synthesis
                 if (_enabled != value)
                 {
                     _enabled = value;
-                    if (_enabled == false)
+                    if (!_enabled)
                     {
                         // reset the default voice if necessary
                         if (_voice.Equals(_voiceSynthesizer.CurrentVoice(switchContext).VoiceInfo))
