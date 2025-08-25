@@ -8,7 +8,7 @@ namespace System.Runtime
 {
     internal class GCStress
     {
-        [UnmanagedCallersOnly(EntryPoint = "RhGcStress_Initialize", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)], EntryPoint = "RhGcStress_Initialize")]
         public static void Initialize()
         {
 #if FEATURE_GC_STRESS

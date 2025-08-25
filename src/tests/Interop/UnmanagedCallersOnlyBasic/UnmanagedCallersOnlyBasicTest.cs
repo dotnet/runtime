@@ -55,7 +55,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
-   [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+   [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int ManagedDoubleCallback_Stdcall(int n)
     {
         return DoubleImpl(n);
@@ -73,7 +73,7 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, actual);
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     public static int ManagedDoubleCallback_Cdecl(int n)
     {
         return DoubleImpl(n);

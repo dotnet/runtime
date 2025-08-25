@@ -26,7 +26,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func0AA2S0VyF")]
     private static extern S0 SwiftRetFunc0();
 
@@ -58,7 +58,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func1AA2S1VyF")]
     private static extern S1 SwiftRetFunc1();
 
@@ -104,7 +104,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func2AA2S2VyF")]
     private static extern S2 SwiftRetFunc2();
 
@@ -144,7 +144,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func3AA2S3VyF")]
     private static extern S3 SwiftRetFunc3();
 
@@ -180,7 +180,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func4AA2S4VyF")]
     private static extern S4 SwiftRetFunc4();
 
@@ -230,7 +230,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func5AA2S5VyF")]
     private static extern S5 SwiftRetFunc5();
 
@@ -266,7 +266,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func6AA2S6VyF")]
     private static extern S6 SwiftRetFunc6();
 
@@ -304,7 +304,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func7AA2S7VyF")]
     private static extern S7 SwiftRetFunc7();
 
@@ -328,7 +328,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func8AA2S8VyF")]
     private static extern S8 SwiftRetFunc8();
 
@@ -371,7 +371,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB5Func9AA2S9VyF")]
     private static extern S9 SwiftRetFunc9();
 
@@ -401,7 +401,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func10AA3S10VyF")]
     private static extern S10 SwiftRetFunc10();
 
@@ -432,7 +432,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func11AA3S11VyF")]
     private static extern S11 SwiftRetFunc11();
 
@@ -459,7 +459,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func12AA3S12VyF")]
     private static extern S12 SwiftRetFunc12();
 
@@ -483,7 +483,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func13AA3S13VyF")]
     private static extern S13 SwiftRetFunc13();
 
@@ -541,7 +541,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func14AA3S14VyF")]
     private static extern S14 SwiftRetFunc14();
 
@@ -590,7 +590,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func15AA3S15VyF")]
     private static extern S15 SwiftRetFunc15();
 
@@ -628,7 +628,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func16AA3S16VyF")]
     private static extern S16 SwiftRetFunc16();
 
@@ -661,7 +661,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func17AA3S17VyF")]
     private static extern S17 SwiftRetFunc17();
 
@@ -708,7 +708,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func18AA3S18VyF")]
     private static extern S18 SwiftRetFunc18();
 
@@ -745,7 +745,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func19AA3S19VyF")]
     private static extern S19 SwiftRetFunc19();
 
@@ -788,7 +788,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func20AA3S20VyF")]
     private static extern S20 SwiftRetFunc20();
 
@@ -846,7 +846,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func21AA3S21VyF")]
     private static extern S21 SwiftRetFunc21();
 
@@ -875,7 +875,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func22AA3S22VyF")]
     private static extern S22 SwiftRetFunc22();
 
@@ -911,7 +911,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func23AA3S23VyF")]
     private static extern S23 SwiftRetFunc23();
 
@@ -943,7 +943,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func24AA3S24VyF")]
     private static extern S24 SwiftRetFunc24();
 
@@ -987,7 +987,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func25AA3S25VyF")]
     private static extern S25 SwiftRetFunc25();
 
@@ -1015,7 +1015,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func26AA3S26VyF")]
     private static extern S26 SwiftRetFunc26();
 
@@ -1049,7 +1049,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func27AA3S27VyF")]
     private static extern S27 SwiftRetFunc27();
 
@@ -1097,7 +1097,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func28AA3S28VyF")]
     private static extern S28 SwiftRetFunc28();
 
@@ -1137,7 +1137,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func29AA3S29VyF")]
     private static extern S29 SwiftRetFunc29();
 
@@ -1199,7 +1199,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func30AA3S30VyF")]
     private static extern S30 SwiftRetFunc30();
 
@@ -1236,7 +1236,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func31AA3S31VyF")]
     private static extern S31 SwiftRetFunc31();
 
@@ -1274,7 +1274,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func32AA3S32VyF")]
     private static extern S32 SwiftRetFunc32();
 
@@ -1315,7 +1315,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func33AA3S33VyF")]
     private static extern S33 SwiftRetFunc33();
 
@@ -1349,7 +1349,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func34AA3S34VyF")]
     private static extern S34 SwiftRetFunc34();
 
@@ -1385,7 +1385,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func35AA3S35VyF")]
     private static extern S35 SwiftRetFunc35();
 
@@ -1418,7 +1418,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func36AA3S36VyF")]
     private static extern S36 SwiftRetFunc36();
 
@@ -1446,7 +1446,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func37AA3S37VyF")]
     private static extern S37 SwiftRetFunc37();
 
@@ -1477,7 +1477,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func38AA3S38VyF")]
     private static extern S38 SwiftRetFunc38();
 
@@ -1512,7 +1512,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func39AA3S39VyF")]
     private static extern S39 SwiftRetFunc39();
 
@@ -1563,7 +1563,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func40AA3S40VyF")]
     private static extern S40 SwiftRetFunc40();
 
@@ -1595,7 +1595,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func41AA3S41VyF")]
     private static extern S41 SwiftRetFunc41();
 
@@ -1637,7 +1637,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func42AA3S42VyF")]
     private static extern S42 SwiftRetFunc42();
 
@@ -1688,7 +1688,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func43AA3S43VyF")]
     private static extern S43 SwiftRetFunc43();
 
@@ -1719,7 +1719,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func44AA3S44VyF")]
     private static extern S44 SwiftRetFunc44();
 
@@ -1763,7 +1763,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func45AA3S45VyF")]
     private static extern S45 SwiftRetFunc45();
 
@@ -1800,7 +1800,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func46AA3S46VyF")]
     private static extern S46 SwiftRetFunc46();
 
@@ -1842,7 +1842,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func47AA3S47VyF")]
     private static extern S47 SwiftRetFunc47();
 
@@ -1867,7 +1867,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func48AA3S48VyF")]
     private static extern S48 SwiftRetFunc48();
 
@@ -1923,7 +1923,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func49AA3S49VyF")]
     private static extern S49 SwiftRetFunc49();
 
@@ -1952,7 +1952,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func50AA3S50VyF")]
     private static extern S50 SwiftRetFunc50();
 
@@ -2019,7 +2019,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func51AA3S51VyF")]
     private static extern S51 SwiftRetFunc51();
 
@@ -2058,7 +2058,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func52AA3S52VyF")]
     private static extern S52 SwiftRetFunc52();
 
@@ -2108,7 +2108,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func53AA3S53VyF")]
     private static extern S53 SwiftRetFunc53();
 
@@ -2154,7 +2154,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func54AA3S54VyF")]
     private static extern S54 SwiftRetFunc54();
 
@@ -2191,7 +2191,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func55AA3S55VyF")]
     private static extern S55 SwiftRetFunc55();
 
@@ -2226,7 +2226,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func56AA3S56VyF")]
     private static extern S56 SwiftRetFunc56();
 
@@ -2259,7 +2259,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func57AA3S57VyF")]
     private static extern S57 SwiftRetFunc57();
 
@@ -2288,7 +2288,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func58AA3S58VyF")]
     private static extern S58 SwiftRetFunc58();
 
@@ -2323,7 +2323,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func59AA3S59VyF")]
     private static extern S59 SwiftRetFunc59();
 
@@ -2354,7 +2354,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func60AA3S60VyF")]
     private static extern S60 SwiftRetFunc60();
 
@@ -2400,7 +2400,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func61AA3S61VyF")]
     private static extern S61 SwiftRetFunc61();
 
@@ -2461,7 +2461,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func62AA3S62VyF")]
     private static extern S62 SwiftRetFunc62();
 
@@ -2498,7 +2498,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func63AA3S63VyF")]
     private static extern S63 SwiftRetFunc63();
 
@@ -2543,7 +2543,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func64AA3S64VyF")]
     private static extern S64 SwiftRetFunc64();
 
@@ -2582,7 +2582,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func65AA3S65VyF")]
     private static extern S65 SwiftRetFunc65();
 
@@ -2620,7 +2620,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func66AA3S66VyF")]
     private static extern S66 SwiftRetFunc66();
 
@@ -2669,7 +2669,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func67AA3S67VyF")]
     private static extern S67 SwiftRetFunc67();
 
@@ -2719,7 +2719,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func68AA3S68VyF")]
     private static extern S68 SwiftRetFunc68();
 
@@ -2748,7 +2748,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func69AA3S69VyF")]
     private static extern S69 SwiftRetFunc69();
 
@@ -2774,7 +2774,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func70AA3S70VyF")]
     private static extern S70 SwiftRetFunc70();
 
@@ -2818,7 +2818,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func71AA3S71VyF")]
     private static extern S71 SwiftRetFunc71();
 
@@ -2846,7 +2846,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func72AA3S72VyF")]
     private static extern S72 SwiftRetFunc72();
 
@@ -2882,7 +2882,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func73AA3S73VyF")]
     private static extern S73 SwiftRetFunc73();
 
@@ -2920,7 +2920,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func74AA3S74VyF")]
     private static extern S74 SwiftRetFunc74();
 
@@ -2976,7 +2976,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func75AA3S75VyF")]
     private static extern S75 SwiftRetFunc75();
 
@@ -3035,7 +3035,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func76AA3S76VyF")]
     private static extern S76 SwiftRetFunc76();
 
@@ -3072,7 +3072,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func77AA3S77VyF")]
     private static extern S77 SwiftRetFunc77();
 
@@ -3102,7 +3102,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func78AA3S78VyF")]
     private static extern S78 SwiftRetFunc78();
 
@@ -3146,7 +3146,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func79AA3S79VyF")]
     private static extern S79 SwiftRetFunc79();
 
@@ -3178,7 +3178,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func80AA3S80VyF")]
     private static extern S80 SwiftRetFunc80();
 
@@ -3227,7 +3227,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func81AA3S81VyF")]
     private static extern S81 SwiftRetFunc81();
 
@@ -3257,7 +3257,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func82AA3S82VyF")]
     private static extern S82 SwiftRetFunc82();
 
@@ -3289,7 +3289,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func83AA3S83VyF")]
     private static extern S83 SwiftRetFunc83();
 
@@ -3328,7 +3328,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func84AA3S84VyF")]
     private static extern S84 SwiftRetFunc84();
 
@@ -3373,7 +3373,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func85AA3S85VyF")]
     private static extern S85 SwiftRetFunc85();
 
@@ -3406,7 +3406,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func86AA3S86VyF")]
     private static extern S86 SwiftRetFunc86();
 
@@ -3436,7 +3436,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func87AA3S87VyF")]
     private static extern S87 SwiftRetFunc87();
 
@@ -3466,7 +3466,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func88AA3S88VyF")]
     private static extern S88 SwiftRetFunc88();
 
@@ -3500,7 +3500,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func89AA3S89VyF")]
     private static extern S89 SwiftRetFunc89();
 
@@ -3540,7 +3540,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func90AA3S90VyF")]
     private static extern S90 SwiftRetFunc90();
 
@@ -3582,7 +3582,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func91AA3S91VyF")]
     private static extern S91 SwiftRetFunc91();
 
@@ -3635,7 +3635,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func92AA3S92VyF")]
     private static extern S92 SwiftRetFunc92();
 
@@ -3673,7 +3673,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func93AA3S93VyF")]
     private static extern S93 SwiftRetFunc93();
 
@@ -3709,7 +3709,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func94AA3S94VyF")]
     private static extern S94 SwiftRetFunc94();
 
@@ -3752,7 +3752,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func95AA3S95VyF")]
     private static extern S95 SwiftRetFunc95();
 
@@ -3788,7 +3788,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func96AA3S96VyF")]
     private static extern S96 SwiftRetFunc96();
 
@@ -3823,7 +3823,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func97AA3S97VyF")]
     private static extern S97 SwiftRetFunc97();
 
@@ -3860,7 +3860,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func98AA3S98VyF")]
     private static extern S98 SwiftRetFunc98();
 
@@ -3902,7 +3902,7 @@ public class SwiftRetAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s17SwiftRetAbiStress05swiftB6Func99AA3S99VyF")]
     private static extern S99 SwiftRetFunc99();
 
