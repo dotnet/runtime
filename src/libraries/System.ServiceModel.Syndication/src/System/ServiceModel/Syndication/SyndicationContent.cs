@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -45,11 +46,13 @@ namespace System.ServiceModel.Syndication
             return new TextSyndicationContent(content, TextSyndicationContentKind.XHtml);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, (DataContractSerializer)null);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject, XmlObjectSerializer dataContractSerializer)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, dataContractSerializer);
@@ -60,6 +63,8 @@ namespace System.ServiceModel.Syndication
             return new XmlSyndicationContent(xmlReader);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public static XmlSyndicationContent CreateXmlContent(object xmlSerializerObject, XmlSerializer serializer)
         {
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, xmlSerializerObject, serializer);
