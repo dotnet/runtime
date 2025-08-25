@@ -32,7 +32,7 @@
     <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
 
     <!-- Reduce library test app size by trimming framework library features  -->
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
 
