@@ -81,7 +81,7 @@ internal unsafe partial interface IXCLRDataModule
     [PreserveSig]
     int StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
     [PreserveSig]
-    int EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method);
+    int EnumMethodInstanceByName(ulong* handle, /*IXCLRDataMethodInstance*/ void** method);
     [PreserveSig]
     int EndEnumMethodInstancesByName(ulong handle);
 

@@ -33,10 +33,10 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     }
 
     int IXCLRDataMethodInstance.GetTypeInstance(void** typeInstance)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeInstance(typeInstance) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetTypeInstance(typeInstance)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetDefinition(void** methodDefinition)
-        => _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetDefinition(methodDefinition)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, void** /*IXCLRDataModule*/ mod)
     {
@@ -110,22 +110,22 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     }
 
     int IXCLRDataMethodInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
-        => _legacyImpl is not null ? _legacyImpl.GetName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetName(flags, bufLen, nameLen, nameBuf)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
-        => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFlags(flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.IsSameObject(IXCLRDataMethodInstance* method)
-        => _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.IsSameObject(method)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetEnCVersion(uint* version)
-        => _legacyImpl is not null ? _legacyImpl.GetEnCVersion(version) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetEnCVersion(version)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetNumTypeArguments(uint* numTypeArgs)
-        => _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetNumTypeArguments(numTypeArgs)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, void** typeArg)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetTypeArgumentByIndex(index, typeArg)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
     {
@@ -211,22 +211,22 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     }
 
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
-        => _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, void* maps)
-        => _legacyImpl is not null ? _legacyImpl.GetILAddressMap(mapLen, mapNeeded, maps) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetILAddressMap(mapLen, mapNeeded, maps)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
-        => _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.StartEnumExtents(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.EnumExtent(ulong* handle, void* extent)
-        => _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.EnumExtent(handle, extent)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
-        => _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.EndEnumExtents(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer)) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
