@@ -38,6 +38,7 @@ if [[ "$TARGET" == "ios-device" ]]; then SCHEME_SDK=$CONFIGURATION-iphoneos; fi
 if [[ "$TARGET" == "tvos-device" ]]; then SCHEME_SDK=$CONFIGURATION-appletvos; fi
 if [[ "$TARGET" == "maccatalyst" ]]; then SCHEME_SDK=$CONFIGURATION-maccatalyst; fi
 
+if [[ "$TARGET" == "ios-device" || "$TARGET" == "tvos-device" ]]; then SIGNAL_APP_END="--signal-app-end"; fi
 
 cd $EXECUTION_DIR
 
