@@ -11694,7 +11694,8 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
 //    The node itself, or a cast added on top of the node to perform normalization.
 //
 // Remarks:
-//    May insert a cast or may bash the node type in place for constants.
+//    May insert a cast or may bash the node type in place for constants. Does
+//    not replace the use.
 //
 GenTree* Lowering::NormalizeIndexToNativeSized(GenTree* index)
 {
