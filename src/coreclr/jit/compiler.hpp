@@ -4233,19 +4233,8 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         // The struct is not enregistered
         return PROMOTION_TYPE_DEPENDENT;
     }
-    if (!varDsc->lvIsParam)
-    {
-        // The struct is a register candidate
-        return PROMOTION_TYPE_INDEPENDENT;
-    }
 
-// We have a parameter that could be enregistered
-#if defined(TARGET_ARM)
-    // TODO-Cleanup: return INDEPENDENT for arm32.
-    return PROMOTION_TYPE_DEPENDENT;
-#else  // !TARGET_ARM
     return PROMOTION_TYPE_INDEPENDENT;
-#endif // !TARGET_ARM
 }
 
 /*****************************************************************************
