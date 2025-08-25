@@ -59,6 +59,22 @@ namespace System.IO.Compression
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
         }
 
+        public void AttachDictionary(BrotliDictionary dictionary)
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            EnsureNotDisposed();
+
+            if (_mode == CompressionMode.Compress)
+            {
+                _encoder.AttachDictionary(dictionary);
+            }
+            else if (_mode == CompressionMode.Decompress)
+            {
+                _decoder.AttachDictionary(dictionary);
+            }
+        }
+
         private void EnsureNotDisposed()
         {
             ObjectDisposedException.ThrowIf(_stream is null, this);

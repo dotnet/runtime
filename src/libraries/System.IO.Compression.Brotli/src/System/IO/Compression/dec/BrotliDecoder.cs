@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -21,11 +22,27 @@ namespace System.IO.Compression
                 throw new IOException(SR.BrotliDecoder_Create);
         }
 
+        /// <summary>
+        /// Attaches a Brotli dictionary to the decoder.
+        /// </summary>
+        /// <param name="dictionary">The Brotli dictionary to attach.</param>
+        public void AttachDictionary(BrotliDictionary dictionary)
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            EnsureInitialized();
+
+            dictionary.AttachToDecoder(_state);
+        }
+
+        [MemberNotNull(nameof(_state))]
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
             if (_state == null)
                 InitializeDecoder();
+
+            Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
         }
 
         /// <summary>Releases all resources used by the current Brotli decoder instance.</summary>

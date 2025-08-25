@@ -31,4 +31,35 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
+
+    internal sealed class SafeBrotliPreparedDictionaryHandle : SafeHandle
+    {
+        internal IntPtr _dictionaryBytes;
+        internal int _dictionaryLength;
+
+        public int DictionaryLength => _dictionaryLength;
+        public unsafe byte* DictionaryBytes => (byte*)_dictionaryBytes.ToPointer();
+
+        public SafeBrotliPreparedDictionaryHandle() : base(IntPtr.Zero, true) { }
+
+        public void SetDictionaryBytes(IntPtr dictionaryBytes, int dictionaryLength)
+        {
+            _dictionaryBytes = dictionaryBytes;
+            _dictionaryLength = dictionaryLength;
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Brotli.BrotliEncoderDestroyPreparedDictionary(handle);
+            unsafe
+            {
+                NativeMemory.Free(_dictionaryBytes.ToPointer());
+            }
+            _dictionaryBytes = IntPtr.Zero;
+            _dictionaryLength = 0;
+            return true;
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+    }
 }
