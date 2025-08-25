@@ -598,6 +598,8 @@ bool Compiler::optIsIVWideningProfitable(
         return BasicBlockVisit::Continue;
     });
 
+    // TODO: 'savedCost' is already computed using normalized weights. Don't divide by the method entry block's weight,
+    // in case there is flow into it?
     const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
     weight_t       cycleImprovementPerInvoc                      = savedCost / fgFirstBB->getBBWeight(this);
 

@@ -73,7 +73,7 @@ void Compiler::fgCreateNewInitBB()
         {
             // If the result is clearly nonsensical, just inherit
             //
-            JITDUMP("\fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
+            JITDUMP("\nfgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
                     fgPgoConsistent ? "is now" : "was already");
 
             if (fgPgoConsistent)
