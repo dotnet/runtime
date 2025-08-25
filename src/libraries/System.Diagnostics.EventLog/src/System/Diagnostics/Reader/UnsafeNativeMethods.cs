@@ -106,10 +106,7 @@ namespace Microsoft.Win32
             public short Milliseconds;
         }
 
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
-#pragma warning disable 618 // System.Core still uses SecurityRuleSet.Level1
-        [SecurityCritical(SecurityCriticalScope.Everything)]
-#pragma warning restore 618
+        [StructLayout(LayoutKind.Explicit)]
         internal struct EvtVariant
         {
             [FieldOffset(0)]
@@ -488,21 +485,21 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetEventInfo(
+        internal static unsafe partial bool EvtGetEventInfo(
                             EventLogHandle eventHandle,
                             EvtEventPropertyId propertyId,
                             int bufferSize,
-                            IntPtr bufferPtr,
+                            EvtVariant* bufferPtr,
                             out int bufferUsed);
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetQueryInfo(
+        internal static unsafe partial bool EvtGetQueryInfo(
                             EventLogHandle queryHandle,
                             EvtQueryPropertyId propertyId,
                             int bufferSize,
-                            IntPtr buffer,
-                            ref int bufferRequired);
+                            EvtVariant* buffer,
+                            out int bufferRequired);
 
         // PUBLISHER METADATA
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
@@ -515,12 +512,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetPublisherMetadataProperty(
+        internal static unsafe partial bool EvtGetPublisherMetadataProperty(
                             EventLogHandle publisherMetadataHandle,
                             EvtPublisherMetadataPropertyId propertyId,
                             int flags,
                             int publisherMetadataPropertyBufferSize,
-                            IntPtr publisherMetadataPropertyBuffer,
+                            EvtVariant* publisherMetadataPropertyBuffer,
                             out int publisherMetadataPropertyBufferUsed);
 
         // NEW
@@ -533,13 +530,13 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetObjectArrayProperty(
+        internal static unsafe partial bool EvtGetObjectArrayProperty(
                             EventLogHandle objectArray,
                             int propertyId,
                             int arrayIndex,
                             int flags,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            EvtVariant* propertyValueBuffer,
                             out int propertyValueBufferUsed);
 
         // NEW 2
@@ -555,12 +552,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetEventMetadataProperty(
+        internal static unsafe partial bool EvtGetEventMetadataProperty(
                             EventLogHandle eventMetadata,
                             EvtEventMetadataPropertyId propertyId,
                             int flags,
                             int eventMetadataPropertyBufferSize,
-                            IntPtr eventMetadataPropertyBuffer,
+                            EvtVariant* eventMetadataPropertyBuffer,
                             out int eventMetadataPropertyBufferUsed);
 
         // Channel Configuration Native Api
@@ -613,12 +610,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetChannelConfigProperty(
+        internal static unsafe partial bool EvtGetChannelConfigProperty(
                             EventLogHandle channelConfig,
                             EvtChannelConfigPropertyId propertyId,
                             int flags,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            EvtVariant* propertyValueBuffer,
                             out int propertyValueBufferUsed);
 
         // Log Information Native Api
@@ -631,11 +628,11 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtGetLogInfo(
+        internal static unsafe partial bool EvtGetLogInfo(
                             EventLogHandle log,
                             EvtLogPropertyId propertyId,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            EvtVariant* propertyValueBuffer,
                             out int propertyValueBufferUsed);
 
         // LOG MANIPULATION
@@ -686,12 +683,12 @@ namespace Microsoft.Win32
 
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtRender", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtRender(
+        internal static unsafe partial bool EvtRender(
                             EventLogHandle context,
                             EventLogHandle eventHandle,
                             EvtRenderFlags flags,
                             int buffSize,
-                            IntPtr buffer,
+                            EvtVariant* buffer,
                             out int buffUsed,
                             out int propCount);
 
@@ -765,17 +762,18 @@ namespace Microsoft.Win32
                              Span<char> buffer,
                              out int bufferUsed);
 
-        [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
+
+        [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvtFormatMessageBuffer(
+        internal static unsafe partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
-                             IntPtr values,
+                             EvtVariant* values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
-                             IntPtr buffer,
+                             ushort* buffer,
                              out int bufferUsed);
 
         // SESSION
