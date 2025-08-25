@@ -11698,7 +11698,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
 //
 GenTree* Lowering::NormalizeIndexToNativeSized(GenTree* index)
 {
-    if (index->TypeIs(TYP_I_IMPL))
+    if (genActualType(index) == TYP_I_IMPL)
     {
         return index;
     }
