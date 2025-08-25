@@ -4890,6 +4890,9 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         return LowerNode(node);
     }
 
+    op2         = NormalizeIndexToNativeSized(op2);
+    node->Op(2) = op2;
+
     uint32_t elemSize = genTypeSize(simdBaseType);
     uint32_t count    = simdSize / elemSize;
 
@@ -5337,6 +5340,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
     if (!op2->OperIsConst())
     {
+        op2         = NormalizeIndexToNativeSized(op2);
+        node->Op(2) = op2;
         // We will specially handle WithElement in codegen when op2 isn't a constant
         ContainCheckHWIntrinsic(node);
         return node->gtNext;
