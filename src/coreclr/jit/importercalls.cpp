@@ -10762,6 +10762,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     lookupMethodName = nullptr;
                                 }
                             }
+                            else if (strcmp(methodName, "SquareRoot") == 0)
+                            {
+                                lookupMethodName = "Sqrt";
+                            }
 
                             if (lookupMethodName != nullptr)
                             {
