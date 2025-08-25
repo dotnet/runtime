@@ -3319,7 +3319,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	error_init (cfg->error);
 
 	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || mono_class_is_gtd (method->klass) || method_is_gshared)) {
-		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED);
 		return cfg;
 	}
 
