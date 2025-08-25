@@ -78,5 +78,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetThreadIOPendingFlag(nint hThread, out BOOL lpIOIsPending);
+
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool QueueUserAPC(delegate* unmanaged<nuint, void> pfnAPC, SafeHandle hThread, nuint dwData);
+
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint SleepEx(uint dwMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool bAlertable);
     }
 }

@@ -18,7 +18,7 @@ namespace System.Threading
     {
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
-#if !CORECLR
+#if MONO
         private static void SleepInternal(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);

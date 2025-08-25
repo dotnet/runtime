@@ -615,6 +615,14 @@ namespace System.Runtime
         internal static extern unsafe IntPtr RhGetDefaultStackSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetInterruptApcCallback")]
+        internal static extern unsafe delegate* unmanaged<nuint, void> RhGetInterruptApcCallback();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhCheckAndClearPendingInterrupt")]
+        internal static extern bool RhCheckAndClearPendingInterrupt();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]
         internal static extern IntPtr GetCurrentInteropThunkContext();
 
