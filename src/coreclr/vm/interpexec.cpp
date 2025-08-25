@@ -1715,9 +1715,6 @@ MAIN_LOOP:
                 case INTOP_LDIND_R8:
                     LDIND(double, double);
                     break;
-                case INTOP_LDIND_O:
-                    LDIND(Object*, Object*);
-                    break;
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);

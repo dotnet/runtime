@@ -3874,8 +3874,8 @@ retry_emit:
                     int tempVar = m_pStackPointer[-1].var;
                     m_pLastNewIns->SetDVar(tempVar);
 
-                    // Now we generate an LDIND_O to get the actual string out of the ref
-                    AddIns(INTOP_LDIND_O);
+                    // Now we generate an LDIND_I to get the actual string out of the ref
+                    AddIns(INTOP_LDIND_I);
                     // LDIND offset
                     m_pLastNewIns->data[0] = 0;
                     m_pLastNewIns->SetSVar(tempVar);
