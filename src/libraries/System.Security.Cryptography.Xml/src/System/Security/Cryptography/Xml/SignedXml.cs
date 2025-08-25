@@ -271,7 +271,7 @@ namespace System.Security.Cryptography.Xml
                     bRet = CheckSignature(key);
                     SignedXmlDebugLog.LogVerificationResult(this, key, bRet);
                 }
-            } while (key != null && bRet == false);
+            } while (key != null && !bRet);
 
             signingKey = key;
             return bRet;

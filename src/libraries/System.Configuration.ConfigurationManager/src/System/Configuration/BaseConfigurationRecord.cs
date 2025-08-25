@@ -2466,7 +2466,7 @@ namespace System.Configuration
                     if (!factoryRecord.HasErrors)
                     {
                         // We have a valid factoryRecord for a section
-                        if (inLocation && (factoryRecord.AllowLocation == false))
+                        if (inLocation && !factoryRecord.AllowLocation)
                         {
                             xmlUtil.SchemaErrors.AddError(
                                 new ConfigurationErrorsException(

@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case NameReady:
                     Debug.Assert(frame.StoredOutput != null);
-                    if (processor.BeginEvent(XPathNodeType.ProcessingInstruction, string.Empty, frame.StoredOutput, string.Empty, false) == false)
+                    if (!processor.BeginEvent(XPathNodeType.ProcessingInstruction, string.Empty, frame.StoredOutput, string.Empty, false))
                     {
                         // Come back later
                         frame.State = NameReady;
@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;                              // Allow children to run
 
                 case ProcessingChildren:
-                    if (processor.EndEvent(XPathNodeType.ProcessingInstruction) == false)
+                    if (!processor.EndEvent(XPathNodeType.ProcessingInstruction))
                     {
                         frame.State = ProcessingChildren;
                         break;
