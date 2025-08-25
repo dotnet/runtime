@@ -138,6 +138,12 @@ internal struct DacpModuleData
     public ulong dwModuleIndex; // Always 0 - .NET no longer has this
 }
 
+internal enum ModuleMapType
+{
+    TYPEDEFTOMETHODTABLE = 0x0,
+    TYPEREFTOMETHODTABLE = 0x1
+}
+
 internal struct DacpMethodTableData
 {
     public int bIsFree; // everything else is NULL if this is true.
@@ -309,7 +315,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(/*ModuleMapType*/ int mmt, ClrDataAddress moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
     [PreserveSig]
     int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]

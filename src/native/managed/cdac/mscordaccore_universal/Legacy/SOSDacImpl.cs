@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
@@ -2385,8 +2386,78 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.TraverseModuleMap(int mmt, ClrDataAddress moduleAddr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseModuleMap(mmt, moduleAddr, pCallback, token) : HResults.E_NOTIMPL;
+
+#if DEBUG
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static void TraverseModuleMapCallback(uint index, ulong moduleAddr, void* expectedElements)
+    {
+        var expectedElementsDict = (Dictionary<ulong, uint>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
+        if (expectedElementsDict.TryGetValue(moduleAddr, out uint expectedIndex) && expectedIndex == index)
+        {
+            expectedElementsDict[default]++; // Increment the count for verification
+        }
+        else
+        {
+            Debug.Assert(false, $"Unexpected module address {moduleAddr:x} at index {index}");
+        }
+    }
+#endif
+    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ulong, void*, void> pCallback, void* token)
+    {
+        int hr = HResults.S_OK;
+        IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
+        if (moduleAddr == 0)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                TargetPointer moduleAddrPtr = moduleAddr.ToTargetPointer(_target);
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(moduleAddrPtr);
+                Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+                switch (mmt)
+                {
+                    case ModuleMapType.TYPEDEFTOMETHODTABLE:
+                        elements = loader.EnumerateModuleLookupMap(lookupTables.TypeDefToMethodTable);
+                        break;
+                    case ModuleMapType.TYPEREFTOMETHODTABLE:
+                        elements = loader.EnumerateModuleLookupMap(lookupTables.TypeRefToMethodTable);
+                        break;
+                    default:
+                        hr = HResults.E_INVALIDARG;
+                        break;
+                }
+                if (hr == HResults.S_OK)
+                {
+                    foreach ((TargetPointer element, uint index) in elements)
+                    {
+                        // Call the callback with each element
+                        pCallback(index, element.ToClrDataAddress(_target).Value, token);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => tuple.Index);
+            expectedElements.Add(default, 0);
+            void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
+            delegate* unmanaged[Stdcall]<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
+
+            int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(expectedElements[default] == elements.Count(), $"cDAC: {elements.Count()} elements, DAC: {expectedElements[default]} elements");
+            GCHandle.FromIntPtr((nint)tokenDebug).Free();
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
