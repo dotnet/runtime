@@ -18,7 +18,8 @@ internal readonly struct Exception_1 : IException
     {
         Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);
         nextNestedExceptionInfo = exceptionInfo.PreviousNestedInfo;
-        return exceptionInfo.ThrownObject.Object;
+        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
+        return throwableObject.Object;
     }
 
     ExceptionData IException.GetExceptionData(TargetPointer exceptionAddr)
@@ -33,5 +34,16 @@ internal readonly struct Exception_1 : IException
             exception.RemoteStackTraceString,
             exception.HResult,
             exception.XCode);
+    }
+
+    TargetPointer IException.GetWatsonBucketsFromThrowable(TargetPointer exceptionAddr)
+    {
+        Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(exceptionAddr);
+        if (exception.WatsonBuckets != TargetPointer.Null)
+        {
+            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
+            return exception.WatsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>(Constants.Globals.ObjectHeaderSize);
+        }
+        return TargetPointer.Null;
     }
 }
