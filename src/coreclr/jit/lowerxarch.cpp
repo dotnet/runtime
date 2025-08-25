@@ -5255,6 +5255,12 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             {
                 // We specially handle float and double for more efficient codegen
                 resIntrinsic = NI_Vector128_GetElement;
+                // GetElement takes a native sized index after lowering, so change
+                // the type of the constant we inserted above.
+                // (This is generally only for the non constant index case,
+                // which is not the case here, but keep the index operand's
+                // type consistent)
+                op2->gtType = TYP_I_IMPL;
                 break;
             }
 
