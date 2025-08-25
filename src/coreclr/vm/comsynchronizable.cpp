@@ -148,19 +148,12 @@ static void PulseAllHelper(Thread* pThread)
     }
     CONTRACTL_END;
 
-    EX_TRY
-    {
-        // GetExposedObject() will either throw, or we have a valid object.  Note
-        // that we re-acquire it each time, since it may move during calls.
-        pThread->GetExposedObject()->EnterObjMonitor();
-        pThread->GetExposedObject()->PulseAll();
-        pThread->GetExposedObject()->LeaveObjMonitor();
-    }
-    EX_CATCH
-    {
-        // just keep going...
-    }
-    EX_END_CATCH
+    // GetExposedObject() will either throw, or we have a valid object.  Note
+    // that we re-acquire it each time, since it may move during calls.
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__PULSE_THREAD_OBJECT);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -601,7 +594,7 @@ static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
                    ? INFINITE
                    : (DWORD) timeout);
 
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, WaitMode_Alertable);
     switch(rv)
     {
         case WAIT_OBJECT_0:
@@ -907,3 +900,64 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
+
+extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    int32_t index = -1;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Force creation of a SyncBlock for the object.
+    PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
+
+    // We expect this index to remain valid for this object and we're going to
+    // put data in it that makes it "precious" soon.
+    // Mark it as precious now so the sync block doesn't get cleaned up between now
+    // and when we use it by GC.
+    pSyncBlock->SetPrecious();
+    index = (int32_t)pSyncBlock->GetSyncBlockIndex();
+
+    END_QCALL;
+
+    return index;
+}
+
+FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
+    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
+    if (pSyncBlock == NULL)
+    {
+        return (OBJECTHANDLE)NULL;
+    }
+    return pSyncBlock->GetLockIfExists();
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
+    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
+    if (pSyncBlock == NULL)
+    {
+        // We don't have a syncblock for the object, just the slot.
+        // Create the syncblock now.
+        pSyncBlock = obj.Get()->GetSyncBlock();
+    }
+
+    lockObj.Set(ObjectFromHandle(pSyncBlock->GetLock()));
+
+    END_QCALL;
+}

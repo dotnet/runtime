@@ -110,103 +110,6 @@ BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, ini
     return IsValid();
 }
 
-void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((g_fEEStarted));
-        PRECONDITION((GetThreadNULLOk() != NULL));
-        PRECONDITION((!IsOSEvent()));
-    }
-    CONTRACTL_END;
-
-    // thread-safe SetAutoEvent
-    InterlockedOr((LONG*)&m_dwFlags, CLREVENT_FLAGS_AUTO_EVENT);
-
-    {
-        HANDLE h = CreateEvent(NULL,FALSE,FALSE,NULL);
-        if (h == NULL) {
-            ThrowOutOfMemory();
-        }
-        if (InterlockedCompareExchangeT(&m_handle,
-                                                h,
-                                                INVALID_HANDLE_VALUE) != INVALID_HANDLE_VALUE)
-        {
-            // We lost the race
-            CloseHandle(h);
-        }
-    }
-
-    // thread-safe SetInDeadlockDetection
-    InterlockedOr((LONG*)&m_dwFlags, CLREVENT_FLAGS_IN_DEADLOCK_DETECTION);
-
-    for (;;)
-    {
-        LONG oldFlags = m_dwFlags;
-
-        if (oldFlags & CLREVENT_FLAGS_MONITOREVENT_ALLOCATED)
-        {
-            // Other thread has set the flag already. Nothing left for us to do.
-            break;
-        }
-
-        LONG newFlags = oldFlags | CLREVENT_FLAGS_MONITOREVENT_ALLOCATED;
-        if (InterlockedCompareExchange((LONG*)&m_dwFlags, newFlags, oldFlags) != oldFlags)
-        {
-            // We lost the race
-            continue;
-        }
-
-        // Because we set the allocated bit, we are the ones to do the signalling
-        if (oldFlags & CLREVENT_FLAGS_MONITOREVENT_SIGNALLED)
-        {
-            // We got the honour to signal the event
-            Set();
-        }
-        break;
-    }
-}
-
-
-void CLREventBase::SetMonitorEvent()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // SetMonitorEvent is robust against initialization races. It is possible to
-    // call CLREvent::SetMonitorEvent on event that has not been initialialized yet by CreateMonitorEvent.
-    // CreateMonitorEvent will signal the event once it is created if it happens.
-
-    for (;;)
-    {
-        LONG oldFlags = m_dwFlags;
-
-        if (oldFlags & CLREVENT_FLAGS_MONITOREVENT_ALLOCATED)
-        {
-            // Event has been allocated already. Use the regular codepath.
-            Set();
-            break;
-        }
-
-        LONG newFlags = oldFlags | CLREVENT_FLAGS_MONITOREVENT_SIGNALLED;
-        if (InterlockedCompareExchange((LONG*)&m_dwFlags, newFlags, oldFlags) != oldFlags)
-        {
-            // We lost the race
-            continue;
-        }
-        break;
-    }
-}
-
-
-
 void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
                                 )
 {
@@ -309,11 +212,9 @@ void CLREventBase::CloseEvent()
     CONTRACTL
     {
       NOTHROW;
-      if (IsInDeadlockDetection()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
+      GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    GCX_MAYBE_PREEMP(IsInDeadlockDetection() && IsValid());
 
     _ASSERTE(Thread::Debug_AllowCallout());
 
@@ -406,14 +307,14 @@ static DWORD CLREventWaitHelper(HANDLE handle, DWORD dwMilliseconds, BOOL alerta
 }
 
 
-DWORD CLREventBase::Wait(DWORD dwMilliseconds, BOOL alertable, PendingSync *syncState)
+DWORD CLREventBase::Wait(DWORD dwMilliseconds, BOOL alertable)
 {
     WRAPPER_NO_CONTRACT;
-    return WaitEx(dwMilliseconds, alertable?WaitMode_Alertable:WaitMode_None,syncState);
+    return WaitEx(dwMilliseconds, alertable?WaitMode_Alertable:WaitMode_None);
 }
 
 
-DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syncState)
+DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
 {
     BOOL alertable = (mode & WaitMode_Alertable)!=0;
     CONTRACTL
@@ -457,12 +358,10 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syn
         if (pThread && alertable) {
             DWORD dwRet = WAIT_FAILED;
             dwRet = pThread->DoAppropriateWait(1, &m_handle, FALSE, dwMilliseconds,
-                                              mode,
-                                              syncState);
+                                              mode);
             return dwRet;
         }
         else {
-            _ASSERTE (syncState == NULL);
             return CLREventWaitHelper(m_handle,dwMilliseconds,alertable);
         }
     }
