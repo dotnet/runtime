@@ -276,8 +276,8 @@ namespace System
 
         /// <summary>Gets the value of the variant field for the <see cref="Guid" />.</summary>
         /// <remarks>
-        ///     <para>This corresponds to the most significant 4 bits of the 8th byte: 00000000-0000-0000-F000-000000000000. Depending on the variant of the UUID, only the first 2 bits might be relevant, as described in RFC 9562. The additional bits are "don't-care" bits and are not masked out.</para>
-        ///     <para>To interpret this value you need to bit-shift depending on the variant of UUID that is represented. For example for UUIDv7, do guid.Variant >> 2, to see the value 2 (0b10).</para></para>
+        ///     <para>This returns all 4 bits as is, some users may only care about fewer bits of the variant field and should refer to RFC 9562 for how to interpret the result.</para>
+        ///     <para>For example, UUIDv7 may only want to consider the 2 most significant bits of the field as the least 2 significant bits are documented as "don't-care".</para>
         /// </remarks>
         public int Variant => _d >> 4;
 
