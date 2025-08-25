@@ -1184,7 +1184,7 @@ void EEJitManager::SetCpuInfo()
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n"));
-#elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_APPLE))
+#elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n"));
 #elif defined(TARGET_ARM64)
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n"));
@@ -2940,7 +2940,9 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
             DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
 
             // If the IL Stub is a P/Invoke stub, set the CodeHeader's MethodDesc
-            // to be the real target method and not the stub.
+            // to be the real target method and not the stub. This adjustment makes
+            // the stub frame show up with the P/Invoke method identity in stack
+            // traces without any special handling in the stackwalker.
             if (pDMD->IsPInvokeStub())
                 pMDTarget = pDMD->GetILStubResolver()->GetStubTargetMethodDesc();
         }

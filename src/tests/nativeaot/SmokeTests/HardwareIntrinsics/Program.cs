@@ -21,7 +21,7 @@ unsafe class Program
         Console.WriteLine("****************************************************");
 
         long lowerBound, upperBound;
-        lowerBound = 1100 * 1024; // ~1.1 MB
+        lowerBound = 1090 * 1024; // ~1.09 MB
         upperBound = 1500 * 1024; // ~1.5 MB
 
         if (fileSize < lowerBound || fileSize > upperBound)
