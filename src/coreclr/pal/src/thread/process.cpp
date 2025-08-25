@@ -2826,17 +2826,26 @@ InitializeFlushProcessWriteBuffers()
     _ASSERTE(s_flushUsingMemBarrier == 0);
 
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
+
+#ifdef TARGET_ANDROID
+    // Avoid calling membarrier on older Android versions where membarrier
+    // may be barred by seccomp causing the process to be killed.
+    int apiLevel = android_get_device_api_level();
+    if (apiLevel >= __ANDROID_API_Q__)
+#endif
     {
-        // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
+        // Starting with Linux kernel 4.14, process memory barriers can be generated
+        // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
+        int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
+        if (mask >= 0 &&
+            mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
         {
-            s_flushUsingMemBarrier = TRUE;
-            return TRUE;
+            // Register intent to use the private expedited command.
+            if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
+            {
+                s_flushUsingMemBarrier = TRUE;
+                return TRUE;
+            }
         }
     }
 #endif
