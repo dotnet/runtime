@@ -809,6 +809,14 @@ FCIMPL1(UINT64, GCInterface::GetGenerationSize, int gen)
 }
 FCIMPLEND
 
+FCIMPL0(Object*, GCInterface::GetNextFinalizableObject)
+{
+    FCALL_CONTRACT;
+
+    return OBJECTREFToObject(FinalizerThread::GetNextFinalizableObject());
+}
+FCIMPLEND
+
 /*================================GetTotalMemory================================
 **Action: Returns the total number of bytes in use
 **Returns: The total number of bytes in use
@@ -852,32 +860,6 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
     GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
-}
-
-extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
-{
-    QCALL_CONTRACT;
-
-    PCODE funcPtr = 0;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
-
-    if (target != NULL)
-    {
-        pObj.Set(target);
-
-        MethodTable* pMT = target->GetMethodTable();
-
-        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
-    }
-
-    END_QCALL;
-
-    return (void*)funcPtr;
 }
 
 /*==========================WaitForPendingFinalizers============================
