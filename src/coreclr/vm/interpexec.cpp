@@ -646,6 +646,7 @@ MAIN_LOOP:
                 // Normal moves between vars
                 case INTOP_MOV_4: MOV(int32_t, int32_t); break;
                 case INTOP_MOV_8: MOV(int64_t, int64_t); break;
+#undef MOV
 
                 case INTOP_MOV_VT:
                     memmove(stack + ip[1], stack + ip[2], ip[3]);
@@ -1016,6 +1017,7 @@ MAIN_LOOP:
                 case INTOP_BRTRUE_I8:
                     BR_UNOP(int64_t, != 0);
                     break;
+#undef BR_UNOP
 
 #define BR_BINOP_COND(cond) \
     if (cond)               \
@@ -1226,6 +1228,8 @@ MAIN_LOOP:
                     BR_BINOP_COND(isunordered(d1, d2) || d1 < d2);
                     break;
                 }
+#undef BR_BINOP_COND
+#undef BR_BINOP
 
                 case INTOP_ADD_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
@@ -1682,6 +1686,7 @@ MAIN_LOOP:
                 case INTOP_CLT_UN_R8:
                     CMP_BINOP_FP(double, <, 1);
                     break;
+#undef CMP_BINOP_FP
 
 #define LDIND(dtype, ftype)                                 \
     do {                                                    \
@@ -1715,6 +1720,7 @@ MAIN_LOOP:
                 case INTOP_LDIND_R8:
                     LDIND(double, double);
                     break;
+#undef LDIND
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
@@ -1757,6 +1763,7 @@ MAIN_LOOP:
                 case INTOP_STIND_R8:
                     STIND(double, double);
                     break;
+#undef STIND
                 case INTOP_STIND_O:
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
@@ -2349,6 +2356,7 @@ do {                                                                           \
                     LDELEM(double, double);
                     break;
                 }
+#undef LDELEM
                 case INTOP_LDELEM_REF:
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
@@ -2435,6 +2443,7 @@ do {                                                                           \
                     STELEM(double, double);
                     break;
                 }
+#undef STELEM
                 case INTOP_STELEM_REF:
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
@@ -2613,6 +2622,7 @@ do                                                                      \
                     COMPARE_EXCHANGE(int64_t);
                     break;
                 }
+#undef COMPARE_EXCHANGE
 
 #define EXCHANGE(type)                                                  \
 do                                                                      \
