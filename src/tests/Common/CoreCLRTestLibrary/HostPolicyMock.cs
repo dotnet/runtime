@@ -30,17 +30,11 @@ namespace TestLibrary
         private static extern void Set_corehost_resolve_component_dependencies_Callback(
             IntPtr callback);
 
-        private static Type _corehost_error_writer_fnType;
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         public delegate void ErrorWriterDelegate(string message);
 
         public static void Initialize(string testBasePath, string coreRoot)
         {
-            // This is needed for marshalling of function pointers to work - requires private access to the ADR unfortunately
-            // Delegate marshalling doesn't support casting delegates to anything but the original type
-            // so we need to use the original type.
-            _corehost_error_writer_fnType = typeof(object).Assembly.GetType("Interop+HostPolicy+corehost_error_writer_fn");
         }
 
         public static MockValues_corehost_resolve_component_dependencies Mock_corehost_resolve_component_dependencies(
@@ -125,17 +119,19 @@ namespace TestLibrary
                     }
                     else
                     {
-                        Delegate d = Marshal.GetDelegateForFunctionPointer(errorWriterPtr, _corehost_error_writer_fnType);
                         return (string message) =>
                         {
-                            IntPtr messagePtr = Marshal.StringToCoTaskMemAuto(message);
-                            try
+                            unsafe
                             {
-                                d.DynamicInvoke(messagePtr);
-                            }
-                            finally
-                            {
-                                Marshal.FreeCoTaskMem(messagePtr);
+                                IntPtr messagePtr = Marshal.StringToCoTaskMemAuto(message);
+                                try
+                                {
+                                    ((delegate* unmanaged[Cdecl]<nint, void>)errorWriterPtr)(messagePtr);
+                                }
+                                finally
+                                {
+                                    Marshal.FreeCoTaskMem(messagePtr);
+                                }
                             }
                         };
                     }
