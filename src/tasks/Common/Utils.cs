@@ -280,6 +280,28 @@ internal static class Utils
         return areDifferent;
     }
 
+    public static bool MoveIfDifferent(string src, string dst)
+    {
+        if (!File.Exists(src))
+            throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
+
+        bool areDifferent = !File.Exists(dst) || !ContentEqual(src, dst);
+        if (areDifferent)
+        {
+
+#if NET
+            File.Move(src, dst, true);
+#else
+            if (File.Exists(dst))
+                File.Delete(dst);
+
+            File.Move(src, dst);
+#endif
+        }
+
+        return areDifferent;
+    }
+
     private static string ToBase64SafeString(byte[] data)
     {
         if (data.Length == 0)
