@@ -448,9 +448,15 @@ internal readonly struct Loader_1 : ILoader
     bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer assembly = module.Assembly;
-        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsDynamic(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.IsDynamic;
     }
 
     bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
