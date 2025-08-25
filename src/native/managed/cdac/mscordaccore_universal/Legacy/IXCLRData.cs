@@ -413,6 +413,20 @@ internal unsafe partial interface IXCLRDataTask
     int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
 }
 
+internal enum ClrDataSourceType : uint
+{
+    CLRDATA_SOURCE_TYPE_INVALID = 0,
+}
+
+// CLRDATA_IL_ADDRESS_MAP
+internal struct ClrDataILAddressMap
+{
+    public uint ilOffset;
+    public ClrDataAddress startAddress;
+    public ClrDataAddress endAddress;
+    public ClrDataSourceType type;
+}
+
 [GeneratedComInterface]
 [Guid("ECD73800-22CA-4b0d-AB55-E9BA7E6318A5")]
 internal unsafe partial interface IXCLRDataMethodInstance
@@ -466,7 +480,7 @@ internal unsafe partial interface IXCLRDataMethodInstance
     int GetILAddressMap(
         uint mapLen,
         uint* mapNeeded,
-        /*CLRDATA_IL_ADDRESS_MAP* */ void* maps);
+        [In, Out, MarshalUsing(CountElementName = nameof(mapLen))] ClrDataILAddressMap[]? maps);
 
     [PreserveSig]
     int StartEnumExtents(ulong* handle);
