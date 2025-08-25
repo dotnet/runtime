@@ -1599,8 +1599,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     if (immLowerBound != 0)
     {
-        immOpDup =
-            gtNewOperNode(GT_SUB, genActualType(immOp), immOpDup, gtNewIconNode(immLowerBound, genActualType(immOp)));
+        immOpDup = gtNewOperNode(GT_SUB, genActualType(immOp), immOpDup, gtNewIconNode(immLowerBound, genActualType(immOp)));
     }
 
     GenTreeBoundsChk* hwIntrinsicChk =
