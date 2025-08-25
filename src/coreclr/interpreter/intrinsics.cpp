@@ -104,6 +104,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "CompareExchange"))
                 return NI_System_Threading_Interlocked_CompareExchange;
+            else if (!strcmp(methodName, "Exchange"))
+                return NI_System_Threading_Interlocked_Exchange;
             else if (!strcmp(methodName, "MemoryBarrier"))
                 return NI_System_Threading_Interlocked_MemoryBarrier;
         }

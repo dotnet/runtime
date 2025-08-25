@@ -148,6 +148,6 @@ set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native 
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(CLR_CMAKE_HOST_ANDROID)
+if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     install (TARGETS System.Native-Static DESTINATION sharedFramework COMPONENT runtime)
 endif()
