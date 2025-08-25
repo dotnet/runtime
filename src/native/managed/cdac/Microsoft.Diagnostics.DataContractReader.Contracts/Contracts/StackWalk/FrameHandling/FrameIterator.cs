@@ -159,7 +159,7 @@ internal sealed class FrameIterator
 
     public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
 
-    public static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
+    private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
