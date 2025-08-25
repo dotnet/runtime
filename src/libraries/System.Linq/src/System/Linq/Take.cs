@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -108,47 +110,42 @@ namespace System.Linq
 
             if (isStartIndexFromEnd)
             {
-                // TakeLast compat: enumerator should be disposed before yielding the first element.
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                PrepareArrayForFromEndRange(ref source, ref startIndex, ref endIndex, isEndIndexFromEnd);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void PrepareArrayForFromEndRange(ref IEnumerable<TSource> source, ref int startIndex, ref int endIndex, bool isEndIndexFromEnd)
                 {
+
+                    // TakeLast compat: enumerator should be disposed before yielding the first element.
+                    using var e = source.GetEnumerator();
                     if (!e.MoveNext())
                     {
-                        yield break;
+                        startIndex = 0;
+                        endIndex = 0;
+                        return;
                     }
 
-                    queue = new Queue<TSource>();
-                    queue.Enqueue(e.Current);
-                    count = 1;
-
-                    while (e.MoveNext())
+                    var scratchBuffer = default(InlineArray16<TSource>);
+                    using var buffer = new FromEndRangeCircularBuffer<TSource>(startIndex, scratchBuffer);
+                    do
                     {
-                        if (count < startIndex)
-                        {
-                            queue.Enqueue(e.Current);
-                            ++count;
-                        }
-                        else
-                        {
-                            do
-                            {
-                                queue.Dequeue();
-                                queue.Enqueue(e.Current);
-                                checked { ++count; }
-                            } while (e.MoveNext());
-                            break;
-                        }
-                    }
+                        buffer.Enqueue(e.Current);
+                    } while (e.MoveNext());
 
-                    Debug.Assert(queue.Count == Math.Min(count, startIndex));
+                    startIndex = CalculateStartIndex(true, startIndex, buffer.TotalCount);
+                    endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, buffer.TotalCount);
+                    int requestCount = endIndex - startIndex;
+                    if (requestCount < 0) return;
+                    source = buffer.Build(requestCount, out startIndex);
+                    endIndex = startIndex + requestCount;
                 }
 
-                startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
-                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
-                Debug.Assert(endIndex - startIndex <= queue.Count);
-
-                for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
+                for (; startIndex < endIndex; startIndex++)
                 {
-                    yield return queue.Dequeue();
+                    // Here `source` is guaranteed to be TSource[] as per PrepareArrayForFromEndRange's Build() implementation.
+                    // This allows us to avoid creating unnecessary field.
+                    var array = Unsafe.As<TSource[]>(source);
+                    yield return array[(uint)startIndex % (uint)array.Length];
                 }
             }
             else
@@ -192,6 +189,176 @@ namespace System.Linq
 
             static int CalculateEndIndex(bool isEndIndexFromEnd, int endIndex, int count) =>
                 Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
+        }
+
+
+        /// <summary>
+        /// A circular buffer for efficiently handling Take(Range) operations with from-end indices.
+        /// </summary>
+        /// <remarks>
+        /// Used by LINQ's Take(Range) when start/end indices are specified from the end (e.g., ^5..^2).
+        /// This avoids buffering the entire sequence by retaining only the last <paramref name="maxCapacity"/> elements.
+        /// Strategy:
+        /// - Start with a stack-allocated scratch buffer (fast path, no heap allocation).
+        /// - Grow to a heap array if needed (ArrayPool-rented until max capacity is reached).
+        /// - Once full, overwrite oldest elements in circular fashion.
+        /// </remarks>
+        internal ref struct FromEndRangeCircularBuffer<T>(int maxCapacity, Span<T> scratchBuffer)
+        {
+            /// <summary>
+            /// The underlying buffer, pointing either to the scratch buffer or a heap-allocated array.
+            /// Acts as a circular buffer once full.
+            /// </summary>
+            private Span<T> _buffer = scratchBuffer;
+
+            /// <summary>
+            /// Heap array backing store, if allocated.
+            /// - Rented from ArrayPool&lt;T&gt; if below maxCapacity.
+            /// </summary>
+            private T[]? _array = null;
+
+            /// <summary>The index where the next element will be written.</summary>
+            private int _tail = 0;
+
+            /// <summary>Total number of elements enqueued over the lifetime of this buffer.</summary>
+            private int _totalCount = 0;
+
+            public int TotalCount => _totalCount;
+
+            /// <summary>
+            /// Adds an element to the buffer.
+            /// Overwrites the oldest element once maxCapacity is reached (circular behavior).
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Enqueue(T item)
+            {
+                var tail = _tail;
+                var span = _buffer;
+
+                if ((uint)tail < (uint)span.Length)
+                {
+                    span[tail] = item;
+                    var newTail = tail + 1;
+                    _tail = newTail == maxCapacity ? 0 : newTail;
+                    checked { _totalCount++; }
+                }
+                else
+                {
+                    SlowEnqueue(item);
+                }
+            }
+
+            /// <summary>
+            /// Constructs the final array for the requested range.
+            /// </summary>
+            /// <param name="requestCount">Number of elements to include in the result.</param>
+            /// <param name="head">Outputs the starting index in the buffer for the range.</param>
+            /// <remarks>
+            /// The returned array is safe to cast to TSource[] in calling code.
+            /// If the array length equals maxCapacity, it may be the internal buffer itself.
+            /// This is fine inside LINQ as the array is not mutated by consumers.
+            /// </remarks>
+            public T[] Build(int requestCount, out int head)
+            {
+                // Determine the oldest relevant element's index in the circular buffer
+                head = _tail - Math.Min(_totalCount, maxCapacity);
+                if (head < 0) head += maxCapacity;
+
+                int actualCount = Math.Min(requestCount, _totalCount);
+                if (actualCount <= 0)
+                    return Array.Empty<T>();
+
+                // Fast path: if we already have a heap array at maxCapacity, return it directly
+                if (_array != null && _array.Length == maxCapacity)
+                    return _array;
+
+                var result = GC.AllocateUninitializedArray<T>(actualCount);
+                var resultSpan = result.AsSpan();
+
+                // Simple case: buffer hasn't wrapped or we're taking all elements
+                if (actualCount == maxCapacity || _totalCount < maxCapacity)
+                {
+                    _buffer[..actualCount].CopyTo(resultSpan);
+                }
+                else
+                {
+                    // Complex case: must copy from wrapped circular buffer
+                    int firstPart = head + actualCount <= maxCapacity
+                        ? actualCount
+                        : Math.Min(maxCapacity, _buffer.Length) - head;
+
+                    _buffer.Slice(head, firstPart).CopyTo(resultSpan);
+
+                    // Wrap-around case: copy remaining elements from the start of the buffer
+                    if (firstPart != actualCount)
+                    {
+                        _buffer[..(actualCount - firstPart)].CopyTo(resultSpan[firstPart..]);
+                    }
+
+                    head = 0; // Consumers can now read from start
+                }
+
+                return result;
+            }
+
+            /// <summary>
+            /// Expands the buffer when scratchBuffer is exhausted.
+            /// Uses ArrayPool&lt;T&gt; until reaching maxCapacity, then allocates permanently.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void SlowEnqueue(in T item)
+            {
+                int newCapacity = _buffer.Length * 2;
+                if ((uint)newCapacity > Array.MaxLength) newCapacity = Math.Max(maxCapacity, Array.MaxLength);
+
+                T[] newArray;
+                if (newCapacity >= maxCapacity)
+                {
+                    newCapacity = maxCapacity;
+                    newArray = GC.AllocateUninitializedArray<T>(newCapacity);
+                }
+                else
+                {
+                    newArray = ArrayPool<T>.Shared.Rent(newCapacity);
+                }
+
+                _buffer.CopyTo(newArray);
+
+                if (_array != null && _array.Length != maxCapacity)
+                {
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        _buffer.Clear();
+                    }
+                    ArrayPool<T>.Shared.Return(_array);
+                }
+
+                _array = newArray;
+                _buffer = newArray.AsSpan();
+                _buffer[_tail] = item;
+                _totalCount++;
+                _tail++;
+
+                if (_tail == maxCapacity) _tail = 0;
+            }
+
+            /// <summary>
+            /// Releases any rented arrays back to the pool.
+            /// Arrays allocated at exactly maxCapacity are not returned (not pool-owned).
+            /// </summary>
+            public void Dispose()
+            {
+                if (_array != null)
+                {
+                    var toReturn = _array;
+                    _array = null;
+
+                    if (toReturn.Length == maxCapacity)
+                        return; // Permanent allocation, skip return
+
+                    ArrayPool<T>.Shared.Return(toReturn, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+            }
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
