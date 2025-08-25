@@ -334,8 +334,65 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAssemblyData(ClrDataAddress baseDomainPtr, ClrDataAddress assembly, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyData(baseDomainPtr, assembly, data) : HResults.E_NOTIMPL;
+
+    int ISOSDacInterface.GetAssemblyData(ClrDataAddress domain, ClrDataAddress assembly, DacpAssemblyData* data)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (assembly == 0 && domain == 0)
+                throw new ArgumentException();
+
+            // Zero out data structure
+            *data = default;
+
+            data->AssemblyPtr = assembly;
+            data->DomainPtr = domain;
+
+            TargetPointer ppAppDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer pAppDomain = _target.ReadPointer(ppAppDomain);
+            data->ParentDomain = pAppDomain.ToClrDataAddress(_target);
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
+            data->isDynamic = loader.IsDynamic(moduleHandle) ? 1 : 0;
+
+            // The DAC increments ModuleCount to 1 if assembly->GetModule() is valid,
+            // the cDAC assumes that all assemblies will have a module and the above logic relies on that.
+            // Therefore we always set ModuleCount to 1.
+            data->ModuleCount = 1;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAssemblyData dataLocal = default;
+            int hrLocal = _legacyImpl.GetAssemblyData(domain, assembly, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->AssemblyPtr == dataLocal.AssemblyPtr, $"cDAC: {data->AssemblyPtr:x}, DAC: {dataLocal.AssemblyPtr:x}");
+                Debug.Assert(data->ClassLoader == dataLocal.ClassLoader, $"cDAC: {data->ClassLoader:x}, DAC: {dataLocal.ClassLoader:x}");
+                Debug.Assert(data->ParentDomain == dataLocal.ParentDomain, $"cDAC: {data->ParentDomain:x}, DAC: {dataLocal.ParentDomain:x}");
+                Debug.Assert(data->DomainPtr == dataLocal.DomainPtr, $"cDAC: {data->DomainPtr:x}, DAC: {dataLocal.DomainPtr:x}");
+                Debug.Assert(data->AssemblySecDesc == dataLocal.AssemblySecDesc, $"cDAC: {data->AssemblySecDesc:x}, DAC: {dataLocal.AssemblySecDesc:x}");
+                Debug.Assert(data->isDynamic == dataLocal.isDynamic, $"cDAC: {data->isDynamic}, DAC: {dataLocal.isDynamic}");
+                Debug.Assert(data->ModuleCount == dataLocal.ModuleCount, $"cDAC: {data->ModuleCount}, DAC: {dataLocal.ModuleCount}");
+                Debug.Assert(data->LoadContext == dataLocal.LoadContext, $"cDAC: {data->LoadContext:x}, DAC: {dataLocal.LoadContext:x}");
+                Debug.Assert(data->isDomainNeutral == dataLocal.isDomainNeutral, $"cDAC: {data->isDomainNeutral}, DAC: {dataLocal.isDomainNeutral}");
+                Debug.Assert(data->dwLocationFlags == dataLocal.dwLocationFlags, $"cDAC: {data->dwLocationFlags:x}, DAC: {dataLocal.dwLocationFlags:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+
     int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
         if (addr == 0)

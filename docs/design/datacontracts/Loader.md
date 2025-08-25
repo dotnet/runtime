@@ -109,7 +109,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
 | `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
 | `Assembly` | `Module` | Pointer to the Assemblies module |
-| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected |
+| `Assembly` | `IsCollectible` | Flag indicating if this module may be collected |
+| `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
@@ -551,6 +552,13 @@ bool IsCollectible(ModuleHandle handle)
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
     byte isCollectible = target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
+}
+
+bool IsDynamic(ModuleHandle handle)
+{
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isDynamic = target.Read<byte>(assembly + /* Assembly::IsDynamic*/);
+    return isDynamic != 0;
 }
 
 bool IsAssemblyLoaded(ModuleHandle handle)
