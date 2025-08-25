@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 namespace System.Net
@@ -151,7 +152,7 @@ namespace System.Net
             return this;
         }
 
-        private static string MarshalToString(SecureString sstr)
+        private static unsafe string MarshalToString(SecureString sstr)
         {
             if (sstr == null || sstr.Length == 0)
             {
@@ -163,7 +164,7 @@ namespace System.Net
             try
             {
                 ptr = Marshal.SecureStringToGlobalAllocUnicode(sstr);
-                result = Marshal.PtrToStringUni(ptr)!;
+                result = Utf16StringMarshaller.ConvertToManaged((ushort*)ptr)!;
             }
             finally
             {

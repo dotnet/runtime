@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.X509Certificates
         public IntPtr pRevocationInfo;
         public IntPtr pIssuanceUsage;
         public IntPtr pApplicationUsage;
-        public IntPtr pwszExtendedErrorInfo;
+        public ushort* pwszExtendedErrorInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 #if ENABLE_JS_INTEROP_BY_VALUE
-            value = Marshal.PtrToStringUni(slot.IntPtrValue, slot.Length);
+            value = new string((char*)slot.IntPtrValue, 0, slot.Length);
             Marshal.FreeHGlobal(slot.IntPtrValue);
 #else
             fixed (void* argAsRoot = &slot.IntPtrValue)

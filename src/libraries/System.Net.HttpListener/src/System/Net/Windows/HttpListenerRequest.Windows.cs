@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
