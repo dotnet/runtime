@@ -74,6 +74,21 @@ internal struct DacpAppDomainStoreData
     public ClrDataAddress systemDomain;
     public int DomainCount;
 };
+
+internal struct DacpAssemblyData
+{
+    public ClrDataAddress AssemblyPtr;
+    public ClrDataAddress ClassLoader;
+    public ClrDataAddress ParentDomain;
+    public ClrDataAddress DomainPtr;
+    public ClrDataAddress AssemblySecDesc;
+    public int isDynamic;
+    public uint ModuleCount;
+    public uint LoadContext;
+    public int isDomainNeutral; // Always false, preserved for backward compatibility
+    public uint dwLocationFlags;
+}
+
 internal struct DacpThreadData
 {
     public int corThreadId;
@@ -284,7 +299,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
     [PreserveSig]
-    int GetAssemblyData(ClrDataAddress baseDomainPtr, ClrDataAddress assembly, /*struct DacpAssemblyData*/ void* data);
+    int GetAssemblyData(ClrDataAddress domain, ClrDataAddress assembly, DacpAssemblyData* data);
     [PreserveSig]
     int GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 

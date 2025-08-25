@@ -99,6 +99,7 @@ public interface ILoader : IContract
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
