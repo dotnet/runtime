@@ -259,13 +259,20 @@ namespace System.IO.Compression
             {
                 ThrowIfDisposed();
 
-                throw new NotSupportedException(SR.SeekingNotSupported);
+                if (!CanSeek)
+                {
+                    throw new NotSupportedException(SR.SeekingNotSupported);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                _positionInSuperStream = _startInSuperStream + value;
             }
         }
 
         public override bool CanRead => _superStream.CanRead && _canRead;
 
-        public override bool CanSeek => false;
+        public override bool CanSeek => _superStream.CanSeek && !_isDisposed;
 
         public override bool CanWrite => false;
 
@@ -366,7 +373,28 @@ namespace System.IO.Compression
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
-            throw new NotSupportedException(SR.SeekingNotSupported);
+
+            if (!CanSeek)
+            {
+                throw new NotSupportedException(SR.SeekingNotSupported);
+            }
+
+            long newPositionInSuperStream = origin switch
+            {
+                SeekOrigin.Begin => _startInSuperStream + offset,
+                SeekOrigin.Current => _positionInSuperStream + offset,
+                SeekOrigin.End => _endInSuperStream + offset,
+                _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+            };
+
+            if (newPositionInSuperStream < _startInSuperStream)
+            {
+                throw new IOException(SR.IO_SeekBeforeBegin);
+            }
+
+            _positionInSuperStream = newPositionInSuperStream;
+
+            return _positionInSuperStream - _startInSuperStream;
         }
 
         public override void SetLength(long value)
