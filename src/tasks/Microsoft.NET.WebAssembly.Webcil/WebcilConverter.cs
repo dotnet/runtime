@@ -26,7 +26,7 @@ public class WebcilConverter
         FilePosition SectionStart,
         // The debug directory entries
         ImmutableArray<DebugDirectoryEntry> DebugDirectoryEntries
-        );
+    );
 
     // Intersting stuff we know about the webcil file we're writing
     public record WCFileInfo(
@@ -80,6 +80,39 @@ public class WebcilConverter
             var wrapper = new WebcilWasmWrapper(memoryStream);
             memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);
+        }
+    }
+
+    public byte[] ConvertToWebcilBytes()
+    {
+        using var inputStream = File.Open(_inputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        PEFileInfo peInfo;
+        WCFileInfo wcInfo;
+        using (var peReader = new PEReader(inputStream, PEStreamOptions.LeaveOpen))
+        {
+            GatherInfo(peReader, out wcInfo, out peInfo);
+        }
+
+        if (!WrapInWebAssembly)
+        {
+            using var outputStream = new MemoryStream(checked((int)inputStream.Length));
+            WriteConversionTo(outputStream, inputStream, peInfo, wcInfo);
+            return outputStream.ToArray();
+        }
+        else
+        {
+            // if wrapping in WASM, write the webcil payload to memory because we need to discover the length
+
+            // webcil is about the same size as the PE file
+            using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
+            WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
+            memoryStream.Flush();
+            var wrapper = new WebcilWasmWrapper(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            using var outputStream = new MemoryStream();
+            wrapper.WriteWasmWrappedWebcil(outputStream);
+            return outputStream.ToArray();
         }
     }
 

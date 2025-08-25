@@ -142,7 +142,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (UseWebcil)
             {
                 using TempFileName tmpWebcil = new();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: logAdapter);
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(logger: logAdapter, inputPath: assembly, outputPath: tmpWebcil.Path);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
@@ -249,7 +249,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (UseWebcil)
             {
                 using TempFileName tmpWebcil = new();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil.Path, logger: logAdapter);
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(logger: logAdapter, inputPath: args.fullPath, outputPath: tmpWebcil.Path);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(cultureDirectory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
