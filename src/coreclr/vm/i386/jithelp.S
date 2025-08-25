@@ -385,23 +385,6 @@ C_FUNC(JIT_WriteBarrierEAX_Loc):
     .word 0
     .text
 
-LEAF_ENTRY JIT_WriteBarrier_Callable, _TEXT
-    mov eax, edx
-    mov edx, ecx
-    push    eax
-    call    1f
-1:
-    pop     eax
-2:
-.att_syntax
-    addl     $_GLOBAL_OFFSET_TABLE_+(2b-1b), %eax
-.intel_syntax noprefix
-    mov     eax, dword ptr [eax + C_FUNC(JIT_WriteBarrierEAX_Loc)@GOT]
-    mov     eax, [eax]
-    xchg    eax, dword ptr [esp]
-    ret
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 .macro UniversalWriteBarrierHelper name
 .align 4
 
