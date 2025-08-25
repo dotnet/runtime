@@ -5235,7 +5235,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     }
     else
     {
-        op2 = comp->gtNewIconNode(imm8, TYP_I_IMPL);
+        op2 = comp->gtNewIconNode(imm8);
         BlockRange().InsertBefore(node, op2);
 
         switch (simdBaseType)
