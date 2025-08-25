@@ -51,6 +51,7 @@ namespace ILCompiler.ObjectWriter
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
                 CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset++];
+
                 short dwarfReg = BitConverter.ToInt16(blobData, offset);
                 offset += sizeof(short);
                 int cfiOffset = BitConverter.ToInt32(blobData, offset);
@@ -112,6 +113,10 @@ namespace ILCompiler.ObjectWriter
                         cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
                         cfaOffset = cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);
+                        break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        cfiCode[cfiCodeOffset++] = DW_CFA_AARCH64_negate_ra_state;
                         break;
                 }
             }
