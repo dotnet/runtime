@@ -101,8 +101,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
 
             // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform) // IgnoreSymbols are not supported
-                yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
+            yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10, 2 };
 
