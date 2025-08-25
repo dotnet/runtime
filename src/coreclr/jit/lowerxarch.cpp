@@ -2184,29 +2184,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (!op2->OperIsConst())
                 {
                     // Extract allows the full range while GetElement only allows
-                    // 0-3, so we need to mask the index here so codegen works. We also may need
-                    // an extension since GetElement takes a native sized index.
+                    // 0-3, so we need to mask the index here so codegen works.
 
-                    if (!op2->TypeIs(TYP_I_IMPL))
-                    {
-                        GenTree* cast = comp->gtNewCastNode(TYP_I_IMPL, op2, true, TYP_I_IMPL);
-                        BlockRange().InsertAfter(op2, cast);
-                        LowerNode(cast);
-                        op2 = cast;
-                    }
-
-                    GenTree* msk = comp->gtNewIconNode(3, TYP_I_IMPL);
+                    GenTree* msk = comp->gtNewIconNode(3, TYP_INT);
                     BlockRange().InsertAfter(op2, msk);
 
-                    GenTree* tmp = comp->gtNewOperNode(GT_AND, TYP_I_IMPL, op2, msk);
+                    GenTree* tmp = comp->gtNewOperNode(GT_AND, TYP_INT, op2, msk);
                     BlockRange().InsertAfter(msk, tmp);
                     LowerNode(tmp);
 
                     node->Op(2) = tmp;
-                }
-                else
-                {
-                    op2->gtType = TYP_I_IMPL;
                 }
 
                 node->ChangeHWIntrinsicId(NI_Vector128_GetElement);
