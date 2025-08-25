@@ -22,7 +22,6 @@ OPDEF(INTOP_LDC_R4, "ldc.r4", 3, 1, 0, InterpOpFloat)
 OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
-OPDEF(INTOP_LDPTR_ADDRESS, "ldptr.address", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_LDPTR_DEREF, "ldptr.deref", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_NULLCHECK, "nullcheck", 2, 1, 0, InterpOpNoArgs)
 OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpPointerHelperFtn)

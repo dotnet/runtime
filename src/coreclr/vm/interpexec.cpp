@@ -604,10 +604,6 @@ MAIN_LOOP:
                     LOCAL_VAR(ip[1], void*) = pMethod->pDataItems[ip[2]];
                     ip += 3;
                     break;
-                case INTOP_LDPTR_ADDRESS:
-                    LOCAL_VAR(ip[1], void*) = &pMethod->pDataItems[ip[2]];
-                    ip += 3;
-                    break;
                 case INTOP_LDPTR_DEREF:
                     LOCAL_VAR(ip[1], void*) = *(void**)pMethod->pDataItems[ip[2]];
                     ip += 3;

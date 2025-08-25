@@ -3342,17 +3342,6 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     switch (pFieldInfo->fieldAccessor)
     {
-        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
-        {
-            void *emptyString;
-            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
-            assert(iat == IAT_VALUE);
-            AddIns(INTOP_LDPTR_ADDRESS);
-            PushInterpType(InterpTypeByRef, NULL);
-            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
-            break;
-        }
         case CORINFO_FIELD_STATIC_ADDRESS:
         case CORINFO_FIELD_STATIC_RVA_ADDRESS:
         {
@@ -5151,7 +5140,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
                 EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
 
