@@ -305,8 +305,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         return value;
                     }
 
-                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+
+                    // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+                    if (setMethod.HasExtensionParameterOnType())
+                    {
+                        arguments.Add(instanceValue);
+                        instanceValue = TopValue;
+                    }
+
+                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     foreach (var val in propertyRef.Arguments)
                         arguments.Add(Visit(val, state));
                     arguments.Add(value);
