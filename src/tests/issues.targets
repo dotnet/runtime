@@ -2196,6 +2196,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/Foreign/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/PInvoke/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/57353</Issue>
