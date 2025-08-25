@@ -57,11 +57,14 @@ namespace ILLink.RoslynAnalyzer
         /// </summary>
         public static bool IsInRequiresScope(this ISymbol member, string attributeName, [NotNullWhen(true)] out AttributeData? requiresAttribute)
         {
-            // Requires attribute on a type does not silence warnings that originate
-            // from the type directly. We also only check the containing type for members
-            // below, not of nested types.
-            if (member is ITypeSymbol)
+            // For type symbols, check if the type itself has the requires attribute
+            // This allows a type's RUC to suppress warnings about the type using other RUC types
+            // (e.g., in generic constraints, base types, etc.)
+            if (member is ITypeSymbol typeSymbol)
             {
+                if (typeSymbol.TryGetAttribute(attributeName, out requiresAttribute))
+                    return true;
+
                 requiresAttribute = null;
                 return false;
             }
@@ -78,7 +81,7 @@ namespace ILLink.RoslynAnalyzer
             if (member.ContainingType is ITypeSymbol containingType && containingType.TryGetAttribute(attributeName, out requiresAttribute))
             {
                 if (!ExcludeStatics(requiresAttribute))
-                        return true;
+                    return true;
 
                 if (!member.IsStatic)
                     return true;
