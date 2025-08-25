@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
         {
             Configuration config = Configuration.Debug;
             ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ZipArchiveInteropTest", extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
-            BuildProject(info, config);
+            BuildProject(info, config, new BuildOptions(ExpectedFileType: NativeFilesType.Relinked));
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "ZipArchiveInteropTest"));
             Assert.Collection(
                 result.TestOutput,
