@@ -3316,6 +3316,25 @@ public:
     }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    class DetachNotifications
+    {
+    private:
+        CordbProcess * m_process;
+    public:
+        DetachNotifications(CordbProcess * process) : m_process(process) { }
+        ~DetachNotifications()
+        {
+            if (m_process->m_fDetachInProgress)
+            {
+                // notify that there has been an update to the number of processed 
+                // SetThreadContextNeeded events
+                DWORD dwProcessedFlares = InterlockedIncrement(&m_process->m_cProcessedFlares);
+                LOG((LF_CORDB, LL_INFO10000, "HSTCN: Detach in progress - %d\n", dwProcessedFlares));
+                SetEvent(m_process->m_detachSetThreadContextNeededEvent);
+            }
+        }
+    };
+
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
     bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
 #endif
@@ -4153,6 +4172,11 @@ private:
     DWORD m_dwOutOfProcessStepping;
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+    
+private:
+    HANDLE m_detachSetThreadContextNeededEvent;
+    Volatile<BOOL> m_fDetachInProgress;
+    Volatile<DWORD> m_cProcessedFlares;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
