@@ -269,8 +269,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     {
     case (WAIT_OBJECT_0):
         return;
-    case (WAIT_ABANDONED):
-        return;
     case (WAIT_TIMEOUT):
         break;
     }
@@ -331,8 +329,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             switch (event->Wait(2000, FALSE))
             {
             case (WAIT_OBJECT_0):
-                return;
-            case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
                 break;

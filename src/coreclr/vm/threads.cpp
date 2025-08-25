@@ -2573,93 +2573,122 @@ void Thread::CoUninitialize()
 void Thread::CleanupDetachedThreads()
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
     }
     CONTRACTL_END;
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    ThreadStoreLockHolder threadStoreLockHolder;
+    ArrayList threadsWithManagedCleanup;
 
-    Thread *thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
-
-    STRESS_LOG0(LF_SYNC, LL_INFO1000, "T::CDT called\n");
-
-    while (thread != NULL)
     {
-        Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
+        ThreadStoreLockHolder threadStoreLockHolder;
 
-        if (thread->IsDetached())
+        Thread *thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+
+        STRESS_LOG0(LF_SYNC, LL_INFO1000, "T::CDT called\n");
+
+        while (thread != NULL)
         {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
+            Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
 
-            // Unmark that the thread is detached while we have the
-            // thread store lock. This will ensure that no other
-            // thread will race in here and try to delete it, too.
-            thread->ResetThreadState(TS_Detached);
-            InterlockedDecrement(&m_DetachCount);
-            if (!thread->IsBackground())
-                InterlockedDecrement(&m_ActiveDetachCount);
+            if (thread->IsDetached())
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
 
-            // If the debugger is attached, then we need to unlock the
-            // thread store before calling OnThreadTerminate. That
-            // way, we won't be holding the thread store lock if we
-            // need to block sending a detach thread event.
-            BOOL debuggerAttached =
+                if (!thread->IsGCSpecial())
+                {
+                    // Record threads that we'll need to do some managed cleanup of
+                    // after we exit the thread store lock.
+                    threadsWithManagedCleanup.Append(thread);
+                }
+
+                // Unmark that the thread is detached while we have the
+                // thread store lock. This will ensure that no other
+                // thread will race in here and try to delete it, too.
+                thread->ResetThreadState(TS_Detached);
+                InterlockedDecrement(&m_DetachCount);
+                if (!thread->IsBackground())
+                    InterlockedDecrement(&m_ActiveDetachCount);
+
+                // If the debugger is attached, then we need to unlock the
+                // thread store before calling OnThreadTerminate. That
+                // way, we won't be holding the thread store lock if we
+                // need to block sending a detach thread event.
+                BOOL debuggerAttached =
 #ifdef DEBUGGING_SUPPORTED
-                CORDebuggerAttached();
+                    CORDebuggerAttached();
 #else // !DEBUGGING_SUPPORTED
-                FALSE;
+                    FALSE;
 #endif // !DEBUGGING_SUPPORTED
 
-            if (debuggerAttached)
-                ThreadStore::UnlockThreadStore();
+                if (debuggerAttached)
+                    ThreadStore::UnlockThreadStore();
 
-            thread->OnThreadTerminate(debuggerAttached ? FALSE : TRUE);
+                thread->OnThreadTerminate(debuggerAttached ? FALSE : TRUE);
 
 #ifdef DEBUGGING_SUPPORTED
-            if (debuggerAttached)
-            {
-                ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
+                if (debuggerAttached)
+                {
+                    ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
-                // We remember the next Thread in the thread store
-                // list before deleting the current one. But we can't
-                // use that Thread pointer now that we release the
-                // thread store lock in the middle of the loop. We
-                // have to start from the beginning of the list every
-                // time. If two threads T1 and T2 race into
-                // CleanupDetachedThreads, then T1 will grab the first
-                // Thread on the list marked for deletion and release
-                // the lock. T2 will grab the second one on the
-                // list. T2 may complete destruction of its Thread,
-                // then T1 might re-acquire the thread store lock and
-                // try to use the next Thread in the thread store. But
-                // T2 just deleted that next Thread.
-                thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+                    // We remember the next Thread in the thread store
+                    // list before deleting the current one. But we can't
+                    // use that Thread pointer now that we release the
+                    // thread store lock in the middle of the loop. We
+                    // have to start from the beginning of the list every
+                    // time. If two threads T1 and T2 race into
+                    // CleanupDetachedThreads, then T1 will grab the first
+                    // Thread on the list marked for deletion and release
+                    // the lock. T2 will grab the second one on the
+                    // list. T2 may complete destruction of its Thread,
+                    // then T1 might re-acquire the thread store lock and
+                    // try to use the next Thread in the thread store. But
+                    // T2 just deleted that next Thread.
+                    thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+                }
+                else
+#endif // DEBUGGING_SUPPORTED
+                {
+                    thread = next;
+                }
+            }
+            else if (thread->HasThreadState(TS_Finalized))
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - finalized thread 0x%p\n", thread);
+
+                thread->ResetThreadState(TS_Finalized);
+                // We have finalized the managed Thread object.  Now it is time to clean up the unmanaged part
+                thread->DecExternalCount(TRUE);
+                thread = next;
             }
             else
-#endif // DEBUGGING_SUPPORTED
             {
                 thread = next;
             }
         }
-        else if (thread->HasThreadState(TS_Finalized))
-        {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - finalized thread 0x%p\n", thread);
 
-            thread->ResetThreadState(TS_Finalized);
-            // We have finalized the managed Thread object.  Now it is time to clean up the unmanaged part
-            thread->DecExternalCount(TRUE);
-            thread = next;
-        }
-        else
-        {
-            thread = next;
-        }
+        s_fCleanFinalizedThread = FALSE;
     }
 
-    s_fCleanFinalizedThread = FALSE;
+    ArrayList::Iterator iter = threadsWithManagedCleanup.Iterate();
+    while (iter.Next())
+    {
+        // During the actual thread shutdown,
+        // it may not be practical for us to run enough managed code to clean up
+        // any managed code that needs to know when a thread exits.
+        // Instead, run that clean up here when the thread object is finalized
+        // (which is definitely after the thread has exited)
+        //
+        // We know its safe to do this work here as we can't have finalized the managed thread object yet
+        // as we're running on the finalizer thread right now.
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(((Thread*)iter.GetElement())->GetExposedObject());
+        CALL_MANAGED_METHOD_NORET(args);
+    }
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -3349,7 +3378,6 @@ retry:
         goto retry;
     }
     _ASSERTE((ret >= WAIT_OBJECT_0  && ret < (WAIT_OBJECT_0  + (DWORD)countHandles)) ||
-             (ret >= WAIT_ABANDONED && ret < (WAIT_ABANDONED + (DWORD)countHandles)) ||
              (ret == WAIT_TIMEOUT) || (ret == WAIT_FAILED));
     // countHandles is used as an unsigned -- it should never be negative.
     _ASSERTE(countHandles >= 0);
@@ -3447,11 +3475,13 @@ retry:
                 DWORD subRet = WaitForSingleObject (handles[i], 0);
                 if ((subRet == WAIT_OBJECT_0) || (subRet == WAIT_FAILED))
                     break;
+#ifdef HOST_WINDOWS
                 if (subRet == WAIT_ABANDONED)
                 {
                     ret = (ret - WAIT_OBJECT_0) + WAIT_ABANDONED;
                     break;
                 }
+#endif // HOST_WINDOWS
                 // If we get alerted it just masks the real state of the current
                 // handle, so retry the wait.
                 if (subRet == WAIT_IO_COMPLETION)
@@ -3607,11 +3637,18 @@ retry:
 WaitCompleted:
 
     //Check that the return state is valid
+#ifdef HOST_WINDOWS
     _ASSERTE(WAIT_OBJECT_0 == ret  ||
          WAIT_ABANDONED == ret ||
          WAIT_TIMEOUT == ret ||
          WAIT_FAILED == ret  ||
          ERROR_TOO_MANY_POSTS == ret);
+#else
+    _ASSERTE(WAIT_OBJECT_0 == ret  ||
+         WAIT_TIMEOUT == ret ||
+         WAIT_FAILED == ret  ||
+         ERROR_TOO_MANY_POSTS == ret);
+#endif // HOST_WINDOWS
 
     //Wrong to time out if the wait was infinite
     _ASSERTE((WAIT_TIMEOUT != ret) || (INFINITE != millis));

@@ -82,22 +82,3 @@ extern "C" INT32 QCALLTYPE WaitHandle_SignalAndWait(HANDLE waitHandleSignal, HAN
     END_QCALL;
     return retVal;
 }
-
-#ifdef TARGET_UNIX
-extern "C" INT32 QCALLTYPE WaitHandle_WaitOnePrioritized(HANDLE handle, INT32 timeoutMs)
-{
-    QCALL_CONTRACT;
-
-    DWORD result = WAIT_FAILED;
-
-    BEGIN_QCALL;
-
-    _ASSERTE(handle != NULL);
-    _ASSERTE(handle != INVALID_HANDLE_VALUE);
-
-    result = PAL_WaitForSingleObjectPrioritized(handle, timeoutMs);
-
-    END_QCALL;
-    return (INT32)result;
-}
-#endif // TARGET_UNIX

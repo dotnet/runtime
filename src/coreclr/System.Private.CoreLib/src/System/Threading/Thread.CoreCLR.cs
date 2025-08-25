@@ -33,6 +33,10 @@ namespace System.Threading
         private string? _name;
         private StartHelper? _startHelper;
 
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+        internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
+#endif
+
         /*=========================================================================
         ** The base implementation of Thread is all native.  The following fields
         ** should never be used in the C# code.  They are here to define the proper
@@ -298,6 +302,30 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
         private static partial int GetThreadState(ThreadHandle t);
 
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+        internal void SetWaitSleepJoinState()
+        {
+            // This method is called when the thread is about to enter a wait, sleep, or join state.
+            // It sets the state in the native layer to indicate that the thread is waiting.
+            SetWaitSleepJoinState(GetNativeHandle());
+            GC.KeepAlive(this);
+        }
+
+        internal void ClearWaitSleepJoinState()
+        {
+            // This method is called when the thread is no longer in a wait, sleep, or join state.
+            // It clears the state in the native layer to indicate that the thread is no longer waiting.
+            ClearWaitSleepJoinState(GetNativeHandle());
+            GC.KeepAlive(this);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
+        private static partial void SetWaitSleepJoinState(ThreadHandle t);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
+        private static partial void ClearWaitSleepJoinState(ThreadHandle t);
+#endif
+
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
@@ -511,6 +539,33 @@ namespace System.Threading
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static void PollGCWorker() => PollGCInternal();
+        }
+
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo
+        {
+            get
+            {
+                return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
+
+                WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
+                {
+                    Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
+                    return _waitInfo;
+                }
+            }
+        }
+#endif
+
+#pragma warning disable CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
+        private void OnThreadExiting()
+#pragma warning restore CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
+        {
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+            // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
+            // the thread.
+            _waitInfo?.OnThreadExiting();
+#endif
         }
 
         [StructLayout(LayoutKind.Sequential)]
