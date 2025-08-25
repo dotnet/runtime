@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionPropertyAnnotatedAccessor();
             TestExtensionPropertyAnnotatedAccessorMismatch();
             TestExtensionPropertyRequires();
+            TestExtensionPropertyConflict();
         }
 
         static void TestExtensionMethod()
@@ -107,6 +108,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = GetWithFields().ExtensionMembersPropertyRequires;
         }
 
+        [UnexpectedWarning("IL2072", "ExtensionMembersPropertyConflict", "RequiresPublicFields", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
+        static void TestExtensionPropertyConflict()
+        {
+            var instance = GetWithFields();
+            instance.ExtensionMembersPropertyConflict.RequiresPublicFields();
+            instance.ExtensionMembersPropertyConflict = GetWithFields();
+        }
+
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
         public static Type GetWithFields() => null;
 
@@ -185,6 +194,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 [RequiresUnreferencedCode("ExtensionMembersPropertyRequires")]
                 get => null;
+            }
+
+            // Conflict scenario for extension property: both property-level and accessor-level DAM
+            // Analyzer behavior: skip IL2043 conflicts for extension properties (property metadata doesn't apply to accessors).
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public Type ExtensionMembersPropertyConflict
+            {
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                get => ExtensionMembersDataFlow.GetWithFields();
+
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                set => value.RequiresPublicFields();
             }
         }
     }
