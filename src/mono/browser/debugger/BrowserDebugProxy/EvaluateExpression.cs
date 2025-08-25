@@ -276,7 +276,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         switch (objectId?.Scheme)
                         {
-                            case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
+                            case "valuetype" when variable["isEnum"]?.Value<bool>() is true:
                                 typeRet = variable["className"]?.Value<string>();
                                 valueRet = $"({typeRet}) {value["value"].Value<double>()}";
                                 break;
@@ -478,7 +478,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") == true)
+                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") is true)
                 {
                     variableDefStrings.Add($"string {definition.IdName} = \"\";");
                     continue;
