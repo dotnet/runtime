@@ -1684,6 +1684,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
+            op2         = NormalizeIndexToNativeSized(op2);
+            node->Op(2) = op2;
+
             bool isContainableMemory = IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1);
 
             if (isContainableMemory || !op2->OperIsConst())
