@@ -1590,7 +1590,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
     // The value of (immUpperBound - immLowerBound + 1) is denoted as adjustedUpperBound.
 
     const ssize_t adjustedUpperBound     = (ssize_t)immUpperBound - immLowerBound + 1;
-    GenTree*      adjustedUpperBoundNode = gtNewIconNode(adjustedUpperBound, TYP_I_IMPL);
+    GenTree*      adjustedUpperBoundNode = gtNewIconNode(adjustedUpperBound, genActualType(immOp));
 
     GenTree* immOpDup = nullptr;
 
@@ -1599,7 +1599,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     if (immLowerBound != 0)
     {
-        immOpDup = gtNewOperNode(GT_SUB, TYP_I_IMPL, immOpDup, gtNewIconNode(immLowerBound, TYP_I_IMPL));
+        immOpDup = gtNewOperNode(GT_SUB, genActualType(immOp), immOpDup, gtNewIconNode(immLowerBound, TYP_I_IMPL));
     }
 
     GenTreeBoundsChk* hwIntrinsicChk =
