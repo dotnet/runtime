@@ -88,5 +88,5 @@ target_link_libraries(
 set_target_properties(
     %ProjectName%
     PROPERTIES LINK_FLAGS
-    %EXTRA_LINKER_ARGS%
+    "-Xlinker -O0 %EXTRA_LINKER_ARGS%"
 )
