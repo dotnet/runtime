@@ -91,8 +91,7 @@ namespace System.IO.Tests
         [Fact]
         public void BinaryWriter_SeekTests()
         {
-            // Max length allowed by CLR for byte[] is 0x7FFFFFC7
-            int[] iArrLargeValues = new int[] { 10000, 100000, int.MaxValue / 200, int.MaxValue / 1000, short.MaxValue, 0x7FFFFFC7, 0x7FFFFFC7 - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
+            int[] iArrLargeValues = new int[] { 10000, 100000, int.MaxValue / 200, int.MaxValue / 1000, short.MaxValue, Array.MaxLength, Array.MaxLength - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
 
             BinaryWriter dw2 = null;
             MemoryStream mstr = null;

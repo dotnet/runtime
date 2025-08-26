@@ -34,8 +34,7 @@ namespace System.IO
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
-        // Max array length allowed by CLR for byte[]
-        private const int MemStreamMaxLength = 0x7FFFFFC7;
+        private static int MemStreamMaxLength => Array.MaxLength;
 
         public MemoryStream()
             : this(0)
