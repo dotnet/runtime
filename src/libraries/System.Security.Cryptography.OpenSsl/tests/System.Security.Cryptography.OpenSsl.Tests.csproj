@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <!-- The library is not supported on Android / Apple (PNSE) -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'osx'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst'">true</IgnoreForCI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
