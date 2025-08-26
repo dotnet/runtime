@@ -611,7 +611,6 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67568", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
