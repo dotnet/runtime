@@ -40,7 +40,6 @@ This command will:
 
 ### Browser Testing (Recommended)
 
-
 If you don't have `dotnet-serve` installed, you can install it as a global .NET tool with:
 
 ```bash
