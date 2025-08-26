@@ -183,7 +183,7 @@ namespace ILCompiler
                     if (callsiteModule != null)
                     {
                         Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
-                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().Name);
                     }
                 }
             }
@@ -241,6 +241,7 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.MetadataTypeHandle:
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.TypeHandleForCasting:
                 case ReadyToRunHelperId.ObjectAllocator:
@@ -271,13 +272,17 @@ namespace ILCompiler
             // We need to make a small exception for canonical definitions because of RuntimeAugments.GetCanonType
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 
-            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
-                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
-            if (canPotentiallyConstruct)
-                return ReadyToRunHelperId.TypeHandle;
-
             if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
-                return ReadyToRunHelperId.TypeHandle;
+                return ReadyToRunHelperId.MetadataTypeHandle;
+
+            if (ConstructedEETypeNode.CreationAllowed(type))
+            {
+                if (NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.TypeHandle;
+
+                if (NodeFactory.DevirtualizationManager.CanReferenceMetadataMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.MetadataTypeHandle;
+            }
 
             return ReadyToRunHelperId.NecessaryTypeHandle;
         }
@@ -307,6 +312,8 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                     return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.MetadataTypeHandle:
+                    return NodeFactory.MetadataTypeSymbol((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                     return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.TypeHandleForCasting:

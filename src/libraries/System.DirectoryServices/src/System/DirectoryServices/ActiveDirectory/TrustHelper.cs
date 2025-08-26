@@ -910,7 +910,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string CreateTrustPassword()
         {
-#if NET8_0_OR_GREATER
+#if NET
             return RandomNumberGenerator.GetString(PasswordCharacterSet, PASSWORD_LENGTH);
 #else
             char[] cBuf = new char[PASSWORD_LENGTH];

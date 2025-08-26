@@ -20,7 +20,7 @@ steps:
           artifactName:  AndroidMonoArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App JIT Mono
           artifactName: AndroidHelloWorldArm64Mono
@@ -43,7 +43,7 @@ steps:
           artifactName:  AndroidMonoAOTArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App AOT Mono
           artifactName: AndroidHelloWorldArm64MonoAOT
@@ -67,7 +67,7 @@ steps:
           artifactName:  AndroidCoreCLRArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App JIT CoreCLR
           artifactName: AndroidHelloWorldArm64CoreCLR
@@ -90,7 +90,7 @@ steps:
           artifactName:  AndroidCoreCLRArm64StaticLinkingBuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App JIT CoreCLR Static Linking
           artifactName: AndroidHelloWorldArm64CoreCLRStaticLinking
@@ -113,7 +113,7 @@ steps:
           artifactName:  AndroidCoreCLRR2RArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App R2R CoreCLR
           artifactName: AndroidHelloWorldArm64CoreCLRR2R

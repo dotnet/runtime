@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Diagnostics;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -132,14 +136,315 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, handle) : HResults.E_NOTIMPL;
+    internal class EnumMethodInstances
+    {
+        private readonly Target _target;
+        private readonly TargetPointer _mainMethodDesc;
+        public readonly TargetPointer _appDomain;
+        private readonly ILoader _loader;
+        private readonly IRuntimeTypeSystem _rts;
+        private readonly ICodeVersions _cv;
+        public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
+        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
-    int IXCLRDataProcess.EnumMethodInstanceByAddress(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
-        => _legacyProcess is not null ? _legacyProcess.EnumMethodInstanceByAddress(handle, method) : HResults.E_NOTIMPL;
+        public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
+        {
+            _target = target;
+            _mainMethodDesc = methodDesc;
+            if (appDomain == TargetPointer.Null)
+            {
+                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                _appDomain = _target.ReadPointer(appDomainPointer);
+            }
+            else
+            {
+                _appDomain = appDomain;
+            }
+
+            _loader = _target.Contracts.Loader;
+            _rts = _target.Contracts.RuntimeTypeSystem;
+            _cv = _target.Contracts.CodeVersions;
+        }
+
+        public int Start()
+        {
+            MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
+            if (!HasClassOrMethodInstantiation(mainMD) && !_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
+            {
+                return HResults.S_FALSE;
+            }
+
+            methodEnumerator = IterateMethodInstances().GetEnumerator();
+
+            return HResults.S_OK;
+        }
+
+        private IEnumerable<MethodDescHandle> IterateMethodInstantiations(Contracts.ModuleHandle moduleHandle)
+        {
+            IEnumerable<TargetPointer> methodInstantiations = _loader.GetInstantiatedMethods(moduleHandle);
+
+            foreach (TargetPointer methodPtr in methodInstantiations)
+            {
+                yield return _rts.GetMethodDescHandle(methodPtr);
+            }
+        }
+
+        private IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
+        {
+            IEnumerable<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
+
+            foreach (TargetPointer type in typeParams)
+            {
+                yield return _rts.GetTypeHandle(type);
+            }
+        }
+
+        private IEnumerable<Contracts.ModuleHandle> IterateModules()
+        {
+            ILoader loader = _target.Contracts.Loader;
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                _appDomain,
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+
+            foreach (Contracts.ModuleHandle moduleHandle in modules)
+            {
+                yield return moduleHandle;
+            }
+        }
+
+        private IEnumerable<MethodDescHandle> IterateMethodInstances()
+        {
+            /*
+            There are 4 cases for method instances:
+            1. Non-generic method on non-generic type  (There is 1 MethodDesc for the method (excluding unboxing stubs, and such)
+            2. Generic method on non-generic type (There is a generic defining method + a instantiated method for each particular instantiation)
+            3. Non-generic method on generic type (There is 1 method for each generic instance created + 1 for the method on the uninstantiated generic type)
+            4. Generic method on Generic type (There are N generic defining methods where N is the number of generic instantiations of the generic type + 1 on the uninstantiated generic types + M different generic instances of the method)
+            */
+
+            MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
+
+            if (!HasClassOrMethodInstantiation(mainMD))
+            {
+                // case 1
+                // no method or class instantiation, then it's not generic.
+                if (_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
+                {
+                    yield return mainMD;
+                }
+                yield break;
+            }
+
+            TargetPointer mtAddr = _rts.GetMethodTable(mainMD);
+            TypeHandle mainMT = _rts.GetTypeHandle(mtAddr);
+            TargetPointer mainModule = _rts.GetModule(mainMT);
+            uint mainMTToken = _rts.GetTypeDefToken(mainMT);
+            uint mainMDToken = _rts.GetMethodToken(mainMD);
+            ushort slotNum = _rts.GetSlotNumber(mainMD);
+
+            if (HasMethodInstantiation(mainMD))
+            {
+                // case 2/4
+                // 2 is trivial, 4 is covered because the defining method on a generic type is not instantiated
+                foreach (Contracts.ModuleHandle moduleHandle in IterateModules())
+                {
+                    foreach (MethodDescHandle methodDesc in IterateMethodInstantiations(moduleHandle))
+                    {
+                        TypeHandle methodTypeHandle = _rts.GetTypeHandle(_rts.GetMethodTable(methodDesc));
+
+                        if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
+                        if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
+
+                        if (_cv.HasNativeCodeAnyVersion(methodDesc.Address))
+                        {
+                            yield return methodDesc;
+                        }
+                    }
+                }
+
+                yield break;
+            }
+
+            if (HasClassInstantiation(mainMD))
+            {
+                // case 3
+                // class instantiations are only interesting if the method is not generic
+                foreach (Contracts.ModuleHandle moduleHandle in IterateModules())
+                {
+                    if (HasClassInstantiation(mainMD))
+                    {
+                        foreach (Contracts.TypeHandle typeParam in IterateTypeParams(moduleHandle))
+                        {
+                            uint typeParamToken = _rts.GetTypeDefToken(typeParam);
+
+                            // not a MethodTable
+                            if (typeParamToken == 0) continue;
+
+                            // Check the class token
+                            if (mainMTToken != typeParamToken) continue;
+
+                            // Check the module is correct
+                            if (mainModule != _rts.GetModule(typeParam)) continue;
+
+                            TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
+                            TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
+
+                            TargetPointer methodDescAddr = _rts.GetMethodDescForSlot(cmtHandle, slotNum);
+                            if (methodDescAddr == TargetPointer.Null) continue;
+                            MethodDescHandle methodDesc = _rts.GetMethodDescHandle(methodDescAddr);
+
+                            if (_cv.HasNativeCodeAnyVersion(methodDescAddr))
+                            {
+                                yield return methodDesc;
+                            }
+                        }
+                    }
+                }
+
+                yield break;
+            }
+
+        }
+
+        private bool HasClassOrMethodInstantiation(MethodDescHandle md)
+        {
+            return HasClassInstantiation(md) || HasMethodInstantiation(md);
+        }
+
+        private bool HasClassInstantiation(MethodDescHandle md)
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mtAddr = rts.GetMethodTable(md);
+            TypeHandle mt = rts.GetTypeHandle(mtAddr);
+            return !rts.GetInstantiation(mt).IsEmpty;
+        }
+
+        private bool HasMethodInstantiation(MethodDescHandle md)
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            if (rts.IsGenericMethodDefinition(md)) return true;
+            return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+        }
+    }
+
+    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    {
+        int hr = HResults.S_FALSE;
+        *handle = 0;
+
+        ulong handleLocal = default;
+#if DEBUG
+        int hrLocal = default;
+        if (_legacyProcess is not null)
+        {
+            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
+        }
+#endif
+
+        try
+        {
+            TargetCodePointer methodAddr = address.ToTargetCodePointer(_target);
+
+            // ClrDataAccess::IsPossibleCodeAddress
+            // Does a trivial check on the readability of the address
+            bool isTriviallyReadable = _target.TryRead(methodAddr, out byte _);
+            if (!isTriviallyReadable)
+                throw new ArgumentException();
+
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (eman.GetCodeBlockHandle(methodAddr) is CodeBlockHandle cbh &&
+                eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+            {
+                EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
+                emi.LegacyHandle = handleLocal;
+
+                GCHandle gcHandle = GCHandle.Alloc(emi);
+                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+                hr = emi.Start();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
+
+    int IXCLRDataProcess.EnumMethodInstanceByAddress(ulong* handle, out IXCLRDataMethodInstance? method)
+    {
+        method = default;
+        int hr = HResults.S_OK;
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+        if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
+
+        IXCLRDataMethodInstance? legacyMethod = null;
+
+#if DEBUG
+        int hrLocal = default;
+        if (_legacyProcess is not null)
+        {
+            ulong legacyHandle = emi.LegacyHandle;
+            hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, out legacyMethod);
+            emi.LegacyHandle = legacyHandle;
+        }
+#endif
+
+        try
+        {
+            if (emi.methodEnumerator.MoveNext())
+            {
+                MethodDescHandle methodDesc = emi.methodEnumerator.Current;
+                method = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumMethodInstancesByAddress(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumMethodInstancesByAddress(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+        if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
+        gcHandle.Free();
+
+#if DEBUG
+        if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
+        {
+            int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
+            if (hrLocal < 0)
+                return hrLocal;
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetDataByAddress(
         ClrDataAddress address,

@@ -475,6 +475,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 #endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
+    // Handle async continuation argument.
+    _ASSERTE(!!sArgPlacerDst.HasAsyncContinuation() == !!sArgPlacerSrc.HasAsyncContinuation());
+    if (sArgPlacerDst.HasAsyncContinuation())
+    {
+        // The async continuation is implicit in both signatures.
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
     // destination locations.
     while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -1523,7 +1535,7 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
     if (pMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    if (pMD->MethodDesc::IsVarArg())
+    if (pMD->IsVarArg())
         COMPlusThrow(kNotSupportedException, IDS_EE_VARARG_NOT_SUPPORTED);
 }
 

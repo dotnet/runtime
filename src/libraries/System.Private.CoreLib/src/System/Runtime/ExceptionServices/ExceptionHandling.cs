@@ -48,6 +48,10 @@ namespace System.Runtime.ExceptionServices
         /// event and then return.
         ///
         /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        ///
+        /// This API is thread safe and can be called from multiple threads. However, only one thread
+        /// will trigger the event handlers, while other threads will wait indefinitely without raising
+        /// the event.
         /// </remarks>
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
         {

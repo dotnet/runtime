@@ -150,7 +150,6 @@ namespace ILCompiler
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
-            _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(_nodeFactory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved")), "Substitution for methods removed based on scanning");
 
             _dependencyGraph.ComputeMarkedNodes();
 
@@ -277,37 +276,18 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
-        public BodyAndFieldSubstitutions GetBodyAndFieldSubstitutions()
-        {
-            Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
-
-            bool hasIDynamicInterfaceCastableType = false;
-
-            foreach (var type in ConstructedEETypes)
-            {
-                if (type.IsIDynamicInterfaceCastable)
-                {
-                    hasIDynamicInterfaceCastableType = true;
-                    break;
-                }
-            }
-
-            if (!hasIDynamicInterfaceCastableType)
-            {
-                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
-                // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
-                // Trim out the logic that we can't do easily here.
-                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
-                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetKnownMethod("GetDynamicInterfaceImplementation", null);
-                bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
-            }
-
-            return new BodyAndFieldSubstitutions(bodySubstitutions, []);
-        }
-
         public TypeMapManager GetTypeMapManager()
         {
             return new ScannedTypeMapManager(_factory);
+        }
+
+        public IEnumerable<string> GetAnalysisCharacteristics()
+        {
+            foreach (DependencyNodeCore<NodeFactory> n in MarkedNodes)
+            {
+                if (n is AnalysisCharacteristicNode acn)
+                    yield return acn.Characteristic;
+            }
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -393,12 +373,15 @@ namespace ILCompiler
                 ArrayBuilder<GenericLookupResult> slotBuilder = default;
                 ArrayBuilder<GenericLookupResult> discardedBuilder = default;
 
-                // Find all constructed type lookups. We'll deduplicate those with necessary type lookups.
+                // Find all constructed and metadata type lookups. We'll use this for deduplication.
                 var constructedTypeLookups = new HashSet<TypeDesc>();
+                var metadataTypeLookups = new HashSet<TypeDesc>();
                 foreach (GenericLookupResult lookupResult in slots)
                 {
                     if (lookupResult is TypeHandleGenericLookupResult thLookup)
                         constructedTypeLookups.Add(thLookup.Type);
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                        metadataTypeLookups.Add(mdthLookup.Type);
                 }
 
                 // We go over all slots in the layout, looking for references to method dictionaries
@@ -422,7 +405,12 @@ namespace ILCompiler
                     }
                     else if (lookupResult is NecessaryTypeHandleGenericLookupResult thLookup)
                     {
-                        if (constructedTypeLookups.Contains(thLookup.Type))
+                        if (constructedTypeLookups.Contains(thLookup.Type) || metadataTypeLookups.Contains(thLookup.Type))
+                            continue;
+                    }
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                    {
+                        if (constructedTypeLookups.Contains(mdthLookup.Type))
                             continue;
                     }
 
@@ -485,6 +473,7 @@ namespace ILCompiler
         {
             private CompilerTypeSystemContext _context;
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _metadataMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
@@ -513,6 +502,11 @@ namespace ILCompiler
                     if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
                     {
                         _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
+                    }
+
+                    if (node is MetadataEETypeNode metadataMT)
+                    {
+                        _metadataMethodTables.Add(metadataMT.Type);
                     }
 
                     TypeDesc type = (node as ConstructedEETypeNode)?.Type;
@@ -770,6 +764,13 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type);
+            }
+
+            public override bool CanReferenceMetadataMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _metadataMethodTables.Contains(type);
             }
 
             public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
