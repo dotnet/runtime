@@ -145,7 +145,7 @@ jobs:
 
     # Direct run for aspnet2 collection: execute the repo script and produce the final .mch without Helix
     - ${{ if eq(parameters.collectionName, 'aspnet2') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet2.py --runtime-bits-path $(Core_Root_Dir) --output $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet2.py --core_root $(Core_Root_Dir) --output_mch $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: Run aspnet2 SuperPMI collection
 
       # Run superpmi collection in helix
