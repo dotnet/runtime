@@ -1962,7 +1962,7 @@ namespace System.Management
             string relationshipQualifier,
             string thisRole)
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;

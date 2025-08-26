@@ -143,7 +143,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
-            if (storeCtx.SupportsSearchNatively == false)
+            if (!storeCtx.SupportsSearchNatively)
                 throw new InvalidOperationException(SR.PrincipalSearcherNoUnderlying);
 
             // We need to generate the searcher every time because the object could change
@@ -167,7 +167,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
-            if (storeCtx.SupportsSearchNatively == false)
+            if (!storeCtx.SupportsSearchNatively)
                 throw new InvalidOperationException(SR.PrincipalSearcherNoUnderlying);
 
             return storeCtx.SearcherNativeType();

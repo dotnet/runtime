@@ -1600,7 +1600,7 @@ namespace System.IO.Ports
 
                     fixed (int* eventsOccurredPtr = &eventsOccurred)
                     {
-                        if (Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped) == false)
+                        if (!Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped))
                         {
                             int hr = Marshal.GetLastPInvokeError();
 
@@ -1682,7 +1682,7 @@ namespace System.IO.Ports
                 if ((nativeEvents & (Interop.Kernel32.CommEvents.EV_ERR | Interop.Kernel32.CommEvents.EV_RXCHAR)) != 0)
                 {
                     int errors = 0;
-                    if (Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero) == false)
+                    if (!Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero))
                     {
 
                         //throw Win32Marshal.GetExceptionForLastWin32Error();

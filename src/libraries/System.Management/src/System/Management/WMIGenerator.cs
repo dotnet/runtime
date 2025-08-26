@@ -551,26 +551,14 @@ namespace System.Management
                 OriginalClassName = thePath.ClassName;
                 OriginalNamespace = thePath.NamespacePath;
 
-                char[] arrString = OriginalNamespace.ToCharArray();
-
-                // Remove the server from the namespace
-                if (arrString.Length >= 2 && arrString[0] == '\\' && arrString[1] == '\\')
+                // Remove the server from the namespace. For a path like \\server\root\cimv2,
+                // strip the leading \\server\ and keep everything after it.
+                if (OriginalNamespace.Length >= 2 && OriginalNamespace[0] == '\\' && OriginalNamespace[1] == '\\')
                 {
-                    bool bStart = false;
-                    int Len = OriginalNamespace.Length;
-                    OriginalNamespace = string.Empty;
-                    for (int i = 2; i < Len; i++)
-                    {
-                        if (bStart)
-                        {
-                            OriginalNamespace += arrString[i];
-                        }
-                        else
-                            if (arrString[i] == '\\')
-                        {
-                            bStart = true;
-                        }
-                    }
+                    int firstSlashAfterServer = OriginalNamespace.IndexOf('\\', 2);
+                    OriginalNamespace = firstSlashAfterServer >= 0 && firstSlashAfterServer + 1 < OriginalNamespace.Length
+                        ? OriginalNamespace.Substring(firstSlashAfterServer + 1)
+                        : string.Empty;
                 }
 
             }
@@ -5047,7 +5035,7 @@ namespace System.Management
                     break;
 
                 case CimType.UInt16:
-                    if (bUnsignedSupported == false)
+                    if (!bUnsignedSupported)
                     {
                         retFunctionName = "ToInt16";
                     }
@@ -5064,7 +5052,7 @@ namespace System.Management
 
                 case CimType.UInt32:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             retFunctionName = "ToInt32";
                         }
@@ -5081,7 +5069,7 @@ namespace System.Management
                     }
                 case CimType.UInt64:
                     {
-                        if (bUnsignedSupported == false)
+                        if (!bUnsignedSupported)
                         {
                             retFunctionName = "ToInt64";
                         }
@@ -5777,7 +5765,7 @@ namespace System.Management
         {
             varValue ??= new CodeVariableReferenceExpression("value");
 
-            if (bArray == false)
+            if (!bArray)
             {
                 statColl.Add(new CodeAssignStatement(prop,
                     ConvertPropertyToString(strType, varValue)));
@@ -6145,7 +6133,7 @@ namespace System.Management
 
             if (isTimeInterval)
             {
-                if (bTimeSpanConversionFunctionsAdded == false)
+                if (!bTimeSpanConversionFunctionsAdded)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConversionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
@@ -6155,7 +6143,7 @@ namespace System.Management
             }
             else
             {
-                if (bDateConversionFunctionsAdded == false)
+                if (!bDateConversionFunctionsAdded)
                 {
                     cc.Comments.Add(new CodeCommentStatement(SR.CommentDateConversionFunction));
                     bDateConversionFunctionsAdded = true;
