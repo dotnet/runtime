@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -57,6 +58,19 @@ internal readonly struct GC_1 : IGC
         return _target.Read<uint>(pMaxGeneration);
     }
 
+    void IGC.GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr)
+    {
+        minAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCLowestAddress));
+        maxAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHighestAddress));
+    }
+
+    TargetPointer IGC.GetCurrentGCStateAddress()
+    {
+        if (!IsBackgroundGCEnabled())
+            return TargetPointer.Null;
+        return _target.ReadGlobalPointer(Constants.Globals.CurrentGCState);
+    }
+
     IEnumerable<TargetPointer> IGC.GetGCHeaps()
     {
         if (GetGCType() != GCType.Server)
@@ -71,6 +85,39 @@ internal readonly struct GC_1 : IGC
         {
             yield return _target.ReadPointer(pHeapTable + (i * (uint)_target.PointerSize));
         }
+    }
+
+    GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
+    {
+        if (GetGCType() != GCType.Server)
+            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+
+        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
+        Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(heap.FinalizeQueue);
+
+        IList<GCGenerationData> generationDataList = heap.GenerationTable.Select(gen =>
+            new GCGenerationData()
+            {
+                StartSegment = gen.StartSegment,
+                AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
+                AllocationContextPointer = gen.AllocationContext.Pointer,
+                AllocationContextLimit = gen.AllocationContext.Limit,
+            }).ToList();
+
+        return new GCHeapData()
+        {
+            MarkArray = heap.MarkArray,
+            NextSweepObject = heap.NextSweepObj,
+            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr,
+            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr,
+            AllocAllocated = heap.AllocAllocated,
+            EphemeralHeapSegment = heap.EphemeralHeapSegment,
+            CardTable = heap.CardTable,
+            GenerationTable = generationDataList.AsReadOnly(),
+            FillPointers = finalize.FillPointers,
+            SavedSweepEphemeralSegment = heap.SavedSweepEphemeralSeg ?? TargetPointer.Null,
+            SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
+        };
     }
 
     private GCType GetGCType()
@@ -88,5 +135,11 @@ internal readonly struct GC_1 : IGC
         {
             return GCType.Unknown; // Unknown or unsupported GC type
         }
+    }
+
+    private bool IsBackgroundGCEnabled()
+    {
+        string[] identifiers = ((IGC)this).GetGCIdentifiers();
+        return identifiers.Contains(GCIdentifiers.Background);
     }
 }

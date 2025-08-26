@@ -19,6 +19,8 @@ public enum DataType
     nuint,
     pointer,
 
+    /* VM Data Types */
+
     GCHandle,
     CodePointer,
     Thread,
@@ -129,4 +131,11 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+
+
+    /* GC Data Types */
+
+    GCHeap,
+    Generation,
+    CFinalize,
 }

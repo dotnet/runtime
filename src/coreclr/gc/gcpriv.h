@@ -5680,6 +5680,7 @@ class CFinalize
 {
 
     friend class CFinalizeStaticAsserts;
+    friend struct ::cdac_data<CFinalize>;
 
 private:
 

@@ -74,6 +74,8 @@ public static class Constants
         public const string OperatingSystem = nameof(OperatingSystem);
 
         public const string GCInfoVersion = nameof(GCInfoVersion);
+        public const string GCLowestAddress = nameof(GCLowestAddress);
+        public const string GCHighestAddress = nameof(GCHighestAddress);
 
         // Globals found on GCDescriptor
         // see src/coreclr/gc/datadescriptors/datadescriptor.inc
@@ -82,6 +84,9 @@ public static class Constants
         public const string StructureInvalidCount = nameof(StructureInvalidCount);
         public const string NumHeaps = nameof(NumHeaps);
         public const string Heaps = nameof(Heaps);
+        public const string CurrentGCState = nameof(CurrentGCState);
+        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string TotalGenerationCount = nameof(TotalGenerationCount);
     }
     public static class FieldNames
     {
