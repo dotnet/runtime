@@ -3357,6 +3357,14 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr, size_t size)
+        {
+            // We calculate the size dynamically, so the size value here is
+            // invalid. Fall back to the unsized delete operator.
+            return ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 

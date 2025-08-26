@@ -321,7 +321,7 @@ public:
     static BOOL isStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
-        
+
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
         if (isCachedInterfaceDispatchStub(addr))
             return TRUE;
@@ -1549,6 +1549,13 @@ private:
     void* operator new(size_t baseSize, NumCallStubs_t, size_t numCallStubs)
     {
         return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
+    }
+
+    static void operator delete(void* ptr, size_t size)
+    {
+        // We calculate the size dynamically, so the size value here is
+        // invalid. Fall back to the unsized delete operator.
+        return ::operator delete(ptr);
     }
 };
 #ifdef _MSC_VER
