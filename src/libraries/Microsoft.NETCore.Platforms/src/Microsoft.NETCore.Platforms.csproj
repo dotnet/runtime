@@ -20,9 +20,16 @@
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(TargetRid)" Imports="$(PortableTargetRid)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
+    <!--
+      When building from source, ensure the RID we're building for and the RID we're building on are part of the RID graph.
+      The RID we're targeting may not be part of the graph because source-build builds are generally non-portable.
+      The RID we're building on may not be part of the RID graph if we are being built with a source-built SDK.
+      If we're cross-building (for example building source-build for a new version of an existing distro and bootstrapping from an old version)
+      then the RID we're building on would be different than the RID we're targeting.
+    -->
+    <AdditionalRuntimeIdentifiers Include="$(TargetRid)" Imports="$(PortableTargetRid)" />
+    <AdditionalRuntimeIdentifiers Include="$(NETCoreSdkRuntimeIdentifier)" Imports="$(NETCoreSdkPortableRuntimeIdentifier)" />
   </ItemGroup>
 
   <ItemGroup>

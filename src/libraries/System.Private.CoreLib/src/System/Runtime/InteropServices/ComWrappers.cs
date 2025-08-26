@@ -785,7 +785,7 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This!.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
                 return new ManagedObjectWrapperHolder(value, c);
             }, new { This = this, flags });
 
