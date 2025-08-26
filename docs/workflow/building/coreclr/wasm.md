@@ -40,7 +40,7 @@ This command will:
 
 ### Browser Testing (Recommended)
 
-The simplest way to test the runtime in a browser is to use `dotnet-serve`:
+The simplest way to test the runtime in a browser is to use [`dotnet-serve`](https://github.com/natemcmaster/dotnet-serve):
 
 **Linux/macOS:**
 ```bash
