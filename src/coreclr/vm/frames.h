@@ -1268,6 +1268,7 @@ template<>
 struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+    static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1710,6 +1711,14 @@ public:
 
 private:
     friend class VirtualCallStubManager;
+    friend struct ::cdac_data<StubDispatchFrame>;
+};
+
+template <>
+struct cdac_data<StubDispatchFrame>
+{
+    static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
+    static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;

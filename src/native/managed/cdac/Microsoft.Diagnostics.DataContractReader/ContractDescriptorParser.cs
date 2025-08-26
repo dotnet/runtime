@@ -68,14 +68,14 @@ public partial class ContractDescriptorParser
 
         public Dictionary<string, GlobalDescriptor>? Globals { get; set; }
 
-        public Dictionary<string, string>? GlobalStrings { get; set; }
+        public Dictionary<string, GlobalDescriptor>? SubDescriptors { get; set; }
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement>? Extras { get; set; }
 
         public override string ToString()
         {
-            return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}, GlobalStrings: {GlobalStrings?.Count}";
+            return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}, SubDescriptors: {SubDescriptors?.Count}";
         }
 
     }

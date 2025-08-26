@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Wasm;
 
 namespace System.Runtime.Intrinsics
 {
@@ -2593,6 +2594,10 @@ namespace System.Runtime.Intrinsics
                 {
                     result = (TVectorSingle)(object)AdvSimd.Arm64.ConvertToSingleLower((Vector128<double>)(object)vector);
                 }
+                else if (PackedSimd.IsSupported)
+                {
+                    result = (TVectorSingle)(object)PackedSimd.ConvertToSingle((Vector128<double>)(object)vector).GetLower();
+                }
                 else
                 {
                     Vector128<double> value = (Vector128<double>)(object)vector;
@@ -2905,6 +2910,11 @@ namespace System.Runtime.Intrinsics
                 if (AdvSimd.Arm64.IsSupported)
                 {
                     result = (TVectorDouble)(object)AdvSimd.Arm64.ConvertToDouble((Vector64<float>)(object)vector);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<float> value = Vector128.Create((Vector64<float>)(object)vector, (Vector64<float>)(object)vector);
+                    result = (TVectorDouble)(object)PackedSimd.ConvertToDoubleLower(value);
                 }
                 else
                 {
