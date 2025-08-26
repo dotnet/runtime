@@ -75,6 +75,7 @@ TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
@@ -109,7 +110,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
 | `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
 | `Assembly` | `Module` | Pointer to the Assemblies module |
-| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected |
+| `Assembly` | `IsCollectible` | Flag indicating if this module may be collected |
+| `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
@@ -546,11 +548,45 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     return TargetPointer.Null;
 }
 
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
+{
+    Data.ModuleLookupMap lookupMap = new Data.ModuleLookupMap(table);
+    // have to read lookupMap an extra time upfront because only the first map
+    // has valid supportedFlagsMask
+    TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    uint index = 1; // zero is invalid
+    do
+    {
+        uint count = target.Read<uint>(table + /*ModuleLookupMap::Count*/);
+        if (index < count)
+        {
+            TargetPointer entryAddress = target.ReadPointer(table + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer rawValue = target.ReadPointer(entryAddress);
+            ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
+            if (maskedValue != 0)
+                yield return (new TargetPointer(maskedValue), index);
+            index++;
+        }
+        else
+        {
+            table = target.ReadPointer(table + /*ModuleLookupMap::Next*/);
+            index -= count;
+        }
+    } while (table != TargetPointer.Null);
+}
+
 bool IsCollectible(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
     byte isCollectible = target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
+}
+
+bool IsDynamic(ModuleHandle handle)
+{
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isDynamic = target.Read<byte>(assembly + /* Assembly::IsDynamic*/);
+    return isDynamic != 0;
 }
 
 bool IsAssemblyLoaded(ModuleHandle handle)

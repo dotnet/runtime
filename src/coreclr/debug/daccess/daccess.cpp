@@ -4183,6 +4183,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
         methodDesc = ExecutionManager::GetCodeMethodDesc(taddr);
         if (!methodDesc)
         {
+            status = S_FALSE;
             goto Exit;
         }
 
