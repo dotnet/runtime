@@ -177,6 +177,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [RequiresUnreferencedCode(nameof(ExtensionMembersStaticMethodRequires))]
             public static void ExtensionMembersStaticMethodRequires() { }
 
+            // Annotations on extension properties have no effect:
+            // https://github.com/dotnet/runtime/issues/119113
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersProperty
             {
@@ -186,6 +188,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 set => value.RequiresPublicMethods();
             }
 
+            // Annotations on extension properties have no effect:
+            // https://github.com/dotnet/runtime/issues/119113
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersPropertyMismatch
             {
@@ -220,8 +224,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 get => null;
             }
 
-            // Conflict scenario for extension property: both property-level and accessor-level DAM
-            // Analyzer behavior: skip IL2043 conflicts for extension properties (property metadata doesn't apply to accessors).
+            // Annotations on extension properties have no effect:
+            // https://github.com/dotnet/runtime/issues/119113
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersPropertyConflict
             {
