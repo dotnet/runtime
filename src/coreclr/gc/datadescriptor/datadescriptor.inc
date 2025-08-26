@@ -21,9 +21,7 @@ CDAC_TYPE_FIELD(GCHeap, /*pointer*/, AllocAllocated, cdac_data<GC_NAMESPACE::gc_
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, EphemeralHeapSegment, cdac_data<GC_NAMESPACE::gc_heap>::EphemeralHeapSegment)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, CardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FinalizeQueue, cdac_data<GC_NAMESPACE::gc_heap>::FinalizeQueue)
-
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, GenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::GenerationTable)
-
 #ifndef USE_REGIONS
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
@@ -51,6 +49,22 @@ CDAC_GLOBALS_BEGIN()
 
 CDAC_GLOBAL(TotalGenerationCount, /*uint32*/, (uint32_t)total_generation_count)
 CDAC_GLOBAL(CFinalizeFillPointersLength, /*uint32*/, (uint32_t)cdac_data<GC_NAMESPACE::CFinalize>::FillPointersLength)
+
+#ifndef SERVER_GC
+CDAC_GLOBAL_POINTER(GCHeapMarkArray, cdac_data<GC_NAMESPACE::gc_heap>::MarkArray)
+CDAC_GLOBAL_POINTER(GCHeapNextSweepObj, cdac_data<GC_NAMESPACE::gc_heap>::NextSweepObj)
+CDAC_GLOBAL_POINTER(GCHeapBackgroundMinSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMinSavedAddr)
+CDAC_GLOBAL_POINTER(GCHeapBackgroundMaxSavedAddr, cdac_data<GC_NAMESPACE::gc_heap>::BackgroundMaxSavedAddr)
+CDAC_GLOBAL_POINTER(GCHeapAllocAllocated, cdac_data<GC_NAMESPACE::gc_heap>::AllocAllocated)
+CDAC_GLOBAL_POINTER(GCHeapEphemeralHeapSegment, cdac_data<GC_NAMESPACE::gc_heap>::EphemeralHeapSegment)
+CDAC_GLOBAL_POINTER(GCHeapCardTable, cdac_data<GC_NAMESPACE::gc_heap>::CardTable)
+CDAC_GLOBAL_POINTER(GCHeapFinalizeQueue, cdac_data<GC_NAMESPACE::gc_heap>::FinalizeQueue)
+CDAC_GLOBAL_POINTER(GCHeapGenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::GenerationTable)
+#ifndef USE_REGIONS
+CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
+CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
+#endif // !USE_REGIONS
+#endif // !SERVER_GC
 
 #ifdef SERVER_GC
 #define GC_TYPE server

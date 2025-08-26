@@ -59,6 +59,9 @@ public interface IGC : IContract
 
     /* SVR only APIs */
     GCHeapData SVRGetHeapData(TargetPointer heapAddress) => throw new NotImplementedException();
+
+    /* WKS only APIs */
+    GCHeapData WKSGetHeapData() => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

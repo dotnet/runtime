@@ -28,6 +28,13 @@ namespace GC_NAMESPACE {
 
 // On non-MSVC builds explicit specializations must be declared in the namespace the template was defined.
 // Due to the gc being built into coreclr, cdac_data must be defined in the global scope.
+
+#ifdef SERVER_GC
+#define GC_HEAP_FIELD(cdacName, fieldName) static constexpr size_t cdacName = offsetof(GC_NAMESPACE::gc_heap, fieldName);
+#else // !SERVER_GC
+#define GC_HEAP_FIELD(cdacName, fieldName) static constexpr decltype(&GC_NAMESPACE::gc_heap::fieldName) cdacName = &GC_NAMESPACE::gc_heap::fieldName;
+#endif // !SERVER_GC
+
 template<>
 struct cdac_data<GC_NAMESPACE::gc_heap>
 {
@@ -36,23 +43,23 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 #endif // BACKGROUND_GC
 #ifdef SERVER_GC
     static constexpr GC_NAMESPACE::gc_heap*** Heaps = &GC_NAMESPACE::gc_heap::g_heaps;
+#endif // SERVER_GC
 
-    static constexpr size_t MarkArray = offsetof(GC_NAMESPACE::gc_heap, mark_array);
-    static constexpr size_t NextSweepObj = offsetof(GC_NAMESPACE::gc_heap, next_sweep_obj);
-    static constexpr size_t BackgroundMinSavedAddr = offsetof(GC_NAMESPACE::gc_heap, background_saved_lowest_address);
-    static constexpr size_t BackgroundMaxSavedAddr = offsetof(GC_NAMESPACE::gc_heap, background_saved_highest_address);
-    static constexpr size_t AllocAllocated = offsetof(GC_NAMESPACE::gc_heap, alloc_allocated);
-    static constexpr size_t EphemeralHeapSegment = offsetof(GC_NAMESPACE::gc_heap, ephemeral_heap_segment);
-    static constexpr size_t CardTable = offsetof(GC_NAMESPACE::gc_heap, card_table);
-    static constexpr size_t FinalizeQueue = offsetof(GC_NAMESPACE::gc_heap, finalize_queue);
+    GC_HEAP_FIELD(MarkArray, mark_array)
+    GC_HEAP_FIELD(NextSweepObj, next_sweep_obj)
+    GC_HEAP_FIELD(BackgroundMinSavedAddr, background_saved_lowest_address)
+    GC_HEAP_FIELD(BackgroundMaxSavedAddr, background_saved_highest_address)
+    GC_HEAP_FIELD(AllocAllocated, alloc_allocated)
+    GC_HEAP_FIELD(EphemeralHeapSegment, ephemeral_heap_segment)
+    GC_HEAP_FIELD(CardTable, card_table)
+    GC_HEAP_FIELD(FinalizeQueue, finalize_queue)
 
-    static constexpr size_t GenerationTable = offsetof(GC_NAMESPACE::gc_heap, generation_table);
+    GC_HEAP_FIELD(GenerationTable, generation_table)
 
 #ifndef USE_REGIONS
-    static constexpr size_t SavedSweepEphemeralSeg = offsetof(GC_NAMESPACE::gc_heap, saved_sweep_ephemeral_seg);
-    static constexpr size_t SavedSweepEphemeralStart = offsetof(GC_NAMESPACE::gc_heap, saved_sweep_ephemeral_start);
+    GC_HEAP_FIELD(SavedSweepEphemeralSeg, saved_sweep_ephemeral_seg)
+    GC_HEAP_FIELD(SavedSweepEphemeralStart, saved_sweep_ephemeral_start)
 #endif // !USE_REGIONS
-#endif // SERVER_GC
 };
 
 template<>

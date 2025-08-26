@@ -462,9 +462,9 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
-    int GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details); // wks only
+    int GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details);
     [PreserveSig]
-    int GetGCHeapStaticData(/*struct DacpGcHeapDetails */ void* data);
+    int GetGCHeapStaticData(DacpGcHeapDetails* details);
     [PreserveSig]
     int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
     [PreserveSig]

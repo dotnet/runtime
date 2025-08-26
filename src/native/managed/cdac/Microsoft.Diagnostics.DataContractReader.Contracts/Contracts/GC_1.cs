@@ -120,6 +120,65 @@ internal readonly struct GC_1 : IGC
         };
     }
 
+    GCHeapData IGC.WKSGetHeapData()
+    {
+        if (GetGCType() != GCType.Workstation)
+            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
+
+        TargetPointer markArray = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapMarkArray));
+        TargetPointer nextSweepObj = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapNextSweepObj));
+        TargetPointer backgroundMinSavedAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMinSavedAddr));
+        TargetPointer backgroundMaxSavedAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMaxSavedAddr));
+        TargetPointer allocAllocated = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapAllocAllocated));
+        TargetPointer ephemeralHeapSegment = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapEphemeralHeapSegment));
+        TargetPointer cardTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapCardTable));
+
+        TargetPointer finalizeQueue = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapFinalizeQueue));
+        Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(finalizeQueue);
+
+        uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
+        TargetPointer generationTableArrayStart = _target.ReadGlobalPointer(Constants.Globals.GCHeapGenerationTable);
+        List<Data.Generation> generationTable = [];
+        for (uint i = 0; i < generationTableLength; i++)
+        {
+            TargetPointer generationAddress = generationTableArrayStart + i * generationSize;
+            generationTable.Add(_target.ProcessedData.GetOrAdd<Data.Generation>(generationAddress));
+        }
+        IList<GCGenerationData> generationDataList = generationTable.Select(gen =>
+        new GCGenerationData()
+        {
+            StartSegment = gen.StartSegment,
+            AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
+            AllocationContextPointer = gen.AllocationContext.Pointer,
+            AllocationContextLimit = gen.AllocationContext.Limit,
+        }).ToList();
+
+        TargetPointer? savedSweepEphemeralSeg = null;
+        TargetPointer? savedSweepEphemeralStart = null;
+        if (_target.TryReadGlobalPointer(Constants.Globals.GCHeapSavedSweepEphemeralSeg, out TargetPointer? savedSweepEphemeralSegPtr) &&
+            _target.TryReadGlobalPointer(Constants.Globals.GCHeapSavedSweepEphemeralStart, out TargetPointer? savedSweepEphemeralStartPtr))
+        {
+            savedSweepEphemeralSeg = _target.ReadPointer(savedSweepEphemeralSegPtr.Value);
+            savedSweepEphemeralStart = _target.ReadPointer(savedSweepEphemeralStartPtr.Value);
+        }
+
+        return new GCHeapData()
+        {
+            MarkArray = markArray,
+            NextSweepObject = nextSweepObj,
+            BackGroundSavedMinAddress = backgroundMinSavedAddr,
+            BackGroundSavedMaxAddress = backgroundMaxSavedAddr,
+            AllocAllocated = allocAllocated,
+            EphemeralHeapSegment = ephemeralHeapSegment,
+            CardTable = cardTable,
+            GenerationTable = generationDataList.AsReadOnly(),
+            FillPointers = finalize.FillPointers,
+            SavedSweepEphemeralSegment = savedSweepEphemeralSeg ?? TargetPointer.Null,
+            SavedSweepEphemeralStart = savedSweepEphemeralStart ?? TargetPointer.Null,
+        };
+    }
+
     private GCType GetGCType()
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
