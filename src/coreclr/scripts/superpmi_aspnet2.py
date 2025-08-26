@@ -22,7 +22,7 @@ from pathlib import Path
 #  The script is cross-platform and does everything locally while requiring only 'git' as a dependency.
 #
 #  Usage example:
-#    py run.py --runtime-bits-path C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output aspnet.mch
+#    py superpmi_aspnet2.py --core_root C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output_mch aspnet.mch
 #
 #  Prerequisites:
 #  * git (crank-agent relies on it being available from PATH)
@@ -218,56 +218,65 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, 
 # Main entry point
 def main():
     parser = argparse.ArgumentParser(description="Cross-platform crank runner with 1 retry (kills its own crank-agent).")
-    parser.add_argument("--runtime-bits-path", required=True, help="Path to built runtime bits.")
-    parser.add_argument("--framework", default="net10.0", help="Target .NET framework (e.g., net10.0).")
-    parser.add_argument("--output", help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
+    # Renamed args
+    parser.add_argument("--core_root", required=True, help="Path to built runtime bits (CORE_ROOT).")
+    parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
+    parser.add_argument("--output_mch", required=True, help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
+
+    # New args
+    parser.add_argument("--work_dir", help="Optional work directory; if not specified, a temp directory is used.")
+    parser.add_argument("--no_cleanup", action="store_true", help="If specified, do not clean up temporary files after execution.")
     args = parser.parse_args()
     repo_dir = Path.cwd()
-    runtime_bits_path = Path(args.runtime_bits_path)
+    runtime_bits_path = Path(args.core_root).expanduser().resolve()
+    output_mch_path = Path(args.output_mch).expanduser().resolve()
 
     mcs_cmd = runtime_bits_path / ("mcs.exe" if sys.platform == "win32" else "mcs")
     if not mcs_cmd.exists():
         print(f"Error: mcs.exe not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
         sys.exit(2)
 
-    # Create an isolated temp working directory for crank_data
-    temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_crank_"))
-    print(f"Using temp work directory: {temp_root}")
+    # Create or use working directory for crank_data
+    created_temp = False
+    if args.work_dir:
+        temp_root = Path(args.work_dir).resolve()
+        temp_root.mkdir(parents=True, exist_ok=True)
+        print(f"Using work directory: {temp_root}")
+    else:
+        temp_root = Path(tempfile.mkdtemp(prefix="aspnet4_crank_"))
+        created_temp = True
+        print(f"Using temp work directory: {temp_root}")
 
     # Set current working directory to temp_root
     os.chdir(temp_root)
 
     ensure_tools_and_localhost_yaml(temp_root, CRANK_PORT)
     try:
+        agent_process = None
         agent_process = start_crank_agent(temp_root, CRANK_PORT)
 
         # Benchmarks
 
-        print("### Running OrchardCMS benchmark... ###")
         config_path = temp_root / "crank_data" / "Localhost.yml"
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="about-sqlite", config_path=config_path))
+        # print("### Running OrchardCMS benchmark... ###")
+        # run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="about-sqlite", config_path=config_path))
 
-        # print("### Running JsonMVC benchmark... ###")
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="mvc", config_path=config_path))
+        print("### Running JsonMVC benchmark... ###")
+        run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="mvc", config_path=config_path))
 
-        # print("### Running NoMvcAuth benchmark... ###")
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
+        print("### Running NoMvcAuth benchmark... ###")
+        run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
+
 
         print("Finished running benchmarks.")
-    finally:
-        print("Cleaning up...")
-        agent_process.terminate()
-        time.sleep(3)
-        print("Done!")
 
-    # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
-    tmp_dir = temp_root / "crank_data" / "tmp"
-    if tmp_dir.exists():
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-
-    produced_mch = False
-    try:
+        # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
+        print("Extracting .mc files from zip archives...")
+        tmp_dir = temp_root / "crank_data" / "tmp"
+        if tmp_dir.exists():
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        produced_mch = False
         extracted_count = 0
         for z in pathlib.Path('.').glob('*.crank.zip'):
             with zipfile.ZipFile(z) as f:
@@ -276,7 +285,9 @@ def main():
                     if name.endswith('.mc'):
                         f.extract(name, str(tmp_dir))
                         extracted_count += 1
+            z.unlink(missing_ok=True)
 
+        # Merge *.mc files into crank.mch
         if extracted_count == 0:
             print("No .mc files found in zip outputs; skipping merge.")
         else:
@@ -293,34 +304,47 @@ def main():
             ], check=True, cwd=str(tmp_dir))
 
             # Move the produced crank.mch back to the workspace root
+            print(f"Moving produced crank.mch to {repo_dir / 'crank.mch'}")
             shutil.copyfile(tmp_dir / "crank.mch", repo_dir / "crank.mch")
             produced_mch = True
+            
+            # Copy the resulting MCH to the specified output file
+            if args.output_mch:
+                mch_src = repo_dir / "crank.mch"
+                if not mch_src.exists():
+                    print(f"Error: expected MCH not found at {mch_src}", file=sys.stderr)
+                    sys.exit(2)
+                out_path = output_mch_path
+                if out_path.exists() and out_path.is_dir():
+                    print(f"Error: --output_mch points to a directory, expected a file path: {out_path}", file=sys.stderr)
+                    sys.exit(2)
+                # Ensure the destination directory exists
+                if out_path.parent and not out_path.parent.exists():
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                print(f"Copying {mch_src} -> {out_path}")
+                shutil.copyfile(mch_src, out_path)
+
+        # Clean up the temp crank directory at the very end
+        if not args.no_cleanup:
+            # Only delete the working directory if we created a temp one
+            if 'created_temp' in locals() and created_temp:
+                try:
+                    shutil.rmtree(temp_root, ignore_errors=True)
+                except Exception:
+                    pass
+        
     finally:
-        # Clean up the tmp extraction directory only after the MCH has been produced
-        if produced_mch:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-        # remove all *.zip files
-        for z in pathlib.Path('.').glob('*.crank.zip'):
-            z.unlink(missing_ok=True)
+        print("Cleaning up...")
+        if 'agent_process' in locals() and agent_process is not None:
+            agent_process.terminate()
+        time.sleep(3)
+        
+        # Clean up only if not suppressed
+        if not args.no_cleanup:
+            if produced_mch:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    # Optionally copy the resulting MCH to the specified output file
-    if args.output:
-        mch_name = "crank.mch"
-        out_path = Path(args.output)
-        if out_path.exists() and out_path.is_dir():
-            print(f"Error: --output points to a directory, expected a file path: {out_path}", file=sys.stderr)
-            sys.exit(2)
-        # Ensure the destination directory exists
-        if out_path.parent and not out_path.parent.exists():
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Copying {mch_name} -> {out_path}")
-        shutil.copyfile(mch_name, out_path)
-
-    # Clean up the temp crank directory at the very end
-    try:
-        shutil.rmtree(temp_root, ignore_errors=True)
-    except Exception:
-        pass
+    print("Done!")
 
 if __name__ == "__main__":
     main()
