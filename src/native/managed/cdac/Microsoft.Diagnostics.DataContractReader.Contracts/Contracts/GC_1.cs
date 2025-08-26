@@ -64,11 +64,11 @@ internal readonly struct GC_1 : IGC
         maxAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHighestAddress));
     }
 
-    TargetPointer IGC.GetCurrentGCStateAddress()
+    uint IGC.GetCurrentGCState()
     {
         if (!IsBackgroundGCEnabled())
-            return TargetPointer.Null;
-        return _target.ReadGlobalPointer(Constants.Globals.CurrentGCState);
+            return 0;
+        return _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.CurrentGCState));
     }
 
     IEnumerable<TargetPointer> IGC.GetGCHeaps()

@@ -862,7 +862,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             if (gcIdentifiers.Contains(GCIdentifiers.Background))
             {
-                details->current_c_gc_state = gc.GetCurrentGCStateAddress().ToClrDataAddress(_target);
+                details->current_c_gc_state = gc.GetCurrentGCState();
                 details->mark_array = heapData.MarkArray.ToClrDataAddress(_target);
                 details->next_sweep_obj = heapData.NextSweepObject.ToClrDataAddress(_target);
                 details->background_saved_lowest_address = heapData.BackGroundSavedMinAddress.ToClrDataAddress(_target);
@@ -995,7 +995,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             if (gcIdentifiers.Contains(GCIdentifiers.Background))
             {
-                details->current_c_gc_state = gc.GetCurrentGCStateAddress().ToClrDataAddress(_target);
+                details->current_c_gc_state = gc.GetCurrentGCState();
                 details->mark_array = heapData.MarkArray.ToClrDataAddress(_target);
                 details->next_sweep_obj = heapData.NextSweepObject.ToClrDataAddress(_target);
                 details->background_saved_lowest_address = heapData.BackGroundSavedMinAddress.ToClrDataAddress(_target);

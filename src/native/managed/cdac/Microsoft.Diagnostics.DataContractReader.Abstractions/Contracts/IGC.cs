@@ -54,7 +54,7 @@ public interface IGC : IContract
     bool GetGCStructuresValid() => throw new NotImplementedException();
     uint GetMaxGeneration() => throw new NotImplementedException();
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr) => throw new NotImplementedException();
-    TargetPointer GetCurrentGCStateAddress() => throw new NotImplementedException();
+    uint GetCurrentGCState() => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 
     /* SVR only APIs */
