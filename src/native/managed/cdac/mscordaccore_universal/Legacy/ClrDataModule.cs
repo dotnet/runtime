@@ -109,7 +109,6 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         => _legacyModule is not null ? FallbackHelper.Fallback(() => _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle)) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
     {
-        method = default;
         return _legacyModule is not null ? FallbackHelper.Fallback(() => _legacyModule.EnumMethodInstanceByName(handle, method)) : HResults.E_NOTIMPL;
     }
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
