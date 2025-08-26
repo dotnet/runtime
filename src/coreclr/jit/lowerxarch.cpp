@@ -5173,6 +5173,9 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         return LowerNode(node);
     }
 
+    op2         = NormalizeIndexToNativeSized(op2);
+    node->Op(2) = op2;
+
     uint32_t elemSize = genTypeSize(simdBaseType);
     uint32_t count    = simdSize / elemSize;
 
@@ -5535,6 +5538,12 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             {
                 // We specially handle float and double for more efficient codegen
                 resIntrinsic = NI_Vector128_GetElement;
+                // GetElement takes a native sized index after lowering, so change
+                // the type of the constant we inserted above.
+                // (This is generally only for the non constant index case,
+                // which is not the case here, but keep the index operand's
+                // type consistent)
+                op2->gtType = TYP_I_IMPL;
                 break;
             }
 
@@ -5625,6 +5634,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
     if (!op2->OperIsConst())
     {
+        op2         = NormalizeIndexToNativeSized(op2);
+        node->Op(2) = op2;
         // We will specially handle WithElement in codegen when op2 isn't a constant
         ContainCheckHWIntrinsic(node);
         return node->gtNext;
