@@ -62,12 +62,13 @@ def native_dll(name: str) -> str:
 
 
 # Run a command
-def run(cmd):
+def run(cmd, cwd=None):
     print(f"Running command: {' '.join(map(str, cmd))}")
     kwargs = {
         "stdin": subprocess.DEVNULL,
         "stdout": sys.stdout,
         "stderr": subprocess.STDOUT,
+        "cwd": cwd,
     }
     if os.name == "nt":
         kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
@@ -115,8 +116,8 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
                 subprocess.check_call([path,"-Channel","8.0","-InstallDir", str(dotnethome_dir)])
 
         dotnet_exe = dotnethome_dir / "dotnet"
-        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"])
-        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"])
+        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"], cwd=dotnethome_dir)
+        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"], cwd=dotnethome_dir)
 
         # Create a Localhost.yml to define the local environment
         yml = textwrap.dedent(
@@ -154,7 +155,8 @@ def start_crank_agent(workdir: Path, port: int):
     print("crank-agent is not running yet. Starting...")
     logs_dir = workdir / "crank_data" / "logs"
     build_dir = workdir / "crank_data" / "build"
-    dotnethome_dir = workdir / "crank_data" / "dotnethome"
+    # Keep naming consistent with ensure_tools_and_localhost_yaml()
+    dotnethome_dir = workdir / "crank_data" / "dotnet_home"
 
     agent_process = subprocess.Popen(
         [
@@ -174,12 +176,11 @@ def start_crank_agent(workdir: Path, port: int):
     return agent_process
 
 # Build the crank-controller command for execution
-def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str):
+def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, config_path: Path):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
     spcorelib = "System.Private.CoreLib.dll"
-    config_path = Path("crank_data") / "Localhost.yml"
     cmd = [
         "crank",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/azure.profile.yml",
@@ -190,7 +191,7 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str):
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml",
-        "--config", str(config_path),
+    "--config", str(config_path),
         "--profile", "Localhost",
         "--application.noGlobalJson", "false",
         "--application.framework", framework,
@@ -221,7 +222,7 @@ def main():
     parser.add_argument("--framework", default="net10.0", help="Target .NET framework (e.g., net10.0).")
     parser.add_argument("--output", help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
     args = parser.parse_args()
-    workdir = Path.cwd()
+    repo_dir = Path.cwd()
     runtime_bits_path = Path(args.runtime_bits_path)
 
     mcs_cmd = runtime_bits_path / ("mcs.exe" if sys.platform == "win32" else "mcs")
@@ -229,20 +230,28 @@ def main():
         print(f"Error: mcs.exe not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
         sys.exit(2)
 
-    ensure_tools_and_localhost_yaml(workdir, CRANK_PORT)
+    # Create an isolated temp working directory for crank_data
+    temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_crank_"))
+    print(f"Using temp work directory: {temp_root}")
+
+    # Set current working directory to temp_root
+    os.chdir(temp_root)
+
+    ensure_tools_and_localhost_yaml(temp_root, CRANK_PORT)
     try:
-        agent_process = start_crank_agent(workdir, CRANK_PORT)
+        agent_process = start_crank_agent(temp_root, CRANK_PORT)
 
         # Benchmarks
 
         print("### Running OrchardCMS benchmark... ###")
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="about-sqlite"))
+        config_path = temp_root / "crank_data" / "Localhost.yml"
+        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="about-sqlite", config_path=config_path))
 
         # print("### Running JsonMVC benchmark... ###")
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="mvc"))
+        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="mvc", config_path=config_path))
 
         # print("### Running NoMvcAuth benchmark... ###")
-        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth"))
+        run(build_crank_command(framework=args.framework, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
 
         print("Finished running benchmarks.")
     finally:
@@ -252,7 +261,7 @@ def main():
         print("Done!")
 
     # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
-    tmp_dir = workdir / "crank_data" / "tmp"
+    tmp_dir = temp_root / "crank_data" / "tmp"
     if tmp_dir.exists():
         shutil.rmtree(tmp_dir, ignore_errors=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -284,7 +293,7 @@ def main():
             ], check=True, cwd=str(tmp_dir))
 
             # Move the produced crank.mch back to the workspace root
-            shutil.copyfile(tmp_dir / "crank.mch", workdir / "crank.mch")
+            shutil.copyfile(tmp_dir / "crank.mch", repo_dir / "crank.mch")
             produced_mch = True
     finally:
         # Clean up the tmp extraction directory only after the MCH has been produced
@@ -306,6 +315,12 @@ def main():
             out_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Copying {mch_name} -> {out_path}")
         shutil.copyfile(mch_name, out_path)
+
+    # Clean up the temp crank directory at the very end
+    try:
+        shutil.rmtree(temp_root, ignore_errors=True)
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     main()
