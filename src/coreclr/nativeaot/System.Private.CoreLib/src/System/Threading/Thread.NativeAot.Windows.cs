@@ -503,13 +503,13 @@ namespace System.Threading
                 }
 
                 // Thread.Interrupt for thread that has not been started yet should queue a pending interrupt
-                if (GetThreadStateBit(ThreadState.Unstarted))
+                // for when we actually create the thread.
+                if (_osHandle?.IsInvalid ?? true)
                 {
                     SetThreadStateBit(Interrupted);
                     return;
                 }
 
-                Debug.Assert(!_osHandle.IsInvalid);
                 unsafe
                 {
                     Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);

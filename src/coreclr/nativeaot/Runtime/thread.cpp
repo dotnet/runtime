@@ -1346,6 +1346,10 @@ FCIMPLEND
 static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
 {
     // Set the interrupt flag on the current thread
+    // If we were queued on a thread that wasn't started,
+    // we may be the first code that runs on this thread.
+    // Ensure we're attached to the thread store.
+    ThreadStore::AttachCurrentThread();
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     if (pCurrentThread != nullptr)
     {
