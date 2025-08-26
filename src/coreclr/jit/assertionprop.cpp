@@ -251,17 +251,16 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_CompareScalarUnorderedLessThan:
                 case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_SSE42_TestC:
-                case NI_SSE42_TestZ:
-                case NI_SSE42_TestNotZAndNotC:
+                case NI_X86Base_TestC:
+                case NI_X86Base_TestZ:
+                case NI_X86Base_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
                 case NI_X86Base_Extract:
-                case NI_SSE42_Extract:
-                case NI_SSE42_X64_Extract:
+                case NI_X86Base_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -278,8 +277,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX2_TrailingZeroCount:
                 case NI_AVX2_X64_LeadingZeroCount:
                 case NI_AVX2_X64_TrailingZeroCount:
-                case NI_SSE42_PopCount:
-                case NI_SSE42_X64_PopCount:
+                case NI_X86Base_PopCount:
+                case NI_X86Base_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};

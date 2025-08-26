@@ -108,7 +108,8 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize);
+                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                isReadyToRun: false);
 
             string systemModuleName = Get(_command.SystemModuleName);
             string reflectionData = Get(_command.ReflectionData);
@@ -529,10 +530,6 @@ namespace ILCompiler
                 builder.UseTypeMapManager(scanResults.GetTypeMapManager());
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
-
-                substitutions.AppendFrom(scanResults.GetBodyAndFieldSubstitutions());
-
-                substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
 
                 ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics());
 

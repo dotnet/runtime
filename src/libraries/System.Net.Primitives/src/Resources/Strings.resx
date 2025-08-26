@@ -117,4 +117,10 @@
   <data name="PlatformNotSupported_NetPrimitives" xml:space="preserve">
     <value>System.Net.Primitives is not supported on this platform.</value>
   </data>
+  <data name="net_SocketException_OperationNotSupported" xml:space="preserve">
+    <value>The requested property is not supported for the '{0}' AddressFamily.</value>
+  </data>
+  <data name="net_SocketException_OperationNotSupported_ReadOnlyIPAddress" xml:space="preserve">
+    <value>This operation is not supported on a read-only IPAddress instance.</value>
+  </data>
 </root>

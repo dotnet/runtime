@@ -1268,6 +1268,7 @@ template<>
 struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+    static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1710,6 +1711,14 @@ public:
 
 private:
     friend class VirtualCallStubManager;
+    friend struct ::cdac_data<StubDispatchFrame>;
+};
+
+template <>
+struct cdac_data<StubDispatchFrame>
+{
+    static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
+    static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -2203,10 +2212,10 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains MethodDesc ptr or
+    // m_Datum contains PInvokeMethodDesc ptr or
     // - on 64 bit host: CALLI target address (if lowest bit is set)
     // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
+    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
     // - bit 1 set indicates invoking new exception handling helpers
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.

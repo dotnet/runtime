@@ -200,7 +200,7 @@ namespace System.Threading
             }
 
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle),
+                RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle),
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out _);
 
@@ -219,7 +219,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static uint ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);
