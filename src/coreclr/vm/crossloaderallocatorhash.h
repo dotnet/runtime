@@ -199,14 +199,19 @@ private:
         static void* operator new(size_t) = delete;
         static void* operator new(size_t baseSize, CountWrapper capacity);
 
+    public:
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void operator delete(void* ptr, size_t size)
         {
             // We calculate the size dynamically, so the size value here is
             // invalid. Fall back to the unsized delete operator.
-            return ::operator delete(ptr);
+            ::operator delete(ptr);
         }
 
-    public:
         static KeyValueStore *Create(TCount capacity, const TKey &key);
 
         TCount GetCapacity() const { return _capacity; }

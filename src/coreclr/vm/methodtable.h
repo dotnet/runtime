@@ -3122,6 +3122,17 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        // Some subtypes calculate the allocation size dynamically.
+        // As a result, don't do a sized-delete here. It might be the wrong size.
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
+        static void operator delete(void* ptr, size_t size)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3358,11 +3369,16 @@ protected:
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
 
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void operator delete(void* ptr, size_t size)
         {
             // We calculate the size dynamically, so the size value here is
             // invalid. Fall back to the unsized delete operator.
-            return ::operator delete(ptr);
+            ::operator delete(ptr);
         }
 
         static void* operator new(size_t size) = delete;

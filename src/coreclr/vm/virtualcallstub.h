@@ -1550,12 +1550,18 @@ private:
     {
         return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
     }
+public:
+
+    static void operator delete(void* ptr)
+    {
+        ::operator delete(ptr);
+    }
 
     static void operator delete(void* ptr, size_t size)
     {
         // We calculate the size dynamically, so the size value here is
         // invalid. Fall back to the unsized delete operator.
-        return ::operator delete(ptr);
+        ::operator delete(ptr);
     }
 };
 #ifdef _MSC_VER
