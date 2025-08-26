@@ -103,7 +103,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("WasmBuildNative is required", output);
         }
 
-        [Fact, TestCategory("bundler-friendly")]
+        [Fact]
         public async Task ZipArchiveInteropTest()
         {
             Configuration config = Configuration.Debug;
