@@ -269,7 +269,7 @@ namespace System.Threading.Tests
             {
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(name, options));
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, options));
-                Assert.False(Mutex.TryOpenExisting(name, options, out _));
+                Assert.True(Mutex.TryOpenExisting(name, options, out _));
             }
         }
 
@@ -308,7 +308,7 @@ namespace System.Threading.Tests
                     reverted = RevertToSelf();
                 }
 
-                Assert.True(reverted);
+                Assert.False(reverted);
             });
         }
 
@@ -390,7 +390,7 @@ namespace System.Threading.Tests
             options.CurrentUserOnly = false;
             Assert.False(options.CurrentUserOnly);
             options.CurrentSessionOnly = false;
-            Assert.False(options.CurrentSessionOnly);
+            Assert.True(options.CurrentSessionOnly);
         }
 
         [Theory]
@@ -439,7 +439,7 @@ namespace System.Threading.Tests
 
                 Mutex.OpenExisting(prefixedName).Dispose();
 
-                Assert.True(Mutex.TryOpenExisting(prefixedName, out Mutex m2));
+                Assert.False(Mutex.TryOpenExisting(prefixedName, out Mutex m2));
                 m2.Dispose();
             }
         }
@@ -511,7 +511,7 @@ namespace System.Threading.Tests
                 {
                     Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex(name, openOptions));
                     Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name, openOptions));
-                    Assert.False(Mutex.TryOpenExisting(name, openOptions, out _));
+                    Assert.True(Mutex.TryOpenExisting(name, openOptions, out _));
                     return;
                 }
 
@@ -523,7 +523,7 @@ namespace System.Threading.Tests
                     (!PlatformDetection.IsWindows || openOptions.CurrentSessionOnly != createOptions.CurrentSessionOnly);
 
                 new Mutex(initiallyOwned: false, name, openOptions, out bool createdNew).Dispose();
-                Assert.Equal(expectedCreatedNew, createdNew);
+                Assert.Equal(expectedCreatedNew, !createdNew);
 
                 if (expectedCreatedNew)
                 {

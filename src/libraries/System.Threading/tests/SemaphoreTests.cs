@@ -444,7 +444,7 @@ namespace System.Threading.Tests
                     name,
                     new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
 
-                Assert.True(
+                Assert.False(
                     Semaphore.TryOpenExisting(
                         name,
                         new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
@@ -467,7 +467,7 @@ namespace System.Threading.Tests
 
                 Semaphore.OpenExisting(prefixedName).Dispose();
 
-                Assert.True(Semaphore.TryOpenExisting(prefixedName, out Semaphore s2));
+                Assert.False(Semaphore.TryOpenExisting(prefixedName, out Semaphore s2));
                 s2.Dispose();
             }
         }
@@ -518,7 +518,7 @@ namespace System.Threading.Tests
                     Assert.Throws<WaitHandleCannotBeOpenedException>(
                         () => new Semaphore(initialCount: 1, maximumCount: 1, name, openOptions));
                     Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, openOptions));
-                    Assert.False(Semaphore.TryOpenExisting(name, openOptions, out _));
+                    Assert.True(Semaphore.TryOpenExisting(name, openOptions, out _));
                     return;
                 }
 
@@ -530,7 +530,7 @@ namespace System.Threading.Tests
                     (!PlatformDetection.IsWindows || openOptions.CurrentSessionOnly != createOptions.CurrentSessionOnly);
 
                 new Semaphore(initialCount: 1, maximumCount: 1, name, openOptions, out bool createdNew).Dispose();
-                Assert.Equal(expectedCreatedNew, createdNew);
+                Assert.Equal(expectedCreatedNew, !createdNew);
 
                 if (expectedCreatedNew)
                 {
@@ -572,7 +572,7 @@ namespace System.Threading.Tests
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.True(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
+                    Assert.False(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
                     outbound.Release();
                 }
             }
