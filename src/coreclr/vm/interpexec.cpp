@@ -2425,6 +2425,16 @@ do {                                                                           \
                     STELEM(int64_t, int64_t);
                     break;
                 }
+                case INTOP_STELEM_U1:
+                {
+                    STELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_STELEM_U2:
+                {
+                    STELEM(int32_t, uint16_t);
+                    break;
+                }
                 case INTOP_STELEM_R4:
                 {
                     STELEM(float, float);
