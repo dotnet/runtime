@@ -44,6 +44,8 @@ If you don't have `dotnet-serve` installed, you can install it as a global .NET 
 
 ```bash
 dotnet tool install --global dotnet-serve
+```
+
 **Linux/macOS:**
 ```bash
 dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun"
