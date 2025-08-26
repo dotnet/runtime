@@ -146,6 +146,21 @@ namespace System.IO.Tests
             Assert.True(s.ReadArrayInvoked);
         }
 
+        [Fact]
+        public void MemoryStream_CapacityBoundaryChecks()
+        {
+            const int MaxSupportedLength = 0x7FFFFFC7;
+
+            using (var ms = new MemoryStream())
+            {
+                ms.Capacity = MaxSupportedLength - 1;
+
+                Assert.Equal(MaxSupportedLength - 1, ms.Capacity);
+
+                Assert.ThrowsAny<Exception>(() => ms.Capacity = MaxSupportedLength + 1);
+            }
+        }
+
         private class ReadWriteOverridingMemoryStream : MemoryStream
         {
             public bool ReadArrayInvoked, WriteArrayInvoked;
