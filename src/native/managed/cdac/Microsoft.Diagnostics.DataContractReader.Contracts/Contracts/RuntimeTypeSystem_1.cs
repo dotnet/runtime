@@ -98,12 +98,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal enum AsyncMethodKind
     {
-        NotAsync = 0,
-        TaskReturning = 1,
         RuntimeAsync = 2,
-        AsyncVariantImpl = 3,
         AsyncVariantThunk = 4,
-        AsyncExplicitImpl = 5,
     }
 
     internal struct MethodDesc
