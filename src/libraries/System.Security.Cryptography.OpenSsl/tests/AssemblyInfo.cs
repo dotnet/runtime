@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "OpenSSL is not supported on Apple platforms")]
+[assembly: SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android, "OpenSSL is not supported on Apple platforms and Android")]
