@@ -543,7 +543,7 @@ namespace System.IO
         // into the MemoryStream constructor.  The upper bounds prevents any
         // situations where a stream may be created on top of an array then
         // the stream is made longer than the maximum possible length of the
-        // array (MemStreamMaxLength
+        // array (MemStreamMaxLength).
         //
         public override void SetLength(long value)
         {
