@@ -40,8 +40,11 @@ This command will:
 
 ### Browser Testing (Recommended)
 
-The simplest way to test the runtime in a browser is to use [`dotnet-serve`](https://github.com/natemcmaster/dotnet-serve):
 
+If you don't have `dotnet-serve` installed, you can install it as a global .NET tool with:
+
+```bash
+dotnet tool install --global dotnet-serve
 **Linux/macOS:**
 ```bash
 dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun"
