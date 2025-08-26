@@ -100,6 +100,8 @@ extends:
           - windows_x64
           jobParameters:
             name: cdac_no_fallback
+            variables:
+            - CDAC_DISABLE_FALLBACK: 1
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
@@ -112,9 +114,6 @@ extends:
                   artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
                   displayName: 'Runtime Build Artifacts'
-              - powershell: |
-                  $env:CDAC_DISABLE_FALLBACK=1
-                displayName: 'Set CDAC_DISABLE_FALLBACK=1'
             postBuildSteps:
             - task: PublishTestResults@2
               inputs:

@@ -37,7 +37,6 @@ parameters:
   templateContext: ''
   disableComponentGovernance: ''
   liveRuntimeDir: ''
-  cdacDisableFallback: false
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
