@@ -1552,7 +1552,7 @@ namespace Mono.Linker.Steps
                 // This can happen when the compiler emits typerefs into IL which aren't strictly necessary per ECMA 335.
                 foreach (TypeReference typeReference in assembly.MainModule.GetTypeReferences())
                 {
-                    if (!Visited!.Add(typeReference))
+                    if (!Visited.Add(typeReference))
                         continue;
                     markingHelpers.MarkForwardedScope(typeReference, new MessageOrigin(assembly));
                 }
@@ -1813,7 +1813,7 @@ namespace Mono.Linker.Steps
                 Context.LogWarning(origin, id, type.GetDisplayName(),
                     ((MemberReference)member).GetDisplayName(), // The cast is valid since it has to be a method or field
                     MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Message),
-                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Url));
+                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute.Url));
             }
 
             bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection(member);
@@ -1910,7 +1910,7 @@ namespace Mono.Linker.Steps
                 return;
 
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
-                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute!, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
+                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
 
             switch (dependencyKind)
             {
@@ -2151,17 +2151,6 @@ namespace Mono.Linker.Steps
                 MarkType(type.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, type), typeOrigin);
             MarkCustomAttributes(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
             MarkSecurityDeclarations(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
-
-            if (Context.TryResolve(type.BaseType) is TypeDefinition baseType &&
-                !Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(type) &&
-                Annotations.TryGetLinkerAttribute(baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode))
-            {
-
-                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(effectiveRequiresUnreferencedCode.Message);
-                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(effectiveRequiresUnreferencedCode.Url);
-                Context.LogWarning(typeOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName(), type.BaseType.GetDisplayName(), arg1, arg2);
-            }
-
 
             if (type.IsMulticastDelegate())
             {

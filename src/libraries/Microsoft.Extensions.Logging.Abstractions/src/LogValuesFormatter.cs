@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging
     {
         private const string NullValue = "(null)";
         private readonly List<string> _valueNames = new List<string>();
-#if NET8_0_OR_GREATER
+#if NET
         private readonly CompositeFormat _format;
 #else
         private readonly string _format;
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Logging
                 {
                     // No holes found.
                     _format =
-#if NET8_0_OR_GREATER
+#if NET
                         CompositeFormat.Parse(format);
 #else
                         format;
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging
             }
 
             _format =
-#if NET8_0_OR_GREATER
+#if NET
                 CompositeFormat.Parse(vsb.ToString());
 #else
                 vsb.ToString();
@@ -176,14 +176,14 @@ namespace Microsoft.Extensions.Logging
 
         internal string Format()
         {
-#if NET8_0_OR_GREATER
+#if NET
             return _format.Format;
 #else
             return _format;
 #endif
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         internal string Format<TArg0>(TArg0 arg0)
         {
             return

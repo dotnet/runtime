@@ -3098,13 +3098,6 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        {
-            // If we answer "true" here, RyuJIT is going to ask for the cookie and for the CORINFO_HELP_PINVOKE_CALLI
-            // helper. The helper doesn't exist in ReadyToRun, so let's just throw right here.
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
-        }
-
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;
         private int SizeOfReversePInvokeTransitionFrame
         {
@@ -3124,8 +3117,8 @@ namespace Internal.JitInterface
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            // Filters don't have class token in the clause.ClassTokenOrOffset
-            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
+            // Filters, finallys, and faults don't have class token in the clause.ClassTokenOrOffset
+            if ((clause.Flags & (CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT)) == 0)
             {
                 if (clause.ClassTokenOrOffset != 0)
                 {

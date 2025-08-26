@@ -5,10 +5,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
+
+#if NETFRAMEWORK
+using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
+#endif
 
 namespace System.Security.Cryptography
 {
@@ -367,26 +370,29 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten)
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination)
         {
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.1
             //  1.  Combine and output the encoded public key
             //
             //      output mldsaPK || tradPK
 
-            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes));
+            int bytesWritten = 0;
 
-            if (_componentAlgorithm.TryExportPublicKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
+            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes));
+            bytesWritten += AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes;
+
+            if (!_componentAlgorithm.TryExportPublicKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
             {
-                bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes + componentBytesWritten;
-                return true;
+                throw new CryptographicException();
             }
 
-            bytesWritten = 0;
-            return false;
+            bytesWritten += componentBytesWritten;
+
+            return bytesWritten;
         }
 
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination)
         {
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.2
             //  1.  Combine and output the encoded private key
@@ -395,16 +401,19 @@ namespace System.Security.Cryptography
 
             try
             {
-                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes));
+                int bytesWritten = 0;
 
-                if (_componentAlgorithm.TryExportPrivateKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
+                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes));
+                bytesWritten += AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes;
+
+                if (!_componentAlgorithm.TryExportPrivateKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
                 {
-                    bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes + componentBytesWritten;
-                    return true;
+                    throw new CryptographicException();
                 }
 
-                bytesWritten = 0;
-                return false;
+                bytesWritten += componentBytesWritten;
+
+                return bytesWritten;
             }
             catch (CryptographicException)
             {
@@ -547,38 +556,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private sealed class ECDsaComponent : ComponentAlgorithm
-#if DESIGNTIMEINTERFACES
-#pragma warning disable SA1001 // Commas should be spaced correctly
-            , IComponentAlgorithmFactory<ECDsaComponent, ECDsaAlgorithm>
-#pragma warning restore SA1001 // Commas should be spaced correctly
-#endif
-        {
-            public static bool IsAlgorithmSupported(ECDsaAlgorithm _) => false;
-            public static ECDsaComponent GenerateKey(ECDsaAlgorithm algorithm) => throw new NotImplementedException();
-            public static ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => throw new NotImplementedException();
-            public static ECDsaComponent ImportPublicKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => throw new NotImplementedException();
-
-            internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-            internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-
-            internal override bool VerifyData(
-#if NET
-                ReadOnlySpan<byte> data,
-#else
-                byte[] data,
-#endif
-                ReadOnlySpan<byte> signature) => throw new NotImplementedException();
-
-            internal override int SignData(
-#if NET
-                ReadOnlySpan<byte> data,
-#else
-                byte[] data,
-#endif
-                Span<byte> destination) => throw new NotImplementedException();
-        }
-
         private static Dictionary<CompositeMLDsaAlgorithm, AlgorithmMetadata> CreateAlgorithmMetadata()
         {
             const int count = 18;
@@ -613,7 +590,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa44,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x03],
                         HashAlgorithmName.SHA256)
                 },
@@ -621,7 +598,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x04],
                         HashAlgorithmName.SHA512)
                 },
@@ -637,7 +614,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x06],
                         HashAlgorithmName.SHA512)
                 },
@@ -653,7 +630,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x08],
                         HashAlgorithmName.SHA512)
                 },
@@ -661,7 +638,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x09],
                         HashAlgorithmName.SHA512)
                 },
@@ -669,7 +646,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateBrainpoolP256r1(HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0A],
                         HashAlgorithmName.SHA512)
                 },
@@ -685,7 +662,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0C],
                         HashAlgorithmName.SHA512)
                 },
@@ -693,7 +670,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateBrainpoolP384r1(HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0D],
                         HashAlgorithmName.SHA512)
                 },
@@ -709,7 +686,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0F],
                         HashAlgorithmName.SHA512)
                 },
@@ -717,7 +694,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x10],
                         HashAlgorithmName.SHA512)
                 },
@@ -725,7 +702,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        ECDsaAlgorithm.CreateP521(HashAlgorithmName.SHA512),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x11],
                         HashAlgorithmName.SHA512)
                 }
@@ -757,6 +734,106 @@ namespace System.Security.Cryptography
 
         private sealed class ECDsaAlgorithm
         {
+            internal int KeySizeInBits { get; }
+            internal HashAlgorithmName HashAlgorithmName { get; }
+
+#if NET || NETSTANDARD
+            internal ECCurve Curve { get; }
+            internal Oid CurveOid => Curve.Oid;
+#else
+            internal Oid CurveOid { get; }
+            internal KeyBlobMagicNumber PrivateKeyBlobMagicNumber { get; }
+            internal KeyBlobMagicNumber PublicKeyBlobMagicNumber { get; }
+#endif
+
+            internal string CurveOidValue => CurveOid.Value!;
+
+            internal int KeySizeInBytes => (KeySizeInBits + 7) / 8;
+
+            private ECDsaAlgorithm(
+                int keySizeInBits,
+#if NET || NETSTANDARD
+                ECCurve curve,
+#else
+                Oid curveOid,
+                KeyBlobMagicNumber privateKeyBlobMagicNumber,
+                KeyBlobMagicNumber publicKeyBlobMagicNumber,
+#endif
+                HashAlgorithmName hashAlgorithmName)
+            {
+                KeySizeInBits = keySizeInBits;
+                HashAlgorithmName = hashAlgorithmName;
+
+#if NET || NETSTANDARD
+                Curve = curve;
+#else
+                CurveOid = curveOid;
+                PrivateKeyBlobMagicNumber = privateKeyBlobMagicNumber;
+                PublicKeyBlobMagicNumber = publicKeyBlobMagicNumber;
+#endif
+
+                Debug.Assert(CurveOid.Value is not null);
+            }
+
+            internal static ECDsaAlgorithm CreateP256(HashAlgorithmName hashAlgorithmName) =>
+                new ECDsaAlgorithm(
+                    256,
+#if NET || NETSTANDARD
+                    ECCurve.NamedCurves.nistP256,
+#else
+                    new Oid(Oids.secp256r1, "nistP256"),
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P256_MAGIC,
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P256_MAGIC,
+#endif
+                    hashAlgorithmName);
+
+            internal static ECDsaAlgorithm CreateP384(HashAlgorithmName hashAlgorithmName) =>
+                new ECDsaAlgorithm(
+                    384,
+#if NET || NETSTANDARD
+                    ECCurve.NamedCurves.nistP384,
+#else
+                    new Oid(Oids.secp384r1, "nistP384"),
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P384_MAGIC,
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P384_MAGIC,
+#endif
+                    hashAlgorithmName);
+
+            internal static ECDsaAlgorithm CreateP521(HashAlgorithmName hashAlgorithmName) =>
+                new ECDsaAlgorithm(
+                    521,
+#if NET || NETSTANDARD
+                    ECCurve.NamedCurves.nistP521,
+#else
+                    new Oid(Oids.secp521r1, "nistP521"),
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P521_MAGIC,
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P521_MAGIC,
+#endif
+                    hashAlgorithmName);
+
+            internal static ECDsaAlgorithm CreateBrainpoolP256r1(HashAlgorithmName hashAlgorithmName) =>
+                new ECDsaAlgorithm(
+                    256,
+#if NET || NETSTANDARD
+                    ECCurve.NamedCurves.brainpoolP256r1,
+#else
+                    new Oid(Oids.brainpoolP256r1, "brainpoolP256r1"),
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC,
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC,
+#endif
+                    hashAlgorithmName);
+
+            internal static ECDsaAlgorithm CreateBrainpoolP384r1(HashAlgorithmName hashAlgorithmName) =>
+                new ECDsaAlgorithm(
+                    384,
+#if NET || NETSTANDARD
+                    ECCurve.NamedCurves.brainpoolP384r1,
+#else
+                    new Oid(Oids.brainpoolP384r1, "brainpoolP384r1"),
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC,
+                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC,
+#endif
+                    hashAlgorithmName);
         }
 
         private sealed class EdDsaAlgorithm

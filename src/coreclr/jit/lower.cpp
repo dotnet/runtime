@@ -1222,7 +1222,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
 #ifdef TARGET_64BIT
-            if (tempLclType != TYP_I_IMPL)
+            if (RISCV64_ONLY(!comp->compOpportunisticallyDependsOn(InstructionSet_Zba)&&) // shXadd.uw 0-extends index
+                tempLclType != TYP_I_IMPL)
             {
                 // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
                 // Note that the switch value is unsigned so the cast should be unsigned as well.
@@ -4987,7 +4988,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
         unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
-        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
 
@@ -5307,6 +5308,27 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             GenTree* bitCast = comp->gtNewBitCastNode(regType, regEntry->GetNode());
             BlockRange().InsertBefore(fieldList, bitCast);
             regEntry->SetNode(bitCast);
+        }
+
+        // If this is the last entry then try to optimize out unnecessary
+        // normalizing casts, similar to how LowerRetSingleRegStructLclVar
+        // avoids inserting them.
+        if ((i == numRegs - 1) && varTypeUsesIntReg(regType))
+        {
+            GenTree* node = regEntry->GetNode();
+            // If this is a truncation that affects only bits after the return
+            // size then it can be removed. Those bits are undefined in all our
+            // ABIs for structs.
+            while (node->OperIs(GT_CAST) && !node->gtOverflow() && (genActualType(node->CastFromType()) == TYP_INT) &&
+                   (genActualType(node->CastToType()) == TYP_INT) &&
+                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
+            {
+                GenTree* op = node->AsCast()->CastOp();
+                regEntry->SetNode(op);
+                op->ClearContained();
+                node->gtBashToNOP();
+                node = op;
+            }
         }
 
         if (fieldListPrev->gtNext != fieldList)
@@ -7240,8 +7262,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    const bool hasRcpc2 = comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !hasRcpc2)
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
@@ -7284,7 +7306,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(hasRcpc2);
+        assert(comp->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
+
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;

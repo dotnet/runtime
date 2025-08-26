@@ -4024,7 +4024,6 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -5195,7 +5194,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
         {
             ssize_t compressedDsp;
 
-            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+            // Only the scaling factor of the original EVEX instructions can be changed by embedded broadcast.
+            // If the instruction does not have tuple type info, say extended EVEX from APX, the scaling factor is
+            // constantly 1, then this optimization cannot be performed, and whether disp8 or disp32 should be applied
+            // only depends dspInByte.
+            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
             {
                 SetEvexCompressedDisplacement(id);
             }
@@ -5368,7 +5371,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
         {
             SetEvexCompressedDisplacement(id);
         }
@@ -6999,35 +7002,8 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        // Extract and store upper 4 bytes
-        emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
-    }
-    else if (tmpRegProvider != nullptr)
-    {
-        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
-        assert(isFloatReg(tmpReg));
-
-        // Extract upper 4 bytes from data
-        emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-
-        // Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
-    }
-    else
-    {
-        // We don't have temp regs - let's do two shuffles then
-
-        // [0,1,2,3] -> [2,3,0,1]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-
-        //  Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
-
-        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-    }
+    // Extract and store upper 4 bytes
+    emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
 }
 #endif // FEATURE_SIMD
 
@@ -13624,7 +13600,6 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;
@@ -14672,13 +14647,16 @@ GOT_DSP:
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
         {
-            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+            assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
             dspInByte = false;
         }
         else
         {
+            // TODO-XArch-APX: for now, Extended Evex instruction will not have compressed displacement, or more
+            // accurately, extended evex may not have compressed displacement optimization as the scaling factor is
+            // constantly 1.
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         dspIsZero = (dsp == 0);
@@ -15556,7 +15534,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
         {
 #if FEATURE_FIXED_OUT_ARGS
             // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
@@ -17904,6 +17882,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             idAmd->idCodeSize(sz);
 
             code = insCodeRM(ins);
+            code = AddX86PrefixIfNeeded(id, code, id->idOpSize());
             code |= (insEncodeReg345(id, id->idReg1(), EA_PTRSIZE, &code) << 8);
 
             dst = emitOutputAM(dst, idAmd, code, nullptr);

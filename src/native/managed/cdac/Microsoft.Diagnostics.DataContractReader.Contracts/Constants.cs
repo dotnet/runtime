@@ -15,6 +15,7 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
+        public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -30,6 +31,7 @@ public static class Constants
         public const string DacNotificationFlags = nameof(DacNotificationFlags);
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
+        public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
@@ -55,10 +57,15 @@ public static class Constants
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string DefaultADID = nameof(DefaultADID);
+        public const string StaticsPointerMask = nameof(StaticsPointerMask);
+        public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
+        public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
+
+        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
