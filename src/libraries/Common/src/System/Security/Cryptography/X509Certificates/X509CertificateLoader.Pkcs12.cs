@@ -22,14 +22,8 @@ namespace System.Security.Cryptography.X509Certificates
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
-#pragma warning disable CA1805
-        private static readonly AttributeAsn? s_syntheticKspAttribute =
-#if NET
-            null;
-#else
-            BuildSyntheticKspAttribute();
-#endif
-#pragma warning restore CA1805
+        private static AttributeAsn s_syntheticKspAttribute = BuildSyntheticKspAttribute();
+        private static AttributeAsn s_syntheticCapiCspAttribute = BuildSyntheticCapiAttribute();
 
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
@@ -71,6 +65,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             BagState bagState = default;
+            bagState.SetStorageFlags(keyStorageFlags);
 
             try
             {
@@ -279,6 +274,7 @@ namespace System.Security.Cryptography.X509Certificates
             outer.ThrowIfNotEmpty();
 
             HashSet<string> duplicateAttributeCheck = new();
+            CngMachineKeyState machineKeyState = CngMachineKeyState.Unknown;
 
             while (reader.HasData)
             {
@@ -370,16 +366,56 @@ namespace System.Security.Cryptography.X509Certificates
                                     // so always preserve it.
                                     Oids.MsPkcs12MachineKeySet => true,
                                     Oids.Pkcs9FriendlyName => limits.PreserveKeyName,
-                                    Oids.MsPkcs12KeyProviderName => limits.PreserveStorageProvider,
+                                    Oids.MsPkcs12KeyProviderName => ProviderNameIsRelevant,
                                     _ => limits.PreserveUnknownAttributes,
                                 });
                     }
 
-                    if (!loaderLimits.PreserveStorageProvider && s_syntheticKspAttribute.HasValue)
+                    AttributeAsn? providerName = null;
+
+                    if (ProviderNameIsRelevant)
                     {
-                        int newCount = (bag.BagAttributes?.Length).GetValueOrDefault(0) + 1;
-                        Array.Resize(ref bag.BagAttributes, newCount);
-                        bag.BagAttributes[newCount - 1] = s_syntheticKspAttribute.GetValueOrDefault();
+                        if (!loaderLimits.PreserveStorageProvider)
+                        {
+                            providerName = DetermineStorageProvider(
+                                bag.BagAttributes,
+                                bagState.StorageFlags,
+                                ref machineKeyState);
+                        }
+
+                        // If DetermineStorageProvider returns null, leave an existing provider alone,
+                        // but if there's no provider, add the synthetic KSP attribute.
+
+                        // Otherwise, replace any existing provider with what it returned,
+                        // or add what it said if there are no provider attributes.
+
+                        bool hadAttribute = false;
+
+                        foreach (AttributeAsn attr in bag.BagAttributes ?? Array.Empty<AttributeAsn>())
+                        {
+                            if (attr.AttrType == Oids.MsPkcs12KeyProviderName)
+                            {
+                                hadAttribute = true;
+
+                                if (providerName.HasValue)
+                                {
+                                    if (attr.AttrValues?.Length > 0)
+                                    {
+                                        for (int i = 0; i < attr.AttrValues.Length; i++)
+                                        {
+                                            attr.AttrValues[i] = providerName.GetValueOrDefault().AttrValues[0];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!hadAttribute)
+                        {
+                            int oldCount = (bag.BagAttributes?.Length).GetValueOrDefault(0);
+                            Array.Resize(ref bag.BagAttributes, oldCount + 1);
+                            bag.BagAttributes[oldCount] = s_syntheticKspAttribute;
+                        }
                     }
 
                     bagState.AddKey(bag);
@@ -568,8 +604,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-#if !NET
-        private static AttributeAsn? BuildSyntheticKspAttribute()
+        private static bool ProviderNameIsRelevant =>
+#if NET
+            OperatingSystem.IsWindows();
+#else
+            // The netstandard builds could use RuntimeInformation.IsOSPlatform,
+            // but we'd still need a #else for .NET Framework, so netstandard
+            // and netfx will both say provider name is relevant and process
+            // the attributes accordingly.
+            true;
+#endif
+
+        private static AttributeAsn BuildSyntheticKspAttribute()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             writer.WriteCharacterString(UniversalTagNumber.BMPString, "Microsoft Software Key Storage Provider");
@@ -580,13 +626,259 @@ namespace System.Security.Cryptography.X509Certificates
                 AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) }
             };
         }
+
+        private static AttributeAsn BuildSyntheticCapiAttribute()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.BMPString, "Microsoft Enhanced RSA and AES Cryptographic Provider");
+
+            return new AttributeAsn
+            {
+                AttrType = Oids.MsPkcs12KeyProviderName,
+                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) }
+            };
+        }
+
+        private static AttributeAsn? DetermineStorageProvider(
+            AttributeAsn[]? bagAttributes,
+            X509KeyStorageFlags storageFlags,
+            ref CngMachineKeyState machineKeyState)
+        {
+            // Windows CNG and Windows CAPI have different default permissions models for machine keys.
+            //
+            // CAPI allows anyone to create a machine key, CNG only allows administrators.
+            //
+            // But if a system has changed their permissions to allow non-admins to create CNG machine keys,
+            // then, by all means, we should use CNG.
+
+            // This all breaks down to:
+            //
+            // if (machine key && can't make machine keys && known CAPI provider)
+            // {
+            //     if (RSA)
+            //     {
+            //         return CAPI PROV_RSA_AES;
+            //     }
+            //     else
+            //     {
+            //         pretend PreserveStorageProvider was set.
+            //     }
+            // }
+            //
+            // return CNG KSP;
+
+            if (HasMachineKey(bagAttributes, storageFlags))
+            {
+                if (HasCapiCsp(bagAttributes, out bool isRsa))
+                {
+                    if (machineKeyState == CngMachineKeyState.Unknown)
+                    {
+                        machineKeyState = CheckMachineKeyPermissions();
+                    }
+
+                    if (machineKeyState == CngMachineKeyState.Denied)
+                    {
+                        if (isRsa)
+                        {
+                            return s_syntheticCapiCspAttribute;
+                        }
+
+                        // A DSS or DH CAPI provider, preserve it.
+                        return null;
+                    }
+                }
+            }
+
+            // Not a machine key, or wasn't known to be a CAPI key, so use CNG.
+            return s_syntheticKspAttribute;
+
+            static bool HasMachineKey(AttributeAsn[]? bagAttributes, X509KeyStorageFlags storageKind)
+            {
+                // This needs to be kept in sync with the Windows MapStorageFlags behavior.
+                // We say that both UserKeySet & MachineKeySet maps to a user key.
+
+                if ((storageKind & X509KeyStorageFlags.UserKeySet) != 0)
+                {
+                    return false;
+                }
+
+                if ((storageKind & X509KeyStorageFlags.MachineKeySet) != 0)
+                {
+                    return true;
+                }
+
+                // The Machine Key Set attribute OID is a sentinel, the attribute has no interpreted value.
+                // So, any attribute that specifies it means it's a machine key.
+                if (bagAttributes is not null)
+                {
+                    foreach (AttributeAsn attr in bagAttributes)
+                    {
+                        if (attr.AttrType == Oids.MsPkcs12MachineKeySet)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            static CngMachineKeyState CheckMachineKeyPermissions()
+            {
+#if NET || NETFRAMEWORK
+                CngKey? cngKey = null;
+
+                try
+                {
+#if NET
+                    Debug.Assert(OperatingSystem.IsWindows());
 #endif
+
+                    cngKey = CngKey.Create(
+                        CngAlgorithm.Rsa,
+                        Guid.NewGuid().ToString("B"),
+                        new CngKeyCreationParameters
+                        {
+                            Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                            KeyCreationOptions = CngKeyCreationOptions.MachineKey,
+                        });
+
+                    return CngMachineKeyState.Permitted;
+                }
+                catch (CryptographicException)
+                {
+                    return CngMachineKeyState.Denied;
+                }
+                finally
+                {
+                    cngKey?.Dispose();
+                }
+#else
+                // The netstandard builds shouldn't ever execute on a relevant configuration,
+                // so it's not worth adding a reference to the Cng package for this method
+                // to compile.
+                return CngMachineKeyState.Permitted;
+#endif
+            }
+
+            static bool HasCapiCsp(AttributeAsn[]? bagAttributes, out bool isRsa)
+            {
+                isRsa = false;
+
+                if (bagAttributes is not null)
+                {
+                    foreach (AttributeAsn attr in bagAttributes)
+                    {
+                        if (attr.AttrType == Oids.MsPkcs12KeyProviderName && attr.AttrValues?.Length > 0)
+                        {
+                            return HasCapiValue(attr.AttrValues[0].Span, out isRsa);
+                        }
+                    }
+                }
+
+                // If there is no provider name at all, then PFXImportCertStore will use the CAPI
+                // MS_BASE_PROV provider, so it's a CAPI key.
+                return true;
+
+                static bool HasCapiValue(ReadOnlySpan<byte> encodedAttribute, out bool isRsa)
+                {
+                    // All of the MS_*_PROV_W values from wincrypt.h, except MS_SCARD_PROV(_W).
+                    const string MS_DEF_PROV = "Microsoft Base Cryptographic Provider v1.0";
+                    const string MS_ENHANCED_PROV = "Microsoft Enhanced Cryptographic Provider v1.0";
+                    const string MS_STRONG_PROV = "Microsoft Strong Cryptographic Provider";
+                    const string MS_DEF_RSA_SIG_PROV = "Microsoft RSA Signature Cryptographic Provider";
+                    const string MS_DEF_RSA_SCHANNEL_PROV = "Microsoft RSA SChannel Cryptographic Provider";
+                    const string MS_DEF_DSS_PROV = "Microsoft Base DSS Cryptographic Provider";
+                    const string MS_DEF_DSS_DH_PROV = "Microsoft Base DSS and Diffie-Hellman Cryptographic Provider";
+                    const string MS_ENH_DSS_DH_PROV = "Microsoft Enhanced DSS and Diffie-Hellman Cryptographic Provider";
+                    const string MS_DEF_DH_SCHANNEL_PROV = "Microsoft DH SChannel Cryptographic Provider";
+                    const string MS_ENH_RSA_AES_PROV = "Microsoft Enhanced RSA and AES Cryptographic Provider";
+                    const string MS_ENH_RSA_AES_PROV_XP = "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)";
+
+                    isRsa = false;
+
+                    if (!Asn1Tag.TryDecode(encodedAttribute, out Asn1Tag tag, out _))
+                    {
+                        return false;
+                    }
+
+                    if (tag.TagClass != TagClass.Universal)
+                    {
+                        return false;
+                    }
+
+                    string? providerName;
+
+                    try
+                    {
+                        UniversalTagNumber encodingType = (UniversalTagNumber)tag.TagValue;
+                        int bytesRead = 0;
+
+                        // Windows writes the provider using BMPString, but reads it from any type.
+                        // Technically, Windows will read it as a NumericString, because they don't
+                        // validate characters being outside the character set.
+                        // Since we do validation, NumericString is omitted.
+                        providerName = encodingType switch
+                        {
+                            UniversalTagNumber.BMPString or
+                            UniversalTagNumber.UTF8String or
+                            UniversalTagNumber.IA5String or
+                            UniversalTagNumber.PrintableString or
+                            UniversalTagNumber.VisibleString or
+                            UniversalTagNumber.T61String => AsnDecoder.ReadCharacterString(
+                                encodedAttribute,
+                                AsnEncodingRules.BER,
+                                encodingType,
+                                out bytesRead),
+                            _ => null,
+                        };
+
+                        if (bytesRead != encodedAttribute.Length)
+                        {
+                            return false;
+                        }
+                    }
+                    catch (AsnContentException)
+                    {
+                        return false;
+                    }
+
+                    isRsa = providerName switch
+                    {
+                        MS_DEF_PROV or
+                        MS_ENHANCED_PROV or
+                        MS_STRONG_PROV or
+                        MS_DEF_RSA_SIG_PROV or
+                        MS_DEF_RSA_SCHANNEL_PROV or
+                        MS_ENH_RSA_AES_PROV or
+                        MS_ENH_RSA_AES_PROV_XP => true,
+                        _ => false,
+                    };
+
+                    return isRsa || providerName switch
+                    {
+                        MS_DEF_DSS_PROV or
+                        MS_DEF_DSS_DH_PROV or
+                        MS_ENH_DSS_DH_PROV or
+                        MS_DEF_DH_SCHANNEL_PROV => true,
+                        _ => false,
+                    };
+                }
+            }
+        }
 
         private readonly partial struct Pkcs12Return
         {
             internal partial bool HasValue();
             internal partial X509Certificate2 ToCertificate();
         }
+
+        private enum CngMachineKeyState
+        {
+            Unknown,
+            Permitted,
+            Denied,
+        };
 
         private partial struct BagState
         {
@@ -599,6 +891,12 @@ namespace System.Security.Cryptography.X509Certificates
             private int _decryptBufferOffset;
             private int _keyDecryptBufferOffset;
             private byte _passwordState;
+            private X509KeyStorageFlags _storageFlags;
+
+            internal void SetStorageFlags(X509KeyStorageFlags storageFlags)
+            {
+                _storageFlags = storageFlags & (X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.UserKeySet);
+            }
 
             internal void Init(Pkcs12LoaderLimits loaderLimits)
             {
@@ -633,6 +931,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                 this = default;
             }
+
+            internal readonly X509KeyStorageFlags StorageFlags => _storageFlags;
 
             public readonly int CertCount => _certCount;
 
