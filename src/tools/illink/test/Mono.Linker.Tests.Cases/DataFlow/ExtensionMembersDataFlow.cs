@@ -22,6 +22,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionMethodWithParams();
             TestExtensionMethodWithParamsMismatch();
             TestExtensionStaticMethodRequires();
+            TestExtensionMethodAnnotation();
+            TestExtensionStaticMethodAnnotation();
             TestExtensionProperty();
             TestExtensionPropertyMismatch();
             TestExtensionPropertyAnnotatedAccessor();
@@ -65,6 +67,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestExtensionStaticMethodRequires()
         {
             ExtensionMembers.ExtensionMembersStaticMethodRequires();
+        }
+
+        static void TestExtensionMethodAnnotation()
+        {
+            GetWithFields().ExtensionMembersMethodAnnotation();
+        }
+
+        static void TestExtensionStaticMethodAnnotation()
+        {
+            ExtensionMembers.ExtensionMembersStaticMethodAnnotation();
         }
 
         [ExpectedWarning("IL2072", "ExtensionMembersProperty", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -176,6 +188,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [RequiresUnreferencedCode(nameof(ExtensionMembersStaticMethodRequires))]
             public static void ExtensionMembersStaticMethodRequires() { }
+
+            [ExpectedWarning("IL2041")]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public void ExtensionMembersMethodAnnotation()
+            {
+                type.RequiresPublicFields();
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2041")]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public static void ExtensionMembersStaticMethodAnnotation()
+            {
+            }
 
             // Annotations on extension properties have no effect:
             // https://github.com/dotnet/runtime/issues/119113
