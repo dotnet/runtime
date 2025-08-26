@@ -2401,6 +2401,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         }
         case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
         {
+            if (sig.sigInst.methInstCount != 1)
+            {
+                assert(!mustExpand);
+                return false;
+            }
             CHECK_STACK(1);
 
             m_pStackPointer--;
