@@ -31,7 +31,7 @@ endianness.  The types `nint`, `nuint` and `pointer` have target architecture po
 The data descriptor consists of:
 * a collection of type structure descriptors
 * a collection of global value descriptors
-* an optional collection of pointers to sub-contracts
+* an optional collection of pointers to sub-descriptors
 
 ## Types
 
@@ -99,7 +99,7 @@ Each sub-descriptor descriptor is effectively a global with a type of `pointer`.
 * a name
 * a pointer value
 
-If these values are non-null, the pointer represents another JSON data descriptor with the specification described in this document.
+If the value is non-null, the pointer points to another [contract descriptor](contract-descriptor.md#contract-descriptor-1).
 
 When parsing a data descriptor with sub-descriptors each sub-descriptor should be parsed then its type, global, and contract values should be merged in. If any conflicts arise when merging in sub-descriptor data, this is an error and behavior is undefined.
 
@@ -361,7 +361,7 @@ The following is an example of an in-memory descriptor that references the above
   },
   "sub-descriptors": 
   {
-    "GCDescriptor": [ 1 ] // indirect from aux data offset 1
+    "GC": [ 1 ] // indirect from aux data offset 1
   }
 }
 ```
