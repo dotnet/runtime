@@ -94,7 +94,7 @@ VS Code provides multiple debugging options for WebAssembly CoreCLR:
 
 3. **Set up your launch configuration** in VS Code to attach to the WebAssembly runtime
 
-#### Option 2: Node.js Debugging (Recommended)
+#### Option 2: Node.js Debugging
 
 For a simpler debugging experience, you can use VS Code's built-in Node.js debugger:
 
@@ -119,7 +119,7 @@ For a simpler debugging experience, you can use VS Code's built-in Node.js debug
    
    **Note:** On Windows, use backslashes in the path: `"${workspaceFolder}\\artifacts\\bin\\coreclr\\browser.wasm.Debug\\corewasmrun\\"`
 
-2. **Set breakpoints** in `corewasmrun.js` at line 1815 (the `stdout`/`printf` implementation)
+2. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
 
 3. **Start debugging** and step through the WebAssembly code using the call stack
 
