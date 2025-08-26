@@ -283,7 +283,7 @@ internal static class Utils
     public static bool MoveIfDifferent(string src, string dst)
     {
         if (!File.Exists(src))
-            throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
+            throw new ArgumentException($"Cannot find {src} file to move", nameof(src));
 
         bool areDifferent = !File.Exists(dst) || !ContentEqual(src, dst);
         if (areDifferent)
