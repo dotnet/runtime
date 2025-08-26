@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Formats.Tar;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
