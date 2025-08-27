@@ -2917,6 +2917,76 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<uint> ReciprocalSqrtEstimate(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
+        // Truncate to 16 bits and store, non-temporal
+
+        // /// <summary>
+        // /// void svstnt1h_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        // ///   STNT1H Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // // Removed as per #103297
+        // public static void Scatter16BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svstnt1h_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1H Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter16BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        // /// <summary>
+        // /// void svstnt1h_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        // ///   STNT1H Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // // Removed as per #103297
+        // public static void Scatter16BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svstnt1h_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1H Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        // Truncate to 32 bits and store, non-temporal
+
+        /// <summary>
+        /// void svstnt1w_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1W Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter32BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svstnt1w_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1W Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        // Truncate to 8 bits and store, non-temporal
+
+        // /// <summary>
+        // /// void svstnt1b_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        // ///   STNT1B Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter8BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svstnt1b_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1B Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter8BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        // /// <summary>
+        // /// void svstnt1b_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        // ///   STNT1B Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter8BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svstnt1b_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1B Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter8BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
         // Rounding shift left
 
         /// <summary>
