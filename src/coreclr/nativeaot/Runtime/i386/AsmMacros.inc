@@ -138,8 +138,8 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_AbortInProgress equ 1
 TrapThreadsFlags_TrapThreads     equ 2
 
-;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      equ 43h
+;; This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
+STATUS_NATIVEAOT_THREAD_ABORT      equ 43h
 
 ;;
 ;; Rename fields of nested structs

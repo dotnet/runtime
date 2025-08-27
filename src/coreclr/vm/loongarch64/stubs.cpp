@@ -20,70 +20,6 @@
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
-// InstructionFormat for B.cond
-//-----------------------------------------------------------------------
-class ConditionalBranchInstructionFormat : public InstructionFormat
-{
-
-    public:
-        ConditionalBranchInstructionFormat() : InstructionFormat(InstructionFormat::k32)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
-            _ASSERTE(refsize == InstructionFormat::k32);
-
-            return 4;
-        }
-
-        virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
-        {
-            WRAPPER_NO_CONTRACT;
-            return 0;
-        }
-
-
-        virtual BOOL CanReach(UINT refSize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            _ASSERTE(!fExternal || "LOONGARCH64:NYI - CompareAndBranchInstructionFormat::CanReach external");
-            if (fExternal)
-                return false;
-
-            if (offset < -1048576 || offset > 1048572)
-                return false;
-            return true;
-        }
-        ////TODO: add for LOONGARCH. unused now!
-        // B.<cond> <label>
-        // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
-        // cond = Bits3-0(variation)
-        // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
-            LIMITED_METHOD_CONTRACT;
-
-            _ASSERTE(refSize == InstructionFormat::k32);
-
-            if (fixedUpReference < -1048576 || fixedUpReference > 1048572)
-                COMPlusThrow(kNotSupportedException);
-
-            _ASSERTE((fixedUpReference & 0x3) == 0);
-            DWORD imm19 = (DWORD)(0x7FFFF & (fixedUpReference >> 2));
-
-            pOutBufferRW[0] = static_cast<BYTE>((0x7 & imm19 /* Bits2-0(imm19) */) << 5  | (0xF & variationCode /* cond */));
-            pOutBufferRW[1] = static_cast<BYTE>((0x7F8 & imm19 /* Bits10-3(imm19) */) >> 3);
-            pOutBufferRW[2] = static_cast<BYTE>((0x7F800 & imm19 /* Bits19-11(imm19) */) >> 11);
-            pOutBufferRW[3] = static_cast<BYTE>(0x54);
-        }
-};
-
-//-----------------------------------------------------------------------
 // InstructionFormat for JIRL (unconditional jump)
 //-----------------------------------------------------------------------
 class BranchInstructionFormat : public InstructionFormat
@@ -271,9 +207,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
 
 
 
-static BYTE gConditionalBranchIF[sizeof(ConditionalBranchInstructionFormat)];
 static BYTE gBranchIF[sizeof(BranchInstructionFormat)];
-//static BYTE gLoadFromLabelIF[sizeof(LoadFromLabelInstructionFormat)];
 
 #endif
 
@@ -807,36 +741,6 @@ void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
     Emit32(0x4c000000 | (regTarget << 5));
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset)
-{
-    EmitLoadStoreRegPairImm(flags, (int)Rt1, (int)Rt2, Rn, offset, FALSE);
-}
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Rn, int offset)
-{
-    EmitLoadStoreRegPairImm(flags, (int)Vt1, (int)Vt2, Rn, offset, TRUE);
-}
-
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Rn, int offset, BOOL isVec)
-{
-    _ASSERTE(isVec == FALSE); // TODO: VecReg not supported yet
-    _ASSERTE((-2048 <= offset) && (offset < 2047));
-    _ASSERTE((offset & 7) == 0);
-
-    BOOL isLoad = flags & 1;
-    if (isLoad) {
-        // ld.d(regNum1, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xa3, regNum1, Rn, offset));
-        // ld.d(regNum2, Rn, offset + 8);
-        Emit32(emitIns_O_R_R_I(0xa3, regNum2, Rn, offset + 8));
-    } else {
-        // st.d(regNum1, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xa7, regNum1, Rn, offset));
-        // st.d(regNum2, Rn, offset + 8);
-        Emit32(emitIns_O_R_R_I(0xa7, regNum2, Rn, offset + 8));
-    }
-}
-
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset, int log2Size)
 {
     EmitLoadStoreRegImm(flags, (int)Rt, Rn, offset, FALSE, log2Size);
@@ -872,9 +776,7 @@ void StubLinkerCPU::EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value)
 
 void StubLinkerCPU::Init()
 {
-    new (gConditionalBranchIF) ConditionalBranchInstructionFormat();
     new (gBranchIF) BranchInstructionFormat();
-    //new (gLoadFromLabelIF) LoadFromLabelInstructionFormat();
 }
 
 static bool InRegister(UINT16 ofs)

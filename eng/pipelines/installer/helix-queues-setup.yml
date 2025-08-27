@@ -29,15 +29,15 @@ jobs:
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
-      - (Ubuntu.2504.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-arm64v8
+      - (Ubuntu.2510.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-arm64v8
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - (Alpine.321.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+      - (Alpine.322.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.321.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
+      - (Alpine.322.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -45,7 +45,10 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - osx.13.Arm64.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
+        - OSX.26.Arm64.Open
+      - ${{ if ne(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
+        - osx.13.Arm64.Open
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:

@@ -72,6 +72,7 @@ void InitJITWriteBarrierHelpers();
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
                         _Out_ bool* isTier0,
+                        _Out_ bool* isInterpreterCode,
                         _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
@@ -83,7 +84,7 @@ void getMethodInfoILMethodHeaderHelper(
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
+                          BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
@@ -148,7 +149,7 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicSta
 EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
@@ -160,16 +161,13 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, 
 EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
 #endif
 
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-
-EXTERN_C FCDECL1(Object*, AllocateStringFast, DWORD stringLength);
-EXTERN_C FCDECL1(Object*, AllocateStringSlow, DWORD stringLength);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -540,14 +538,12 @@ public:
         m_numRichOffsetMappings = 0;
     }
 
-    virtual void BackoutJitData(EECodeGenManager * jitMgr) = 0;
-
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo(PCODE nativeEntry);
+    void CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -570,14 +566,14 @@ public:
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
+    void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
+                      CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
     InfoAccessType emptyStringLiteral(void ** ppValue) override;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
@@ -617,9 +613,6 @@ protected:
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
 #endif
-
-    size_t                  m_GCinfo_len;   // Cached copy of GCinfo_len so we can backout in BackoutJitData()
-    size_t                  m_EHinfo_len;   // Cached copy of EHinfo_len so we can backout in BackoutJitData()
 
     ULONG32                 m_iOffsetMapping;
     ICorDebugInfo::OffsetMapping * m_pOffsetMapping;
@@ -715,7 +708,6 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry() override
@@ -972,8 +964,9 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
 };
 #endif // FEATURE_INTERPRETER
 
@@ -1027,11 +1020,6 @@ BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
-// ppPinnedString: If the string is pinned (e.g. allocated in frozen heap),
-// the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
-// means that the caller does not care whether the string is pinned or not.
-STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
-
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
 class InlinedCallFrame;
@@ -1047,17 +1035,12 @@ struct VirtualFunctionPointerArgs
     CORINFO_METHOD_HANDLE methodHnd;
 };
 
-typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
-
 struct StaticFieldAddressArgs
 {
-    FnStaticBaseHelper staticBaseHelper;
+    PCODE staticBaseHelper;
     TADDR arg0;
     SIZE_T offset;
 };
-
-FCDECL1(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs);
-FCDECL1(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs);
 
 struct GenericHandleArgs
 {

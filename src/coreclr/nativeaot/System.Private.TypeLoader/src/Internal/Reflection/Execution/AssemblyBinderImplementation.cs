@@ -94,6 +94,11 @@ namespace Internal.Reflection.Execution
             return loadedAssemblies;
         }
 
+        public sealed override int GetLoadedAssembliesCount()
+        {
+            return ScopeGroups.Length;
+        }
+
         //
         // Encapsulates the assembly ref->def matching policy.
         //

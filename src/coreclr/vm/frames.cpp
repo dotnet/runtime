@@ -1530,6 +1530,17 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
     }
 
+    // Promote async continuation for async methods
+    if (argit.HasAsyncContinuation())
+    {
+        PTR_PTR_VOID pAsyncCont = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetAsyncContinuationArgOffset());
+        LOG((LF_GC, INFO3,
+             "    async continuation argument at " FMT_ADDR "promoted from" FMT_ADDR "\n",
+             DBG_ADDR(pAsyncCont), DBG_ADDR(*pAsyncCont) ));
+
+        (fn)(PTR_PTR_Object(pAsyncCont), sc, CHECK_APP_DOMAIN);
+    }
+
     int argOffset;
     while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
@@ -1669,7 +1680,6 @@ CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, Met
 }
 #endif // #ifndef DACCESS_COMPILE
 
-//virtual
 void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1680,22 +1690,32 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
     FramedMethodFrame::GcScanRoots_Impl(fn, sc);
     PromoteCallerStack(fn, sc);
 
-
+    //
     // Promote the returned object
-    MethodDesc* methodDesc = GetFunction();
-    ReturnKind returnKind = methodDesc->GetReturnKind();
-    if (returnKind == RT_Object)
+    //
+
+    MetaSig sig(GetFunction());
+
+    TypeHandle thValueType;
+    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
+    if (CorTypeInfo::IsObjRef_NoThrow(et))
     {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
     }
-    else if (returnKind == RT_ByRef)
+    else if (CorTypeInfo::IsByRef_NoThrow(et))
     {
         PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
     }
-    else
+    else if (et == ELEMENT_TYPE_VALUETYPE)
     {
-        _ASSERTE_MSG(!IsStructReturnKind(returnKind), "NYI: We can't promote multiregs struct returns");
-        _ASSERTE_MSG(IsScalarReturnKind(returnKind), "Non-scalar types must be promoted.");
+        ArgIterator argit(&sig);
+        if (!argit.HasRetBuffArg())
+        {
+#ifdef TARGET_UNIX
+#error Non-Windows ABIs must be special cased
+#endif
+            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
+        }
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -1737,16 +1757,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
     return sc.oref_protected;
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     TPMethodFrame::GcScanRoots    public
-//
-//  Synopsis:   GC protects arguments on the stack
-//
-
-//
-//+----------------------------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1850,6 +1860,9 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
+
+TADDR InterpreterFrame::DummyCallerIP = (TADDR)&InterpreterFrame::DummyFuncletCaller;
+
 PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1891,13 +1904,30 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
     SetIP(pContext, (TADDR)pFrame->ip);
     SetSP(pContext, dac_cast<TADDR>(pFrame));
     SetFP(pContext, (TADDR)pFrame->pStack);
-    SetFirstArgReg(pContext, (TADDR)this);
+    SetFirstArgReg(pContext, dac_cast<TADDR>(this));
+    pContext->ContextFlags = CONTEXT_FULL;
+    if (m_isFaulting)
+    {
+        pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    }
 }
 
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    // Update the SSP to match the updated regdisplay
+    size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
+    if (targetSSP != NULL)
+    {
+        while (*targetSSP++ != pRD->ControlPC)
+        {
+        }
+        _ASSERTE(targetSSP != NULL);
+        pRD->SSP = (TADDR)targetSSP;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE

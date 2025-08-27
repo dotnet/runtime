@@ -6,7 +6,7 @@
 
 #include "CommonMacros.h"
 #include "ICodeManager.h"
-#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "Pal.h" // NATIVE_CONTEXT
 #include "regdisplay.h"
 
 #include "forward_declarations.h"

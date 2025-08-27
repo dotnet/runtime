@@ -142,7 +142,7 @@ typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
 typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
-typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
+typedef DPTR(class PInvokeMethodDesc)   PTR_PInvokeMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;
@@ -202,22 +202,10 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* STDCALL GetAppDomain();
+AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
-
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {

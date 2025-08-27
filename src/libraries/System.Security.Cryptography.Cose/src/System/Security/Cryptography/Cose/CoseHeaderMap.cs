@@ -329,7 +329,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool isProtected = false, int? algHeaderValueToSlip = null)
+        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool isProtected = false, CoseAlgorithm? algHeaderValueToSlip = null)
         {
             map ??= s_emptyMap;
             bool shouldSlipAlgHeader = algHeaderValueToSlip.HasValue;
@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Cose
             {
                 Debug.Assert(!map.ContainsKey(CoseHeaderLabel.Algorithm));
                 writer.WriteInt32(KnownHeaders.Alg);
-                writer.WriteInt32(algHeaderValueToSlip!.Value);
+                writer.WriteInt32((int)algHeaderValueToSlip!.Value);
             }
 
             foreach (KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp in map)
@@ -379,7 +379,7 @@ namespace System.Security.Cryptography.Cose
             return bytesWritten;
         }
 
-        internal static int ComputeEncodedSize(CoseHeaderMap? map, int? algHeaderValueToSlip = null)
+        internal static int ComputeEncodedSize(CoseHeaderMap? map, CoseAlgorithm? algHeaderValueToSlip = null)
         {
             map ??= s_emptyMap;
 
@@ -391,7 +391,7 @@ namespace System.Security.Cryptography.Cose
             {
                 mapLength += 1;
                 encodedSize += CoseHeaderLabel.Algorithm.EncodedSize;
-                encodedSize += CoseHelpers.GetIntegerEncodedSize(algHeaderValueToSlip.Value);
+                encodedSize += CoseHelpers.GetIntegerEncodedSize((int)algHeaderValueToSlip.Value);
             }
 
             encodedSize += CoseHelpers.GetIntegerEncodedSize(mapLength);

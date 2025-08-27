@@ -1611,7 +1611,7 @@ namespace System.Text.Json.Serialization.Tests
             Class_With_Parameters_Default_Values result = await Serializer.DeserializeWrapper<Class_With_Parameters_Default_Values>(json);
             result.Verify();
         }
-        
+
         [Fact]
         public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
         {
@@ -1820,6 +1820,26 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonExtensionData]
             public Dictionary<string, object> ExtensionData { get; set; }
+        }
+
+        [Fact]
+        public async Task RequiredMemberWithUnmappedMember()
+        {
+            // https://github.com/dotnet/runtime/issues/116801
+            string json = """
+                {
+                    "Bar": "asdf",
+                    "Baz": "hello"
+                }
+                """;
+
+            ClassWithRequiredProperty obj = await Serializer.DeserializeWrapper<ClassWithRequiredProperty>(json);
+            Assert.Equal("asdf", obj.Bar);
+        }
+
+        public class ClassWithRequiredProperty
+        {
+            public required string? Bar { get; set; }
         }
     }
 }

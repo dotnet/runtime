@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -131,6 +133,11 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
     }
 
+    /// <summary>
+    /// If an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call),
+    /// we may have skipped an explicit frame.  This function checks for them.
+    /// </summary>
+    /// <returns> true if there are skipped frames. </returns>
     private bool CheckForSkippedFrames(StackWalkData handle)
     {
         // ensure we can find the caller context
@@ -185,12 +192,22 @@ internal readonly struct StackWalk_1 : IStackWalk
     {
         byte[] bytes = new byte[context.Size];
         Span<byte> buffer = new Span<byte>(bytes);
+        // The underlying ICLRDataTarget.GetThreadContext has some variance depending on the host.
+        // SOS's managed implementation sets the ContextFlags to platform specific values defined in ThreadService.cs (diagnostics repo)
+        // SOS's native implementation keeps the ContextFlags passed into this function.
+        // To match the DAC behavior, the DefaultContextFlags are what the DAC passes in in DacGetThreadContext.
+        // In most implementations, this will be overridden by the host, but in some cases, it may not be.
         if (!_target.TryGetThreadContext(threadData.OSId.Value, context.DefaultContextFlags, buffer))
         {
             throw new InvalidOperationException($"GetThreadContext failed for thread {threadData.OSId.Value}");
         }
 
         context.FillFromBuffer(buffer);
+    }
+
+    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
+    {
+        return FrameIterator.GetMethodDescPtr(framePtr, _target);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

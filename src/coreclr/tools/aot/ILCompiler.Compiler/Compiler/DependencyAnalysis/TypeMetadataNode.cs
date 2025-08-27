@@ -37,8 +37,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
-
             DefType containingType = _type.ContainingType;
             if (containingType != null)
                 dependencies.Add(factory.TypeMetadata((MetadataType)containingType), "Containing type of a reflectable type");
@@ -99,6 +97,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            return dependencies;
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
             return dependencies;
         }
 
@@ -172,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable type: " + _type.ToString();
+            return "Type metadata: " + _type.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)
@@ -183,9 +188,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

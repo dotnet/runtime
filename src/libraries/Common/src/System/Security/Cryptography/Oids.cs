@@ -135,6 +135,25 @@ namespace System.Security.Cryptography
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";
 
+        internal const string MLDsa44WithRSA2048PssPreHashSha256 = "2.16.840.1.114027.80.9.1.0";
+        internal const string MLDsa44WithRSA2048Pkcs15PreHashSha256 = "2.16.840.1.114027.80.9.1.1";
+        internal const string MLDsa44WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.1.2";
+        internal const string MLDsa44WithECDsaP256PreHashSha256 = "2.16.840.1.114027.80.9.1.3";
+        internal const string MLDsa65WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.1.4";
+        internal const string MLDsa65WithRSA3072Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.1.5";
+        internal const string MLDsa65WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.1.6";
+        internal const string MLDsa65WithRSA4096Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.1.7";
+        internal const string MLDsa65WithECDsaP256PreHashSha512 = "2.16.840.1.114027.80.9.1.8";
+        internal const string MLDsa65WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.1.9";
+        internal const string MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 = "2.16.840.1.114027.80.9.1.10";
+        internal const string MLDsa65WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.1.11";
+        internal const string MLDsa87WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.1.12";
+        internal const string MLDsa87WithECDsaBrainpoolP384r1PreHashSha512 = "2.16.840.1.114027.80.9.1.13";
+        internal const string MLDsa87WithEd448PreHashShake256_512 = "2.16.840.1.114027.80.9.1.14";
+        internal const string MLDsa87WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.1.15";
+        internal const string MLDsa87WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.1.16";
+        internal const string MLDsa87WithECDsaP521PreHashSha512 = "2.16.840.1.114027.80.9.1.17";
+
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
 
@@ -243,6 +262,9 @@ namespace System.Security.Cryptography
         internal const string secp256r1 = "1.2.840.10045.3.1.7";
         internal const string secp384r1 = "1.3.132.0.34";
         internal const string secp521r1 = "1.3.132.0.35";
+
+        internal const string brainpoolP256r1 = "1.3.36.3.3.2.8.1.1.7";
+        internal const string brainpoolP384r1 = "1.3.36.3.3.2.8.1.1.11";
 
         // LDAP
         internal const string DomainComponent = "0.9.2342.19200300.100.1.25";

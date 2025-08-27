@@ -22,22 +22,9 @@ extern PCODE GetPreStubEntryPoint();
 #define X86_INSTR_MOV_EAX_ECX_IND 0x018b    // mov eax, [ecx]
 #define X86_INSTR_CMP_IND_ECX_IMM32 0x3981  // cmp [ecx], imm32
 
-#define X86_INSTR_MOV_AL        0xB0        // mov al, imm8
-#define X86_INSTR_JMP_REL8      0xEB        // jmp short rel8
-
-#define X86_INSTR_NOP           0x90        // nop
 #define X86_INSTR_NOP3_1        0x9090      // 1st word of 3-byte nop
 #define X86_INSTR_NOP3_3        0x90        // 3rd byte of 3-byte nop
 #define X86_INSTR_INT3          0xCC        // int 3
-#define X86_INSTR_HLT           0xF4        // hlt
-
-#define X86_INSTR_MOVAPS_R_RM   0x280F      // movaps xmm1, xmm2/mem128
-#define X86_INSTR_MOVAPS_RM_R   0x290F      // movaps xmm1/mem128, xmm2
-#define X86_INSTR_MOVLPS_R_RM   0x120F      // movlps xmm1, xmm2/mem128
-#define X86_INSTR_MOVLPS_RM_R   0x130F      // movlps xmm1/mem128, xmm2
-#define X86_INSTR_MOVUPS_R_RM   0x100F      // movups xmm1, xmm2/mem128
-#define X86_INSTR_MOVUPS_RM_R   0x110F      // movups xmm1/mem128, xmm2
-#define X86_INSTR_XORPS         0x570F      // xorps xmm1, xmm2/mem128
 
 //----------------------------------------------------------------------
 // Encodes X86 registers. The numbers are chosen to match Intel's opcode
@@ -101,12 +88,6 @@ enum X86Reg : UCHAR
 };
 
 
-// Use this only if you are absolutely sure that the instruction format
-// handles it. This is not declared as X86Reg so that users are forced
-// to add a cast and think about what exactly they are doing.
-const int kESP_Unsafe = 4;
-
-
 //----------------------------------------------------------------------
 // StubLinker with extensions for generating X86 code.
 //----------------------------------------------------------------------
@@ -126,15 +107,15 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg);
 
+#ifdef TARGET_X86
         VOID X86EmitPushReg(X86Reg reg);
         VOID X86EmitPopReg(X86Reg reg);
         VOID X86EmitPushImm32(UINT value);
         VOID X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg = kR10));
+#endif
 
 #ifdef TARGET_AMD64
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
-        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
-        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
@@ -146,26 +127,23 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
-        VOID X86EmitZeroOutReg(X86Reg reg);
-        VOID X86EmitJumpReg(X86Reg reg);
-
         VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
-        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
+#ifdef TARGET_X86
         VOID X86EmitNearJump(CodeLabel *pTarget);
+#endif
 
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 
+#ifdef TARGET_X86
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
-        VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
 
         VOID X86EmitAddEsp(INT32 imm32);
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
-                              int32_t ofs
-                    AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
-                              );
+                              int32_t ofs);
+#endif
 
         // Emits the most efficient form of the operation:
         //
@@ -209,25 +187,6 @@ class StubLinkerCPU : public StubLinker
         }
 #endif // TARGET_AMD64
 
-        // Emits
-        //
-        //    opcode altreg, modrmreg
-        //
-        // or
-        //
-        //    opcode modrmreg, altreg
-        //
-        // (the opcode determines which one comes first)
-        //
-        // For single-operand opcodes, "altreg" actually selects
-        // an operation rather than a register.
-
-        VOID X86EmitR2ROp(WORD opcode,
-                          X86Reg altreg,
-                          X86Reg modrmreg
-                AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
-                          );
-
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
         VOID X86_64BitOperands ()
@@ -254,10 +213,6 @@ class StubLinkerCPU : public StubLinker
         //===========================================================================
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
-
-#ifdef _DEBUG
-        VOID X86EmitDebugTrashReg(X86Reg reg);
-#endif
 
     public:
         static void Init();

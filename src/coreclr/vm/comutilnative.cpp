@@ -33,6 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -1454,7 +1455,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     {
         // Ignore failures
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -1561,7 +1562,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 }
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)

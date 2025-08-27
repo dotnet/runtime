@@ -56,7 +56,7 @@
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               4       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
   #define FIRST_INT_CALLEE_SAVED  REG_S1
@@ -99,6 +99,11 @@
 
   #define CNT_CALLEE_SAVED_FLOAT  (12)
   #define CNT_CALLEE_TRASH_FLOAT  (20)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_TRASH_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)

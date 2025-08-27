@@ -51,8 +51,9 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
     protected override Assembly Load(AssemblyName assemblyName)
     {
         string strPath;
-        if (assemblyName.Name.StartsWith("System."))
+        if (assemblyName.Name.StartsWith("System.", StringComparison.Ordinal) || assemblyName.Name.StartsWith("Microsoft.", StringComparison.Ordinal))
         {
+            // If the assembly is a framework assembly, we load it from the framework path.
             strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
         }
         else
@@ -332,6 +333,18 @@ public class ReliabilityFramework
             }  
         }
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
+    }
+
+    public void RecordTestRunCountForPerTest(string refOrID)
+    {
+        lock (_testRunCounterLock)
+        {
+            if (_testRunCounter.TryGetValue(refOrID, out var value))
+            {
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Run tests \"{refOrID}\" {value} times.");
+            } 
+        }
+        
     }
 
     public void HandleOom(Exception e, string message)
@@ -981,7 +994,15 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
                 _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
+            lock(_testRunCounterLock)
+            {
+                string testRefOrID = test.RefOrID;
+                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
+            }
+
             newThread.Start(test);
+            RecordTestRunCountForPerTest(test.RefOrID);
+
         }
         catch (OutOfMemoryException e)
         {
@@ -1220,12 +1241,6 @@ public class ReliabilityFramework
                         SignalTestFinished(daTest);
                     }
                     break;
-            }
-
-            lock (_testRunCounterLock)
-            {
-                string testRefOrID = daTest.RefOrID;
-                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
             }
         }
         catch (Exception e)

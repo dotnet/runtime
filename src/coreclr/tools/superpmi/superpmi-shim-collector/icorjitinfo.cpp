@@ -1462,12 +1462,21 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void interceptor_ICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {
     mc->cr->AddCall("getHelperFtn");
-    void* temp = original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
-    mc->recGetHelperFtn(ftnNum, ppIndirection, temp);
-    return temp;
+    CORINFO_CONST_LOOKUP localNativeEntrypoint;
+    CORINFO_METHOD_HANDLE localMethodHandle;
+    original_ICorJitInfo->getHelperFtn(ftnNum, &localNativeEntrypoint, &localMethodHandle);
+    mc->recGetHelperFtn(ftnNum, localNativeEntrypoint, localMethodHandle);
+    if (pNativeEntrypoint != nullptr)
+    {
+        *pNativeEntrypoint = localNativeEntrypoint;
+    }
+    if (methodHandle != nullptr)
+    {
+        *methodHandle = localMethodHandle;
+    }
 }
 
 // return a callable address of the function (native code). This function
@@ -1495,15 +1504,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
     mc->recGetFunctionFixedEntryPoint(ftn, pResult);
 }
 
-// get the synchronization handle that is passed to monXstatic function
-void* interceptor_ICJI::getMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection)
-{
-    mc->cr->AddCall("getMethodSync");
-    void* temp = original_ICorJitInfo->getMethodSync(ftn, ppIndirection);
-    mc->recGetMethodSync(ftn, ppIndirection, temp);
-    return temp;
-}
-
 // These entry points must be called if a handle is being embedded in
 // the code to be passed to a JIT helper function. (as opposed to just
 // being passed back into the ICorInfo interface.)
@@ -1515,6 +1515,14 @@ CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HAND
     mc->cr->AddCall("getLazyStringLiteralHelper");
     CorInfoHelpFunc temp = original_ICorJitInfo->getLazyStringLiteralHelper(handle);
     mc->recGetLazyStringLiteralHelper(handle, temp);
+    return temp;
+}
+
+CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
+{
+    mc->cr->AddCall("embedModuleHandle");
+    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->embedModuleHandle(handle, ppIndirection);
+    mc->recEmbedModuleHandle(handle, ppIndirection, temp);
     return temp;
 }
 
@@ -1531,6 +1539,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::embedMethodHandle(CORINFO_METHOD_HANDLE 
     mc->cr->AddCall("embedMethodHandle");
     CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->embedMethodHandle(handle, ppIndirection);
     mc->recEmbedMethodHandle(handle, ppIndirection, temp);
+    return temp;
+}
+
+CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
+{
+    mc->cr->AddCall("embedFieldHandle");
+    CORINFO_FIELD_HANDLE temp = original_ICorJitInfo->embedFieldHandle(handle, ppIndirection);
+    mc->recEmbedFieldHandle(handle, ppIndirection, temp);
     return temp;
 }
 
@@ -1574,8 +1590,7 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
+// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
 LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
     mc->cr->AddCall("GetCookieForPInvokeCalliSig");
@@ -1584,13 +1599,12 @@ LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig
     return temp;
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool interceptor_ICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
+// Generate a cookie based on the signature to pass to INTOP_CALLI
+LPVOID interceptor_ICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
-    mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
-    bool temp = original_ICorJitInfo->canGetCookieForPInvokeCalliSig(szMetaSig);
-    mc->recCanGetCookieForPInvokeCalliSig(szMetaSig, temp);
+    mc->cr->AddCall("GetCookieForInterpreterCalliSig");
+    LPVOID temp = original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
+    mc->recGetCookieForInterpreterCalliSig(szMetaSig, temp);
     return temp;
 }
 
@@ -1684,21 +1698,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_
 }
 
 // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
-CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     mc->cr->AddCall("getVarArgsHandle");
-    CORINFO_VARARGS_HANDLE temp = original_ICorJitInfo->getVarArgsHandle(pSig, ppIndirection);
-    mc->recGetVarArgsHandle(pSig, ppIndirection, temp);
-    return temp;
-}
-
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool interceptor_ICJI::canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    mc->cr->AddCall("canGetVarArgsHandle");
-    bool temp = original_ICorJitInfo->canGetVarArgsHandle(pSig);
-    mc->recCanGetVarArgsHandle(pSig, temp);
+    CORINFO_VARARGS_HANDLE temp = original_ICorJitInfo->getVarArgsHandle(pSig, methHnd, ppIndirection);
+    mc->recGetVarArgsHandle(pSig, methHnd, ppIndirection, temp);
     return temp;
 }
 

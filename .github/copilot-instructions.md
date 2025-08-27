@@ -16,6 +16,10 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Trust the C# null annotations and don't add null checks when the type system says a value cannot be null.
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
+- When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
+- If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
+- When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
+- Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 
 ---
@@ -33,10 +37,11 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
     - [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries)
     - [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library)
 - [6. WebAssembly (WASM) Libraries Workflow](#6-webassembly-wasm-libraries-workflow)
-- [7. Additional Notes](#7-additional-notes)
-    - [7.1. Troubleshooting](#71-troubleshooting)
-    - [7.2. Windows Command Equivalents](#72-windows-command-equivalents)
-    - [7.3. References](#73-references)
+- [7. Host Workflow](#7-host-workflow)
+- [8. Additional Notes](#8-additional-notes)
+    - [8.1. Troubleshooting](#81-troubleshooting)
+    - [8.2. Windows Command Equivalents](#82-windows-command-equivalents)
+    - [8.3. References](#83-references)
 
 ## 1. Prerequisites
 
@@ -50,6 +55,7 @@ Identify which components will be impacted by the changes. If in doubt, analyze 
 - **Mono Runtime:** Changes in `src/mono/`
 - **Libraries:** Changes in `src/libraries/`
 - **WASM/WASI Libraries:** Changes in `src/libraries/` *and* the affected library targets WASM or WASI *and* the changes are included for the target (see below for details).
+- **Host:** Changes in `src/native/corehost/`, `src/installer/managed/`, or `src/installer/tests/`
 - If none above apply, it is most possibly an infra-only or a docs-only change. Skip build and test steps.
 
 **WASM/WASI Library Change Detection**
@@ -72,6 +78,7 @@ Before applying any changes, ensure you have a full successful build of the need
     - **Mono Runtime:** `./build.sh mono+libs`
     - **Libraries:** `./build.sh clr+libs -rc release`
     - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
+    - **Host:** `./build.sh clr+libs+host -rc release -lc release`
 
 3. Verify the build completed without error.
     - _If the baseline build failed, report the failure and don't proceed with the changes._
@@ -235,9 +242,24 @@ From the repository root:
 
 ---
 
-## 7. Additional Notes
+## 7. Host Workflow
 
-### 7.1. Troubleshooting
+From the repository root:
+
+- Build:
+  `./build.sh host -rc release -lc release`
+
+- Run all tests:
+  `./build.sh host.tests -rc release -lc release -test`
+
+- More info can be found in the dedicated workflow docs:
+    - [Building and running host tests](/docs/workflow/testing/host/testing.md)
+
+---
+
+## 8. Additional Notes
+
+### 8.1. Troubleshooting
 
 - **Shared Framework Missing**
 
@@ -269,7 +291,7 @@ From the repository root:
 
 ---
 
-### 7.2. Windows Command Equivalents
+### 8.2. Windows Command Equivalents
 
 - Use `build.cmd` instead of `build.sh` on Windows.
 - Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
@@ -277,7 +299,7 @@ From the repository root:
 
 ---
 
-### 7.3. References
+### 8.3. References
 
 - [`.editorconfig`](/.editorconfig)
 - [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
@@ -288,3 +310,4 @@ From the repository root:
 - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 - [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
 - [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
+- [Building and running host tests](/docs/workflow/testing/host/testing.md)

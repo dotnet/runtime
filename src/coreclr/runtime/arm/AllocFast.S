@@ -353,7 +353,7 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
 LOCAL_LABEL(RhpNewPtrArrayFast_RarePath):
         NEW_ARRAY_FAST_TAIL_EPILOG
-        b           C_FUNC(RhpNewVariableSizeObject)
+        b           C_FUNC(RhpNewArrayFast)
 LEAF_END RhpNewPtrArrayFast, _TEXT
 
 

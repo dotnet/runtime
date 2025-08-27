@@ -160,7 +160,11 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffs
 ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs
                     == offsetof(GenericDictionaryDynamicHelperStubData, HandleArgs));
 
+#ifdef FEATURE_INTERPRETER
+#define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x48, 0x20)
+#else
 #define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x40, 0x18)
+#endif // FEATURE_INTERPRETER
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo
                     == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
 
@@ -244,9 +248,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-#define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
-                    == offsetof(VASigCookie, pNDirectILStub));
+#define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
+                    == offsetof(VASigCookie, pPInvokeILStub));
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
@@ -550,6 +554,39 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
+#define OFFSETOF__ThreadLocalInfo__m_pThread 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLocalInfo, m_pThread))
+
+#ifdef FEATURE_INTERPRETER
+#ifdef _DEBUG
+#define OFFSETOF__InterpMethod__pCallStub 0x20
+#else
+#define OFFSETOF__InterpMethod__pCallStub 0x18
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
+
+#ifdef TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
+#else // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xba8
+#endif // TARGET_UNIX
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
+
+#define OFFSETOF__InterpThreadContext__pStackPointer 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
+
+#define OFFSETOF__CallStubHeader__Routines 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
+
+#ifdef TARGET_UNIX
+#define SIZEOF__TransitionBlock 0x68
+#else // TARGET_UNIX
+#define SIZEOF__TransitionBlock 0x48
+#endif // TARGET_UNIX
+ASMCONSTANTS_C_ASSERT(SIZEOF__TransitionBlock == sizeof(TransitionBlock))
+
+#endif // FEATURE_INTERPRETER
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER        0x1

@@ -1339,7 +1339,7 @@ namespace System.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public static void TryParse_NullOrEmptyString_ReturnsFalse(string input)
+        public static void TryParse_NullOrEmptyString_ReturnsFalse(string? input)
         {
             Assert.False(DateTime.TryParse(input, out DateTime result));
             Assert.False(DateTime.TryParse(input, new MyFormatter(), DateTimeStyles.None, out result));

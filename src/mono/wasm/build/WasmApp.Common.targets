@@ -240,7 +240,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -495,6 +496,7 @@
 
     <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="$(WasmProfilers.Contains('browser')) and '$(RunAOTCompilation)' == 'true'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
     <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
 
     <PropertyGroup>

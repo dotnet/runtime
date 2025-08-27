@@ -5,6 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
@@ -44,12 +45,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        public CommandResult RunComponentResolutionTest(TestApp component, Action<Command> commandCustomizer = null)
+        public CommandResult RunComponentResolutionTest(TestApp component, Action<Command> commandCustomizer = null, [CallerMemberName] string caller = "")
         {
-            return RunComponentResolutionTest(component.AppDll, FrameworkReferenceApp, DotNetWithNetCoreApp.GreatestVersionHostFxrPath, commandCustomizer);
+            return RunComponentResolutionTest(component.AppDll, FrameworkReferenceApp, DotNetWithNetCoreApp.GreatestVersionHostFxrPath, commandCustomizer, caller);
         }
 
-        public CommandResult RunComponentResolutionTest(string componentPath, TestApp hostApp, string hostFxrFolder, Action<Command> commandCustomizer = null)
+        public CommandResult RunComponentResolutionTest(string componentPath, TestApp hostApp, string hostFxrFolder, Action<Command> commandCustomizer = null, [CallerMemberName] string caller = "")
         {
             string[] args =
             {
@@ -65,16 +66,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .MultilevelLookup(false);
             commandCustomizer?.Invoke(command);
 
-            return command.Execute()
+            return command.Execute(caller)
                 .StdErrAfter("corehost_resolve_component_dependencies = {");
         }
 
-        public CommandResult RunComponentResolutionMultiThreadedTest(TestApp componentOne, TestApp componentTwo)
+        public CommandResult RunComponentResolutionMultiThreadedTest(TestApp componentOne, TestApp componentTwo, [CallerMemberName] string caller = "")
         {
-            return RunComponentResolutionMultiThreadedTest(componentOne.AppDll, componentTwo.AppDll, FrameworkReferenceApp, DotNetWithNetCoreApp.GreatestVersionHostFxrPath);
+            return RunComponentResolutionMultiThreadedTest(componentOne.AppDll, componentTwo.AppDll, FrameworkReferenceApp, DotNetWithNetCoreApp.GreatestVersionHostFxrPath, caller);
         }
 
-        public CommandResult RunComponentResolutionMultiThreadedTest(string componentOnePath, string componentTwoPath, TestApp hostApp, string hostFxrFolder)
+        public CommandResult RunComponentResolutionMultiThreadedTest(string componentOnePath, string componentTwoPath, TestApp hostApp, string hostFxrFolder, [CallerMemberName] string caller = "")
         {
             string[] args =
             {
@@ -89,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return Command.Create(NativeHostPath, args)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
-                .Execute();
+                .Execute(caller);
         }
 
         protected override void Dispose(bool disposing)

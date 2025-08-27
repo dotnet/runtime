@@ -5,10 +5,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 #include "slist.h"
@@ -127,7 +127,7 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
 }
 FCIMPLEND
 
-FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 {
     // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.

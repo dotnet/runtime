@@ -200,7 +200,7 @@ ArraySizeOverflow
 
         mov         x2, #(0x40000000 / 8) ; sizeof(void*)
         cmp         x1, x2
-        bhs         RhpNewVariableSizeObject
+        bhs         RhpNewArrayFast
 
         ; In this case we know the element size is sizeof(void *), or 8 for arm64
         ; This helps us in two ways - we can shift instead of multiplying, and

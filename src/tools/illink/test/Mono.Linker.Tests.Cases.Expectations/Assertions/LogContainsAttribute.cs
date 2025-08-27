@@ -5,22 +5,22 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (
-		AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field,
-		AllowMultiple = true,
-		Inherited = false)]
-	public class LogContainsAttribute : EnableLoggerAttribute
-	{
-		public LogContainsAttribute (string message, bool regexMatch = false)
-		{
-			if (string.IsNullOrEmpty (message))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (message));
-		}
+    [AttributeUsage(
+        AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field,
+        AllowMultiple = true,
+        Inherited = false)]
+    public class LogContainsAttribute : EnableLoggerAttribute
+    {
+        public LogContainsAttribute(string message, bool regexMatch = false)
+        {
+            if (string.IsNullOrEmpty(message))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(message));
+        }
 
-		/// <summary>
-		/// Property used by the result checkers of trimmer and analyzers to determine whether
-		/// the tool should have produced the specified warning on the annotated member.
-		/// </summary>
-		public Tool ProducedBy { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
-	}
+        /// <summary>
+        /// Property used by the result checkers of trimmer and analyzers to determine whether
+        /// the tool should have produced the specified warning on the annotated member.
+        /// </summary>
+        public Tool ProducedBy { get; set; } = Tool.All;
+    }
 }

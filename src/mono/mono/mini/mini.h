@@ -64,6 +64,12 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/icall-signatures.h"
 
+/* we use runtime checks to fallback to scalar ops for/
+ * older z/Architectures
+ */
+#ifdef TARGET_S390X
+#include <mono/utils/mono-hwcap.h>
+#endif
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
  * can be linked into both mono and mono-sgen.
@@ -1306,6 +1312,12 @@ typedef enum {
 #define vreg_is_ref(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
 #define vreg_is_mp(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
 
+typedef struct {
+	MonoInst* addr_var;
+	int alloc_size;
+	GSList* localloc_ins;
+} MonoCachedLocallocInfo;
+
 /*
  * Control Flow Graph and compilation unit information
  */
@@ -1661,6 +1673,8 @@ typedef struct {
 
 	gboolean *clause_is_dead;
 
+	MonoCachedLocallocInfo localloc_cache [2];
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
@@ -1679,7 +1693,7 @@ typedef struct {
 	G_UNLIKELY ((cfg)->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## flag)
 
 #define MONO_CFG_PROFILE_CALL_CONTEXT(cfg) \
-	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
+	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
 
 typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
@@ -3007,6 +3021,11 @@ mini_safepoints_enabled (void)
 static inline gboolean
 mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 {
+#ifdef TARGET_S390X
+        /* vector facility was introduced in z13 */
+	if (!mono_hwcap_s390x_has_vec)
+		return FALSE;
+#endif
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (!(((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass)))
 		return FALSE;

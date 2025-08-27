@@ -178,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (g_hStubLogFile == INVALID_HANDLE_VALUE) {
         g_hStubLogFile = NULL;
@@ -1950,7 +1950,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     /////////////////////////////////////////////////////////////////////////////////////
     // If we failed to find a target in either the resolver or cache entry hash tables,
@@ -2242,7 +2242,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     // Target can be NULL only if we can't resolve to an address
     _ASSERTE(target != (PCODE)NULL);
@@ -2322,11 +2322,6 @@ VirtualCallStubManager::Resolver(
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != (PCODE)NULL)
-                implSlot = DispatchSlot(pDirectTarget);
-
             // Only patch to a target if it's not going to call the prestub.
             fShouldPatch = TRUE;
         }

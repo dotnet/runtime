@@ -276,8 +276,8 @@ namespace System
 
         /// <summary>Gets the value of the variant field for the <see cref="Guid" />.</summary>
         /// <remarks>
-        ///     <para>This corresponds to the most significant 4 bits of the 8th byte: 00000000-0000-0000-F000-000000000000. The "don't-care" bits are not masked out.</para>
-        ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
+        ///     <para>This returns all 4 bits as is, some users may only care about fewer bits of the variant field and should refer to RFC 9562 for how to interpret the result.</para>
+        ///     <para>For example, UUIDv7 may only want to consider the 2 most significant bits of the field as the least 2 significant bits are documented as "don't-care".</para>
         /// </remarks>
         public int Variant => _d >> 4;
 
@@ -1078,7 +1078,7 @@ namespace System
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
             }
 
             ref int rA = ref Unsafe.AsRef(in left._a);
@@ -1514,7 +1514,7 @@ namespace System
                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            Vector128<byte> srcVec = Unsafe.BitCast<Guid, Vector128<byte>>(value);
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
                 HexConverter.AsciiToHexVector128(srcVec, hexMap);
 

@@ -37,10 +37,6 @@ if(FEATURE_GDBJIT)
     )
 endif(FEATURE_GDBJIT)
 
-if(FEATURE_JIT_PITCHING)
-   add_definitions(-DFEATURE_JIT_PITCHING)
-endif(FEATURE_JIT_PITCHING)
-
 if(FEATURE_PERFTRACING)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
@@ -50,10 +46,6 @@ endif(FEATURE_PERFTRACING)
 
 add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
 add_compile_definitions($<${FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH}:FEATURE_VIRTUAL_STUB_DISPATCH>)
-
-if(CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_definitions(FEATURE_STATICALLY_LINKED)
-endif()
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -275,12 +267,6 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
-if(FEATURE_JIT_PITCHING)
-    list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
-        codepitchingmanager.cpp
-    )
-endif(FEATURE_JIT_PITCHING)
-
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
@@ -311,7 +297,6 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
-    callsiteinspect.cpp
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
@@ -509,6 +494,7 @@ set(GC_SOURCES_WKS
     ../gc/gceesvr.cpp
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
+    ../gc/gcbridge.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
@@ -517,6 +503,7 @@ set(GC_HEADERS_WKS
     ../gc/gceventstatus.h
     ../gc/gcconfig.h
     ../gc/gcscan.h
+    ../gc/gcbridge.h
     ../gc/gchandletableimpl.h
     ../gc/softwarewritewatch.h)
 
@@ -558,6 +545,10 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_java.cpp
+)
+
 if(CLR_CMAKE_TARGET_WIN32)
 
     set(VM_SOURCES_DAC_AND_WKS_WIN32
@@ -594,6 +585,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # COM interop scenarios
     list(APPEND VM_SOURCES_WKS
+        callsiteinspect.cpp
         classcompat.cpp
         comcache.cpp
         comcallablewrapper.cpp
@@ -918,6 +910,14 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/helpers.cpp
+        exceptionhandling.cpp
+        gcinfodecoder.cpp
+    )
 endif()
 
 set(VM_SOURCES_DAC_ARCH
@@ -1013,3 +1013,5 @@ add_subdirectory(wks)
 if(FEATURE_PERFTRACING)
     add_subdirectory(eventing)
 endif(FEATURE_PERFTRACING)
+
+add_subdirectory(datadescriptor)

@@ -4,8 +4,136 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
+#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
+#include "enum_class_flags.h"
+#include <new>
+#include "failures.h"
+#include "simdhash.h"
+#include "intrinsics.h"
+
+struct InterpException
+{
+    InterpException(const char* message, CorJitResult result)
+        : m_message(message), m_result(result)
+    {
+        assert(result != CORJIT_OK);
+    }
+    const char* const m_message;
+    const CorJitResult m_result;
+};
+
+class InterpreterStackMap;
+class InterpCompiler;
+
+class InterpDataItemIndexMap
+{
+    struct VarSizedData
+    {
+        VarSizedData(size_t size) : size(size)
+        {
+        }
+
+        const size_t size;
+        uint32_t SizeOf()
+        {
+            return (uint32_t)(size * sizeof(void*));
+        }
+    };
+
+    template<typename T>
+    struct VarSizedDataWithPayload : public VarSizedData
+    {
+        VarSizedDataWithPayload() : VarSizedData(sizeof(VarSizedDataWithPayload<T>)/sizeof(void*))
+        {
+            assert(SizeOf() == sizeof(VarSizedDataWithPayload<T>));
+        }
+        T payload;
+    };
+
+    dn_simdhash_ght_t* _hash = nullptr;
+    TArray<void*> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
+    InterpCompiler* _compiler = nullptr;
+
+    static unsigned int HashVarSizedData(const void *voidKey)
+    {
+        VarSizedData* key = (VarSizedData*)voidKey;
+        return MurmurHash3_32((const uint8_t*)key, key->SizeOf(), 0);
+    }
+
+    static int32_t KeyEqualVarSizeData(const void * aVoid, const void * bVoid)
+    {
+        VarSizedData* keyA = (VarSizedData*)aVoid;
+        VarSizedData* keyB = (VarSizedData*)bVoid;
+
+        if (keyA->size != keyB->size)
+            return 0;
+
+        if (memcmp(aVoid, bVoid, keyA->SizeOf()) == 0)
+            return 1;
+        else
+            return 0;
+    }
+
+    dn_simdhash_ght_t* GetHash()
+    {
+        if (_hash == nullptr)
+            _hash = dn_simdhash_ght_new(HashVarSizedData, KeyEqualVarSizeData, 0, NULL);
+        if (_hash == nullptr)
+            NOMEM();
+
+        return _hash;
+    }
+
+public:
+    InterpDataItemIndexMap() = default;
+    InterpDataItemIndexMap(const InterpDataItemIndexMap&) = delete;
+    InterpDataItemIndexMap& operator=(const InterpDataItemIndexMap&) = delete;
+
+    void Init(TArray<void*> *dataItems, InterpCompiler* compiler)
+    {
+        _compiler = compiler;
+        _dataItems = dataItems;
+    }
+
+    int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
+    {
+        const size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
+                                          sizeof(InterpGenericLookup::indirections) +
+                                          sizeof(InterpGenericLookup::sizeOffset) +
+                                          sizeof(InterpGenericLookup::lookupType) +
+                                          sizeof(InterpGenericLookup::signature);
+
+        const size_t sizeOfStruct = sizeof(InterpGenericLookup);
+
+        static_assert_no_msg(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        return GetDataItemIndexForT(lookup);
+    }
+
+    int32_t GetDataItemIndex(void* lookup)
+    {
+        // TODO: this is a bit more expensive than necessary size we are allocating a full varsized struct for a single pointer
+        // Consider optimizing this to use a seperate hashtable like a dn_simdhash_ptr_ptr_t if it becomes a bottleneck
+        return GetDataItemIndexForT(lookup);
+    }
+
+private:
+    template<typename T>
+    int32_t GetDataItemIndexForT(const T& lookup);
+};
+
+TArray<char> PrintMethodName(COMP_HANDLE comp,
+                             CORINFO_CLASS_HANDLE  clsHnd,
+                             CORINFO_METHOD_HANDLE methHnd,
+                             CORINFO_SIG_INFO*     sig,
+                             bool                  includeAssembly,
+                             bool                  includeClass,
+                             bool                  includeClassInstantiation,
+                             bool                  includeMethodInstantiation,
+                             bool                  includeSignature,
+                             bool                  includeReturnType,
+                             bool                  includeThisSpecifier);
 
 // Types that can exist on the IL execution stack. They are used only during
 // IL import compilation stage.
@@ -231,6 +359,7 @@ struct InterpVar
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
+    unsigned int pinned : 1; // Indicates that the var had the 'pinned' modifier in IL
 
     InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
     {
@@ -246,6 +375,7 @@ struct InterpVar
         global = false;
         ILGlobal = false;
         alive = false;
+        pinned = false;
     }
 };
 
@@ -253,20 +383,16 @@ struct StackInfo
 {
     StackType type;
     CORINFO_CLASS_HANDLE clsHnd;
-    // Size that this value will occupy on the interpreter stack. It is a multiple
-    // of INTERP_STACK_SLOT_SIZE
-    int size;
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
     int var;
 
-    StackInfo(StackType type)
+    StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
         this->type = type;
-        clsHnd = NULL;
-        size = 0;
-        var = -1;
+        this->clsHnd = clsHnd;
+        this->var = var;
     }
 };
 
@@ -294,7 +420,6 @@ struct Reloc
     }
 };
 
-typedef class ICorJitInfo* COMP_HANDLE;
 
 class InterpIAllocator;
 
@@ -319,10 +444,68 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+
+    void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
 #ifdef DEBUG
-    const char *m_methodName;
+        void *ptr = (void*)clsHnd;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsClassHandle);
+        }
+#endif // DEBUG
+    }
+
+    void DeclarePointerIsMethod(CORINFO_METHOD_HANDLE methodHnd)
+    {
+#ifdef DEBUG
+        void *ptr = (void*)methodHnd;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsMethodHandle);
+        }
+#endif // DEBUG
+    }
+
+    void DeclarePointerIsString(void* stringLiteral)
+    {
+#ifdef DEBUG
+        void *ptr = (void*)stringLiteral;
+        if (!PointerInNameMap(ptr))
+        {
+            AddPointerToNameMap(ptr, PointerIsStringLiteral);
+        }
+#endif // DEBUG
+    }
+
+    CORINFO_CLASS_HANDLE m_classHnd;
+    #ifdef DEBUG
+    TArray<char> m_methodName;
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    bool m_verbose = true;
+#else
     bool m_verbose = false;
-#endif
+#endif // TARGET_WASM
+
+    const char* PointerIsClassHandle = (const char*)0x1;
+    const char* PointerIsMethodHandle = (const char*)0x2;
+    const char* PointerIsStringLiteral = (const char*)0x3;
+
+    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
+    bool PointerInNameMap(void* ptr)
+    {
+        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
+    }
+    void AddPointerToNameMap(void* ptr, const char* name)
+    {
+        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
+    }
+    void PrintNameInPointerMap(void* ptr);
+#endif // DEBUG
+
+    dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
+    InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -340,19 +523,92 @@ private:
     // instruction can request an index for some data (like a MethodDesc pointer), that it
     // will then embed in the instruction stream. The data item table will be referenced
     // from the interpreter code header during execution.
-    // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
-    int32_t GetDataItemIndex(void* data);
-    int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
-    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
-    int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    InterpDataItemIndexMap m_genericLookupToDataItemIndex;
+    int32_t GetDataItemIndex(void* data)
+    {
+        return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+    int32_t GetDataItemIndex(const InterpGenericLookup& data)
+    {
+        return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+
+    void* GetDataItemAtIndex(int32_t index);
+    void* GetAddrOfDataItemAtIndex(int32_t index);
+    int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
+    int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
+
+    void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
+    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+
+    struct InterpEmbedGenericResult
+    {
+        // If var is != -1, then the var holds the result of the lookup
+        int var = -1;
+        // If var == -1, then the data item holds the result of the lookup
+        int dataItemIndex = -1;
+    };
+
+    enum class GenericHandleEmbedOptions
+    {
+        support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
+
+        None = 0,
+        VarOnly = 1,
+        EmbedParent = 2,
+    };
+
+    enum class HelperArgType
+    {
+        GenericResolution,
+        Value
+    };
+
+    struct TokenArg
+    {
+        CORINFO_RESOLVED_TOKEN* token;
+        InterpCompiler::GenericHandleEmbedOptions options;
+    };
+
+    struct GenericHandleData
+    {
+        GenericHandleData(int genericVar, int dataItemIndex)
+            : argType(HelperArgType::GenericResolution), genericVar(genericVar), dataItemIndex(dataItemIndex) {}
+
+        GenericHandleData(int dataItemIndex)
+            : argType(HelperArgType::Value), genericVar(-1), dataItemIndex(dataItemIndex) {}
+
+        GenericHandleData() = default;
+
+        HelperArgType argType = HelperArgType::Value;
+        int genericVar = -1; // This will be set to the var of the generic context argument if argType == HelperArgType::GenericResolution
+        int dataItemIndex = 0;
+    };
+
+    GenericHandleData GenericHandleToGenericHandleData(const CORINFO_GENERICHANDLE_RESULT& embedInfo);
+    InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
+
+    // Do a generic handle lookup and acquire the result as either a var or a data item.
+    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
+
+    // Emit a generic dictionary lookup and push the result onto the interpreter stack
+    void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src);
+    void EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup);
+    void EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    void EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
+    void EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -411,6 +667,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
+    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
@@ -428,12 +685,14 @@ private:
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
 
+    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset, bool pinned = false);
+
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
     int32_t m_stackCapacity;
-    bool m_hasInvalidCode = false;
 
-    bool CheckStackHelper(int n);
+    void CheckStackHelper(int n);
+    void CheckStackExact(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
@@ -441,15 +700,15 @@ private:
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
 
     // Code emit
-    void    EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type, InterpOpcode convOp);
+    void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
     void    EmitLoadVar(int var);
     void    EmitStoreVar(int var);
     void    EmitBinaryArithmeticOp(int32_t opBase);
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
-    bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
@@ -457,6 +716,7 @@ private:
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
+    void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;
@@ -484,8 +744,8 @@ private:
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
     void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
-    bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
-    bool InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
     void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
 
@@ -495,6 +755,8 @@ private:
     void PrintCode();
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
+    void PrintPointer(void* pointer);
+    void PrintHelperFtn(int32_t _data);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
@@ -524,5 +786,45 @@ public:
  {
      return compiler->AllocMemPool0(sz);
  }
+
+template<typename T>
+int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
+{
+    VarSizedDataWithPayload<T> key;
+    key.payload = lookup;
+
+    dn_simdhash_ght_t* hash = GetHash();
+
+    void* resultAsPtr = nullptr;
+    if (dn_simdhash_ght_try_get_value(hash, (void*)&key, &resultAsPtr))
+    {
+        return (int32_t)(size_t)resultAsPtr;
+    }
+
+    // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+    static_assert_no_msg(sizeof(VarSizedData) == sizeof(void*));
+    static_assert_no_msg(sizeof(T) % sizeof(void*) == 0);
+    static_assert_no_msg(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+
+    void** LookupAsPtrs = (void**)&lookup;
+    int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);
+    for (unsigned i = 1; i < sizeof(T) / sizeof(void*); i++)
+    {
+        _dataItems->Add(LookupAsPtrs[i]);
+    }
+
+    void* hashItemPayload = _compiler->AllocMemPool0(sizeof(VarSizedDataWithPayload<T>));
+    if (hashItemPayload == nullptr)
+        NOMEM();
+
+    VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
+    memcpy(&pLookup->payload, &lookup, sizeof(T));
+
+    checkAddedNew(dn_simdhash_ght_try_insert(
+        hash, (void*)pLookup, (void*)(size_t)dataItemIndex, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
+    ));
+
+    return dataItemIndex;
+}
 
 #endif //_COMPILER_H_

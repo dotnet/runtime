@@ -47,7 +47,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryObjectNotFoundException() : base() { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -59,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public string? Name { get; }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -103,7 +103,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryOperationException() : base(SR.DSUnknownFailure) { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -113,7 +113,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int ErrorCode { get; }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -145,7 +145,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryServerDownException() : base() { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -170,7 +170,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -190,7 +190,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryObjectExistsException() : base() { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -216,7 +216,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public SyncFromAllServersOperationException() : base(SR.DSSyncAllFailure) { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -239,7 +239,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -264,7 +264,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ForestTrustCollisionException() : base(SR.ForestTrustCollision) { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -274,7 +274,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ForestTrustRelationshipCollisionCollection? Collisions { get; } = new ForestTrustRelationshipCollisionCollection();
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

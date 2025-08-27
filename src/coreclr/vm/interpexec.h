@@ -24,17 +24,20 @@ struct StackVal
     } data;
 };
 
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+class InterpreterFrame;
+
 struct InterpMethodContextFrame
 {
     PTR_InterpMethodContextFrame pParent;
-    const int32_t *startIp; // from startIp we can obtain InterpMethod and MethodDesc
+    PTR_InterpByteCodeStart startIp; // from startIp we can obtain InterpMethod and MethodDesc
     int8_t *pStack;
     int8_t *pRetVal;
     const int32_t *ip; // This ip is updated only when execution can leave the frame
     PTR_InterpMethodContextFrame pNext;
 
 #ifndef DACCESS_COMPILE
-    void ReInit(InterpMethodContextFrame *pParent, const int32_t *startIp, int8_t *pRetVal, int8_t *pStack)
+    void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
     {
         this->pParent = pParent;
         this->startIp = startIp;
@@ -47,14 +50,14 @@ struct InterpMethodContextFrame
 
 struct InterpThreadContext
 {
-    int8_t *pStackStart;
-    int8_t *pStackEnd;
+    PTR_INT8 pStackStart;
+    PTR_INT8 pStackEnd;
 
     // This stack pointer is the highest stack memory that can be used by the current frame. This does not
     // change throughout the execution of a frame and it is essentially the upper limit of the execution
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
-    int8_t *pStackPointer;
+    PTR_INT8 pStackPointer;
 
     FrameDataAllocator frameDataAllocator;
 
@@ -75,5 +78,7 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
+
+CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
 #endif

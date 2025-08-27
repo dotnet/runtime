@@ -160,7 +160,7 @@ static void PulseAllHelper(Thread* pThread)
     {
         // just keep going...
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -899,3 +899,11 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
+
+FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(IsFinalizerThread());
+}
+FCIMPLEND

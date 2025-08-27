@@ -485,7 +485,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
                 }
 
-                if (size >= 4 * REGSIZE_BYTES && compiler->IsBaselineSimdIsaSupported())
+                if (size >= 4 * REGSIZE_BYTES)
                 {
                     // We can use 128-bit SIMD ldp/stp for larger block sizes
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());

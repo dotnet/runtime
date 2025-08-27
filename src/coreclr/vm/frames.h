@@ -74,8 +74,6 @@
 //    |   |                           call count threshold is reached
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
-//    |   |
-//    |   +-TPMethodFrame       - for calls on transparent proxy
 //    |
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
@@ -1228,7 +1226,7 @@ public:
     {
 #ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
 #endif
     }
@@ -1254,7 +1252,7 @@ public:
         TADDR p = GetTransitionBlock() - TransitionBlock::GetNegSpaceSize();
 #endif
         // Return value is right before the transition block (or floating point spill area on AMD64) for frames that need it
-        // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
         p -= ENREGISTERED_RETURNTYPE_MAXSIZE;
 #else
@@ -1270,6 +1268,7 @@ template<>
 struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+    static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1712,6 +1711,14 @@ public:
 
 private:
     friend class VirtualCallStubManager;
+    friend struct ::cdac_data<StubDispatchFrame>;
+};
+
+template <>
+struct cdac_data<StubDispatchFrame>
+{
+    static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
+    static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -2127,7 +2134,7 @@ struct ReversePInvokeFrame
 
 //------------------------------------------------------------------------
 // This frame is pushed by any JIT'ted method that contains one or more
-// inlined N/Direct calls. Note that the JIT'ted method keeps it pushed
+// inlined PInvoke calls. Note that the JIT'ted method keeps it pushed
 // the whole time to amortize the pushing cost across the entire method.
 //------------------------------------------------------------------------
 
@@ -2136,6 +2143,21 @@ typedef DPTR(class InlinedCallFrame) PTR_InlinedCallFrame;
 class InlinedCallFrame : public Frame
 {
 public:
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_INTERPRETER
+    InlinedCallFrame() : Frame(FrameIdentifier::InlinedCallFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_Datum = NULL;
+        m_pCallSiteSP = NULL;
+        m_pCallerReturnAddress = 0;
+        m_pCalleeSavedFP = 0;
+        m_pThread = NULL;
+    }
+#endif // FEATURE_INTERPRETER
+#endif // DACCESS_COMPILE
+
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
@@ -2190,14 +2212,14 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains MethodDesc ptr or
+    // m_Datum contains PInvokeMethodDesc ptr or
     // - on 64 bit host: CALLI target address (if lowest bit is set)
     // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
+    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
     // - bit 1 set indicates invoking new exception handling helpers
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
-    PTR_NDirectMethodDesc   m_Datum;
+    PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
@@ -2214,7 +2236,7 @@ public:
     // This is used only for EBP. Hence, a stackwalk will miss the other
     // callee-saved registers for the method with the InlinedCallFrame.
     // To prevent GC-holes, we do not keep any GC references in callee-saved
-    // registers across an NDirect call.
+    // registers across an PInvoke call.
     TADDR                m_pCalleeSavedFP;
 
     // This field is used to cache the current thread object where this frame is
@@ -2345,7 +2367,17 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+
+    friend struct cdac_data<TailCallFrame>;
 };
+
+template<>
+struct cdac_data<TailCallFrame>
+{
+    static constexpr size_t CalleeSavedRegisters = offsetof(TailCallFrame, m_regs);
+    static constexpr size_t ReturnAddress = offsetof(TailCallFrame, m_ReturnAddress);
+};
+
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
 //------------------------------------------------------------------------
@@ -2399,11 +2431,18 @@ typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
 
 class InterpreterFrame : public FramedMethodFrame
 {
+    static void DummyFuncletCaller() {}
 public:
+
+    // This is a special value representing a caller of the first interpreter frame
+    // in a block of interpreter frames belonging to a single InterpreterFrame.
+    static TADDR DummyCallerIP;
+
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pTopInterpMethodContextFrame(pContextFrame)
+        m_pTopInterpMethodContextFrame(pContextFrame),
+        m_isFaulting(false)
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
@@ -2457,10 +2496,18 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+    void SetIsFaulting(bool isFaulting)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isFaulting = isFaulting;
+    }
+
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
+    // Set to true to indicate that the topmost interpreted frame has thrown an exception
+    bool m_isFaulting;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;

@@ -25,10 +25,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         public delegate void ExportSlhDsaPublicKeyCoreAction(Span<byte> s);
-        public delegate void ExportSlhDsaSecretKeyCoreAction(Span<byte> s);
+        public delegate void ExportSlhDsaPrivateKeyCoreAction(Span<byte> s);
         public delegate bool TryExportPkcs8PrivateKeyCoreFunc(Span<byte> destination, out int bytesWritten);
         public delegate void SignDataCoreAction(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> s);
         public delegate bool VerifyDataCoreFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
+        public delegate void SignPreHashCoreAction(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
+        public delegate bool VerifyPreHashCoreFunc(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
         public delegate void DisposeAction(bool disposing);
 
         public TryExportPkcs8PrivateKeyCoreFunc BaseTryExportPkcs8PrivateKeyCore =>
@@ -36,17 +38,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         public int VerifyDataCoreCallCount = 0;
         public int SignDataCoreCallCount = 0;
+        public int VerifyPreHashCoreCallCount = 0;
+        public int SignPreHashCoreCallCount = 0;
         public int ExportSlhDsaPublicKeyCoreCallCount = 0;
-        public int ExportSlhDsaSecretKeyCoreCallCount = 0;
+        public int ExportSlhDsaPrivateKeyCoreCallCount = 0;
         public int TryExportPkcs8PrivateKeyCoreCallCount = 0;
         public int DisposeCallCount = 0;
 
         public ExportSlhDsaPublicKeyCoreAction ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => Assert.Fail();
-        public ExportSlhDsaSecretKeyCoreAction ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => Assert.Fail();
+        public ExportSlhDsaPrivateKeyCoreAction ExportSlhDsaPrivateKeyCoreHook { get; set; } = _ => Assert.Fail();
         public TryExportPkcs8PrivateKeyCoreFunc TryExportPkcs8PrivateKeyCoreHook { get; set; } =
             (_, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public SignDataCoreAction SignDataCoreHook { get; set; } = (_, _, _) => Assert.Fail();
         public VerifyDataCoreFunc VerifyDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return false; };
+        public SignPreHashCoreAction SignPreHashCoreHook { get; set; } = (_, _, _, _) => Assert.Fail();
+        public VerifyPreHashCoreFunc VerifyPreHashCoreHook { get; set; } = (_, _, _, _) => { Assert.Fail(); return false; };
         public DisposeAction DisposeHook { get; set; } = _ => { };
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination)
@@ -55,10 +61,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExportSlhDsaPublicKeyCoreHook(destination);
         }
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination)
         {
-            ExportSlhDsaSecretKeyCoreCallCount++;
-            ExportSlhDsaSecretKeyCoreHook(destination);
+            ExportSlhDsaPrivateKeyCoreCallCount++;
+            ExportSlhDsaPrivateKeyCoreHook(destination);
         }
 
         protected override void Dispose(bool disposing)
@@ -85,6 +91,18 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             return VerifyDataCoreHook(data, context, signature);
         }
 
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination)
+        {
+            SignPreHashCoreCallCount++;
+            SignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
+        }
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature)
+        {
+            VerifyPreHashCoreCallCount++;
+            return VerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
+        }
+
         public void AddLengthAssertion()
         {
             ExportSlhDsaPublicKeyCoreAction oldExportSlhDsaPublicKeyCoreHook = ExportSlhDsaPublicKeyCoreHook;
@@ -94,11 +112,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 Assert.Equal(Algorithm.PublicKeySizeInBytes, destination.Length);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
-                Assert.Equal(Algorithm.SecretKeySizeInBytes, destination.Length);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
+                Assert.Equal(Algorithm.PrivateKeySizeInBytes, destination.Length);
             };
 
             SignDataCoreAction oldSignDataCoreHook = SignDataCoreHook;
@@ -115,6 +133,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 Assert.Equal(Algorithm.SignatureSizeInBytes, signature.Length);
                 return ret;
             };
+
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignDataCoreHook(hash, context, destination);
+                Assert.Equal(Algorithm.SignatureSizeInBytes, destination.Length);
+            };
+
+            VerifyPreHashCoreFunc oldVerifyPreHashCoreHook = VerifyPreHashCoreHook;
+            VerifyPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
+                Assert.Equal(Algorithm.SignatureSizeInBytes, signature.Length);
+                return ret;
+            };
         }
 
         public void AddDestinationBufferIsSameAssertion(ReadOnlyMemory<byte> buffer)
@@ -126,10 +159,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
@@ -137,6 +170,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
                 oldSignDataCoreHook(data, context, destination);
+                AssertExtensions.Same(buffer.Span, destination);
+            };
+
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
@@ -165,6 +205,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Same(buffer.Span, context);
                 return ret;
             };
+
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
+                AssertExtensions.Same(buffer.Span, context);
+            };
+
+            VerifyPreHashCoreFunc oldVerifyPreHashCoreHook = VerifyPreHashCoreHook;
+            VerifyPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
+                AssertExtensions.Same(buffer.Span, context);
+                return ret;
+            };
         }
 
         public void AddSignatureBufferIsSameAssertion(ReadOnlyMemory<byte> buffer)
@@ -173,6 +228,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
+                AssertExtensions.Same(buffer.Span, signature);
+                return ret;
+            };
+
+            VerifyPreHashCoreFunc oldVerifyPreHashCoreHook = VerifyPreHashCoreHook;
+            VerifyPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
                 AssertExtensions.Same(buffer.Span, signature);
                 return ret;
             };
@@ -194,6 +257,39 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Same(buffer.Span, data);
                 return ret;
             };
+
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
+                AssertExtensions.Same(buffer.Span, hash);
+            };
+
+            VerifyPreHashCoreFunc oldVerifyPreHashCoreHook = VerifyPreHashCoreHook;
+            VerifyPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
+                AssertExtensions.Same(buffer.Span, hash);
+                return ret;
+            };
+        }
+
+        public void AddHashAlgorithmIsSameAssertion(ReadOnlyMemory<char> buffer)
+        {
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
+                AssertExtensions.Same(buffer.Span, hashAlgorithmOid);
+            };
+
+            VerifyPreHashCoreFunc oldVerifyPreHashCoreHook = VerifyPreHashCoreHook;
+            VerifyPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            {
+                bool ret = oldVerifyPreHashCoreHook(hash, context, hashAlgorithmOid, signature);
+                AssertExtensions.Same(buffer.Span, hashAlgorithmOid);
+                return ret;
+            };
         }
 
         public void AddFillDestination(byte b)
@@ -205,10 +301,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 destination.Fill(b);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
                 destination.Fill(b);
             };
 
@@ -216,6 +312,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
                 oldSignDataCoreHook(data, context, destination);
+                destination.Fill(b);
+            };
+
+            SignPreHashCoreAction oldSignPreHashCoreHook = SignPreHashCoreHook;
+            SignPreHashCoreHook = (ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            {
+                oldSignPreHashCoreHook(hash, context, hashAlgorithmOid, destination);
                 destination.Fill(b);
             };
 

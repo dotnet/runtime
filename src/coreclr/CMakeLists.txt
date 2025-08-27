@@ -39,6 +39,10 @@ if (DEFINED CLR_CMAKE_ICU_DIR)
   include_directories(${CLR_CMAKE_ICU_DIR}/include)
 endif(DEFINED CLR_CMAKE_ICU_DIR)
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    add_compile_options(-fwasm-exceptions)
+endif()
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -106,10 +110,6 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-      add_subdirectory(hosts)
-    endif()
 else()
     if(CLR_CMAKE_TARGET_UNIX)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
@@ -173,6 +173,12 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
 include(clrdefinitions.cmake)
+
+#--------------------------------
+# Data descriptors mechanics
+#  - all clr specific data descriptor helpers should be included in this file
+#----------------------------------
+include(clrdatadescriptors.cmake)
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
@@ -301,8 +307,5 @@ endif()
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)
-endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-
-if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(hosts)
-endif(CLR_CMAKE_HOST_WIN32)
+endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)

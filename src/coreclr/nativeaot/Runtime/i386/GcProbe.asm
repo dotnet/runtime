@@ -172,7 +172,7 @@ RhpWaitForGC  proc
 
         HijackFixupEpilog
 Abort:
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         ecx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         edx
         pop         eax         ;; ecx was pushed here, but we don't care for its value
         pop         ebp

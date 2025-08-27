@@ -17,10 +17,6 @@
 
 #ifdef FEATURE_METADATA_EMIT
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
-
 //*****************************************************************************
 // Create and set a new MethodDef record.
 //*****************************************************************************
