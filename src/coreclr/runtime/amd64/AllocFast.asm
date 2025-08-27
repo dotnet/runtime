@@ -81,6 +81,9 @@ ifdef FEATURE_NATIVEAOT
         mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
         test        ax, ax
         jnz         RhpNewObject_ValidMethodTable
+        mov         eax, [rcx]
+        and         eax, 7C000000h
+        jz          RhpNewObject_ValidMethodTable
         int         3
 RhpNewObject_ValidMethodTable:
 endif
