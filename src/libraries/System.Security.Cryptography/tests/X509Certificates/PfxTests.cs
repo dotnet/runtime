@@ -951,6 +951,126 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        // preserveProvider: false, non-ephemeral
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet)]
+        [InlineData(1, false, X509KeyStorageFlags.DefaultKeySet)]
+        [InlineData(1, false, X509KeyStorageFlags.MachineKeySet)]
+        // preserveProvider: true, non-ephemeral
+        [InlineData(2, true, X509KeyStorageFlags.UserKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.DefaultKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.MachineKeySet)]
+        // preserveProvider: false, ephemeral
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        // preserveProvider: true, ephemeral
+        [InlineData(0, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        public static void Windows_MachineKey_HasExpectedProvider(int expectedState, bool preserveProvider, X509KeyStorageFlags storageFlags)
+        {
+            const string StrongProv = "Microsoft Strong Cryptographic Provider";
+
+            byte[] pfx = MakePfx();
+            string cngKsp = CngProvider.MicrosoftSoftwareKeyStorageProvider.Provider;
+
+            if (expectedState == 0)
+            {
+                Assert.Equal(cngKsp, GetProvider(pfx, preserveProvider, storageFlags));
+            }
+            else if (expectedState == 1)
+            {
+                HashSet<string> machineKeyAllowedProviders = new() { cngKsp };
+
+                if (!AdminHelpers.IsProcessElevated())
+                {
+                    machineKeyAllowedProviders.Add("Microsoft Enhanced RSA and AES Cryptographic Provider");
+                }
+
+                Assert.Contains(GetProvider(pfx, preserveProvider, storageFlags), machineKeyAllowedProviders);
+            }
+            else if (expectedState == 2)
+            {
+                Assert.Equal(StrongProv, GetProvider(pfx, preserveProvider, storageFlags));
+            }
+
+            static byte[] MakePfx()
+            {
+                // Weak PBE is fine, the key is public and the password is well-known.
+                PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 10);
+                Pkcs9LocalKeyId localKeyId = new Pkcs9LocalKeyId([1]);
+
+                using (RSA rsa = RSA.Create())
+                {
+                    rsa.ImportFromPem(TestData.RsaPkcs1Key);
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    CertificateRequest req = new CertificateRequest(
+                        $"CN=Self-Signed Test {now:yyyy-MM-dd HHmmss}",
+                        rsa,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
+
+                    using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(5)))
+                    {
+                        Pkcs12Builder builder = new Pkcs12Builder();
+                        Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                        Pkcs12CertBag certBag = certContents.AddCertificate(cert);
+                        certBag.Attributes.Add(localKeyId);
+                        builder.AddSafeContentsEncrypted(certContents, "", pbeParams);
+
+                        Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                        Pkcs12ShroudedKeyBag keyBag = keyContents.AddShroudedKey(rsa, "", pbeParams);
+                        keyBag.Attributes.Add(localKeyId);
+
+                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                        writer.WriteCharacterString(UniversalTagNumber.BMPString, StrongProv);
+
+                        keyBag.Attributes.Add(
+                            new AsnEncodedData(
+                                new Oid("1.3.6.1.4.1.311.17.1", "1.3.6.1.4.1.311.17.1"),
+                                writer.Encode()));
+
+                        builder.AddSafeContentsUnencrypted(keyContents);
+                        builder.SealWithMac("", HashAlgorithmName.SHA1, 10);
+                        return builder.Encode();
+                    }
+                }
+            }
+
+            static string GetProvider(byte[] pfxBytes, bool preserveProvider, X509KeyStorageFlags keyStorageFlags)
+            {
+                X509Certificate2 cert;
+
+                if (preserveProvider)
+                {
+                    cert = new X509Certificate2(pfxBytes, "", keyStorageFlags);
+                }
+                else
+                {
+                    cert = X509CertificateLoader.LoadPkcs12(pfxBytes, "", keyStorageFlags);
+                }
+
+                using (cert)
+                using (RSA rsa = cert.GetRSAPrivateKey())
+                {
+                    if (rsa is RSACng rsaCng)
+                    {
+                        return rsaCng.Key.Provider.Provider;
+                    }
+
+                    return null;
+                }
+            }
+        }
+
         internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
         {
             if (allowedIterations == UnlimitedIterations)
