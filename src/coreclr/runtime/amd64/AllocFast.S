@@ -16,6 +16,9 @@ LEAF_ENTRY RhpNewFast, _TEXT
         mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
         test        ax, ax
         jnz         LOCAL_LABEL(RhpNewFast_ValidMethodTable)
+        mov         eax, [rdi]
+        and         eax, 0x7C000000
+        jz          LOCAL_LABEL(RhpNewFast_ValidMethodTable)
         int         3
 LOCAL_LABEL(RhpNewFast_ValidMethodTable):
 #endif
