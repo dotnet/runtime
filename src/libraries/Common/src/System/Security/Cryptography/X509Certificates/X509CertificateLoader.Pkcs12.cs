@@ -751,7 +751,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 finally
                 {
-                    cngKey?.Dispose();
+                    cngKey?.Delete();
                 }
 #else
                 // The netstandard builds shouldn't ever execute on a relevant configuration,
