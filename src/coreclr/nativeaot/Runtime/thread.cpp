@@ -1345,16 +1345,16 @@ FCIMPLEND
 // This callback sets the interrupt flag on the current thread
 static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
 {
-    // Set the interrupt flag on the current thread
-    // If we were queued on a thread that wasn't started,
-    // we may be the first code that runs on this thread.
-    // Ensure we're attached to the thread store.
-    ThreadStore::AttachCurrentThread();
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    if (pCurrentThread != nullptr)
+    if (!pCurrentThread->IsInitialized())
     {
-        pCurrentThread->SetInterrupted(true);
+        // If the thread was interrupted before it was started
+        // the thread won't have been initialized.
+        // Attach the thread here if it's the first time we're seeing it.
+        ThreadStore::AttachCurrentThread();
     }
+
+    pCurrentThread->SetInterrupted(true);
 }
 
 // Function to get the address of the interrupt APC callback
@@ -1367,7 +1367,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    if (pCurrentThread != nullptr && pCurrentThread->CheckInterrupted())
+    if (pCurrentThread->CheckInterrupted())
     {
         pCurrentThread->SetInterrupted(false);
         FC_RETURN_BOOL(true);
