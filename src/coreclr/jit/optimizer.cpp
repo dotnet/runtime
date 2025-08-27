@@ -3655,12 +3655,21 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
-    // Find the set of definitely-executed blocks. These will be given priority for hoisting.
+    // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
     //
-    // TODO: We ought to consider hoisting more aggressively from conditionally executed blocks,
-    // if they are frequently executed and it is safe to evaluate the tree early.
+    // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
+    // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
+    // or side-effect dependent things. Note that HoistVisitor uses `m_beforeSideEffect` to determine if it's
+    // ok to hoist a side-effect. It allows this only for the first block (the entry block), before any
+    // side-effect has been seen. After the first block, it assumes that there has been a side effect and
+    // no further side-effect can be hoisted. It is true that we don't analyze any program behavior in the
+    // flow graph between the entry block and the subsequent blocks, whether they be the next block dominating
+    // the exit block, or the pre-headers of nested loops.
+    //
+    // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
+    // and it is safe to evaluate the tree early.
     //
     assert(m_dfsTree != nullptr);
     BitVecTraits traits(m_dfsTree->PostOrderTraits());
@@ -4283,6 +4292,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 m_valueStack.Reset();
             }
+
+            // Only unconditionally executed blocks in the loop are visited (see optHoistThisLoop)
+            // so after we're done visiting the first block we need to assume the worst, that the
+            // blocks that are not visited have side effects.
+            m_beforeSideEffect = false;
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -4461,7 +4475,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     if (!m_beforeSideEffect)
                     {
                         // For now, we give up on an expression that might raise an exception if it is after the
-                        // first possible global side effect.
+                        // first possible global side effect (and we assume we're after that if we're not in the first
+                        // block).
                         // TODO-CQ: this is when we might do loop cloning.
                         //
                         if ((tree->gtFlags & GTF_EXCEPT) != 0)
