@@ -75,11 +75,11 @@ namespace System.Text.Json.Serialization
 
         public void Read(PipeReader utf8Json) => throw new NotImplementedException();
 
-        public Utf8JsonReader GetReader(JsonReaderState jsonReaderState)
+        public void GetReader(JsonReaderState jsonReaderState, out Utf8JsonReader reader)
         {
             if (_sequence.IsSingleSegment)
             {
-                return new Utf8JsonReader(
+                reader = new Utf8JsonReader(
 #if NET
                     _sequence.FirstSpan,
 #else
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                return new Utf8JsonReader(_sequence, IsFinalBlock, jsonReaderState);
+                reader = new Utf8JsonReader(_sequence, IsFinalBlock, jsonReaderState);
             }
         }
 

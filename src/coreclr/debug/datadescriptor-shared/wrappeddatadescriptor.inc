@@ -40,6 +40,9 @@
 #ifndef CDAC_GLOBAL_STRING
 #define CDAC_GLOBAL_STRING(globalname,stringval)
 #endif
+#ifndef CDAC_GLOBAL_SUB_DESCRIPTOR
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(globalname,addr)
+#endif
 #ifndef CDAC_GLOBALS_END
 #define CDAC_GLOBALS_END()
 #endif
@@ -58,4 +61,5 @@
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBAL_POINTER
 #undef CDAC_GLOBAL_STRING
+#undef CDAC_GLOBAL_SUB_DESCRIPTOR
 #undef CDAC_GLOBALS_END

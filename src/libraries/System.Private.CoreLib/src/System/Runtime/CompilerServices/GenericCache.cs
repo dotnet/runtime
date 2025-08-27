@@ -90,7 +90,7 @@ namespace System.Runtime.CompilerServices
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
             CreateCacheTable(initialCacheSize) ??
 #endif
-            _sentinelTable!;
+            _sentinelTable;
             _lastFlushSize = initialCacheSize;
         }
 
@@ -141,9 +141,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGet(TKey key, out TValue? value)
         {
-            // table is always initialized and is not null.
-            Entry[] table = _table!;
-            int hash = key!.GetHashCode();
+            Entry[] table = _table;
+            int hash = key.GetHashCode();
             int index = HashToBucket(table, hash);
             for (int i = 0; i < BUCKET_SIZE;)
             {
@@ -241,7 +240,7 @@ namespace System.Runtime.CompilerServices
         internal void TrySet(TKey key, TValue value)
         {
             int bucket;
-            int hash = key!.GetHashCode();
+            int hash = key.GetHashCode();
             Entry[] table;
 
             do
@@ -384,7 +383,7 @@ namespace System.Runtime.CompilerServices
             // with the writing of the table
             _lastFlushSize = lastSize;
             // flushing is just replacing the table with a sentinel.
-            _table = _sentinelTable!;
+            _table = _sentinelTable;
         }
 
         private bool MaybeReplaceCacheWithLarger(int size)

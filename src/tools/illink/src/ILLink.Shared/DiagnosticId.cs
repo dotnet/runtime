@@ -190,6 +190,7 @@ namespace ILLink.Shared
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
         ReferenceNotMarkedIsTrimmable = 2125,
+        DataflowAnalysisDidNotConverge = 2126,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.

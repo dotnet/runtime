@@ -7,7 +7,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// Helper to read memory by 4-bit (half-byte) nibbles as is used for encoding
     /// method fixups. More or less ported over from CoreCLR src\inc\nibblestream.h.
     /// </summary>
-    class NibbleReader
+    internal class NibbleReader
     {
         /// <summary>
         /// Special value in _nextNibble saying there's no next nibble and the next byte

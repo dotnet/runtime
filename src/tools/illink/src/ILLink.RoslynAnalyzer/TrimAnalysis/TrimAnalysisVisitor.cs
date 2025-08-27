@@ -137,8 +137,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue VisitParameterReference(IParameterReferenceOperation paramRef, StateValue state)
         {
+            IParameterSymbol parameter = paramRef.Parameter;
+
+            if (parameter.ContainingSymbol is not IMethodSymbol)
+            {
+                // TODO: Extension members allows parameters to be on types, rather than methods.
+                // For example: `extension<T>(ref T value) { }` will enumerate `value` where
+                // the containing symbol is a `NonErrorNamedTypeSymbol`
+                return TopValue;
+            }
+
             // Reading from a parameter always returns the same annotated value. We don't track modifications.
-            return GetParameterTargetValue(paramRef.Parameter);
+            return GetParameterTargetValue(parameter);
         }
 
         public override MultiValue VisitInstanceReference(IInstanceReferenceOperation instanceRef, StateValue state)

@@ -422,7 +422,7 @@ namespace System.Reflection
 
             if (metaType != null)
             {
-                CheckGenericParameters(nullability, metaMember!, metaType, memberInfo.ReflectedType);
+                CheckGenericParameters(nullability, metaMember, metaType, memberInfo.ReflectedType);
             }
         }
 

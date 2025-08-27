@@ -562,6 +562,12 @@
     <Target>T:System.Reflection.RuntimeAssemblyName</Target>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.Dataflow.TrimAnalysisGenericInstantiationAccessPattern</Target>
+    <Left>ref/net10.0/illink.dll</Left>
+    <Right>lib/net10.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.assembly_actions</Target>
   </Suppression>

@@ -272,6 +272,35 @@ namespace System
 
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
+#if MONO
+        // Workaround for a performance regression on Mono: https://github.com/dotnet/runtime/issues/111932
+        private static readonly byte[] TwoDigitsCharsAsBytes =
+            MemoryMarshal.AsBytes<char>("00010203040506070809" +
+                                        "10111213141516171819" +
+                                        "20212223242526272829" +
+                                        "30313233343536373839" +
+                                        "40414243444546474849" +
+                                        "50515253545556575859" +
+                                        "60616263646566676869" +
+                                        "70717273747576777879" +
+                                        "80818283848586878889" +
+                                        "90919293949596979899").ToArray();
+        private static readonly byte[] TwoDigitsBytes =
+                                       ("00010203040506070809"u8 +
+                                        "10111213141516171819"u8 +
+                                        "20212223242526272829"u8 +
+                                        "30313233343536373839"u8 +
+                                        "40414243444546474849"u8 +
+                                        "50515253545556575859"u8 +
+                                        "60616263646566676869"u8 +
+                                        "70717273747576777879"u8 +
+                                        "80818283848586878889"u8 +
+                                        "90919293949596979899"u8).ToArray();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
+            ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+#else
         private static ReadOnlySpan<byte> TwoDigitsCharsAsBytes =>
             MemoryMarshal.AsBytes<char>("00010203040506070809" +
                                         "10111213141516171819" +
@@ -294,6 +323,12 @@ namespace System
                                         "70717273747576777879"u8 +
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
+            ref MemoryMarshal.GetReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+#endif
+
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
@@ -1572,7 +1607,7 @@ namespace System
 
             Unsafe.CopyBlockUnaligned(
                 ref *(byte*)ptr,
-                ref Unsafe.Add(ref MemoryMarshal.GetReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes), (uint)sizeof(TChar) * 2 * value),
+                ref Unsafe.Add(ref GetTwoDigitsBytesRef(typeof(TChar) == typeof(char)), (uint)sizeof(TChar) * 2 * value),
                 (uint)sizeof(TChar) * 2);
         }
 
@@ -1588,7 +1623,7 @@ namespace System
 
             (value, uint remainder) = Math.DivRem(value, 100);
 
-            ref byte charsArray = ref MemoryMarshal.GetReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+            ref byte charsArray = ref GetTwoDigitsBytesRef(typeof(TChar) == typeof(char));
 
             Unsafe.CopyBlockUnaligned(
                 ref *(byte*)ptr,

@@ -305,7 +305,7 @@ namespace System.Reflection
                     Array.Empty<ParameterInfo>();
 
                 for (int i = 0; i < propParams.Length; i++)
-                    propParams[i] = new RuntimeParameterInfo((RuntimeParameterInfo)methParams![i], this);
+                    propParams[i] = new RuntimeParameterInfo((RuntimeParameterInfo)methParams[i], this);
 
                 m_parameters = propParams;
             }

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
@@ -159,8 +160,8 @@ internal sealed unsafe partial class MsQuicApi
             }
             Version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
 
-            paramSize = 64 * sizeof(sbyte);
-            sbyte* libGitHash = stackalloc sbyte[64];
+            paramSize = 64 * sizeof(byte);
+            byte* libGitHash = stackalloc byte[64];
             status = apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_GIT_HASH, &paramSize, libGitHash);
             if (StatusFailed(status))
             {
@@ -170,7 +171,7 @@ internal sealed unsafe partial class MsQuicApi
                 }
                 return;
             }
-            string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
+            string? gitHash = Utf8StringMarshaller.ConvertToManaged(libGitHash);
 
             MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {Version} ({gitHash})";
 

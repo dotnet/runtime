@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -425,10 +426,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // IDN mapping is handled by MsQuic.
             string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
-            IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
-            try
+            unsafe
             {
-                unsafe
+                byte* targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
+                try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
@@ -438,10 +439,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         (ushort)port),
                         "ConnectionStart failed");
                 }
-            }
-            finally
-            {
-                Marshal.FreeCoTaskMem(targetHostPtr);
+                finally
+                {
+                    Utf8StringMarshaller.Free(targetHostPtr);
+                }
             }
         }
 

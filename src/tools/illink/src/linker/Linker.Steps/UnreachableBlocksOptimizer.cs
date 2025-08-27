@@ -530,7 +530,7 @@ namespace Mono.Linker.Steps
                                 if (!md.HasMetadataParameters() && CanInlineInstanceCall(instrs, i))
                                 {
                                     processor.Replace(i - 1, Instruction.Create(OpCodes.Nop));
-                                    processor.Replace(i, result.GetPrototype()!);
+                                    processor.Replace(i, result.GetPrototype());
                                     changed = true;
                                 }
 

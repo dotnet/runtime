@@ -594,11 +594,29 @@ function(install_clr)
     endif()
 
     foreach(destination ${destinations})
-      # We don't need to install the export libraries for our DLLs
-      # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
-      if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
+      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Use install FILES since these are WASM assets that aren't executable.
+        install(FILES
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+
+        # Conditionally check for and copy any extra data file at install time.
+        install(CODE
+        "
+          if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
+              file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
+          endif()
+        "
+        COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      else()
+        # We don't need to install the export libraries for our DLLs
+        # since they won't be directly linked against.
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)

@@ -220,7 +220,7 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pSrcVar));
-        PRECONDITION(CheckPointer(pDestObj) && *pDestObj == NULL);
+        PRECONDITION(CheckPointer(pDestObj));
     }
     CONTRACTL_END;
 
@@ -236,6 +236,7 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
 
     if (!pSafeArray)
     {
+        *pDestObj = NULL;
         return;
     }
 

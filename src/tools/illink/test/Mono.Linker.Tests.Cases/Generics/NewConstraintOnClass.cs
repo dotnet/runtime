@@ -130,8 +130,8 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 namespace System.Runtime.CompilerServices
 {
-    [Kept]
-    [KeptMember(".ctor()")]
+    [Kept(By = Tool.Trimmer)]
+    [KeptMember(".ctor()", By = Tool.Trimmer)]
     public partial class IsUnmanagedAttribute
     {
     }

@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert, Module } from "./globals";
 import { setI32, localHeapViewU8, forceThreadMemoryViewRefresh } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
@@ -51,7 +51,7 @@ export function ws_get_state (ws: WebSocketExtension): number {
     const queued_events_count = receive_event_queue.getLength();
     if (queued_events_count == 0)
         return ws.readyState ?? -1;
-    return WebSocket.OPEN;
+    return ws[wasm_ws_close_sent] ? WebSocket.CLOSING : WebSocket.OPEN;
 }
 
 export function ws_wasm_create (uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr): WebSocketExtension {
@@ -116,13 +116,15 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
             }
 
             // send close to any pending receivers, to wake them
-            const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
-            receive_promise_queue.drain((receive_promise_control) => {
-                setI32(receive_status_ptr, 0); // count
-                setI32(<any>receive_status_ptr + 4, 2); // type:close
-                setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
-                receive_promise_control.resolve();
-            });
+            Module.safeSetTimeout(() => {
+                const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
+                receive_promise_queue.drain((receive_promise_control) => {
+                    setI32(receive_status_ptr, 0); // count
+                    setI32(<any>receive_status_ptr + 4, 2); // type:close
+                    setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
+                    receive_promise_control.resolve();
+                });
+            }, 0);
         } catch (error: any) {
             mono_log_warn("failed to propagate WebSocket close event: " + error.toString());
         }

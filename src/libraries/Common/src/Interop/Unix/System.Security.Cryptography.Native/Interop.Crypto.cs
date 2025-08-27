@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -69,22 +70,22 @@ internal static partial class Interop
         internal static unsafe string? GetX509RootStorePath(out bool defaultPath)
         {
             byte usedDefault;
-            IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
+            byte* ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
-            return Marshal.PtrToStringUTF8(ptr);
+            return Utf8StringMarshaller.ConvertToManaged(ptr);
         }
 
         internal static unsafe string? GetX509RootStoreFile()
         {
             byte unused;
-            return Marshal.PtrToStringUTF8(GetX509RootStoreFile_private(&unused));
+            return Utf8StringMarshaller.ConvertToManaged(GetX509RootStoreFile_private(&unused));
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
-        private static unsafe partial IntPtr GetX509RootStorePath_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStorePath_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
-        private static unsafe partial IntPtr GetX509RootStoreFile_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStoreFile_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(

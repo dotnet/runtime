@@ -78,9 +78,9 @@ namespace ILCompiler.Dataflow
             stack.Push(new StackSlot());
         }
 
-        private void PushUnknownAndWarnAboutInvalidIL(Stack<StackSlot> stack, MethodIL methodBody, int offset)
+        private void PushUnknownAndWarnAboutInvalidIL(Stack<StackSlot> stack, MethodIL methodIL, int offset)
         {
-            WarnAboutInvalidILInMethod(methodBody, offset);
+            WarnAboutInvalidILInMethod(methodIL, offset);
             PushUnknown(stack);
         }
 
@@ -160,14 +160,14 @@ namespace ILCompiler.Dataflow
             private readonly HashSet<int> _methodBranchTargets;
             private int _currentBlockIndex;
             private bool _foundEndOfPrevBlock;
-            private MethodIL _methodBody;
+            private MethodIL _methodIL;
 
-            public BasicBlockIterator(MethodIL methodBody)
+            public BasicBlockIterator(MethodIL methodIL)
             {
-                _methodBranchTargets = methodBody.ComputeBranchTargets();
+                _methodBranchTargets = methodIL.ComputeBranchTargets();
                 _currentBlockIndex = -1;
                 _foundEndOfPrevBlock = true;
-                _methodBody = methodBody;
+                _methodIL = methodIL;
             }
 
             public int CurrentBlockIndex
@@ -186,7 +186,7 @@ namespace ILCompiler.Dataflow
                     _foundEndOfPrevBlock = false;
                 }
 
-                var reader = new ILReader(_methodBody.GetILBytes(), offset);
+                var reader = new ILReader(_methodIL.GetILBytes(), offset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode.IsControlFlowInstruction())
                 {
@@ -341,23 +341,23 @@ namespace ILCompiler.Dataflow
             interproceduralState.TrackMethod(method);
         }
 
-        protected virtual void Scan(MethodIL methodBody, ref InterproceduralState interproceduralState)
+        protected virtual void Scan(MethodIL methodIL, ref InterproceduralState interproceduralState)
         {
-            MethodDesc thisMethod = methodBody.OwningMethod;
+            MethodDesc thisMethod = methodIL.OwningMethod;
 
-            ValueBasicBlockPair?[] locals = new ValueBasicBlockPair?[methodBody.GetLocals().Length];
+            ValueBasicBlockPair?[] locals = new ValueBasicBlockPair?[methodIL.GetLocals().Length];
 
             Dictionary<int, Stack<StackSlot>> knownStacks = new Dictionary<int, Stack<StackSlot>>();
-            Stack<StackSlot>? currentStack = new Stack<StackSlot>(methodBody.MaxStack);
+            Stack<StackSlot>? currentStack = new Stack<StackSlot>(methodIL.MaxStack);
 
-            ScanExceptionInformation(knownStacks, methodBody);
+            ScanExceptionInformation(knownStacks, methodIL);
 
-            BasicBlockIterator blockIterator = new BasicBlockIterator(methodBody);
+            BasicBlockIterator blockIterator = new BasicBlockIterator(methodIL);
 
-            ILReader reader = new ILReader(methodBody.GetILBytes());
+            ILReader reader = new ILReader(methodIL.GetILBytes());
             while (reader.HasNext)
             {
-                ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
+                ValidateNoReferenceToReference(locals, methodIL, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
                 if (knownStacks.TryGetValue(reader.Offset, out var knownStack))
@@ -373,7 +373,7 @@ namespace ILCompiler.Dataflow
                     }
                 }
 
-                currentStack ??= new Stack<StackSlot>(methodBody.MaxStack);
+                currentStack ??= new Stack<StackSlot>(methodIL.MaxStack);
 
                 int offset = reader.Offset;
                 ILOpcode opcode = reader.ReadILOpcode();
@@ -404,7 +404,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.shr:
                     case ILOpcode.shr_un:
                     case ILOpcode.ceq:
-                        PopUnknown(currentStack, 2, methodBody, offset);
+                        PopUnknown(currentStack, 2, methodIL, offset);
                         PushUnknown(currentStack);
                         reader.Skip(opcode);
                         break;
@@ -472,9 +472,9 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldftn:
                         {
-                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            if (methodIL.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
+                                HandleMethodTokenAccess(methodIL, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -508,7 +508,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldloc_s:
                     case ILOpcode.ldloca:
                     case ILOpcode.ldloca_s:
-                        ScanLdloc(methodBody, opcode, opcode switch
+                        ScanLdloc(methodIL, opcode, opcode switch
                         {
                             ILOpcode.ldloc => reader.ReadILUInt16(),
                             ILOpcode.ldloca => reader.ReadILUInt16(),
@@ -516,29 +516,29 @@ namespace ILCompiler.Dataflow
                             ILOpcode.ldloca_s => reader.ReadILByte(),
                             _ => opcode - ILOpcode.ldloc_0
                         }, currentStack, locals);
-                        ValidateNoReferenceToReference(locals, methodBody, offset);
+                        ValidateNoReferenceToReference(locals, methodIL, offset);
                         break;
 
                     case ILOpcode.ldstr:
                         {
-                            StackSlot slot = new StackSlot(new KnownStringValue((string)methodBody.GetObject(reader.ReadILToken())));
+                            StackSlot slot = new StackSlot(new KnownStringValue((string)methodIL.GetObject(reader.ReadILToken())));
                             currentStack.Push(slot);
                         }
                         break;
 
                     case ILOpcode.ldtoken:
-                        object obj = methodBody.GetObject(reader.ReadILToken());
-                        ScanLdtoken(methodBody, offset, obj, currentStack);
+                        object obj = methodIL.GetObject(reader.ReadILToken());
+                        ScanLdtoken(methodIL, offset, obj, currentStack);
                         break;
 
                     case ILOpcode.ldvirtftn:
                         {
-                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            if (methodIL.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
+                                HandleMethodTokenAccess(methodIL, offset, methodOperand);
                             }
 
-                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PopUnknown(currentStack, 1, methodIL, offset);
                             PushUnknown(currentStack);
                         }
                         break;
@@ -596,15 +596,15 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.unbox_any:
                     case ILOpcode.neg:
                     case ILOpcode.not:
-                        PopUnknown(currentStack, 1, methodBody, offset);
+                        PopUnknown(currentStack, 1, methodIL, offset);
                         PushUnknown(currentStack);
                         reader.Skip(opcode);
                         break;
 
                     case ILOpcode.box:
                     case ILOpcode.mkrefany:
-                        HandleTypeTokenAccess(methodBody, offset, (TypeDesc)methodBody.GetObject(reader.ReadILToken()));
-                        PopUnknown(currentStack, 1, methodBody, offset);
+                        HandleTypeTokenAccess(methodIL, offset, (TypeDesc)methodIL.GetObject(reader.ReadILToken()));
+                        PopUnknown(currentStack, 1, methodIL, offset);
                         PushUnknown(currentStack);
                         break;
 
@@ -620,15 +620,15 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldsfld:
                     case ILOpcode.ldflda:
                     case ILOpcode.ldsflda:
-                        ScanLdfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack, ref interproceduralState);
+                        ScanLdfld(methodIL, offset, opcode, (FieldDesc)methodIL.GetObject(reader.ReadILToken()), currentStack, ref interproceduralState);
                         break;
 
                     case ILOpcode.newarr:
                         {
-                            StackSlot count = PopUnknown(currentStack, 1, methodBody, offset);
-                            var arrayElement = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
-                            HandleTypeTokenAccess(methodBody, offset, arrayElement);
-                            currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElement)));
+                            StackSlot count = PopUnknown(currentStack, 1, methodIL, offset);
+                            var arrayElementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            HandleTypeTokenAccess(methodIL, offset, arrayElementType);
+                            currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElementType)));
                         }
                         break;
 
@@ -641,7 +641,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stelem_r8:
                     case ILOpcode.stelem:
                     case ILOpcode.stelem_ref:
-                        ScanStelem(offset, currentStack, methodBody, curBasicBlock);
+                        ScanStelem(offset, currentStack, methodIL, curBasicBlock);
                         reader.Skip(opcode);
                         break;
 
@@ -658,23 +658,23 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldelem:
                     case ILOpcode.ldelem_ref:
                     case ILOpcode.ldelema:
-                        ScanLdelem(opcode, offset, currentStack, methodBody, curBasicBlock);
+                        ScanLdelem(opcode, offset, currentStack, methodIL, curBasicBlock);
                         reader.Skip(opcode);
                         break;
 
                     case ILOpcode.cpblk:
                     case ILOpcode.initblk:
-                        PopUnknown(currentStack, 3, methodBody, offset);
+                        PopUnknown(currentStack, 3, methodIL, offset);
                         reader.Skip(opcode);
                         break;
 
                     case ILOpcode.stfld:
                     case ILOpcode.stsfld:
-                        ScanStfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack, locals, ref interproceduralState);
+                        ScanStfld(methodIL, offset, opcode, (FieldDesc)methodIL.GetObject(reader.ReadILToken()), currentStack, locals, ref interproceduralState);
                         break;
 
                     case ILOpcode.cpobj:
-                        PopUnknown(currentStack, 2, methodBody, offset);
+                        PopUnknown(currentStack, 2, methodIL, offset);
                         reader.Skip(opcode);
                         break;
 
@@ -687,20 +687,20 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stind_r8:
                     case ILOpcode.stind_ref:
                     case ILOpcode.stobj:
-                        ScanIndirectStore(methodBody, offset, currentStack, locals, curBasicBlock, ref interproceduralState);
-                        ValidateNoReferenceToReference(locals, methodBody, offset);
+                        ScanIndirectStore(methodIL, offset, currentStack, locals, curBasicBlock, ref interproceduralState);
+                        ValidateNoReferenceToReference(locals, methodIL, offset);
                         reader.Skip(opcode);
                         break;
 
                     case ILOpcode.initobj:
                     case ILOpcode.pop:
-                        PopUnknown(currentStack, 1, methodBody, offset);
+                        PopUnknown(currentStack, 1, methodIL, offset);
                         reader.Skip(opcode);
                         break;
 
                     case ILOpcode.starg:
                     case ILOpcode.starg_s:
-                        ScanStarg(methodBody, offset, opcode == ILOpcode.starg ? reader.ReadILUInt16() : reader.ReadILByte(), currentStack);
+                        ScanStarg(methodIL, offset, opcode == ILOpcode.starg ? reader.ReadILUInt16() : reader.ReadILByte(), currentStack);
                         break;
 
                     case ILOpcode.stloc:
@@ -709,13 +709,13 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stloc_1:
                     case ILOpcode.stloc_2:
                     case ILOpcode.stloc_3:
-                        ScanStloc(methodBody, offset, opcode switch
+                        ScanStloc(methodIL, offset, opcode switch
                         {
                             ILOpcode.stloc => reader.ReadILUInt16(),
                             ILOpcode.stloc_s => reader.ReadILByte(),
                             _ => opcode - ILOpcode.stloc_0,
                         }, currentStack, locals, curBasicBlock);
-                        ValidateNoReferenceToReference(locals, methodBody, offset);
+                        ValidateNoReferenceToReference(locals, methodIL, offset);
                         break;
 
                     case ILOpcode.constrained:
@@ -731,24 +731,24 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.brfalse_s:
                     case ILOpcode.brtrue:
                     case ILOpcode.brtrue_s:
-                        PopUnknown(currentStack, 1, methodBody, offset);
+                        PopUnknown(currentStack, 1, methodIL, offset);
                         NewKnownStack(knownStacks, reader.ReadBranchDestination(opcode), currentStack);
                         break;
 
                     case ILOpcode.calli:
                         {
-                            var signature = (MethodSignature)methodBody.GetObject(reader.ReadILToken());
+                            var signature = (MethodSignature)methodIL.GetObject(reader.ReadILToken());
                             if (!signature.IsStatic)
                             {
-                                PopUnknown(currentStack, 1, methodBody, offset);
+                                PopUnknown(currentStack, 1, methodIL, offset);
                             }
 
                             // Pop arguments
                             if (signature.Length > 0)
-                                PopUnknown(currentStack, signature.Length, methodBody, offset);
+                                PopUnknown(currentStack, signature.Length, methodIL, offset);
 
                             // Pop function pointer
-                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PopUnknown(currentStack, 1, methodIL, offset);
 
                             // Push return value
                             if (!signature.ReturnType.IsVoid)
@@ -760,10 +760,10 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.callvirt:
                     case ILOpcode.newobj:
                         {
-                            MethodDesc methodOperand = (MethodDesc)methodBody.GetObject(reader.ReadILToken());
+                            MethodDesc methodOperand = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                             TrackNestedFunctionReference(methodOperand, ref interproceduralState);
-                            HandleCall(methodBody, opcode, offset, methodOperand, currentStack, locals, ref interproceduralState, curBasicBlock);
-                            ValidateNoReferenceToReference(locals, methodBody, offset);
+                            HandleCall(methodIL, opcode, offset, methodOperand, currentStack, locals, ref interproceduralState, curBasicBlock);
+                            ValidateNoReferenceToReference(locals, methodIL, offset);
                         }
                         break;
 
@@ -781,7 +781,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.leave:
                     case ILOpcode.leave_s:
                         ClearStack(ref currentStack);
-                        NewKnownStack(knownStacks, reader.ReadBranchDestination(opcode), new Stack<StackSlot>(methodBody.MaxStack));
+                        NewKnownStack(knownStacks, reader.ReadBranchDestination(opcode), new Stack<StackSlot>(methodIL.MaxStack));
                         break;
 
                     case ILOpcode.endfilter:
@@ -793,20 +793,20 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ret:
                         {
-                            bool hasReturnValue = !methodBody.OwningMethod.Signature.ReturnType.IsVoid;
+                            bool hasReturnValue = !methodIL.OwningMethod.Signature.ReturnType.IsVoid;
                             if (currentStack.Count != (hasReturnValue ? 1 : 0))
                             {
-                                WarnAboutInvalidILInMethod(methodBody, offset);
+                                WarnAboutInvalidILInMethod(methodIL, offset);
                             }
                             if (hasReturnValue)
                             {
-                                StackSlot retStackSlot = PopUnknown(currentStack, 1, methodBody, offset);
+                                StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, offset);
                                 // If the return value is a reference, treat it as the value itself for now
                                 // We can handle ref return values better later
-                                MultiValue retValue = DereferenceValue(methodBody, offset, retStackSlot.Value, locals, ref interproceduralState);
-                                var methodReturnValue = GetReturnValue(methodBody);
-                                HandleReturnValue(methodBody, offset, methodReturnValue, retValue);
-                                ValidateNoReferenceToReference(locals, methodBody, offset);
+                                MultiValue retValue = DereferenceValue(methodIL, offset, retStackSlot.Value, locals, ref interproceduralState);
+                                var methodReturnValue = GetReturnValue(methodIL);
+                                HandleReturnValue(methodIL, offset, methodReturnValue, retValue);
+                                ValidateNoReferenceToReference(locals, methodIL, offset);
                             }
                             ClearStack(ref currentStack);
                             break;
@@ -814,7 +814,7 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.switch_:
                         {
-                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PopUnknown(currentStack, 1, methodIL, offset);
 
                             uint count = reader.ReadILUInt32();
                             int jmpBase = reader.Offset + (int)(4 * count);
@@ -845,7 +845,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.blt_s:
                     case ILOpcode.blt_un:
                     case ILOpcode.blt_un_s:
-                        PopUnknown(currentStack, 2, methodBody, offset);
+                        PopUnknown(currentStack, 2, methodIL, offset);
                         NewKnownStack(knownStacks, reader.ReadBranchDestination(opcode), currentStack);
                         break;
                     default:
@@ -855,9 +855,9 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private static void ScanExceptionInformation(Dictionary<int, Stack<StackSlot>> knownStacks, MethodIL methodBody)
+        private static void ScanExceptionInformation(Dictionary<int, Stack<StackSlot>> knownStacks, MethodIL methodIL)
         {
-            foreach (ILExceptionRegion exceptionClause in methodBody.GetExceptionRegions())
+            foreach (ILExceptionRegion exceptionClause in methodIL.GetExceptionRegions())
             {
                 Stack<StackSlot> catchStack = new Stack<StackSlot>(1);
                 catchStack.Push(new StackSlot());
@@ -896,24 +896,24 @@ namespace ILCompiler.Dataflow
         }
 
         private void ScanStarg(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             int index,
             Stack<StackSlot> currentStack
             )
         {
-            var valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
+            var valueToStore = PopUnknown(currentStack, 1, methodIL, offset);
             ParameterIndex paramNum = (ParameterIndex)index;
-            ParameterProxy param = new(methodBody.OwningMethod, paramNum);
+            ParameterProxy param = new(methodIL.OwningMethod, paramNum);
             var targetValue = GetMethodParameterValue(param);
             if (targetValue is MethodParameterValue targetParameterValue)
-                HandleStoreParameter(methodBody, offset, targetParameterValue, valueToStore.Value, null);
+                HandleStoreParameter(methodIL, offset, targetParameterValue, valueToStore.Value, null);
 
             // If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
         }
 
         private static void ScanLdloc(
-            MethodIL methodBody,
+            MethodIL methodIL,
             ILOpcode operation,
             int index,
             Stack<StackSlot> currentStack,
@@ -925,7 +925,7 @@ namespace ILCompiler.Dataflow
             StackSlot newSlot;
             if (isByRef)
             {
-                newSlot = new StackSlot(new LocalVariableReferenceValue(index, methodBody.GetLocals()[index].Type));
+                newSlot = new StackSlot(new LocalVariableReferenceValue(index, methodIL.GetLocals()[index].Type));
             }
             else if (localValue.HasValue)
                 newSlot = new StackSlot(localValue.Value.Value);
@@ -934,7 +934,7 @@ namespace ILCompiler.Dataflow
             currentStack.Push(newSlot);
         }
 
-        private void ScanLdtoken(MethodIL methodBody, int offset, object operand, Stack<StackSlot> currentStack)
+        private void ScanLdtoken(MethodIL methodIL, int offset, object operand, Stack<StackSlot> currentStack)
         {
             if (operand is TypeDesc type)
             {
@@ -971,14 +971,14 @@ namespace ILCompiler.Dataflow
                     }
                 }
 
-                HandleTypeTokenAccess(methodBody, offset, type);
+                HandleTypeTokenAccess(methodIL, offset, type);
             }
             else if (operand is MethodDesc method)
             {
                 StackSlot slot = new StackSlot(new RuntimeMethodHandleValue(method));
                 currentStack.Push(slot);
 
-                HandleMethodTokenAccess(methodBody, offset, method);
+                HandleMethodTokenAccess(methodIL, offset, method);
             }
             else
             {
@@ -986,34 +986,34 @@ namespace ILCompiler.Dataflow
 
                 PushUnknown(currentStack);
 
-                HandleFieldTokenAccess(methodBody, offset, (FieldDesc)operand);
+                HandleFieldTokenAccess(methodIL, offset, (FieldDesc)operand);
             }
         }
 
         private void ScanStloc(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             int index,
             Stack<StackSlot> currentStack,
             ValueBasicBlockPair?[] locals,
             int curBasicBlock)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, offset);
             StoreMethodLocalValue(locals, valueToStore.Value, index, curBasicBlock);
         }
 
         private void ScanIndirectStore(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             Stack<StackSlot> currentStack,
             ValueBasicBlockPair?[] locals,
             int curBasicBlock,
             ref InterproceduralState ipState)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
-            StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, offset);
+            StackSlot destination = PopUnknown(currentStack, 1, methodIL, offset);
 
-            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock, ref ipState, null);
+            StoreInReference(destination.Value, valueToStore.Value, methodIL, offset, locals, curBasicBlock, ref ipState, null);
         }
 
         /// <summary>
@@ -1021,10 +1021,10 @@ namespace ILCompiler.Dataflow
         /// </summary>
         /// <param name="target">A set of <see cref="ReferenceValue"/> that a value is being stored into</param>
         /// <param name="source">The value to store</param>
-        /// <param name="method">The method body that contains the operation causing the store</param>
+        /// <param name="methodIL">The method body that contains the operation causing the store</param>
         /// <param name="offset">The instruction offset causing the store</param>
         /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
-        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
+        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL methodIL, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
         {
             foreach (var value in target.AsEnumerable())
             {
@@ -1034,26 +1034,26 @@ namespace ILCompiler.Dataflow
                         StoreMethodLocalValue(locals, source, localReference.LocalIndex, curBasicBlock);
                         break;
                     case FieldReferenceValue fieldReference
-                    when HandleGetField(method, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
-                        HandleStoreField(method, offset, fieldValue, source, parameterIndex);
+                    when HandleGetField(methodIL, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
+                        HandleStoreField(methodIL, offset, fieldValue, source, parameterIndex);
                         break;
                     case ParameterReferenceValue parameterReference
                     when GetMethodParameterValue(parameterReference.Parameter) is MethodParameterValue parameterValue:
-                        HandleStoreParameter(method, offset, parameterValue, source, parameterIndex);
+                        HandleStoreParameter(methodIL, offset, parameterValue, source, parameterIndex);
                         break;
                     case MethodReturnValue methodReturnValue:
                         // Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
-                        HandleReturnValue(method, offset, methodReturnValue, source);
+                        HandleReturnValue(methodIL, offset, methodReturnValue, source);
                         break;
                     case FieldValue fieldValue:
-                        HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState), parameterIndex);
+                        HandleStoreField(methodIL, offset, fieldValue, DereferenceValue(methodIL, offset, source, locals, ref ipState), parameterIndex);
                         break;
                     case IValueWithStaticType valueWithStaticType:
                         if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType.Value.Type))
                             throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
                                 $"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType()}.",
                                 (int)DiagnosticId.LinkerUnexpectedError,
-                                origin: new MessageOrigin(method, offset)).ToMSBuildString());
+                                origin: new MessageOrigin(methodIL, offset)).ToMSBuildString());
                         // This should only happen for pointer derefs, which can't point to interesting types
                         break;
                     default:
@@ -1083,10 +1083,10 @@ namespace ILCompiler.Dataflow
         /// need to track those. It makes the design a bit cleaner because hoisted locals are purely handled in here
         /// and don't leak over to the reflection handling code in any way.
         /// </remarks>
-        protected abstract MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field);
+        protected abstract MultiValue HandleGetField(MethodIL methodIL, int offset, FieldDesc field);
 
         private void ScanLdfld(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             ILOpcode opcode,
             FieldDesc field,
@@ -1094,7 +1094,7 @@ namespace ILCompiler.Dataflow
             ref InterproceduralState interproceduralState)
         {
             if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda)
-                PopUnknown(currentStack, 1, methodBody, offset);
+                PopUnknown(currentStack, 1, methodIL, offset);
 
             bool isByRef = opcode == ILOpcode.ldflda || opcode == ILOpcode.ldsflda;
 
@@ -1109,7 +1109,7 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                value = HandleGetField(methodBody, offset, field);
+                value = HandleGetField(methodIL, offset, field);
             }
             currentStack.Push(new StackSlot(value));
         }
@@ -1127,7 +1127,7 @@ namespace ILCompiler.Dataflow
         }
 
         private void ScanStfld(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             ILOpcode opcode,
             FieldDesc field,
@@ -1135,9 +1135,9 @@ namespace ILCompiler.Dataflow
             ValueBasicBlockPair?[] locals,
             ref InterproceduralState interproceduralState)
         {
-            StackSlot valueToStoreSlot = PopUnknown(currentStack, 1, methodBody, offset);
+            StackSlot valueToStoreSlot = PopUnknown(currentStack, 1, methodIL, offset);
             if (opcode == ILOpcode.stfld)
-                PopUnknown(currentStack, 1, methodBody, offset);
+                PopUnknown(currentStack, 1, methodIL, offset);
 
             if (CompilerGeneratedState.IsHoistedLocal(field))
             {
@@ -1145,7 +1145,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            foreach (var value in HandleGetField(methodBody, offset, field).AsEnumerable())
+            foreach (var value in HandleGetField(methodIL, offset, field).AsEnumerable())
             {
                 // GetFieldValue may return different node types, in which case they can't be stored to.
                 // At least not yet.
@@ -1153,16 +1153,16 @@ namespace ILCompiler.Dataflow
                     continue;
 
                 // Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
-                MultiValue valueToStore = DereferenceValue(methodBody, offset, valueToStoreSlot.Value, locals, ref interproceduralState);
+                MultiValue valueToStore = DereferenceValue(methodIL, offset, valueToStoreSlot.Value, locals, ref interproceduralState);
 
-                HandleStoreField(methodBody, offset, fieldValue, valueToStore, null);
+                HandleStoreField(methodIL, offset, fieldValue, valueToStore, null);
             }
         }
 
         private ValueNodeList PopCallArguments(
             Stack<StackSlot> currentStack,
             MethodDesc methodCalled,
-            MethodIL containingMethodBody,
+            MethodIL containingMethodIL,
             bool isNewObj, int ilOffset)
         {
             int countToPop = 0;
@@ -1173,7 +1173,7 @@ namespace ILCompiler.Dataflow
             ValueNodeList methodParams = new ValueNodeList(countToPop);
             for (int iParam = 0; iParam < countToPop; ++iParam)
             {
-                StackSlot slot = PopUnknown(currentStack, 1, containingMethodBody, ilOffset);
+                StackSlot slot = PopUnknown(currentStack, 1, containingMethodIL, ilOffset);
                 methodParams.Add(slot.Value);
             }
 
@@ -1186,7 +1186,7 @@ namespace ILCompiler.Dataflow
         }
 
         internal MultiValue DereferenceValue(
-            MethodIL methodBody,
+            MethodIL methodIL,
             int offset,
             MultiValue maybeReferenceValue,
             ValueBasicBlockPair?[] locals,
@@ -1202,7 +1202,7 @@ namespace ILCompiler.Dataflow
                             dereferencedValue,
                             CompilerGeneratedState.IsHoistedLocal(fieldReferenceValue.FieldDefinition)
                                 ? interproceduralState.GetHoistedLocal(new HoistedLocalKey(fieldReferenceValue.FieldDefinition))
-                                : HandleGetField(methodBody, offset, fieldReferenceValue.FieldDefinition));
+                                : HandleGetField(methodIL, offset, fieldReferenceValue.FieldDefinition));
                         break;
                     case ParameterReferenceValue parameterReferenceValue:
                         dereferencedValue = MultiValue.Union(
@@ -1234,7 +1234,7 @@ namespace ILCompiler.Dataflow
         /// Assigns a MethodParameterValue to the location of each parameter passed by reference. (i.e. assigns the value to x when passing `ref x` as a parameter)
         /// </summary>
         protected void AssignRefAndOutParameters(
-            MethodIL callingMethodBody,
+            MethodIL callingMethodIL,
             MethodDesc calledMethod,
             ValueNodeList methodArguments,
             int offset,
@@ -1247,27 +1247,27 @@ namespace ILCompiler.Dataflow
                 if (parameter.GetReferenceKind() is not (ReferenceKind.Ref or ReferenceKind.Out))
                     continue;
                 var newByRefValue = _annotations.GetMethodParameterValue(parameter);
-                StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody, offset, locals, curBasicBlock, ref ipState, parameter.Index.Index);
+                StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodIL, offset, locals, curBasicBlock, ref ipState, parameter.Index.Index);
             }
         }
 
         /// <summary>
         /// Called when type is accessed directly by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType);
+        protected abstract void HandleTypeTokenAccess(MethodIL methodIL, int offset, TypeDesc accessedType);
 
         /// <summary>
         /// Called to handle access to a method by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+        protected abstract void HandleMethodTokenAccess(MethodIL methodIL, int offset, MethodDesc accessedMethod);
 
         /// <summary>
         /// Called to handle access to a field by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
+        protected abstract void HandleFieldTokenAccess(MethodIL methodIL, int offset, FieldDesc accessedField);
 
         private void HandleCall(
-            MethodIL callingMethodBody,
+            MethodIL callingMethodIL,
             ILOpcode opcode,
             int offset,
             MethodDesc calledMethod,
@@ -1278,7 +1278,7 @@ namespace ILCompiler.Dataflow
         {
             bool isNewObj = opcode == ILOpcode.newobj;
 
-            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj, offset);
+            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodIL, isNewObj, offset);
 
             // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
             // We don't track multi-dimensional arrays in any way, so return unknown value.
@@ -1290,9 +1290,9 @@ namespace ILCompiler.Dataflow
 
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
-                dereferencedMethodParams.Add(DereferenceValue(callingMethodBody, offset, argument, locals, ref interproceduralState));
+                dereferencedMethodParams.Add(DereferenceValue(callingMethodIL, offset, argument, locals, ref interproceduralState));
             MultiValue methodReturnValue = HandleCall(
-                callingMethodBody,
+                callingMethodIL,
                 calledMethod,
                 opcode,
                 offset,
@@ -1301,7 +1301,7 @@ namespace ILCompiler.Dataflow
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue));
 
-            AssignRefAndOutParameters(callingMethodBody, calledMethod, methodArguments, offset, locals, curBasicBlock, ref interproceduralState);
+            AssignRefAndOutParameters(callingMethodIL, calledMethod, methodArguments, offset, locals, curBasicBlock, ref interproceduralState);
 
             foreach (var param in methodArguments)
             {
@@ -1320,7 +1320,7 @@ namespace ILCompiler.Dataflow
         }
 
         public abstract MultiValue HandleCall(
-            MethodIL callingMethodBody,
+            MethodIL callingMethodIL,
             MethodDesc calledMethod,
             ILOpcode operation,
             int offset,
@@ -1343,12 +1343,12 @@ namespace ILCompiler.Dataflow
         private void ScanStelem(
             int offset,
             Stack<StackSlot> currentStack,
-            MethodIL methodBody,
+            MethodIL methodIL,
             int curBasicBlock)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
-            StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodBody, offset);
-            StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodBody, offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, offset);
+            StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodIL, offset);
+            StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodIL, offset);
             int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt();
             foreach (var array in arrayToStoreIn.Value.AsEnumerable())
             {
@@ -1375,11 +1375,11 @@ namespace ILCompiler.Dataflow
             ILOpcode opcode,
             int offset,
             Stack<StackSlot> currentStack,
-            MethodIL methodBody,
+            MethodIL methodIL,
             int curBasicBlock)
         {
-            StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
-            StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
+            StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodIL, offset);
+            StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodIL, offset);
 
             bool isByRef = opcode == ILOpcode.ldelema;
 

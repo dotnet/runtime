@@ -4,6 +4,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandleutilities.h"
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -1275,6 +1276,49 @@ FCIMPL0(Object**, RhGetThreadStaticStorage)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
+}
+FCIMPLEND
+
+#ifdef TARGET_UNIX
+#define NEWTHREAD_RETURN_TYPE size_t
+#else
+#define NEWTHREAD_RETURN_TYPE uint32_t
+#endif
+
+static NEWTHREAD_RETURN_TYPE RhThreadEntryPoint(void* pContext)
+{
+    // We will attach the thread early so that when the managed thread entrypoint
+    // starts running and performs its reverse p/invoke transition, the thread is
+    // already attached.
+    //
+    // This avoids potential deadlocks with module initializers that may be running
+    // as part of runtime initialization (in non-EXE scenario) and creating new
+    // threads. When RhThreadEntryPoint runs, the runtime must already be initialized
+    // enough to be able to run managed code so we don't need to wait for it to
+    // finish.
+
+    ThreadStore::AttachCurrentThread();
+
+    Thread * pThread = ThreadStore::GetCurrentThread();
+    pThread->SetDeferredTransitionFrameForNativeHelperThread();
+    pThread->DisablePreemptiveMode();
+
+    Object * pThreadObject = ObjectFromHandle((OBJECTHANDLE)pContext);
+    MethodTable* pMT = pThreadObject->GetMethodTable();
+
+    pThread->EnablePreemptiveMode();
+
+    NEWTHREAD_RETURN_TYPE (*pFn)(void*) = (NEWTHREAD_RETURN_TYPE (*)(void*))
+        pMT->GetTypeManagerPtr()
+        ->AsTypeManager()
+        ->GetClasslibFunction(ClasslibFunctionId::ThreadEntryPoint);
+
+    return pFn(pContext);
+}
+
+FCIMPL0(void*, RhGetThreadEntryPointAddress)
+{
+    return (void*)&RhThreadEntryPoint;
 }
 FCIMPLEND
 

@@ -348,7 +348,7 @@ namespace System.Threading
         {
             Debug.Assert(threadLocalCompletionCountObject != null);
 
-            NotifyWorkItemProgress(threadLocalCompletionCountObject!, currentTimeMs);
+            NotifyWorkItemProgress(threadLocalCompletionCountObject, currentTimeMs);
             return !WorkerThread.ShouldStopProcessingWorkNow(this);
         }
 

@@ -17,6 +17,8 @@ add_subdirectory(../../hostmisc hostmisc)
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
+add_compile_definitions(RAPIDJSON_HAS_CXX17)
+
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)
 endif()

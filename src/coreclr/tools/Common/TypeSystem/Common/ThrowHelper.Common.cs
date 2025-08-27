@@ -65,7 +65,7 @@ namespace Internal.TypeSystem
                 IAssemblyDesc assembly = module as IAssemblyDesc;
                 if (assembly != null)
                 {
-                    return assembly.GetName().FullName;
+                    return assembly.GetName().Name;
                 }
                 else
                 {

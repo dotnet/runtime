@@ -34,7 +34,6 @@ namespace System
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
         public static bool IsQemuLinux => IsLinux && Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
         public static bool IsNotQemuLinux => !IsQemuLinux;
-        public static bool IsNotAzureLinux => !IsAzureLinux;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -44,6 +43,7 @@ namespace System
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
         public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
         public static bool IsNotAppSandbox => !IsAppSandbox;
+        public static bool IsApplePlatform26OrLater => IsApplePlatform && Environment.OSVersion.Version.Major >= 26;
 
         public static Version OpenSslVersion => !IsApplePlatform && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
@@ -56,6 +56,18 @@ namespace System
         public static bool IsOpenSsl3 => IsOpenSslVersionAtLeast(s_openssl3Version);
         public static bool IsOpenSsl3_4 => IsOpenSslVersionAtLeast(s_openssl3_4Version);
         public static bool IsOpenSsl3_5 => IsOpenSslVersionAtLeast(s_openssl3_5Version);
+
+        private static readonly Lazy<bool> s_isSymCryptOpenSsl = new(() =>
+        {
+            return IsAzureLinux &&
+                (
+                    File.Exists("/usr/lib/ossl-modules/symcryptprovider.so") ||
+                    File.Exists("/usr/lib64/ossl-modules/symcryptprovider.so")
+                );
+        });
+
+        public static bool IsSymCryptOpenSsl => s_isSymCryptOpenSsl.Value;
+        public static bool IsNotSymCryptOpenSsl => !IsSymCryptOpenSsl;
 
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".

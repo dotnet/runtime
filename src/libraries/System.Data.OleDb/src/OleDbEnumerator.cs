@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.OleDb
@@ -12,6 +13,9 @@ namespace System.Data.OleDb
         {
         }
 
+#if NET
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
         public DataTable GetElements()
         {
             DataTable dataTable = new DataTable("MSDAENUM");
@@ -21,17 +25,26 @@ namespace System.Data.OleDb
             return dataTable;
         }
 
+#if NET
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
         public static OleDbDataReader GetEnumerator(Type type)
         {
             return GetEnumeratorFromType(type);
         }
 
+#if NET
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
         internal static OleDbDataReader GetEnumeratorFromType(Type type)
         {
             object? value = Activator.CreateInstance(type, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
             return GetEnumeratorReader(value);
         }
 
+#if NET
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
         private static OleDbDataReader GetEnumeratorReader(object? value)
         {
             NativeMethods.ISourcesRowset? srcrowset;
@@ -66,6 +79,9 @@ namespace System.Data.OleDb
             return dataReader;
         }
 
+#if NET
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
         public static OleDbDataReader GetRootEnumerator()
         {
             //readonly Guid CLSID_MSDAENUM = new Guid(0xc8b522d0,0x5cf3,0x11ce,0xad,0xe5,0x00,0xaa,0x00,0x44,0x77,0x3d);

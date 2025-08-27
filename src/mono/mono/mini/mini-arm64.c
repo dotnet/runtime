@@ -6966,7 +6966,7 @@ mono_arch_get_seq_point_info (guint8 *code)
 		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
-		info = g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size / 4) * sizeof(guint8*));
+		info = g_malloc0 (sizeof (SeqPointInfo) + ji->code_size * sizeof(guint8*));
 
 		info->ss_tramp_addr = &ss_trampoline;
 

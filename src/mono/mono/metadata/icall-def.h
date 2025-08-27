@@ -586,6 +586,7 @@ HANDLES(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor
 
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))
+NOHANDLES(ICALL(THREAD_16, "CurrentThreadIsFinalizerThread", ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread))
 HANDLES(ITHREAD_2, "FreeInternal", ves_icall_System_Threading_InternalThread_Thread_free_internal, void, 1, (MonoInternalThread))
 HANDLES(THREAD_15, "GetCurrentOSThreadId", ves_icall_System_Threading_Thread_GetCurrentOSThreadId, guint64, 0, ())
 NOHANDLES(ICALL(THREAD_5, "GetCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread))

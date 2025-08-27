@@ -183,7 +183,7 @@ namespace ILCompiler
                     if (callsiteModule != null)
                     {
                         Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
-                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().Name);
                     }
                 }
             }

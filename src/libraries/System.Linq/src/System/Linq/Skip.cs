@@ -30,12 +30,12 @@ namespace System.Linq
 
                 count = 0;
             }
-            else if (!IsSizeOptimized && source is Iterator<TSource> iterator)
+            else if (source is Iterator<TSource> iterator)
             {
                 return iterator.Skip(count) ?? Empty<TSource>();
             }
 
-            return IsSizeOptimized ? SizeOptimizedSkipIterator(source, count) : SpeedOptimizedSkipIterator(source, count);
+            return SpeedOptimizedSkipIterator(source, count);
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)

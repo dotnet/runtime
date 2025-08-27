@@ -1702,7 +1702,17 @@ static void OsAttachThread(void* thread)
 
     if (t_flsState == FLS_STATE_INVOKED)
     {
-        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+        // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
+        // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
+        // suppress this assert in release builds if we have encountered any mixed mode binaries.
+        if (Module::HasAnyIJWBeenLoaded())
+        {
+            _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+        }
+        else
+        {
+            _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+        }
     }
 
     t_flsState = FLS_STATE_ARMED;

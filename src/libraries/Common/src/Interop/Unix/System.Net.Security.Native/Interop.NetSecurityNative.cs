@@ -12,8 +12,8 @@ internal static partial class Interop
     internal static partial class NetSecurityNative
     {
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ReleaseGssBuffer")]
-        internal static partial void ReleaseGssBuffer(
-            IntPtr bufferPtr,
+        internal static unsafe partial void ReleaseGssBuffer(
+            byte* bufferPtr,
             ulong length);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DisplayMinorStatus")]
