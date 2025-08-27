@@ -2023,6 +2023,8 @@ static InterpThreadContext* GetInterpThreadContext()
 
 EXTERN_C void STDCALL ReversePInvokeBadTransition();
 
+UMEntryThunkData * GetMostRecentUMEntryThunkData();
+
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
@@ -2062,6 +2064,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
     frames.interpMethodContextFrame.pStack = sp;
     frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
+    frames.interpMethodContextFrame.hiddenArgument = GetMostRecentUMEntryThunkData();
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 

@@ -2306,6 +2306,14 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             AddIns(INTOP_THROW_PNSE);
             return true;
 
+        case NI_System_StubHelpers_GetStubContext:
+        {
+            AddIns(INTOP_GETSTUBCONTEXT);
+            PushStackType(StackTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
         {
             CHECK_STACK(1);
@@ -2852,7 +2860,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
-            bool isMustExpand = (callInfo.hMethod == m_methodHnd);
+            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))

@@ -210,6 +210,17 @@ VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 
+#ifdef FEATURE_INTERPRETER
+PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
+
+UMEntryThunkData * GetMostRecentUMEntryThunkData()
+{
+    UMEntryThunkData * result = t_MostRecentUMEntryThunkData;
+    t_MostRecentUMEntryThunkData = nullptr;
+    return result;
+}
+#endif
+
 PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
@@ -235,6 +246,11 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
+#ifdef FEATURE_INTERPRETER
+    // HACK: Stash the entry thunk data address so that the interpreter can recover it.
+    // The InterpreterStub overwrites the register that normally would contain this address.
+    t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+#endif
     pUMEntryThunkData->RunTimeInit();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -263,7 +279,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
-       
+
         pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
         UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #ifdef FEATURE_PERFMAP
