@@ -217,7 +217,7 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, 
 
 # Main entry point
 def main():
-    parser = argparse.ArgumentParser(description="Cross-platform crank runner with 1 retry (kills its own crank-agent).")
+    parser = argparse.ArgumentParser(description="Cross-platform crank runner.")
     # Renamed args
     parser.add_argument("--core_root", required=True, help="Path to built runtime bits (CORE_ROOT).")
     parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
@@ -230,6 +230,11 @@ def main():
     repo_dir = Path.cwd()
     runtime_bits_path = Path(args.core_root).expanduser().resolve()
     output_mch_path = Path(args.output_mch).expanduser().resolve()
+
+    print("Running the script with the following parameters:")
+    print(f"--core_root: {runtime_bits_path}")
+    print(f"--tfm: {args.tfm}")
+    print(f"--output_mch: {output_mch_path}")
 
     mcs_cmd = runtime_bits_path / ("mcs.exe" if sys.platform == "win32" else "mcs")
     if not mcs_cmd.exists():

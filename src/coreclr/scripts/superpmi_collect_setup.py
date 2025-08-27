@@ -44,7 +44,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
-parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
@@ -523,6 +523,10 @@ def main(main_args):
       jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
       print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
       copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
+    elif coreclr_args.collection_name == "aspnet2":
+      # For aspnet2, use checked runtime bits
+      print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
     else:
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
@@ -530,6 +534,9 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
+    elif coreclr_args.collection_name == "aspnet2":
+        # Setup aspnet2 - no special payload setup needed, the script handles everything
+        pass
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 

@@ -68,10 +68,10 @@
 
   <!-- OS-specific settings for non-benchmarks collections -->
 
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(AGENT_OS)' == 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>%HELIX_WORKITEM_PAYLOAD%\binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2' and '$(AGENT_OS)' != 'Windows_NT' ">
     <AssembliesDirectoryOnHelix>$HELIX_WORKITEM_PAYLOAD/binaries</AssembliesDirectoryOnHelix>
   </PropertyGroup>
 
@@ -138,13 +138,18 @@
 
   <!-- Define the Helix work item command and timeout for each collection type -->
 
-  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
+  <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld'">
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture) $(RunArguments)</WorkItemCommand>
+    <WorkItemTimeout>3:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --output_mch $(OutputMchPath)$(FileSeparatorChar)$(CollectionName).$(CollectionType).$(MchFileTag).mch</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -197,7 +202,7 @@
   <!-- For non-benchmark collections, we create one Helix work item for each sub-directory
        in the `InputArtifacts` directory.
   -->
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" CollectAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
@@ -264,7 +269,7 @@
     <BDN_Partition Include="Partition5" Index="5" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>  
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
     <HelixWorkItem Include="@(Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(AssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.CollectAssemblies)</PayloadDirectory>
@@ -291,6 +296,16 @@
       <Command>$(WorkItemCommand) -partition_count 1 -partition_index 0 -benchmark_path %(HelixWorkItem.BenchmarkPath) -benchmark_binary %(HelixWorkItem.BenchmarkBinary) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
+    <HelixWorkItem Include="aspnet2_single">
+      <OutputFileName>$(CollectionName).$(CollectionType).0.$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>$(CollectionName).$(CollectionType).$(MchFileTag).mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>  
 </Project>
