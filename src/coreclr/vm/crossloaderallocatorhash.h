@@ -200,11 +200,6 @@ private:
         static void* operator new(size_t baseSize, CountWrapper capacity);
 
     public:
-        static void operator delete(void* ptr)
-        {
-            ::operator delete(ptr);
-        }
-
         static void operator delete(void* ptr, size_t size)
         {
             // We calculate the size dynamically, so the size value here is

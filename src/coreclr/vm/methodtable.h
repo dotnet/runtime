@@ -3124,11 +3124,6 @@ public:
 
         // Some subtypes calculate the allocation size dynamically.
         // As a result, don't do a sized-delete here. It might be the wrong size.
-        static void operator delete(void* ptr)
-        {
-            ::operator delete(ptr);
-        }
-
         static void operator delete(void* ptr, size_t size)
         {
             ::operator delete(ptr);
@@ -3367,11 +3362,6 @@ protected:
             _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
-        }
-
-        static void operator delete(void* ptr)
-        {
-            ::operator delete(ptr);
         }
 
         static void operator delete(void* ptr, size_t size)
