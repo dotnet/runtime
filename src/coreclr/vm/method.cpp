@@ -2198,6 +2198,8 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     return pTarget;
 }
 
+#endif // !DACCESS_COMPILE
+
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 {
     CONTRACTL {
@@ -2213,37 +2215,36 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return NULL;
     }
 
-    // Inlined fast path for fixup precode and stub precode from RangeList implementation
-    if (pRS->_flags == RangeSection::RANGE_SECTION_RANGELIST)
+    if (pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
     {
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint);
+#ifdef DACCESS_COMPILE
+        // GetPrecodeFromEntryPoint can return NULL under DAC
+        if (pPrecode == NULL)
+            return NULL;
+#endif
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
         {
-            return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            return dac_cast<PTR_MethodDesc>(pPrecode->AsFixupPrecode()->GetMethodDesc());
         }
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
         }
     }
-
-    MethodDesc* pMD;
-    if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
-        return pMD;
-
-    auto stubCodeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
-
-    switch(stubCodeBlockKind)
+    else
     {
-    case STUB_CODE_BLOCK_FIXUPPRECODE:
-        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
-    case STUB_CODE_BLOCK_STUBPRECODE:
-        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
-    default:
-        // We should never get here
-        _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
-        return NULL;
+        MethodDesc* pMD;
+        if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+            return pMD;
     }
+
+    // We should never get here
+    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
+    return NULL;
 }
+
+#ifndef DACCESS_COMPILE
 
 static void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
 {
@@ -2624,7 +2625,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 }
 
 // static
-MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative /*=FALSE*/)
+MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /*=FALSE*/)
 {
     CONTRACT(MethodDesc *)
     {
@@ -2635,8 +2636,6 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 
     MethodDesc* pMD = NULL;
 
-    // Otherwise this must be some kind of precode
-    //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
     _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
@@ -2670,7 +2669,7 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     _ASSERTE(pEntryPoint != (PCODE)NULL);
 
 #ifdef _DEBUG
-    MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
+    MethodDesc * pMD = MethodDesc::GetMethodDescFromPrecode(pEntryPoint);
     _ASSERTE(PTR_HOST_TO_TADDR(this) == PTR_HOST_TO_TADDR(pMD));
 #endif
 

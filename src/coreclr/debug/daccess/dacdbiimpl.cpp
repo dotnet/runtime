@@ -3191,7 +3191,7 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescPtrFromIpEx(TADDR funcIp, VMPTR_Method
     }
 
     // Otherwise try to see if a method desc is available for the method that isn't jitted by walking the code stubs.
-    MethodDesc* pMD = MethodTable::GetMethodDescForSlotAddress(PINSTRToPCODE(funcIp));
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(PINSTRToPCODE(funcIp));
 
     if (pMD == NULL)
         return E_INVALIDARG;
