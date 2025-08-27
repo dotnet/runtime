@@ -73,25 +73,6 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE ta
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
-// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
-NOINLINE void InvokePInvokeMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget, bool suppressGCTransition)
-{
-    InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-    inlinedCallFrame.m_pThread = GetThread();
-    inlinedCallFrame.m_Datum = NULL;
-    inlinedCallFrame.Push();
-
-    {
-        GCX_MAYBE_PREEMP(!suppressGCTransition);
-        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
-    }
-
-    inlinedCallFrame.Pop();
-}
-
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     CONTRACTL
@@ -176,6 +157,25 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 }
 
 #endif // !TARGET_WASM
+
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE void InvokePInvokeMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    {
+        GCX_PREEMP();
+        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+    }
+
+    inlinedCallFrame.Pop();
+}
 
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -1977,7 +1977,14 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InvokePInvokeMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget, (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
+                    if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
+                    {
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
+                    else
+                    {
+                        InvokePInvokeMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                    }
 
                     break;
                 }
