@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -241,7 +242,15 @@ namespace Internal.IL.Stubs
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
         {
+            return CanCompareValueTypeBitsUntilOffset(type, objectEqualsMethod, out int lastFieldOffset)
+                && lastFieldOffset == type.InstanceFieldSize.AsInt;
+        }
+
+        public static bool CanCompareValueTypeBitsUntilOffset(MetadataType type, MethodDesc objectEqualsMethod, out int lastFieldEndOffset)
+        {
             Debug.Assert(type.IsValueType);
+
+            lastFieldEndOffset = 0;
 
             if (type.ContainsGCPointers)
                 return false;
@@ -259,6 +268,8 @@ namespace Internal.IL.Stubs
             {
                 if (field.IsStatic)
                     continue;
+
+                lastFieldEndOffset = Math.Max(lastFieldEndOffset, field.Offset.AsInt + field.FieldType.GetElementSize().AsInt);
 
                 if (!overlappingFieldTracker.TrackField(field))
                 {
@@ -299,7 +310,7 @@ namespace Internal.IL.Stubs
             }
 
             // If there are gaps, we can't memcompare
-            if (result && overlappingFieldTracker.HasGaps)
+            if (result && overlappingFieldTracker.HasGapsBeforeOffset(lastFieldEndOffset))
                 result = false;
 
             return result;
@@ -341,16 +352,13 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            public bool HasGaps
+            public bool HasGapsBeforeOffset(int offset)
             {
-                get
-                {
-                    for (int i = 0; i < _usedBytes.Length; i++)
-                        if (!_usedBytes[i])
-                            return true;
+                for (int i = 0; i < offset; i++)
+                    if (!_usedBytes[i])
+                        return true;
 
-                    return false;
-                }
+                return false;
             }
         }
 

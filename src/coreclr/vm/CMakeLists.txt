@@ -47,10 +47,6 @@ endif(FEATURE_PERFTRACING)
 add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
 add_compile_definitions($<${FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH}:FEATURE_VIRTUAL_STUB_DISPATCH>)
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_definitions(FEATURE_STATICALLY_LINKED)
-endif()
-
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
@@ -914,6 +910,14 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/helpers.cpp
+        exceptionhandling.cpp
+        gcinfodecoder.cpp
+    )
 endif()
 
 set(VM_SOURCES_DAC_ARCH
@@ -1009,3 +1013,5 @@ add_subdirectory(wks)
 if(FEATURE_PERFTRACING)
     add_subdirectory(eventing)
 endif(FEATURE_PERFTRACING)
+
+add_subdirectory(datadescriptor)

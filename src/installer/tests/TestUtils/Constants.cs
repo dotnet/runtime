@@ -103,9 +103,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class HostTracing
         {
-            public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
-            public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
-            public const string VerbosityEnvironmentVariable = "COREHOST_TRACE_VERBOSITY";
+            public const string TraceLevelEnvironmentVariable = "DOTNET_HOST_TRACE";
+            public const string TraceFileEnvironmentVariable = "DOTNET_HOST_TRACEFILE";
+            public const string VerbosityEnvironmentVariable = "DOTNET_HOST_TRACE_VERBOSITY";
         }
 
         public static class DotnetRoot
@@ -128,6 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
             public const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int SdkResolveFailure = unchecked((int)0x8000809b);
             public const int FrameworkCompatFailure = unchecked((int)0x8000809c);
             public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 

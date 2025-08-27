@@ -72,13 +72,11 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitILCommon(MethodDesc contextMethod)
         {
-            var owningType = (MetadataType)_owningType.InstantiateAsOpen();
-
             ILEmitter emitter = new ILEmitter();
 
             // Types marked as InlineArray aren't supported by
             // the built-in Equals() or GetHashCode().
-            if (owningType.IsInlineArray)
+            if (_owningType.IsInlineArray)
             {
                 var stream = emitter.NewCodeStream();
                 MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
@@ -86,8 +84,18 @@ namespace Internal.IL.Stubs
                 return emitter.Link(this);
             }
 
+            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null), out int lastFieldEndOffset))
+            {
+                var stream = emitter.NewCodeStream();
+                stream.EmitLdc(-lastFieldEndOffset);
+                stream.Emit(ILOpcode.ret);
+                return emitter.Link(this);
+            }
+
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
+
+            var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
                 emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));

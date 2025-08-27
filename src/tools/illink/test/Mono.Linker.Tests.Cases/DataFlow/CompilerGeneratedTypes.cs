@@ -48,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             CapturingLocalFunctionInsideIterator<int>();
             LambdaInsideAsync<int>();
             LocalFunctionInsideAsync<int>();
+            NestedAsyncLambda.Test<int>();
+            NestedAsyncLocalFunction.Test<int>();
             NestedStaticLambda.Test<int>();
         }
 
@@ -171,8 +173,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 #if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
             [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
 #endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
@@ -198,8 +198,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 #if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
             [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
             [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
-            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
 #endif
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T1>()
             {
@@ -421,6 +419,50 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             void LocalFunction() => typeof(T).GetMethods();
             await Task.Delay(0);
             LocalFunction();
+        }
+
+        class NestedAsyncLambda
+        {
+            public static async void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                var outer = async () =>
+                {
+                    var inner =
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    () =>
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+
+                    inner();
+                };
+
+                outer().Wait();
+            }
+        }
+
+        class NestedAsyncLocalFunction
+        {
+            public static void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                Local1();
+
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2091", "T", nameof(DynamicallyAccessedMemberTypes.PublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                static async Task Local1()
+                {
+                    Local2();
+
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    static void Local2()
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+                };
+            }
         }
 
         class NestedStaticLambda

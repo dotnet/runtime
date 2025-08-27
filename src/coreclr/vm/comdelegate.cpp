@@ -475,6 +475,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 #endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
+    // Handle async continuation argument.
+    _ASSERTE(!!sArgPlacerDst.HasAsyncContinuation() == !!sArgPlacerSrc.HasAsyncContinuation());
+    if (sArgPlacerDst.HasAsyncContinuation())
+    {
+        // The async continuation is implicit in both signatures.
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
     // destination locations.
     while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -1523,7 +1535,7 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
     if (pMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    if (pMD->MethodDesc::IsVarArg())
+    if (pMD->IsVarArg())
         COMPlusThrow(kNotSupportedException, IDS_EE_VARARG_NOT_SUPPORTED);
 }
 
@@ -1541,9 +1553,9 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
 
     ValidateDelegatePInvoke(pDelegateMD);
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
-    RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
+    RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
 
@@ -1555,10 +1567,10 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
-    return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
+    return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
@@ -2034,7 +2046,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 

@@ -216,7 +216,6 @@ namespace System.Security.Cryptography
         ///   A new <see cref="CngAlgorithm"/> object that specifies the Module-Lattice-Based Key-Encapsulation
         ///   Mechanism (ML-KEM).
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithm MLKem => field ??= new CngAlgorithm("ML-KEM"); // BCRYPT_MLKEM_ALGORITHM
 
         /// <summary>

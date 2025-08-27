@@ -612,13 +612,12 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
  *  Generate a set instruction.
  */
 
-void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
+void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions)
 {
 #ifdef TARGET_XARCH
     instruction ins;
 
     /* Convert the condition to an instruction opcode */
-
     switch (condition)
     {
         case EJ_js:
@@ -672,10 +671,35 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
             return;
     }
 
+#ifdef TARGET_AMD64
+    // If using ZU feature, we need to promote the SETcc to the new instruction.
+    if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
+    {
+        const int offset = (INS_seto - INS_seto_apx);
+        assert(INS_seto == (INS_seto_apx + offset));
+        assert(INS_setno == (INS_setno_apx + offset));
+        assert(INS_setb == (INS_setb_apx + offset));
+        assert(INS_setae == (INS_setae_apx + offset));
+        assert(INS_sete == (INS_sete_apx + offset));
+        assert(INS_setne == (INS_setne_apx + offset));
+        assert(INS_setbe == (INS_setbe_apx + offset));
+        assert(INS_seta == (INS_seta_apx + offset));
+        assert(INS_sets == (INS_sets_apx + offset));
+        assert(INS_setns == (INS_setns_apx + offset));
+        assert(INS_setp == (INS_setp_apx + offset));
+        assert(INS_setnp == (INS_setnp_apx + offset));
+        assert(INS_setl == (INS_setl_apx + offset));
+        assert(INS_setge == (INS_setge_apx + offset));
+        assert(INS_setle == (INS_setle_apx + offset));
+        assert(INS_setg == (INS_setg_apx + offset));
+        ins = (instruction)(ins - offset);
+    }
+#endif
+
     assert(genRegMask(reg) & RBM_BYTE_REGS);
 
     // These instructions only write the low byte of 'reg'
-    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
+    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg, instOptions);
 #elif defined(TARGET_ARM64)
 
     GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
@@ -1079,7 +1103,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
-                case NI_SSE42_LoadAndDuplicateToVector128:
+                case NI_X86Base_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
@@ -1103,13 +1127,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     }
                 }
 
-                case NI_SSE42_MoveAndDuplicate:
+                case NI_X86Base_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
+                    if (intrinsicId == NI_X86Base_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
