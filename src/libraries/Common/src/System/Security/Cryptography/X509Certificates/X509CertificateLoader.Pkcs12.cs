@@ -22,8 +22,8 @@ namespace System.Security.Cryptography.X509Certificates
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
-        private static AttributeAsn s_syntheticKspAttribute = BuildSyntheticKspAttribute();
-        private static AttributeAsn s_syntheticCapiCspAttribute = BuildSyntheticCapiAttribute();
+        private static readonly AttributeAsn s_syntheticKspAttribute = BuildSyntheticKspAttribute();
+        private static readonly AttributeAsn s_syntheticCapiCspAttribute = BuildSyntheticCapiAttribute();
 
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
@@ -389,13 +389,13 @@ namespace System.Security.Cryptography.X509Certificates
                         // Otherwise, replace any existing provider with what it returned,
                         // or add what it said if there are no provider attributes.
 
-                        bool hadAttribute = false;
+                        bool hasAttribute = false;
 
                         foreach (AttributeAsn attr in bag.BagAttributes ?? Array.Empty<AttributeAsn>())
                         {
                             if (attr.AttrType == Oids.MsPkcs12KeyProviderName)
                             {
-                                hadAttribute = true;
+                                hasAttribute = true;
 
                                 if (providerName.HasValue)
                                 {
@@ -410,7 +410,7 @@ namespace System.Security.Cryptography.X509Certificates
                             }
                         }
 
-                        if (!hadAttribute)
+                        if (!hasAttribute)
                         {
                             int oldCount = (bag.BagAttributes?.Length).GetValueOrDefault(0);
                             Array.Resize(ref bag.BagAttributes, oldCount + 1);
@@ -667,25 +667,22 @@ namespace System.Security.Cryptography.X509Certificates
             //
             // return CNG KSP;
 
-            if (HasMachineKey(bagAttributes, storageFlags))
+            if (HasMachineKey(bagAttributes, storageFlags) && HasCapiCsp(bagAttributes, out bool isRsa))
             {
-                if (HasCapiCsp(bagAttributes, out bool isRsa))
+                if (machineKeyState == CngMachineKeyState.Unknown)
                 {
-                    if (machineKeyState == CngMachineKeyState.Unknown)
+                    machineKeyState = CheckMachineKeyPermissions();
+                }
+
+                if (machineKeyState == CngMachineKeyState.Denied)
+                {
+                    if (isRsa)
                     {
-                        machineKeyState = CheckMachineKeyPermissions();
+                        return s_syntheticCapiCspAttribute;
                     }
 
-                    if (machineKeyState == CngMachineKeyState.Denied)
-                    {
-                        if (isRsa)
-                        {
-                            return s_syntheticCapiCspAttribute;
-                        }
-
-                        // A DSS or DH CAPI provider, preserve it.
-                        return null;
-                    }
+                    // A DSS or DH CAPI provider, preserve it.
+                    return null;
                 }
             }
 
@@ -736,7 +733,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     cngKey = CngKey.Create(
                         CngAlgorithm.Rsa,
-                        Guid.NewGuid().ToString("B"),
+                        "netperm-" + Guid.NewGuid().ToString("B"),
                         new CngKeyCreationParameters
                         {
                             Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
