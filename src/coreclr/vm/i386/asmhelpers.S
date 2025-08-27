@@ -384,6 +384,7 @@ LOCAL_LABEL(GoCallVarargWorker):
     // save pMD
     push        eax
 
+    push        eax                     // pMD
     push        dword ptr [esi + 4*7]   // pVaSigCookie
     push        esi                     // pTransitionBlock
 

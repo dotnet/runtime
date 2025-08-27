@@ -7,7 +7,7 @@ public static class Constants
 {
     public static class Globals
     {
-        // See src/coreclr/debug/runtimeinfo/datadescriptor.h
+        // See src/coreclr/debug/runtimeinfo/datadescriptor.inc
         public const string AppDomain = nameof(AppDomain);
         public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
@@ -74,6 +74,14 @@ public static class Constants
         public const string OperatingSystem = nameof(OperatingSystem);
 
         public const string GCInfoVersion = nameof(GCInfoVersion);
+
+        // Globals found on GCDescriptor
+        // see src/coreclr/gc/datadescriptors/datadescriptor.inc
+        public const string GCIdentifiers = nameof(GCIdentifiers);
+        public const string MaxGeneration = nameof(MaxGeneration);
+        public const string StructureInvalidCount = nameof(StructureInvalidCount);
+        public const string NumHeaps = nameof(NumHeaps);
+        public const string Heaps = nameof(Heaps);
     }
     public static class FieldNames
     {

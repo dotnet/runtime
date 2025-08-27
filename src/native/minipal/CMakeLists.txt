@@ -2,6 +2,7 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    descriptorlimit.c
     memorybarrierprocesswide.c
     mutex.c
     guid.c

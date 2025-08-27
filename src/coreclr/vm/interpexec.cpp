@@ -2172,6 +2172,18 @@ CALL_INTERP_METHOD:
                     ip += 4;
                     break;
                 }
+                case INTOP_INITBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    uint8_t value = LOCAL_VAR(ip[2], uint8_t);
+                    uint32_t size = LOCAL_VAR(ip[3], uint32_t);
+                    if (size && !dst)
+                        COMPlusThrow(kNullReferenceException);
+                    else
+                        memset(dst, value, size);
+                    ip += 4;
+                    break;
+                }
                 case INTOP_LOCALLOC:
                 {
                     size_t len = LOCAL_VAR(ip[2], size_t);
@@ -2423,6 +2435,16 @@ do {                                                                           \
                 case INTOP_STELEM_I8:
                 {
                     STELEM(int64_t, int64_t);
+                    break;
+                }
+                case INTOP_STELEM_U1:
+                {
+                    STELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_STELEM_U2:
+                {
+                    STELEM(int32_t, uint16_t);
                     break;
                 }
                 case INTOP_STELEM_R4:

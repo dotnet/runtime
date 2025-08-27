@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -202,6 +203,11 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
 
         context.FillFromBuffer(buffer);
+    }
+
+    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
+    {
+        return FrameIterator.GetMethodDescPtr(framePtr, _target);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

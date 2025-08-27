@@ -414,27 +414,23 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
+    private static (bool Done, uint NextIndex) SearchLookupMap(uint index) => (true, index);
+    private delegate (bool Done, uint NextIndex) Delegate(uint index);
+    private IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table, uint index, Delegate iterator)
     {
-        uint rid = EcmaMetadataUtils.GetRowId(token);
-        ArgumentOutOfRangeException.ThrowIfZero(rid);
-        flags = new TargetNUInt(0);
-        if (table == TargetPointer.Null)
-            return TargetPointer.Null;
-        uint index = rid;
-        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        // have to read lookupMap an extra time upfront because only the first map
-        // has valid supportedFlagsMask
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        bool doneIterating;
         do
         {
-            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
             if (index < lookupMap.Count)
             {
                 TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
                 TargetPointer rawValue = _target.ReadPointer(entryAddress);
-                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
-                return rawValue & ~(supportedFlagsMask.Value);
+                yield return (rawValue, index);
+                (doneIterating, index) = iterator(index);
+                if (doneIterating)
+                    yield break;
             }
             else
             {
@@ -442,15 +438,54 @@ internal readonly struct Loader_1 : ILoader
                 index -= lookupMap.Count;
             }
         } while (table != TargetPointer.Null);
-        return TargetPointer.Null;
+    }
+
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    {
+        if (table == TargetPointer.Null)
+        {
+            flags = new TargetNUInt(0);
+            return TargetPointer.Null;
+        }
+
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
+        flags = new TargetNUInt(rval & supportedFlagsMask);
+        return rval & ~supportedFlagsMask;
+    }
+
+    IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)
+    {
+        if (table == TargetPointer.Null)
+            yield break;
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+        TargetNUInt flags = new TargetNUInt(0);
+        uint index = 1; // zero is invalid
+        foreach ((TargetPointer targetPointer, uint idx) in IterateModuleLookupMap(table, index, IterateLookupMap))
+        {
+            TargetPointer rval = targetPointer & ~supportedFlagsMask;
+            if (rval != TargetPointer.Null)
+                yield return (rval, idx);
+        }
     }
 
     bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer assembly = module.Assembly;
-        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsDynamic(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.IsDynamic;
     }
 
     bool ILoader.IsAssemblyLoaded(ModuleHandle handle)

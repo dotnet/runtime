@@ -2462,12 +2462,18 @@ MethodImpl *MethodDesc::GetMethodImpl()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresMDContextArg() const
+BOOL MethodDesc::RequiresMDContextArg()
 {
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
     if (IsCLRToCOMCall())
+        return TRUE;
+
+    // Interop marshalling of varargs needs MethodDesc calling convention
+    // to support ldftn <PInvoke method with varargs>. It is not possible
+    // to smuggle the MethodDesc* via vararg cookie in this case.
+    if (IsPInvoke() && IsVarArg())
         return TRUE;
 
     return FALSE;
@@ -3497,7 +3503,7 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         // Stubs generated for being called from native code are equivalent to
         // managed methods marked with UnmanagedCallersOnly.
-        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop;
+        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubReversePInvoke;
     }
 
     HRESULT hr = GetCustomAttribute(
