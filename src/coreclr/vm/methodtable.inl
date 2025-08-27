@@ -412,10 +412,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 #endif // DACCESS_COMPILE
 
@@ -456,10 +456,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 
 #ifndef DACCESS_COMPILE

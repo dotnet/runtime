@@ -585,11 +585,8 @@ public:
 
         return dac_cast<PTR_StubPrecode>(this);
     }
-private:
 
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
-public:
-    // Fake precodes has to be exposed
     PInvokeImportPrecode* AsPInvokeImportPrecode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -597,8 +594,6 @@ public:
 
         return dac_cast<PTR_PInvokeImportPrecode>(this);
     }
-
-private:
 #endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
@@ -630,6 +625,7 @@ private:
     }
 #endif // FEATURE_INTERPRETER
 
+private:
     TADDR GetStart()
     {
         SUPPORTS_DAC;
