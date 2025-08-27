@@ -404,7 +404,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
                     MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
-                    SaltLength = SignaturePadding.CalculatePssSaltLength(publicKey.KeySize, hashAlgorithmName),
+                    SaltLength = RsaPaddingProcessor.CalculatePssSaltLength(SignaturePadding.PssSaltLength, publicKey.KeySize, hashAlgorithmName),
                     TrailerField = 1
                 };
 

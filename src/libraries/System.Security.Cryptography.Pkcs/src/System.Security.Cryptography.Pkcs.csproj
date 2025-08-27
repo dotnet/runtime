@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -717,6 +717,13 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs"
+         Link="Common\System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HashAlgorithmNames.cs"
+         Link="Common\System\Security\Cryptography\HashAlgorithmNames.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

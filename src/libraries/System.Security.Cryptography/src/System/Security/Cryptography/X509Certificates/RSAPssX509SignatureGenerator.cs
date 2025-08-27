@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            cbSalt = _padding.CalculatePssSaltLength(_key.KeySize, hashAlgorithm);
+            cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(_padding.PssSaltLength, _key.KeySize, hashAlgorithm);
 
             // RFC 5754 says that the NULL for SHA2 (256/384/512) MUST be omitted
             // (https://tools.ietf.org/html/rfc5754#section-2) (and that you MUST

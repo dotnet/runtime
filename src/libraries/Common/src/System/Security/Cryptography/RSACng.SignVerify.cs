@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcsPaddingInfo, estimatedSize);
 
                             case RSASignaturePaddingMode.Pss:
-                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = padding.CalculatePssSaltLength(KeySize, hashAlgorithm) };
+                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) };
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, estimatedSize);
 
                             default:
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
                             var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO()
                             {
                                 pszAlgId = namePtr,
-                                cbSalt = padding.CalculatePssSaltLength(KeySize, hashAlgorithm)
+                                cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
                             };
                             return keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, out bytesWritten);
 
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography
                             var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO()
                             {
                                 pszAlgId = namePtr,
-                                cbSalt = padding.CalculatePssSaltLength(KeySize, hashAlgorithm)
+                                cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
                             };
                             return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo);
 

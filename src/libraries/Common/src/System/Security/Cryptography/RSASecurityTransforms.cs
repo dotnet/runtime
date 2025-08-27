@@ -544,7 +544,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
                     Debug.Assert(bytesWritten == rsaSize);
-                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
+                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize, RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm));
                 }
                 finally
                 {

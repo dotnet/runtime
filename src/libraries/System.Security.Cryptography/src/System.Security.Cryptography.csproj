@@ -438,8 +438,12 @@
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HashAlgorithmNames.cs"
+             Link="Common\System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs"
+             Link="Common\System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
              Link="Common\System\Security\Cryptography\SlhDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaAlgorithm.cs"
@@ -571,7 +575,6 @@
     <Compile Include="System\Security\Cryptography\FixedMemoryKeyBox.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
-    <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="System\Security\Cryptography\HashProvider.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />

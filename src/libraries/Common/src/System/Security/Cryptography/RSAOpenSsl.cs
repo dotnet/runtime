@@ -735,7 +735,7 @@ namespace System.Security.Cryptography
             int bytesRequired = Interop.Crypto.GetEvpPKeySizeBytes(key);
             byte[] signature = new byte[bytesRequired];
 
-            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? padding.CalculatePssSaltLength(KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, signature);
+            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, signature);
 
             if (written != signature.Length)
             {
@@ -766,7 +766,7 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? padding.CalculatePssSaltLength(KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, destination);
+            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, destination);
             Debug.Assert(bytesWritten == bytesRequired);
             return true;
         }
@@ -794,7 +794,7 @@ namespace System.Security.Cryptography
             return Interop.Crypto.RsaVerifyHash(
                 key,
                 padding.Mode,
-                padding.Mode == RSASignaturePaddingMode.Pss ? padding.CalculatePssSaltLength(KeySize, hashAlgorithm) : 0,
+                padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0,
                 hashAlgorithm,
                 hash,
                 signature);
