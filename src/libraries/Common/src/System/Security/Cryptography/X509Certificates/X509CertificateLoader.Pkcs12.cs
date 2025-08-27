@@ -375,7 +375,18 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (ProviderNameIsRelevant)
                     {
-                        if (!loaderLimits.PreserveStorageProvider)
+                        const X509KeyStorageFlags EphemeralKeySet =
+#if NET
+                            X509KeyStorageFlags.EphemeralKeySet;
+#else
+                            (X509KeyStorageFlags)0x20;
+#endif
+
+                        if ((bagState.StorageFlags & EphemeralKeySet) != 0)
+                        {
+                            // Ephemeral loads have to go into CNG, but also won't get access denied.
+                        }
+                        else if (!loaderLimits.PreserveStorageProvider)
                         {
                             providerName = DetermineStorageProvider(
                                 bag.BagAttributes,
