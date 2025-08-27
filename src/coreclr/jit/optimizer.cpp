@@ -4296,7 +4296,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             assert(!m_canHoistSideEffects || (block == m_loop->GetHeader()));
             // After visiting the first block (which is expected to always be
             // the loop header) we can no longer hoist out side effecting trees
-            // as the next blocks could be unconditionally executed.
+            // as the next blocks could be conditionally executed.
             m_canHoistSideEffects = false;
         }
 
