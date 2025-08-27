@@ -11,6 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
+    [IgnoreTestCase("NativeAOT sometimes emits duplicate IL2041: https://github.com/dotnet/runtime/issues/119155", IgnoredBy = Tool.NativeAot)]
     [ExpectedNoWarnings]
     public class ExtensionMembersDataFlow
     {
