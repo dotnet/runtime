@@ -583,6 +583,8 @@ namespace System.IO.Compression.Tests
             MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
 
+            FieldInfo compressionMethodField = typeof(ZipArchiveEntry).GetField("_storedCompressionMethod", BindingFlags.NonPublic | BindingFlags.Instance);
+
             foreach (ZipArchiveEntry e in archive.Entries)
             {
                 Stream s = await OpenEntryStream(async, e);
@@ -590,18 +592,21 @@ namespace System.IO.Compression.Tests
                 Assert.True(s.CanRead, "Can read to read archive");
                 Assert.False(s.CanWrite, "Can't write to read archive");
                 
-                // SubReadStream should be seekable when the underlying stream (MemoryStream) is seekable
-                // However, if the entry is compressed, it will be wrapped in a DeflateStream which is not seekable
-                // So we only expect seekability for stored (uncompressed) entries
-                if (e.CompressedLength == e.Length)
+                // Check the entry's compression method to determine seekability
+                // SubReadStream should be seekable when the underlying stream is seekable and the entry is stored (uncompressed)
+                // If the entry is compressed (Deflate, Deflate64, etc.), it will be wrapped in a compression stream which is not seekable
+                ushort compressionMethod = (ushort)compressionMethodField.GetValue(e);
+                const ushort StoredCompressionMethod = 0x0; // CompressionMethodValues.Stored
+                
+                if (compressionMethod == StoredCompressionMethod)
                 {
-                    // This is likely a stored (uncompressed) entry, should be seekable
-                    Assert.True(s.CanSeek, $"SubReadStream should be seekable for uncompressed entry '{e.FullName}' when underlying stream is seekable");
+                    // Entry is stored (uncompressed), should be seekable
+                    Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored (uncompressed) entry '{e.FullName}' with compression method {compressionMethod} when underlying stream is seekable");
                 }
                 else
                 {
-                    // This is likely a compressed entry, wrapped in DeflateStream, should not be seekable
-                    Assert.False(s.CanSeek, $"Compressed entry '{e.FullName}' should not be seekable due to DeflateStream wrapper");
+                    // Entry is compressed (Deflate, Deflate64, etc.), wrapped in compression stream, should not be seekable
+                    Assert.False(s.CanSeek, $"Entry '{e.FullName}' with compression method {compressionMethod} should not be seekable because compressed entries are wrapped in non-seekable compression streams");
                 }
                 
                 Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on stream"
