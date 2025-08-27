@@ -414,16 +414,20 @@ internal sealed class Xcode
                 toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
             }
 
-            string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                foreach (string lib in dylibs)
+                // Interpreter-FIXME: CoreCLR on iOS currently supports only static linking.
+                // The build system needs to be updated to conditionally initialize the compiler at runtime based on an environment variable.
+                // Tracking issue: https://github.com/dotnet/runtime/issues/119006
+                string[] staticLibs = Directory.GetFiles(workspace, "*.a");
+                foreach (string lib in staticLibs)
                 {
-                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                    toLink += $"    \"{lib}\"{Environment.NewLine}";
                 }
             }
             else
             {
+                string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
                 foreach (string lib in staticLibsToLink)

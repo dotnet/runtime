@@ -2378,6 +2378,36 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
         }
 
+        case NI_System_Threading_Interlocked_Exchange:
+        {
+            CHECK_STACK(2);
+            InterpType retType = GetInterpType(sig.retType);
+
+            int32_t opcode;
+            switch (retType)
+            {
+                case InterpTypeI4:
+                    opcode = INTOP_EXCHANGE_I4;
+                    break;
+                case InterpTypeI8:
+                    opcode = INTOP_EXCHANGE_I8;
+                    break;
+                default:
+                    return false;
+            }
+
+            AddIns(opcode);
+            m_pStackPointer -= 2;
+
+            int32_t addrVar = m_pStackPointer[0].var;
+            int32_t valueVar = m_pStackPointer[1].var;
+
+            PushInterpType(retType, nullptr);
+            m_pLastNewIns->SetSVars2(addrVar, valueVar);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         {
             CORINFO_CLASS_HANDLE clsHnd = sig.sigInst.methInst[0];
