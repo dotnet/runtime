@@ -13097,8 +13097,12 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         {
             continue;
         }
-        else if (assignedInterval != nullptr)
 #endif
+        if (assignedInterval == nullptr)
+        {
+            continue;
+        }
+
         {
             if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
                 !assignedInterval->getNextRefPosition()->RegOptional())
@@ -13140,16 +13144,6 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 }
             }
         }
-#ifdef TARGET_ARM64
-        else
-        {
-            // Ideally we should not be seeing this candidate because it is not assigned to
-            // any interval. But it is possible for certain scenarios. One of them is that
-            // `refPosition` needs consecutive registers and we decided to pick a mix of free+busy
-            // registers. This candidate is part of that set and is free and hence is not assigned
-            // to any interval.
-        }
-#endif // TARGET_ARM64
 
         // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
         if (currentSpillWeight == 0)
