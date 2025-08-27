@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef HOST_WINDOWS
-#include <assert.h>
-#include <pthread.h>
+
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
+#include <minipal/memorybarrierprocesswide.h>
+
+#ifndef HOST_WASM
+#include <pthread.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __APPLE__
 #include <stdlib.h>
@@ -72,7 +75,7 @@ static bool CanFlushUsingMembarrier(void)
 static bool s_flushUsingMemBarrier = false;
 #endif // HAVE_SYS_MEMBARRIER_H
 
-#if !defined(HOST_APPLE) && !defined(HOST_WASM)
+#ifndef HOST_APPLE
 // Helper memory page used by the fallback path
 static uint8_t* g_helperPage = NULL;
 
@@ -80,7 +83,8 @@ static uint8_t* g_helperPage = NULL;
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 static size_t s_pageSize = 0;
-#endif // !TARGET_APPLE && !HOST_WASM
+#endif // !HOST_APPLE
+#endif // !HOST_WASM
 
 static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
 

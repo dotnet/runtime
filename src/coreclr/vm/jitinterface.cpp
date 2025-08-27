@@ -1920,15 +1920,15 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, bool fDoubleAlignHint)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
     // Default alignment is sizeof(void*)
     unsigned result = TARGET_POINTER_SIZE;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     TypeHandle clsHnd(type);
 
@@ -1950,14 +1950,14 @@ unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, bool f
         result = getClassAlignmentRequirementStatic(clsHnd);
     }
 
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
 
     return result;
 }
 
 unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     // Default alignment is sizeof(void*)
     unsigned result = TARGET_POINTER_SIZE;

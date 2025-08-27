@@ -397,6 +397,7 @@ OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
+OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
@@ -414,6 +415,8 @@ OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpNoArgs)
 OPDEF(INTOP_COMPARE_EXCHANGE_I8, "compare.exchange.i8", 5, 1, 3, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I4, "exchange.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I8, "exchange.i8", 4, 1, 2, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)

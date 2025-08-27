@@ -3122,6 +3122,10 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3357,6 +3361,12 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
