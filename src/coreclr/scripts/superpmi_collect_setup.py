@@ -525,8 +525,11 @@ def main(main_args):
       copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     elif coreclr_args.collection_name == "aspnet2":
       # For aspnet2, use checked runtime bits
-      print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
-      copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
+      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
+      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
     else:
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)

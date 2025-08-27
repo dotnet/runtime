@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --output_mch $(OutputMchPath)$(FileSeparatorChar)$(CollectionName).$(CollectionType).$(MchFileTag).mch</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory)</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -300,12 +300,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <HelixWorkItem Include="aspnet2_single">
+    <HelixWorkItem Include="aspnet2">
       <OutputFileName>$(CollectionName).$(CollectionType).0.$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand)</Command>
+      <Command>$(WorkItemCommand) --output_mch $(OutputFileName).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>$(CollectionName).$(CollectionType).$(MchFileTag).mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>$(OutputFileName).mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>  
 </Project>
