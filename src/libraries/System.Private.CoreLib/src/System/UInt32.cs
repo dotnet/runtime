@@ -964,6 +964,12 @@ namespace System
                 result = (TOther)(object)actualResult;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = checked((short)value);
@@ -1035,6 +1041,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1115,6 +1127,12 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
