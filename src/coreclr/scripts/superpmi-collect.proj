@@ -267,7 +267,14 @@
     <BDN_Partition Include="Partition3" Index="3" BenchmarkPath="src/benchmarks/real-world/Microsoft.ML.Benchmarks/Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition4" Index="4" BenchmarkPath="src/benchmarks/real-world/Roslyn/CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
     <BDN_Partition Include="Partition5" Index="5" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
-  </ItemGroup>  
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
+    <PartitionCount>1</PartitionCount>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
+    <BDN_Partition Include="Partition0" Index="0" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
     <HelixWorkItem Include="@(Partition)">
@@ -300,12 +307,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <HelixWorkItem Include="aspnet2">
-      <OutputFileName>$(CollectionName).$(CollectionType).0.$(MchFileTag)</OutputFileName>
+    <HelixWorkItem Include="@(BDN_Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) --output_mch $(OutputFileName).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>$(OutputFileName).mch</DownloadFilesFromResults>
     </HelixWorkItem>
-  </ItemGroup>  
+  </ItemGroup> 
 </Project>
