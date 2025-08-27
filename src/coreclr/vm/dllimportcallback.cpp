@@ -221,6 +221,22 @@ UMEntryThunkData * GetMostRecentUMEntryThunkData()
 }
 #endif
 
+static void PatchUMEntryPrecodeIfNecessary(UMEntryThunkData * pUMEntryThunkData, PCODE callTarget)
+{
+#ifdef FEATURE_INTERPRETER
+    // HACK: We currently rely on the thread-local stash in TheUMEntryPrestubWorker for proper operation
+    //  of reverse p/invoke IL stubs in the interpreter, so we can't patch the precode in this scenario.
+    // Instead, every reverse p/invoke will go through TheUMEntryPrestubWorker.
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(callTarget);
+    if (pMD && pMD->GetInterpreterCode())
+        return;
+#endif
+
+    // NOTE: This may be run concurrently by multiple threads, but it should be safe since we will just be
+    //  setting the target of the precode to the same thing multiple times in a row.
+    pUMEntryThunkData->PatchPrecode();
+}
+
 PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
@@ -240,23 +256,36 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     if (pUMEntryThunkData->IsCollectedDelegate())
         CallbackOnCollectedDelegate(pUMEntryThunkData);
 
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    // this method is called by stubs which are called by managed code,
-    // so we need an unwind and continue handler so that our internal
-    // exceptions don't leak out into managed code.
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
+    PCODE callTarget = (PCODE)0;
 #ifdef FEATURE_INTERPRETER
     // HACK: Stash the entry thunk data address so that the interpreter can recover it.
     // The InterpreterStub overwrites the register that normally would contain this address.
     t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+
+    // See whether another thread has already prepared the IL stub for the reverse p/invoke.
+    callTarget = pUMEntryThunkData->GetCachedCallTarget();
 #endif
-    pUMEntryThunkData->RunTimeInit();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    // We don't have a pre-prepared reverse p/invoke, and might be racing with another thread.
+    if (!callTarget)
+    {
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        // this method is called by stubs which are called by managed code,
+        // so we need an unwind and continue handler so that our internal
+        // exceptions don't leak out into managed code.
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    return (PCODE)pUMEntryThunkData->GetCode();
+        pUMEntryThunkData->RunTimeInit();
+        callTarget = pUMEntryThunkData->GetCachedCallTarget();
+        // We're likely to be the first thread to have gotten here for this UM entry thunk, so make
+        //  sure that the precode is patched to point to the IL stub instead of us, if necessary.
+        PatchUMEntryPrecodeIfNecessary(pUMEntryThunkData, callTarget);
+
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    }
+
+    return callTarget;
 }
 
 UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()

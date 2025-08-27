@@ -134,7 +134,7 @@ public:
     PTR_UMEntryThunkData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         return dac_cast<PTR_UMEntryThunkData>(GetSecretParam());
     }
 };
@@ -148,6 +148,9 @@ class UMEntryThunkData
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
     // but it may not have the correct value.
     PCODE                   m_pManagedTarget;
+    // The native code to tailcall. May or may not match what the UM entry precode has been patched to call directly.
+    // This is populated by RunTimeInit at the end of execution.
+    PCODE                   m_pCachedCallTarget;
 
     // This is used for debugging and profiling.
     PTR_MethodDesc          m_pMD;
@@ -200,6 +203,7 @@ public:
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
+        m_pCachedCallTarget = (PCODE)0;
 
         m_pMD = pMD;
 
@@ -214,7 +218,20 @@ public:
 
     void Terminate();
 
-    VOID RunTimeInit()
+    PCODE GetCachedCallTarget()
+    {
+        STANDARD_VM_CONTRACT;
+        return m_pCachedCallTarget;
+    }
+
+    void PatchPrecode()
+    {
+        STANDARD_VM_CONTRACT;
+
+        m_pUMEntryThunk->SetTargetUnconditional(m_pCachedCallTarget);
+    }
+
+    void RunTimeInit()
     {
         STANDARD_VM_CONTRACT;
 
@@ -227,7 +244,8 @@ public:
         if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        m_pUMEntryThunk->SetTargetUnconditional(m_pUMThunkMarshInfo->GetExecStubEntryPoint());
+        // FIXME: Do we need to use atomics here?
+        m_pCachedCallTarget = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
 
 #ifdef _DEBUG
         m_state = kRunTimeInited;
