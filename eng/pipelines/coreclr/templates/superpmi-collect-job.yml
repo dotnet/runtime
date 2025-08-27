@@ -67,6 +67,7 @@ jobs:
         artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
         displayName: 'Release runtime build artifacts'
         cleanUnpackFolder: false
+        overwriteExistingFiles: true
 
     # Unzip individual test projects
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:

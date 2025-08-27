@@ -5060,7 +5060,26 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     }
     CONTRACTL_END
 
-    EECodeInfo codeInfo(currentPC);
+    ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, scanFlag);
+    if (pRS == NULL)
+        return NULL;
+
+    if (pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            PTR_StubPrecode pStubPrecode = dac_cast<PTR_StubPrecode>(PCODEToPINSTR(currentPC));
+            if (pStubPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                return dac_cast<PTR_MethodDesc>(pStubPrecode->GetMethodDesc());
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
+    EECodeInfo codeInfo(currentPC, scanFlag);
     if (!codeInfo.IsValid())
         return NULL;
     return codeInfo.GetMethodDesc();
