@@ -12,6 +12,15 @@ LEAF_ENTRY RhpNewFast, _TEXT
         push_nonvol_reg rbx
         mov         rbx, rdi
 
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhpNewFast_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhpNewFast_ValidMethodTable):
+#endif
+
+
         // rax = ee_alloc_context pointer; trashes volatile registers
         INLINE_GET_ALLOC_CONTEXT_BASE
 
@@ -80,6 +89,14 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME rcx
 
         // RCX: transition frame
+
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhpNewObject_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhpNewObject_ValidMethodTable):
+#endif
 
         // Preserve the MethodTable in RBX
         mov         rbx, rdi
@@ -176,6 +193,14 @@ NESTED_END RhpNewObject, _TEXT
 //  RSI == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhNewString_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhNewString_ValidMethodTable):
+#endif
+
         // we want to limit the element count to the non-negative 32-bit int range
         cmp         rsi, MAX_STRING_LENGTH
         ja          LOCAL_LABEL(StringSizeOverflow)
@@ -202,6 +227,14 @@ LEAF_END RhNewString, _TEXT
 //  RDI == MethodTable
 //  ESI == element count
 LEAF_ENTRY RhpNewArrayFast, _TEXT
+
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhpNewArrayFast_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhpNewArrayFast_ValidMethodTable):
+#endif
 
         // we want to limit the element count to the non-negative 32-bit int range
         cmp         rsi, 0x07fffffff
@@ -232,6 +265,14 @@ LEAF_END RhpNewArrayFast, _TEXT
 //  ESI == element count
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhpNewPtrArrayFast_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhpNewPtrArrayFast_ValidMethodTable):
+#endif
+
         // Delegate overflow handling to the generic helper conservatively
         // The constant 0x8000000 is (0x40000000 / sizeof(void*))
         // Some assemblers don't like an expression here, so the
@@ -260,6 +301,14 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         // rsi == element count
 
         PUSH_COOP_PINVOKE_FRAME rcx
+
+#ifdef FEATURE_NATIVEAOT
+        mov         ax, [rdi + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         LOCAL_LABEL(RhpNewVariableSizeObject_ValidMethodTable)
+        int         3
+LOCAL_LABEL(RhpNewVariableSizeObject_ValidMethodTable):
+#endif
 
         // rcx: transition frame
 

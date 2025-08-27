@@ -9,6 +9,14 @@ include AsmMacros_Shared.inc
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhpNewFast_ValidMethodTable
+        int         3
+RhpNewFast_ValidMethodTable:
+endif
+
         ;; rdx = ee_alloc_context pointer, TRASHES rax
         INLINE_GET_ALLOC_CONTEXT_BASE rdx, rax
 
@@ -65,6 +73,14 @@ NESTED_ENTRY RhpNewObject, _TEXT
         PUSH_COOP_PINVOKE_FRAME r9
 
         ; R9: transition frame
+
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhpNewObject_ValidMethodTable
+        int         3
+RhpNewObject_ValidMethodTable:
+endif
 
         ;; Preserve the MethodTable in RSI
         mov         rsi, rcx
@@ -131,6 +147,15 @@ ENDM ; NEW_ARRAY_FAST
 ;;  RDX == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhNewString_ValidMethodTable
+        int         3
+RhNewString_ValidMethodTable:
+endif
+
+
         ; we want to limit the element count to the non-negative 32-bit int range
         cmp         rdx, MAX_STRING_LENGTH
         ja          StringSizeOverflow
@@ -157,6 +182,14 @@ LEAF_END RhNewString, _TEXT
 ;;  RCX == MethodTable
 ;;  EDX == element count
 LEAF_ENTRY RhpNewArrayFast, _TEXT
+
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhpNewArrayFast_ValidMethodTable
+        int         3
+RhpNewArrayFast_ValidMethodTable:
+endif
 
         ; we want to limit the element count to the non-negative 32-bit int range
         cmp         rdx, 07fffffffh
@@ -187,6 +220,14 @@ LEAF_END RhpNewArrayFast, _TEXT
 ;;  EDX == element count
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhpNewPtrArrayFast_ValidMethodTable
+        int         3
+RhpNewPtrArrayFast_ValidMethodTable:
+endif
+
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         rdx, (40000000h / 8) ; sizeof(void*)
@@ -212,6 +253,14 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT
         ; rdx == element count
 
         PUSH_COOP_PINVOKE_FRAME r9
+
+ifdef FEATURE_NATIVEAOT
+        mov         ax, [rcx + OFFSETOF__MethodTable__m_usNumVtableSlots]
+        test        ax, ax
+        jnz         RhpNewVariableSizeObject_ValidMethodTable
+        int         3
+RhpNewVariableSizeObject_ValidMethodTable:
+endif
 
         ; r9: transition frame
 
