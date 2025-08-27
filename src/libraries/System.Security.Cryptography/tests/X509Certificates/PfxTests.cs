@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -632,31 +634,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 AQkVMRYEFAoeq6T+1m3SxQcSi9MLIHgD+izRMDEwITAJBgUrDgMCGgUABBSkzDq8UAiqd5YK7p1i
                 YwIgZfxAsAQIG3eE/Gomu/ECAgfQ");
 
+            Assert.Throws<CryptographicException>(
+               () => X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
             // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
             // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags))
-                {
-                    Assert.Throws<CryptographicException>(
-                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, PfxPassword));
-                }
-
                 using (X509Certificate2 cert = new(pfxBytes, PfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, PfxPassword));
                 }
-            }
-            else
-            {
-                Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags));
 
-                Assert.Throws<CryptographicException>(
-                    () => new X509Certificate2(pfxBytes, PfxPassword, keyStorageFlags));
+                pfxBytes = RepackWithCsp(pfxBytes, PfxPassword);
             }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, PfxPassword, keyStorageFlags));
         }
 
         public static IEnumerable<object[]> ReadMLDsa_Pfx_Ietf_Data =>
@@ -748,31 +745,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLDsaTestsData.IetfMLDsa_Pfx_Pbes1;
             string pfxPassword = "PLACEHOLDER";
 
+            Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
             // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
             // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-                {
-                    Assert.Throws<CryptographicException>(
-                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
-                }
-
                 using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
                 }
-            }
-            else
-            {
-                Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
 
-                Assert.Throws<CryptographicException>(
-                    () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
+                pfxBytes = RepackWithCsp(pfxBytes, pfxPassword);
             }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
         }
 
         [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
@@ -807,31 +799,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx_Pbes1;
             string pfxPassword = "PLACEHOLDER";
 
+            Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
             // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
             // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-                {
-                    Assert.Throws<CryptographicException>(
-                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
-                }
-
                 using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
                 }
-            }
-            else
-            {
-                Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
 
-                Assert.Throws<CryptographicException>(
-                    () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
+                pfxBytes = RepackWithCsp(pfxBytes, pfxPassword);
             }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
         }
 
 #if !NO_EPHEMERALKEYSET_AVAILABLE
@@ -1024,6 +1011,53 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2 newC = new X509Certificate2(c.Handle);
             c.Dispose();
             return newC;
+        }
+
+        private static byte[] RepackWithCsp(byte[] pfxBytes, string pfxPassword)
+        {
+            // This method assumes a very specific format for the incoming data.
+            // An encrypted data segment containing the certificate,
+            // and an unencrypted segment consisting of one shrouded key,
+            // and that key already has attributes (LocalKeyId),
+            // and does not already have a provider name attribute.
+
+            Pkcs12Info pkcs12 = Pkcs12Info.Decode(pfxBytes, out _, skipCopy: true);
+
+            if (!pkcs12.VerifyMac(pfxPassword))
+            {
+                throw new InvalidOperationException();
+            }
+
+            Pkcs12Builder builder = new Pkcs12Builder();
+
+            foreach (Pkcs12SafeContents safeContents in pkcs12.AuthenticatedSafe)
+            {
+                if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
+                {
+                    builder.AddSafeContentsUnencrypted(safeContents);
+                }
+                else
+                {
+                    Pkcs12SafeContents newContents = new Pkcs12SafeContents();
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    writer.WriteCharacterString(UniversalTagNumber.BMPString, CngProvider.MicrosoftSoftwareKeyStorageProvider.Provider);
+
+                    foreach (Pkcs12SafeBag bag in safeContents.GetBags())
+                    {
+                        bag.Attributes.Add(
+                            new AsnEncodedData(
+                                new Oid("1.3.6.1.4.1.311.17.1", "1.3.6.1.4.1.311.17.1"),
+                                writer.Encode()));
+
+                        newContents.AddSafeBag(bag);
+                    }
+
+                    builder.AddSafeContentsUnencrypted(newContents);
+                }
+            }
+
+            builder.SealWithMac(pfxPassword, HashAlgorithmName.SHA256, 25);
+            return builder.Encode();
         }
 
         internal delegate ulong GetIterationCountDelegate(ReadOnlySpan<byte> pkcs12, out int bytesConsumed);
