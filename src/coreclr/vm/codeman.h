@@ -404,12 +404,11 @@ typedef DPTR(InterpreterCodeHeader) PTR_InterpreterCodeHeader;
 // When creating new JumpStubs we have a constarint that the address used
 // should be in the range [loAddr..hiAddr]
 //
-struct CodeHeapRequestInfo
+class CodeHeapRequestInfo final
 {
-    MethodDesc * m_pMD;
     LoaderAllocator* m_pAllocator;
-    const BYTE * m_loAddr;          // lowest address to use to satisfy our request (0 -- don't care)
-    const BYTE * m_hiAddr;          // hihest address to use to satisfy our request (0 -- don't care)
+    const BYTE*  m_loAddr;          // lowest address to use to satisfy our request (0 -- don't care)
+    const BYTE*  m_hiAddr;          // highest address to use to satisfy our request (0 -- don't care)
     size_t       m_requestSize;     // minimum size that must be made available
     size_t       m_reserveSize;     // Amount that VirtualAlloc will reserved
     size_t       m_reserveForJumpStubs; // Amount to reserve for jump stubs (won't be allocated)
@@ -418,42 +417,35 @@ struct CodeHeapRequestInfo
     bool         m_isInterpreted;
     bool         m_throwOnOutOfMemoryWithinRange;
 
+public:
+    CodeHeapRequestInfo(MethodDesc* pMD);
+    CodeHeapRequestInfo(LoaderAllocator* pAllocator);
+    CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllocator, BYTE* loAddr, BYTE* hiAddr);
+
+    LoaderAllocator* GetAllocator()             { return m_pAllocator;         }
+
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
     void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
 
+    const BYTE* GetLoAddr()                     { return m_loAddr;             }
+    const BYTE* GetHiAddr()                     { return m_hiAddr;             }
+
     bool   IsCollectible()                      { return m_isCollectible;      }
 
-    bool   IsInterpreted()                      { return m_isInterpreted;       }
+    bool   IsInterpreted()                      { return m_isInterpreted;      }
     void   SetInterpreted()                     { m_isInterpreted = true;      }
 
-    size_t getRequestSize()                     { return m_requestSize;        }
-    void   setRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
+    size_t GetRequestSize()                     { return m_requestSize;        }
+    void   SetRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
 
-    size_t getReserveSize()                     { return m_reserveSize;        }
-    void   setReserveSize(size_t reserveSize)   { m_reserveSize = reserveSize; }
+    size_t GetReserveSize()                     { return m_reserveSize;        }
+    void   SetReserveSize(size_t reserveSize)   { m_reserveSize = reserveSize; }
 
-    size_t getReserveForJumpStubs()             { return m_reserveForJumpStubs; }
-    void   setReserveForJumpStubs(size_t size)  { m_reserveForJumpStubs = size; }
+    size_t GetReserveForJumpStubs()             { return m_reserveForJumpStubs; }
+    void   SetReserveForJumpStubs(size_t size)  { m_reserveForJumpStubs = size; }
 
-    bool   getThrowOnOutOfMemoryWithinRange()   { return m_throwOnOutOfMemoryWithinRange; }
-    void   setThrowOnOutOfMemoryWithinRange(bool value) { m_throwOnOutOfMemoryWithinRange = value; }
-
-    void   Init();
-
-    CodeHeapRequestInfo(MethodDesc *pMD)
-        : m_pMD(pMD), m_pAllocator(0),
-          m_loAddr(0), m_hiAddr(0),
-          m_requestSize(0), m_reserveSize(0), m_reserveForJumpStubs(0)
-        , m_isInterpreted(false)
-    { WRAPPER_NO_CONTRACT;   Init(); }
-
-    CodeHeapRequestInfo(MethodDesc *pMD, LoaderAllocator* pAllocator,
-                        BYTE * loAddr, BYTE * hiAddr)
-        : m_pMD(pMD), m_pAllocator(pAllocator),
-          m_loAddr(loAddr), m_hiAddr(hiAddr),
-          m_requestSize(0), m_reserveSize(0), m_reserveForJumpStubs(0)
-        , m_isInterpreted(false)
-    { WRAPPER_NO_CONTRACT;   Init(); }
+    bool   GetThrowOnOutOfMemoryWithinRange()   { return m_throwOnOutOfMemoryWithinRange; }
+    void   SetThrowOnOutOfMemoryWithinRange(bool value) { m_throwOnOutOfMemoryWithinRange = value; }
 };
 
 //-----------------------------------------------------------------------------
@@ -2232,7 +2224,16 @@ public:
     HINSTANCE           m_AltJITCompiler;
     bool                m_AltJITRequired;
 #endif //ALLOW_SXS_JIT
+
+    friend struct ::cdac_data<EEJitManager>;
 };
+
+template<>
+struct cdac_data<EEJitManager>
+{
+    static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+};
+
 
 //*****************************************************************************
 //

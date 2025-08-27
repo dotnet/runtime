@@ -10824,7 +10824,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10837,7 +10837,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
@@ -10883,7 +10883,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

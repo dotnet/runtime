@@ -118,9 +118,12 @@ namespace
 
         switch (type)
         {
-            case DynamicMethodDesc::StubCLRToNativeInterop: return "IL_STUB_PInvoke";
+            case DynamicMethodDesc::StubPInvoke:
+            case DynamicMethodDesc::StubPInvokeDelegate:
+            case DynamicMethodDesc::StubPInvokeCalli:
+            case DynamicMethodDesc::StubPInvokeVarArg:      return "IL_STUB_PInvoke";
+            case DynamicMethodDesc::StubReversePInvoke:     return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCLRToCOMInterop:    return "IL_STUB_CLRtoCOM";
-            case DynamicMethodDesc::StubNativeToCLRInterop: return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
@@ -304,19 +307,26 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
         {
-            pMD->SetILStubType(DynamicMethodDesc::StubNativeToCLRInterop);
+            pMD->SetILStubType(DynamicMethodDesc::StubReversePInvoke);
         }
         else
         {
             if (SF_IsDelegateStub(dwStubFlags))
             {
-                pMD->SetFlags(DynamicMethodDesc::FlagIsDelegate);
+                pMD->SetILStubType(DynamicMethodDesc::StubPInvokeDelegate);
             }
             else if (SF_IsCALLIStub(dwStubFlags))
             {
-                pMD->SetFlags(DynamicMethodDesc::FlagIsCALLI);
+                pMD->SetILStubType(DynamicMethodDesc::StubPInvokeCalli);
             }
-            pMD->SetILStubType(DynamicMethodDesc::StubCLRToNativeInterop);
+            else if (SF_IsVarArgStub(dwStubFlags))
+            {
+                pMD->SetILStubType(DynamicMethodDesc::StubPInvokeVarArg);
+            }
+            else
+            {
+                pMD->SetILStubType(DynamicMethodDesc::StubPInvoke);
+            }
         }
     }
 

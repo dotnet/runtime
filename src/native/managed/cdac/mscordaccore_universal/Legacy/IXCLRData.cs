@@ -206,7 +206,7 @@ internal unsafe partial interface IXCLRDataProcess
     int GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod);
 
     [PreserveSig]
-    int StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
     [PreserveSig]
     int EnumMethodInstanceByAddress(ulong* handle, out IXCLRDataMethodInstance? method);
     [PreserveSig]

@@ -110,6 +110,8 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
@@ -126,4 +128,5 @@ public enum DataType
     FaultingExceptionFrame,
     HijackFrame,
     TailCallFrame,
+    StubDispatchFrame,
 }

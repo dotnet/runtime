@@ -463,6 +463,7 @@ private:
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,
                                                  unsigned    simdSize);
+    GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions
