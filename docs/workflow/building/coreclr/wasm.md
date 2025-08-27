@@ -87,22 +87,12 @@ For debugging CoreCLR WebAssembly code, the recommended approach is using Chrome
 
 ### VS Code WebAssembly Debugging
 
-VS Code provides multiple debugging options for WebAssembly CoreCLR:
+VS Code, through Node.js, provides a good debugging option for WebAssembly CoreCLR:
 
-#### Option 1: WebAssembly Dwarf Debugging Extension
-
-1. **Install the VS Code extension:**
+1. **Install the VS Code extension (Optional):**
    - [WebAssembly Dwarf Debugging](https://marketplace.visualstudio.com/items?itemName=ms-vscode.wasm-dwarf-debugging)
 
-2. **Configure your debugging environment** according to the extension's documentation
-
-3. **Set up your launch configuration** in VS Code to attach to the WebAssembly runtime
-
-#### Option 2: Node.js Debugging
-
-For a simpler debugging experience, you can use VS Code's built-in Node.js debugger:
-
-1. **Create a launch.json configuration:**
+2. **Create a launch.json configuration:**
    ```json
    {
        "version": "0.2.0",
@@ -120,11 +110,9 @@ For a simpler debugging experience, you can use VS Code's built-in Node.js debug
        ]
    }
    ```
-   
-   **Note:** On Windows, use backslashes in the path: `"${workspaceFolder}\\artifacts\\bin\\coreclr\\browser.wasm.Debug\\corewasmrun\\"`
 
-2. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
+3. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
 
-3. **Start debugging** and step through the WebAssembly code using the call stack
+4. **Start debugging** and step through the WebAssembly code using the call stack
 
-This approach allows you to debug the JavaScript host and step into WebAssembly code.
+This approach allows you to debug the JavaScript host and step into WebAssembly code or into the C/C++ code if the Dwarf Debugging extension was installed.
