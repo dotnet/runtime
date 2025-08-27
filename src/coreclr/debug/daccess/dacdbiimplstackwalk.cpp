@@ -812,7 +812,12 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Strictly speaking, we can do this in CordbJITILFrame::Init(), but it's just easier and more
         // efficiently to do it here.  CordbJITILFrame::Init() will initialize the other vararg-related
         // fields.  We don't have the native var info here to fully initialize everything.
-        pFrameData->v.fVarArgs = (pMD->IsVarArg() == TRUE);
+        BOOL isVarArg = FALSE;
+        HRESULT hr = pMD->IsVarArgDAC(&isVarArg);
+        if (FAILED(hr))
+            ThrowHR(hr);
+
+        pFrameData->v.fVarArgs = (isVarArg == TRUE);
 
         pFrameData->v.fNoMetadata = (pMD->IsNoMetadata() == TRUE);
 

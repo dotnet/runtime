@@ -1177,6 +1177,81 @@ BOOL MethodDesc::IsVarArg()
     return MetaSig::IsVarArg(signature);
 }
 
+#ifdef DACCESS_COMPILE
+//*******************************************************************************
+HRESULT MethodDesc::GetSignatureDAC(Signature* pSignature)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    SUPPORTS_DAC;
+
+    PTR_MethodDesc thisPtr = dac_cast<PTR_MethodDesc>(this);
+    PCCOR_SIGNATURE pSig = NULL;
+    DWORD           cSig;
+
+    do
+    {
+        if (HasStoredSig())
+        {
+            PTR_StoredSigMethodDesc pSMD = dac_cast<PTR_StoredSigMethodDesc>(this);
+            if (pSMD->HasStoredMethodSig() || GetClassification()==mcDynamic)
+            {
+                pSig = pSMD->GetStoredMethodSig(&cSig);
+                break;
+            }
+        }
+
+        // Async variant methods have alternative signatures that do not match metadata.
+        if (IsAsyncVariantMethod())
+        {
+            Signature sig = GetAddrOfAsyncMethodData()->sig;
+            pSig = sig.GetRawSig();
+            cSig = sig.GetRawSigLen();
+        }
+        else
+        {
+            HRESULT hr = GetMDImport()->GetSigOfMethodDef(GetMemberDef(), &cSig, &pSig);
+            if (FAILED(hr))
+                return hr;
+        }
+    } while (0);
+
+    Signature signature(pSig, cSig);
+    *pSignature = signature;
+    return S_OK;
+}
+
+HRESULT MethodDesc::IsVarArgDAC(BOOL *isVarArg)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    SUPPORTS_DAC;
+
+    PTR_MethodDesc thisPtr = dac_cast<PTR_MethodDesc>(this);
+
+    Signature signature;
+    HRESULT hr = GetSignatureDAC(&signature);
+    if (FAILED(hr))
+        return hr;
+
+    _ASSERTE(!signature.IsEmpty());
+    if (signature.IsEmpty())
+        return E_FAIL;
+    *isVarArg = MetaSig::IsVarArg(signature);
+    return S_OK;
+}
+#endif // DACCESS_COMPILE
+
 //*******************************************************************************
 COR_ILMETHOD* MethodDesc::GetILHeader()
 {
