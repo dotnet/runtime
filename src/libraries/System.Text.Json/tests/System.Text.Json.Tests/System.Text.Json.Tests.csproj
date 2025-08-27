@@ -24,11 +24,6 @@
     <Features>$(Features.Replace('nullablePublicOnly', ''))</Features>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
-    <WasmEnvironmentVariable Include="MONO_LOG_LEVEL" Value="debug" />
-    <WasmEnvironmentVariable Include="MONO_LOG_MASK" Value="all" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
     <XunitShowProgress>true</XunitShowProgress>
