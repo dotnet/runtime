@@ -174,6 +174,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ExtensionsDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task ExtensionMembersDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task FeatureCheckDataFlow()
         {
             return RunTest();
