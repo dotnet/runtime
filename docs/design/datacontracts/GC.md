@@ -241,7 +241,7 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
             generationData.AllocationStart = target.ReadPointer(generationAddress + /* Generation::AllocationStart offset */)
         else
             generationData.AllocationStart = -1;
-        
+
         generationData.AllocationContextPointer =
             target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Pointer offset */);
         generationData.AllocationContextLimit =
@@ -318,7 +318,7 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
             generationData.AllocationStart = target.ReadPointer(generationAddress + /* Generation::AllocationStart offset */)
         else
             generationData.AllocationStart = -1;
-        
+
         generationData.AllocationContextPointer =
             target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Pointer offset */);
         generationData.AllocationContextLimit =
