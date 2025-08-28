@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import re
+import requests
 import socket
 import pathlib
 import subprocess
@@ -13,6 +15,7 @@ import platform
 import tempfile
 import urllib.request
 from pathlib import Path
+
 
 ##########################################################################################################
 #
@@ -98,6 +101,40 @@ def run(cmd, cwd=None):
         return None
 
 
+def get_arch() -> str:
+    m = platform.machine().lower()
+    if "arm64" in m: return "arm64"
+    if m in ("amd64", "x86_64"): return "x64"
+    raise RuntimeError(f"Unsupported arch: {m}")
+
+
+def download_mingit_windows(dest: str) -> str:
+    m = {"x64": "64-bit", "arm64": "arm64"}
+    assets = requests.get("https://api.github.com/repos/git-for-windows/git/releases/latest",timeout=100).json()["assets"]
+    rx = re.compile(r"^MinGit-.*-(64-bit|arm64)\.zip$", re.I)
+    asset = next(a for a in assets if rx.match(a["name"]) and m[get_arch()] in a["name"])
+    os.makedirs(dest, exist_ok=True); zip_path = os.path.join(dest, asset["name"])
+    with requests.get(asset["browser_download_url"], stream=True) as r, open(zip_path,"wb") as f:
+        for c in r.iter_content(8192): f.write(c)
+    git_dir = os.path.join(dest,"git"); shutil.rmtree(git_dir, ignore_errors=True)
+    with zipfile.ZipFile(zip_path) as z: z.extractall(git_dir)
+    os.remove(zip_path)
+    return git_dir
+
+
+def ensure_git(dest: Path) -> str:
+    # if shutil.which("git"): 
+    #     print("git found")
+    #     return shutil.which("git")
+    if not sys.platform == "win32":
+        raise RuntimeError("Git is not available on this platform")
+    print("git not found, downloading portable git...")
+    git_dir = download_mingit_windows(str(dest))
+    cmd_path = os.path.join(git_dir,"cmd")
+    os.environ["PATH"] = cmd_path + os.pathsep + os.environ["PATH"]
+    return shutil.which("git")
+
+
 # Ensure .NET tools are installed and Localhost.yml is present
 def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     data_dir = workdir / "crank_data"
@@ -121,6 +158,8 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
         build_dir.mkdir(parents=True, exist_ok=True)
         dotnethome_dir.mkdir(parents=True, exist_ok=True)
         tools_dir.mkdir(parents=True, exist_ok=True)
+
+        ensure_git(tools_dir)
 
         # If a CLI path was provided, skip installing .NET and use that SDK.
         if cli is None:
