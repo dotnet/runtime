@@ -86,7 +86,7 @@ typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 struct InterpreterPrecode;
 
 typedef DPTR(InterpreterPrecode) PTR_InterpreterPrecode;
-#endif 
+#endif // FEATURE_INTERPRETER
 
 // Regular precode
 struct StubPrecode
@@ -215,7 +215,7 @@ struct PInvokeImportPrecode : StubPrecode
 
     void Init(PInvokeImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
-    LPVOID GetEntrypoint()
+    LPVOID GetEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         return (LPVOID)PINSTRToPCODE(dac_cast<TADDR>(this));
@@ -250,7 +250,7 @@ struct ThisPtrRetBufPrecode : StubPrecode
         return dac_cast<PTR_ThisPtrRetBufPrecodeData>(StubPrecode::GetData()->SecretParam);
     }
 
-    LPVOID GetEntrypoint()
+    LPVOID GetEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         return (LPVOID)PINSTRToPCODE(dac_cast<TADDR>(this));
