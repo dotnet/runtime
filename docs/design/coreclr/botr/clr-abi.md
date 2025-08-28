@@ -537,11 +537,21 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
-# WASM support
+# Portable entrypoints
 
-The WASM target has restrictions that present unique difficulties for a JITed environment. One of those restrictions is the inability to allocate executable code at run-time.
+On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
 
-The Portable Entry Point feature is required for WASM to avoid the need for run-time executable code generation. On less restricted platforms, `Precode`s are used to represent entry points to pre-JITed methods or for function pointers to managed functions. Instead of a small executable block of code, we use the `PortableEntryPoint` type that acts as a container for the target method (for example, `MethodDesc`) and a pointer to the code to interpret.
+On platforms that do not allow dynamic code generation (Wasm), the runtime abstracts away execution strategies by allocating portable entrypoints for dynamically loaded methods. The `PortableEntryPoint` is a data structure that allows efficient transition to the desired execution strategy for the target method. When the runtime is configured to use portable entrypoints, the managed calling convention is modified as follows:
+
+- The native code to call is obtained by dereferencing the entrypoint
+
+- The entrypoint address is passed in as an extra last hidden argument. The extra hidden argument must be present in signatures of all methods. It is unused by the code of JITed or AOT-compiled methods.
+
+Pseudo code for a call with portable entrypoints:
+
+> `(*(void**)pfn)(arg0, arg1, ..., argN, pfn)`
+
+Portable entrypoints are used for Wasm with interpreter only currently. Note that portable entrypoints are unnecessary for Wasm with native AOT since native AOT does not support dynamic loading.
 
 # System V x86_64 support
 
