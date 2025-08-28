@@ -254,9 +254,9 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (!PortableEntryPoint::IsNativeEntryPoint(addr))
+    if (!PortableEntryPoint::IsNativeEntryPoint((TADDR)addr))
     {
-        *pILTargetMethod = PortableEntryPoint::GetMethodDesc(addr);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
         return NULL; // Return null to interpret this entrypoint
     }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

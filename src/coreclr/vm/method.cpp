@@ -2202,13 +2202,18 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    return PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(entryPoint));
+
+#else // FEATURE_PORTABLE_ENTRYPOINTS
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
@@ -2242,6 +2247,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     // We should never get here
     _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 #ifndef DACCESS_COMPILE
@@ -2637,7 +2643,7 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
     MethodDesc* pMD = NULL;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    pMD = PortableEntryPoint::GetMethodDesc((void*)PCODEToPINSTR(addr));
+    pMD = PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(addr));
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
@@ -2864,7 +2870,7 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
     _ASSERTE(tempEntry != (PCODE)NULL);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    _ASSERTE(PortableEntryPoint::GetMethodDesc((void*)PCODEToPINSTR(tempEntry)) == this);
+    _ASSERTE(PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(tempEntry)) == this);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();

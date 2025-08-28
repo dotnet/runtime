@@ -13,14 +13,14 @@
     #define CANARY_VALUE 0x12345678
 #endif // HOST_64BIT
 
-bool PortableEntryPoint::IsNativeEntryPoint(void* addr)
+bool PortableEntryPoint::IsNativeEntryPoint(TADDR addr)
 {
     STANDARD_VM_CONTRACT;
 
     return false;
 }
 
-MethodDesc* PortableEntryPoint::GetMethodDesc(void* addr)
+MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
 {
     STANDARD_VM_CONTRACT;
 
@@ -29,7 +29,7 @@ MethodDesc* PortableEntryPoint::GetMethodDesc(void* addr)
     return portableEntryPoint->_pMD;
 }
 
-void* PortableEntryPoint::GetInterpreterData(void* addr)
+void* PortableEntryPoint::GetInterpreterData(TADDR addr)
 {
     STANDARD_VM_CONTRACT;
 
@@ -38,7 +38,7 @@ void* PortableEntryPoint::GetInterpreterData(void* addr)
     return portableEntryPoint->_pInterpreterData;
 }
 
-void PortableEntryPoint::SetInterpreterData(void* addr, PCODE interpreterData)
+void PortableEntryPoint::SetInterpreterData(TADDR addr, PCODE interpreterData)
 {
     STANDARD_VM_CONTRACT;
 
@@ -47,7 +47,7 @@ void PortableEntryPoint::SetInterpreterData(void* addr, PCODE interpreterData)
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
 }
 
-PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(void* addr)
+PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(TADDR addr)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(addr != NULL);

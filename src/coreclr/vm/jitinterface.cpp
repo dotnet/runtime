@@ -13354,7 +13354,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetTemporaryEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);
-            PortableEntryPoint::SetInterpreterData((void*)PCODEToPINSTR(portableEntryPoint), ret);
+            PortableEntryPoint::SetInterpreterData(PCODEToPINSTR(portableEntryPoint), ret);
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS

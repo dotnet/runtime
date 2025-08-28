@@ -12,13 +12,13 @@
 class PortableEntryPoint final
 {
 public: // static
-    static bool IsNativeEntryPoint(void* addr);
-    static MethodDesc* GetMethodDesc(void* addr);
-    static void* GetInterpreterData(void* addr);
-    static void SetInterpreterData(void* addr, PCODE interpreterData);
+    static bool IsNativeEntryPoint(TADDR addr);
+    static MethodDesc* GetMethodDesc(TADDR addr);
+    static void* GetInterpreterData(TADDR addr);
+    static void SetInterpreterData(TADDR addr, PCODE interpreterData);
 
 private: // static
-    static PortableEntryPoint* ToPortableEntryPoint(void* addr);
+    static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
 
 private:
     INDEBUG(size_t _canary);
@@ -43,6 +43,7 @@ enum PrecodeType
     PRECODE_FIXUP,
     PRECODE_PINVOKE_IMPORT,
     PRECODE_THISPTR_RETBUF,
+    PRECODE_INTERPRETER,
 };
 
 class StubPrecode
@@ -55,12 +56,16 @@ public: // static
 public:
     void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0) { }
 
+    BYTE GetType() { return 0; }
+
     void SetTargetUnconditional(TADDR target) { }
 
     TADDR GetSecretParam() const { return (TADDR)NULL; }
 
     MethodDesc* GetMethodDesc() { return NULL; }
 };
+
+typedef DPTR(StubPrecode) PTR_StubPrecode;
 
 class FixupPrecode final
 {
@@ -103,6 +108,12 @@ public:
     UMEntryThunk* AsUMEntryThunk() { return NULL; }
 
     PInvokeImportPrecode* AsPInvokeImportPrecode() { return NULL; }
+
+    StubPrecode* AsStubPrecode() { return NULL; }
+
+#ifdef HAS_FIXUP_PRECODE
+    FixupPrecode* AsFixupPrecode() { return NULL; }
+#endif // HAS_FIXUP_PRECODE
 
     MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE) { return NULL; }
 
