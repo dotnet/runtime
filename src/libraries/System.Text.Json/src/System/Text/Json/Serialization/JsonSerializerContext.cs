@@ -107,6 +107,14 @@ namespace System.Text.Json.Serialization
         /// <returns>The metadata for the specified type, or <see langword="null" /> if the context has no metadata for the type.</returns>
         public abstract JsonTypeInfo? GetTypeInfo(Type type);
 
+
+        /// <summary>
+        /// Returns a <see cref="JsonTypeInfo{T}"/> instance representing the given type.
+        /// </summary>
+        /// <typeparam name="T">The type to fetch metadata about.</typeparam>
+        /// <returns>The metadata for the specified type, or <see langword="null" /> if the context has no metadata for the type.</returns>
+        public JsonTypeInfo<T>? GetTypeInfo<T>() => (JsonTypeInfo<T>?)GetTypeInfo(typeof(T));
+
         JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
         {
             if (options != null && options != _options)

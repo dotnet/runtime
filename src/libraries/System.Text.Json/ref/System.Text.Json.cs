@@ -1154,6 +1154,7 @@ namespace System.Text.Json.Serialization
         protected abstract System.Text.Json.JsonSerializerOptions? GeneratedSerializerOptions { get; }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
         public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
         System.Text.Json.Serialization.Metadata.JsonTypeInfo System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver.GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
     [System.FlagsAttribute]
@@ -1272,6 +1273,9 @@ namespace System.Text.Json.Serialization.Metadata
     public partial interface IJsonTypeInfoResolver
     {
         System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options);
+#if NET
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
+#endif
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonCollectionInfoValues<TCollection>

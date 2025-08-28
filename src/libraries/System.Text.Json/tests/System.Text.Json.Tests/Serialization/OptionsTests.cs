@@ -675,6 +675,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Options_GetTypeInfoGeneric()
+        {
+            var options = JsonContext.Default.Options;
+            var t1Info = (JsonTypeInfo<WeatherForecastWithPOCOs>)options.GetTypeInfo(typeof(WeatherForecastWithPOCOs));
+            var t2Info = options.GetTypeInfo<WeatherForecastWithPOCOs>();
+            Assert.Same(t1Info, t2Info);
+
+            Assert.True(options.TryGetTypeInfo(typeof(WeatherForecastWithPOCOs), out JsonTypeInfo? t3Info));
+            Assert.True(options.TryGetTypeInfo<WeatherForecastWithPOCOs>(out var t4Info));
+            Assert.Same(t1Info, t3Info);
+            Assert.Same(t3Info, t4Info);
+        }
+
+        [Fact]
         public static void JsonSerializer_IsReflectionEnabledByDefault_DefaultsToTrue()
         {
             Assert.True(JsonSerializer.IsReflectionEnabledByDefault);
