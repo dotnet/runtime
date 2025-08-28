@@ -266,7 +266,9 @@ namespace System.IO.Compression
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
-                _positionInSuperStream = _startInSuperStream + value;
+                long newPositionInSuperStream = _startInSuperStream + value;
+                _superStream.Seek(newPositionInSuperStream, SeekOrigin.Begin);
+                _positionInSuperStream = newPositionInSuperStream;
             }
         }
 
@@ -392,6 +394,7 @@ namespace System.IO.Compression
                 throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
+            _superStream.Seek(newPositionInSuperStream, SeekOrigin.Begin);
             _positionInSuperStream = newPositionInSuperStream;
 
             return _positionInSuperStream - _startInSuperStream;
