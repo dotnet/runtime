@@ -128,8 +128,7 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     if (!EnumerateProgramHeaders(
         baseAddress,
 #if defined(TARGET_LINUX_MUSL) || defined(TARGET_RISCV64) || defined(HOST_ANDROID)
-        // On musl based platforms (Alpine) and RISCV64 (VisionFive2 board),
-        // the below dynamic entries for hash,
+        // On some platforms, the below dynamic entries for hash,
         // string table, etc. are RVAs instead of absolute address like on all
         // other Linux distros. Get the "loadbias" (basically the base address
         // of the module) and add to these RVAs.
