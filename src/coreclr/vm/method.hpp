@@ -3227,7 +3227,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
         return m_pImportThunkGlue;
+#else
+        return &m_ImportThunkGlue;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
     }
 
     LPVOID GetPInvokeTarget()
@@ -3247,7 +3251,7 @@ public:
 
         _ASSERTE(IsPInvoke());
 
-        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntrypoint());
+        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntryPoint());
     }
 #endif // !DACCESS_COMPILE
 

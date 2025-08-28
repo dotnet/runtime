@@ -1219,9 +1219,11 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                                &s_stubPrecodeHeapConfig);
 #endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
 
+#ifdef HAS_FIXUP_PRECODE
     m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
                                                                        &s_fixupStubPrecodeHeapConfig);
+#endif // HAS_FIXUP_PRECODE
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;

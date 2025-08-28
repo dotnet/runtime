@@ -66,6 +66,137 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pActualCode = NULL;
 }
 
+InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+
+void StubPrecode::Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator, TADDR type, TADDR target)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"StubPrecode::Init is not supported with Portable EntryPoints");
+}
+
+BYTE StubPrecode::GetType()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"StubPrecode::GetType is not supported with Portable EntryPoints");
+    return 0;
+}
+
+void StubPrecode::SetTargetUnconditional(TADDR target)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"StubPrecode::SetTargetUnconditional is not supported with Portable EntryPoints");
+}
+
+TADDR StubPrecode::GetSecretParam() const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"StubPrecode::GetSecretParam is not supported with Portable EntryPoints");
+    return (TADDR)NULL;
+}
+
+MethodDesc* StubPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"StubPrecode::GetMethodDesc is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+PCODE* FixupPrecode::GetTargetSlot()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"FixupPrecode::GetTargetSlot is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+MethodDesc* FixupPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"FixupPrecode::GetMethodDesc is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+PrecodeType Precode::GetType()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::GetType is not supported with Portable EntryPoints");
+    return (PrecodeType)0;
+}
+
+UMEntryThunk* Precode::AsUMEntryThunk()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::AsUMEntryThunk is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+StubPrecode* Precode::AsStubPrecode()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::AsStubPrecode is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::GetMethodDesc is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+PCODE Precode::GetEntryPoint()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::GetEntryPoint is not supported with Portable EntryPoints");
+    return (PCODE)NULL;
+}
+
+BOOL Precode::IsPointingToNativeCode(PCODE pNativeCode)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::IsPointingToNativeCode is not supported with Portable EntryPoints");
+    return FALSE;
+}
+
+void Precode::Reset()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::Reset is not supported with Portable EntryPoints");
+}
+
+PCODE Precode::GetTarget()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::GetTarget is not supported with Portable EntryPoints");
+    return (PCODE)NULL;
+}
+
+void Precode::ResetTargetInterlocked()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::ResetTargetInterlocked is not supported with Portable EntryPoints");
+}
+
+BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::SetTargetInterlocked is not supported with Portable EntryPoints");
+    return FALSE;
+}
+
+BOOL Precode::IsPointingToPrestub()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::IsPointingToPrestub is not supported with Portable EntryPoints");
+    return FALSE;
+}
+
+BOOL Precode::IsPointingToPrestub(PCODE target)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::IsPointingToPrestub is not supported with Portable EntryPoints");
+    return FALSE;
+}
+
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
 {
 
@@ -75,10 +206,5 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     return FALSE;
 }
-
-InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
-#ifdef HAS_FIXUP_PRECODE
-InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
-#endif
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

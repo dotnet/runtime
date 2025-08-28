@@ -31,9 +31,6 @@ public:
 };
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
-#ifdef HAS_FIXUP_PRECODE
-extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
-#endif
 
 enum PrecodeType
 {
@@ -42,7 +39,6 @@ enum PrecodeType
     PRECODE_UMENTRY_THUNK,
     PRECODE_FIXUP,
     PRECODE_PINVOKE_IMPORT,
-    PRECODE_THISPTR_RETBUF,
     PRECODE_INTERPRETER,
 };
 
@@ -51,18 +47,16 @@ class StubPrecode
 public: // static
     static const BYTE Type = PRECODE_STUB;
 
-    static void StaticInitialize() { }
-
 public:
-    void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0) { }
+    void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0);
 
-    BYTE GetType() { return 0; }
+    BYTE GetType();
 
-    void SetTargetUnconditional(TADDR target) { }
+    void SetTargetUnconditional(TADDR target);
 
-    TADDR GetSecretParam() const { return (TADDR)NULL; }
+    TADDR GetSecretParam() const;
 
-    MethodDesc* GetMethodDesc() { return NULL; }
+    MethodDesc* GetMethodDesc();
 };
 
 typedef DPTR(StubPrecode) PTR_StubPrecode;
@@ -72,18 +66,10 @@ class FixupPrecode final
 public: // static
     static const int FixupCodeOffset = 0;
 
-    static void StaticInitialize() { }
-
 public:
-    PCODE* GetTargetSlot() { return NULL; }
+    PCODE* GetTargetSlot();
 
-    MethodDesc* GetMethodDesc() { return NULL; }
-};
-
-class PInvokeImportPrecode final : StubPrecode
-{
-public:
-    LPVOID GetEntrypoint() { return NULL; }
+    MethodDesc* GetMethodDesc();
 };
 
 class UMEntryThunk;
@@ -103,43 +89,34 @@ public: // static
     }
 
 public:
-    PrecodeType GetType() { return (PrecodeType)0; }
+    PrecodeType GetType();
 
-    UMEntryThunk* AsUMEntryThunk() { return NULL; }
+    UMEntryThunk* AsUMEntryThunk();
 
-    PInvokeImportPrecode* AsPInvokeImportPrecode() { return NULL; }
+    StubPrecode* AsStubPrecode();
 
-    StubPrecode* AsStubPrecode() { return NULL; }
+    MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE);
 
-#ifdef HAS_FIXUP_PRECODE
-    FixupPrecode* AsFixupPrecode() { return NULL; }
-#endif // HAS_FIXUP_PRECODE
+    PCODE GetEntryPoint();
 
-    MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE) { return NULL; }
+    BOOL IsPointingToNativeCode(PCODE pNativeCode);
 
-    PCODE GetEntryPoint() { return (PCODE)NULL; }
+    void Reset();
 
-    BOOL IsPointingToNativeCode(PCODE pNativeCode) { return FALSE; }
+    PCODE GetTarget();
 
-    void Reset() { }
+    void ResetTargetInterlocked();
 
-    PCODE GetTarget() { return (PCODE)NULL; }
+    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
 
-    void ResetTargetInterlocked() { }
+    BOOL IsPointingToPrestub();
 
-    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE) { return FALSE; }
-
-    BOOL IsPointingToPrestub() { return FALSE; }
-
-    BOOL IsPointingToPrestub(PCODE target) { return FALSE; }
+    BOOL IsPointingToPrestub(PCODE target);
 };
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
 BOOL DoesSlotCallPrestub(PCODE pCode);
 
-struct PrecodeMachineDescriptor
-{
-    static void Init(PrecodeMachineDescriptor* dest) { }
-};
+class PrecodeMachineDescriptor { };
 
 #endif // __PRECODE_PORTABLE_H__

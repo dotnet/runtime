@@ -804,9 +804,11 @@ void EEStartupHelper()
         CoreLibBinder::Startup();
 
         StubLinkerCPU::Init();
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
         CDacPlatformMetadata::InitPrecodes();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
         InitializeGarbageCollector();
 
