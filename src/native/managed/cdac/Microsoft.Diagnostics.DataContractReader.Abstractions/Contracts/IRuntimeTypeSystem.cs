@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -90,6 +91,8 @@ public interface IRuntimeTypeSystem : IContract
 
     TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot) => throw new NotImplementedException();
 
+    TypeHandle GetMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -134,6 +137,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
+    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
@@ -184,6 +188,15 @@ public interface IRuntimeTypeSystem : IContract
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
+    #region FieldDesc inspection APIs
+    TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescMemberDef(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
+    TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    #endregion FieldDesc inspection APIs
 }
 
 public struct RuntimeTypeSystem : IRuntimeTypeSystem

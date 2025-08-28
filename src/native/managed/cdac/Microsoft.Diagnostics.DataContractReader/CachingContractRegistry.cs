@@ -42,6 +42,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
             [typeof(IDebugInfo)] = new DebugInfoFactory(),
             [typeof(IGC)] = new GCFactory(),
+            [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -62,6 +63,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
     public override IDebugInfo DebugInfo => GetContract<IDebugInfo>();
     public override IGC GC => GetContract<IGC>();
+    public override ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {

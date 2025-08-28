@@ -320,6 +320,13 @@ CDAC_TYPE_INDETERMINATE(TypeDesc)
 CDAC_TYPE_FIELD(TypeDesc, /*uint32*/, TypeAndFlags, cdac_data<TypeDesc>::TypeAndFlags)
 CDAC_TYPE_END(TypeDesc)
 
+CDAC_TYPE_BEGIN(FieldDesc)
+CDAC_TYPE_SIZE(sizeof(FieldDesc))
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord1, cdac_data<FieldDesc>::DWord1)
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord2, cdac_data<FieldDesc>::DWord2)
+CDAC_TYPE_FIELD(FieldDesc, /*pointer*/, MTOfEnclosingClass, cdac_data<FieldDesc>::MTOfEnclosingClass)
+CDAC_TYPE_END(FieldDesc)
+
 CDAC_TYPE_BEGIN(ParamTypeDesc)
 CDAC_TYPE_INDETERMINATE(ParamTypeDesc)
 CDAC_TYPE_FIELD(ParamTypeDesc, /*pointer*/, TypeArg, cdac_data<ParamTypeDesc>::TypeArg)
@@ -898,6 +905,11 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
+CDAC_TYPE_BEGIN(CoreLibBinder)
+CDAC_TYPE_INDETERMINATE(CoreLibBinder)
+CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
+CDAC_TYPE_END(CoreLibBinder)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -973,12 +985,14 @@ CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMAS
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL(FieldOffsetBigRVA, uint32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
+CDAC_GLOBAL_POINTER(PredefinedArrayTypes, &::g_pPredefinedArrayTypes)
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
@@ -986,6 +1000,7 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS

@@ -282,6 +282,17 @@ internal partial struct RuntimeTypeSystem_1
 }
 ```
 
+### FieldDesc
+```csharp
+TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
+uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
+bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+uint GetFieldDescType(TargetPointer fieldDescPointer);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer);
+```
+
 Internally the contract has a `MethodTable_1` struct that depends on the `MethodTable` data descriptor
 
 ```csharp
@@ -1384,4 +1395,93 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
         return GetMethodDescForEntrypoint(pCode);
     }
+
+    TypeHandle IRuntimeTypeSystem.GetMethodTable(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsTypeDesc())
+        {
+            Data.TypeDesc typeDesc = target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+            switch (elemType)
+            {
+                case CorElementType.Ptr:
+                case CorElementType.FnPtr:
+                    TargetPointer coreLib = target.ReadGlobalPointer(Constants.Globals.CoreLib);
+                    TargetPointer classes = target.ReadPointer(coreLib + /* CoreLibData::Classes offset */);
+                    TargetPointer typeHandlePtr = target.ReadPointer(classes + (ulong)CorElementType.U * (ulong)target.PointerSize);
+                    return GetTypeHandle(typeHandlePtr);
+                case CorElementType.ValueType:
+                    return GetTypeHandle(target.ReadPointer(typeHandle.TypeDescAddress() + /* ParamTypeDesc::TypeArg offset */));
+                default:
+                    return new TypeHandle(TargetPointer.Null);
+            }
+        }
+        return typeHandle;
+    }
+```
+
+### FieldDesc
+
+The version 1 FieldDesc APIs depend on the following data descriptors:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `FieldDesc` | `MTOfEnclosingClass` | Pointer to method table of enclosing class |
+| `FieldDesc` | `DWord1` | The FD's flags and token |
+| `FieldDesc` | `DWord2` | The FD's kind and offset |
+
+```csharp
+internal enum FieldDescFlags1 : uint
+{
+    TokenMask = 0xffffff,
+    IsStatic = 0x1000000,
+    IsThreadStatic = 0x2000000,
+}
+
+internal enum FieldDescFlags2 : uint
+{
+    TypeMask = 0xf8000000,
+    OffsetMask = 0x07ffffff,
+}
+
+TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer)
+{
+    return target.ReadPointer(fieldDescPointer + /* FieldDesc::MTOfEnclosingClass offset */);
+}
+
+uint GetFieldDescMemberDef(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return EcmaMetadataUtils.CreateFieldDef(DWord1 & (uint)FieldDescFlags1.TokenMask);
+}
+
+bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
+}
+
+bool IsFieldDescStatic(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
+}
+
+uint GetFieldDescType(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
+}
+
+uint GetFieldDescOffset(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
+    {
+        return (uint)fieldDef.GetRelativeVirtualAddress();
+    }
+    return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
+
+TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer)
+    => fieldDescPointer + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 ```
