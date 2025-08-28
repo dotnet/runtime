@@ -71,7 +71,6 @@ extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP

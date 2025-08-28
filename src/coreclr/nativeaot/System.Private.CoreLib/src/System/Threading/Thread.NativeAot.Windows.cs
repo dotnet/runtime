@@ -26,59 +26,6 @@ namespace System.Threading
 
         partial void PlatformSpecificInitialize();
 
-        internal static void SleepInternal(int millisecondsTimeout)
-        {
-            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
-
-            CheckForPendingInterrupt();
-
-            Thread currentThread = CurrentThread;
-            if (millisecondsTimeout == Timeout.Infinite)
-            {
-                // Infinite wait - use alertable wait
-                currentThread.SetWaitSleepJoinState();
-                uint result;
-                while (true)
-                {
-                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
-                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                    {
-                        break;
-                    }
-                    CheckForPendingInterrupt();
-                }
-
-                currentThread.ClearWaitSleepJoinState();
-            }
-            else
-            {
-                // Timed wait - use alertable wait
-                currentThread.SetWaitSleepJoinState();
-                long startTime = Environment.TickCount64;
-                while (true)
-                {
-                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
-                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                    {
-                        break;
-                    }
-                    // Check if this was our interrupt APC
-                    CheckForPendingInterrupt();
-                    // Handle APC completion by adjusting timeout and retrying
-                    long currentTime = Environment.TickCount64;
-                    long elapsed = currentTime - startTime;
-                    if (elapsed >= millisecondsTimeout)
-                    {
-                        break;
-                    }
-                    millisecondsTimeout -= (int)elapsed;
-                    startTime = currentTime;
-                }
-
-                currentThread.ClearWaitSleepJoinState();
-            }
-        }
-
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {

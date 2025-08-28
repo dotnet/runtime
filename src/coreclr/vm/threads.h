@@ -1803,8 +1803,6 @@ public:
     static bool    SysSweepThreadsForDebug(bool forceSync);
     static void    SysResumeFromDebug(AppDomain *pAppDomain);
 
-    void           UserSleep(INT32 time);
-
 private:
 
     // Specifies type of thread abort.

@@ -18,13 +18,58 @@ namespace System.Threading
     {
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
-#if MONO
-        private static void SleepInternal(int millisecondsTimeout)
+        internal static void SleepInternal(int millisecondsTimeout)
         {
-            Debug.Assert(millisecondsTimeout >= -1);
-            Interop.Kernel32.Sleep((uint)millisecondsTimeout);
+            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
+
+            CheckForPendingInterrupt();
+
+            Thread currentThread = CurrentThread;
+            if (millisecondsTimeout == Timeout.Infinite)
+            {
+                // Infinite wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                uint result;
+                while (true)
+                {
+                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    CheckForPendingInterrupt();
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
+            else
+            {
+                // Timed wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                long startTime = Environment.TickCount64;
+                while (true)
+                {
+                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    // Check if this was our interrupt APC
+                    CheckForPendingInterrupt();
+                    // Handle APC completion by adjusting timeout and retrying
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
         }
-#endif
 
         internal static int GetCurrentProcessorNumber()
         {

@@ -857,17 +857,6 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GetThread()->UserSleep(iTime);
-
-    END_QCALL;
-}
-
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread)
 {

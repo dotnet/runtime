@@ -112,14 +112,6 @@ namespace System.Threading
             startHelper.Run();
         }
 
-        /// <summary>
-        /// Suspends the current thread for timeout milliseconds. If timeout == 0,
-        /// forces the thread to give up the remainder of its timeslice.  If timeout
-        /// == Timeout.Infinite, no timeout will occur.
-        /// </summary>
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Sleep")]
-        private static partial void SleepInternal(int millisecondsTimeout);
-
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
 

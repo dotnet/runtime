@@ -301,7 +301,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
     DllImportEntry(ThreadNative_Interrupt)
-    DllImportEntry(ThreadNative_Sleep)
     DllImportEntry(ThreadNative_PollGC)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
