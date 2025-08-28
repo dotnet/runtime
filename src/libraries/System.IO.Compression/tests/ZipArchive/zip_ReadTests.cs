@@ -583,8 +583,63 @@ namespace System.IO.Compression.Tests
             MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
 
-            FieldInfo compressionMethodField = typeof(ZipArchiveEntry).GetField("_storedCompressionMethod", BindingFlags.NonPublic | BindingFlags.Instance);
+            // Helper method to get the compression method from the central directory
+            static ushort GetCompressionMethod(ZipArchiveEntry entry)
+            {
+                // The CompressionMethod property is not public, so we parse the central directory header.
+                // The ZipArchiveEntry has a private field _archive and _offsetOfLocalHeader, but we can't access them.
+                // Instead, we can open the archive file and parse the central directory for the entry.
+                // Since we have the entry's FullName, we can find the entry in the archive's central directory.
+                // This helper assumes the archive is backed by a seekable stream.
 
+                ZipArchive archive = entry.Archive;
+                Stream baseStream = archive.Mode == ZipArchiveMode.Read
+                    ? ((MemoryStream)archive.GetType().GetProperty("Stream", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(archive))
+                    : null;
+                if (baseStream == null)
+                    throw new InvalidOperationException("Cannot access base stream of archive.");
+
+                long originalPosition = baseStream.Position;
+                try
+                {
+                    // Find the central directory by scanning from the end of the stream
+                    baseStream.Seek(-22, SeekOrigin.End);
+                    byte[] eocd = new byte[22];
+                    baseStream.Read(eocd, 0, 22);
+                    // Central directory offset is at offset 16 in EOCD
+                    int centralDirOffset = BitConverter.ToInt32(eocd, 16);
+                    baseStream.Seek(centralDirOffset, SeekOrigin.Begin);
+
+                    // Scan central directory entries
+                    while (true)
+                    {
+                        byte[] header = new byte[46];
+                        int read = baseStream.Read(header, 0, 46);
+                        if (read < 46)
+                            break;
+                        // Central directory file header signature
+                        if (header[0] != 0x50 || header[1] != 0x4b || header[2] != 0x01 || header[3] != 0x02)
+                            break;
+                        ushort fileNameLength = BitConverter.ToUInt16(header, 28);
+                        ushort extraFieldLength = BitConverter.ToUInt16(header, 30);
+                        ushort fileCommentLength = BitConverter.ToUInt16(header, 32);
+                        ushort compressionMethod = BitConverter.ToUInt16(header, 10);
+                        byte[] fileNameBytes = new byte[fileNameLength];
+                        baseStream.Read(fileNameBytes, 0, fileNameLength);
+                        string fileName = System.Text.Encoding.UTF8.GetString(fileNameBytes);
+                        // Compare with entry name
+                        if (fileName == entry.FullName)
+                            return compressionMethod;
+                        // Skip extra field and file comment
+                        baseStream.Seek(extraFieldLength + fileCommentLength, SeekOrigin.Current);
+                    }
+                    throw new InvalidOperationException("Entry not found in central directory.");
+                }
+                finally
+                {
+                    baseStream.Position = originalPosition;
+                }
+            }
             foreach (ZipArchiveEntry e in archive.Entries)
             {
                 Stream s = await OpenEntryStream(async, e);
@@ -596,7 +651,7 @@ namespace System.IO.Compression.Tests
                 // SubReadStream should be seekable when the underlying stream is seekable and the entry is stored (uncompressed)
                 // If the entry is compressed (Deflate, Deflate64, etc.), it will be wrapped in a compression stream which is not seekable
                 ushort compressionMethod = (ushort)compressionMethodField.GetValue(e);
-                const ushort StoredCompressionMethod = 0x0; // CompressionMethodValues.Stored
+                const ushort StoredCompressionMethod = CompressionMethodValues.Stored;
                 
                 if (compressionMethod == StoredCompressionMethod)
                 {
