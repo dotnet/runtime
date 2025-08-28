@@ -14,7 +14,7 @@ namespace NativeExports
     class CallingConventions
     {
         // Use 9 long arguments to ensure we spill to the stack on all platforms.
-        [UnmanagedCallersOnly(EntryPoint = "RhGcStress_Initialize", CallConvs = [typeof(CallConvCdecl)])]
+        [UnmanagedCallersOnly(EntryPoint = "add_integers_cdecl", CallConvs = [typeof(CallConvCdecl)])]
         public static long AddLongsCdecl(long i, long j, long k, long l, long m, long n, long o, long p, long q)
         {
             return i + j + k + l + m + n + o + p + q;
