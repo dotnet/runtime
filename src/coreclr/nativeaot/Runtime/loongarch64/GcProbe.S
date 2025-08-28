@@ -122,7 +122,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
-    li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + (PTFF_THREAD_HIJACK_HI << 32))
+    li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK)
     b  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 

@@ -290,8 +290,8 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 16
                                                                     ;; [esp + 0Ch]: ebx save
         esp_offsetof_PrevEBP                    textequ %10h        ;; [esp + 10h]: prev ebp
         esp_offsetof_RetAddr                    textequ %14h        ;; [esp + 14h]: return address
-        esp_offsetof_RegDisplay                 textequ %20h        ;; [esp + 20h]: REGDISPLAY*
-        esp_offsetof_ExInfo                     textequ %1ch        ;; [esp + 1ch]: ExInfo*
+        esp_offsetof_RegDisplay                 textequ %1ch        ;; [esp + 1Ch]: REGDISPLAY*
+        esp_offsetof_ExInfo                     textequ %18h        ;; [esp + 18h]: ExInfo*
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
