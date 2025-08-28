@@ -25,6 +25,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
         public static bool MLKemIsNotSupported => !MLKem.IsSupported;
 
+        private static readonly Oid s_keyProviderNameOid =
+            new Oid("1.3.6.1.4.1.311.17.1", "szOID_PKCS_12_KEY_PROVIDER_NAME_ATTR");
+
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
             get
@@ -1033,10 +1036,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                         writer.WriteCharacterString(UniversalTagNumber.BMPString, StrongProv);
 
-                        keyBag.Attributes.Add(
-                            new AsnEncodedData(
-                                new Oid("1.3.6.1.4.1.311.17.1", "1.3.6.1.4.1.311.17.1"),
-                                writer.Encode()));
+                        keyBag.Attributes.Add(new AsnEncodedData(s_keyProviderNameOid, writer.Encode()));
 
                         builder.AddSafeContentsUnencrypted(keyContents);
                         builder.SealWithMac("", HashAlgorithmName.SHA1, 10);
@@ -1164,10 +1164,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     foreach (Pkcs12SafeBag bag in safeContents.GetBags())
                     {
-                        bag.Attributes.Add(
-                            new AsnEncodedData(
-                                new Oid("1.3.6.1.4.1.311.17.1", "1.3.6.1.4.1.311.17.1"),
-                                writer.Encode()));
+                        bag.Attributes.Add(new AsnEncodedData(s_keyProviderNameOid, writer.Encode()));
 
                         newContents.AddSafeBag(bag);
                     }

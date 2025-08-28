@@ -22,6 +22,13 @@ namespace System.Security.Cryptography.X509Certificates
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
+        private const X509KeyStorageFlags EphemeralKeySet =
+#if NET
+            X509KeyStorageFlags.EphemeralKeySet;
+#else
+            (X509KeyStorageFlags)0x20;
+#endif
+
         private static readonly AttributeAsn s_syntheticKspAttribute = BuildSyntheticKspAttribute();
         private static readonly AttributeAsn s_syntheticCapiCspAttribute = BuildSyntheticCapiAttribute();
 
@@ -375,18 +382,10 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (ProviderNameIsRelevant)
                     {
-                        const X509KeyStorageFlags EphemeralKeySet =
-#if NET
-                            X509KeyStorageFlags.EphemeralKeySet;
-#else
-                            (X509KeyStorageFlags)0x20;
-#endif
+                        // Ephemeral loads have to go into CNG, but also won't get access denied,
 
-                        if ((bagState.StorageFlags & EphemeralKeySet) != 0)
-                        {
-                            // Ephemeral loads have to go into CNG, but also won't get access denied.
-                        }
-                        else if (!loaderLimits.PreserveStorageProvider)
+                        if ((bagState.StorageFlags & EphemeralKeySet) == 0 &&
+                            !loaderLimits.PreserveStorageProvider)
                         {
                             providerName = DetermineStorageProvider(
                                 bag.BagAttributes,
@@ -785,7 +784,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 // If there is no provider name at all, then PFXImportCertStore will use the CAPI
-                // MS_BASE_PROV provider, so it's a CAPI key.
+                // MS_DEF_PROV provider, so it's a CAPI key.
                 return true;
 
                 static bool HasCapiValue(ReadOnlySpan<byte> encodedAttribute, out bool isRsa)
@@ -903,7 +902,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal void SetStorageFlags(X509KeyStorageFlags storageFlags)
             {
-                _storageFlags = storageFlags & (X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.UserKeySet);
+                const X509KeyStorageFlags RelevantFlags =
+                    X509KeyStorageFlags.MachineKeySet |
+                    X509KeyStorageFlags.UserKeySet |
+                    EphemeralKeySet;
+
+                _storageFlags = storageFlags & RelevantFlags;
             }
 
             internal void Init(Pkcs12LoaderLimits loaderLimits)
