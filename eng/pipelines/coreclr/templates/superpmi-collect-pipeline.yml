@@ -265,7 +265,6 @@ extends:
           - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          isExtraPlatformsBuild: true
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
