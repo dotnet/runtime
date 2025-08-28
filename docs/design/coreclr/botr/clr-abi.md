@@ -537,6 +537,12 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
+# WASM support
+
+The WASM target has restrictions that present unique difficulties for a JITed environment. One of those restrictions is the inability to allocate executable code at run-time.
+
+The Portable Entry Point feature is required for WASM to avoid the need for run-time executable code generation. On less restricted platforms, `Precode`s are used to represent entry points to pre-JITed methods or for function pointers to managed functions. Instead of a small executable block of code, we use the `PortableEntryPoint` type that acts as a container for the target method (for example, `MethodDesc`) and a pointer to the code to interpret.
+
 # System V x86_64 support
 
 This section relates mostly to calling conventions on System V systems (such as Ubuntu Linux and Mac OS X).
