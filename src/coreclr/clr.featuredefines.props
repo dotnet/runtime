@@ -11,7 +11,7 @@
         <FeatureJavaMarshal>true</FeatureJavaMarshal>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' OR '$(TargetsWasi)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
     </PropertyGroup>
 
