@@ -4655,7 +4655,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
 	int target_vars_capacity = num_locals + 64;
 
-	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
+	imethod->local_offsets = (guint32*)imethod_alloc0 (td, num_il_locals * sizeof(guint32));
 	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
 	td->vars_capacity = target_vars_capacity;
@@ -4753,7 +4753,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 #endif
 
-	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->clause_data_offsets = (guint32*)imethod_alloc0 (td, header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
