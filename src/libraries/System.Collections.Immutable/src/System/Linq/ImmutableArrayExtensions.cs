@@ -190,7 +190,7 @@ namespace System.Linq
             if (items is ICollection<TBase> itemsCol)
             {
                 immutableArray.ThrowNullRefIfNotInitialized();
-                return immutableArray.array!.SequenceEqual(itemsCol, comparer);
+                return Enumerable.SequenceEqual(immutableArray.array!, itemsCol, comparer);
             }
 
             return Impl(immutableArray, items, comparer);
