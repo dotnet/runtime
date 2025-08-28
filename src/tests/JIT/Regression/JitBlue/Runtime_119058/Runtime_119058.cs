@@ -14,7 +14,7 @@ using Xunit;
 // 
 //     File: /Users/runner/work/1/s/src/coreclr/jit/fgopt.cpp Line: 4535
 // 
-public class Runtime_119508
+public class Runtime_119058
 {
     public static uint s_3;
     public static ulong s_7;
