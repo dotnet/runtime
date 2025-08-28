@@ -61,6 +61,21 @@ def native_dll(name: str) -> str:
     return f"{prefix}{name}{ext}"
 
 
+# Helper function to find available PowerShell executable
+def find_powershell():
+    """Find available PowerShell executable, preferring pwsh over powershell.exe"""
+    # Try pwsh first (PowerShell Core, more modern and cross-platform)
+    if shutil.which("pwsh"):
+        return "pwsh"
+    # Fall back to Windows PowerShell
+    if shutil.which("powershell.exe"):
+        return "powershell.exe"
+    # Last resort, try just "powershell"
+    if shutil.which("powershell"):
+        return "powershell"
+    raise FileNotFoundError("No PowerShell executable found. Please install PowerShell Core (pwsh) or Windows PowerShell.")
+
+
 # Run a command
 def run(cmd, cwd=None):
     print(f"Running command: {' '.join(map(str, cmd))}")
@@ -111,8 +126,22 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
             path = os.path.join(tmp, os.path.basename(url))
             urllib.request.urlretrieve(url, path)
             if url.endswith(".ps1"):
-                subprocess.check_call(["powershell.exe","-NoProfile", "-ExecutionPolicy","Bypass","-File",path,
-                                    "-Channel","8.0","-InstallDir", str(dotnethome_dir)])
+                # Find available PowerShell executable
+                powershell_exe = find_powershell()
+                print(f"Using PowerShell executable: {powershell_exe}")
+                
+                # Add better error handling and capture output
+                try:
+                    result = subprocess.run([
+                        powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path,
+                        "-Channel", "8.0", "-InstallDir", str(dotnethome_dir)
+                    ], capture_output=True, text=True, check=True)
+                    print(f"PowerShell output: {result.stdout}")
+                except subprocess.CalledProcessError as e:
+                    print(f"PowerShell script failed with exit code {e.returncode}")
+                    print(f"Error output: {e.stderr}")
+                    print(f"Standard output: {e.stdout}")
+                    raise
             else:
                 os.chmod(path,0o755)
                 subprocess.check_call([path,"-Channel","8.0","-InstallDir", str(dotnethome_dir)])
