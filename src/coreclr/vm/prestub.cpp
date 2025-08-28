@@ -2064,7 +2064,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
     frames.interpMethodContextFrame.pStack = sp;
     frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
-    frames.interpMethodContextFrame.hiddenArgument = GetMostRecentUMEntryThunkData();
+    frames.interpMethodContextFrame.hiddenArgument = pInterpreterCode->Method->hasHiddenArgument ? GetMostRecentUMEntryThunkData() : NULL;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
