@@ -71,6 +71,8 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);
 #endif
 
+    bool IsFinalTier() const;
+
     // NOTE: Don't change existing values to avoid breaking changes in event tracing
     enum OptimizationTier
     {
@@ -81,10 +83,9 @@ public:
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
     };
-    OptimizationTier GetOptimizationTier() const;
-    bool IsFinalTier() const;
-
 #ifdef FEATURE_TIERED_COMPILATION
+    OptimizationTier GetOptimizationTier() const;
+
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif
