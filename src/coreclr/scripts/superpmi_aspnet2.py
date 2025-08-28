@@ -99,7 +99,7 @@ def run(cmd, cwd=None):
 
 
 # Ensure .NET tools are installed and Localhost.yml is present
-def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
+def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     data_dir = workdir / "crank_data"
     logs_dir = data_dir / "logs"
     build_dir = data_dir / "build"
@@ -107,7 +107,9 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
     dotnethome_dir = data_dir / "dotnet_home"
     localhost_yml = data_dir / "Localhost.yml"
 
-    os.environ['DOTNET_ROOT'] = str(dotnethome_dir)
+    # If a CLI path is provided, use it as DOTNET_ROOT; otherwise default to our local dotnet_home
+    dotnet_root_dir = cli if cli else dotnethome_dir
+    os.environ['DOTNET_ROOT'] = str(dotnet_root_dir)
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
     os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     os.environ['UseSharedCompilation'] = 'false'
@@ -120,33 +122,39 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
         dotnethome_dir.mkdir(parents=True, exist_ok=True)
         tools_dir.mkdir(parents=True, exist_ok=True)
 
-        # Install .NET 8.0 needed for crank and crank-agent via dotnet-install public script.
-        url = "https://dot.net/v1/dotnet-install." + ("ps1" if platform.system()=="Windows" else "sh")
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, os.path.basename(url))
-            urllib.request.urlretrieve(url, path)
-            if url.endswith(".ps1"):
-                # Find available PowerShell executable
-                powershell_exe = find_powershell()
-                print(f"Using PowerShell executable: {powershell_exe}")
-                
-                # Add better error handling and capture output
-                try:
-                    result = subprocess.run([
-                        powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path,
-                        "-Channel", "8.0", "-InstallDir", str(dotnethome_dir)
-                    ], capture_output=True, text=True, check=True)
-                    print(f"PowerShell output: {result.stdout}")
-                except subprocess.CalledProcessError as e:
-                    print(f"PowerShell script failed with exit code {e.returncode}")
-                    print(f"Error output: {e.stderr}")
-                    print(f"Standard output: {e.stdout}")
-                    raise
-            else:
-                os.chmod(path,0o755)
-                subprocess.check_call([path,"-Channel","8.0","-InstallDir", str(dotnethome_dir)])
+        # If a CLI path was provided, skip installing .NET and use that SDK.
+        if cli is None:
+            # Install .NET 8.0 needed for crank and crank-agent via dotnet-install public script.
+            url = "https://dot.net/v1/dotnet-install." + ("ps1" if platform.system()=="Windows" else "sh")
+            with tempfile.TemporaryDirectory() as tmp:
+                path = os.path.join(tmp, os.path.basename(url))
+                urllib.request.urlretrieve(url, path)
+                if url.endswith(".ps1"):
+                    # Find available PowerShell executable
+                    powershell_exe = find_powershell()
+                    print(f"Using PowerShell executable: {powershell_exe}")
+                    
+                    # Add better error handling and capture output
+                    try:
+                        result = subprocess.run([
+                            powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path,
+                            "-Channel", "8.0", "-InstallDir", str(dotnethome_dir)
+                        ], capture_output=True, text=True, check=True)
+                        print(f"PowerShell output: {result.stdout}")
+                    except subprocess.CalledProcessError as e:
+                        print(f"PowerShell script failed with exit code {e.returncode}")
+                        print(f"Error output: {e.stderr}")
+                        print(f"Standard output: {e.stdout}")
+                        raise
+                else:
+                    os.chmod(path,0o755)
+                    subprocess.check_call([path,"-Channel","8.0","-InstallDir", str(dotnethome_dir)])
+        else:
+            print(f"Using existing .NET SDK at: {dotnet_root_dir}")
 
-        dotnet_exe = dotnethome_dir / "dotnet"
+        # Determine the dotnet executable to use for installing tools
+        dotnet_file = "dotnet.exe" if sys.platform == "win32" else "dotnet"
+        dotnet_exe = dotnet_root_dir / dotnet_file
         run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"], cwd=dotnethome_dir)
         run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"], cwd=dotnethome_dir)
 
@@ -186,8 +194,10 @@ def start_crank_agent(workdir: Path, port: int):
     print("crank-agent is not running yet. Starting...")
     logs_dir = workdir / "crank_data" / "logs"
     build_dir = workdir / "crank_data" / "build"
-    # Keep naming consistent with ensure_tools_and_localhost_yaml()
-    dotnethome_dir = workdir / "crank_data" / "dotnet_home"
+    # Prefer DOTNET_ROOT if set (configured by ensure_tools_and_localhost_yaml),
+    # otherwise fall back to the local dotnet_home
+    env_dotnet_root = os.environ.get('DOTNET_ROOT')
+    dotnethome_dir = Path(env_dotnet_root) if env_dotnet_root else (workdir / "crank_data" / "dotnet_home")
 
     agent_process = subprocess.Popen(
         [
@@ -257,15 +267,21 @@ def main():
     # New args
     parser.add_argument("--work_dir", help="Optional work directory; if not specified, a temp directory is used.")
     parser.add_argument("--no_cleanup", action="store_true", help="If specified, do not clean up temporary files after execution.")
+    parser.add_argument("--cli", help="Optional path to an existing .NET SDK root; if provided, DOTNET_ROOT will use this and .NET 8.0 will not be installed.")
     args = parser.parse_args()
+
     repo_dir = Path.cwd()
     runtime_bits_path = Path(args.core_root).expanduser().resolve()
     output_mch_path = Path(args.output_mch).expanduser().resolve()
+    if args.cli:
+        args.cli = str(Path(args.cli).expanduser().resolve())
 
     print("Running the script with the following parameters:")
     print(f"--core_root: {runtime_bits_path}")
     print(f"--tfm: {args.tfm}")
     print(f"--output_mch: {output_mch_path}")
+    if args.cli:
+        print(f"--cli: {args.cli}")
 
     mcs_cmd = runtime_bits_path / ("mcs.exe" if sys.platform == "win32" else "mcs")
     if not mcs_cmd.exists():
@@ -286,14 +302,15 @@ def main():
     # Set current working directory to temp_root
     os.chdir(temp_root)
 
-    ensure_tools_and_localhost_yaml(temp_root, CRANK_PORT)
+    ensure_tools_and_localhost_yaml(temp_root, CRANK_PORT, cli=args.cli)
     try:
         agent_process = None
         agent_process = start_crank_agent(temp_root, CRANK_PORT)
 
         # Benchmarks
 
-        config_path = temp_root / "crank_data" / "Localhost.yml"
+        crank_data_path = temp_root / "crank_data"
+        config_path = crank_data_path / "Localhost.yml"
         # print("### Running OrchardCMS benchmark... ###")
         # run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="about-sqlite", config_path=config_path))
 
@@ -308,10 +325,6 @@ def main():
 
         # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
         print("Extracting .mc files from zip archives...")
-        tmp_dir = temp_root / "crank_data" / "tmp"
-        if tmp_dir.exists():
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-        tmp_dir.mkdir(parents=True, exist_ok=True)
         produced_mch = False
         extracted_count = 0
         for z in pathlib.Path('.').glob('*.crank.zip'):
@@ -319,7 +332,7 @@ def main():
                 for name in f.namelist():
                     # include .mc files from any path inside the zip
                     if name.endswith('.mc'):
-                        f.extract(name, str(tmp_dir))
+                        f.extract(name, str(crank_data_path))
                         extracted_count += 1
             z.unlink(missing_ok=True)
 
@@ -336,12 +349,12 @@ def main():
                 "-dedup",
                 "-thin",
                 "crank.mch",
-                "."
-            ], check=True, cwd=str(tmp_dir))
+                "*.mc"
+            ], check=True, cwd=str(crank_data_path))
 
             # Move the produced crank.mch back to the workspace root
             print(f"Moving produced crank.mch to {repo_dir / 'crank.mch'}")
-            shutil.copyfile(tmp_dir / "crank.mch", repo_dir / "crank.mch")
+            shutil.copyfile(crank_data_path / "crank.mch", repo_dir / "crank.mch")
             produced_mch = True
             
             # Copy the resulting MCH to the specified output file
@@ -359,26 +372,17 @@ def main():
                     out_path.parent.mkdir(parents=True, exist_ok=True)
                 print(f"Copying {mch_src} -> {out_path}")
                 shutil.copyfile(mch_src, out_path)
-
-        # Clean up the temp crank directory at the very end
-        if not args.no_cleanup:
-            # Only delete the working directory if we created a temp one
-            if 'created_temp' in locals() and created_temp:
-                try:
-                    shutil.rmtree(temp_root, ignore_errors=True)
-                except Exception:
-                    pass
         
     finally:
         print("Cleaning up...")
         if 'agent_process' in locals() and agent_process is not None:
             agent_process.terminate()
-        time.sleep(3)
+        time.sleep(5)
         
         # Clean up only if not suppressed
         if not args.no_cleanup:
-            if produced_mch:
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+            # remove the entire temp_root:
+            shutil.rmtree(temp_root, ignore_errors=True)
 
     print("Done!")
 
