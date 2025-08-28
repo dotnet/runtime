@@ -1574,6 +1574,13 @@ public:
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Ensure that the portable entrypoint is allocated, and the slot is filled
+    void EnsurePortableEntryPoint();
+
+    PCODE GetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();

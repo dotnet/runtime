@@ -6546,10 +6546,12 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DELEGATE_INVOKE;
     }
 
+#ifdef FEATURE_TIERED_COMPILATION
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
+#endif // FEATURE_TIERED_COMPILATION
 
     return result;
 }
@@ -13352,7 +13354,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            PCODE portableEntryPoint = ftn->GetTemporaryEntryPoint();
+            PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);
             PortableEntryPoint::SetInterpreterData(PCODEToPINSTR(portableEntryPoint), ret);
             ret = portableEntryPoint;

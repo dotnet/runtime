@@ -81,9 +81,10 @@ public:
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
     };
-#ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
     bool IsFinalTier() const;
+
+#ifdef FEATURE_TIERED_COMPILATION
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif

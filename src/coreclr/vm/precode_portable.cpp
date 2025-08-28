@@ -20,6 +20,15 @@ bool PortableEntryPoint::IsNativeEntryPoint(TADDR addr)
     return false;
 }
 
+void* PortableEntryPoint::GetActualCode(TADDR addr)
+{
+    STANDARD_VM_CONTRACT;
+
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    _ASSERTE(portableEntryPoint->_pActualCode != NULL);
+    return portableEntryPoint->_pActualCode;
+}
+
 MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
 {
     STANDARD_VM_CONTRACT;
@@ -60,10 +69,10 @@ PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(TADDR addr)
 void PortableEntryPoint::Init(MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
-    INDEBUG(_canary = CANARY_VALUE);
+    _pActualCode = NULL;
     _pMD = pMD;
     _pInterpreterData = NULL;
-    _pActualCode = NULL;
+    INDEBUG(_canary = CANARY_VALUE);
 }
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
@@ -112,6 +121,21 @@ MethodDesc* FixupPrecode::GetMethodDesc()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(!"FixupPrecode::GetMethodDesc is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
+    LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::Allocate is not supported with Portable EntryPoints");
+    return NULL;
+}
+
+Precode* Precode::GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"Precode::GetPrecodeFromEntryPoint is not supported with Portable EntryPoints");
     return NULL;
 }
 
@@ -199,11 +223,14 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
 {
-
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"FlushCacheForDynamicMappedStub is not supported with Portable EntryPoints");
 }
 
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!"DoesSlotCallPrestub is not supported with Portable EntryPoints");
     return FALSE;
 }
 

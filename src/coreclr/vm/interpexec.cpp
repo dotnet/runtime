@@ -259,6 +259,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
         *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
         return NULL; // Return null to interpret this entrypoint
     }
+    addr = PortableEntryPoint::GetActualCode((TADDR)addr);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     return (THelper)addr;

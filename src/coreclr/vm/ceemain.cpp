@@ -670,8 +670,10 @@ void EEStartupHelper()
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
         CodeVersionManager::StaticInitialize();
+#ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
+#endif // FEATURE_TIERED_COMPILATION
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
 

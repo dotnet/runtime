@@ -13,6 +13,7 @@ class PortableEntryPoint final
 {
 public: // static
     static bool IsNativeEntryPoint(TADDR addr);
+    static void* GetActualCode(TADDR addr);
     static MethodDesc* GetMethodDesc(TADDR addr);
     static void* GetInterpreterData(TADDR addr);
     static void SetInterpreterData(TADDR addr, PCODE interpreterData);
@@ -21,10 +22,12 @@ private: // static
     static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
 
 private:
-    INDEBUG(size_t _canary);
     void* _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
+
+    // We keep the canary value last to ensure a stable ABI across build flavors
+    INDEBUG(size_t _canary);
 
 public:
     void Init(MethodDesc* pMD);
@@ -78,15 +81,9 @@ class Precode
 {
 public: // static
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
-        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
-    {
-        return NULL;
-    }
+        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static Precode* GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE)
-    {
-        return NULL;
-    }
+    static Precode* GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE);
 
 public:
     PrecodeType GetType();

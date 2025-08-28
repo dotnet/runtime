@@ -2108,7 +2108,13 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
 
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        EnsurePortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         GetOrCreatePrecode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
 
     // We create stable entrypoints for these upfront
     if (IsWrapperStub() || IsEnCAddedMethod())
@@ -2146,9 +2152,11 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         return (PCODE)NULL;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // Force the creation of the precode if we would eventually got one anyway
     if (MayHavePrecode())
         return GetOrCreatePrecode()->GetEntryPoint();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     _ASSERTE(!RequiresStableEntryPoint());
 
@@ -2775,6 +2783,28 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
         InterlockedUpdateFlags4(enum_flag4_TemporaryEntryPointAssigned, TRUE);
     }
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+void MethodDesc::EnsurePortableEntryPoint()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    EnsureTemporaryEntryPoint();
+
+    SetStableEntryPointInterlocked(GetPortableEntryPoint());
+}
+
+PCODE MethodDesc::GetPortableEntryPoint()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    return GetTemporaryEntryPoint();
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 //*******************************************************************************
 void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
