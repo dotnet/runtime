@@ -25,11 +25,11 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             get
             {
-                return !(PlatformDetection.IsWindows7 || PlatformDetection.IsApplePlatform);
+                return IsSupported && !PlatformDetection.IsWindows7;
             }
         }
 
-        public bool IsSupported => !PlatformDetection.IsApplePlatform;
+        public bool IsSupported => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
     }
 
     public partial class DSAFactory
