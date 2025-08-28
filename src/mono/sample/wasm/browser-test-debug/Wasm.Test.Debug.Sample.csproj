@@ -22,10 +22,18 @@
 
      
     <!--<RunAOTCompilation>true</RunAOTCompilation>-->
-    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>    
     <WasmNativeStrip>false</WasmNativeStrip>
-    
+    <TargetFramework>net10.0</TargetFramework>    
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>    
   </PropertyGroup>
+  
+  <!-- PDB file output -->
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
     <WasmExtraFilesToDeploy Include="advanced-sample.lib.module.js" />
@@ -40,7 +48,7 @@
     <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.mjs" />
     
   </ItemGroup>
-    
+ 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
 </Project>

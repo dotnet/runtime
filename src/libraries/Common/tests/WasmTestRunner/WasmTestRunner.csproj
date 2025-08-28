@@ -3,7 +3,21 @@
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
+        
+    <RestoreAdditionalProjectSources>
+      $(RestoreAdditionalProjectSources);
+      C:\xr_dev\xharness\artifacts\packages\Debug\Shipping;
+      C:\Users\mike.hudson\.nuget\packages;
+    </RestoreAdditionalProjectSources>
+    
   </PropertyGroup>
+      
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <WasmXHarnessMonoArgs>--setenv=MONO_GC_DEBUG=9</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+ 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
@@ -12,6 +26,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WasmTestRunner.cs" />
-    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-dev" />
   </ItemGroup>
 </Project>
