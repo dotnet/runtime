@@ -81,6 +81,8 @@ Data descriptors used:
 | `Generation` | StartSegment | GC | Pointer to the start heap segment |
 | `Generation` | AllocationStart | GC | Pointer to the allocation start |
 | `CFinalize` | FillPointers | GC | Pointer to the start of an array containing `"CFinalizeFillPointersLength"` elements |
+| `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
+| `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
