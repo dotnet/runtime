@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "DSA is not available")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.OSX, "DSA is not available")]
         public void SignedXmlHasDSACertificateVerifiableSignature()
         {
             using (X509Certificate2 x509cert = TestHelpers.GetSampleDSAX509Certificate())
