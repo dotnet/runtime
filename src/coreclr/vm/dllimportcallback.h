@@ -153,7 +153,7 @@ class UMEntryThunkData
     // InterpreterPrecode to tailcall if the target is interpreted. This allows TheUMEntryPrestubWorker
     // stash the hidden argument in a thread static and avoid collision with the hidden argument
     // used by InterpreterPrecode.
-    Volatile<PCODE>         m_pIntepretedCallTarget;
+    Volatile<PCODE>         m_pInterpretedCallTarget;
 #endif
 
     // This is used for debugging and profiling.
@@ -207,7 +207,7 @@ public:
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
-        m_pIntepretedCallTarget = (PCODE)0;
+        m_pInterpretedCallTarget = (PCODE)0;
 
         m_pMD = pMD;
 
@@ -225,7 +225,7 @@ public:
     PCODE GetInterpreterTarget()
     {
         STANDARD_VM_CONTRACT;
-        return m_pIntepretedCallTarget;
+        return m_pInterpretedCallTarget;
     }
 
     void RunTimeInit()
@@ -252,7 +252,7 @@ public:
             StubPrecode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint)->AsStubPrecode();
             if (pPrecode->GetType() == PRECODE_INTERPRETER)
             {
-                m_pIntepretedCallTarget = entryPoint;
+                m_pInterpretedCallTarget = entryPoint;
                 entryPoint = NULL;
             }
         }
