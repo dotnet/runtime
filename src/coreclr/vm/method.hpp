@@ -1808,6 +1808,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         VolatileStore(&m_interpreterCode, interpreterCode);
     }
+
+    bool CanBeInterpreted()
+    {
+        WRAPPER_NO_CONTRACT;
+        return (IsIL() || IsNoMetadata()) && !IsUnboxingStub();
+    }
 #endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG

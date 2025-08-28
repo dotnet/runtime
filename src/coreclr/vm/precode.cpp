@@ -7,6 +7,7 @@
 // Stub that runs before the actual native code
 //
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "common.h"
 #include "dllimportcallback.h"
@@ -134,9 +135,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     TADDR pMD = (TADDR)NULL;
 
     PrecodeType precodeType = GetType();
-#ifdef TARGET_WASM
-    pMD = *(TADDR*)(m_data + OFFSETOF_PRECODE_MD);
-#else
     switch (precodeType)
     {
     case PRECODE_STUB:
@@ -169,7 +167,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     default:
         break;
     }
-#endif // TARGET_WASM
 
     if (pMD == (TADDR)NULL)
     {
@@ -322,11 +319,8 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_WASM
-    m_data[OFFSETOF_PRECODE_TYPE] = t;
-    *(TADDR*)(m_data + OFFSETOF_PRECODE_MD) = (TADDR)pMD;
-#else
-    switch (t) {
+    switch (t)
+    {
     case PRECODE_STUB:
         ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, (TADDR)pMD, pLoaderAllocator);
         break;
@@ -349,7 +343,6 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
         UnexpectedPrecodeType("Precode::Init", t);
         break;
     }
-#endif
 
     _ASSERTE(IsValidType(GetType()));
 }
@@ -571,8 +564,6 @@ void StubPrecode::StaticInitialize()
     }
 
     #undef ENUM_PAGE_SIZE
-#elif defined(TARGET_WASM)
-    // StubPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
@@ -587,8 +578,6 @@ void StubPrecode::StaticInitialize()
 
 void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-#ifndef TARGET_WASM
-    int totalCodeSize = (int)(pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
 #ifdef TARGET_X86
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
     {
@@ -610,7 +599,6 @@ void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_
         _ASSERTE(StubPrecode::IsStubPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
-#endif // TARGET_WASM
 }
 
 BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
@@ -725,8 +713,6 @@ void FixupPrecode::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
-#elif defined(TARGET_WASM)
-    // FixupPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
@@ -740,7 +726,6 @@ void FixupPrecode::StaticInitialize()
 
 void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
 {
-#ifndef TARGET_WASM
     // Fill in the data page such that the target of the fixup precode starts as initialized to point
     // to the start of the precode itself, so that before the memory for the precode is initialized,
     // the precode is in a state where it will loop forever.
@@ -759,13 +744,10 @@ void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
         PCODE* ppTargetSlot = (PCODE*)(pageBase + i + offsetof(FixupPrecodeData, Target));
         *ppTargetSlot = ((Precode*)(pageBase - pageSize + i))->GetEntryPoint();
     }
-#endif // !TARGET_WASM
 }
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-#ifndef TARGET_WASM
-    int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
 #ifdef TARGET_X86
 
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
@@ -790,7 +772,6 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
         _ASSERTE(FixupPrecode::IsFixupPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
-#endif // !TARGET_WASM
 }
 
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
@@ -967,3 +948,5 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
     return TRUE;
 }
+
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS

@@ -13351,10 +13351,20 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            PCODE portableEntryPoint = ftn->GetTemporaryEntryPoint();
+            _ASSERTE(portableEntryPoint != NULL);
+            PortableEntryPoint::SetInterpreterData((void*)PCODEToPINSTR(portableEntryPoint), ret);
+            ret = portableEntryPoint;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             AllocMemTracker amt;
             InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
             *isInterpreterCode = true;
             *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         }

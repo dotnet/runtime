@@ -2636,12 +2636,16 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
 
     MethodDesc* pMD = NULL;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    pMD = PortableEntryPoint::GetMethodDesc((void*)PCODEToPINSTR(addr));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
     _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
-    {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
-    }
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     RETURN(pMD);
 }
@@ -2735,12 +2739,24 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
         PTR_PCODE pSlot = GetAddrOfSlot();
 
         AllocMemTracker amt;
-        AllocMemTracker *pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+        AllocMemTracker* pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+
+        PCODE entryPoint;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
+            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
+        portableEntryPoint->Init(this);
+        entryPoint = (PCODE)portableEntryPoint;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), pamTrackerPrecode);
+        entryPoint = pPrecode->GetEntryPoint();
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         IfFailThrow(EnsureCodeDataExists(pamTracker));
 
-        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
+        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, entryPoint, (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
 
         PCODE tempEntryPoint = m_codeData->TemporaryEntryPoint;
@@ -2827,12 +2843,14 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
 #ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
+    _ASSERTE(*pSlot != (PCODE)NULL);
+    _ASSERTE(*pSlot == tempEntry);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-    _ASSERTE(*pSlot != (PCODE)NULL);
-    _ASSERTE(*pSlot == tempEntry);
-#endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
 
     // Set the flags atomically
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
@@ -2845,10 +2863,14 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
 #if _DEBUG
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
     _ASSERTE(tempEntry != (PCODE)NULL);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE(PortableEntryPoint::GetMethodDesc((void*)PCODEToPINSTR(tempEntry)) == this);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
     _ASSERTE(!HasPrecode());
     _ASSERTE(RequiresStableEntryPoint());
 
