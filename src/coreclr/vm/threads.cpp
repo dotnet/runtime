@@ -415,10 +415,6 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
     _ASSERTE(pCurThread || dbgOnly_IsSpecialEEThread());
 
     {
-        // We're not hosted, so WaitMode_InDeadlock is irrelevant.  Clear it, so that this wait can be
-        // forwarded to a SynchronizationContext if needed.
-        mode = (WaitMode)(mode & ~WaitMode_InDeadlock);
-
         HANDLE handle = GetThreadHandle();
         if (handle == INVALID_HANDLE_VALUE) {
             return WAIT_FAILED;

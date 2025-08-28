@@ -627,7 +627,7 @@ static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
                    ? INFINITE
                    : (DWORD) timeout);
 
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/));
     switch(rv)
     {
         case WAIT_OBJECT_0:

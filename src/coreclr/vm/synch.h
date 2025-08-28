@@ -13,7 +13,6 @@ enum WaitMode
     WaitMode_None =0x0,
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
     WaitMode_IgnoreSyncCtx = 0x2,     // Dispatch to synchronization context if existed.
-    WaitMode_InDeadlock = 0x4,        // The wait can be terminated by host's deadlock detection
 };
 
 
