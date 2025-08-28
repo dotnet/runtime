@@ -120,23 +120,8 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     ld  a0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a2)
     call  C_FUNC(RhpWaitForGC2)
 
-    ld  a2, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
-
-    # Load PTFF_THREAD_ABORT_BIT into a register, using t2 if needed
-    slli  t2, a2, (63-PTFF_THREAD_ABORT_BIT)
-    srli  t2, t2, 63
-    bnez  t2, LOCAL_LABEL(ThrowThreadAbort)
-
-    .cfi_remember_state
     POP_PROBE_FRAME
     EPILOG_RETURN
-
-    .cfi_restore_state
-LOCAL_LABEL(ThrowThreadAbort):
-    POP_PROBE_FRAME
-    li  a0, STATUS_NATIVEAOT_THREAD_ABORT
-    mv  a1, ra      # Set return address as exception PC
-    call  C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)

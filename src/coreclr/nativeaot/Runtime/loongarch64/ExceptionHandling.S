@@ -446,10 +446,6 @@ LOCAL_LABEL(NotHijacked):
         ld.d  $a2, $sp, 0x50
         ld.d  $a3, $sp, 0x58
 
-        ld.d  $a4, $a5, OFFSETOF__Thread__m_threadAbortException
-        sub.d  $a4, $a4, $a0
-        st.d  $a4, $sp, rsp_offset_is_not_handling_thread_abort // Non-zero if the exception is not ThreadAbortException
-
         addi.d  $t3, $a5, OFFSETOF__Thread__m_ThreadStateFlags
 
         addi.w  $a6, $zero, -17    // $a6 = $a6 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
@@ -513,22 +509,6 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         st.d  $a3, $a1, OFFSETOF__Thread__m_pExInfoStackHead    // store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
-
-        bstrpick.d  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit, TrapThreadsFlags_AbortInProgress_Bit
-        beqz  $t7, LOCAL_LABEL(NoAbort)
-
-        ld.d  $a3, $sp, rsp_offset_is_not_handling_thread_abort
-        bnez  $a3, LOCAL_LABEL(NoAbort)
-
-        // It was the ThreadAbortException, so rethrow it
-        // reset SP
-        ori  $a1, $a0, 0                                        // a1 <- continuation address as exception PC
-        addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
-        ori  $sp, $a2, 0
-        b  C_FUNC(RhpThrowHwEx)
-
-LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
         ori  $sp, $a2, 0
         jirl  $r0, $a0, 0

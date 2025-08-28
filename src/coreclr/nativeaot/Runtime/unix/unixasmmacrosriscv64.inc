@@ -298,9 +298,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 31
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -310,10 +307,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

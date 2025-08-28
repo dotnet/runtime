@@ -363,12 +363,11 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
-        FUNCLET_CALL_PROLOGUE 3, 0
+        FUNCLET_CALL_PROLOGUE 2, 1
 
         ;; locals
         rsp_offsetof_thread = rsp_offsetof_locals
         rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
-        rsp_offsetof_is_handling_thread_abort = rsp_offsetof_locals + 16;
 
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
@@ -377,9 +376,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
-
-        cmp     rcx, [rax + OFFSETOF__Thread__m_threadAbortException]
-        setz    byte ptr [rsp + rsp_offsetof_is_handling_thread_abort]
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
@@ -500,20 +496,8 @@ endif
         xor     r9, r9                                              ;; r9 <- 0
    endif
 
-        test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz      @f
-
-        ;; test if the exception handled by the catch was the ThreadAbortException
-        cmp     byte ptr [rsp + rsp_offsetof_is_handling_thread_abort], 0
-        je      @f
-
-        ;; It was the ThreadAbortException, so rethrow it
-        mov     rcx, STATUS_NATIVEAOT_THREAD_ABORT
-        mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
-
         ;; reset RSP and jump to RAX
-   @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
+        mov     rsp, r8                                             ;; reset the SP to resume SP value
 
         ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made. (r11 must contain target SSP)
         rdsspq  r9                                                  ;; NB, r9 == 0 prior to this
