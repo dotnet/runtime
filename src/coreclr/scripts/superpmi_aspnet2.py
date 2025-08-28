@@ -93,7 +93,9 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
     localhost_yml = data_dir / "Localhost.yml"
 
     os.environ['DOTNET_ROOT'] = str(dotnethome_dir)
-    os.environ['DOTNET_MULTILEVEL_LOOKUP'] = "1"
+    os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
+    os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
+    os.environ['UseSharedCompilation'] = 'false'
     os.environ["PATH"] = str(tools_dir) + os.pathsep + os.environ.get("PATH", "")
 
     if not data_dir.exists():
@@ -109,7 +111,7 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int):
             path = os.path.join(tmp, os.path.basename(url))
             urllib.request.urlretrieve(url, path)
             if url.endswith(".ps1"):
-                subprocess.check_call(["powershell","-ExecutionPolicy","Bypass","-File",path,
+                subprocess.check_call(["powershell.exe","-NoProfile", "-ExecutionPolicy","Bypass","-File",path,
                                     "-Channel","8.0","-InstallDir", str(dotnethome_dir)])
             else:
                 os.chmod(path,0o755)
