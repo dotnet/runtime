@@ -123,16 +123,44 @@ def download_mingit_windows(dest: str) -> str:
 
 
 def ensure_git(dest: Path) -> str:
-    # if shutil.which("git"): 
-    #     print("git found")
-    #     return shutil.which("git")
-    if not sys.platform == "win32":
-        raise RuntimeError("Git is not available on this platform")
-    print("git not found, downloading portable git...")
-    git_dir = download_mingit_windows(str(dest))
-    cmd_path = os.path.join(git_dir,"cmd")
-    os.environ["PATH"] = cmd_path + os.pathsep + os.environ["PATH"]
-    return shutil.which("git")
+    existing = shutil.which("git")
+    if existing:
+        print("git found")
+        return existing
+
+    # Windows: download portable MinGit
+    if sys.platform == "win32":
+        print("git not found, downloading portable git...")
+        git_dir = download_mingit_windows(str(dest))
+        cmd_path = os.path.join(git_dir, "cmd")
+        os.environ["PATH"] = cmd_path + os.pathsep + os.environ.get("PATH", "")
+        found = shutil.which("git")
+        if found:
+            return found
+        raise RuntimeError("Failed to make downloaded Git available in PATH")
+
+    # Linux: try installing via tdnf (Azure Linux 3)
+    if sys.platform.startswith("linux"):
+        print("git not found, attempting to install via tdnf (Azure Linux 3)...")
+        tdnf = shutil.which("tdnf")
+        if tdnf is None:
+            raise RuntimeError("'tdnf' not found. Please install Git using your package manager or install tdnf.")
+
+        # Assume this script is run under sudo/root on Azure Linux 3
+        cmd = [tdnf, "-y", "install", "git"]
+
+        rc = run(cmd)
+        if rc != 0:
+            raise RuntimeError(f"Failed to install Git via tdnf (exit code {rc}). Ensure you run this script with sudo/root.")
+
+        found = shutil.which("git")
+        if found:
+            print("git installed via tdnf")
+            return found
+        raise RuntimeError("Git was installed via tdnf but is still not found in PATH")
+
+    # Other platforms (e.g., macOS) are not handled here explicitly
+    raise RuntimeError("Git is not available on this platform; please install it and ensure it is on PATH.")
 
 
 # Ensure .NET tools are installed and Localhost.yml is present
