@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-public class Async2Small
+public class Async2WideningTailcall
 {
     [Fact]
     public static void TestEntryPoint()
