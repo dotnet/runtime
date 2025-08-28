@@ -405,7 +405,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 }
             }
         }
-#endif ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
+#endif // ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
