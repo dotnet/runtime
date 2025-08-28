@@ -27,6 +27,14 @@ namespace System.Runtime
         internal const string RuntimeLibrary = "*";
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadEntryPointAddress")]
+#if TARGET_UNIX
+        internal static extern unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress();
+#else
+        internal static extern unsafe delegate* unmanaged<nint, uint> RhGetThreadEntryPointAddress();
+#endif
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
