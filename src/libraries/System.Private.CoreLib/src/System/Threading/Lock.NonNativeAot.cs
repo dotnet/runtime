@@ -16,12 +16,6 @@ namespace System.Threading
         /// </summary>
         public Lock() => _spinCount = s_maxSpinCount;
 
-        internal ulong OwningOSThreadId => _owningOsThreadId;
-
-#pragma warning disable CA1822 // can be marked as static - varies between runtimes
-        internal int OwningManagedThreadId => 0;
-#pragma warning restore CA1822
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterOneShot(int currentManagedThreadId)
         {
@@ -32,7 +26,6 @@ namespace System.Threading
                 Debug.Assert(_owningThreadId == 0);
                 Debug.Assert(_recursionCount == 0);
                 _owningThreadId = (uint)currentManagedThreadId;
-                _owningOsThreadId = OwningOSThreadIdHolder.Current.Id;
                 return true;
             }
 
@@ -66,13 +59,12 @@ namespace System.Threading
             return isHeld;
         }
 
-        internal void InitializeToLockedWithNoWaiters(int currentManagedThreadId, uint recursionLevel, nuint owningOsThreadId)
+        internal void InitializeToLockedWithNoWaiters(int currentManagedThreadId, uint recursionLevel)
         {
             Debug.Assert(currentManagedThreadId != 0);
 
             _owningThreadId = (uint)currentManagedThreadId;
             _recursionCount = recursionLevel;
-            _owningOsThreadId = owningOsThreadId;
             _state = State.LockedStateValue;
         }
 
@@ -82,7 +74,6 @@ namespace System.Threading
 
             uint recursionCount = _recursionCount;
             _owningThreadId = 0;
-            _owningOsThreadId = 0;
             _recursionCount = 0;
 
             State state = State.Unlock(this);

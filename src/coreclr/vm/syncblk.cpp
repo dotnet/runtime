@@ -1752,14 +1752,12 @@ OBJECTHANDLE SyncBlock::GetLock()
         // We have thin-lock info that needs to be transferred to the lock object.
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
-        SIZE_T osThreadId = g_pThinLockThreadIdDispenser->IdToThread(lockThreadId)->GetOSThreadId64();
         _ASSERTE(lockThreadId != 0);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_TO_LOCKED_WITH_NO_WAITERS);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
         args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
-        args[ARGNUM_3] = PTR_TO_ARGHOLDER(osThreadId);
         CALL_MANAGED_METHOD_NORET(args);
     }
 

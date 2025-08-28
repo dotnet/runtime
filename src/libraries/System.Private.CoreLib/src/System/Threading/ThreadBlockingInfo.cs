@@ -21,8 +21,8 @@ namespace System.Threading
     //   - Evaluate "(*(System.Threading.ThreadBlockingInfo*)ptr).fieldOrProperty", where "ptr" is the blocking info pointer
     //     value, to get the field and relevant property getter values below
     //   - Use the _objectKind field value to determine what kind of blocking is occurring
-    //   - Get the LockOwnerOSThreadId and LockOwnerManagedThreadId property getter values. If the blocking is waiting for a
-    //     lock and the lock is currently owned by a thread, one of these properties will return a nonzero value that can be
+    //   - Get the LockOwnerManagedThreadId property getter value. If the blocking is waiting for a
+    //     lock and the lock is currently owned by a thread, this property will return a nonzero value that can be
     //     used to identify the lock owner thread.
     //   - Use the _next field value to obtain the next pointer to a blocking info for the thread
     [StructLayout(LayoutKind.Sequential)]
@@ -66,36 +66,6 @@ namespace System.Threading
 
             t_first = _next;
             _objectPtr = null;
-        }
-
-        // If the blocking is associated with a lock of some kind that has thread affinity and tracks the owner's OS thread ID,
-        // returns the OS thread ID of the thread that currently owns the lock. Otherwise, returns 0. A return value of 0 may
-        // indicate that the associated lock is currently not owned by a thread, or that the information could not be
-        // determined.
-        //
-        // Calls to native helpers are avoided in the property getter such that it can be more easily evaluated by a debugger.
-        public ulong LockOwnerOSThreadId // the getter may be used by debuggers
-        {
-            get
-            {
-                Debug.Assert(_objectPtr != null);
-
-                switch (_objectKind)
-                {
-
-                    case ObjectKind.Lock:
-                        return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningOSThreadId;
-
-#if !MONO
-                    case ObjectKind.Condition:
-                        Debug.Assert(_objectKind == ObjectKind.Condition);
-                        return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningOSThreadId;
-#endif
-
-                    default:
-                        throw new UnreachableException();
-                }
-            }
         }
 
         // If the blocking is associated with a lock of some kind that has thread affinity and tracks the owner's managed thread

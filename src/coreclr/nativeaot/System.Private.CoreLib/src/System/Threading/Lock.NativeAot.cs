@@ -25,12 +25,6 @@ namespace System.Threading
         /// </summary>
         public Lock() => _spinCount = SpinCountNotInitialized;
 
-#pragma warning disable CA1822 // can be marked as static - varies between runtimes
-        internal ulong OwningOSThreadId => 0;
-#pragma warning restore CA1822
-
-        internal int OwningManagedThreadId => (int)_owningThreadId;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterOneShot(int currentManagedThreadId)
         {
