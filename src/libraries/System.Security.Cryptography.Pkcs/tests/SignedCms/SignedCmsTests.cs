@@ -1126,8 +1126,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 cms = new SignedCms();
 
-                // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
-                if (PlatformDetection.UsesMobileAppleCrypto)
+                // DSA is not supported on Apple platforms, so use ECDsa signed document instead
+                if (PlatformDetection.UsesAppleCrypto)
                 {
                     cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
                 }
