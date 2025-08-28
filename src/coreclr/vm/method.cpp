@@ -2107,14 +2107,12 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
-    if (RequiresStableEntryPoint() && !HasStableEntryPoint())
-    {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        EnsurePortableEntryPoint();
+    return GetPortableEntryPoint();
+
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
+    if (RequiresStableEntryPoint() && !HasStableEntryPoint())
         GetOrCreatePrecode();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-    }
 
     // We create stable entrypoints for these upfront
     if (IsWrapperStub() || IsEnCAddedMethod())
@@ -2152,11 +2150,9 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         return (PCODE)NULL;
     }
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // Force the creation of the precode if we would eventually got one anyway
     if (MayHavePrecode())
         return GetOrCreatePrecode()->GetEntryPoint();
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     _ASSERTE(!RequiresStableEntryPoint());
 
@@ -2176,6 +2172,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         //
         return GetTemporaryEntryPoint();
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 //*******************************************************************************
