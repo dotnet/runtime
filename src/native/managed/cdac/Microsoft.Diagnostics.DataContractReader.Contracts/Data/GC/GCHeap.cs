@@ -21,18 +21,7 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
         EphemeralHeapSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(EphemeralHeapSegment)].Offset);
         CardTable = target.ReadPointer(address + (ulong)type.Fields[nameof(CardTable)].Offset);
         FinalizeQueue = target.ReadPointer(address + (ulong)type.Fields[nameof(FinalizeQueue)].Offset);
-
-        uint generationTableLength = target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
-        TargetPointer generationTableArrayStart = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
-        uint generationSize = target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
-
-        List<Generation> generationTable = [];
-        for (uint i = 0; i < generationTableLength; i++)
-        {
-            TargetPointer generationAddress = generationTableArrayStart + i * generationSize;
-            generationTable.Add(target.ProcessedData.GetOrAdd<Generation>(generationAddress));
-        }
-        GenerationTable = generationTable.AsReadOnly();
+        GenerationTable = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
 
         // Fields only exist segment GC builds
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralSeg)))
@@ -49,7 +38,7 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
     public TargetPointer EphemeralHeapSegment { get; }
     public TargetPointer CardTable { get; }
     public TargetPointer FinalizeQueue { get; }
-    public IReadOnlyList<Generation> GenerationTable { get; }
+    public TargetPointer GenerationTable { get; }
 
     public TargetPointer? SavedSweepEphemeralSeg { get; }
     public TargetPointer? SavedSweepEphemeralStart { get; }

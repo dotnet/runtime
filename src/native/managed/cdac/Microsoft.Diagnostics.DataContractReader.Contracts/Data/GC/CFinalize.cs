@@ -12,14 +12,8 @@ internal sealed class CFinalize : IData<CFinalize>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CFinalize);
 
-        uint fillPointersLength = target.ReadGlobal<uint>(Constants.Globals.CFinalizeFillPointersLength);
-        TargetPointer fillPointersArrayStart = address + (ulong)type.Fields[nameof(FillPointers)].Offset;
-
-        TargetPointer[] fillPointers = new TargetPointer[fillPointersLength];
-        for (uint i = 0; i < fillPointersLength; i++)
-            fillPointers[i] = target.ReadPointer(fillPointersArrayStart + i * (ulong)target.PointerSize);
-        FillPointers = fillPointers.AsReadOnly();
+        FillPointers = address + (ulong)type.Fields[nameof(FillPointers)].Offset;
     }
 
-    public IReadOnlyList<TargetPointer> FillPointers { get; }
+    public TargetPointer FillPointers { get; }
 }

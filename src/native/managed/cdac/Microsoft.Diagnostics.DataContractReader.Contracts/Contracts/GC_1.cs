@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -99,24 +100,7 @@ internal readonly struct GC_1 : IGC
 
         TargetPointer finalizeQueue = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapFinalizeQueue));
         Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(finalizeQueue);
-
-        uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
-        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
         TargetPointer generationTableArrayStart = _target.ReadGlobalPointer(Constants.Globals.GCHeapGenerationTable);
-        List<Data.Generation> generationTable = [];
-        for (uint i = 0; i < generationTableLength; i++)
-        {
-            TargetPointer generationAddress = generationTableArrayStart + i * generationSize;
-            generationTable.Add(_target.ProcessedData.GetOrAdd<Data.Generation>(generationAddress));
-        }
-        IList<GCGenerationData> generationDataList = generationTable.Select(gen =>
-        new GCGenerationData()
-        {
-            StartSegment = gen.StartSegment,
-            AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
-            AllocationContextPointer = gen.AllocationContext.Pointer,
-            AllocationContextLimit = gen.AllocationContext.Limit,
-        }).ToList();
 
         TargetPointer? savedSweepEphemeralSeg = null;
         TargetPointer? savedSweepEphemeralStart = null;
@@ -136,8 +120,8 @@ internal readonly struct GC_1 : IGC
             AllocAllocated = allocAllocated,
             EphemeralHeapSegment = ephemeralHeapSegment,
             CardTable = cardTable,
-            GenerationTable = generationDataList.AsReadOnly(),
-            FillPointers = finalize.FillPointers,
+            GenerationTable = GetGenerationData(generationTableArrayStart).AsReadOnly(),
+            FillPointers = GetFillPointers(finalize).AsReadOnly(),
             SavedSweepEphemeralSegment = savedSweepEphemeralSeg ?? TargetPointer.Null,
             SavedSweepEphemeralStart = savedSweepEphemeralStart ?? TargetPointer.Null,
         };
@@ -151,15 +135,6 @@ internal readonly struct GC_1 : IGC
         Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
         Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(heap.FinalizeQueue);
 
-        IList<GCGenerationData> generationDataList = heap.GenerationTable.Select(gen =>
-            new GCGenerationData()
-            {
-                StartSegment = gen.StartSegment,
-                AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
-                AllocationContextPointer = gen.AllocationContext.Pointer,
-                AllocationContextLimit = gen.AllocationContext.Limit,
-            }).ToList();
-
         return new GCHeapData()
         {
             MarkArray = heap.MarkArray,
@@ -169,11 +144,42 @@ internal readonly struct GC_1 : IGC
             AllocAllocated = heap.AllocAllocated,
             EphemeralHeapSegment = heap.EphemeralHeapSegment,
             CardTable = heap.CardTable,
-            GenerationTable = generationDataList.AsReadOnly(),
-            FillPointers = finalize.FillPointers,
+            GenerationTable = GetGenerationData(heap.GenerationTable).AsReadOnly(),
+            FillPointers = GetFillPointers(finalize).AsReadOnly(),
             SavedSweepEphemeralSegment = heap.SavedSweepEphemeralSeg ?? TargetPointer.Null,
             SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
         };
+    }
+
+    private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
+    {
+        uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
+        List<Data.Generation> generationTable = [];
+        for (uint i = 0; i < generationTableLength; i++)
+        {
+            TargetPointer generationAddress = generationTableArrayStart + i * generationSize;
+            generationTable.Add(_target.ProcessedData.GetOrAdd<Data.Generation>(generationAddress));
+        }
+        List<GCGenerationData> generationDataList = generationTable.Select(gen =>
+        new GCGenerationData()
+        {
+            StartSegment = gen.StartSegment,
+            AllocationStart = gen.AllocationStart,
+            AllocationContextPointer = gen.AllocationContext.Pointer,
+            AllocationContextLimit = gen.AllocationContext.Limit,
+        }).ToList();
+        return generationDataList;
+    }
+
+    private List<TargetPointer> GetFillPointers(Data.CFinalize cFinalize)
+    {
+        uint fillPointersLength = _target.ReadGlobal<uint>(Constants.Globals.CFinalizeFillPointersLength);
+        TargetPointer fillPointersArrayStart = cFinalize.FillPointers;
+        List<TargetPointer> fillPointers = [];
+        for (uint i = 0; i < fillPointersLength; i++)
+            fillPointers.Add(_target.ReadPointer(fillPointersArrayStart + i * (ulong)_target.PointerSize));
+        return fillPointers;
     }
 
     private GCType GetGCType()
