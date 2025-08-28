@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --cli $(PerformanceDirectory)$(FileSeparatorChar)tools$(FileSeparatorChar)dotnet </WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --cli $(PerformanceDirectory)$(FileSeparatorChar)tools$(FileSeparatorChar)dotnet$(FileSeparatorChar)$(Architecture) </WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 

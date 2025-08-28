@@ -64,21 +64,6 @@ def native_dll(name: str) -> str:
     return f"{prefix}{name}{ext}"
 
 
-# Helper function to find available PowerShell executable
-def find_powershell():
-    """Find available PowerShell executable, preferring pwsh over powershell.exe"""
-    # Try pwsh first (PowerShell Core, more modern and cross-platform)
-    if shutil.which("pwsh"):
-        return "pwsh"
-    # Fall back to Windows PowerShell
-    if shutil.which("powershell.exe"):
-        return "powershell.exe"
-    # Last resort, try just "powershell"
-    if shutil.which("powershell"):
-        return "powershell"
-    raise FileNotFoundError("No PowerShell executable found. Please install PowerShell Core (pwsh) or Windows PowerShell.")
-
-
 # Run a command
 def run(cmd, cwd=None):
     print(f"Running command: {' '.join(map(str, cmd))}")
@@ -101,18 +86,23 @@ def run(cmd, cwd=None):
         return None
 
 
-def get_arch() -> str:
-    m = platform.machine().lower()
-    if "arm64" in m: return "arm64"
-    if m in ("amd64", "x86_64"): return "x64"
-    raise RuntimeError(f"Unsupported arch: {m}")
-
-
 def download_mingit_windows(dest: str) -> str:
-    m = {"x64": "64-bit", "arm64": "arm64"}
-    assets = requests.get("https://api.github.com/repos/git-for-windows/git/releases/latest",timeout=100).json()["assets"]
-    rx = re.compile(r"^MinGit-.*-(64-bit|arm64)\.zip$", re.I)
-    asset = next(a for a in assets if rx.match(a["name"]) and m[get_arch()] in a["name"])
+    # Map our arch key to MinGit asset suffix
+    m = {"x64": "64-bit", "arm64": "arm64", "x86": "32-bit"}
+    assets = requests.get("https://api.github.com/repos/git-for-windows/git/releases/latest", timeout=100).json()["assets"]
+    rx = re.compile(r"^MinGit-.*-(32-bit|64-bit|arm64)\.zip$", re.I)
+
+    arch = "x64"
+    mach = platform.machine().lower()
+    if "arm64" in mach:
+        arch = "arm64"
+    elif mach in ("x86", "i386", "i686"):
+        arch = "x86"
+
+    try:
+        asset = next(a for a in assets if rx.match(a["name"]) and m[arch] in a["name"])
+    except StopIteration:
+        raise RuntimeError(f"Unable to find MinGit asset for arch '{arch}'. Available assets: {[a['name'] for a in assets if 'MinGit' in a['name']]}")
     os.makedirs(dest, exist_ok=True); zip_path = os.path.join(dest, asset["name"])
     with requests.get(asset["browser_download_url"], stream=True) as r, open(zip_path,"wb") as f:
         for c in r.iter_content(8192): f.write(c)
@@ -198,7 +188,10 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
                 urllib.request.urlretrieve(url, path)
                 if url.endswith(".ps1"):
                     # Find available PowerShell executable
-                    powershell_exe = find_powershell()
+                    if shutil.which("pwsh"):
+                        powershell_exe = "pwsh"
+                    else:
+                        powershell_exe = "powershell.exe"
                     print(f"Using PowerShell executable: {powershell_exe}")
                     
                     # Add better error handling and capture output
