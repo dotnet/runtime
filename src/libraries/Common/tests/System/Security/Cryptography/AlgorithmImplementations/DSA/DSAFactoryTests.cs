@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAFactoryTests
     {
-        public static bool IsNotSupported => DSAFactory.IsSupported;
+        public static bool IsNotSupported => !DSAFactory.IsSupported;
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
         public static void DSACreateDefault_Equals_SameInstance()
