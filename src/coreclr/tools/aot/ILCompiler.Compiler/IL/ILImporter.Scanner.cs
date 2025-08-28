@@ -1066,6 +1066,17 @@ namespace Internal.IL
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
+            if (field.IsStatic && (!write.HasValue || write == false))
+            {
+                FieldDesc fieldToReport = canonField;
+                DefType fieldOwningType = canonField.OwningType;
+                TypeDesc canonFieldOwningType = fieldOwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (fieldOwningType != canonFieldOwningType)
+                    fieldToReport = _factory.TypeSystemContext.GetFieldForInstantiatedType(fieldToReport.GetTypicalFieldDefinition(), (InstantiatedType)canonFieldOwningType);
+
+                _dependencies.Add(_factory.StaticFieldRead(fieldToReport), "Static field read");
+            }
+
             // `write` will be null for ld(s)flda. Consider address loads write unless they were
             // for initonly static fields. We'll trust the initonly that this is not a write.
             write ??= !field.IsInitOnly || !field.IsStatic;

@@ -43,6 +43,9 @@ namespace ILCompiler.DependencyAnalysis
                 return dependencies;
             }
 
+            if (_field.IsStatic)
+                dependencies.Add(factory.StaticFieldRead(_field), "Reflection readable static field");
+
             // readonly static fields are not reflection settable, the rest are
             if (!_field.IsInitOnly || !_field.IsStatic)
                 dependencies.Add(factory.NotReadOnlyField(_field), "Reflection writable field");

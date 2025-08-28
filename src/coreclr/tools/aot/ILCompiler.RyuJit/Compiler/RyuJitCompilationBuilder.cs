@@ -157,7 +157,7 @@ namespace ILCompiler
                 _instructionSetSupport,
                 _profileDataManager,
                 _methodImportationErrorProvider,
-                _readOnlyFieldPolicy,
+                _fieldPolicy,
                 options,
                 _methodLayoutAlgorithm,
                 _fileLayoutAlgorithm,

@@ -5,12 +5,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    public class ReadOnlyFieldPolicy
+    public class FieldPolicy
     {
         public virtual bool IsReadOnly(FieldDesc field) => field.IsInitOnly;
+        public virtual bool IsStaticFieldRead(FieldDesc field) => true;
     }
 
-    public sealed class StaticReadOnlyFieldPolicy : ReadOnlyFieldPolicy
+    public sealed class FieldPolicyWithStaticInitOnly : FieldPolicy
     {
         public override bool IsReadOnly(FieldDesc field) => field.IsStatic && field.IsInitOnly;
     }

@@ -37,7 +37,7 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly ILProvider _ilProvider;
         private readonly TypePreinitializationPolicy _policy;
-        private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+        private readonly FieldPolicy _fieldPolicy;
         private readonly FlowAnnotations _flowAnnotations;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
@@ -45,13 +45,13 @@ namespace ILCompiler
         private readonly Dictionary<MetadataType, NestedPreinitResult> _nestedPreinitResults = new Dictionary<MetadataType, NestedPreinitResult>();
         private readonly Dictionary<EcmaField, byte[]> _rvaFieldDatas = new Dictionary<EcmaField, byte[]>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, FieldPolicy fieldPolicy, FlowAnnotations flowAnnotations)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
             _policy = policy;
-            _readOnlyPolicy = readOnlyPolicy;
+            _fieldPolicy = fieldPolicy;
             _flowAnnotations = flowAnnotations;
 
             // Zero initialize all fields we model.
@@ -64,7 +64,7 @@ namespace ILCompiler
             }
         }
 
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, FieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
@@ -104,7 +104,16 @@ namespace ILCompiler
             {
                 var values = new List<KeyValuePair<FieldDesc, ISerializableValue>>();
                 foreach (var kvp in preinit._fieldValues)
-                    values.Add(new KeyValuePair<FieldDesc, ISerializableValue>(kvp.Key, kvp.Value));
+                {
+                    FieldDesc field = kvp.Key;
+                    Value value = kvp.Value;
+
+                    // If nobody will be reading this field, consider it zero init.
+                    if (!preinit._fieldPolicy.IsStaticFieldRead(field))
+                        value = NewUninitializedLocationValue(field.FieldType, field);
+
+                    values.Add(new KeyValuePair<FieldDesc, ISerializableValue>(field, value));
+                }
 
                 return new PreinitializationInfo(type, values);
             }
@@ -116,7 +125,7 @@ namespace ILCompiler
         {
             if (!_nestedPreinitResults.TryGetValue(type, out result))
             {
-                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
+                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _fieldPolicy, _flowAnnotations);
                 recursionProtect ??= new Stack<MethodDesc>();
                 recursionProtect.Push(callingMethod);
 
@@ -423,7 +432,7 @@ namespace ILCompiler
                         {
                             fieldValue = _fieldValues[field];
                         }
-                        else if (_readOnlyPolicy.IsReadOnly(field)
+                        else if (_fieldPolicy.IsReadOnly(field)
                             && field.OwningType.HasStaticConstructor
                             && _policy.CanPreinitialize(field.OwningType))
                         {
@@ -435,7 +444,7 @@ namespace ILCompiler
                             if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                         }
-                        else if (_readOnlyPolicy.IsReadOnly(field)
+                        else if (_fieldPolicy.IsReadOnly(field)
                             && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios
                             && !field.OwningType.HasStaticConstructor)
                         {
@@ -659,7 +668,7 @@ namespace ILCompiler
                                         TypeDesc fieldType = field.FieldType;
                                         if (fieldType.IsGCPointer)
                                         {
-                                            if (!_readOnlyPolicy.IsReadOnly(field))
+                                            if (!_fieldPolicy.IsReadOnly(field))
                                             {
                                                 allGcPointersAreReadonly = false;
                                                 break;

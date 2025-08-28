@@ -27,7 +27,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileDataManager;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
-        private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
+        private readonly FieldPolicy _fieldPolicy;
         private readonly int _parallelism;
 
         public InstructionSetSupport InstructionSetSupport { get; }
@@ -43,7 +43,7 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
-            ReadOnlyFieldPolicy readOnlyFieldPolicy,
+            FieldPolicy fieldPolicy,
             RyuJitCompilationOptions options,
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
@@ -58,7 +58,7 @@ namespace ILCompiler
 
             _methodImportationErrorProvider = errorProvider;
 
-            _readOnlyFieldPolicy = readOnlyFieldPolicy;
+            _fieldPolicy = fieldPolicy;
 
             _parallelism = parallelism;
 
@@ -67,7 +67,7 @@ namespace ILCompiler
 
         public ProfileDataManager ProfileData => _profileDataManager;
 
-        public bool IsInitOnly(FieldDesc field) => _readOnlyFieldPolicy.IsReadOnly(field);
+        public bool IsInitOnly(FieldDesc field) => _fieldPolicy.IsReadOnly(field);
 
         public override IEETypeNode NecessaryTypeSymbolIfPossible(TypeDesc type)
         {

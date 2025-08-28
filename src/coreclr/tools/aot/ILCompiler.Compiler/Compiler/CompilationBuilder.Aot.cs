@@ -19,7 +19,7 @@ namespace ILCompiler
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
         protected InlinedThreadStatics _inlinedThreadStatics = new InlinedThreadStatics();
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
-        protected ReadOnlyFieldPolicy _readOnlyFieldPolicy = new ReadOnlyFieldPolicy();
+        protected FieldPolicy _fieldPolicy = new FieldPolicy();
         protected IInliningPolicy _inliningPolicy;
         protected MethodBodyFoldingMode _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
@@ -112,9 +112,9 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseReadOnlyFieldPolicy(ReadOnlyFieldPolicy policy)
+        public CompilationBuilder UseFieldPolicy(FieldPolicy policy)
         {
-            _readOnlyFieldPolicy = policy;
+            _fieldPolicy = policy;
             return this;
         }
 
@@ -139,7 +139,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new StaticReadOnlyFieldPolicy(), null);
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new FieldPolicyWithStaticInitOnly(), null);
             return _preinitializationManager;
         }
 

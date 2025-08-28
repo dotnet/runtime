@@ -271,9 +271,9 @@ namespace ILCompiler
             return new ScannedInlinedThreadStatics(_factory, MarkedNodes);
         }
 
-        public ReadOnlyFieldPolicy GetReadOnlyFieldPolicy()
+        public FieldPolicy GetFieldPolicy()
         {
-            return new ScannedReadOnlyPolicy(MarkedNodes);
+            return new ScannedFieldPolicy(MarkedNodes);
         }
 
         public TypeMapManager GetTypeMapManager()
@@ -998,17 +998,22 @@ namespace ILCompiler
             }
         }
 
-        private sealed class ScannedReadOnlyPolicy : ReadOnlyFieldPolicy
+        private sealed class ScannedFieldPolicy : FieldPolicy
         {
             private HashSet<FieldDesc> _writtenFields = new();
+            private HashSet<FieldDesc> _staticReadFields = new();
 
-            public ScannedReadOnlyPolicy(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            public ScannedFieldPolicy(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var node in markedNodes)
                 {
                     if (node is NotReadOnlyFieldNode writtenField)
                     {
                         _writtenFields.Add(writtenField.Field);
+                    }
+                    else if (node is StaticFieldReadNode readField)
+                    {
+                        _staticReadFields.Add(readField.Field);
                     }
                 }
             }
@@ -1025,6 +1030,22 @@ namespace ILCompiler
                 }
 
                 return !_writtenFields.Contains(field);
+            }
+
+            public override bool IsStaticFieldRead(FieldDesc field)
+            {
+                Debug.Assert(field.IsStatic);
+
+                FieldDesc typicalField = field.GetTypicalFieldDefinition();
+                if (field != typicalField)
+                {
+                    DefType owningType = field.OwningType;
+                    var canonOwningType = (InstantiatedType)owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (owningType != canonOwningType)
+                        field = field.Context.GetFieldForInstantiatedType(typicalField, canonOwningType);
+                }
+
+                return _staticReadFields.Contains(field);
             }
         }
 

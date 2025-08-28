@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (!factory.Target.IsWindows)
                     return ObjectNodeSection.DataSection;
 
-                ReadOnlyFieldPolicy readOnlyPolicy = _preinitializationManager.ReadOnlyFieldPolicy;
+                FieldPolicy fieldPolicy = _preinitializationManager.FieldPolicy;
 
                 bool allFieldsReadOnly = true;
                 foreach (FieldDesc field in _type.GetFields())
@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!IsNonGcStaticField(field))
                         continue;
 
-                    allFieldsReadOnly = readOnlyPolicy.IsReadOnly(field);
+                    allFieldsReadOnly = fieldPolicy.IsReadOnly(field);
                     if (!allFieldsReadOnly)
                         break;
                 }

@@ -455,6 +455,7 @@
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StaticFieldReadNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\Disassembler.cs" />
@@ -631,7 +632,7 @@
     <Compile Include="Compiler\ObjectWriter\SectionData.cs" />
     <Compile Include="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\StringTableBuilder.cs" />
-    <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
+    <Compile Include="Compiler\FieldPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />

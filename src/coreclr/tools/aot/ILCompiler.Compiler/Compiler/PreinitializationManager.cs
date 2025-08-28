@@ -17,12 +17,12 @@ namespace ILCompiler
     {
         private readonly bool _supportsLazyCctors;
 
-        public ReadOnlyFieldPolicy ReadOnlyFieldPolicy => _preinitHashTable._readOnlyPolicy;
+        public FieldPolicy FieldPolicy => _preinitHashTable._fieldPolicy;
 
-        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, FieldPolicy fieldPolicy, FlowAnnotations flowAnnotations)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
-            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy, flowAnnotations);
+            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, fieldPolicy, flowAnnotations);
         }
 
         /// <summary>
@@ -141,15 +141,15 @@ namespace ILCompiler
             private readonly CompilationModuleGroup _compilationGroup;
             private readonly ILProvider _ilProvider;
             internal readonly TypePreinit.TypePreinitializationPolicy _policy;
-            internal readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+            internal readonly FieldPolicy _fieldPolicy;
             private readonly FlowAnnotations _flowAnnotations;
 
-            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
+            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, FieldPolicy fieldPolicy, FlowAnnotations flowAnnotations)
             {
                 _compilationGroup = compilationGroup;
                 _ilProvider = ilProvider;
                 _policy = policy;
-                _readOnlyPolicy = readOnlyPolicy;
+                _fieldPolicy = fieldPolicy;
                 _flowAnnotations = flowAnnotations;
             }
 
@@ -160,7 +160,7 @@ namespace ILCompiler
 
             protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
             {
-                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations, key);
+                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _fieldPolicy, _flowAnnotations, key);
 
                 // We either successfully preinitialized or
                 // the type doesn't have a canonical form or
