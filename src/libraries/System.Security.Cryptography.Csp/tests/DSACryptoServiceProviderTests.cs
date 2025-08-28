@@ -12,8 +12,6 @@ namespace System.Security.Cryptography.Csp.Tests
     {
         const int PROV_DSS_DH = 13;
 
-        public static bool IsSupported => DSAFactory.IsSupported;
-
         [Fact]
         public static void DefaultKeySize()
         {

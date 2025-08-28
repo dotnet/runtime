@@ -9,9 +9,6 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public static class DSACreateTests
     {
-        public static bool IsSupported => DSAFactory.IsSupported;
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]
@@ -80,7 +77,7 @@ namespace System.Security.Cryptography.Tests
             CreateWithParameters(DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         public static void CreateWithParameters_2048()
         {
             CreateWithParameters(DSATestData.GetDSA2048Params());

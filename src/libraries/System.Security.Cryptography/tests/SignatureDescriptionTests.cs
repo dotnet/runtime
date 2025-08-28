@@ -41,7 +41,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS/tvOS/MacCatalyst")]
         public void Constructor_SecurityElement_DSA()
         {
             SecurityElement se = new SecurityElement("DSASignature");
@@ -154,8 +153,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(sig.CreateDigest());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not supported on Apple platforms")]
+        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
         public void Formatter()
         {
             SignatureDescription sig = new SignatureDescription();

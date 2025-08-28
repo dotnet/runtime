@@ -8,7 +8,6 @@ namespace System.Security.Cryptography.Dsa.Tests
     [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public partial class DSAKeyGeneration
     {
-        public static bool IsSupported => DSAFactory.IsSupported;
         public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]

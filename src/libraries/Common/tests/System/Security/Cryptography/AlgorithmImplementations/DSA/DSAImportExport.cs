@@ -8,9 +8,6 @@ namespace System.Security.Cryptography.Dsa.Tests
     [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public partial class DSAImportExport
     {
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-        public static bool IsSupported => DSAFactory.IsSupported;
-
         [Fact]
         public static void ExportAutoKey()
         {
@@ -73,7 +70,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         public static void Import_2048()
         {
             using (DSA dsa = DSAFactory.Create())
