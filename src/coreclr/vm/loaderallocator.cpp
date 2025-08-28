@@ -1244,7 +1244,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         m_callCountingManager = new CallCountingManager();
     }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 
