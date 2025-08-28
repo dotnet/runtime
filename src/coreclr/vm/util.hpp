@@ -427,10 +427,10 @@ extern LockOwner g_lockTrustMeIAmThreadSafe;
 class EEThreadId
 {
 private:
+    static SIZE_T const UNKNOWN_ID = INVALID_POINTER_CD;
     SIZE_T m_FiberPtrId;
 public:
 #ifdef _DEBUG
-    static SIZE_T const UNKNOWN_ID = INVALID_POINTER_CD;
     EEThreadId() : m_FiberPtrId(UNKNOWN_ID)
     {
         LIMITED_METHOD_CONTRACT;
