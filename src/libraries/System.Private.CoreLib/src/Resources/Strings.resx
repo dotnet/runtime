@@ -3014,6 +3014,9 @@
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
+  <data name="NotSupported_TypeBuilderInstantiation_ResolvingMembers" xml:space="preserve">
+    <value>TypeBuilder generic instantiation does not support resolving members. Use TypeBuilder.{0} instead.</value>
+  </data>
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
   </data>
@@ -3412,6 +3415,9 @@
   </data>
   <data name="SemaphoreSlim_Wait_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
+  </data>
+  <data name="SemaphoreSlim_Wait_TimeSpanTimeoutWrong" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), or be non-negative.</value>
   </data>
   <data name="Serialization_BadParameterInfo" xml:space="preserve">
     <value>Non existent ParameterInfo. Position bigger than member's parameters length.</value>
@@ -4381,5 +4387,34 @@
   </data>
   <data name="PlatformNotSupported_DynamicEntrypoint" xml:space="preserve">
     <value>Dynamic entrypoint allocation is not supported in the current environment.</value>
+  </data>  <data name="Arg_InvalidOperationException_CannotReleaseUnownedMutex" xml:space="preserve">
+    <value>Cannot release a lock that is not owned by the current thread.</value>
+  </data>
+  <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
+    <value>Failed to initialize pthread mutex</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
+  <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
+    <value>The file '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_FilePermissionsIncorrect" xml:space="preserve">
+    <value>The file '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
+    <value>The path '{0}' exists but is not a directory.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
+    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
 </root>

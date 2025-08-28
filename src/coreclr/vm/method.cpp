@@ -2198,6 +2198,8 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     return pTarget;
 }
 
+#endif // !DACCESS_COMPILE
+
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 {
     CONTRACTL {
@@ -2213,37 +2215,36 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return NULL;
     }
 
-    // Inlined fast path for fixup precode and stub precode from RangeList implementation
-    if (pRS->_flags == RangeSection::RANGE_SECTION_RANGELIST)
+    if (pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
     {
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint);
+#ifdef DACCESS_COMPILE
+        // GetPrecodeFromEntryPoint can return NULL under DAC
+        if (pPrecode == NULL)
+            return NULL;
+#endif
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
         {
-            return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            return dac_cast<PTR_MethodDesc>(pPrecode->AsFixupPrecode()->GetMethodDesc());
         }
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
         }
     }
-
-    MethodDesc* pMD;
-    if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
-        return pMD;
-
-    auto stubCodeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
-
-    switch(stubCodeBlockKind)
+    else
     {
-    case STUB_CODE_BLOCK_FIXUPPRECODE:
-        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
-    case STUB_CODE_BLOCK_STUBPRECODE:
-        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
-    default:
-        // We should never get here
-        _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
-        return NULL;
+        MethodDesc* pMD;
+        if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+            return pMD;
     }
+
+    // We should never get here
+    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
+    return NULL;
 }
+
+#ifndef DACCESS_COMPILE
 
 static void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
 {
@@ -2462,20 +2463,25 @@ MethodImpl *MethodDesc::GetMethodImpl()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=FALSE*/)
+BOOL MethodDesc::RequiresMDContextArg()
 {
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsPInvoke() || IsCLRToCOMCall())
+    if (IsCLRToCOMCall())
         return TRUE;
 
+    // Interop marshalling of varargs needs MethodDesc calling convention
+    // to support ldftn <PInvoke method with varargs>. It is not possible
+    // to smuggle the MethodDesc* via vararg cookie in this case.
+    if (IsPInvoke() && IsVarArg())
+        return TRUE;
 
     return FALSE;
 }
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
+BOOL MethodDesc::RequiresStableEntryPoint()
 {
     BYTE bFlags4 = VolatileLoadWithoutBarrier(&m_bFlags4);
     if (bFlags4 & enum_flag4_ComputedRequiresStableEntryPoint)
@@ -2484,16 +2490,14 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
     }
     else
     {
-        if (fEstimateForChunk)
-            return RequiresStableEntryPointCore(fEstimateForChunk);
-        BOOL fRequiresStableEntryPoint = RequiresStableEntryPointCore(FALSE);
+        BOOL fRequiresStableEntryPoint = RequiresStableEntryPointCore();
         BYTE requiresStableEntrypointFlags = (BYTE)(enum_flag4_ComputedRequiresStableEntryPoint | (fRequiresStableEntryPoint ? enum_flag4_RequiresStableEntryPoint : 0));
         InterlockedUpdateFlags4(requiresStableEntrypointFlags, TRUE);
         return fRequiresStableEntryPoint;
     }
 }
 
-BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
+BOOL MethodDesc::RequiresStableEntryPointCore()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2509,26 +2513,17 @@ BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
     if (IsLCGMethod())
         return TRUE;
 
-    if (fEstimateForChunk)
-    {
-        // Make a best guess based on the method table of the chunk.
-        if (IsInterface())
-            return TRUE;
-    }
-    else
-    {
-        // Wrapper stubs are stored in generic dictionary that's not backpatched
-        if (IsWrapperStub())
-            return TRUE;
+    // Wrapper stubs are stored in generic dictionary that's not backpatched
+    if (IsWrapperStub())
+        return TRUE;
 
-        // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
-            return TRUE;
+    // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
+    if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
+        return TRUE;
 
-        // FCalls need stable entrypoint that can be mapped back to MethodDesc
-        if (IsFCall())
-            return TRUE;
-    }
+    // FCalls need stable entrypoint that can be mapped back to MethodDesc
+    if (IsFCall())
+        return TRUE;
 
     return FALSE;
 }
@@ -2630,7 +2625,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 }
 
 // static
-MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative /*=FALSE*/)
+MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /*=FALSE*/)
 {
     CONTRACT(MethodDesc *)
     {
@@ -2641,8 +2636,6 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 
     MethodDesc* pMD = NULL;
 
-    // Otherwise this must be some kind of precode
-    //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
     _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
@@ -2676,7 +2669,7 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     _ASSERTE(pEntryPoint != (PCODE)NULL);
 
 #ifdef _DEBUG
-    MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
+    MethodDesc * pMD = MethodDesc::GetMethodDescFromPrecode(pEntryPoint);
     _ASSERTE(PTR_HOST_TO_TADDR(this) == PTR_HOST_TO_TADDR(pMD));
 #endif
 
@@ -3509,7 +3502,7 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         // Stubs generated for being called from native code are equivalent to
         // managed methods marked with UnmanagedCallersOnly.
-        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop;
+        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubReversePInvoke;
     }
 
     HRESULT hr = GetCustomAttribute(
@@ -3903,7 +3896,7 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMethodDescCallingConvention())
+    if (!RequiresMDContextArg())
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;

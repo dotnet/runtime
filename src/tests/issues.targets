@@ -232,9 +232,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
-          <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->
@@ -539,21 +536,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_68278/**">
-            <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/BBT/Scenario4/Not-Int32/**">
-            <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
-            <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/**">
-            <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/multidimmarray/rank1array/**">
-            <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
@@ -1732,8 +1714,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/**">
-          <Issue>NYI on Mono</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/HandlerThrows/*">
+            <Issue>https://github.com/dotnet/runtime/issues/47624</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/*">
+            <Issue>Test issue. The test relies on overriding the process return code.</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2209,6 +2194,12 @@
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/Foreign/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/PInvoke/**">
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
 

@@ -111,7 +111,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+EXTERN_C void QCALLTYPE RhCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -126,7 +126,7 @@ EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
+EXTERN_C int64_t QCALLTYPE RhGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -142,7 +142,7 @@ EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C int32_t QCALLTYPE RhStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -157,7 +157,7 @@ EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL has
     return result;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpEndNoGCRegion()
+EXTERN_C int32_t QCALLTYPE RhEndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 

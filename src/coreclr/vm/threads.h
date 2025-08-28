@@ -642,7 +642,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
+        TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -3946,6 +3946,7 @@ struct cdac_data<Thread>
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
@@ -5155,17 +5156,24 @@ class CoopTransitionHolder
 {
     Frame * m_pFrame;
 
+#ifdef DEBUG
+    int m_uncaughtExceptions;
+#endif
+
 public:
     CoopTransitionHolder(Thread * pThread)
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DEBUG
+        m_uncaughtExceptions = std::uncaught_exceptions();
+#endif
     }
 
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        _ASSERTE_MSG(m_pFrame == nullptr || m_uncaughtExceptions < std::uncaught_exceptions(), "Early return from JIT/EE interface method");
         if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }

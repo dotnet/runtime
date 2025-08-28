@@ -1004,6 +1004,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short FusedSubtractHalving(short op1, short op2) => (short)((uint)((int)op1 - (int)op2) >> 1);
 
+        public static int Log2(float val)
+        {
+            if (float.IsNaN(val) || val <= 0)
+            {
+                return int.MinValue;
+            }
+            if (float.IsInfinity(val))
+            {
+                return int.MaxValue;
+            }
+
+            double log2 = Math.Log(val, 2.0);
+            if (log2 >= int.MaxValue) return int.MaxValue;
+            if (log2 <= int.MinValue) return int.MinValue;
+
+            return (int)Math.Floor(log2);
+        }
+
         public static int MultiplyByScalarWideningUpper(short[] op1, short op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
         public static int MultiplyByScalarWideningUpperAndAdd(int[] op1, short[] op2, short op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
@@ -1185,6 +1203,24 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int FusedAddRoundedHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2 + 1) >> 1);
 
         public static int FusedSubtractHalving(int op1, int op2) => (int)((ulong)((long)op1 - (long)op2) >> 1);
+
+        public static long Log2(double val)
+        {
+            if (double.IsNaN(val) || val <= 0)
+            {
+                return long.MinValue;
+            }
+            if (double.IsInfinity(val))
+            {
+                return long.MaxValue;
+            }
+
+            double log2 = Math.Log(val, 2.0);
+            if (log2 >= long.MaxValue) return long.MaxValue;
+            if (log2 <= long.MinValue) return long.MinValue;
+
+            return (long)Math.Floor(log2);
+        }
 
         public static long MultiplyByScalarWideningUpper(int[] op1, int op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
@@ -1829,6 +1865,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return SaturateHigh(val, ovf);
         }
 
+        public static sbyte[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(sbyte[] op1, sbyte[] op2, sbyte[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (sbyte ans1, sbyte ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static short MultiplyDoublingWideningAndAddSaturate(short op1, sbyte op2, sbyte op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
 
         public static short MultiplyDoublingWideningAndSubtractSaturate(short op1, sbyte op2, sbyte op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -2166,6 +2224,51 @@ namespace JIT.HardwareIntrinsics.Arm
             var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
 
             return SaturateHigh(val, ovf);
+        }
+
+        public static short[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(short[] op1, short[] op2, short[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (short ans1, short ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static short[] MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(short[] op1, short[] op2, short[] op3, byte index, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (short op3Real, short op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (short ans1, short ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3Img)),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3Real)),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3Img)),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3Real)),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
         }
 
         public static int MultiplyDoublingWideningAndAddSaturate(int op1, short op2, short op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -2507,6 +2610,51 @@ namespace JIT.HardwareIntrinsics.Arm
             return SaturateHigh(val, ovf);
         }
 
+        public static int[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(int[] op1, int[] op2, int[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (int ans1, int ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static int[] MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(int[] op1, int[] op2, int[] op3, byte index, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (int op3Real, int op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (int ans1, int ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3Img)),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3Real)),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3Img)),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3Real)),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static long MultiplyDoublingWideningAndAddSaturate(long op1, int op2, int op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
 
         public static long MultiplyDoublingWideningAndSubtractSaturate(long op1, int op2, int op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -2579,6 +2727,28 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return long.CreateChecked(result);
+        }
+
+        public static long[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(long[] op1, long[] op2, long[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (long ans1, long ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
         }
 
         public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
@@ -2992,6 +3162,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
         {
             // If mask isn't provided, default to all true
@@ -3294,6 +3486,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? ushort.MaxValue : result;
         }
 
+        public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static short NegateSaturate(short op1) => SubtractSaturate((short)0, op1);
 
         public static short SubtractSaturate(short op1, short op2)
@@ -3560,6 +3774,28 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? uint.MaxValue : result;
+        }
+
+        public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
         }
 
         public static int NegateSaturate(int op1) => SubtractSaturate((int)0, op1);
@@ -3830,6 +4066,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? ulong.MaxValue : result;
         }
 
+        public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static long NegateSaturate(long op1) => SubtractSaturate((long)0, op1);
 
         public static long SubtractSaturate(long op1, long op2)
@@ -4070,6 +4328,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
+        public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
+        {
+            if (i % 2 == 0)
+            {
+                double val = value[i / 2];
+                float floatVal = (float)val;
+
+                float f = (float)val;
+
+                // If val is NaN or Inf there’s nothing else to do
+                if (double.IsNaN(val) || double.IsInfinity(val))
+                    return f;
+
+                // Detect the cases where the default cast rounded away from zero
+                if ((val > 0 && (double)f > val) ||
+                    (val < 0 && (double)f < val))
+                {
+                    // Move toward zero to get truncate() behaviour.
+                    int bits = BitConverter.SingleToInt32Bits(f);
+                    bits += (val > 0) ? -1 : +1;
+                    f = BitConverter.Int32BitsToSingle(bits);
+                }
+
+                // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
+                if (val != (double)f)
+                {
+                    int bits = BitConverter.SingleToInt32Bits(f);
+                    bits |= 0x1;
+                    f = BitConverter.Int32BitsToSingle(bits);
+                }
+
+                return f;
+            }
+
+            return 0f;
+        }
+
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
 
         public static float FusedMultiplyAddNegated(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(-op2, op3, -op1);
@@ -4120,6 +4415,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return op1;
         }
 
+        public static T[] MultiplyAddRotateComplex<T>(T[] op1, T[] op2, T[] op3, byte imm) where T : INumber<T>
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (T ans1, T ans2) = imm switch
+                {
+                    0 => (op1[real] + op2[real] * op3[real], op1[img] + op2[real] * op3[img]),
+                    1 => (op1[real] - op2[img] * op3[img], op1[img] + op2[img] * op3[real]),
+                    2 => (op1[real] - op2[real] * op3[real], op1[img] - op2[real] * op3[img]),
+                    3 => (op1[real] + op2[img] * op3[img], op1[img] - op2[img] * op3[real]),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float[] MultiplyAddRotateComplexBySelectedScalar(float[] op1, float[] op2, float[] op3, byte index, byte imm)
         {
             for (int i = 0; i < op1.Length; i += 2)
@@ -4134,6 +4451,29 @@ namespace JIT.HardwareIntrinsics.Arm
                     2 => (FusedMultiplySubtract(op1[real], op2[real], op3Real), FusedMultiplySubtract(op1[img], op2[real], op3Img)),
                     3 => (FusedMultiplyAdd(op1[real], op2[img], op3Img), FusedMultiplySubtract(op1[img], op2[img], op3Real)),
                     _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static T[] MultiplyAddRotateComplexBySelectedScalar<T>(T[] op1, T[] op2, T[] op3, byte index, byte imm) where T : INumber<T>
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (T op3Real, T op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (T ans1, T ans2) = imm switch
+                {
+                    0 => (op1[real] + op2[real] * op3Real, op1[img] + op2[real] * op3Img),
+                    1 => (op1[real] - op2[img] * op3Img, op1[img] + op2[img] * op3Real),
+                    2 => (op1[real] - op2[real] * op3Real, op1[img] - op2[real] * op3Img),
+                    3 => (op1[real] + op2[img] * op3Img, op1[img] - op2[img] * op3Real),
+                    _ => (default, default)
                 };
 
                 op1[real] = ans1;
@@ -4615,36 +4955,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint UnsignedReciprocalEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0x8000_0000u) == 0)
+                return 0xFFFF_FFFFu;
 
-            if ((op1 & (1 << 31)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint idx = (op1 >> 23) & 0x1FFu;
 
-            return result;
+            uint estimate = ReciprocalEstimate(idx) & 0x1FFu;
+
+            return estimate << 23;
         }
 
         public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0xC0000000u) == 0)
+                return 0xFFFFFFFFu;
 
-            if ((op1 & (3 << 30)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23)) & 0x1FFu;
 
-            return result;
+            return estimate << 23;
         }
 
         public static T Add<T>(T a, T b) where T : INumber<T> => a + b;
@@ -4666,6 +4994,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static T AddPairwiseSve<T>(T[] array1, T[] array2, int i)
             where T : unmanaged, INumber<T>
             => PairwiseSve((a, b) => Add(a, b), array1, array2, i);
+
+        public static T[] AddRotateComplex<T>(T[] op1, T[] op2, byte rot) where T : INumber<T>
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
 
         public static T MaxPairwise<T>(T[] array, int i)
             where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
@@ -4723,29 +5073,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return (i % 2 == 0)
                 ? op(array1[i], array1[i + 1])
                 : op(array2[i - 1], array2[i]);
-        }
-
-        public static T[] AddRotateComplex<T>(T[] op1, T[] op2, byte rot)
-            where T : unmanaged, IFloatingPoint<T>
-        {
-            for (int i = 0; i < op1.Length; i += 2)
-            {
-                int real = i;
-                int img = i + 1;
-
-                if (rot == 0)
-                {
-                    op1[real] -= op2[img];
-                    op1[img] += op2[real];
-                }
-                else
-                {
-                    op1[real] += op2[img];
-                    op1[img] -= op2[real];
-                }
-            }
-
-            return op1;
         }
 
         public static T AddAcross<T>(T[] values)

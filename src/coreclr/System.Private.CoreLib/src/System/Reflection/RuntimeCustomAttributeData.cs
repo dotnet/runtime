@@ -170,7 +170,7 @@ namespace System.Reflection
             if (type.IsClass)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsInterface)
+            if (type.IsActualInterface)
                 return CustomAttributeEncoding.Object;
 
             if (type.IsActualValueType)
@@ -253,10 +253,10 @@ namespace System.Reflection
             m_scope = scope;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
-            if (m_ctor!.DeclaringType!.IsGenericType)
+            if (m_ctor.DeclaringType!.IsGenericType)
             {
                 MetadataImport metadataScope = m_scope.MetadataImport;
-                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null);
                 m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
@@ -2263,7 +2263,7 @@ namespace System.Reflection
 
         internal static StructLayoutAttribute? GetStructLayoutCustomAttribute(RuntimeType type)
         {
-            if (type.IsInterface || type.HasElementType || type.IsGenericParameter)
+            if (type.IsActualInterface || type.HasElementType || type.IsGenericParameter)
                 return null;
 
             LayoutKind layoutKind = LayoutKind.Auto;

@@ -396,23 +396,24 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 template<>
 struct cdac_offsets<StressLog>
 {
-    static const size_t facilitiesToLog = offsetof(StressLog, facilitiesToLog);
-    static const size_t levelToLog = offsetof(StressLog, levelToLog);
-    static const size_t MaxSizePerThread = offsetof(StressLog, MaxSizePerThread);
-    static const size_t MaxSizeTotal = offsetof(StressLog, MaxSizeTotal);
-    static const size_t totalChunk = offsetof(StressLog, totalChunk);
-    static const size_t logs = offsetof(StressLog, logs);
-    static const size_t tickFrequency = offsetof(StressLog, tickFrequency);
-    static const size_t startTimeStamp = offsetof(StressLog, startTimeStamp);
-    static const size_t startTime = offsetof(StressLog, startTime);
-    static const size_t moduleOffset = offsetof(StressLog, moduleOffset);
-    static constexpr uint64_t MAX_MODULES = StressLog::MAX_MODULES;
+    static constexpr size_t facilitiesToLog = offsetof(StressLog, facilitiesToLog);
+    static constexpr size_t levelToLog = offsetof(StressLog, levelToLog);
+    static constexpr size_t MaxSizePerThread = offsetof(StressLog, MaxSizePerThread);
+    static constexpr size_t MaxSizeTotal = offsetof(StressLog, MaxSizeTotal);
+    static constexpr size_t totalChunk = offsetof(StressLog, totalChunk);
+    static constexpr size_t logs = offsetof(StressLog, logs);
+    static constexpr size_t tickFrequency = offsetof(StressLog, tickFrequency);
+    static constexpr size_t startTimeStamp = offsetof(StressLog, startTimeStamp);
+    static constexpr size_t startTime = offsetof(StressLog, startTime);
+    static constexpr size_t moduleOffset = offsetof(StressLog, moduleOffset);
+    static constexpr size_t MAX_MODULES = StressLog::MAX_MODULES;
+    static constexpr size_t modules = offsetof(StressLog, modules);
 
     struct ModuleDesc
     {
         static constexpr size_t type_size = sizeof(StressLog::ModuleDesc);
-        static const size_t baseAddress = offsetof(StressLog::ModuleDesc, baseAddress);
-        static const size_t size = offsetof(StressLog::ModuleDesc, size);
+        static constexpr size_t baseAddress = offsetof(StressLog::ModuleDesc, baseAddress);
+        static constexpr size_t size = offsetof(StressLog::ModuleDesc, size);
     };
 };
 
