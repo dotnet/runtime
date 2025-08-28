@@ -148,9 +148,13 @@ class UMEntryThunkData
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
     // but it may not have the correct value.
     PCODE                   m_pManagedTarget;
-    // The native code to tailcall. May or may not match what the UM entry precode has been patched to call directly.
-    // This is populated by RunTimeInit at the end of execution.
-    PCODE                   m_pCachedCallTarget;
+
+#ifdef FEATURE_INTERPRETER
+    // InterpreterPrecode to tailcall if the target is interpreted. This allows TheUMEntryPrestubWorker
+    // stash the hidden argument in a thread static and avoid collision with the hidden argument
+    // used by InterpreterPrecode.
+    Volatile<PCODE>         m_pIntepretedCallTarget;
+#endif
 
     // This is used for debugging and profiling.
     PTR_MethodDesc          m_pMD;
@@ -203,7 +207,7 @@ public:
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
-        m_pCachedCallTarget = (PCODE)0;
+        m_pIntepretedCallTarget = (PCODE)0;
 
         m_pMD = pMD;
 
@@ -218,17 +222,10 @@ public:
 
     void Terminate();
 
-    PCODE GetCachedCallTarget()
+    PCODE GetInterpreterTarget()
     {
         STANDARD_VM_CONTRACT;
-        return m_pCachedCallTarget;
-    }
-
-    void PatchPrecode()
-    {
-        STANDARD_VM_CONTRACT;
-
-        m_pUMEntryThunk->SetTargetUnconditional(m_pCachedCallTarget);
+        return m_pIntepretedCallTarget;
     }
 
     void RunTimeInit()
@@ -244,8 +241,27 @@ public:
         if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        // FIXME: Do we need to use atomics here?
-        m_pCachedCallTarget = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
+        PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
+
+#ifdef FEATURE_INTERPRETER
+        // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
+        // unmanaged-to-managed invocation in order to populate the TLS variable every time.
+        auto stubKind = RangeSectionStubManager::GetStubKind(entryPoint);
+        if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            StubPrecode* pPrecode = Precode::GetPrecodeFromEntryPoint(entryPoint)->AsStubPrecode();
+            if (pPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                m_pIntepretedCallTarget = entryPoint;
+                entryPoint = NULL;
+            }
+        }
+
+        if (entryPoint != NULL)
+#endif // FEATURE_INTERPRETER
+        {
+            m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
+        }
 
 #ifdef _DEBUG
         m_state = kRunTimeInited;
