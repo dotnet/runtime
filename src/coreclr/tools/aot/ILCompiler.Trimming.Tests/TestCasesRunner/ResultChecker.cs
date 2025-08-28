@@ -430,7 +430,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse(unexpectedWarningCode.Substring(2));
 
-                MessageContainer? unexpectedWarningMessage = null;
                 foreach (var mc in unmatchedMessages)
                 {
                     if (mc.Category != MessageCategory.Warning)
@@ -445,9 +444,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                     unexpectedMessageWarnings.Add($"Unexpected warning found: {mc}");
                 }
-
-                Assert.False(unexpectedWarningMessage.HasValue,
-                    $"Unexpected warning found: {unexpectedWarningMessage}");
             }
 
             if (missingMessageWarnings.Any())
