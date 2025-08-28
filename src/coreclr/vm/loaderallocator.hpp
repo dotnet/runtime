@@ -229,9 +229,17 @@ public:
     LoaderAllocatorID(LoaderAllocatorType laType=LAT_Invalid, VOID* value = 0)
     {
         m_type = laType;
-        m_pValue = value;
+        m_pValue = 0;
     };
     VOID Init();
+    bool HasAttachedDynamicAssemblies()
+    {
+        if (m_type == LAT_Assembly && m_pDomainAssembly != NULL)
+        {
+            return true;
+        }
+        return false;
+    }
     LoaderAllocatorType GetType();
     VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
     DomainAssemblyIterator GetDomainAssemblyIterator();
