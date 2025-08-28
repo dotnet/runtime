@@ -230,7 +230,7 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, 
         "--application.options.collectCounters", "false",
         "--application.collectDependencies", "false",
         "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "5", # default 15s is not enough for Tier1 promotion
+        "--load.variables.duration", "10", # default 15s is not enough for Tier1 promotion
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
         "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
         "--application.environmentVariables", "SuperPMIShimLogPath=.",
@@ -301,7 +301,7 @@ def main():
         run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="mvc", config_path=config_path))
 
         print("### Running NoMvcAuth benchmark... ###")
-        run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
+        # run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
 
 
         print("Finished running benchmarks.")
