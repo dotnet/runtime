@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;
@@ -49,18 +49,11 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         protected static IEnumerable<KeyDescription> LocalGenerateTestKeys()
         {
-            if (DSAFactory.SupportsKeyGeneration)
-            {
-                yield return CreateKey(1024);
-
-                if (DSAFactory.SupportsFips186_3)
-                {
-                    yield return CreateKey(2048);
-                }
-            }
+            yield return CreateKey(1024);
 
             if (DSAFactory.SupportsFips186_3)
             {
+                yield return CreateKey(2048);
                 yield return OpenKey(DSATestData.GetDSA2048Params());
             }
 

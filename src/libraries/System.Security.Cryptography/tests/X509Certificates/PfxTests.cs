@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void DsaPrivateKeyProperty()
         {
             using (var cert = new X509Certificate2(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword, Cert.EphemeralIfPossible))
@@ -366,7 +366,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void ReadDSAPrivateKey()
         {
             byte[] data = { 1, 2, 3, 4, 5 };

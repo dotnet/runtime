@@ -18,7 +18,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+    [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
     public class DSAKeyValueTest
     {
         [Fact]

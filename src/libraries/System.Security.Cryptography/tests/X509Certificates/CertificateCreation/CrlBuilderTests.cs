@@ -777,7 +777,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+        [SkipOnPlatform(TestPlatforms.Browser | PlatformSupport.AppleCrypto, "Not supported on Browser/Apple")]
         public static void DsaNotDirectlySupported()
         {
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();

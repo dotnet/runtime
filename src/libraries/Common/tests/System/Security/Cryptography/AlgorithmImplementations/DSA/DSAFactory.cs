@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         DSA Create();
         DSA Create(int keySize);
         bool SupportsFips186_3 { get; }
-        bool SupportsKeyGeneration { get; }
+        bool IsSupported { get; }
     }
 
     public static partial class DSAFactory
@@ -36,6 +36,6 @@ namespace System.Security.Cryptography.Dsa.Tests
         /// </summary>
         public static bool SupportsFips186_3 => s_provider.SupportsFips186_3;
 
-        public static bool SupportsKeyGeneration => s_provider.SupportsKeyGeneration;
+        public static bool IsSupported => s_provider.IsSupported;
     }
 }

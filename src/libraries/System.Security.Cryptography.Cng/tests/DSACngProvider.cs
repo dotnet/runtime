@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         public bool SupportsFips186_3 => (!PlatformDetection.IsWindows7);
-        public bool SupportsKeyGeneration => true;
+        public bool IsSupported => true;
     }
 
     public partial class DSAFactory

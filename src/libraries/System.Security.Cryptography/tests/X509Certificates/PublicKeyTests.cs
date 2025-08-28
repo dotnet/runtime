@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void TestPublicKey_Key_DSA()
         {
             PublicKey pk = GetTestDsaKey();
@@ -586,7 +586,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void TestDSAPublicKey()
         {
             using (var cert = new X509Certificate2(TestData.DssCer))
@@ -598,7 +598,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void TestDSAPublicKey_VerifiesSignature()
         {
             byte[] data = { 1, 2, 3, 4, 5 };
@@ -618,7 +618,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void TestDSAPublicKey_RSACert()
         {
             using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
@@ -629,7 +629,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void TestDSAPublicKey_ECDSACert()
         {
             using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void ExportSubjectPublicKeyInfo_DSA()
         {
             using DSA dsa = DSA.Create();
@@ -793,7 +793,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA()
         {
             using DSA dsa = DSA.Create();
@@ -839,7 +839,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA_InvalidKey()
         {
             // The DSA key is invalid here, but we should be able to round-trip the
@@ -928,7 +928,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void GetDSAPublicKey_NullForDifferentAlgorithm()
         {
             byte[] spki = TestData.GostR3410SubjectPublicKeyInfo;
@@ -959,7 +959,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void GetDSAPublicKey_ReturnsDsaKey()
         {
             PublicKey key = GetTestDsaKey();
@@ -972,7 +972,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void GetDSAPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });

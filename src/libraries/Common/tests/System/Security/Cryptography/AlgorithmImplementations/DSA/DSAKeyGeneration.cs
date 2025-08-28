@@ -5,10 +5,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public partial class DSAKeyGeneration
     {
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        public static bool IsSupported => DSAFactory.IsSupported;
         public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
 
         [Fact]
@@ -23,19 +23,19 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration), nameof(HasSecondMinSize))]
+        [ConditionalFact(nameof(HasSecondMinSize))]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateKey_1024()
         {
             GenerateKey(1024);

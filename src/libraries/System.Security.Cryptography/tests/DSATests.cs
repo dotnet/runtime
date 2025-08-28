@@ -8,12 +8,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public class DSATests
     {
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
-
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void TryCreateSignature_UsesCreateSignature()
         {
             var input = new byte[1024];
@@ -54,7 +52,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void TrySignData_UsesTryHashDataAndTryCreateSignature()
         {
             var input = new byte[1024];
@@ -79,7 +77,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void VerifyData_Array_UsesHashDataAndVerifySignature()
         {
             var input = new byte[1024];
@@ -103,7 +101,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void VerifyData_Stream_UsesHashDataAndVerifySignature()
         {
             var input = new byte[1024];
@@ -122,7 +120,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void VerifyData_Span_UsesTryHashDataAndVerifySignature()
         {
             var input = new byte[1024];

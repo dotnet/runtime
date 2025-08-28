@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void NamedAsymmetricAlgorithmCreate_DSA(string identifier, Type baseType)
         {
             using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))
@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.AsymmetricAlgorithm", "System.Security.Cryptography.RSACryptoServiceProvider", true };
-                    if (!PlatformDetection.UsesMobileAppleCrypto)
+                    if (!PlatformDetection.IsApplePlatform)
                     {
                         yield return new object[] { "DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
                         yield return new object[] { "System.Security.Cryptography.DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };

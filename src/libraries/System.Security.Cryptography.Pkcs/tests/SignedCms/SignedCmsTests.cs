@@ -514,7 +514,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
 #if NET

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public sealed class DSASignVerify_Array : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public sealed class DSASignVerify_Stream : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     }
 
 #if NET
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public sealed class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -109,13 +109,13 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 #endif
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public abstract partial class DSASignVerify
     {
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
         public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 () => VerifyData(dsa, data, sig, HashAlgorithmName.SHA1));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void SignAndVerifyDataNew1024()
         {
             using (DSA dsa = DSAFactory.Create(1024))
@@ -429,6 +429,6 @@ namespace System.Security.Cryptography.Dsa.Tests
                 return DSAFactory.SupportsFips186_3;
             }
         }
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        public static bool IsSupported => DSAFactory.IsSupported;
     }
 }

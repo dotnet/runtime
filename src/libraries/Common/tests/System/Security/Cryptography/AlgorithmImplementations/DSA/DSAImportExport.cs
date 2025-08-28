@@ -5,13 +5,13 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
     public partial class DSAImportExport
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        public static bool IsSupported => DSAFactory.IsSupported;
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;
@@ -143,13 +143,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             // Ensure that the key got created, and then Dispose it.
             using (key)
             {
-                try
-                {
-                    key.CreateSignature(hash);
-                }
-                catch (PlatformNotSupportedException) when (!SupportsKeyGeneration)
-                {
-                }
+                key.CreateSignature(hash); // Assert.NoThrow
             }
 
             Assert.Throws<ObjectDisposedException>(() => key.ExportParameters(false));

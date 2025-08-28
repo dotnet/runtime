@@ -445,7 +445,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
         {
             SignedCms cms = new SignedCms();
@@ -676,7 +676,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void AddCounterSigner_DSA()
         {
             AssertAddCounterSigner(
