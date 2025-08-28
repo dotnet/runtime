@@ -751,8 +751,8 @@ private:
                 // Splice out the comma with its value
                 //
                 GenTree* const valueTree = condTree->gtGetOp2();
-                condTree = valueTree;
-                tree->AsOp()->gtOp1 = valueTree;
+                condTree                 = valueTree;
+                tree->AsOp()->gtOp1      = valueTree;
                 m_compiler->gtUpdateNodeSideEffects(tree);
             }
 
