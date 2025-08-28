@@ -452,19 +452,8 @@ namespace System.Runtime
 
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
-        // ExactSpelling = 'true' to force MCG to resolve it to default
         [LibraryImport(RuntimeLibrary)]
-        private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
-
-        // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
-        // we must prevent RhCompatibleReentrantWaitAny from using marshaling because it would
-        // rewrite System.Private.CoreLib to reference the non-shareable interop assembly. With shared interop,
-        // we will be able to remove this helper method and change the DllImport above
-        // to directly accept a boolean parameter and use the SetLastError = true modifier.
-        internal static unsafe int RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, IntPtr* handles)
-        {
-            return RhCompatibleReentrantWaitAny(alertable ? 1 : 0, timeout, count, handles);
-        }
+        internal static unsafe partial int RhCompatibleReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 #endif
 
         //

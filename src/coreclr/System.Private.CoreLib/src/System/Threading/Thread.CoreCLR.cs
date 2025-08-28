@@ -302,7 +302,6 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
         private static partial int GetThreadState(ThreadHandle t);
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal void SetWaitSleepJoinState()
         {
             // This method is called when the thread is about to enter a wait, sleep, or join state.
@@ -324,7 +323,6 @@ namespace System.Threading
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         private static partial void ClearWaitSleepJoinState(ThreadHandle t);
-#endif
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -375,6 +373,9 @@ namespace System.Threading
             return true;
         }
 
+        internal static bool ReentrantWaitsEnabled =>
+            CurrentThread.GetApartmentState() == ApartmentState.STA;
+
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         public ApartmentState GetApartmentState() => ApartmentState.Unknown;
 
@@ -392,6 +393,8 @@ namespace System.Threading
 
             return true;
         }
+
+        internal const bool ReentrantWaitsEnabled = false;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP
@@ -568,6 +571,18 @@ namespace System.Threading
 #endif
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
+        internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
+
+        internal static void CheckForPendingInterrupt()
+        {
+            CheckForPendingInterrupt(CurrentThread.GetNativeHandle());
+            GC.KeepAlive(CurrentThread);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
+        private static partial void CheckForPendingInterrupt(ThreadHandle t);
+
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeThreadClass
         {
@@ -576,12 +591,12 @@ namespace System.Threading
 
         private enum NativeThreadState
         {
-            None                      = 0,
-            TS_AbortRequested         = 0x00000001,    // Abort the thread
-            TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
-            TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
+            None = 0,
+            TS_AbortRequested = 0x00000001,    // Abort the thread
+            TS_DebugSuspendPending = 0x00000008,    // Is the debugger suspending threads?
+            TS_GCOnTransitions = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        // We require (and assert) that the following bits are less than 0x100.
+            // We require (and assert) that the following bits are less than 0x100.
             TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
         };
     }

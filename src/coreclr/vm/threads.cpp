@@ -3149,6 +3149,24 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+
+DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    DWORD ret = 0;
+
+    DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+
+    return ret;
+}
+
+
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -3202,18 +3220,6 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
         // anything).
         ResetThreadState(TS_Interrupted);
     }
-}
-
-void MarkOSAlertableWait()
-{
-    LIMITED_METHOD_CONTRACT;
-    GetThread()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
-}
-
-void UnMarkOSAlertableWait()
-{
-    LIMITED_METHOD_CONTRACT;
-    GetThread()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
 }
 
 //--------------------------------------------------------------------
@@ -3289,8 +3295,6 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     {
         DoAppropriateWaitWorkerAlertableHelper(mode);
     }
-
-    StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
 
     ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
 
@@ -3500,158 +3504,6 @@ WaitCompleted:
     {
         FireEtwWaitHandleWaitStop(GetClrInstanceId());
     }
-
-    return ret;
-}
-
-
-//--------------------------------------------------------------------
-// Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
-//--------------------------------------------------------------------
-DWORD Thread::DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable, PendingSync *syncState)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    _ASSERTE(alertable || syncState == 0);
-
-    struct Param
-    {
-        Thread *pThis;
-        HANDLE *handles;
-        DWORD millis;
-        BOOL alertable;
-        DWORD dwRet;
-    } param;
-    param.pThis = this;
-    param.handles = handles;
-    param.millis = millis;
-    param.alertable = alertable;
-    param.dwRet = (DWORD) -1;
-
-    EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoSignalAndWaitWorker(pParam->handles, pParam->millis, pParam->alertable);
-    }
-    EE_FINALLY {
-        if (syncState) {
-            if (!GOT_EXCEPTION() && WAIT_OBJECT_0 == param.dwRet) {
-                // This thread has been removed from syncblk waiting list by the signalling thread
-                syncState->Restore(FALSE);
-            }
-            else
-                syncState->Restore(TRUE);
-        }
-
-        _ASSERTE (WAIT_IO_COMPLETION != param.dwRet);
-    }
-    EE_END_FINALLY;
-
-    return(param.dwRet);
-}
-
-
-DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    DWORD ret = 0;
-
-    GCX_PREEMP();
-
-    if(alertable)
-    {
-        DoAppropriateWaitWorkerAlertableHelper(WaitMode_None);
-    }
-
-    StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    ULONGLONG dwStart = 0, dwEnd;
-
-    if (INFINITE != millis)
-    {
-        dwStart = minipal_lowres_ticks();
-    }
-
-    ret = SignalObjectAndWait(pHandles[0], pHandles[1], millis, alertable);
-
-retry:
-
-    if (WAIT_IO_COMPLETION == ret)
-    {
-        _ASSERTE (alertable);
-        // We could be woken by some spurious APC or an EE APC queued to
-        // interrupt us. In the latter case the TS_Interrupted bit will be set
-        // in the thread state bits. Otherwise we just go back to sleep again.
-        if ((m_State & TS_Interrupted))
-        {
-            HandleThreadInterrupt();
-        }
-        if (INFINITE != millis)
-        {
-            dwEnd = minipal_lowres_ticks();
-            if (dwStart + millis <= dwEnd)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-
-            millis -= (DWORD)(dwEnd - dwStart);
-            dwStart = dwEnd;
-        }
-        //Retry case we don't want to signal again so only do the wait...
-        ret = WaitForSingleObjectEx(pHandles[1],millis,TRUE);
-        goto retry;
-    }
-
-    if (WAIT_FAILED == ret)
-    {
-        DWORD errorCode = ::GetLastError();
-        //If the handle to signal is a mutex and
-        //   the calling thread is not the owner, errorCode is ERROR_NOT_OWNER
-
-        switch(errorCode)
-        {
-            case ERROR_INVALID_HANDLE:
-            case ERROR_NOT_OWNER:
-            case ERROR_ACCESS_DENIED:
-                COMPlusThrowWin32();
-                break;
-
-            case ERROR_TOO_MANY_POSTS:
-                ret = ERROR_TOO_MANY_POSTS;
-                break;
-
-            default:
-                CONSISTENCY_CHECK_MSGF(0, ("This errorCode is not understood '(%d)''\n", errorCode));
-                COMPlusThrowWin32();
-                break;
-        }
-    }
-
-WaitCompleted:
-
-    //Check that the return state is valid
-#ifdef HOST_WINDOWS
-    _ASSERTE(WAIT_OBJECT_0 == ret  ||
-         WAIT_ABANDONED == ret ||
-         WAIT_TIMEOUT == ret ||
-         WAIT_FAILED == ret  ||
-         ERROR_TOO_MANY_POSTS == ret);
-#else
-    _ASSERTE(WAIT_OBJECT_0 == ret  ||
-         WAIT_TIMEOUT == ret ||
-         WAIT_FAILED == ret  ||
-         ERROR_TOO_MANY_POSTS == ret);
-#endif // HOST_WINDOWS
-
-    //Wrong to time out if the wait was infinite
-    _ASSERTE((WAIT_TIMEOUT != ret) || (INFINITE != millis));
 
     return ret;
 }

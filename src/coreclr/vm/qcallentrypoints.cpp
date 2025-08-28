@@ -26,7 +26,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -291,6 +290,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_SetWaitSleepJoinState)
     DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
+    DllImportEntry(ThreadNative_ReentrantWaitAny)
+    DllImportEntry(ThreadNative_CheckForPendingInterrupt)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
@@ -305,9 +306,6 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(WaitHandle_WaitOneCore)
-    DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
-    DllImportEntry(WaitHandle_SignalAndWait)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)

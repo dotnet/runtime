@@ -933,3 +933,32 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
+
+
+extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
+{
+    QCALL_CONTRACT;
+
+    INT32 retVal = 0;
+
+    BEGIN_QCALL;
+
+    Thread *pThread = GetThread();
+    WaitMode mode = (WaitMode)((alertable ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
+    retVal = pThread->DoAppropriateWait(count, handles, FALSE, timeout, mode);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    thread->HandleThreadInterrupt();
+
+    END_QCALL;
+}
