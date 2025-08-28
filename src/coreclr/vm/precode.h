@@ -84,6 +84,12 @@ struct ThisPtrRetBufPrecode;
 typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 #define PRECODE_UMENTRY_THUNK_VALUE 0x7 // Define the value here and not in UMEntryThunk to avoid circular dependency with the dllimportcallback.h header
 
+#ifdef FEATURE_INTERPRETER
+struct InterpreterPrecode;
+
+typedef DPTR(InterpreterPrecode) PTR_InterpreterPrecode;
+#endif 
+
 // Regular precode
 struct StubPrecode
 {
@@ -121,6 +127,10 @@ struct StubPrecode
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     ThisPtrRetBufPrecode* AsThisPtrRetBufPrecode();
 #endif // HAS_THISPTR_RETBUF_PRECODE
+
+#ifdef FEATURE_INTERPRETER
+    PTR_InterpreterPrecode AsInterpreterPrecode();
+#endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
     void SetSecretParam(TADDR secretParam)
@@ -340,7 +350,13 @@ struct InterpreterPrecode
     TADDR GetMethodDesc();
 };
 
-typedef DPTR(InterpreterPrecode) PTR_InterpreterPrecode;
+inline PTR_InterpreterPrecode StubPrecode::AsInterpreterPrecode()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+
+    return dac_cast<PTR_InterpreterPrecode>(this);
+}
 
 #endif // FEATURE_INTERPRETER
 
@@ -509,10 +525,11 @@ inline TADDR StubPrecode::GetMethodDesc()
         case PRECODE_PINVOKE_IMPORT:
             return GetSecretParam();
 
-        case PRECODE_UMENTRY_THUNK:
 #ifdef FEATURE_INTERPRETER
         case PRECODE_INTERPRETER:
+            return AsInterpreterPrecode()->GetMethodDesc();
 #endif // FEATURE_INTERPRETER
+        case PRECODE_UMENTRY_THUNK:
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
         case PRECODE_DYNAMIC_HELPERS:
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -568,11 +585,8 @@ public:
 
         return dac_cast<PTR_StubPrecode>(this);
     }
-private:
 
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
-public:
-    // Fake precodes has to be exposed
     PInvokeImportPrecode* AsPInvokeImportPrecode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -580,8 +594,6 @@ public:
 
         return dac_cast<PTR_PInvokeImportPrecode>(this);
     }
-
-private:
 #endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
@@ -613,6 +625,7 @@ private:
     }
 #endif // FEATURE_INTERPRETER
 
+private:
     TADDR GetStart()
     {
         SUPPORTS_DAC;

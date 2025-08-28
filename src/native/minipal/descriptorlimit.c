@@ -13,7 +13,7 @@
 
 bool minipal_increase_descriptor_limit(void)
 {
-#if TARGET_WASM
+#ifdef __wasm__
     // WebAssembly cannot set limits
 #elif TARGET_LINUX_MUSL
     // Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason

@@ -331,10 +331,8 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
     int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
     {
-        int hr = HResults.S_OK;
-
+        int hr = HResults.S_FALSE;
         *handle = 0;
-        hr = HResults.S_FALSE;
 
         ulong handleLocal = default;
 #if DEBUG
