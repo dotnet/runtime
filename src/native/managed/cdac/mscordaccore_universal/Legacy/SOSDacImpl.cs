@@ -909,7 +909,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 GCGenerationData genData = heapData.GenerationTable[i];
                 details->generation_table[i].start_segment = genData.StartSegment.ToClrDataAddress(_target);
-                details->generation_table[i].allocation_start = (genData.AllocationStart ?? 0).ToClrDataAddress(_target);
+                details->generation_table[i].allocation_start = genData.AllocationStart.ToClrDataAddress(_target);
                 details->generation_table[i].allocContextPtr = genData.AllocationContextPointer.ToClrDataAddress(_target);
                 details->generation_table[i].allocContextLimit = genData.AllocationContextLimit.ToClrDataAddress(_target);
             }
@@ -1042,7 +1042,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 GCGenerationData genData = heapData.GenerationTable[i];
                 details->generation_table[i].start_segment = genData.StartSegment.ToClrDataAddress(_target);
-                details->generation_table[i].allocation_start = (genData.AllocationStart ?? 0).ToClrDataAddress(_target);
+                details->generation_table[i].allocation_start = genData.AllocationStart.ToClrDataAddress(_target);
                 details->generation_table[i].allocContextPtr = genData.AllocationContextPointer.ToClrDataAddress(_target);
                 details->generation_table[i].allocContextLimit = genData.AllocationContextLimit.ToClrDataAddress(_target);
             }

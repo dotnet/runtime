@@ -165,7 +165,7 @@ internal readonly struct GC_1 : IGC
         new GCGenerationData()
         {
             StartSegment = gen.StartSegment,
-            AllocationStart = gen.AllocationStart,
+            AllocationStart = gen.AllocationStart ?? 0,
             AllocationContextPointer = gen.AllocationContext.Pointer,
             AllocationContextLimit = gen.AllocationContext.Limit,
         }).ToList();
