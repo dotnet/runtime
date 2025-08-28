@@ -3368,14 +3368,6 @@ retry:
         {
             ThrowOutOfMemory();
         }
-#ifdef TARGET_UNIX
-        else if (errorCode == ERROR_NOT_SUPPORTED)
-        {
-            // "Wait for any" and "wait for all" operations on multiple wait handles are not supported when a cross-process sync
-            // object is included in the array
-            COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll"));
-        }
-#endif
         else if (errorCode != ERROR_INVALID_HANDLE)
         {
             ThrowWin32(errorCode);
