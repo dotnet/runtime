@@ -261,7 +261,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
+          - windows_x64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
