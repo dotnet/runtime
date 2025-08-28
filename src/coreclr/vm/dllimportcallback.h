@@ -207,7 +207,9 @@ public:
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
+#ifdef FEATURE_INTERPRETER
         m_pInterpretedTarget = (PCODE)0;
+#endif
 
         m_pMD = pMD;
 
