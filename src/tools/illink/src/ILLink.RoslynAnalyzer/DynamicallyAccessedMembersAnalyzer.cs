@@ -61,6 +61,7 @@ namespace ILLink.RoslynAnalyzer
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReturnValueDoesNotMatchFeatureGuards));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.InvalidFeatureGuard));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DataflowAnalysisDidNotConverge));
 
             foreach (var requiresAnalyzer in RequiresAnalyzers.Value)
             {
@@ -110,8 +111,17 @@ namespace ILLink.RoslynAnalyzer
                     foreach (var operationBlock in context.OperationBlocks)
                     {
                         TrimDataFlowAnalysis trimDataFlowAnalysis = new(context, dataFlowAnalyzerContext, operationBlock);
-                        trimDataFlowAnalysis.InterproceduralAnalyze();
+                        bool success = trimDataFlowAnalysis.InterproceduralAnalyze();
                         trimDataFlowAnalysis.ReportDiagnostics(context.ReportDiagnostic);
+                        if (!success)
+                        {
+                            context.ReportDiagnostic(
+                                Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(
+                                    DiagnosticId.DataflowAnalysisDidNotConverge,
+                                    diagnosticSeverity: DiagnosticSeverity.Warning),
+                                operationBlock.Syntax.GetLocation(),
+                                operationBlock.FindContainingSymbol(context.OwningSymbol).GetDisplayName()));
+                        }
                     }
                 });
 
