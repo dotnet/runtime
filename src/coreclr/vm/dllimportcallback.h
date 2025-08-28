@@ -222,11 +222,13 @@ public:
 
     void Terminate();
 
+#ifdef FEATURE_INTERPRETER
     PCODE GetInterpreterTarget()
     {
         STANDARD_VM_CONTRACT;
         return m_pInterpretedTarget;
     }
+#endif
 
     void RunTimeInit()
     {

@@ -215,6 +215,8 @@ PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 
 UMEntryThunkData * GetMostRecentUMEntryThunkData()
 {
+    LIMITED_METHOD_CONTRACT;
+
     UMEntryThunkData * result = t_MostRecentUMEntryThunkData;
     t_MostRecentUMEntryThunkData = nullptr;
     return result;
