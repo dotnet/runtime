@@ -944,7 +944,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 t
     BEGIN_QCALL;
 
     Thread *pThread = GetThread();
-    WaitMode mode = (WaitMode)((alertable ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
+    WaitMode mode = alertable ? WaitMode_Alertable : WaitMode_None;
     retVal = pThread->DoAppropriateWait(count, handles, FALSE, timeout, mode);
 
     END_QCALL;

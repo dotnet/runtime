@@ -3234,48 +3234,6 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     DWORD ret = 0;
 
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
-    // Waits from SynchronizationContext.WaitHelper are always just WaitMode_IgnoreSyncCtx.
-    // So if we defer to a sync ctx, we will lose any extra bits.  We must therefore not
-    // defer to a sync ctx if doing any non-default wait.
-    // If you're doing a default wait, but want to ignore sync ctx, specify WaitMode_IgnoreSyncCtx
-    // which will make mode != WaitMode_Alertable.
-    BOOL ignoreSyncCtx = (mode != WaitMode_Alertable);
-
-    if (AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
-        ignoreSyncCtx = TRUE;
-
-    // Unless the ignoreSyncCtx flag is set, first check to see if there is a synchronization
-    // context on the current thread and if there is, dispatch to it to do the wait.
-    // If  the wait is non alertable we cannot forward the call to the sync context
-    // since fundamental parts of the system (such as the GC) rely on non alertable
-    // waits not running any managed code. Also if we are past the point in shutdown were we
-    // are allowed to run managed code then we can't forward the call to the sync context.
-    if (!ignoreSyncCtx
-        && alertable
-        && !HasThreadStateNC(Thread::TSNC_BlockedForShutdown))
-    {
-        GCX_COOP();
-
-        BOOL fSyncCtxPresent = FALSE;
-        OBJECTREF SyncCtxObj = NULL;
-        GCPROTECT_BEGIN(SyncCtxObj)
-        {
-            GetSynchronizationContext(&SyncCtxObj);
-            if (SyncCtxObj != NULL)
-            {
-                SYNCHRONIZATIONCONTEXTREF syncRef = (SYNCHRONIZATIONCONTEXTREF)SyncCtxObj;
-                if (syncRef->IsWaitNotificationRequired())
-                {
-                    fSyncCtxPresent = TRUE;
-                    ret = DoSyncContextWait(&SyncCtxObj, countHandles, handles, waitAll, millis);
-                }
-            }
-        }
-        GCPROTECT_END();
-
-        if (fSyncCtxPresent)
-            return ret;
-    }
 
     // Before going to pre-emptive mode the thread needs to be flagged as waiting for
     // the debugger. This used to be accomplished by the TS_Interruptible flag but that
@@ -3502,33 +3460,6 @@ WaitCompleted:
     }
 
     return ret;
-}
-
-DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(handles));
-        PRECONDITION(IsProtectedByGCFrame (pSyncCtxObj));
-    }
-    CONTRACTL_END;
-    MethodDescCallSite invokeWaitMethodHelper(METHOD__SYNCHRONIZATION_CONTEXT__INVOKE_WAIT_METHOD_HELPER);
-
-    BASEARRAYREF handleArrayObj = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I, countHandles);
-    memcpyNoGCRefs(handleArrayObj->GetDataPtr(), handles, countHandles * sizeof(HANDLE));
-
-    ARG_SLOT args[6] =
-    {
-        ObjToArgSlot(*pSyncCtxObj),
-        ObjToArgSlot(handleArrayObj),
-        BoolToArgSlot(waitAll),
-        (ARG_SLOT)millis,
-    };
-
-    return invokeWaitMethodHelper.Call_RetI4(args);
 }
 
 // Called out of SyncBlock::Wait() to block this thread until the Notify occurs.

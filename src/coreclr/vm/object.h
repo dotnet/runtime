@@ -1219,37 +1219,15 @@ class ReflectModuleBaseObject : public Object
 };
 
 class ThreadBaseObject;
-class SynchronizationContextObject: public Object
-{
-    friend class CoreLibBinder;
-private:
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size.
-    CLR_BOOL _requireWaitNotification;
-public:
-    BOOL IsWaitNotificationRequired() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _requireWaitNotification;
-    }
-};
-
-
-
-
 
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
 typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
@@ -1356,12 +1334,6 @@ public:
     STRINGREF GetName() {
         LIMITED_METHOD_CONTRACT;
         return m_Name;
-    }
-
-    OBJECTREF GetSynchronizationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SynchronizationContext;
     }
 
     void      InitExisting();
