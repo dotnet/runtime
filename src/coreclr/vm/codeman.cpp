@@ -396,8 +396,8 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
-        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL));
-        if (pRS->_pjit->GetCodeType() == (miManaged | miIL))
+        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL) || pRS->_pjit->GetCodeType() == (miManaged | miIL | miOPTIL));
+        if (pRS->_pjit->GetCodeType() == (miManaged | miIL)) // Do this only for Jitted code, not for interpreted code
         {
             // This cast is justified because only EEJitManager's have the code type above.
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
