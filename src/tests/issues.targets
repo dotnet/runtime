@@ -537,10 +537,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74555</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 arm32 specific excludes -->
