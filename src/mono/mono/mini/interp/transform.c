@@ -3310,6 +3310,8 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		goto fail;
 	td->ip += 5;
 
+	td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
+
 	push_var (td, dreg);
 	return TRUE;
 fail:
@@ -3911,6 +3913,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return_val_if_nok (error, FALSE);
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
+			td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
 			td->ip += 5;
 			goto done;
 		}
@@ -9935,6 +9938,8 @@ exit:
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
 	g_slist_free (td->imethod_items);
+	for (GSList *l = td->headers_to_free; l; l = l->next)
+		mono_metadata_free_mh ((MonoMethodHeader *)l->data);
 	mono_mempool_destroy (td->mempool);
 	mono_interp_pgo_generate_end ();
 	if (td->retry_compilation) {
