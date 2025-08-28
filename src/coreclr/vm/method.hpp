@@ -415,10 +415,7 @@ public:
     Precode* GetOrCreatePrecode();
     void MarkPrecodeAsStableEntrypoint();
 
-
-    // Given a code address return back the MethodDesc whenever possible
-    //
-    static MethodDesc *  GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative = FALSE);
+    static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
 
 
     DWORD GetAttrs() const;

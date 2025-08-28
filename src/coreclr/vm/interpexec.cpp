@@ -158,6 +158,25 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
 #endif // !TARGET_WASM
 
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE void InvokePInvokeMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    {
+        GCX_PREEMP();
+        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+    }
+
+    inlinedCallFrame.Pop();
+}
+
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -1965,20 +1984,14 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InlinedCallFrame inlinedCallFrame;
-                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = pFrame;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-                    inlinedCallFrame.m_pThread = GetThread();
-                    inlinedCallFrame.m_Datum = NULL;
-                    inlinedCallFrame.Push();
-
+                    if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
-
-                    inlinedCallFrame.Pop();
+                    else
+                    {
+                        InvokePInvokeMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                    }
 
                     break;
                 }
