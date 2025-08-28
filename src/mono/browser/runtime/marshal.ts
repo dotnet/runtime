@@ -13,7 +13,7 @@ import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerAr
 import { TypedArray, VoidPtr } from "./types/emscripten";
 import { utf16ToString } from "./strings";
 import { get_managed_stack_trace } from "./managed-exports";
-import { mono_log_debug } from "./logging";
+//import { mono_log_debug } from "./logging";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -161,19 +161,16 @@ export function get_signature_res_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg1_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    mono_log_debug(`get_signature_arg1_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg1MarshalerType)) as any;
 }
 
 export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    mono_log_debug(`get_signature_arg3_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg2MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg2MarshalerType)) as any;
 }
 
 export function get_signature_arg3_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    mono_log_debug(`get_signature_arg3_type for sig '${sig}' is '${getU8(add_offset(sig, JSBindingTypeOffsets.Arg3MarshalerType))}'`);
     return getU8(add_offset(sig, JSBindingTypeOffsets.Arg3MarshalerType)) as any;
 }
 

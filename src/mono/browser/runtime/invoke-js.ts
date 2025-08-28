@@ -86,17 +86,17 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
     bound_fn(args);
 }
 
-function log_function_name_from_handle (function_handle: JSFnHandle): void {
-    const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
-    const closure = (bound_fn as any)[imported_js_function_symbol];
-    if (closure) {
-        mono_log_debug(() => `Invoking ${closure.fqn}`);
-    }
-}
+//function log_function_name_from_handle (function_handle: JSFnHandle): void {
+//    const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
+//    const closure = (bound_fn as any)[imported_js_function_symbol];
+//    if (closure) {
+//        mono_log_debug(() => `Invoking ${closure.fqn}`);
+//    }
+//}
 
 export function mono_wasm_invoke_jsimport_ST (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
-    log_function_name_from_handle(function_handle);
+    //log_function_name_from_handle(function_handle);
     loaderHelpers.assert_runtime_running();
     args = fixupPointer(args, 0);
     const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];

@@ -15,12 +15,12 @@ import { MonoMethod, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_async_jsexport, invoke_sync_jsexport } from "./managed-exports";
-import { mono_log_debug } from "./logging";
+//import { mono_log_debug } from "./logging";
 
 export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
-    mono_log_debug(() => `Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
+    //mono_log_debug(() => `Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
     const version = get_signature_version(signature);
     mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
