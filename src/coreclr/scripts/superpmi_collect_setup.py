@@ -539,7 +539,7 @@ def main(main_args):
         setup_benchmark(workitem_payload_directory, arch)
     elif coreclr_args.collection_name == "aspnet2":
         # Setup aspnet2 - no special payload setup needed, the script handles everything
-        printff("No special setup required for aspnet2")
+        print("No special setup required for aspnet2")
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
