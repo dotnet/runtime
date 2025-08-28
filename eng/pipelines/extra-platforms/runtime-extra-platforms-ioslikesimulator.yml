@@ -148,6 +148,7 @@ jobs:
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
       - iossimulator_arm64
+      - tvossimulator_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

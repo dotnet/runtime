@@ -183,14 +183,14 @@ VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
         g_executableMemoryAllocator.Initialize();
     }
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_MACCATALYST)
     jit_write_protect_np = (void (*)(int))dlsym(RTLD_DEFAULT, "pthread_jit_write_protect_np");
     if (jit_write_protect_np == NULL)
     {
         ERROR("pthread_jit_write_protect_np not available.\n");
         return FALSE;
     }
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_MACCATALYST)
 
     return TRUE;
 }
@@ -596,7 +596,7 @@ static LPVOID ReserveVirtualMemory(
 #endif
     }
 
-#ifdef __APPLE__
+#if defined(TARGET_APPLE) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
     if ((fAllocationType & MEM_RESERVE_EXECUTABLE) && IsRunningOnMojaveHardenedRuntime())
     {
         mmapFlags |= MAP_JIT;

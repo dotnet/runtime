@@ -614,7 +614,7 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(RuntimeFlavor)' == 'CoreCLR'">
+  <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR'">
     <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj"/>
   </ItemGroup>

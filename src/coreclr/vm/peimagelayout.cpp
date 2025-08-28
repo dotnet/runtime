@@ -271,9 +271,11 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
                     PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
                 // Disable writing on Apple Silicon
                 if (bExecRegion)
                     PAL_JitWriteProtect(false);
+#endif
 #else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
@@ -299,7 +301,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 {
 #if defined(__APPLE__) && defined(HOST_ARM64)
                     // Enable writing on Apple Silicon
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
                     PAL_JitWriteProtect(true);
+#endif
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -376,9 +380,11 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
         // Disable writing on Apple Silicon
         if (bExecRegion)
             PAL_JitWriteProtect(false);
+#endif
 #else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,

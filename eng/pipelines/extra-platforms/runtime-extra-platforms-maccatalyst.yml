@@ -202,3 +202,37 @@ jobs:
             buildAllTestsAsStandalone: true
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true /p:DevTeamProvisioning=adhoc /p:EnableAppSandbox=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+
+#
+# Build the whole product using CoreCLR and run functional tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Debug
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
+    platforms:
+      - maccatalyst_x64
+      - maccatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+      - name: illinkContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_CoreCLR
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:RunSmokeTestsOnly=true
+      timeoutInMinutes: 120
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
