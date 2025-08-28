@@ -2878,6 +2878,11 @@ public:
         Init(codeAddress);
     }
 
+    EECodeInfo(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
+    {
+        Init(codeAddress, scanFlag);
+    }
+
     // Explicit initialization
     void Init(PCODE codeAddress);
     void Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag);

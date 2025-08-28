@@ -415,10 +415,7 @@ public:
     Precode* GetOrCreatePrecode();
     void MarkPrecodeAsStableEntrypoint();
 
-
-    // Given a code address return back the MethodDesc whenever possible
-    //
-    static MethodDesc *  GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative = FALSE);
+    static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
 
 
     DWORD GetAttrs() const;
@@ -1720,7 +1717,7 @@ public:
     // The stub produced by prestub requires method desc to be passed
     // in dedicated register.
     // See HasMDContextArg() for the related stub version.
-    BOOL RequiresMDContextArg() const;
+    BOOL RequiresMDContextArg();
 
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
@@ -2703,9 +2700,12 @@ public:
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
-        StubCLRToNativeInterop,
+        StubPInvoke,
+        StubPInvokeDelegate,
+        StubPInvokeCalli,
+        StubPInvokeVarArg,
+        StubReversePInvoke,
         StubCLRToCOMInterop,
-        StubNativeToCLRInterop,
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
         StubArrayOp,
@@ -2738,8 +2738,8 @@ public:
         FlagRequiresCOM         = 0x00002000,
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
-        FlagIsDelegate          = 0x00010000,
-        FlagIsCALLI             = 0x00020000,
+        // unused               = 0x00010000,
+        // unused               = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
@@ -2833,7 +2833,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         ILStubType type = GetILStubType();
-        return type == StubCOMToCLRInterop || type == StubNativeToCLRInterop;
+        return type == StubCOMToCLRInterop || type == StubReversePInvoke;
     }
 
     bool IsStepThroughStub() const
@@ -2855,21 +2855,37 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !HasFlags(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
+        return GetILStubType() == StubCLRToCOMInterop;
     }
     bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !HasFlags(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
+        return GetILStubType() == StubCOMToCLRInterop;
     }
     bool IsPInvokeStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return HasFlags(FlagStatic)
-            && !HasFlags(FlagIsCALLI | FlagIsDelegate)
-            && GetILStubType() == StubCLRToNativeInterop;
+        return GetILStubType() == StubPInvoke;
+    }
+    bool IsPInvokeDelegateStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeDelegate;
+    }
+    bool IsPInvokeCalliStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeCalli;
+    }
+    bool IsPInvokeVarArgStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeVarArg;
     }
 
     bool IsMulticastStub() const
@@ -2910,7 +2926,7 @@ public:
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub();
+        return IsCLRToCOMStub() || IsPInvokeVarArgStub();
     }
 
     //
