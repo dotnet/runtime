@@ -1274,4 +1274,44 @@ namespace System.Runtime.CompilerServices
     {
         internal RuleCache() { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static partial class CallSiteOps
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static void AddRule<T>(System.Runtime.CompilerServices.CallSite<T> site, T rule) where T : class { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static void ClearMatch(System.Runtime.CompilerServices.CallSite site) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static System.Runtime.CompilerServices.CallSite<T> CreateMatchmaker<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static bool GetMatch(System.Runtime.CompilerServices.CallSite site) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static bool SetNotMatched(System.Runtime.CompilerServices.CallSite site) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
+        public static void UpdateRules<T>(System.Runtime.CompilerServices.CallSite<T> @this, int matched) where T : class { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public sealed partial class Closure
+    {
+        public readonly object[] Constants;
+        public readonly object[]? Locals;
+        public Closure(object[] constants, object[]? locals) { throw null; }
+    }
+    public static partial class RuntimeOps
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
+        public static System.Runtime.CompilerServices.IRuntimeVariables MergeRuntimeVariables(System.Runtime.CompilerServices.IRuntimeVariables first, System.Runtime.CompilerServices.IRuntimeVariables second, int[] indexes) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
+        public static System.Linq.Expressions.Expression? Quote(System.Linq.Expressions.Expression? expression, object hoistedLocals, object[] locals) { throw null; }
+    }
 }
