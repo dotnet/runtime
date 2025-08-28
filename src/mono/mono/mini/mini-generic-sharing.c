@@ -1415,7 +1415,7 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 		g_assert (klass);
 
-		mono_class_skip_generic_constraints (klass);
+		mono_class_set_skip_generic_constraints (klass);
 
 		t = m_class_get_byval_arg (klass);
 		MonoType *shared_type = get_wrapper_shared_vtype (t);
