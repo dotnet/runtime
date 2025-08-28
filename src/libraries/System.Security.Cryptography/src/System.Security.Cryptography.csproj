@@ -382,6 +382,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
@@ -456,6 +458,8 @@
              Link="Common\System\Security\Cryptography\SlhDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\SlhDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaCng.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdf.cs"
@@ -502,6 +506,8 @@
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\ErrorCode.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\ErrorCode.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs"
@@ -567,6 +573,7 @@
     <Compile Include="System\Security\Cryptography\DSASignatureFormat.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\ECAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
@@ -694,7 +701,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaX509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\LocalAppContextSwitches.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ErrorCode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ICertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ICertificatePalCore.cs" />
@@ -863,6 +869,7 @@
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
@@ -1028,8 +1035,12 @@
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
@@ -1064,6 +1075,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\CompositeMLDsaImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
@@ -1855,10 +1867,14 @@
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
@@ -1869,6 +1885,8 @@
              Link="Common\System\Security\Cryptography\DSACng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\DSACng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.HashAlgorithm.cs"
              Link="Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.cs"
@@ -1915,6 +1933,8 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCng.Windows.cs" />
@@ -1999,6 +2019,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.Import.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.PrivateKey.cs" />

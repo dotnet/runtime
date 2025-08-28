@@ -707,7 +707,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     if (varTypeIsFloating(targetType))
     {
         assert(tree->OperIs(GT_NEG));
-        genSSE2BitwiseOp(tree);
+        genIntrinsicBitwiseOp(tree);
     }
     else
     {
@@ -1143,28 +1143,11 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // In order for this operation to be correct
     // we need that op is a commutative operation so
     // we can convert it into reg1 = reg1 op reg2 and emit
-    // the same code as above
+    // the same code as above. Or we need both operands to
+    // be the same local.
     else if (op2reg == targetReg)
     {
-
-#ifdef DEBUG
-        unsigned lclNum1 = (unsigned)-1;
-        unsigned lclNum2 = (unsigned)-2;
-
-        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
-        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
-
-        if (op1Skip->OperIsLocalRead())
-        {
-            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
-        }
-        if (op2Skip->OperIsLocalRead())
-        {
-            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
-        }
-
-        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
-#endif
+        assert(GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2));
 
         dst = op2;
         src = op1;
@@ -1447,18 +1430,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
     inst_Mov(TYP_INT, reg0, opReg, /* canSkip */ false);
 
     // reg1 = opRef[61:32]
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        inst_RV_TT_IV(INS_pextrd, EA_4BYTE, reg1, src, 1, INS_OPTS_NONE);
-    }
-    else
-    {
-        bool   isRMW       = !compiler->canUseVexEncoding();
-        int8_t shuffleMask = 1; // we only need [61:32]->[31:0], the rest is not read.
-
-        inst_RV_RV_TT_IV(INS_pshufd, EA_8BYTE, opReg, opReg, src, shuffleMask, isRMW, INS_OPTS_NONE);
-        inst_Mov(TYP_INT, reg1, opReg, /* canSkip */ false);
-    }
+    inst_RV_TT_IV(INS_pextrd, EA_4BYTE, reg1, src, 1, INS_OPTS_NONE);
 #endif // TARGET_X86
 }
 
@@ -1807,19 +1779,29 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
-    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
+    const GenConditionDesc& desc        = GenConditionDesc::Get(condition);
+    insOpts                 instOptions = INS_OPTS_NONE;
 
-    inst_SET(desc.jumpKind1, dstReg);
+    bool needsMovzx = !varTypeIsByte(type);
+    if (needsMovzx && compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
+    {
+        instOptions = INS_OPTS_EVEX_zu;
+        needsMovzx  = false;
+    }
+
+    inst_SET(desc.jumpKind1, dstReg, instOptions);
 
     if (desc.oper != GT_NONE)
     {
         BasicBlock* labelNext = genCreateTempLabel();
         inst_JMP((desc.oper == GT_OR) ? desc.jumpKind1 : emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
-        inst_SET(desc.jumpKind2, dstReg);
+        inst_SET(desc.jumpKind2, dstReg, instOptions);
         genDefineTempLabel(labelNext);
     }
 
-    if (!varTypeIsByte(type))
+    // we can apply EVEX.ZU to avoid this movzx.
+    // TODO-XArch-apx: evaluate setcc + movzx and xor + set
+    if (needsMovzx)
     {
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, /* canSkip */ false);
     }
@@ -2464,17 +2446,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 
         inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
         const emitAttr size = emitTypeSize(TYP_SIMD8);
-        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-        {
-            GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1, INS_OPTS_NONE);
-        }
-        else
-        {
-            regNumber tempXmm = internalRegisters.GetSingle(lclNode);
-            assert(tempXmm != targetReg);
-            inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
-            GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm, INS_OPTS_NONE);
-        }
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1, INS_OPTS_NONE);
         genProduceReg(lclNode);
     }
 #elif defined(TARGET_AMD64)
@@ -5795,8 +5767,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         }
 
                         case NI_X86Base_Extract:
-                        case NI_SSE42_Extract:
-                        case NI_SSE42_X64_Extract:
+                        case NI_X86Base_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512_ExtractVector128:
@@ -5812,15 +5783,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                             switch (ins)
                             {
-                                case INS_pextrw:
-                                {
-                                    // The encoding which supports containment is SSE4.1+ only
-                                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE42));
-
-                                    ins = INS_pextrw_sse42;
-                                    break;
-                                }
-
                                 case INS_vextractf64x2:
                                 {
                                     ins = INS_vextractf32x4;
@@ -7747,7 +7709,7 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 #endif // TARGET_AMD64
 
 //-----------------------------------------------------------------------------------------
-// genSSE2BitwiseOp - generate SSE2 code for the given oper as "Operand BitWiseOp BitMask"
+// genIntrinsicBitwiseOp - generate intrinsic code for the given oper as "Operand BitWiseOp BitMask"
 //
 // Arguments:
 //    treeNode  - tree node
@@ -7759,7 +7721,7 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 //     i) tree oper is one of GT_NEG or GT_INTRINSIC Abs()
 //    ii) tree type is floating point type.
 //   iii) caller of this routine needs to call genProduceReg()
-void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
+void CodeGen::genIntrinsicBitwiseOp(GenTree* treeNode)
 {
     regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(treeNode->gtGetOp1());
@@ -7790,7 +7752,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     }
     else
     {
-        assert(!"genSSE2BitwiseOp: unsupported oper");
+        assert(!"genIntrinsicBitwiseOp: unsupported oper");
     }
 
     simd16_t constValue;
@@ -7806,7 +7768,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 }
 
 //-----------------------------------------------------------------------------------------
-// genSSE42RoundOp - generate SSE42 code for the given tree as a round operation
+// genIntrinsicRoundOp - generate intrinsic code for the given tree as a round operation
 //
 // Arguments:
 //    treeNode  - tree node
@@ -7815,17 +7777,13 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 //    None
 //
 // Assumptions:
-//     i) SSE4.2 is supported by the underlying hardware
-//    ii) treeNode oper is a GT_INTRINSIC
-//   iii) treeNode type is a floating point type
-//    iv) treeNode is not used from memory
-//     v) tree oper is NI_System_Math{F}_Round, _Ceiling, _Floor, or _Truncate
-//    vi) caller of this routine needs to call genProduceReg()
-void CodeGen::genSSE42RoundOp(GenTreeOp* treeNode)
+//     i) treeNode oper is a GT_INTRINSIC
+//    ii) treeNode type is a floating point type
+//   iii) treeNode is not used from memory
+//    iv) tree oper is NI_System_Math{F}_Round, _Ceiling, _Floor, or _Truncate
+//     v) caller of this routine needs to call genProduceReg()
+void CodeGen::genIntrinsicRoundOp(GenTreeOp* treeNode)
 {
-    // i) SSE4.2 is supported by the underlying hardware
-    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE42));
-
     // ii) treeNode oper is a GT_INTRINSIC
     assert(treeNode->OperIs(GT_INTRINSIC));
 
@@ -7868,7 +7826,7 @@ void CodeGen::genSSE42RoundOp(GenTreeOp* treeNode)
 
         default:
             ins = INS_invalid;
-            assert(!"genSSE42RoundOp: unsupported intrinsic");
+            assert(!"genRoundOp: unsupported intrinsic");
             unreached();
     }
 
@@ -7891,14 +7849,14 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     switch (treeNode->gtIntrinsicName)
     {
         case NI_System_Math_Abs:
-            genSSE2BitwiseOp(treeNode);
+            genIntrinsicBitwiseOp(treeNode);
             break;
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
         case NI_System_Math_Truncate:
         case NI_System_Math_Round:
-            genSSE42RoundOp(treeNode->AsOp());
+            genIntrinsicRoundOp(treeNode->AsOp());
             break;
 
         case NI_System_Math_Sqrt:
@@ -9478,6 +9436,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
+
+    theEmitter->emitIns_R(INS_seto_apx, EA_1BYTE, REG_R11, INS_OPTS_EVEX_zu);
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
@@ -10379,7 +10339,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #ifdef TARGET_AMD64
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
         return;
@@ -10505,7 +10465,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         return;
     }
 
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
         const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);

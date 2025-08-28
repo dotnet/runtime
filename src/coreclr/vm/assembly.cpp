@@ -431,10 +431,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         IfFailThrow(pAssemblyEmit->DefineAssembly(pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, hashAlgorithm,
                                                    pAssemblyNameParts->_pName, &assemData, pAssemblyNameParts->_flags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
-
-        // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pBinder);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit, pBinder);
     }
 
     AppDomain* pDomain = ::GetAppDomain();
@@ -2388,7 +2385,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return DACF_NONE;
 #endif // DEBUGGING_SUPPORTED
 }
 

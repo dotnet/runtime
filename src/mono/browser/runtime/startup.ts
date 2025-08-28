@@ -611,7 +611,7 @@ export function mono_wasm_load_runtime (): void {
                 debugLevel = 0 + debugLevel;
             }
         }
-        if (!loaderHelpers.isDebuggingSupported() || !runtimeHelpers.config.resources!.pdb) {
+        if (!loaderHelpers.isDebuggingSupported() || !(runtimeHelpers.config.resources!.corePdb || runtimeHelpers.config.resources!.pdb)) {
             debugLevel = 0;
         }
 

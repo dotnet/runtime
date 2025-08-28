@@ -15,7 +15,7 @@
 #define LOG2SLOT                                LOG2_PTRSIZE
 
 // looks like this is mandatory for now
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
 #define HAS_THISPTR_RETBUF_PRECODE              1
@@ -85,9 +85,13 @@ struct ArgumentRegisters {
 class StubLinkerCPU : public StubLinker
 {
 public:
-    static void Init();
-    void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
-    VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
+    static void Init() { /* no-op on wasm */ }
+    inline void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray) {
+        _ASSERTE("The EmitShuffleThunk is not implemented on wasm");
+    }
+    inline VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg) {
+        _ASSERTE("The EmitComputedInstantiatingMethodStub is not implemented on wasm");
+    }
 };
 
 //**********************************************************************
@@ -160,6 +164,28 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
     int64_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
     __sync_synchronize();
     return result;
+}
+
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    PORTABILITY_ASSERT("SetFirstArgReg is not implemented on wasm");
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    PORTABILITY_ASSERT("GetFirstArgReg is not implemented on wasm");
+    return 0;
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    PORTABILITY_ASSERT("SetSecondArgReg is not implemented on wasm");
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    PORTABILITY_ASSERT("GetSecondArgReg is not implemented on wasm");
+    return 0;
 }
 
 #endif // __cgenwasm_h__

@@ -8,8 +8,116 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     public abstract class CompositeMLDsaTestsBase
     {
+        protected abstract CompositeMLDsa GenerateKey(CompositeMLDsaAlgorithm algorithm);
         protected abstract CompositeMLDsa ImportPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyWithPublicKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            byte[] signature;
+            byte[] data = [0, 1, 2, 3];
+            byte[] exportedPublicKey;
+
+            using (CompositeMLDsa generatedKey = GenerateKey(algorithm))
+            {
+                signature = generatedKey.SignData(data);
+
+                ExerciseSuccessfulVerify(generatedKey, data, signature, []);
+
+                exportedPublicKey = generatedKey.ExportCompositeMLDsaPublicKey();
+            }
+
+            using (CompositeMLDsa publicKey = ImportPublicKey(algorithm, exportedPublicKey))
+            {
+                ExerciseSuccessfulVerify(publicKey, data, signature, []);
+
+                Assert.Throws<CryptographicException>(() => publicKey.SignData(data));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyWithPrivateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            byte[] signature;
+            byte[] data = [0, 1, 2, 3];
+            byte[] exportedPrivateKey;
+
+            using (CompositeMLDsa generatedKey = GenerateKey(algorithm))
+            {
+                signature = generatedKey.SignData(data);
+                exportedPrivateKey = generatedKey.ExportCompositeMLDsaPrivateKey();
+            }
+
+            using (CompositeMLDsa privateKey = ImportPrivateKey(algorithm, exportedPrivateKey))
+            {
+                ExerciseSuccessfulVerify(privateKey, data, signature, []);
+
+                signature = new byte[algorithm.MaxSignatureSizeInBytes];
+                Array.Resize(ref signature, privateKey.SignData(data, signature, []));
+
+                ExerciseSuccessfulVerify(privateKey, data, signature, []);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyNoContext(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+            byte[] data = [1, 2, 3, 4, 5];
+            byte[] signature = dsa.SignData(data);
+            ExerciseSuccessfulVerify(dsa, data, signature, []);
+
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(data, signature, Array.Empty<byte>()));
+            ExerciseSuccessfulVerify(dsa, data, signature, Array.Empty<byte>());
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyWithContext(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+            byte[] context = [1, 1, 3, 5, 6];
+            byte[] data = [1, 2, 3, 4, 5];
+
+            byte[] signature = dsa.SignData(data, context);
+            ExerciseSuccessfulVerify(dsa, data, signature, context);
+
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(data, signature, context));
+            ExerciseSuccessfulVerify(dsa, data, signature, context);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyEmptyMessageNoContext(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+            byte[] signature = dsa.SignData([]);
+            ExerciseSuccessfulVerify(dsa, [], signature, []);
+
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>()));
+            ExerciseSuccessfulVerify(dsa, [], signature, []);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void GenerateSignVerifyEmptyMessageWithContext(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+            byte[] context = [1, 1, 3, 5, 6];
+            byte[] signature = dsa.SignData([], context);
+            ExerciseSuccessfulVerify(dsa, [], signature, context);
+
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(Array.Empty<byte>(), signature, context));
+            ExerciseSuccessfulVerify(dsa, [], signature, context);
+        }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
@@ -50,14 +158,14 @@ namespace System.Security.Cryptography.Tests
             {
                 signature = privateKey.SignData(vector.Message, null);
 
-                Assert.Equal(vector.Signature.Length, signature.Length);
-
                 ExerciseSuccessfulVerify(privateKey, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(privateKey, vector.Message, vector.Signature, []);
             }
 
             using (CompositeMLDsa publicKey = ImportPublicKey(vector.Algorithm, vector.PublicKey))
             {
                 ExerciseSuccessfulVerify(publicKey, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(publicKey, vector.Message, vector.Signature, []);
             }
         }
 
@@ -85,6 +193,56 @@ namespace System.Security.Cryptography.Tests
 
             CompositeMLDsaTestHelpers.AssertExportPrivateKey(
                 export => CompositeMLDsaTestHelpers.AssertPrivateKeyEquals(vector.Algorithm, vector.SecretKey, export(dsa)));
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void Generate_Export_Import_PublicKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            byte[] exportedPublicKey;
+
+            using (CompositeMLDsa dsa = GenerateKey(algorithm))
+            {
+                exportedPublicKey = dsa.ExportCompositeMLDsaPublicKey();
+
+                using (CompositeMLDsa importedDsa = ImportPublicKey(algorithm, exportedPublicKey))
+                {
+                    Assert.Throws<CryptographicException>(() => importedDsa.ExportCompositeMLDsaPrivateKey());
+                    AssertExtensions.SequenceEqual(exportedPublicKey, importedDsa.ExportCompositeMLDsaPublicKey());
+                }
+            }
+
+            using (CompositeMLDsa importedDsa = ImportPublicKey(algorithm, exportedPublicKey))
+            {
+                Assert.Throws<CryptographicException>(() => importedDsa.ExportCompositeMLDsaPrivateKey());
+                AssertExtensions.SequenceEqual(exportedPublicKey, importedDsa.ExportCompositeMLDsaPublicKey());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void Generate_Export_Import_PrivateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            byte[] exportedPrivateKey;
+            byte[] exportedPublicKey;
+
+            using (CompositeMLDsa dsa = GenerateKey(algorithm))
+            {
+                exportedPrivateKey = dsa.ExportCompositeMLDsaPrivateKey();
+                exportedPublicKey = dsa.ExportCompositeMLDsaPublicKey();
+
+                using (CompositeMLDsa importedDsa = ImportPrivateKey(algorithm, exportedPrivateKey))
+                {
+                    AssertExtensions.SequenceEqual(exportedPrivateKey, importedDsa.ExportCompositeMLDsaPrivateKey());
+                    AssertExtensions.SequenceEqual(exportedPublicKey, importedDsa.ExportCompositeMLDsaPublicKey());
+                }
+            }
+
+            using (CompositeMLDsa importedDsa = ImportPrivateKey(algorithm, exportedPrivateKey))
+            {
+                AssertExtensions.SequenceEqual(exportedPrivateKey, importedDsa.ExportCompositeMLDsaPrivateKey());
+                AssertExtensions.SequenceEqual(exportedPublicKey, importedDsa.ExportCompositeMLDsaPublicKey());
+            }
         }
 
         [Theory]

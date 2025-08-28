@@ -76,9 +76,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
+                Assert.False(handler.CheckCertificateRevocationList);
 
                 // Changes from .NET Framework.
-                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
@@ -2345,13 +2345,10 @@ namespace System.Net.Http.Functional.Tests
             Cookie
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task LargeUriAndHeaders_Works()
         {
-            int length =
-                IsWinHttpHandler ? 65_000 :
-                PlatformDetection.IsBrowser ? 4_000 :
-                10_000_000;
+            int length = IsWinHttpHandler ? 65_000 : 10_000_000;
 
             string longPath = "/" + new string('X', length);
             string longHeaderName = new string('Y', length);

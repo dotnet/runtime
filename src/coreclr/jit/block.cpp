@@ -491,7 +491,6 @@ void BasicBlock::dspFlags() const
         {BBF_IMPORTED, "i"},
         {BBF_IS_LIR, "LIR"},
         {BBF_PROF_WEIGHT, "IBC"},
-        {BBF_RUN_RARELY, "rare"},
         {BBF_MARKED, "m"},
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
@@ -1726,82 +1725,6 @@ bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count /* = null
             overLimit = true;
             break;
         }
-    }
-
-    if (count != nullptr)
-    {
-        *count = localCount;
-    }
-
-    return overLimit;
-}
-
-//------------------------------------------------------------------------
-// ComplexityExceeds: check if the number of nodes in the trees in the block
-//   exceeds some limit
-//
-// Arguments:
-//    comp   - compiler instance
-//    limit  - limit on the number of nodes
-//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
-//
-// Returns:
-//   true if the number of nodes is greater than limit
-//
-bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
-{
-    unsigned localCount = 0;
-    bool     overLimit  = false;
-
-    for (Statement* const stmt : Statements())
-    {
-        unsigned slack  = limit - localCount;
-        unsigned actual = 0;
-        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, &actual))
-        {
-            overLimit = true;
-            break;
-        }
-
-        localCount += actual;
-    }
-
-    if (count != nullptr)
-    {
-        *count = localCount;
-    }
-
-    return overLimit;
-}
-
-//------------------------------------------------------------------------
-// ComplexityExceeds: check if the number of nodes in the trees in the blocks
-//   in the range exceeds some limit
-//
-// Arguments:
-//    comp   - compiler instance
-//    limit  - limit on the number of nodes
-//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
-//
-// Returns:
-//   true if the number of nodes is greater than limit
-//
-bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
-{
-    unsigned localCount = 0;
-    bool     overLimit  = false;
-
-    for (BasicBlock* const block : *this)
-    {
-        unsigned slack  = limit - localCount;
-        unsigned actual = 0;
-        if (block->ComplexityExceeds(comp, slack, &actual))
-        {
-            overLimit = true;
-            break;
-        }
-
-        localCount += actual;
     }
 
     if (count != nullptr)

@@ -316,6 +316,9 @@ public:
     // Frees the block of memory pointed to by p.
     virtual void Free(void* p) override
     {
+        if (p == &m_zeroLenAllocTarg)
+            return;
+
         m_alloc.deallocate(p);
     }
 };

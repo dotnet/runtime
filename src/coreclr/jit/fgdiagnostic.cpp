@@ -828,7 +828,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
                 const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasFlag(BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -839,10 +839,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
-                    }
-                    if (block->HasFlag(BBF_RUN_RARELY))
-                    {
-                        fprintf(fgxFile, "R");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -3133,16 +3129,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 }
             }
         }
-
-        /* Check if BBF_RUN_RARELY is set that we have bbWeight of zero */
-        if (block->isRunRarely())
-        {
-            assert(block->bbWeight == BB_ZERO_WEIGHT);
-        }
-        else
-        {
-            assert(block->bbWeight > BB_ZERO_WEIGHT);
-        }
     }
 
     assert(fgBBcount == numBlocks);
@@ -3942,6 +3928,12 @@ void Compiler::fgDebugCheckBlockLinks()
         // If this is a switch, check that the tables are consistent.
         if (block->KindIs(BBJ_SWITCH))
         {
+            // Switch blocks with dominant cases must have profile-derived weights.
+            if (block->GetSwitchTargets()->HasDominantCase())
+            {
+                assert(block->hasProfileWeight());
+            }
+
             // Create a set with all the successors.
             BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));

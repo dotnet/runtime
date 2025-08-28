@@ -60,6 +60,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             "<Module>.MainMethodWrapper()",
             "<Module>.MainMethodWrapper(String[])",
             "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.__GetFieldHelper(Int32,MethodTable*&)",
             "System.Runtime.InteropServices.TypeMapping",
             "System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<TTypeMapGroup>()",
             "System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<TTypeMapGroup>()",

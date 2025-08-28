@@ -189,7 +189,6 @@ private:
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
     BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
-    BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
     BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
@@ -222,7 +221,7 @@ private:
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetHasRVAStaticFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRVAStaticFields(); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -2091,7 +2090,6 @@ private:
         bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
-        bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
         // These data members are specific to regular statics
         DWORD RegularStaticFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];            // Byte offset where to start placing fields of this size
@@ -2671,10 +2669,9 @@ private:
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
-    // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void
-    VerifySelfReferencingStaticValueTypeFields_WithRVA(
-        MethodTable ** pByValueClassCache);
+    // Returns the CorElementType for the type referenced by typeDefOrRef, which must not be
+    // byreflike, and must be a valuetype of some form (enum or valuetype)
+    CorElementType GetCorElementTypeOfTypeDefOrRefForStaticField(Module* module, mdToken typeDefOrRef);
 
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
@@ -2701,8 +2698,8 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
         AsyncMethodKind     asyncKind

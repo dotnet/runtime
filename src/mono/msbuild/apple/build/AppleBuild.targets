@@ -99,6 +99,11 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
+
+    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)libcoreclr_static.a"
+          DestinationFiles="$(AppleBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(CoreCLRArtifactsPath)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AppleResolveReferences">
@@ -322,6 +327,7 @@
       EnableAppSandbox="$(EnableAppSandbox)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+      EnvironmentVariables="@(EnvironmentVariables)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"

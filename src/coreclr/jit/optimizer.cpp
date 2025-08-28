@@ -1901,12 +1901,83 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
+    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
+    const bool     haveProfileWeights   = fgIsUsingProfileWeights();
+    const weight_t weightPreheader      = preheader->bbWeight;
+    const weight_t weightCond           = condBlock->bbWeight;
+    const weight_t weightStayInLoopSucc = stayInLoopSucc->bbWeight;
+
+    // If we have profile data then we calculate the number of times
+    // the loop will iterate into loopIterations
+    if (haveProfileWeights)
+    {
+        assert(preheader->hasProfileWeight());
+        assert(condBlock->hasProfileWeight());
+        assert(stayInLoopSucc->hasProfileWeight());
+
+        // If this while loop never iterates then don't bother transforming
+        //
+        if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
+                    loop->GetIndex(), preheader->bbNum);
+            return false;
+        }
+
+        // Determine average iteration count
+        //
+        //   weightTop is the number of time this loop executes
+        //   weightTest is the number of times that we consider entering or remaining in the loop
+        //   loopIterations is the average number of times that this loop iterates
+        //
+        // If profile is inaccurate, use other data to provide a credible estimate.
+        // The value should at least be >= weightPreheader.
+        //
+        const weight_t loopEntries = max(weightPreheader, weightCond - weightStayInLoopSucc);
+        loopIterations             = weightStayInLoopSucc / loopEntries;
+    }
+
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int sizeLimit = JitConfig.JitLoopInversionSizeLimit();
-    if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
+    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    if (invertSizeLimit >= 0)
     {
-        return false;
+        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
+        bool      mightBenefitFromCloning = false;
+        unsigned  loopSize                = 0;
+
+        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
+        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
+        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
+            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
+            loopSize++;
+            return 1;
+        };
+
+        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+        if (loopSize > (unsigned)invertSizeLimit)
+        {
+            // Don't try to invert oversize loops if they don't show cloning potential,
+            // or if they're too big to be cloned anyway.
+            JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
+            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
+            if (!mightBenefitFromCloning || tooBigToClone)
+            {
+                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
+                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                return false;
+            }
+
+            // If the loop shows cloning potential, tolerate some excess size.
+            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
+            if (loopSize > liberalInvertSizeLimit)
+            {
+                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
+                return false;
+            }
+
+            JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
+        }
     }
 
     unsigned estDupCostSz = 0;
@@ -1919,68 +1990,6 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             GenTree* tree = stmt->GetRootNode();
             gtPrepareCost(tree);
             estDupCostSz += tree->GetCostSz();
-        }
-    }
-
-    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights   = false;
-    weight_t const weightPreheader      = preheader->bbWeight;
-    weight_t const weightCond           = condBlock->bbWeight;
-    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
-
-    // If we have profile data then we calculate the number of times
-    // the loop will iterate into loopIterations
-    if (fgIsUsingProfileWeights())
-    {
-        // Only rely upon the profile weight when all three of these blocks
-        // have good profile weights
-        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight() && stayInLoopSucc->hasProfileWeight())
-        {
-            // If this while loop never iterates then don't bother transforming
-            //
-            if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
-            {
-                JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
-                        loop->GetIndex(), preheader->bbNum);
-                return false;
-            }
-
-            haveProfileWeights = true;
-
-            // We generally expect weightCond > weightStayInLoopSucc
-            //
-            // Tolerate small inconsistencies...
-            //
-            if (!fgProfileWeightsConsistent(weightPreheader + weightStayInLoopSucc, weightCond))
-            {
-                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT
-                        ", cond " FMT_WT "\n",
-                        weightPreheader, weightStayInLoopSucc, weightCond);
-            }
-            else
-            {
-                // Determine average iteration count
-                //
-                //   weightTop is the number of time this loop executes
-                //   weightTest is the number of times that we consider entering or remaining in the loop
-                //   loopIterations is the average number of times that this loop iterates
-                //
-                weight_t loopEntries = weightCond - weightStayInLoopSucc;
-
-                // If profile is inaccurate, try and use other data to provide a credible estimate.
-                // The value should at least be >= weightBlock.
-                //
-                if (loopEntries < weightPreheader)
-                {
-                    loopEntries = weightPreheader;
-                }
-
-                loopIterations = weightStayInLoopSucc / loopEntries;
-            }
-        }
-        else
-        {
-            JITDUMP("Missing profile data for loop!\n");
         }
     }
 
@@ -2343,7 +2352,6 @@ void Compiler::optResetLoopInfo()
         if (!block->hasProfileWeight())
         {
             block->bbWeight = BB_UNITY_WEIGHT;
-            block->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 }
@@ -2864,47 +2872,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     return true;
 }
 
-//------------------------------------------------------------------------
-// optLoopComplexityExceeds: Check if the number of nodes in the loop exceeds some limit
-//
-// Arguments:
-//     loop  - the loop to compute the number of nodes in
-//     limit - limit on the number of nodes
-//
-// Returns:
-//     true if the number of nodes exceeds the limit
-//
-bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit)
-{
-    assert(loop != nullptr);
-
-    // See if loop size exceeds the limit.
-    //
-    unsigned size = 0;
-
-    BasicBlockVisit const result = loop->VisitLoopBlocks([this, limit, &size](BasicBlock* block) {
-        assert(limit >= size);
-        unsigned const slack     = limit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), limit);
-        return true;
-    }
-
-    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, limit);
-    return false;
-}
-
 //-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
@@ -2933,15 +2900,6 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     else
     {
         block->RemoveFlags(BBF_PROF_WEIGHT);
-    }
-
-    if (newWeight == BB_ZERO_WEIGHT)
-    {
-        block->SetFlags(BBF_RUN_RARELY);
-    }
-    else
-    {
-        block->RemoveFlags(BBF_RUN_RARELY);
     }
 }
 
@@ -3697,21 +3655,12 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
-    // Find the set of definitely-executed blocks.
+    // Find the set of definitely-executed blocks. These will be given priority for hoisting.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
     //
-    // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
-    // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
-    // or side-effect dependent things. Note that HoistVisitor uses `m_beforeSideEffect` to determine if it's
-    // ok to hoist a side-effect. It allows this only for the first block (the entry block), before any
-    // side-effect has been seen. After the first block, it assumes that there has been a side effect and
-    // no further side-effect can be hoisted. It is true that we don't analyze any program behavior in the
-    // flow graph between the entry block and the subsequent blocks, whether they be the next block dominating
-    // the exit block, or the pre-headers of nested loops.
-    //
-    // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
-    // and it is safe to evaluate the tree early.
+    // TODO: We ought to consider hoisting more aggressively from conditionally executed blocks,
+    // if they are frequently executed and it is safe to evaluate the tree early.
     //
     assert(m_dfsTree != nullptr);
     BitVecTraits traits(m_dfsTree->PostOrderTraits());
@@ -4334,11 +4283,6 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 m_valueStack.Reset();
             }
-
-            // Only unconditionally executed blocks in the loop are visited (see optHoistThisLoop)
-            // so after we're done visiting the first block we need to assume the worst, that the
-            // blocks that are not visited have side effects.
-            m_beforeSideEffect = false;
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -4517,8 +4461,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     if (!m_beforeSideEffect)
                     {
                         // For now, we give up on an expression that might raise an exception if it is after the
-                        // first possible global side effect (and we assume we're after that if we're not in the first
-                        // block).
+                        // first possible global side effect.
                         // TODO-CQ: this is when we might do loop cloning.
                         //
                         if ((tree->gtFlags & GTF_EXCEPT) != 0)

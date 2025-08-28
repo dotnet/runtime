@@ -6,6 +6,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <!-- error xUnit1015: MemberData must reference an existing member '{MemberName}' on type '{TypeName}'. Fix the member reference, or add the missing data member.-->
+    <NoWarn>$(NoWarn);xUnit1015</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
@@ -47,31 +49,49 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs" Link="Common\System\Net\Http\HuffmanEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs" Link="Common\System\Net\Http\HPackEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs" Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketEchoHelper.cs" Link="Common\System\Net\WebSockets\WebSocketEchoHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketEchoOptions.cs" Link="Common\System\Net\WebSockets\WebSocketEchoOptions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs" Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs" Link="Common\System\IO\DelegateDelegatingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs" Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="AbortTest.cs" />
     <Compile Include="AbortTest.Loopback.cs" />
     <Compile Include="CancelTest.cs" />
+    <Compile Include="CancelTest.Loopback.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
-    <Compile Include="ConnectTest.Http2.cs" />
+    <Compile Include="CloseTest.Loopback.cs" />
     <Compile Include="ConnectTest.cs" />
+    <Compile Include="ConnectTest.Http2.cs" />
+    <Compile Include="ConnectTest.Invoker.cs" />
+    <Compile Include="ConnectTest.Loopback.cs" />
+    <Compile Include="ConnectTest.SharedHandler.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="KeepAliveTest.Loopback.cs" />
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="LoopbackServer\Http2LoopbackStream.cs" />
     <Compile Include="LoopbackServer\LoopbackWebSocketServer.cs" />
+    <Compile Include="LoopbackServer\LoopbackWebSocketServer.Http.cs" />
+    <Compile Include="LoopbackServer\LoopbackWebSocketServer.Echo.cs" />
     <Compile Include="LoopbackServer\ReadAheadWebSocket.cs" />
     <Compile Include="LoopbackServer\WebSocketHandshakeHelper.cs" />
     <Compile Include="LoopbackServer\WebSocketRequestData.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
+    <Compile Include="SendReceiveTest.Loopback.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
-    <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'browser'">
+    <Compile Include="ClientWebSocketTestBase.Echo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <Compile Include="ClientWebSocketTestBase.Echo.Unsupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />

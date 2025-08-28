@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?=.*$)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
         [InlineData(@"(?=^)abc", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
-        [InlineData(@"abc(?=^)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
+        [InlineData(@"abc(?=^)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
         [InlineData(@"(?<!42)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?<=^)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
         [InlineData(@"(?<=^)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
@@ -43,9 +43,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?=\b)^abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?=\b)(?=^.*$)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?=\b)(?=\B)^abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
-        // The next two could be improved slightly to be LeadingString_LeftToRight.
-        [InlineData(@"(?=^.*def)?abc", 0, (int)FindNextStartingPositionMode.FixedDistanceChar_LeftToRight)] 
-        [InlineData(@"(?=^)?(?=^)abc", 0, (int)FindNextStartingPositionMode.FixedDistanceChar_LeftToRight)]
+        [InlineData(@"(?=^.*def)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)] 
+        [InlineData(@"(?=^)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
 
         [InlineData(@"^", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
         [InlineData(@"hello^", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]

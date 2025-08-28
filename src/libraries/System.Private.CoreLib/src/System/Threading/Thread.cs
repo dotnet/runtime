@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.ExceptionServices;
@@ -586,7 +587,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        public static nint VolatileRead(ref nint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull(nameof(address))]
@@ -613,7 +614,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        public static nuint VolatileRead(ref nuint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
@@ -631,7 +632,7 @@ namespace System.Threading
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nint address, nint value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
@@ -657,7 +658,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nuint address, nuint value) => Volatile.Write(ref address, value);
 
         /// <summary>
         /// Manages functionality required to support members of <see cref="Thread"/> dealing with thread-local data
@@ -791,5 +792,11 @@ namespace System.Threading
             }
         }
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+#if NATIVEAOT
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
+#endif
+        internal static extern bool CurrentThreadIsFinalizerThread();
     }
 }

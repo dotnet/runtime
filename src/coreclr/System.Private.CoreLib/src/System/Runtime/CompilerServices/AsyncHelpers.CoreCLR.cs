@@ -591,19 +591,42 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreExecutionContext(ExecutionContext? previousExecutionCtx)
+        private static void RestoreExecutionContext(ExecutionContext? previousExecCtx)
         {
             Thread thread = Thread.CurrentThreadAssumedInitialized;
-            ExecutionContext? currentExecutionCtx = thread._executionContext;
-            if (previousExecutionCtx != currentExecutionCtx)
+            ExecutionContext? currentExecCtx = thread._executionContext;
+            if (previousExecCtx != currentExecCtx)
             {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecutionCtx, currentExecutionCtx);
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
             }
         }
 
-        private static void CaptureContinuationContext(ref object context, ref CorInfoContinuationFlags flags)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CaptureContexts(out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
         {
-            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            execCtx = thread._executionContext;
+            syncCtx = thread._synchronizationContext;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            if (!suspended && previousSyncCtx != thread._synchronizationContext)
+            {
+                thread._synchronizationContext = previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecCtx = thread._executionContext;
+            if (previousExecCtx != currentExecCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+            }
+        }
+
+        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref CorInfoContinuationFlags flags)
+        {
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT;

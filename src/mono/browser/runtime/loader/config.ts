@@ -56,11 +56,17 @@ function deep_merge_resources (target: Assets, source: Assets): Assets {
     if (target === source) return target;
 
     const providedResources: Assets = { ...source };
+    if (providedResources.coreAssembly !== undefined) {
+        providedResources.coreAssembly = [...(target.coreAssembly || []), ...(providedResources.coreAssembly || [])];
+    }
     if (providedResources.assembly !== undefined) {
         providedResources.assembly = [...(target.assembly || []), ...(providedResources.assembly || [])];
     }
     if (providedResources.lazyAssembly !== undefined) {
         providedResources.lazyAssembly = [...(target.lazyAssembly || []), ...(providedResources.lazyAssembly || [])];
+    }
+    if (providedResources.corePdb !== undefined) {
+        providedResources.corePdb = [...(target.corePdb || []), ...(providedResources.corePdb || [])];
     }
     if (providedResources.pdb !== undefined) {
         providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];

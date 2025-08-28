@@ -43,6 +43,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         private FeatureChecksVisitor _featureChecksVisitor;
 
+        readonly TypeNameResolver _typeNameResolver;
+
         public TrimAnalysisVisitor(
             Compilation compilation,
             LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -57,6 +59,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             _multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
+            _typeNameResolver = new TypeNameResolver(compilation);
         }
 
         public override FeatureChecksValue GetConditionValue(IOperation branchValueOperation, StateValue state)
@@ -134,8 +137,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue VisitParameterReference(IParameterReferenceOperation paramRef, StateValue state)
         {
+            IParameterSymbol parameter = paramRef.Parameter;
+
+            if (parameter.ContainingSymbol is not IMethodSymbol)
+            {
+                // TODO: Extension members allows parameters to be on types, rather than methods.
+                // For example: `extension<T>(ref T value) { }` will enumerate `value` where
+                // the containing symbol is a `NonErrorNamedTypeSymbol`
+                return TopValue;
+            }
+
             // Reading from a parameter always returns the same annotated value. We don't track modifications.
-            return GetParameterTargetValue(paramRef.Parameter);
+            return GetParameterTargetValue(parameter);
         }
 
         public override MultiValue VisitInstanceReference(IInstanceReferenceOperation instanceRef, StateValue state)
@@ -331,7 +344,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             //   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
             //   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-            HandleCall(operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
+            HandleCall(_typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
             // This will copy the values if necessary
             TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
@@ -359,6 +372,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         }
 
         internal static void HandleCall(
+            TypeNameResolver typeNameResolver,
             IOperation operation,
             ISymbol owningSymbol,
             IMethodSymbol calledMethod,
@@ -369,7 +383,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ValueSetLattice<SingleValue> multiValueLattice,
             out MultiValue methodReturnValue)
         {
-            var handleCallAction = new HandleCallAction(location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
+            var handleCallAction = new HandleCallAction(typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
             MethodProxy method = new(calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(method);
             if (!handleCallAction.Invoke(method, instance, arguments, intrinsicId, out methodReturnValue))

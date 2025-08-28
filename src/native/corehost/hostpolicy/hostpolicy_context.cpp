@@ -224,7 +224,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         // otherwise fail early.
         if (!bundle::info_t::is_single_file_bundle())
         {
-            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting DOTNET_HOST_TRACE environment variable to 1"));
             return StatusCode::CoreClrResolveFailure;
         }
 

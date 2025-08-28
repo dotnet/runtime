@@ -472,9 +472,7 @@ namespace System.Threading.Tasks
         /// the default constructor on the factory type.
         /// </remarks>
         public static new TaskFactory<TResult> Factory =>
-            Volatile.Read(ref field) ??
-            Interlocked.CompareExchange(ref field, new(), null) ??
-            field;
+            field ?? Interlocked.CompareExchange(ref field, new(), null) ?? field;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.

@@ -68,6 +68,8 @@
 
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)../Mono.Linker.Tests.Cases.Expectations/Support/DynamicallyAccessedMembersAttribute.cs" Link="Support\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresDynamicCodeAttribute.cs" Link="Support\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresUnreferencedCodeAttribute.cs" Link="Support\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
 
 </Project>

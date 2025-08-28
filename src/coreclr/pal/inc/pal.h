@@ -1896,6 +1896,9 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
 
+#define CONTEXT_LSX 0x10
+#define CONTEXT_LASX 0x20
+
 #define CONTEXT_EXCEPTION_ACTIVE 0x8000000
 #define CONTEXT_SERVICE_ACTIVE 0x10000000
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
@@ -3574,11 +3577,6 @@ RtlCaptureContext(
   OUT PCONTEXT ContextRecord
 );
 
-PALIMPORT
-VOID
-PALAPI
-FlushProcessWriteBuffers();
-
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
@@ -4332,6 +4330,12 @@ public:
 
 #ifdef  __cplusplus
 }
+#endif
+
+#ifndef TARGET_WASM
+#define _ReturnAddress() __builtin_return_address(0)
+#else
+#define _ReturnAddress() 0
 #endif
 
 #endif // __PAL_H__

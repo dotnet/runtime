@@ -33,7 +33,7 @@ namespace System
             {
 #if !MONO
                 if (this is RuntimeType rt)
-                    return rt.IsInterface;
+                    return rt.IsActualInterface;
 #endif
                 return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
             }

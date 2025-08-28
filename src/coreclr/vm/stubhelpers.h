@@ -46,11 +46,7 @@ extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDes
 extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD);
 #endif
 
-extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result);
-
 #ifdef FEATURE_COMINTEROP
-extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(HRESULT hr, MethodDesc *pMD, QCall::ObjectHandleOnStack pThis, QCall::ObjectHandleOnStack result);
-
 extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget);
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest);

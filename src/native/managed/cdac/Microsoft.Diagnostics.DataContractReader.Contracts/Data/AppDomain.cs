@@ -14,8 +14,10 @@ internal sealed class AppDomain : IData<AppDomain>
 
         RootAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(RootAssembly)].Offset);
         DomainAssemblyList = address + (ulong)type.Fields[nameof(DomainAssemblyList)].Offset;
+        FriendlyName = target.ReadPointer(address + (ulong)type.Fields[nameof(FriendlyName)].Offset);
     }
 
     public TargetPointer RootAssembly { get; init; }
     public TargetPointer DomainAssemblyList { get; init; }
+    public TargetPointer FriendlyName { get; init; }
 }

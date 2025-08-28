@@ -9,6 +9,8 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using Microsoft.DotNet.CoreSetup.Test;
+using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
 {
@@ -21,11 +23,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private bool _running = false;
 
         public Process Process { get; }
-
-        // Priority order of runnable suffixes to look for and run
-        private static readonly string[] RunnableSuffixes = OperatingSystem.IsWindows()
-                                                         ? new string[] { ".exe", ".cmd", ".bat" }
-                                                         : new string[] { string.Empty };
 
         private Command(string executable, string args)
         {
@@ -54,84 +51,17 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public static Command Create(string executable, string args)
         {
-            ResolveExecutablePath(ref executable, ref args);
-
-            return new Command(executable, args);
-        }
-
-        private static void ResolveExecutablePath(ref string executable, ref string args)
-        {
-            foreach (string suffix in RunnableSuffixes)
-            {
-                var fullExecutable = Path.GetFullPath(Path.Combine(
-                                        AppContext.BaseDirectory, executable + suffix));
-
-                if (File.Exists(fullExecutable))
-                {
-                    executable = fullExecutable;
-
-                    // In priority order we've found the best runnable extension, so break.
-                    break;
-                }
-            }
-
-            // On Windows, we want to avoid using "cmd" if possible (it mangles the colors, and a bunch of other things)
-            // So, do a quick path search to see if we can just directly invoke it
-            var useCmd = ShouldUseCmd(executable);
-
-            if (useCmd)
-            {
-                var comSpec = System.Environment.GetEnvironmentVariable("ComSpec");
-
-                // cmd doesn't like "foo.exe ", so we need to ensure that if
-                // args is empty, we just run "foo.exe"
-                if (!string.IsNullOrEmpty(args))
-                {
-                    executable = (executable + " " + args).Replace("\"", "\\\"");
-                }
-                args = $"/C \"{executable}\"";
-                executable = comSpec;
-            }
-        }
-
-        private static bool ShouldUseCmd(string executable)
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                var extension = Path.GetExtension(executable);
-                if (!string.IsNullOrEmpty(extension))
-                {
-                    return !string.Equals(extension, ".exe", StringComparison.Ordinal);
-                }
-                else if (executable.Contains(Path.DirectorySeparatorChar))
-                {
-                    // It's a relative path without an extension
-                    if (File.Exists(executable + ".exe"))
-                    {
-                        // It refers to an exe!
-                        return false;
-                    }
-                }
-                else
-                {
-                    // Search the path to see if we can find it
-                    foreach (var path in System.Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
-                    {
-                        var candidate = Path.Combine(path, executable + ".exe");
-                        if (File.Exists(candidate))
-                        {
-                            // We found an exe!
-                            return false;
-                        }
-                    }
-                }
-
-                // It's a non-exe :(
-                return true;
-            }
-
-            // Non-windows never uses cmd
-            return false;
+            // Clear out .NET root and tracing environment variables by default
+            string oldPrefix = "COREHOST_";
+            string prefix = "DOTNET_HOST_";
+            return new Command(executable, args)
+                .DotNetRoot(null)
+                .RemoveEnvironmentVariable(HostTracing.TraceLevelEnvironmentVariable)
+                .RemoveEnvironmentVariable(HostTracing.TraceFileEnvironmentVariable)
+                .RemoveEnvironmentVariable(HostTracing.VerbosityEnvironmentVariable)
+                .RemoveEnvironmentVariable(HostTracing.TraceLevelEnvironmentVariable.Replace(prefix, oldPrefix))
+                .RemoveEnvironmentVariable(HostTracing.TraceFileEnvironmentVariable.Replace(prefix, oldPrefix))
+                .RemoveEnvironmentVariable(HostTracing.VerbosityEnvironmentVariable.Replace(prefix, oldPrefix));
         }
 
         public Command DisableDumps()

@@ -942,7 +942,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },                      // X86Base
-    { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
@@ -973,7 +972,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVXVNNIINT_V512, LAST_NI_AVXVNNIINT_V512 },      // AVXVNNIINT_V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
-    { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
@@ -2054,9 +2052,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // If so, skip the lookup.
     simdSize = (simdSize == 0) ? HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig) : simdSize;
 
-    HWIntrinsicSignatureReader sigReader;
-    sigReader.Read(info.compCompHnd, sig);
-
     GenTree* immOp1          = nullptr;
     GenTree* immOp2          = nullptr;
     int      immLowerBound   = 0;
@@ -2073,8 +2068,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
@@ -2121,8 +2115,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
@@ -2206,10 +2199,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        GenTree* op1 = nullptr;
-        GenTree* op2 = nullptr;
-        GenTree* op3 = nullptr;
-        GenTree* op4 = nullptr;
+        GenTree*                   op1 = nullptr;
+        GenTree*                   op2 = nullptr;
+        GenTree*                   op3 = nullptr;
+        GenTree*                   op4 = nullptr;
+        HWIntrinsicSignatureReader sigReader;
+        sigReader.Read(info.compCompHnd, sig);
 
         switch (numArgs)
         {
@@ -2268,9 +2263,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
                 {
-                    case NI_SSE42_ConvertToVector128Int16:
-                    case NI_SSE42_ConvertToVector128Int32:
-                    case NI_SSE42_ConvertToVector128Int64:
+                    case NI_X86Base_ConvertToVector128Int16:
+                    case NI_X86Base_ConvertToVector128Int32:
+                    case NI_X86Base_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX2_ConvertToVector256Int16:
@@ -2326,7 +2321,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                               : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
-                if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
+                if ((intrinsic == NI_X86Base_Crc32) || (intrinsic == NI_X86Base_X64_Crc32))
                 {
                     // TODO-XArch-Cleanup: currently we use the simdBaseJitType to bring the type of the second argument
                     // to the code generator. May encode the overload info in other way.

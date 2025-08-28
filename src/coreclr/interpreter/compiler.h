@@ -24,6 +24,7 @@ struct InterpException
     const CorJitResult m_result;
 };
 
+class InterpreterStackMap;
 class InterpCompiler;
 
 class InterpDataItemIndexMap
@@ -358,6 +359,7 @@ struct InterpVar
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
+    unsigned int pinned : 1; // Indicates that the var had the 'pinned' modifier in IL
 
     InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
     {
@@ -373,6 +375,7 @@ struct InterpVar
         global = false;
         ILGlobal = false;
         alive = false;
+        pinned = false;
     }
 };
 
@@ -478,7 +481,12 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
     #ifdef DEBUG
     TArray<char> m_methodName;
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    bool m_verbose = true;
+#else
     bool m_verbose = false;
+#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
@@ -494,7 +502,10 @@ private:
         checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
     void PrintNameInPointerMap(void* ptr);
-#endif
+#endif // DEBUG
+
+    dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
+    InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -674,13 +685,14 @@ private:
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
 
-    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset);
+    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset, bool pinned = false);
 
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
     int32_t m_stackCapacity;
 
     void CheckStackHelper(int n);
+    void CheckStackExact(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
