@@ -534,12 +534,9 @@ def main(main_args):
       print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
-    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
+    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld" or coreclr_args.collection_name == "aspnet2":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
-    elif coreclr_args.collection_name == "aspnet2":
-        # Setup aspnet2 - no special payload setup needed, the script handles everything
-        print("No special setup required for aspnet2")
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
