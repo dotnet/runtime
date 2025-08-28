@@ -2068,7 +2068,7 @@ CALL_INTERP_METHOD:
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
                             // Attempt to setup the interpreter code for the target method.
-                            if (targetMethod->CanBeInterpreted())
+                            if ((targetMethod->IsIL() || targetMethod->IsNoMetadata()) && !targetMethod->IsUnboxingStub())
                             {
                                 PrepareInitialCode(targetMethod);
                             }
