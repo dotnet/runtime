@@ -735,6 +735,27 @@ private:
             GenTree*    condTree = tree->AsOp()->gtOp1;
             assert(tree == block->lastStmt()->GetRootNode());
 
+            if (condTree->OperIs(GT_COMMA))
+            {
+                // Tree is a root node, and condTree its only child.
+                // Move comma effects to a prior statement.
+                //
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(condTree->gtGetOp1(), &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    m_compiler->fgNewStmtNearEnd(block, sideEffects);
+                }
+
+                // Splice out the comma with its value
+                //
+                GenTree* const valueTree = condTree->gtGetOp2();
+                condTree = valueTree;
+                tree->AsOp()->gtOp1 = valueTree;
+                m_compiler->gtUpdateNodeSideEffects(tree);
+            }
+
             if (condTree->OperIs(GT_CNS_INT))
             {
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
