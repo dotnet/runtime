@@ -18565,7 +18565,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_CU_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
         case IF_SVE_ES_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
         case IF_SVE_EQ_3A: // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
-        case IF_SVE_GQ_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
         case IF_SVE_HO_3A: // <Zd>.H, <Pg>/M, <Zn>.S
         case IF_SVE_HO_3B: // <Zd>.D, <Pg>/M, <Zn>.S
         case IF_SVE_HO_3C: // <Zd>.S, <Pg>/M, <Zn>.D
