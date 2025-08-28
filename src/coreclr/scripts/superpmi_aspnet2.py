@@ -108,7 +108,7 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     localhost_yml = data_dir / "Localhost.yml"
 
     # If a CLI path is provided, use it as DOTNET_ROOT; otherwise default to our local dotnet_home
-    dotnet_root_dir = cli if cli else dotnethome_dir
+    dotnet_root_dir = Path(cli) if cli else dotnethome_dir
     os.environ['DOTNET_ROOT'] = str(dotnet_root_dir)
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
     os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
@@ -155,8 +155,8 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
         # Determine the dotnet executable to use for installing tools
         dotnet_file = "dotnet.exe" if sys.platform == "win32" else "dotnet"
         dotnet_exe = dotnet_root_dir / dotnet_file
-        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"], cwd=dotnethome_dir)
-        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"], cwd=dotnethome_dir)
+        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"])
+        run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"])
 
         # Create a Localhost.yml to define the local environment
         yml = textwrap.dedent(

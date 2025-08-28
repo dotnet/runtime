@@ -77,10 +77,10 @@
 
   <!-- OS-specific settings for benchmarks collections -->
 
-  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld' or '$(CollectionName)' == 'aspnet2') and '$(AGENT_OS)' == 'Windows_NT' ">
     <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld' or '$(CollectionName)' == 'aspnet2') and '$(AGENT_OS)' != 'Windows_NT' ">
     <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
   </PropertyGroup>
 
@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --cli $(PerformanceDirectory)$(FileSeparatorChar)tools$(FileSeparatorChar)dotnet </WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 

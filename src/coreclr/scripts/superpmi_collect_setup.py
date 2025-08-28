@@ -414,6 +414,9 @@ def setup_benchmark(workitem_directory, arch):
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
+        run_command(
+            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
 
 
 def get_python_name():
@@ -539,8 +542,8 @@ def main(main_args):
         setup_benchmark(workitem_payload_directory, arch)
     elif coreclr_args.collection_name == "aspnet2":
         # Nothing to prepare for aspnet2, its script is fully self-contained.
-        # Just make sure workitem_payload_directory directory exists.
-        os.makedirs(workitem_payload_directory, exist_ok=True)
+        # But we'll reuse the same setup_benchmark as for benchmarks and realworld.
+        setup_benchmark(workitem_payload_directory, arch)
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
