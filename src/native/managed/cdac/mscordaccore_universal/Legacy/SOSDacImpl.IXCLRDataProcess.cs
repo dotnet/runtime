@@ -30,13 +30,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     }
 
     int IXCLRDataProcess.StartEnumTasks(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumTasks(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.StartEnumTasks(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumTask(ulong* handle, /*IXCLRDataTask*/ void** task)
-        => _legacyProcess is not null ? _legacyProcess.EnumTask(handle, task) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EnumTask(handle, task)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumTasks(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EndEnumTasks(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, out IXCLRDataTask? task)
     {
@@ -74,25 +74,25 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task)
-        => _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetTaskByUniqueID(taskID, task)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetFlags(uint* flags)
-        => _legacyProcess is not null ? _legacyProcess.GetFlags(flags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetFlags(flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.IsSameObject(IXCLRDataProcess* process)
-        => _legacyProcess is not null ? _legacyProcess.IsSameObject(process) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.IsSameObject(process)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetManagedObject(/*IXCLRDataValue*/ void** value)
-        => _legacyProcess is not null ? _legacyProcess.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetManagedObject(value)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetDesiredExecutionState(uint* state)
-        => _legacyProcess is not null ? _legacyProcess.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetDesiredExecutionState(state)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetDesiredExecutionState(uint state)
-        => _legacyProcess is not null ? _legacyProcess.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.SetDesiredExecutionState(state)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type)
-        => _legacyProcess is not null ? _legacyProcess.GetAddressType(address, type) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetAddressType(address, type)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetRuntimeNameByAddress(
         ClrDataAddress address,
@@ -101,40 +101,40 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint* nameLen,
         char* nameBuf,
         ClrDataAddress* displacement)
-        => _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.StartEnumAppDomains(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EnumAppDomain(handle, appDomain)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EndEnumAppDomains(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetAppDomainByUniqueID(id, appDomain)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.StartEnumAssemblies(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumAssembly(ulong* handle, /*IXCLRDataAssembly*/ void** assembly)
-        => _legacyProcess is not null ? _legacyProcess.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EnumAssembly(handle, assembly)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumAssemblies(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EndEnumAssemblies(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumModules(ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumModules(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.StartEnumModules(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumModule(ulong* handle, /*IXCLRDataModule*/ void** mod)
-        => _legacyProcess is not null ? _legacyProcess.EnumModule(handle, mod) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EnumModule(handle, mod)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumModules(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EndEnumModules(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod)
-        => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetModuleByAddress(address, mod)) : HResults.E_NOTIMPL;
 
     internal class EnumMethodInstances
     {
@@ -456,16 +456,16 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         char* nameBuf,
         /*IXCLRDataValue*/ void** value,
         ClrDataAddress* displacement)
-        => _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
-        => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetExceptionStateByExceptionRecord(record, exState)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify)
-        => _legacyProcess is not null ? _legacyProcess.TranslateExceptionRecordToNotification(record, notify) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.TranslateExceptionRecordToNotification(record, notify)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.CreateMemoryValue(
         /*IXCLRDataAppDomain*/ void* appDomain,
@@ -473,13 +473,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         /*IXCLRDataTypeInstance*/ void* type,
         ClrDataAddress addr,
         /*IXCLRDataValue*/ void** value)
-        => _legacyProcess is not null ? _legacyProcess.CreateMemoryValue(appDomain, tlsTask, type, addr, value) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.CreateMemoryValue(appDomain, tlsTask, type, addr, value)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllTypeNotifications(/*IXCLRDataModule*/ void* mod, uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetAllTypeNotifications(mod, flags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.SetAllTypeNotifications(mod, flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllCodeNotifications(/*IXCLRDataModule*/ void* mod, uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetAllCodeNotifications(mod, flags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.SetAllCodeNotifications(mod, flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetTypeNotifications(
         uint numTokens,
@@ -487,7 +487,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         /*IXCLRDataModule*/ void* singleMod,
         [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
         [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => _legacyProcess is not null ? _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetTypeNotifications(
         uint numTokens,
@@ -496,7 +496,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
         [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
         uint singleFlags)
-        => _legacyProcess is not null ? _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetCodeNotifications(
         uint numTokens,
@@ -504,7 +504,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         /*IXCLRDataModule*/ void* singleMod,
         [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
         [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => _legacyProcess is not null ? _legacyProcess.GetCodeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.GetCodeNotifications(numTokens, mods, singleMod, tokens, flags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetCodeNotifications(
         uint numTokens,
@@ -513,7 +513,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
         [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
         uint singleFlags)
-        => _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
     {
@@ -589,13 +589,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     }
 
     int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EnumMethodDefinitionByAddress(ulong* handle, /*IXCLRDataMethodDefinition*/ void** method)
-        => _legacyProcess is not null ? _legacyProcess.EnumMethodDefinitionByAddress(handle, method) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EnumMethodDefinitionByAddress(handle, method)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumMethodDefinitionsByAddress(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumMethodDefinitionsByAddress(handle) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.EndEnumMethodDefinitionsByAddress(handle)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.FollowStub(
         uint inFlags,
@@ -604,7 +604,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
-        => _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.FollowStub2(
         /*IXCLRDataTask*/ void* task,
@@ -614,7 +614,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
-        => _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.DumpNativeImage(
         ClrDataAddress loadedBase,
@@ -622,11 +622,11 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         /*IXCLRDataDisplay*/ void* display,
         /*IXCLRLibrarySupport*/ void* libSupport,
         /*IXCLRDisassemblySupport*/ void* dis)
-        => _legacyProcess is not null ? _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis) : HResults.E_NOTIMPL;
+        => _legacyProcess is not null ? FallbackHelper.Fallback(() => _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.GetGcNotification(GcEvtArgs* gcEvtArgs)
-        => _legacyProcess2 is not null ? _legacyProcess2.GetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
+        => _legacyProcess2 is not null ? FallbackHelper.Fallback(() => _legacyProcess2.GetGcNotification(gcEvtArgs)) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.SetGcNotification(GcEvtArgs gcEvtArgs)
-        => _legacyProcess2 is not null ? _legacyProcess2.SetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
+        => _legacyProcess2 is not null ? FallbackHelper.Fallback(() => _legacyProcess2.SetGcNotification(gcEvtArgs)) : HResults.E_NOTIMPL;
 }

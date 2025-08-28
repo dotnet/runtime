@@ -479,7 +479,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
         if (assembly == 0)
@@ -577,17 +577,17 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetCCWData(ccw, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
-        => _legacyImpl is not null ? _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetCodeHeaderData(ip, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetCodeHeaderData(ip, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
-        => _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetDacModuleHandle(phModule)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
         int hr = HResults.S_OK;
@@ -664,15 +664,15 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyLocation(assesmbly, count, location, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFailedAssemblyLocation(assesmbly, count, location, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetFieldDescData(fieldDesc, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFieldDescData(fieldDesc, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
     {
         if (vtable == 0)
@@ -725,6 +725,7 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
+
     int ISOSDacInterface.GetGCHeapData(DacpGcHeapData* data)
     {
         int hr = HResults.S_OK;
@@ -837,23 +838,23 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetGCHeapDetails(ClrDataAddress heap, void* details)
-        => _legacyImpl is not null ? _legacyImpl.GetGCHeapDetails(heap, details) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetGCHeapDetails(heap, details)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetGCHeapStaticData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetGCHeapStaticData(data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetGCHeapStaticData(data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnum(void** ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnum(ppHandleEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHandleEnum(ppHandleEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, void** ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, void** ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForTypes(types, count, ppHandleEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHandleEnumForTypes(types, count, ppHandleEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHeapAllocData(count, data, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeData(addr, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHeapAnalyzeData(addr, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeStaticData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeStaticData(data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHeapAnalyzeStaticData(data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapSegmentData(seg, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetHeapSegmentData(seg, data)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetHillClimbingLogEntry(ClrDataAddress addr, void* data)
     {
@@ -909,9 +910,9 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetJitManagerList(uint count, void* managers, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetJitManagerList(count, managers, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetJitManagerList(count, managers, pNeeded)) : HResults.E_NOTIMPL;
 
     private bool IsJumpRel64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
@@ -1739,7 +1740,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodTableSlot(mt, slot, value) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetMethodTableSlot(mt, slot, value)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data)
     {
@@ -1912,7 +1913,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetObjectClassName(obj, count, className, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetObjectClassName(obj, count, className, pNeeded)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
@@ -2065,9 +2066,9 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetOOMData(ClrDataAddress oomAddr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetOOMData(oomAddr, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetOOMData(oomAddr, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetOOMStaticData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetOOMStaticData(data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetOOMStaticData(data)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase)
     {
@@ -2174,15 +2175,15 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetRCWData(addr, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
-        => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetStackReferences(osThreadID, ppEnum)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
@@ -2201,11 +2202,11 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetSyncBlockCleanupData(addr, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetSyncBlockData(number, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetThreadAllocData(thread, data)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {
@@ -2490,9 +2491,9 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.TraverseEHInfo(ip, pCallback, token)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
-        => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback)) : HResults.E_NOTIMPL;
 
 #if DEBUG
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
@@ -2566,9 +2567,9 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token)) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
-        => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface
 
     #region ISOSDacInterface2
@@ -2596,16 +2597,16 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface2.IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy)
-        => _legacyImpl2 is not null ? _legacyImpl2.IsRCWDCOMProxy(rcwAddress, inDCOMProxy) : HResults.E_NOTIMPL;
+        => _legacyImpl2 is not null ? FallbackHelper.Fallback(() => _legacyImpl2.IsRCWDCOMProxy(rcwAddress, inDCOMProxy)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface2
 
     #region ISOSDacInterface3
     int ISOSDacInterface3.GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoData(interestingInfoAddr, data) : HResults.E_NOTIMPL;
+        => _legacyImpl3 is not null ? FallbackHelper.Fallback(() => _legacyImpl3.GetGCInterestingInfoData(interestingInfoAddr, data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface3.GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoStaticData(data) : HResults.E_NOTIMPL;
+        => _legacyImpl3 is not null ? FallbackHelper.Fallback(() => _legacyImpl3.GetGCInterestingInfoStaticData(data)) : HResults.E_NOTIMPL;
     int ISOSDacInterface3.GetGCGlobalMechanisms(nuint* globalMechanisms)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCGlobalMechanisms(globalMechanisms) : HResults.E_NOTIMPL;
+        => _legacyImpl3 is not null ? FallbackHelper.Fallback(() => _legacyImpl3.GetGCGlobalMechanisms(globalMechanisms)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface3
 
     #region ISOSDacInterface4
@@ -2652,12 +2653,12 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface5
     int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
-        => _legacyImpl5 is not null ? _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs) : HResults.E_NOTIMPL;
+        => _legacyImpl5 is not null ? FallbackHelper.Fallback(() => _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6
     int ISOSDacInterface6.GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data)
-        => _legacyImpl6 is not null ? _legacyImpl6.GetMethodTableCollectibleData(mt, data) : HResults.E_NOTIMPL;
+        => _legacyImpl6 is not null ? FallbackHelper.Fallback(() => _legacyImpl6.GetMethodTableCollectibleData(mt, data)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface6
 
     #region ISOSDacInterface7
@@ -2703,28 +2704,28 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
+        => _legacyImpl7 is not null ? FallbackHelper.Fallback(() => _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData)) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData) : HResults.E_NOTIMPL;
+        => _legacyImpl7 is not null ? FallbackHelper.Fallback(() => _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData)) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, methodDescs, cMethodDescs, pcMethodDescs) : HResults.E_NOTIMPL;
+        => _legacyImpl7 is not null ? FallbackHelper.Fallback(() => _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, methodDescs, cMethodDescs, pcMethodDescs)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface7
 
     #region ISOSDacInterface8
     int ISOSDacInterface8.GetNumberGenerations(uint* pGenerations)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetNumberGenerations(pGenerations) : HResults.E_NOTIMPL;
+        => _legacyImpl8 is not null ? FallbackHelper.Fallback(() => _legacyImpl8.GetNumberGenerations(pGenerations)) : HResults.E_NOTIMPL;
 
     // WKS
     int ISOSDacInterface8.GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetGenerationTable(cGenerations, pGenerationData, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl8 is not null ? FallbackHelper.Fallback(() => _legacyImpl8.GetGenerationTable(cGenerations, pGenerationData, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface8.GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFinalizationFillPointers, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl8 is not null ? FallbackHelper.Fallback(() => _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFinalizationFillPointers, pNeeded)) : HResults.E_NOTIMPL;
 
     // SVR
     int ISOSDacInterface8.GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenerationData, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl8 is not null ? FallbackHelper.Fallback(() => _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenerationData, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface8.GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl8 is not null ? FallbackHelper.Fallback(() => _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, pNeeded)) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface8.GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext)
     {
@@ -2778,46 +2779,46 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface10
     int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl10 is not null ? FallbackHelper.Fallback(() => _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersCCW(ccw, isComWrappersCCW) : HResults.E_NOTIMPL;
+        => _legacyImpl10 is not null ? FallbackHelper.Fallback(() => _legacyImpl10.IsComWrappersCCW(ccw, isComWrappersCCW)) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersCCWData(ccw, managedObject, refCount) : HResults.E_NOTIMPL;
+        => _legacyImpl10 is not null ? FallbackHelper.Fallback(() => _legacyImpl10.GetComWrappersCCWData(ccw, managedObject, refCount)) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
+        => _legacyImpl10 is not null ? FallbackHelper.Fallback(() => _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW)) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersRCWData(rcw, identity) : HResults.E_NOTIMPL;
+        => _legacyImpl10 is not null ? FallbackHelper.Fallback(() => _legacyImpl10.GetComWrappersRCWData(rcw, identity)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface10
 
     #region ISOSDacInterface11
     int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
-        => _legacyImpl11 is not null ? _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory) : HResults.E_NOTIMPL;
+        => _legacyImpl11 is not null ? FallbackHelper.Fallback(() => _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory)) : HResults.E_NOTIMPL;
     int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
-        => _legacyImpl11 is not null ? _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes) : HResults.E_NOTIMPL;
+        => _legacyImpl11 is not null ? FallbackHelper.Fallback(() => _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface11
 
     #region ISOSDacInterface12
     int ISOSDacInterface12.GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit)
-        => _legacyImpl12 is not null ? _legacyImpl12.GetGlobalAllocationContext(allocPtr, allocLimit) : HResults.E_NOTIMPL;
+        => _legacyImpl12 is not null ? FallbackHelper.Fallback(() => _legacyImpl12.GetGlobalAllocationContext(allocPtr, allocLimit)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
-        => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetHandleTableMemoryRegions(ppEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetGCBookkeepingMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetGCBookkeepingMemoryRegions(ppEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetGCFreeRegions(ppEnum) : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.GetGCFreeRegions(ppEnum)) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.LockedFlush()
-        => _legacyImpl13 is not null ? _legacyImpl13.LockedFlush() : HResults.E_NOTIMPL;
+        => _legacyImpl13 is not null ? FallbackHelper.Fallback(() => _legacyImpl13.LockedFlush()) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface13
 
     #region ISOSDacInterface14
@@ -2963,11 +2964,11 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface15
     int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator)
-        => _legacyImpl15 is not null ? _legacyImpl15.GetMethodTableSlotEnumerator(mt, enumerator) : HResults.E_NOTIMPL;
+        => _legacyImpl15 is not null ? FallbackHelper.Fallback(() => _legacyImpl15.GetMethodTableSlotEnumerator(mt, enumerator)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface15
 
     #region ISOSDacInterface16
     int ISOSDacInterface16.GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
-        => _legacyImpl16 is not null ? _legacyImpl16.GetGCDynamicAdaptationMode(pDynamicAdaptationMode) : HResults.E_NOTIMPL;
+        => _legacyImpl16 is not null ? FallbackHelper.Fallback(() => _legacyImpl16.GetGCDynamicAdaptationMode(pDynamicAdaptationMode)) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface16
 }

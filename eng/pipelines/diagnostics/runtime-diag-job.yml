@@ -41,7 +41,7 @@ parameters:
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
-    name: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    name: ${{ parameters.name }}_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -80,7 +80,7 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
           - group: AzureDevOps-Artifact-Feeds-Pats
-      
+
       - _PhaseName: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
       - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
 

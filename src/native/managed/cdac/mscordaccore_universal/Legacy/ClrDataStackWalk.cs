@@ -85,11 +85,11 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
 
     int IXCLRDataStackWalk.GetFrame(void** frame)
-        => _legacyImpl is not null ? _legacyImpl.GetFrame(frame) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFrame(frame)) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.GetFrameType(uint* simpleType, uint* detailedType)
-        => _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetFrameType(simpleType, detailedType)) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
-        => _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.GetStackSizeSkipped(stackSizeSkipped)) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.Next()
     {
         int hr;
@@ -156,7 +156,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return hr;
     }
     int IXCLRDataStackWalk.SetContext(uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)
-        => _legacyImpl is not null ? _legacyImpl.SetContext(contextSize, context) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.SetContext(contextSize, context)) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.SetContext2(uint flags, uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)
-        => _legacyImpl is not null ? _legacyImpl.SetContext2(flags, contextSize, context) : HResults.E_NOTIMPL;
+        => _legacyImpl is not null ? FallbackHelper.Fallback(() => _legacyImpl.SetContext2(flags, contextSize, context)) : HResults.E_NOTIMPL;
 }
