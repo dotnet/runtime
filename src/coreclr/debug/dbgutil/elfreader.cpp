@@ -127,7 +127,7 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
     if (!EnumerateProgramHeaders(
         baseAddress,
-#if defined(TARGET_LINUX_MUSL) || defined(TARGET_RISCV64)
+#if defined(TARGET_LINUX_MUSL) || defined(TARGET_RISCV64) || defined(HOST_ANDROID)
         // On musl based platforms (Alpine) and RISCV64 (VisionFive2 board),
         // the below dynamic entries for hash,
         // string table, etc. are RVAs instead of absolute address like on all
