@@ -650,6 +650,22 @@ void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
 }
 #endif // !TARGET_X86 || TARGET_UNIX
 
+bool InlinedCallFrame::CanUpdateFloats()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_pThread != NULL)
+    {
+        return dac_cast<PTR_Thread>(m_pThread)->IsAddressInOSStack(dac_cast<PTR_VOID>(m_pCalleeSavedFP)) && !m_pCalleeSavedFP == 0;
+    }
+    return true;
+}
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------

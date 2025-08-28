@@ -668,7 +668,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 extern void* g_hostingApiReturnAddress;
 
 // static
-UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
+UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext, uint32_t maxFramesToUnwind)
 {
     CONTRACTL
     {
@@ -678,10 +678,11 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     CONTRACTL_END;
 
     PCODE uControlPc = GetIP(pContext);
+    uint32_t framesUnwound = 0;
 
     // unwind out of this function and out of our caller to
     // get our caller's PSP, or our caller's caller's SP.
-    while (!ExecutionManager::IsManagedCode(uControlPc))
+    while (!ExecutionManager::IsManagedCode(uControlPc) && framesUnwound < maxFramesToUnwind)
     {
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
@@ -715,6 +716,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
             break;
         }
 #endif // !TARGET_UNIX
+        framesUnwound++;
     }
 
     return uControlPc;

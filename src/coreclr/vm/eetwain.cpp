@@ -2212,7 +2212,10 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     ClrCaptureContext(pContext);
 
     // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+
+    /* Unwind at most 3 frames, this is enough to escape to the only caller of CallCatchFunclet, which is the only
+       function which calls this function. In combination with the loop below it should get us to the interpreter frame of interest. */
+    Thread::VirtualUnwindToFirstManagedCallFrame(pContext, 3);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     targetSSP = GetSSPForFrameOnCurrentStack(GetIP(pContext));

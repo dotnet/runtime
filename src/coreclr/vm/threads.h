@@ -2286,7 +2286,7 @@ public:
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
-    static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
+    static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext, uint32_t maxFramesToUnwind = UINT32_MAX);
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2474,6 +2474,7 @@ public:
     static BOOL UniqueStack(void* startLoc = 0);
 
     BOOL IsAddressInStack (PTR_VOID addr) const;
+    BOOL IsAddressInOSStack (PTR_VOID addr) const;
     static BOOL IsAddressInCurrentStack (PTR_VOID addr);
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function

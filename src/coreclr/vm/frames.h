@@ -2158,6 +2158,8 @@ public:
 #endif // FEATURE_INTERPRETER
 #endif // DACCESS_COMPILE
 
+    bool CanUpdateFloats();
+
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;

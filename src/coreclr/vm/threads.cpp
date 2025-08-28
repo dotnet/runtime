@@ -7743,6 +7743,15 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
 }
 
+BOOL Thread::IsAddressInOSStack (PTR_VOID addr) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(m_CacheStackBase != NULL);
+    _ASSERTE(m_CacheStackLimit != NULL);
+    _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
+    return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
+}
+
 #ifdef DACCESS_COMPILE
 
 void
