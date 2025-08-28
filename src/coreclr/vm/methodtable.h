@@ -1745,8 +1745,6 @@ public:
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
-    static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
-
     PCODE GetRestoredSlot(DWORD slot);
 
     // Returns MethodTable that GetRestoredSlot get its values from
