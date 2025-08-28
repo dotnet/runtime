@@ -1418,7 +1418,7 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
 
-gboolean
+void
 mono_class_set_skip_generic_constraints (MonoClass *klass);
 
 void
