@@ -74,50 +74,14 @@ internal readonly struct GC_1 : IGC
     IEnumerable<TargetPointer> IGC.GetGCHeaps()
     {
         if (GetGCType() != GCType.Server)
-        {
             yield break; // Only server GC has multiple heaps
-        }
 
         uint heapCount = ((IGC)this).GetGCHeapCount();
-        TargetPointer ppHeapTable = _target.ReadGlobalPointer(Constants.Globals.Heaps);
-        TargetPointer pHeapTable = _target.ReadPointer(ppHeapTable);
+        TargetPointer heapTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.Heaps));
         for (uint i = 0; i < heapCount; i++)
         {
-            yield return _target.ReadPointer(pHeapTable + (i * (uint)_target.PointerSize));
+            yield return _target.ReadPointer(heapTable + (i * (uint)_target.PointerSize));
         }
-    }
-
-    GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
-    {
-        if (GetGCType() != GCType.Server)
-            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
-
-        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
-        Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(heap.FinalizeQueue);
-
-        IList<GCGenerationData> generationDataList = heap.GenerationTable.Select(gen =>
-            new GCGenerationData()
-            {
-                StartSegment = gen.StartSegment,
-                AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
-                AllocationContextPointer = gen.AllocationContext.Pointer,
-                AllocationContextLimit = gen.AllocationContext.Limit,
-            }).ToList();
-
-        return new GCHeapData()
-        {
-            MarkArray = heap.MarkArray,
-            NextSweepObject = heap.NextSweepObj,
-            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr,
-            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr,
-            AllocAllocated = heap.AllocAllocated,
-            EphemeralHeapSegment = heap.EphemeralHeapSegment,
-            CardTable = heap.CardTable,
-            GenerationTable = generationDataList.AsReadOnly(),
-            FillPointers = finalize.FillPointers,
-            SavedSweepEphemeralSegment = heap.SavedSweepEphemeralSeg ?? TargetPointer.Null,
-            SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
-        };
     }
 
     GCHeapData IGC.WKSGetHeapData()
@@ -176,6 +140,39 @@ internal readonly struct GC_1 : IGC
             FillPointers = finalize.FillPointers,
             SavedSweepEphemeralSegment = savedSweepEphemeralSeg ?? TargetPointer.Null,
             SavedSweepEphemeralStart = savedSweepEphemeralStart ?? TargetPointer.Null,
+        };
+    }
+
+    GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
+    {
+        if (GetGCType() != GCType.Server)
+            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+
+        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
+        Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(heap.FinalizeQueue);
+
+        IList<GCGenerationData> generationDataList = heap.GenerationTable.Select(gen =>
+            new GCGenerationData()
+            {
+                StartSegment = gen.StartSegment,
+                AllocationStart = gen.AllocationStart ?? unchecked((ulong)-1),
+                AllocationContextPointer = gen.AllocationContext.Pointer,
+                AllocationContextLimit = gen.AllocationContext.Limit,
+            }).ToList();
+
+        return new GCHeapData()
+        {
+            MarkArray = heap.MarkArray,
+            NextSweepObject = heap.NextSweepObj,
+            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr,
+            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr,
+            AllocAllocated = heap.AllocAllocated,
+            EphemeralHeapSegment = heap.EphemeralHeapSegment,
+            CardTable = heap.CardTable,
+            GenerationTable = generationDataList.AsReadOnly(),
+            FillPointers = finalize.FillPointers,
+            SavedSweepEphemeralSegment = heap.SavedSweepEphemeralSeg ?? TargetPointer.Null,
+            SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
         };
     }
 
