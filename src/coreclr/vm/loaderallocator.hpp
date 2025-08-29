@@ -229,7 +229,7 @@ public:
     LoaderAllocatorID(LoaderAllocatorType laType=LAT_Invalid, VOID* value = 0)
     {
         m_type = laType;
-        m_pValue = 0;
+        m_pValue = value;
     };
     VOID Init();
     bool HasAttachedDynamicAssemblies()
