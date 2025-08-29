@@ -793,7 +793,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // TODO-SVE: Optimise away the explicit copying of `embMaskOp1Reg` to `targetReg`.
                                 // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
                                 // `embMaskOp1Reg`. Thus, we need to perform move before the operation.
-                                GetEmitter()->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, targetReg, embMaskOp1Reg, embMaskOp1Reg, INS_OPTS_SCALABLE_S);
+                                GetEmitter()->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, targetReg, embMaskOp1Reg,
+                                                            embMaskOp1Reg, INS_OPTS_SCALABLE_S);
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
@@ -836,7 +837,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
                             // `embMaskOp1Reg`. Thus, we need to perform move before the operation, and then "sel" to
                             // select the active lanes.
-                            GetEmitter()->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, targetReg, embMaskOp1Reg, embMaskOp1Reg, INS_OPTS_SCALABLE_S);
+                            GetEmitter()->emitIns_R_R_R(INS_sve_orr, EA_SCALABLE, targetReg, embMaskOp1Reg,
+                                                        embMaskOp1Reg, INS_OPTS_SCALABLE_S);
                             emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
