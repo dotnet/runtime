@@ -135,7 +135,7 @@ def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
                     powershell_exe = "pwsh" if shutil.which("pwsh") else "powershell.exe"
                     print(f"Using PowerShell executable: {powershell_exe}")
                     args = [
-                        powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path,
+                        powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script_path,
                         "-Channel", channel, "-InstallDir", str(install_dir)
                     ]
                     result = subprocess.run(args, capture_output=True, text=True, check=True)
