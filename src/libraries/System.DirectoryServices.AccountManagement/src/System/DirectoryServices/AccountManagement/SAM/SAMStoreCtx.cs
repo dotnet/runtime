@@ -480,7 +480,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             // Shouldn't be being called if this is the case
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             // ********** In SAM, computer accounts don't have a change password method
             if (p is ComputerPrincipal)
@@ -515,7 +515,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void UnexpirePassword(AuthenticablePrincipal p)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // ********** In SAM, computer accounts don't have a password-expired property
             if (p is ComputerPrincipal)

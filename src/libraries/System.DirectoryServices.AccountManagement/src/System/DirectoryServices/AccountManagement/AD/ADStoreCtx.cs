@@ -1253,7 +1253,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (false == useASQ)
+                if (!useASQ)
                 {
                     // If this is ADAM then we only need to use the original object.
                     // IF AD then we will use whatever enumerators we discovered above.

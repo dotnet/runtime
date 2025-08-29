@@ -1709,7 +1709,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Special handling if we want to include the SID History in the search
                 Debug.Assert(urnScheme == UrnScheme.SidScheme);
                 StringBuilder sb = new StringBuilder();
-                if (false == SecurityIdentityClaimConverterHelper(urnValue, useSidHistory, sb, throwOnFail))
+                if (!SecurityIdentityClaimConverterHelper(urnValue, useSidHistory, sb, throwOnFail))
                 {
                     return false;
                 }
@@ -1717,7 +1717,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                if (false == IdentityClaimToFilter(urnValue, urnScheme, ref filter, throwOnFail))
+                if (!IdentityClaimToFilter(urnValue, urnScheme, ref filter, throwOnFail))
                 {
                     return false;
                 }
