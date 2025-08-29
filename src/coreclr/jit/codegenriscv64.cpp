@@ -902,10 +902,6 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     assert(genIsValidIntReg(reg));
     if (EA_IS_RELOC(size))
     {
-        if (!compiler->opts.compReloc)
-        {
-            size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs.
-        }
         emit->emitIns_R_AI(INS_addi, size, reg, imm);
     }
     else
@@ -2426,6 +2422,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
+
+                char message[256];
+                _snprintf_s(message, ArrLen(message), _TRUNCATE, "Unhandled oper in genGetInsForOper() - float: %s",
+                            GenTree::OpName(oper));
+                NYIRAW(message);
                 NO_WAY("Unhandled oper in genGetInsForOper() - float");
                 break;
         }
@@ -2743,8 +2744,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
-        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
-        GetEmitter()->emitIns_R_AI(INS_ld, attr, params.ireg, (ssize_t)helperFunction.addr);
+        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
         regSet.verifyRegUsed(params.ireg);
     }
 
@@ -3615,8 +3615,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & killSet) == callTargetMask);
 
-        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
-        GetEmitter()->emitIns_R_AI(INS_ld, attr, callTargetReg, (ssize_t)pAddr);
+        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
         regSet.verifyRegUsed(callTargetReg);
 
         params.callType = EC_INDIR_R;
@@ -4420,8 +4419,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
-        emit->emitIns_R_AI(INS_ld, attr, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
 
         regSet.verifyRegUsed(initReg);
         emit->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
@@ -4456,8 +4454,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         // AOT case - GS cookie constant needs to be accessed through an indirection.
-        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
-        GetEmitter()->emitIns_R_AI(INS_ld, attr, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         regSet.verifyRegUsed(regGSConst);
     }
     // Load this method's GS value from the stack frame
@@ -6481,8 +6478,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             // TODO-RISCV64-RVC: Remove hardcoded branch offset here
             ssize_t imm = (3 + 1) << 2;
             emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-            emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
-            emit->emitIns_R_AI(INS_ld, attr, params.ireg, (ssize_t)pAddr);
+            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
             regSet.verifyRegUsed(params.ireg);
         }
 
