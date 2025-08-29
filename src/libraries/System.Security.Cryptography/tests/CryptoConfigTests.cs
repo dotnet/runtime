@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSANotAvailable))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSANotSupported))]
         [InlineData("DSA")]
         [InlineData("System.Security.Cryptography.DSA")]
         public static void NamedAsymmetricAlgorithmCreate_DSA_NotSupported(string identifier)
