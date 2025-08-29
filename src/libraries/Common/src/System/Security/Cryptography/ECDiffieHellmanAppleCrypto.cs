@@ -8,21 +8,21 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDiffieHellmanImplementation
     {
-        public sealed partial class ECDiffieHellmanSecurityTransforms : ECDiffieHellman
+        public sealed partial class ECDiffieHellmanAppleCrypto : ECDiffieHellman
         {
-            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(typeof(ECDiffieHellman));
+            private readonly EccAppleCrypto _ecc = new EccAppleCrypto(typeof(ECDiffieHellman));
 
-            public ECDiffieHellmanSecurityTransforms()
+            public ECDiffieHellmanAppleCrypto()
             {
                 base.KeySize = 521;
             }
 
-            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal ECDiffieHellmanAppleCrypto(SafeSecKeyRefHandle publicKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal ECDiffieHellmanAppleCrypto(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
@@ -177,10 +177,10 @@ namespace System.Security.Cryptography
 
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
-                if (!(otherPartyPublicKey is ECDiffieHellmanSecurityTransformsPublicKey secTransPubKey))
+                if (!(otherPartyPublicKey is ECDiffieHellmanAppleCryptoPublicKey secTransPubKey))
                 {
                     secTransPubKey =
-                        new ECDiffieHellmanSecurityTransformsPublicKey(otherPartyPublicKey.ExportParameters());
+                        new ECDiffieHellmanAppleCryptoPublicKey(otherPartyPublicKey.ExportParameters());
                 }
 
                 try
@@ -244,16 +244,16 @@ namespace System.Security.Cryptography
             }
 
             public override ECDiffieHellmanPublicKey PublicKey =>
-                new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
+                new ECDiffieHellmanAppleCryptoPublicKey(ExportParameters(false));
 
-            private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
+            private sealed class ECDiffieHellmanAppleCryptoPublicKey : ECDiffieHellmanPublicKey
             {
-                private readonly EccSecurityTransforms _ecc;
+                private readonly EccAppleCrypto _ecc;
 
-                public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
+                public ECDiffieHellmanAppleCryptoPublicKey(ECParameters ecParameters)
                 {
                     Debug.Assert(ecParameters.D == null);
-                    _ecc = new EccSecurityTransforms(typeof(ECDiffieHellmanPublicKey));
+                    _ecc = new EccAppleCrypto(typeof(ECDiffieHellmanPublicKey));
                     _ecc.ImportParameters(ecParameters);
                 }
 
