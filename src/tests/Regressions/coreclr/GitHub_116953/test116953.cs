@@ -68,7 +68,7 @@ public class Test116953
 
         // Load assembly B (depends on assemblies A and C)
         Assembly assemblyB = LoadAssembly(alcB, "AssemblyB");
-	Log($"AssemblyB: {assemblyB}");
+            Log($"AssemblyB: {assemblyB}");
 
         // Call method in assembly B
         Log("\nTesting call to method in assembly B:");
