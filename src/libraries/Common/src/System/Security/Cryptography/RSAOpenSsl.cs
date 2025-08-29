@@ -853,6 +853,7 @@ namespace System.Security.Cryptography
         private static void ValidatePadding(RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(padding);
+            throw new InvalidOperationException($"{padding.Mode}: {padding.PssSaltLength}");
 
             // PKCS#1 does not currently have anything to validate.
             if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
@@ -861,7 +862,6 @@ namespace System.Security.Cryptography
             }
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
-                throw new InvalidCastException();
                 /*if (padding.PssSaltLength < RSASignaturePadding.PssSaltLengthMax)
                 {
                     throw PaddingModeNotSupported();
