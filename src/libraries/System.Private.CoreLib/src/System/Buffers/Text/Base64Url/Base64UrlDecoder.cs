@@ -675,7 +675,9 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
+                str = Vector512.NarrowNative(utf16VectorLower, utf16VectorUpper).AsSByte();
+#elif NET9_0_OR_GREATER
                 str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
 #else
                 str = Vector512.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
@@ -703,7 +705,9 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
+                str = Vector256.NarrowNative(utf16VectorLower, utf16VectorUpper).AsSByte();
+#elif NET9_0_OR_GREATER
                 str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
 #else
                 str = Vector256.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
@@ -719,19 +723,19 @@ namespace System.Buffers.Text
                 Vector128<ushort> utf16VectorUpper = Vector128.LoadUnsafe(ref *src, 8);
 #if NET9_0_OR_GREATER
                 if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
-                {
-                    str = default;
-                    return false;
-                }
-
-                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
 #else
                 if (Base64Helper.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+#endif
                 {
                     str = default;
                     return false;
                 }
 
+#if NET10_0_OR_GREATER
+                str = Vector128.NarrowNative(utf16VectorLower, utf16VectorUpper);
+#elif NET9_0_OR_GREATER
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
+#else
                 str = Base64Helper.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
 #endif
                 return true;
@@ -752,10 +756,17 @@ namespace System.Buffers.Text
                     return false;
                 }
 
+#if NET10_0_OR_GREATER
+                str1 = Vector128.NarrowNative(s11, s31);
+                str2 = Vector128.NarrowNative(s12, s32);
+                str3 = Vector128.NarrowNative(s21, s41);
+                str4 = Vector128.NarrowNative(s22, s42);
+#else
                 str1 = Ascii.ExtractAsciiVector(s11, s31);
                 str2 = Ascii.ExtractAsciiVector(s12, s32);
                 str3 = Ascii.ExtractAsciiVector(s21, s41);
                 str4 = Ascii.ExtractAsciiVector(s22, s42);
+#endif
 
                 return true;
             }
