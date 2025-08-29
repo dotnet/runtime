@@ -307,6 +307,39 @@ namespace System.DirectoryServices.Protocols.Tests
             connection.Dispose();
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        public void NetworkTimeout_InitializationOnLinux_DoesNotThrow()
+        {
+            // This test verifies that initialization with network timeout on Linux doesn't cause issues
+            // We test that the LDAP connection can be created and timeout set without throwing exceptions
+            var connection = new LdapConnection("server")
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            // Verify the timeout is set correctly
+            Assert.Equal(TimeSpan.FromSeconds(10), connection.Timeout);
+            
+            // Dispose to clean up any native resources
+            connection.Dispose();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        public void NetworkTimeout_ZeroTimeoutOnLinux_DoesNotThrow()
+        {
+            // Test with zero timeout (infinite) which is a common edge case
+            var connection = new LdapConnection("server")
+            {
+                Timeout = TimeSpan.Zero
+            };
+
+            // Verify the timeout is set correctly
+            Assert.Equal(TimeSpan.Zero, connection.Timeout);
+            
+            // Dispose to clean up any native resources
+            connection.Dispose();
+        }
+
         public class CustomAsyncResult : IAsyncResult
         {
             public object AsyncState => throw new NotImplementedException();
