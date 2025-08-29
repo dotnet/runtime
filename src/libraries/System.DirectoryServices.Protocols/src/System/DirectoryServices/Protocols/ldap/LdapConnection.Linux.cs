@@ -76,7 +76,27 @@ namespace System.DirectoryServices.Protocols
                 uris = $"{scheme}:{directoryIdentifier.PortNumber}";
             }
 
-            return LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            int result = LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            if (result == 0)
+            {
+                // Set the network timeout option to honor the Timeout property
+                var timeout = new LDAP_TIMEVAL()
+                {
+                    tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond),
+                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / (TimeSpan.TicksPerMillisecond * 1000))
+                };
+
+                int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);
+                // If setting network timeout fails, we continue since it's not a critical error,
+                // but the original URI setting success should be preserved
+                if (timeoutResult != 0)
+                {
+                    // Log or handle timeout setting failure if needed in the future
+                    // For now, we don't fail the connection
+                }
+            }
+
+            return result;
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
