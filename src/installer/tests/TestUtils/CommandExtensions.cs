@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             // If we are clearing out the variable, make sure we clear out any architecture-specific one too
             if (string.IsNullOrEmpty(dotNetRoot))
-                command = command.EnvironmentVariable($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{TestContext.BuildArchitecture}", dotNetRoot);
+                command = command.EnvironmentVariable($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{TestContext.BuildArchitecture.ToUpperInvariant()}", dotNetRoot);
 
             return command
                     .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
