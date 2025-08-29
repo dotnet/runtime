@@ -163,6 +163,15 @@
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
+  
+  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' and '$(CollectionType)' == 'aspnet2'">
+    <HelixPreCommand Include="sudo tdnf install git -y"/>
+    <HelixPreCommand Include="sudo tdnf update -y"/>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' and '$(CollectionType)' == 'aspnet2'">
+    <HelixPreCommand Include="winget install --id Git.Git -e --source winget"/>
+  </ItemGroup>
+
 
   <!-- We're currently not using .dotnet on the Helix agents -->
   <!--

@@ -36,27 +36,6 @@ from pathlib import Path
 CRANK_PORT = 5010
 
 
-# Check if a port is listening
-def port_is_listening(host: str, port: int, timeout_s: float = 0.5) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(timeout_s)
-        try:
-            s.connect((host, port))
-            return True
-        except Exception:
-            return False
-
-
-# Wait for the port to be available
-def wait_for_port(host: str, port: int, timeout_s: int) -> bool:
-    start = time.time()
-    while time.time() - start < timeout_s:
-        if port_is_listening(host, port):
-            return True
-        time.sleep(0.2)
-    return False
-
-
 # Convert a filename to the appropriate native DLL name, e.g. "clrjit" -> "libclrjit.so" (on Linux)
 def native_dll(name: str) -> str:
     ext = ".dll" if sys.platform.startswith("win") else (".dylib" if sys.platform == "darwin" else ".so")
@@ -86,73 +65,6 @@ def run(cmd, cwd=None):
         return None
 
 
-def download_mingit_windows(dest: str) -> str:
-    # Map our arch key to MinGit asset suffix
-    m = {"x64": "64-bit", "arm64": "arm64", "x86": "32-bit"}
-    assets = requests.get("https://api.github.com/repos/git-for-windows/git/releases/latest", timeout=100).json()["assets"]
-    rx = re.compile(r"^MinGit-.*-(32-bit|64-bit|arm64)\.zip$", re.I)
-
-    arch = "x64"
-    mach = platform.machine().lower()
-    if "arm64" in mach:
-        arch = "arm64"
-    elif mach in ("x86", "i386", "i686"):
-        arch = "x86"
-
-    try:
-        asset = next(a for a in assets if rx.match(a["name"]) and m[arch] in a["name"])
-    except StopIteration:
-        raise RuntimeError(f"Unable to find MinGit asset for arch '{arch}'. Available assets: {[a['name'] for a in assets if 'MinGit' in a['name']]}")
-    os.makedirs(dest, exist_ok=True); zip_path = os.path.join(dest, asset["name"])
-    with requests.get(asset["browser_download_url"], stream=True) as r, open(zip_path,"wb") as f:
-        for c in r.iter_content(8192): f.write(c)
-    git_dir = os.path.join(dest,"git"); shutil.rmtree(git_dir, ignore_errors=True)
-    with zipfile.ZipFile(zip_path) as z: z.extractall(git_dir)
-    os.remove(zip_path)
-    return git_dir
-
-
-def ensure_git(dest: Path) -> str:
-    existing = shutil.which("git")
-    if existing:
-        print("git found")
-        return existing
-
-    # Windows: download portable MinGit
-    if sys.platform == "win32":
-        print("git not found, downloading portable git...")
-        git_dir = download_mingit_windows(str(dest))
-        cmd_path = os.path.join(git_dir, "cmd")
-        os.environ["PATH"] = cmd_path + os.pathsep + os.environ.get("PATH", "")
-        found = shutil.which("git")
-        if found:
-            return found
-        raise RuntimeError("Failed to make downloaded Git available in PATH")
-
-    # Linux: try installing via tdnf (Azure Linux 3)
-    if sys.platform.startswith("linux"):
-        print("git not found, attempting to install via tdnf (Azure Linux 3)...")
-        tdnf = shutil.which("tdnf")
-        if tdnf is None:
-            raise RuntimeError("'tdnf' not found. Please install Git using your package manager or install tdnf.")
-
-        # Assume this script is run under sudo/root on Azure Linux 3
-        cmd = [tdnf, "-y", "install", "git"]
-
-        rc = run(cmd)
-        if rc != 0:
-            raise RuntimeError(f"Failed to install Git via tdnf (exit code {rc}). Ensure you run this script with sudo/root.")
-
-        found = shutil.which("git")
-        if found:
-            print("git installed via tdnf")
-            return found
-        raise RuntimeError("Git was installed via tdnf but is still not found in PATH")
-
-    # Other platforms (e.g., macOS) are not handled here explicitly
-    raise RuntimeError("Git is not available on this platform; please install it and ensure it is on PATH.")
-
-
 # Ensure .NET tools are installed and Localhost.yml is present
 def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     data_dir = workdir / "crank_data"
@@ -176,8 +88,6 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
         build_dir.mkdir(parents=True, exist_ok=True)
         dotnethome_dir.mkdir(parents=True, exist_ok=True)
         tools_dir.mkdir(parents=True, exist_ok=True)
-
-        ensure_git(tools_dir)
 
         # If a CLI path was provided, skip installing .NET and use that SDK.
         if cli is None:
@@ -248,9 +158,6 @@ profiles:
 
 # Start the crank-agent
 def start_crank_agent(workdir: Path, port: int):
-    if port_is_listening("127.0.0.1", port):
-        raise ValueError("Port already in use")
-
     print("crank-agent is not running yet. Starting...")
     logs_dir = workdir / "crank_data" / "logs"
     build_dir = workdir / "crank_data" / "build"
@@ -269,11 +176,8 @@ def start_crank_agent(workdir: Path, port: int):
         ]
     )
 
-    print(f"Waiting up to 20s for crank-agent to start ...")
-    if not wait_for_port("127.0.0.1", port, 20):
-        print("Warning: crank-agent didn't open the port in time. Proceeding anyway.", file=sys.stderr)
-    else:
-        print("crank-agent started.")
+    print(f"Waiting up to 10s for crank-agent to start ...")
+    time.sleep(10)
     return agent_process
 
 # Build the crank-controller command for execution
@@ -292,7 +196,7 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, 
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml",
-    "--config", str(config_path),
+        "--config", str(config_path),
         "--profile", "Localhost",
         "--application.noGlobalJson", "false",
         "--application.framework", framework,
@@ -441,8 +345,11 @@ def main():
         
         # Clean up only if not suppressed
         if not args.no_cleanup:
+            print(f'Removing temp dir {temp_root}')
             # remove the entire temp_root:
             shutil.rmtree(temp_root, ignore_errors=True)
+        else:
+            print(f'Not removing temp dir {temp_root} due to --no_cleanup')
 
     print("Done!")
 
