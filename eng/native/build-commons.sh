@@ -89,6 +89,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == maccatalyst ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
