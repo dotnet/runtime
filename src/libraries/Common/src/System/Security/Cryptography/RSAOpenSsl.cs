@@ -861,7 +861,7 @@ namespace System.Security.Cryptography
             }
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
-                if (padding.PssSaltLength is < 0 and not RSASignaturePadding.PssSaltLengthMax and not RSASignaturePadding.PssSaltLengthMax)
+                if (padding.PssSaltLength < RSASignaturePadding.PssSaltLengthMax)
                 {
                     throw PaddingModeNotSupported();
                 }
