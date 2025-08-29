@@ -1742,7 +1742,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
         appendToCurIG(id);
     }
-    else if (size == EA_PTRSIZE)
+    else if (EA_SIZE(size) == EA_PTRSIZE)
     {
         assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);

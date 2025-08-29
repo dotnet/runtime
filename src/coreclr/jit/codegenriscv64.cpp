@@ -899,15 +899,14 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     emitter* emit = GetEmitter();
 
-    if (!compiler->opts.compReloc)
-    {
-        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs.
-    }
-
+    assert(genIsValidIntReg(reg));
     if (EA_IS_RELOC(size))
     {
-        assert(genIsValidIntReg(reg));
-        GetEmitter()->emitIns_R_AI(INS_addi, size, reg, imm);
+        if (!compiler->opts.compReloc)
+        {
+            size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs.
+        }
+        emit->emitIns_R_AI(INS_addi, size, reg, imm);
     }
     else
     {
@@ -2744,16 +2743,8 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
 
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
-        }
-        else
-        {
-            // TODO-RISCV64: maybe optimize further.
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)helperFunction.addr);
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
-        }
+        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
+        GetEmitter()->emitIns_R_AI(INS_ld, attr, params.ireg, (ssize_t)helperFunction.addr);
         regSet.verifyRegUsed(params.ireg);
     }
 
@@ -3584,23 +3575,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
     return callerSPtoSPdelta;
 }
 
-// Produce generic and unoptimized code for loading constant to register and dereferencing it
-// at the end
-static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
-{
-    ssize_t high = imm >> 32;
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (high + 0x800) >> 12);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
-
-    ssize_t low = imm & 0xffffffff;
-    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 21) & 0x7ff));
-
-    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 10) & 0x7ff));
-    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, dstRegister, dstRegister, (low & 0x3ff));
-}
-
 /*****************************************************************************
  *  Emit a call to a helper function.
  */
@@ -3641,14 +3615,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & killSet) == callTargetMask);
 
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
-        }
-        else
-        {
-            emitLoadConstAtAddr(GetEmitter(), callTargetReg, (ssize_t)pAddr);
-        }
+        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
+        GetEmitter()->emitIns_R_AI(INS_ld, attr, callTargetReg, (ssize_t)pAddr);
         regSet.verifyRegUsed(callTargetReg);
 
         params.callType = EC_INDIR_R;
@@ -4452,15 +4420,9 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        if (compiler->opts.compReloc)
-        {
-            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        }
-        else
-        {
-            emit->emitLoadImmediate(EA_PTRSIZE, initReg, ((size_t)compiler->gsGlobalSecurityCookieAddr));
-            emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, initReg, initReg, 0);
-        }
+        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
+        emit->emitIns_R_AI(INS_ld, attr, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+
         regSet.verifyRegUsed(initReg);
         emit->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
@@ -4494,33 +4456,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         // AOT case - GS cookie constant needs to be accessed through an indirection.
-        // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, regGSConst,
-                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        }
-        else
-        {
-            // TODO-RISCV64: maybe optimize furtherk!
-            UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
-            if (((high + 0x800) >> 12) != 0)
-            {
-                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, ((int32_t)(high + 0x800)) >> 12);
-            }
-            if ((high & 0xFFF) != 0)
-            {
-                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, REG_R0, (high & 0xfff));
-            }
-            UINT32 low = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 21) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 10) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 10);
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst, regGSConst, low & 0x3FF);
-        }
+        emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
+        GetEmitter()->emitIns_R_AI(INS_ld, attr, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         regSet.verifyRegUsed(regGSConst);
     }
     // Load this method's GS value from the stack frame
@@ -6541,22 +6478,11 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
-            if (compiler->opts.compReloc)
-            {
-                // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-                ssize_t imm = (3 + 1) << 2;
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
-            }
-            else
-            {
-                // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-                ssize_t imm = 9 << 2;
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                // TODO-RISCV64-CQ: In the future we may consider using emitter::emitLoadImmediate instead,
-                // which is less straightforward but offers slightly better codegen.
-                emitLoadConstAtAddr(GetEmitter(), params.ireg, (ssize_t)pAddr);
-            }
+            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
+            ssize_t imm = (3 + 1) << 2;
+            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+            emitAttr attr = compiler->opts.compReloc ? EA_PTR_DSP_RELOC : EA_PTRSIZE;
+            emit->emitIns_R_AI(INS_ld, attr, params.ireg, (ssize_t)pAddr);
             regSet.verifyRegUsed(params.ireg);
         }
 
