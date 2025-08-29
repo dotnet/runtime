@@ -514,31 +514,27 @@ internal readonly struct Loader_1 : ILoader
         }
         return headerPtr;
     }
-
-    private static TEntry LookupSHash<TKey, TEntry>(SHash<TKey, TEntry> hashTable, TKey key)
+    private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
     {
-        if (hashTable.TableSize == 0)
-            return hashTable.Traits.Null();
+        public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+        public bool Equals(uint left, uint right) => left == right;
+        public uint Hash(uint key) => key;
+        public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+        public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+        public bool IsDeleted(DynamicILBlobEntry entry) => false;
+    }
+    private sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
+    {
+        static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)
+            => new DynamicILBlobTable(target, address);
 
-        uint hash = hashTable.Traits.Hash(key);
-        uint index = hash % hashTable.TableSize;
-        uint increment = 0;
-        while (true)
+        public DynamicILBlobTable(Target target, TargetPointer address)
         {
-            TEntry current = hashTable.Entries![(int)index];
-            if (hashTable.Traits.IsNull(current))
-                return hashTable.Traits.Null();
-            // we don't support the removal of entries
-            if (hashTable.Traits.Equals(key, hashTable.Traits.GetKey(current)))
-                return current;
-
-            if (increment == 0)
-                increment = (hash % (hashTable.TableSize - 1)) + 1;
-
-            index += increment;
-            if (index >= hashTable.TableSize)
-                index -= hashTable.TableSize;
+            ISHash sHashContract = target.Contracts.SHash;
+            Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
+            HashTable = sHashContract.CreateSHash(target, address, type, new DynamicILBlobTraits());
         }
+        public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
     }
 
     private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
@@ -549,6 +545,7 @@ internal readonly struct Loader_1 : ILoader
             return TargetPointer.Null;
         }
         DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
-        return LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
+        ISHash shashContract = _target.Contracts.SHash;
+        return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }
