@@ -1024,13 +1024,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- NativeAOT ControlFlowGuard specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(ControlFlowGuard)' == 'Guard'">
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b425314/b425314/**">
-            <Issue>https://github.com/dotnet/runtime/issues/107418</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
