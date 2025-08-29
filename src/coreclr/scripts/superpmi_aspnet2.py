@@ -236,18 +236,25 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, scenario: str, config_path: Path):
+def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, config_path: Path, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
     spcorelib = "System.Private.CoreLib.dll"
+    # Try to infer scenario name from extra args for naming the output zip
+    scenario_name = None
+    for i, a in enumerate(extra_args):
+        if a == "--scenario" and i + 1 < len(extra_args):
+            scenario_name = str(extra_args[i + 1])
+            break
+    if scenario_name is None:
+        scenario_name = "scenario"
     cmd = [
         str(crank_app),
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/azure.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/ci.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/steadystate.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml",
-        "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Wrk/wrk.yml",
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml",
@@ -265,13 +272,15 @@ def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, sc
         "--application.environmentVariables", "SuperPMIShimLogPath=.",
         "--application.environmentVariables", f"SuperPMIShimPath=./{clrjit}",
         "--application.options.fetch", "true",
-        "--application.options.fetchOutput", scenario + ".crank.zip",
+        "--application.options.fetchOutput", scenario_name + ".crank.zip",
         "--application.options.outputFiles", str(core_root_path / spmi_shim),
         "--application.options.outputFiles", str(core_root_path / clrjit),
         "--application.options.outputFiles", str(core_root_path / coreclr),
         "--application.options.outputFiles", str(core_root_path / spcorelib),
-        "--scenario", scenario
     ]
+    # Append any extra scenario-specific arguments
+    if extra_args:
+        cmd.extend(extra_args)
     run(cmd)
 
 
@@ -308,16 +317,30 @@ def main():
     try:
         agent_process, crank_app_path, config_path = setup_and_run_crank_agent(temp_root)
 
-        # Array of scenarios to run
-        scenarios = [
-            "about-sqlite",
-            "mvc",
-            "NoMvcAuth"
-        ]
+        print("### Running about-sqlite benchmark... ###")
+        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
+            "--scenario", "about-sqlite",
+            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"
+        )
 
-        for scenario in scenarios:
-            print(f"### Running {scenario} benchmark... ###")
-            run_crank_scenario(crank_app_path, args.tfm, core_root_path, scenario, config_path)
+        print("### Running JsonMVC benchmark... ###")
+        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
+            "--scenario", "mvc",
+            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml"
+        )
+
+        print("### Running NoMvcAuth benchmark... ###")
+        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
+            "--scenario", "NoMvcAuth",
+            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"
+        )
+
+        print("### Running PlatformPlaintext benchmark... ###")
+        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
+            "--scenario", "plaintext",
+            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml",
+            "--load.connections", "512"
+        )
 
         print("Finished running benchmarks.")
 

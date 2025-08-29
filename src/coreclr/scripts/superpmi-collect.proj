@@ -284,11 +284,8 @@
     <BDN_Partition Include="Partition5" Index="5" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <PartitionCount>1</PartitionCount>
-  </PropertyGroup>
   <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <BDN_Partition Include="Partition0" Index="0" />
+    <Crank_Partition Include="Partition0" Index="0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
@@ -322,7 +319,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <HelixWorkItem Include="@(BDN_Partition)">
+    <HelixWorkItem Include="@(Crank_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) --output_mch $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
