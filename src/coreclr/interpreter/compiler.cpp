@@ -2987,7 +2987,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     }
                     break;
                     // TODO-Interp, for 64bit Big endian platforms, we may need to implement the 
-                    // truncaction rules for NativeInt/NativeUInt to I4/U4. However, on little-endian
+                    // truncation rules for NativeInt/NativeUInt to I4/U4. However, on little-endian
                     // platforms, the interpreter calling convention will naturally produce the
                     // truncation, so there is no additional code necessary.
                 default:
