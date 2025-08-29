@@ -2713,7 +2713,6 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
         GetProcess(),
         new CorDebugBlockingObject[0],
         0);
-    GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
     return objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
 }
 
