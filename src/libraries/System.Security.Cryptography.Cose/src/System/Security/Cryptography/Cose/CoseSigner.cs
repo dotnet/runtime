@@ -122,9 +122,6 @@ namespace System.Security.Cryptography.Cose
                 }
             }
 #endif
-            Key = key;
-            HashAlgorithm = hashAlgorithm;
-            RSASignaturePadding = signaturePadding;
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
