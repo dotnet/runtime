@@ -493,7 +493,10 @@ namespace System.Security.Cryptography.Pkcs
             Debug.Assert(_signatureAlgorithm == Oids.NoSignature);
 
             // The signature is a hash of the message or signed attributes.
-            return VerifyHashedMessage(compatMode, contentToVerify => _signature.Span.SequenceEqual(contentToVerify));
+            return VerifyHashedMessage(
+                compatMode,
+                _signature,
+                static (signature, contentToVerify) => signature.Span.SequenceEqual(contentToVerify));
         }
 
         private X509Certificate2? FindSignerCertificate()
@@ -604,12 +607,13 @@ namespace System.Security.Cryptography.Pkcs
             return hasher;
         }
 
-        private static bool VerifyAttributes(
+        private static bool VerifyAttributes<TState>(
             ReadOnlySpan<byte> digest,
             AttributeAsn[] signedAttributes,
             bool compatMode,
             bool needsContentAttr,
-            VerifyCallback verify)
+            TState state,
+            VerifyCallback<TState> verify)
         {
             bool hasMatchingDigestAttr = false;
             bool hasContentAttr = false;
@@ -663,23 +667,40 @@ namespace System.Security.Cryptography.Pkcs
 
             if (compatMode)
             {
-                byte[] encoded = writer.Encode();
-                encoded[0] = 0x31;
-                return verify(encoded);
+                int encodedLength = writer.GetEncodedLength();
+                byte[]? rented = null;
+                Span<byte> encoded = encodedLength <= 256
+                    ? stackalloc byte[256]
+                    : (rented = CryptoPool.Rent(encodedLength));
+
+                try
+                {
+                    encoded = encoded.Slice(0, encodedLength);
+                    writer.Encode(encoded);
+                    encoded[0] = 0x31;
+                    return verify(state, encoded);
+                }
+                finally
+                {
+                    if (rented != null)
+                    {
+                        CryptoPool.Return(rented);
+                    }
+                }
             }
             else
             {
 #if NET9_0_OR_GREATER
-                return writer.Encode(verify, static (verify, encoded) => verify(encoded));
+                return writer.Encode((state, verify), static (state, encoded) => state.verify(state.state, encoded));
 #else
-                return verify(writer.Encode());
+                return verify(state, writer.Encode());
 #endif
             }
         }
 
-        private delegate bool VerifyCallback(ReadOnlySpan<byte> contentToVerify);
+        private delegate bool VerifyCallback<TState>(TState state, ReadOnlySpan<byte> contentToVerify);
 
-        private bool VerifyHashedMessage(bool compatMode, VerifyCallback verify)
+        private bool VerifyHashedMessage<TState>(bool compatMode, TState state, VerifyCallback<TState> verify)
         {
             ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
 
@@ -710,7 +731,7 @@ namespace System.Security.Cryptography.Pkcs
                         throw new CryptographicException(SR.Cryptography_Cms_MissingAuthenticatedAttribute);
                     }
 
-                    return verify(contentHash);
+                    return verify(state, contentHash);
                 }
 
                 // Since there are signed attributes, we need to verify those instead.
@@ -720,8 +741,10 @@ namespace System.Security.Cryptography.Pkcs
                         _signedAttributes,
                         compatMode,
                         needsContentAttr: false,
-                        span =>
+                        (state, hasher, verify),
+                        static (state, span) =>
                         {
+                            CmsHash hasher = state.hasher;
                             hasher.AppendData(span);
 
 #if NET || NETSTANDARD2_1
@@ -740,12 +763,12 @@ namespace System.Security.Cryptography.Pkcs
                             byte[] attrHash = hasher.GetHashAndReset();
 #endif
 
-                            return verify(attrHash);
+                            return state.verify(state.state, attrHash);
                         });
             }
         }
 
-        private bool VerifyPureMessage(bool compatMode, VerifyCallback verify)
+        private bool VerifyPureMessage<TState>(bool compatMode, TState state, VerifyCallback<TState> verify)
         {
             ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
 
@@ -760,7 +783,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (!additionalContent.HasValue)
                 {
-                    return verify(content.Span);
+                    return verify(state, content.Span);
                 }
 
                 // If there are multiple pieces of content, concatenate them and verify.
@@ -770,7 +793,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     additionalContent.Value.Span.CopyTo(rented);
                     content.Span.CopyTo(rented.AsSpan(additionalContent.Value.Length));
-                    return verify(rented.AsSpan(0, contentToVerifyLength));
+                    return verify(state, rented.AsSpan(0, contentToVerifyLength));
                 }
                 finally
                 {
@@ -806,7 +829,8 @@ namespace System.Security.Cryptography.Pkcs
                         // it is invalid for countersigners. We'll just ignore it for now, but if we decide to
                         // allow countersigners to omit the content type, we should check that `this` is a countersigner.
                         needsContentAttr: false,
-                        verify);
+                        (state, verify),
+                        static (state, span) => state.verify(state.state, span));
             }
         }
 
@@ -896,19 +920,42 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            Func<bool, VerifyCallback, bool> verifier = signatureProcessor.NeedsHashedMessage ? VerifyHashedMessage : VerifyPureMessage;
-            return verifier(compatMode, contentToVerify =>
-                signatureProcessor.VerifySignature(
+            if (signatureProcessor.NeedsHashedMessage)
+            {
+                return VerifyHashedMessage(
+                    compatMode,
+                    (info: this, signatureProcessor, certificate),
+                    static (state, contentToVerify) =>
+                        state.signatureProcessor.VerifySignature(
 #if NET || NETSTANDARD2_1
-                    contentToVerify,
-                    _signature,
+                            contentToVerify,
+                            state.info._signature,
 #else
-                    contentToVerify.ToArray(),
-                    _signature.ToArray(),
+                            contentToVerify.ToArray(),
+                            state.info._signature.ToArray(),
 #endif
-                    DigestAlgorithm.Value,
-                    _signatureAlgorithmParameters,
-                    certificate));
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
+                            state.certificate));
+            }
+            else
+            {
+                return VerifyPureMessage(
+                    compatMode,
+                    (info: this, signatureProcessor, certificate),
+                    static (state, contentToVerify) =>
+                        state.signatureProcessor.VerifySignature(
+#if NET || NETSTANDARD2_1
+                            contentToVerify,
+                            state.info._signature,
+#else
+                            contentToVerify.ToArray(),
+                            state.info._signature.ToArray(),
+#endif
+                            state.info.DigestAlgorithm.Value,
+                            state.info._signatureAlgorithmParameters,
+                            state.certificate));
+            }
         }
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)

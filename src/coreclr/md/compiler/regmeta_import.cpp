@@ -27,18 +27,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 //*****************************************************************************
 // determine if a token is valid or not
@@ -796,40 +788,6 @@ RegMeta::GetTypeDefProps(
 ErrExit:
     return hr;
 } // RegMeta::GetTypeDefProps
-
-//*****************************************************************************
-// Implementation of IMetaDataImport::ResolveTypeRef to resolve a typeref across scopes.
-//
-// Arguments:
-//    tr - typeref within this scope to resolve
-//    riid - interface on ppIScope to support
-//    ppIScope - out-parameter to get metadata scope for typedef (*ptd)
-//    ptd - out-parameter to get typedef that the ref resolves to.
-//
-// Notes:
-// TypeDefs define a type within a scope. TypeRefs refer to type-defs in other scopes
-// and allow you to import a type from another scope. This function attempts to determine
-// which type-def a type-ref points to.
-//
-// This resolve (type-ref, this cope) --> (type-def=*ptd, other scope=*ppIScope)
-//
-// However, this resolution required knowing what modules have been loaded, which is not decided
-// until runtime via loader / fusion policy. Thus this interface can't possibly be correct since
-// it doesn't have that knowledge. Furthermore, when inspecting metadata from another process
-// (such as a debugger inspecting the debuggee's metadata), this API can be truly misleading.
-//
-// This API is no longer supported.
-//
-//*****************************************************************************
-STDMETHODIMP
-RegMeta::ResolveTypeRef(
-    mdTypeRef   tr,
-    REFIID      riid,
-    IUnknown ** ppIScope,
-    mdTypeDef * ptd)
-{
-    return E_NOTIMPL;
-} // RegMeta::ResolveTypeRef
 
 //*****************************************************************************
 // Retrieve information about an implemented interface.

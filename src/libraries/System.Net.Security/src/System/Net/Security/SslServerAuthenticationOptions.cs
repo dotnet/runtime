@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -9,7 +10,7 @@ namespace System.Net.Security
 {
     public class SslServerAuthenticationOptions
     {
-        private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
+        private X509RevocationMode _checkCertificateRevocation = SslAuthenticationOptions.DefaultRevocationMode;
         private SslProtocols _enabledSslProtocols = SslProtocols.None;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private bool _allowRenegotiation;
@@ -92,5 +93,31 @@ namespace System.Net.Security
         /// are ignored.
         /// </summary>
         public X509ChainPolicy? CertificateChainPolicy { get; set; }
+
+        private bool _allowRsaPssPadding = true;
+        /// <summary>
+        /// Gets or sets a value that indicates whether the the rsa_pss_* family of TLS signature algorithms is enabled for use in the TLS handshake.
+        /// </summary>
+        public bool AllowRsaPssPadding
+        {
+            get => _allowRsaPssPadding;
+
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
+            set { _allowRsaPssPadding = value; }
+        }
+
+        private bool _allowRsaPkcs1Padding = true;
+        /// <summary>
+        /// Gets or sets a value that indicates whether the the rsa_pkcs1_* family of TLS signature algorithms is enabled for use in the TLS handshake.
+        /// </summary>
+        public bool AllowRsaPkcs1Padding
+        {
+            get => _allowRsaPkcs1Padding;
+
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
+            set { _allowRsaPkcs1Padding = value; }
+        }
     }
 }

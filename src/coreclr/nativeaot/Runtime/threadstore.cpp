@@ -6,8 +6,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -237,7 +237,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
-    PalFlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     int prevRemaining = INT32_MAX;
     bool observeOnly = true;
@@ -310,7 +310,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // This is needed to synchronize threads that were running in preemptive mode thus were
     // left alone by suspension to flush their writes that they made before they switched to
     // preemptive mode.
-    PalFlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
@@ -329,7 +329,7 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
         // This is needed to synchronize threads that were running in preemptive mode while
         // the runtime was suspended and that will return to cooperative mode after the runtime
         // is restarted.
-        PalFlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
@@ -418,7 +418,7 @@ FCIMPLEND
 C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread RuntimeThreadLocals tls_CurrentThread;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
 #endif
 
 EXTERN_C RuntimeThreadLocals* RhpGetThread()

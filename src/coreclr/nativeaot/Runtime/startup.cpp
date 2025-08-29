@@ -4,8 +4,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -176,13 +176,32 @@ static bool InitDLL(HANDLE hPalInstance)
 bool DetectCPUFeatures()
 {
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
-    g_cpuFeatures = minipal_getcpufeatures();
+    int cpuFeatures = minipal_getcpufeatures();
 
-    if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
+    if ((cpuFeatures & IntrinsicConstants_Invalid) != 0)
     {
-        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+#if defined(HOST_X86) || defined(HOST_AMD64)
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n");
+#elif defined(HOST_ARM64) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(HOST_MACCATALYST))
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n");
+#elif defined(HOST_ARM64)
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n");
+#else
+        PalPrintFatalError("\nThe current CPU is missing one or more of the baseline instruction sets.\n");
+#endif
+
         RhFailFast();
     }
+
+    int missingCpuFeatures = g_requiredCpuFeatures & ~cpuFeatures;
+
+    if (missingCpuFeatures != 0)
+    {
+        PalPrintFatalError("\nThe current CPU is missing one or more of the required instruction sets.\n");
+        RhFailFast();
+    }
+
+    g_cpuFeatures = cpuFeatures;
 #endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
@@ -350,10 +369,6 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
-#if defined(DEBUG) && defined(HOST_WINDOWS)
-    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
-    at_quick_exit(&OnProcessExit);
-#endif
     atexit(&OnProcessExit);
 #endif
 

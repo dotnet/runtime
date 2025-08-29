@@ -37,7 +37,6 @@
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
-#include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
@@ -66,6 +65,8 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+
+#include "interpexec.h"
 
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
@@ -661,7 +662,7 @@ void Module::Destruct()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -686,16 +687,6 @@ void Module::Destruct()
 
     ReleaseISymUnmanagedReader();
 
-    // Clean up sig cookies
-    VASigCookieBlock    *pVASigCookieBlock = m_pVASigCookieBlock;
-    while (pVASigCookieBlock)
-    {
-        VASigCookieBlock    *pNext = pVASigCookieBlock->m_Next;
-        delete pVASigCookieBlock;
-
-        pVASigCookieBlock = pNext;
-    }
-
     // Clean up the IL stub cache
     if (m_pILStubCache != NULL)
     {
@@ -717,7 +708,7 @@ void Module::Destruct()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
         END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
@@ -1515,7 +1506,7 @@ void Module::StartUnload()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -1657,18 +1648,9 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     {
         ret = GetISymUnmanagedReader();
     }
-    EX_CATCH
-    {
-        // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
-        // The only type of error that should be possible here is OOM.
-        /* DISABLED due to Dev10 bug 619495
-        CONSISTENCY_CHECK_MSG(
-            GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY,
-            "Exception from GetISymUnmanagedReader");
-         */
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
+    EX_SWALLOW_NONTERMINAL
+    // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
+    // The only type of error that should be possible here is OOM.
     RETURN (ret);
 }
 
@@ -2112,7 +2094,7 @@ PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
-TADDR Module::GetIL(DWORD target)
+TADDR Module::GetIL(RVA target)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -2868,7 +2850,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     RETURN pMDRet;
 }
@@ -3363,11 +3345,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -3396,14 +3378,14 @@ void Module::FixupVTables()
                     LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
-                    UMEntryThunk *pUMEntryThunk = UMEntryThunk::CreateUMEntryThunk();
+                    UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
 
                     pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
+                    pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
-                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
                 }
@@ -3627,7 +3609,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -3643,7 +3625,7 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
@@ -3752,10 +3734,19 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #endif
 }
 
+static bool g_fIJWLoaded = false;
+
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
     InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    g_fIJWLoaded = true;
+}
+
+bool Module::HasAnyIJWBeenLoaded()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_fIJWLoaded;
 }
 #endif // !DACCESS_COMPILE
 
@@ -4055,9 +4046,9 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-
     BYTE* pByte = NULL;
-    m_pCeeFileGen->GetMethodBuffer(il, &pByte);
+    if (il != 0)
+        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
     return TADDR(pByte);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
@@ -4259,27 +4250,28 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     }
     CONTRACT_END;
 
-    VASigCookieBlock *pBlock;
-    VASigCookie      *pCookie;
+    VASigCookie *pCookie = NULL;
 
-    pCookie = NULL;
-
-    // First, see if we already enregistered this sig.
+    // First, see if we already have a match for this signature.
     // Note that we're outside the lock here, so be a bit careful with our logic
+    VASigCookieBlock* pBlock;
     for (pBlock = pLoaderModule->m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
     {
-        for (UINT i = 0; i < pBlock->m_numcookies; i++)
+        for (UINT i = 0; i < pBlock->m_numCookies; i++)
         {
-            if (pBlock->m_cookies[i].signature.GetRawSig() == vaSignature.GetRawSig())
+            VASigCookie* cookieMaybe = &pBlock->m_cookies[i];
+
+            // Check if the cookie has the same signature.
+            if (cookieMaybe->signature.GetRawSig() == vaSignature.GetRawSig())
             {
-                _ASSERTE(pBlock->m_cookies[i].classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
-                _ASSERTE(pBlock->m_cookies[i].methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
+                _ASSERTE(cookieMaybe->classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
+                _ASSERTE(cookieMaybe->methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
 
                 bool instMatch = true;
 
-                for (DWORD j = 0; j < pBlock->m_cookies[i].classInst.GetNumArgs(); j++)
+                for (DWORD j = 0; j < cookieMaybe->classInst.GetNumArgs(); j++)
                 {
-                    if (pBlock->m_cookies[i].classInst[j] != typeContext->m_classInst[j])
+                    if (cookieMaybe->classInst[j] != typeContext->m_classInst[j])
                     {
                         instMatch = false;
                         break;
@@ -4288,9 +4280,9 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
                 if (instMatch)
                 {
-                    for (DWORD j = 0; j < pBlock->m_cookies[i].methodInst.GetNumArgs(); j++)
+                    for (DWORD j = 0; j < cookieMaybe->methodInst.GetNumArgs(); j++)
                     {
-                        if (pBlock->m_cookies[i].methodInst[j] != typeContext->m_methodInst[j])
+                        if (cookieMaybe->methodInst[j] != typeContext->m_methodInst[j])
                         {
                             instMatch = false;
                             break;
@@ -4300,7 +4292,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
                 if (instMatch)
                 {
-                    pCookie = &(pBlock->m_cookies[i]);
+                    pCookie = cookieMaybe;
                     break;
                 }
             }
@@ -4320,7 +4312,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         DWORD sizeOfArgs = argit.SizeOfArgStack();
 
         // Prepare instantiation
-        LoaderAllocator  *pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
+        LoaderAllocator* pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
 
         DWORD classInstCount = typeContext->m_classInst.GetNumArgs();
         DWORD methodInstCount = typeContext->m_methodInst.GetNumArgs();
@@ -4337,26 +4329,26 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
             // occasional duplicate cookie instead.
 
             // Is the first block in the list full?
-            if (pLoaderModule->m_pVASigCookieBlock && pLoaderModule->m_pVASigCookieBlock->m_numcookies
-                < VASigCookieBlock::kVASigCookieBlockSize)
+            if (pLoaderModule->m_pVASigCookieBlock
+                && pLoaderModule->m_pVASigCookieBlock->m_numCookies < VASigCookieBlock::kVASigCookieBlockSize)
             {
                 // Nope, reserve a new slot in the existing block.
-                pCookie = &(pLoaderModule->m_pVASigCookieBlock->m_cookies[pLoaderModule->m_pVASigCookieBlock->m_numcookies]);
+                pCookie = &(pLoaderModule->m_pVASigCookieBlock->m_cookies[pLoaderModule->m_pVASigCookieBlock->m_numCookies]);
             }
             else
             {
                 // Yes, create a new block.
-                VASigCookieBlock *pNewBlock = new VASigCookieBlock();
-
+                VASigCookieBlock* pNewBlock = (VASigCookieBlock*)(void*)pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(VASigCookieBlock)));
                 pNewBlock->m_Next = pLoaderModule->m_pVASigCookieBlock;
-                pNewBlock->m_numcookies = 0;
+                pNewBlock->m_numCookies = 0;
                 pLoaderModule->m_pVASigCookieBlock = pNewBlock;
+
                 pCookie = &(pNewBlock->m_cookies[0]);
             }
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = 0;
+            pCookie->pPInvokeILStub = (PCODE)NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;
@@ -4365,7 +4357,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             if (classInstCount != 0)
             {
-                TypeHandle* pClassInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                TypeHandle* pClassInst = (TypeHandle*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount) * S_SIZE_T(sizeof(TypeHandle))));
                 for (DWORD i = 0; i < classInstCount; i++)
                 {
                     pClassInst[i] = typeContext->m_classInst[i];
@@ -4375,7 +4367,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             if (methodInstCount != 0)
             {
-                TypeHandle* pMethodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                TypeHandle* pMethodInst = (TypeHandle*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount) * S_SIZE_T(sizeof(TypeHandle))));
                 for (DWORD i = 0; i < methodInstCount; i++)
                 {
                     pMethodInst[i] = typeContext->m_methodInst[i];
@@ -4387,7 +4379,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
-            pLoaderModule->m_pVASigCookieBlock->m_numcookies++;
+            pLoaderModule->m_pVASigCookieBlock->m_numCookies++;
         }
     }
 
@@ -4617,8 +4609,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         }
     }
 
-    ECall::EnumFCallMethods();
-
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
 
@@ -4756,7 +4746,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             //Only do this for non-generic types and unshared generic types
             //(canonical generics and value type generic instantiations).
@@ -4781,7 +4771,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     };
     //Jit all methods eagerly

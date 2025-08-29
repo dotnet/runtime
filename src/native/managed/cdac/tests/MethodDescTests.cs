@@ -16,7 +16,7 @@ public class MethodDescTests
     private static Target CreateTarget(MockDescriptors.MethodDescriptors methodDescBuilder, Mock<IExecutionManager> mockExecutionManager = null)
     {
         MockMemorySpace.Builder builder = methodDescBuilder.Builder;
-        var target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
+        var target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetMemoryContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
         target.SetContracts(Mock.Of<ContractRegistry>(

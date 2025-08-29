@@ -833,8 +833,6 @@ StackWalkAction Thread::StackWalkFramesEx(
     // that any C++ destructors pushed in this function will never execute, and it means that this function can
     // never have a dynamic contract.
     STATIC_CONTRACT_WRAPPER;
-    SCAN_IGNORE_THROW;            // see contract above
-    SCAN_IGNORE_TRIGGER;          // see contract above
 
     _ASSERTE(pRD);
     _ASSERTE(pCallback);
@@ -1055,9 +1053,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
-#ifdef FEATURE_INTERPRETER
-    m_walkingInterpreterFrames = false;
-#endif
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -1287,7 +1282,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         // 0012e884 ntdll32!DbgBreakPoint
         // 0012e89c CLRStub[StubLinkStub]@1f0ac1e
         // 0012e8a4     invalid ESP of Foo() according to the REGDISPLAY specified by the debuggers
-        // 0012e8b4     address of transition frame (NDirectMethodFrameStandalone)
+        // 0012e8b4     address of transition frame (PInvokeMethodFrameStandalone)
         // 0012e8c8     real ESP of Foo() according to the transition frame
         // 0012e8d8 managed!Dummy.Foo()+0x20
         //
@@ -2846,32 +2841,34 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 #ifdef FEATURE_INTERPRETER
         if (!m_crawl.isFrameless)
         {
+            PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+
             if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
-                PREGDISPLAY pRD = m_crawl.GetRegisterSet();
-
-                if (!m_walkingInterpreterFrames)
+                if (GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP)
                 {
                     // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                     // Switch to walking the underlying interpreted frames.
                     // Save the registers the interpreter frames walking reuses so that we can restore them
                     // after we are done with the interpreter frames.
-                    m_interpExecMethodIP = (TADDR)GetIP(pRD->pCurrentContext);
-                    m_interpExecMethodSP = (TADDR)GetSP(pRD->pCurrentContext);
-                    m_interpExecMethodFP = (TADDR)GetFP(pRD->pCurrentContext);
-                    m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
+                    m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                    m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                    m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                    m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
 
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+                    if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
+                    {
+                        m_crawl.isInterrupted = true;
+                        m_crawl.hasFaulted = true;
+                    }
 
-                    pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
-                    m_walkingInterpreterFrames = m_crawl.isFrameless;
                 }
                 else
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
-                    m_walkingInterpreterFrames = false;
                     // Restore the registers to the values they had before we started walking the interpreter frames.
                     SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
@@ -2879,6 +2876,16 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
                     SyncRegDisplayToCurrentContext(pRD);
                 }
+            }
+            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) &&
+                     (m_crawl.pFrame->PtrNextFrame() != FRAME_TOP) &&
+                     (m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                // There is an active inlined call frame and the next frame is the interpreter frame. This is a special case where we need to save the current context registers that the interpreter frames walking reuses.
+                m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
             }
         }
 #endif // FEATURE_INTERPRETER
@@ -2981,23 +2988,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )
     {
-        BOOL fReportInteropMD =
-        // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-        // was passed to the stub as its secret argument. This is the true interop MD.
-        // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-        // the call is made using the CALLI instruction.
-            m_crawl.pFrame != FRAME_TOP &&
-            m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
-            m_crawl.pFunc != NULL &&
-            m_crawl.pFunc->IsILStub() &&
-            m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
-
-        if (fHandleSkippedFrames
-#ifdef TARGET_X86
-            || // On x86 we have already reported the InlinedCallFrame, don't report it again.
-            (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && !fReportInteropMD)
-#endif // TARGET_X86
-            )
+        if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
 #ifdef STACKWALKER_MAY_POP_FRAMES
@@ -3017,6 +3008,16 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
+            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
+            // was passed to the stub as its secret argument. This is the true interop MD.
+            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
+            // the call is made using the CALLI instruction.
+            bool fReportInteropMD =
+                m_crawl.pFrame != FRAME_TOP
+                && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
+                && m_crawl.pFunc != NULL
+                && m_crawl.pFunc->IsILStub()
+                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();
@@ -3137,22 +3138,6 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     m_exInfoWalk.WalkToPosition(GetRegdisplaySP(m_crawl.pRD), (m_flags & POPFRAMES));
 #endif // ELIMINATE_FEF
 
-#ifdef TARGET_X86
-#ifdef FEATURE_EH_FUNCLETS
-    bool hasReversePInvoke = false;
-    if (!m_crawl.codeInfo.IsFunclet())
-    {
-        hdrInfo *gcHdrInfo;
-        m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
-        hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
-    }
-#else
-    hdrInfo *gcHdrInfo;
-    m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
-    bool hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
-#endif // FEATURE_EH_FUNCLETS
-#endif // TARGET_X86
-
     ProcessIp(GetControlPC(m_crawl.pRD));
 
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
@@ -3161,18 +3146,6 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }
-#ifdef TARGET_X86
-    else if (hasReversePInvoke)
-    {
-        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
-        // frame, that means that the method was called from managed code without any native frames in between.
-        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
-        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
-        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
-        _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
-        m_crawl.isFrameless = false;
-    }
-#endif
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------

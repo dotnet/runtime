@@ -137,11 +137,13 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 * or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
-To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
+The default build output relies on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
 
-The output of the MSBuild toolchain - located in the [AppBundle](#Project-folder-structure) folder - must be fed in to your web build toolchain in order to ensure that the runtime and managed binaries are deployed with the rest of your application assets.
-
-For a sample of using the .NET runtime in a React component, [see here](https://github.com/maraf/dotnet-wasm-react).
+JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
+An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate different JavaScript files that are not runnable
+in the browsers, but they can be consumed by these JavaScript tools. Some examples:
+  - Merge all JavaScript files, resolve wasm & other files as files, copying them to the output directory, optionally fingerprinting them, etc.
+  - Embed all JavaScripts files and wasm & other files as base64 encoded blobs directly into a single file.
 
 ## Project folder structure
 
@@ -274,11 +276,6 @@ Browsers do not offer a way to access the contents of their time zone database, 
 
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
-### Bundling JavaScript and other assets
-Many web developers use tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file. When deploying a .NET application to the web, you can safely bundle the `dotnet.js` ES6 module with the rest of your JavaScript application, but the other assets and modules in the `_framework` folder may not be bundled as they are loaded dynamically.
-
-In our testing the dynamic loading of assets provides faster startup and shorter download times. We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) if there are scenarios where you need the ability to bundle the rest of an application.
-
 ## Resources consumed on the target device
 When you deploy a .NET application to the browser, many necessary components and databases are included:
 - The .NET runtime, including a garbage collector, interpreter, and JIT compiler
@@ -381,15 +378,15 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <WasmPerfTracing>true</WasmPerfTracing>
+  <EnableDiagnostics>true</EnableDiagnostics>
 
   <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
-  Only when WasmPerfInstrumentation is true
+  Only when WasmPerformanceInstrumentation is not empty or none.
   See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
   -->
-  <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
   <!-- alternatively all methods -->
-  <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
   <!-- this is existing switch also on other targets -->

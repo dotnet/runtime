@@ -35,8 +35,8 @@
 #include "TargetPtrs.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "gcenv.interlocked.inl"
 
 #include "slist.h"

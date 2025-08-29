@@ -43,13 +43,10 @@ namespace System.Buffers
                 (typeof(TCaseSensitivity) == typeof(CaseSensitive) || typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters));
         }
 
-        public SingleStringSearchValuesThreeChars(HashSet<string>? uniqueValues, string value) : base(uniqueValues)
+        public SingleStringSearchValuesThreeChars(HashSet<string>? uniqueValues, string value, int ch2Offset, int ch3Offset) : base(uniqueValues)
         {
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
             Debug.Assert(value.Length > 1);
-
-            CharacterFrequencyHelper.GetSingleStringMultiCharacterOffsets(value, IgnoreCase, out int ch2Offset, out int ch3Offset);
-
             Debug.Assert(ch3Offset == 0 || ch3Offset > ch2Offset);
 
             _valueState = new SingleValueState(value, IgnoreCase);
@@ -61,6 +58,8 @@ namespace System.Buffers
 
             if (IgnoreCase)
             {
+                Debug.Assert(char.IsAscii((char)_ch1) && char.IsAscii((char)_ch2) && char.IsAscii((char)_ch3));
+
                 _ch1 &= CaseConversionMask;
                 _ch2 &= CaseConversionMask;
                 _ch3 &= CaseConversionMask;
@@ -99,8 +98,8 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch2ByteOffset / 2));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch3ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch2ByteOffset / sizeof(char)));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector512<ushort>.Count + (int)(_ch3ByteOffset / sizeof(char)));
 
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector512<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
@@ -147,8 +146,8 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch2ByteOffset / 2));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch3ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch2ByteOffset / sizeof(char)));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector256<ushort>.Count + (int)(_ch3ByteOffset / sizeof(char)));
 
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector256<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
@@ -194,8 +193,8 @@ namespace System.Buffers
                 while (true)
                 {
                     ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count);
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch2ByteOffset / 2));
-                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch3ByteOffset / 2));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch2ByteOffset / sizeof(char)));
+                    ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref searchSpace, Vector128<ushort>.Count + (int)(_ch3ByteOffset / sizeof(char)));
 
                     // Find which starting positions likely contain a match (likely match all 3 anchor characters).
                     Vector128<byte> result = GetComparisonResult(ref searchSpace, ch2ByteOffset, ch3ByteOffset, ch1, ch2, ch3);
@@ -281,7 +280,7 @@ namespace System.Buffers
         private static Vector256<byte> GetComparisonResult(ref char searchSpace, nuint ch2ByteOffset, nuint ch3ByteOffset, Vector256<ushort> ch1, Vector256<ushort> ch2, Vector256<ushort> ch3)
         {
             // See comments in 'GetComparisonResult' for Vector128<byte> above.
-            // This method is the same, but operates on 32 input characters at a time.
+            // This method is the same, but operates on 16 input characters at a time.
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace));
@@ -304,7 +303,7 @@ namespace System.Buffers
         private static Vector512<byte> GetComparisonResult(ref char searchSpace, nuint ch2ByteOffset, nuint ch3ByteOffset, Vector512<ushort> ch1, Vector512<ushort> ch2, Vector512<ushort> ch3)
         {
             // See comments in 'GetComparisonResult' for Vector128<byte> above.
-            // This method is the same, but operates on 64 input characters at a time.
+            // This method is the same, but operates on 32 input characters at a time.
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace));
@@ -339,7 +338,7 @@ namespace System.Buffers
 
                 if (CanSkipAnchorMatchVerification || TCaseSensitivity.Equals<TValueLength>(ref matchRef, in _valueState))
                 {
-                    offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
+                    offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / sizeof(char));
                     return true;
                 }
 
@@ -378,7 +377,6 @@ namespace System.Buffers
             offsetFromStart = 0;
             return false;
         }
-
 
         internal override bool ContainsCore(string value) => HasUniqueValues
             ? base.ContainsCore(value)

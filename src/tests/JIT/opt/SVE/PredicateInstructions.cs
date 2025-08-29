@@ -17,122 +17,164 @@ public class PredicateInstructions
     {
         if (Sve.IsSupported)
         {
-            ZipLow();
-            ZipHigh();
-            UnzipOdd();
-            UnzipEven();
-            TransposeOdd();
-            TransposeEven();
-            ReverseElement();
-            And();
-            BitwiseClear();
-            Xor();
-            Or();
-            ConditionalSelect();
+            Vector<sbyte>  vecsb = Vector.Create<sbyte>(2);
+            Vector<short>  vecs  = Vector.Create<short>(2);
+            Vector<ushort> vecus = Vector.Create<ushort>(2);
+            Vector<int>    veci  = Vector.Create<int>(3);
+            Vector<uint>   vecui = Vector.Create<uint>(5);
+            Vector<long>   vecl  = Vector.Create<long>(7);
+
+            ZipLowMask(vecs, vecs);
+            ZipHighMask(vecui, vecui);
+            UnzipOddMask(vecs, vecs);
+            UnzipEvenMask(vecsb, vecsb);
+            TransposeEvenMask(vecl, vecl);
+            TransposeOddMask(vecs, vecs);
+            ReverseElementMask(vecs, vecs);
+            AndMask(vecs, vecs);
+            BitwiseClearMask(vecs, vecs);
+            XorMask(veci, veci);
+            OrMask(vecs, vecs);
+            ConditionalSelectMask(veci, veci, veci);
+
+            UnzipEvenZipLowMask(vecs, vecs);
+            TransposeEvenAndMask(vecs, vecs, vecs);
+
         }
     }
 
+    // These should use the predicate variants.
+    // Sve intrinsics that return masks (Compare) or use mask arguments (CreateBreakAfterMask) are used
+    // to ensure masks are used.
+
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> ZipLow()
+    static Vector<short> ZipLowMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: zip1 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
-        return Sve.ZipLow(Vector<short>.Zero, Sve.CreateTrueMaskInt16());
+        return Sve.ZipLow(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<uint> ZipHigh()
+    static Vector<uint> ZipHighMask(Vector<uint> a, Vector<uint> b)
     {
         //ARM64-FULL-LINE: zip2 {{p[0-9]+}}.s, {{p[0-9]+}}.s, {{p[0-9]+}}.s
-        return Sve.ZipHigh(Sve.CreateTrueMaskUInt32(), Sve.CreateTrueMaskUInt32());
+        return Sve.CreateBreakAfterMask(Sve.ZipHigh(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)), Sve.CreateTrueMaskUInt32());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<sbyte> UnzipEven()
+    static Vector<sbyte> UnzipEvenMask(Vector<sbyte> a, Vector<sbyte> b)
     {
         //ARM64-FULL-LINE: uzp1 {{p[0-9]+}}.b, {{p[0-9]+}}.b, {{p[0-9]+}}.b
-        return Sve.UnzipEven(Sve.CreateTrueMaskSByte(), Vector<sbyte>.Zero);
+        return Sve.UnzipEven(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> UnzipOdd()
+    static Vector<short> UnzipOddMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: uzp2 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
-        return Sve.UnzipOdd(Sve.CreateTrueMaskInt16(), Sve.CreateFalseMaskInt16());
+        return Sve.CreateBreakAfterMask(Sve.UnzipOdd(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)), Sve.CreateTrueMaskInt16());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<long> TransposeEven()
+    static Vector<long> TransposeEvenMask(Vector<long> a, Vector<long> b)
     {
         //ARM64-FULL-LINE: trn1 {{p[0-9]+}}.d, {{p[0-9]+}}.d, {{p[0-9]+}}.d
-        return Sve.TransposeEven(Sve.CreateFalseMaskInt64(), Sve.CreateTrueMaskInt64());
+        return Sve.CreateBreakAfterMask(Sve.TransposeEven(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)), Sve.CreateFalseMaskInt64());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> TransposeOdd()
+    static Vector<short> TransposeOddMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: trn2 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
-        return Sve.TransposeOdd(Vector<short>.Zero, Sve.CreateTrueMaskInt16());
+        return Sve.TransposeOdd(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> ReverseElement()
+    static Vector<short> ReverseElementMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: rev {{p[0-9]+}}.h, {{p[0-9]+}}.h
-        return Sve.ReverseElement(Sve.CreateTrueMaskInt16());
+        return Sve.CreateBreakAfterMask(Sve.ReverseElement(Sve.CompareGreaterThan(a, b)), Sve.CreateFalseMaskInt16());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> And()
+    static Vector<short> AndMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: and {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
-        return Sve.ConditionalSelect(
-            Sve.CreateTrueMaskInt16(),
-            Sve.And(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
-            Vector<short>.Zero
-        );
+        return Sve.CreateBreakAfterMask(
+            Sve.ConditionalSelect(
+                Sve.CreateTrueMaskInt16(),
+                Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                Vector<short>.Zero),
+            Sve.CreateFalseMaskInt16());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> BitwiseClear()
+    static Vector<short> BitwiseClearMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: bic {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
         return Sve.ConditionalSelect(
-            Sve.CreateFalseMaskInt16(),
-            Sve.BitwiseClear(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
-            Vector<short>.Zero
-        );
+                Sve.CreateTrueMaskInt16(),
+                Sve.BitwiseClear(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                Vector<short>.Zero);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<int> Xor()
+    static Vector<int> XorMask(Vector<int> a, Vector<int> b)
     {
         //ARM64-FULL-LINE: eor {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
-        return Sve.ConditionalSelect(
-            Sve.CreateTrueMaskInt32(),
-            Sve.Xor(Sve.CreateTrueMaskInt32(), Sve.CreateTrueMaskInt32()),
-            Vector<int>.Zero
-        );
+        return Sve.CreateBreakAfterMask(
+            Sve.ConditionalSelect(
+                Sve.CreateTrueMaskInt32(),
+                Sve.Xor(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                Vector<int>.Zero),
+            Sve.CreateFalseMaskInt32());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<short> Or()
+    static Vector<short> OrMask(Vector<short> a, Vector<short> b)
     {
         //ARM64-FULL-LINE: orr {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
         return Sve.ConditionalSelect(
-            Sve.CreateTrueMaskInt16(),
-            Sve.Or(Sve.CreateTrueMaskInt16(), Sve.CreateTrueMaskInt16()),
-            Vector<short>.Zero
-        );
+                Sve.CreateTrueMaskInt16(),
+                Sve.Or(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                Vector<short>.Zero);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static Vector<int> ConditionalSelect()
+    static Vector<int> ConditionalSelectMask(Vector<int> v, Vector<int> a, Vector<int> b)
     {
+        // Use a passed in vector for the mask to prevent optimising away the select
         //ARM64-FULL-LINE: sel {{p[0-9]+}}.b, {{p[0-9]+}}, {{p[0-9]+}}.b, {{p[0-9]+}}.b
-        return Sve.ConditionalSelect(
-            Vector<int>.Zero,
-            Sve.CreateFalseMaskInt32(),
-            Sve.CreateTrueMaskInt32()
-        );
+        return Sve.CreateBreakAfterMask(
+            Sve.ConditionalSelect(v, Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+            Sve.CreateFalseMaskInt32());
+    }
+
+    // These have multiple uses of the predicate variants
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> UnzipEvenZipLowMask(Vector<short> a, Vector<short> b)
+    {
+        //ARM64-FULL-LINE: zip1 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
+        //ARM64-FULL-LINE: uzp1 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
+        return Sve.CreateBreakAfterMask(
+            Sve.UnzipEven(
+                Sve.ZipLow(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                Sve.CompareLessThan(a, b)),
+            Sve.CreateTrueMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> TransposeEvenAndMask(Vector<short> v, Vector<short> a, Vector<short> b)
+    {
+        //ARM64-FULL-LINE: and {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        //ARM64-FULL-LINE: trn1 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
+        return Sve.TransposeEven(
+                Sve.CompareGreaterThan(a, b),
+                Sve.ConditionalSelect(
+                    Sve.CreateTrueMaskInt16(),
+                    Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
+                    Sve.CompareLessThan(a, b)));
     }
 }

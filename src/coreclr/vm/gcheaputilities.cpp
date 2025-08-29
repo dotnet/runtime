@@ -203,7 +203,8 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     if (result == nullptr)
     {
         // Look for the standalone GC module next to the clr binary
-        PathString libPath = GetInternalSystemDirectory();
+        PathString libPath;
+        IfFailThrow(GetClrModuleDirectory(libPath));
         libPath.Append(libFileName);
 
         LOG((LF_GC, LL_INFO100, "Loading standalone GC by coreclr %s\n", libPath.GetUTF8()));

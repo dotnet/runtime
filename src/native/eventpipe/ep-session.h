@@ -69,6 +69,11 @@ struct _EventPipeSession_Internal {
 	volatile uint32_t started;
 	// Reference count for the session. This is used to track the number of references to the session.
 	volatile uint32_t ref_count;
+	// The user_events_data file descriptor to register Tracepoints and write user_events to.
+	int user_events_data_fd;
+	// The IPC continuation stream from initializing the session through the diagnostic server
+	// Currently only initialized for user_events sessions.
+	IpcStream *stream;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -100,7 +105,8 @@ ep_session_alloc (
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	int user_events_data_fd);
 
 void
 ep_session_inc_ref (EventPipeSession *session);
@@ -213,6 +219,12 @@ ep_session_resume (EventPipeSession *session);
 
 bool
 ep_session_has_started (EventPipeSession *session);
+
+bool
+ep_session_type_uses_buffer_manager (EventPipeSessionType session_type);
+
+bool
+ep_session_type_uses_streaming_thread (EventPipeSessionType session_type);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_SESSION_H__ */

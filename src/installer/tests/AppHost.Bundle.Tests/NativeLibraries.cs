@@ -34,18 +34,13 @@ namespace AppHost.Bundle.Tests
 
         private void PInvoke(bool selfContained, bool bundleNative)
         {
-            string app = (selfContained, bundleNative) switch
-            {
-                (true, true) => sharedTestState.SelfContainedApp_BundleNative,
-                (true, false) => sharedTestState.SelfContainedApp,
-                (false, true) => sharedTestState.FrameworkDependentApp_BundleNative,
-                (false, false) => sharedTestState.FrameworkDependentApp
-            };
-
+            (string app, string extractionRoot) = sharedTestState.GetApp(selfContained, bundleNative);
             Command.Create(app, "load_native_library_pinvoke")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                // Specify an extraction root that will get cleaned up by the test app artifact
+                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()
                 .Should().Pass()
                 .And.CallPInvoke(null, true)
@@ -67,18 +62,13 @@ namespace AppHost.Bundle.Tests
 
         private void TryLoad(bool selfContained, bool bundleNative)
         {
-            string app = (selfContained, bundleNative) switch
-            {
-                (true, true) => sharedTestState.SelfContainedApp_BundleNative,
-                (true, false) => sharedTestState.SelfContainedApp,
-                (false, true) => sharedTestState.FrameworkDependentApp_BundleNative,
-                (false, false) => sharedTestState.FrameworkDependentApp
-            };
-
+            (string app, string extractionRoot) = sharedTestState.GetApp(selfContained, bundleNative);
             Command.Create(app, "load_native_library_api")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                // Specify an extraction root that will get cleaned up by the test app artifact
+                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()
                 .Should().Pass()
                 .And.TryLoadLibrary(null, true)
@@ -99,14 +89,14 @@ namespace AppHost.Bundle.Tests
 
         public class SharedTestState : IDisposable
         {
-            public string FrameworkDependentApp { get; }
-            public string SelfContainedApp { get; }
-
-            public string FrameworkDependentApp_BundleNative { get; }
-            public string SelfContainedApp_BundleNative { get; }
-
             private SingleFileTestApp _frameworkDependentApp;
             private SingleFileTestApp _selfContainedApp;
+
+            private string _frameworkDependentBundle;
+            private string _selfContainedBundle;
+
+            private string _frameworkDependentBundle_BundleNative;
+            private string _selfContainedBundle_BundleNative;
 
             public SharedTestState()
             {
@@ -122,11 +112,31 @@ namespace AppHost.Bundle.Tests
                     File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(_selfContainedApp.NonBundledLocation, fileName));
                 }
 
-                FrameworkDependentApp = _frameworkDependentApp.Bundle();
-                SelfContainedApp = _selfContainedApp.Bundle();
+                _frameworkDependentBundle = _frameworkDependentApp.Bundle();
+                _selfContainedBundle = _selfContainedApp.Bundle();
 
-                FrameworkDependentApp_BundleNative = _frameworkDependentApp.Bundle(BundleOptions.BundleNativeBinaries);
-                SelfContainedApp_BundleNative = _selfContainedApp.Bundle(BundleOptions.BundleNativeBinaries);
+                _frameworkDependentBundle_BundleNative = _frameworkDependentApp.Bundle(BundleOptions.BundleNativeBinaries);
+                _selfContainedBundle_BundleNative = _selfContainedApp.Bundle(BundleOptions.BundleNativeBinaries);
+            }
+
+            public (string AppPath, string ExtractionRoot) GetApp(bool selfContained, bool bundleNative)
+            {
+                string app = (selfContained, bundleNative) switch
+                {
+                    (true, true) => _selfContainedBundle_BundleNative,
+                    (true, false) => _selfContainedBundle,
+                    (false, true) => _frameworkDependentBundle_BundleNative,
+                    (false, false) => _frameworkDependentBundle
+                };
+                string extractionRoot = null;
+                if (bundleNative)
+                {
+                    extractionRoot = selfContained
+                        ? _selfContainedApp.GetNewExtractionRootPath()
+                        : _frameworkDependentApp.GetNewExtractionRootPath();
+                }
+
+                return (app, extractionRoot);
             }
 
             public void Dispose()

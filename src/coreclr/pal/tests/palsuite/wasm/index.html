@@ -10,7 +10,6 @@
     <script>
         const disabledTestNamePatterns = [
             "exception_handling/RaiseException", // 3 tests, we don't have stack unwinding available from C native code
-            "file_io/GetFileAttributesEx", // blocks main thread
             "file_io/GetSystemTime", // blocks main thread
             "file_io/WriteFile/test5/paltest_writefile_test5", // infinite loop
             "file_io/SetFilePointer/test7/paltest_setfilepointer_test7", // tries to allocate 4GB of memory in MEMFS when run with chromedriver

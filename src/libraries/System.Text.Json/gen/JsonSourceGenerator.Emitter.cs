@@ -1188,6 +1188,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('{');
                 writer.Indentation++;
 
+                if (optionsSpec.AllowDuplicateProperties is bool allowDuplicateProperties)
+                    writer.WriteLine($"AllowDuplicateProperties = {FormatBoolLiteral(allowDuplicateProperties)},");
+
                 if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
                     writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBoolLiteral(allowOutOfOrderMetadataProperties)},");
 

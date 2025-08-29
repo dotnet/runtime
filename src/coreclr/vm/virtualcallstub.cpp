@@ -1,17 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: VirtualCallStub.CPP
-//
+
 // This file contains the virtual call stub manager and caches
-//
-
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 #include "array.h"
@@ -188,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (g_hStubLogFile == INVALID_HANDLE_VALUE) {
         g_hStubLogFile = NULL;
@@ -1489,7 +1479,7 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
     if (!objectType->IsComObjectType()
         && !objectType->IsIDynamicInterfaceCastable())
     {
-        CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+        CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
     }
 #endif // _DEBUG
 
@@ -1960,7 +1950,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     /////////////////////////////////////////////////////////////////////////////////////
     // If we failed to find a target in either the resolver or cache entry hash tables,
@@ -1975,7 +1965,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (!objectType->IsComObjectType()
             && !objectType->IsIDynamicInterfaceCastable())
         {
-            CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+            CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
         }
 #endif // _DEBUG
     }
@@ -2252,7 +2242,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     // Target can be NULL only if we can't resolve to an address
     _ASSERTE(target != (PCODE)NULL);
@@ -2332,11 +2322,6 @@ VirtualCallStubManager::Resolver(
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != (PCODE)NULL)
-                implSlot = DispatchSlot(pDirectTarget);
-
             // Only patch to a target if it's not going to call the prestub.
             fShouldPatch = TRUE;
         }
@@ -2493,8 +2478,8 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-    // This is called when trying to create a HelperMethodFrame, which means there are
-    // potentially managed references on the stack that are not yet protected.
+    // This is called in a context where managed references on the stack may not be fully protected,
+    // so garbage collection must be forbidden here.
     GCX_FORBID();
 
     if (token.IsTypedToken())
@@ -2849,7 +2834,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                        );
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -2910,7 +2895,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                        DispatchStub::e_TYPE_LONG);
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -3101,7 +3086,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     e->pNext  = NULL;
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress((PCODE)addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc((PCODE)addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         pMD->RecordAndBackpatchEntryPointSlot(
@@ -4279,7 +4264,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
     VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
 
-    return pMT->GetMethodDescForSlotAddress(target);
+    return NonVirtualEntry2MethodDesc(target);
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #endif

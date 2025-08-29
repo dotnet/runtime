@@ -14,6 +14,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
     {
         private const uint INVALID_GS_COOKIE_OFFSET = 0;
         private const uint INVALID_SYNC_OFFSET = 0;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
 
         public uint PrologSize { get; set; }
         public uint EpilogSize { get; set; }
@@ -82,7 +83,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             GsCookieOffset = 0;
             SyncStartOffset = 0;
             SyncEndOffset = 0;
-            RevPInvokeOffset = 0;
+            RevPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
             NoGCRegionCnt = 0;
 
             HasArgTabOffset = false;
@@ -157,13 +158,15 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         }
     };
 
-    public class InfoHdrDecoder {
+    public class InfoHdrDecoder
+    {
 
         private const uint HAS_VARPTR = 0xFFFFFFFF;
         private const uint HAS_UNTRACKED = 0xFFFFFFFF;
         private const uint HAS_GS_COOKIE_OFFSET = 0xFFFFFFFF;
         private const uint HAS_SYNC_OFFSET = 0xFFFFFFFF;
-        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFF;
+        private const uint INVALID_REV_PINVOKE_OFFSET = 0xFFFFFFFF;
+        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFE;
         private const uint HAS_NOGCREGIONS = 0xFFFFFFFF;
         private const uint YES = HAS_VARPTR;
 
@@ -179,14 +182,14 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// Initialize the GcInfo header
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> DecodeHeader and <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpInfoHdr</a>
         /// </summary>
-        public static InfoHdrSmall DecodeHeader(byte[] image, ref int offset, int codeLength)
+        public static InfoHdrSmall DecodeHeader(NativeReader imageReader, ref int offset, int codeLength)
         {
-            byte nextByte = image[offset++];
+            byte nextByte = imageReader.ReadByte(ref offset);
             byte encoding = (byte)(nextByte & 0x7f);
             InfoHdrSmall header = GetInfoHdr(encoding);
             while ((nextByte & (uint)InfoHdrAdjustConstants.MORE_BYTES_TO_FOLLOW) != 0)
             {
-                nextByte = image[offset++];
+                nextByte = imageReader.ReadByte(ref offset);
                 encoding = (byte)(nextByte & (uint)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
 
                 if (encoding < (uint)InfoHdrAdjust.NEXT_FOUR_START)
@@ -278,11 +281,11 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 header.SyncStartOffset ^= HAS_SYNC_OFFSET;
                                 break;
                             case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                                header.RevPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
+                                header.RevPInvokeOffset ^= (INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET);
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:
-                                nextByte = image[offset++];
+                                nextByte = imageReader.ReadByte(ref offset);
                                 encoding = (byte)(nextByte & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
                                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
                                 if (encoding <= (int)InfoHdrAdjustConstants.SET_RET_KIND_MAX)
@@ -345,29 +348,29 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             if (header.UntrackedCnt == HAS_UNTRACKED)
             {
                 header.HasArgTabOffset = true;
-                header.UntrackedCnt = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.UntrackedCnt = imageReader.DecodeUnsignedGc(ref offset);
             }
             if (header.VarPtrTableSize == HAS_VARPTR)
             {
                 header.HasArgTabOffset = true;
-                header.VarPtrTableSize = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.VarPtrTableSize = imageReader.DecodeUnsignedGc(ref offset);
             }
             if (header.GsCookieOffset == HAS_GS_COOKIE_OFFSET)
             {
-                header.GsCookieOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.GsCookieOffset = imageReader.DecodeUnsignedGc(ref offset);
             }
             if (header.SyncStartOffset == HAS_SYNC_OFFSET)
             {
-                header.SyncStartOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
-                header.SyncEndOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.SyncStartOffset = imageReader.DecodeUnsignedGc(ref offset);
+                header.SyncEndOffset = imageReader.DecodeUnsignedGc(ref offset);
             }
             if (header.RevPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
             {
-                header.RevPInvokeOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.RevPInvokeOffset = imageReader.DecodeUnsignedGc(ref offset);
             }
             if (header.NoGCRegionCnt == HAS_NOGCREGIONS)
             {
-                header.NoGCRegionCnt = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.NoGCRegionCnt = imageReader.DecodeUnsignedGc(ref offset);
             }
 
             header.Epilogs = new List<int>();
@@ -377,7 +380,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
                 for (int i = 0; i < header.EpilogCount; i++)
                 {
-                    offs = NativeReader.DecodeUDelta(image, ref offset, offs);
+                    offs = imageReader.DecodeUDelta(ref offset, offs);
                     header.Epilogs.Add((int)offs);
                 }
             }
@@ -389,7 +392,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
             if (header.HasArgTabOffset)
             {
-                header.ArgTabOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
+                header.ArgTabOffset = imageReader.DecodeUnsignedGc(ref offset);
             }
 
             return header;

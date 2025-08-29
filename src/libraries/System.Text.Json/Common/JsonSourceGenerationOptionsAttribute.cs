@@ -170,5 +170,10 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.NewLine"/> when set.
         /// </summary>
         public string? NewLine { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowDuplicateProperties"/> when set.
+        /// </summary>
+        public bool AllowDuplicateProperties { get; set; }
     }
 }

@@ -2856,16 +2856,17 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     {
 #if FEATURE_LOOP_ALIGN
 
-        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr) &&
-            (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
+        if (!currIGWasNonEmpty && (emitAlignLastGroup != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG->igNext == emitCurIG))
         {
             // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
             // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
             // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
             // notice a loop that encloses another loop, this information helps in removing the align field from
             // such loops.
-            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
-            emitAlignLast->idaLoopHeadPredIG = emitCurIG;
+            // We need to only update emitAlignLastGroup because we do not align intermingled or overlapping loops.
+            emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
         }
 #endif // FEATURE_LOOP_ALIGN
 
@@ -3782,6 +3783,31 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     assert(!"Unsupported insFmt");
     return IS_NONE;
 }
+
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
@@ -4476,6 +4502,7 @@ void emitter::emitRecomputeIGoffsets()
         ig->igOffs = offs;
         assert(IsCodeAligned(ig->igOffs));
         offs += ig->igSize;
+        assert(offs >= ig->igOffs); // must not overflow
     }
 
     /* Set the total code size */
@@ -4497,7 +4524,7 @@ void emitter::emitRecomputeIGoffsets()
 //    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
@@ -7097,7 +7124,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(dsc->lvTracked);
                 assert(dsc->lvRefCnt() != 0);
 
-                assert(dsc->TypeGet() == TYP_REF || dsc->TypeGet() == TYP_BYREF);
+                assert(dsc->TypeIs(TYP_REF, TYP_BYREF));
 
                 assert(indx < emitComp->lvaTrackedCount);
 
@@ -7113,7 +7140,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 }
 #endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
-                if (dsc->TypeGet() == TYP_BYREF)
+                if (dsc->TypeIs(TYP_BYREF))
                 {
                     offs |= byref_OFFSET_FLAG;
                 }
@@ -8265,12 +8292,8 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
     {
-        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE3)) ||
-            emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-        {
-            dataSize = 8;
-            ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
-        }
+        dataSize = 8;
+        ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
     }
 
     // `vbroadcastss` fills the full SIMD register, so we can't do this last step if the

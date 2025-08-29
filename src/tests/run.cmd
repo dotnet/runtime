@@ -31,6 +31,7 @@ set __PrintLastResultsOnly=
 set LogsDirArg=
 set RunInUnloadableContext=
 set TieringTest=
+set RunInterpreter=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -74,6 +75,7 @@ if /i "%1" == "timeout"                                 (set __TestTimeout=%2&sh
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
+if /i "%1" == "interpreter"                             (set RunInterpreter=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -169,6 +171,10 @@ if defined RunNativeAot (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
 )
 
+if defined RunInterpreter (
+    set __RuntestPyArgs=%__RuntestPyArgs% --interpreter
+)
+
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
 (py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > %TEMP%\pythonlocation.txt 2> NUL
@@ -233,6 +239,7 @@ echo                             Note: some options override this ^(gcstressleve
 echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
+echo interpreter               - Runs the tests with the interpreter enabled.
 echo.
 echo Note that arguments are not case-sensitive.
 echo.

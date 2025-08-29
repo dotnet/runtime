@@ -524,7 +524,7 @@ LOCAL_LABEL(DonePopping):
         // It was the ThreadAbortException, so rethrow it
         // reset SP
         ori  $a1, $a0, 0                                        // a1 <- continuation address as exception PC
-        addi.w  $a0, $zero, STATUS_REDHAWK_THREAD_ABORT
+        addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
         ori  $sp, $a2, 0
         b  C_FUNC(RhpThrowHwEx)
 

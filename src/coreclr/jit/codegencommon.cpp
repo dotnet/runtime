@@ -485,7 +485,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
+                for (BasicBlock* const bTarget : block->SwitchSuccs())
                 {
                     JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
                     bTarget->SetFlags(BBF_HAS_LABEL);
@@ -613,7 +613,7 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 // inline
 regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
 {
-    assert(tree->gtOper == GT_LCL_VAR);
+    assert(tree->OperIs(GT_LCL_VAR));
 
     regMaskTP        regMask = RBM_NONE;
     const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
@@ -634,6 +634,25 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
         regMask = genGetRegMask(varDsc);
     }
     return regMask;
+}
+
+//------------------------------------------------------------------------
+// genIsSameLocalVar:
+//   Check if two trees represent the same scalar local value.
+//
+// Arguments:
+//   op1 - first tree
+//   op2 - second tree
+//
+// Returns:
+//   True if so.
+//
+bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
+{
+    GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+    GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+    return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
+           (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
 }
 
 // The given lclVar is either going live (being born) or dying.
@@ -805,8 +824,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum     = lvaTrackedIndexToLclNum(deadVarIndex);
         LclVarDsc* varDsc     = lvaGetDesc(varNum);
-        bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef    = varDsc->TypeIs(TYP_REF);
+        bool       isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool       isInReg    = varDsc->lvIsInReg();
         bool       isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
 
@@ -841,8 +860,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum  = lvaTrackedIndexToLclNum(bornVarIndex);
         LclVarDsc* varDsc  = lvaGetDesc(varNum);
-        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef = varDsc->TypeIs(TYP_REF);
+        bool       isByRef = varDsc->TypeIs(TYP_BYREF);
 
         if (varDsc->lvIsInReg())
         {
@@ -1204,7 +1223,7 @@ AGAIN:
     /* Check for an addition of a constant */
 
     if (op2->IsIntCnsFitsInI32() && op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()) &&
-        (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
+        !op2->TypeIs(TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         /* We're adding a constant */
 
@@ -1319,7 +1338,7 @@ AGAIN:
                 rv2 = op1->AsOp()->gtOp1;
 
                 int argScale;
-                while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
+                while ((rv2->OperIs(GT_MUL) || rv2->OperIs(GT_LSH)) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
                     if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
@@ -1395,7 +1414,7 @@ AGAIN:
                 // 'op2' is a scaled value...is it's argument also scaled?
                 int argScale;
                 rv2 = op2->AsOp()->gtOp1;
-                while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
+                while ((rv2->OperIs(GT_MUL) || rv2->OperIs(GT_LSH)) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
                     if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
@@ -1674,7 +1693,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
     emitJumpKind jumpKind;
 
 #ifdef TARGET_ARM64
-    if (tree->OperGet() == GT_MUL)
+    if (tree->OperIs(GT_MUL))
     {
         jumpKind = EJ_ne;
     }
@@ -1693,7 +1712,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
         if (jumpKind == EJ_lo)
         {
-            if (tree->OperGet() != GT_SUB)
+            if (!tree->OperIs(GT_SUB))
             {
                 jumpKind = EJ_hs;
             }
@@ -1764,10 +1783,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->IsAot())
     {
-        void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_BULK_WRITEBARRIER; i++)
         {
-            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
 #endif
@@ -2534,7 +2552,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             {
                 wbKind = CWBKind_RetBuf
             }
-            else if (varDsc->TypeGet() == TYP_BYREF)
+            else if (varDsc->TypeIs(TYP_BYREF))
             {
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
@@ -2916,7 +2934,7 @@ void CodeGen::genSpillOrAddRegisterParam(
         LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
-        if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+        if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
         {
             // Can happen for struct fields due to padding.
             storeType = genActualType(varDsc);
@@ -3767,10 +3785,10 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // or when compInitMem is true
             // or when in debug code
 
-            noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
-                         compiler->info.compInitMem || compiler->opts.compDbgCode);
+            noway_assert(varTypeIsGC(varDsc->TypeGet()) || varDsc->TypeIs(TYP_STRUCT) || compiler->info.compInitMem ||
+                         compiler->opts.compDbgCode);
 
-            if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
+            if (varDsc->TypeIs(TYP_STRUCT) && !compiler->info.compInitMem &&
                 (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
@@ -4089,7 +4107,7 @@ void CodeGen::genHomeSwiftStructStackParameters()
         }
 
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
-        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
+        if (!dsc->TypeIs(TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
         {
             continue;
         }
@@ -4898,7 +4916,7 @@ void CodeGen::genFnProlog()
                     }
                 }
             }
-            else if (varDsc->TypeGet() == TYP_DOUBLE)
+            else if (varDsc->TypeIs(TYP_DOUBLE))
             {
                 initDblRegs |= regMask;
             }
@@ -5017,7 +5035,7 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
-    regMaskTP tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
+    regMaskTP tempMask = initRegs & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
     {
@@ -5563,19 +5581,18 @@ void CodeGen::genFnProlog()
 unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
 {
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
+    assert(treeNode->OperIs(GT_JMPTABLE));
 
-    emitter*       emit       = GetEmitter();
-    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+    emitter*         emit       = GetEmitter();
+    const unsigned   jumpCount  = compiler->compCurBB->GetSwitchTargets()->GetCaseCount();
+    FlowEdge** const jumpTable  = compiler->compCurBB->GetSwitchTargets()->GetCases();
+    const unsigned   jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
 
     JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
-        BasicBlock* target = (*jumpTable)->getDestinationBlock();
-        jumpTable++;
+        BasicBlock* target = jumpTable[i]->getDestinationBlock();
         noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
@@ -6718,7 +6735,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
     var_types targetType = treeNode->TypeGet();
 
     assert(op1 != nullptr);
-    assert(op1->OperGet() == GT_LONG);
+    assert(op1->OperIs(GT_LONG));
     GenTree* loRetVal = op1->gtGetOp1();
     GenTree* hiRetVal = op1->gtGetOp2();
     assert((loRetVal->GetRegNum() != REG_NA) && (hiRetVal->GetRegNum() != REG_NA));
@@ -7218,36 +7235,6 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         }
 #endif
 
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            assert(compFeatureArgSplit());
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            unsigned regIndex = 0;
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
-            {
-                if (!seg.IsPassedInRegister())
-                {
-                    continue;
-                }
-
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
-                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
-                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
-
-                if (call->IsFastTailCall())
-                {
-                    // We won't actually consume the register here -- keep it alive into the epilog.
-                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), type);
-                }
-
-                regIndex++;
-            }
-
-            continue;
-        }
-#endif
-
         if (abiInfo.HasExactlyOneRegisterSegment())
         {
             regNumber argReg = abiInfo.Segment(0).GetRegister();
@@ -7567,7 +7554,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
-                assert(varDsc->TypeGet() == TYP_LONG);
+                assert(varDsc->TypeIs(TYP_LONG));
                 assert(offset <= genTypeSize(TYP_LONG));
             }
 #endif // !TARGET_64BIT
@@ -7611,7 +7598,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 //
 void CodeGen::genRegCopy(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_COPY);
+    assert(treeNode->OperIs(GT_COPY));
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 
     if (op1->IsMultiRegNode())
@@ -7731,7 +7718,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 //
 regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 {
-    assert(treeNode->OperGet() == GT_COPY);
+    assert(treeNode->OperIs(GT_COPY));
     GenTree* op1 = treeNode->gtGetOp1();
     assert(op1->IsMultiRegNode());
 

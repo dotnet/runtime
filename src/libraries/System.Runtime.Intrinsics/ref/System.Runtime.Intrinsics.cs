@@ -411,6 +411,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> WithLower<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Xor<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector128<T> : System.IEquatable<System.Runtime.Intrinsics.Vector128<T>>
     {
@@ -837,6 +855,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> WithLower<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Xor<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector256<T> : System.IEquatable<System.Runtime.Intrinsics.Vector256<T>>
     {
@@ -1262,6 +1298,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> WithLower<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Xor<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>>
     {
@@ -1650,6 +1704,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<ulong> WidenUpper(System.Runtime.Intrinsics.Vector64<System.UInt32> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> WithElement<T>(this System.Runtime.Intrinsics.Vector64<T> vector, int index, T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Xor<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector64<T> : System.IEquatable<System.Runtime.Intrinsics.Vector64<T>>
     {
@@ -4712,66 +4784,66 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> Compute8BitAddresses(System.Numerics.Vector<uint> bases, System.Numerics.Vector<uint> indices) { throw null; }
         public static System.Numerics.Vector<ulong> Compute8BitAddresses(System.Numerics.Vector<ulong> bases, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<ulong> Compute8BitAddresses(System.Numerics.Vector<ulong> bases, System.Numerics.Vector<ulong> indices) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValue, System.Numerics.Vector<byte> data) { throw null; }
-        public static byte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValues, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValue, System.Numerics.Vector<double> data) { throw null; }
-        public static double ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, double defaultValues, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValue, System.Numerics.Vector<short> data) { throw null; }
-        public static short ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, short defaultValues, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValue, System.Numerics.Vector<int> data) { throw null; }
-        public static int ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, int defaultValues, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValue, System.Numerics.Vector<long> data) { throw null; }
-        public static long ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, long defaultValues, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static sbyte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValue, System.Numerics.Vector<float> data) { throw null; }
-        public static float ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, float defaultValues, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
-        public static ushort ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValue, System.Numerics.Vector<uint> data) { throw null; }
-        public static uint ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValues, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
-        public static ulong ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValue, System.Numerics.Vector<byte> data) { throw null; }
-        public static byte ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValues, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValue, System.Numerics.Vector<double> data) { throw null; }
-        public static double ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, double defaultValues, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValue, System.Numerics.Vector<short> data) { throw null; }
-        public static short ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, short defaultValues, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValue, System.Numerics.Vector<int> data) { throw null; }
-        public static int ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, int defaultValues, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValue, System.Numerics.Vector<long> data) { throw null; }
-        public static long ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, long defaultValues, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static sbyte ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValue, System.Numerics.Vector<float> data) { throw null; }
-        public static float ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, float defaultValues, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
-        public static ushort ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValue, System.Numerics.Vector<uint> data) { throw null; }
-        public static uint ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValues, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
-        public static ulong ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
-        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> fallback, System.Numerics.Vector<byte> data) { throw null; }
-        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> fallback, System.Numerics.Vector<double> data) { throw null; }
-        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> fallback, System.Numerics.Vector<short> data) { throw null; }
-        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> fallback, System.Numerics.Vector<int> data) { throw null; }
-        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> fallback, System.Numerics.Vector<long> data) { throw null; }
-        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> fallback, System.Numerics.Vector<sbyte> data) { throw null; }
-        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> fallback, System.Numerics.Vector<float> data) { throw null; }
-        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> fallback, System.Numerics.Vector<ushort> data) { throw null; }
-        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> fallback, System.Numerics.Vector<uint> data) { throw null; }
-        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> fallback, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValue, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
+        public static double ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, double defaultValue, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
+        public static short ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, short defaultValue, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
+        public static int ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, int defaultValue, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
+        public static long ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, long defaultValue, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
+        public static float ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, float defaultValue, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValue, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ConditionalExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValues, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValues, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValues, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValues, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValues, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValues, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValues, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultScalar, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ConditionalExtractLastActiveElement(System.Numerics.Vector<byte> mask, byte defaultValue, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultScalar, System.Numerics.Vector<double> data) { throw null; }
+        public static double ConditionalExtractLastActiveElement(System.Numerics.Vector<double> mask, double defaultValue, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultScalar, System.Numerics.Vector<short> data) { throw null; }
+        public static short ConditionalExtractLastActiveElement(System.Numerics.Vector<short> mask, short defaultValue, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultScalar, System.Numerics.Vector<int> data) { throw null; }
+        public static int ConditionalExtractLastActiveElement(System.Numerics.Vector<int> mask, int defaultValue, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultScalar, System.Numerics.Vector<long> data) { throw null; }
+        public static long ConditionalExtractLastActiveElement(System.Numerics.Vector<long> mask, long defaultValue, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultScalar, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ConditionalExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, sbyte defaultValue, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultScalar, System.Numerics.Vector<float> data) { throw null; }
+        public static float ConditionalExtractLastActiveElement(System.Numerics.Vector<float> mask, float defaultValue, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultScalar, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ConditionalExtractLastActiveElement(System.Numerics.Vector<ushort> mask, ushort defaultValue, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultScalar, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ConditionalExtractLastActiveElement(System.Numerics.Vector<uint> mask, uint defaultValue, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultScalar, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ConditionalExtractLastActiveElement(System.Numerics.Vector<ulong> mask, ulong defaultValue, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> defaultValues, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> defaultValues, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> defaultValues, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> defaultValues, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> defaultValues, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> defaultValues, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> defaultValues, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> defaultValues, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> defaultValues, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> defaultValues, System.Numerics.Vector<ulong> data) { throw null; }
         public static System.Numerics.Vector<byte> ConditionalSelect(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> ConditionalSelect(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -4804,14 +4876,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-        public static System.Numerics.Vector<byte> CreateBreakAfterMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateBreakAfterMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateBreakAfterMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateBreakAfterMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateBreakAfterMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateBreakAfterMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateBreakAfterMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateBreakAfterMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakAfterMask(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakAfterMask(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakAfterMask(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakAfterMask(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakAfterMask(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakAfterMask(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakAfterMask(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakAfterMask(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateBreakAfterPropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> CreateBreakAfterPropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> CreateBreakAfterPropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4820,14 +4892,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateBreakAfterPropagateMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> CreateBreakAfterPropagateMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> CreateBreakAfterPropagateMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateBreakBeforeMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateBreakBeforeMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateBreakBeforeMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateBreakBeforeMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateBreakBeforeMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateBreakBeforeMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateBreakBeforeMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateBreakBeforeMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakBeforeMask(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakBeforeMask(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakBeforeMask(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakBeforeMask(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakBeforeMask(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakBeforeMask(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakBeforeMask(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakBeforeMask(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateBreakBeforePropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> CreateBreakBeforePropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> CreateBreakBeforePropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4854,18 +4926,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateFalseMaskUInt16() { throw null; }
         public static System.Numerics.Vector<uint> CreateFalseMaskUInt32() { throw null; }
         public static System.Numerics.Vector<ulong> CreateFalseMaskUInt64() { throw null; }
-        public static System.Numerics.Vector<byte> CreateMaskForFirstActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<short> CreateMaskForFirstActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static System.Numerics.Vector<int> CreateMaskForFirstActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static System.Numerics.Vector<long> CreateMaskForFirstActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static System.Numerics.Vector<sbyte> CreateMaskForFirstActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateMaskForFirstActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateMaskForFirstActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateMaskForFirstActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static System.Numerics.Vector<byte> CreateMaskForNextActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateMaskForNextActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static System.Numerics.Vector<uint> CreateMaskForNextActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateMaskForNextActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateMaskForFirstActiveElement(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateMaskForFirstActiveElement(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateMaskForFirstActiveElement(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateMaskForFirstActiveElement(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateMaskForFirstActiveElement(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateMaskForFirstActiveElement(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateMaskForFirstActiveElement(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateMaskForFirstActiveElement(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateMaskForNextActiveElement(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateMaskForNextActiveElement(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateMaskForNextActiveElement(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateMaskForNextActiveElement(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4928,6 +5000,46 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> DuplicateSelectedScalarToVector(System.Numerics.Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
         public static System.Numerics.Vector<uint> DuplicateSelectedScalarToVector(System.Numerics.Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
         public static System.Numerics.Vector<ulong> DuplicateSelectedScalarToVector(System.Numerics.Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<byte> ExtractAfterLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ExtractAfterLastActiveElementScalar(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ExtractAfterLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static double ExtractAfterLastActiveElementScalar(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ExtractAfterLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static short ExtractAfterLastActiveElementScalar(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ExtractAfterLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static int ExtractAfterLastActiveElementScalar(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ExtractAfterLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static long ExtractAfterLastActiveElementScalar(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ExtractAfterLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ExtractAfterLastActiveElementScalar(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ExtractAfterLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static float ExtractAfterLastActiveElementScalar(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ExtractAfterLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ExtractAfterLastActiveElementScalar(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ExtractAfterLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ExtractAfterLastActiveElementScalar(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ExtractAfterLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ExtractAfterLastActiveElementScalar(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static System.Numerics.Vector<byte> ExtractLastActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static byte ExtractLastActiveElementScalar(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> data) { throw null; }
+        public static System.Numerics.Vector<double> ExtractLastActiveElement(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static double ExtractLastActiveElementScalar(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> data) { throw null; }
+        public static System.Numerics.Vector<short> ExtractLastActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static short ExtractLastActiveElementScalar(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> data) { throw null; }
+        public static System.Numerics.Vector<int> ExtractLastActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static int ExtractLastActiveElementScalar(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> data) { throw null; }
+        public static System.Numerics.Vector<long> ExtractLastActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static long ExtractLastActiveElementScalar(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> data) { throw null; }
+        public static System.Numerics.Vector<sbyte> ExtractLastActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static sbyte ExtractLastActiveElementScalar(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static System.Numerics.Vector<float> ExtractLastActiveElement(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static float ExtractLastActiveElementScalar(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> data) { throw null; }
+        public static System.Numerics.Vector<ushort> ExtractLastActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static ushort ExtractLastActiveElementScalar(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> data) { throw null; }
+        public static System.Numerics.Vector<uint> ExtractLastActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static uint ExtractLastActiveElementScalar(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> data) { throw null; }
+        public static System.Numerics.Vector<ulong> ExtractLastActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
+        public static ulong ExtractLastActiveElementScalar(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> data) { throw null; }
         public static System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
         public static System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
         public static System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
@@ -5308,12 +5420,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVector128AndReplicateToVector(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVector128AndReplicateToVector(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVector128AndReplicateToVector(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
-        public static unsafe System.Numerics.Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(System.Numerics.Vector<short> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(System.Numerics.Vector<int> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(System.Numerics.Vector<long> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(System.Numerics.Vector<ushort> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(System.Numerics.Vector<uint> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<short> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<int> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, byte* address) { throw null; }
@@ -5326,10 +5438,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorByteZeroExtendToUInt16(System.Numerics.Vector<ushort> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorByteZeroExtendToUInt32(System.Numerics.Vector<uint> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorByteZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(System.Numerics.Vector<int> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(System.Numerics.Vector<long> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(System.Numerics.Vector<uint> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<int> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<long> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<uint> mask, short* address) { throw null; }
@@ -5338,22 +5450,22 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendToInt64(System.Numerics.Vector<long> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendToUInt32(System.Numerics.Vector<uint> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16SignExtendToUInt64(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(System.Numerics.Vector<long> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendFirstFaulting(System.Numerics.Vector<long> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendFirstFaulting(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendToInt64(System.Numerics.Vector<long> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendToUInt64(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
-        public static unsafe System.Numerics.Vector<byte> LoadVectorNonFaulting(byte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<double> LoadVectorNonFaulting(double* address) { throw null; }
-        public static unsafe System.Numerics.Vector<short> LoadVectorNonFaulting(short* address) { throw null; }
-        public static unsafe System.Numerics.Vector<int> LoadVectorNonFaulting(int* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorNonFaulting(long* address) { throw null; }
-        public static unsafe System.Numerics.Vector<sbyte> LoadVectorNonFaulting(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<float> LoadVectorNonFaulting(float* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ushort> LoadVectorNonFaulting(ushort* address) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> LoadVectorNonFaulting(uint* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorNonFaulting(ulong* address) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> LoadVectorNonFaulting(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<double> LoadVectorNonFaulting(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorNonFaulting(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorNonFaulting(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorNonFaulting(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> LoadVectorNonFaulting(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<float> LoadVectorNonFaulting(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorNonFaulting(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorNonFaulting(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorNonFaulting(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
         public static unsafe System.Numerics.Vector<byte> LoadVectorNonTemporal(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<double> LoadVectorNonTemporal(System.Numerics.Vector<double> mask, double* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorNonTemporal(System.Numerics.Vector<short> mask, short* address) { throw null; }
@@ -5374,12 +5486,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorFirstFaulting(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorFirstFaulting(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
-        public static unsafe System.Numerics.Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(System.Numerics.Vector<ushort> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(System.Numerics.Vector<uint> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(System.Numerics.Vector<ulong> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
@@ -5392,10 +5504,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteSignExtendToUInt16(System.Numerics.Vector<ushort> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorSByteSignExtendToUInt32(System.Numerics.Vector<uint> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteSignExtendToUInt64(System.Numerics.Vector<ulong> mask, sbyte* address) { throw null; }
-        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
@@ -5404,8 +5516,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendToInt64(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
-        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendFirstFaulting(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
@@ -5726,7 +5838,15 @@ namespace System.Runtime.Intrinsics.Arm
         // public static void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<int> data) { throw null; }
         public static void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
         // public static void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<uint> data) { throw null; }
-        public static void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> indices, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> indices, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<int> indices, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> indices, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter16BitNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<int> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<int> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
@@ -5735,8 +5855,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
-        public static void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
-        public static void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> indices, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void Scatter32BitNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> indices, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<long> data) { throw null; }
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
@@ -5753,6 +5877,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> offsets, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void ScatterWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static void SetFfr(System.Numerics.Vector<byte> value) { throw null; }
         public static void SetFfr(System.Numerics.Vector<short> value) { throw null; }
         public static void SetFfr(System.Numerics.Vector<int> value) { throw null; }
@@ -5897,30 +6033,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
         public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> TransposeEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -6039,6 +6175,151 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get { throw null; } }
         }
 
+        public static System.Numerics.Vector<sbyte> AbsSaturate(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<short> AbsSaturate(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> AbsSaturate(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> AbsSaturate(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> AbsoluteDifferenceAdd(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifferenceAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AbsoluteDifferenceAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLowerAndAddEven(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningLowerAndAddOdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifferenceWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+
+        public static System.Numerics.Vector<uint> AddCarryWideningEven(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> AddCarryWideningEven(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> AddCarryWideningOdd(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> AddCarryWideningOdd(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+
+        public static System.Numerics.Vector<byte> AddHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> AddHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> AddHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddHighNarrowingEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddHighNarrowingEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> AddHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> AddHighNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> AddHighNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddHighNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+
+        public static System.Numerics.Vector<byte> AddPairwise(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> AddPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> AddPairwise(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AddPairwise(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AddPairwise(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddPairwise(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> AddPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddPairwise(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddPairwise(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddPairwise(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<short> AddPairwiseWideningAndAdd(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddPairwiseWideningAndAdd(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddPairwiseWideningAndAdd(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddPairwiseWideningAndAdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddPairwiseWideningAndAdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddPairwiseWideningAndAdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<byte> AddRotateComplex(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<short> AddRotateComplex(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> AddRotateComplex(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> AddRotateComplex(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddRotateComplex(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<ushort> AddRotateComplex(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<uint> AddRotateComplex(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<ulong> AddRotateComplex(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<byte> AddRoundedHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> AddRoundedHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> AddRoundedHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddRoundedHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddRoundedHighNarrowingEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddRoundedHighNarrowingEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> AddRoundedHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> AddRoundedHighNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> AddRoundedHighNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddRoundedHighNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddRoundedHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddRoundedHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static new System.Numerics.Vector<byte> AddSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static new System.Numerics.Vector<short> AddSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static new System.Numerics.Vector<int> AddSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static new System.Numerics.Vector<long> AddSaturate(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static new System.Numerics.Vector<sbyte> AddSaturate(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static new System.Numerics.Vector<ushort> AddSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static new System.Numerics.Vector<uint> AddSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static new System.Numerics.Vector<ulong> AddSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> AddSaturateRotateComplex(System.Numerics.Vector<short> op1, System.Numerics.Vector<short> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> AddSaturateRotateComplex(System.Numerics.Vector<int> op1, System.Numerics.Vector<int> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> AddSaturateRotateComplex(System.Numerics.Vector<long> op1, System.Numerics.Vector<long> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddSaturateRotateComplex(System.Numerics.Vector<sbyte> op1, System.Numerics.Vector<sbyte> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<byte> AddSaturateWithSignedAddend(System.Numerics.Vector<byte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddSaturateWithSignedAddend(System.Numerics.Vector<ushort> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddSaturateWithSignedAddend(System.Numerics.Vector<uint> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddSaturateWithSignedAddend(System.Numerics.Vector<ulong> left, System.Numerics.Vector<long> right) { throw null; }
+         public static System.Numerics.Vector<short> AddSaturateWithUnsignedAddend(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<int> AddSaturateWithUnsignedAddend(System.Numerics.Vector<int> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<long> AddSaturateWithUnsignedAddend(System.Numerics.Vector<long> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddSaturateWithUnsignedAddend(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AddWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddWideningEven(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AddWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AddWideningEvenOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddWideningEvenOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddWideningEvenOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> AddWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddWideningOdd(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> AddWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> AddWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> AddWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<byte> BitwiseClearXor(System.Numerics.Vector<byte> xor, System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> mask) { throw null; }
         public static System.Numerics.Vector<short> BitwiseClearXor(System.Numerics.Vector<short> xor, System.Numerics.Vector<short> value, System.Numerics.Vector<short> mask) { throw null; }
         public static System.Numerics.Vector<int> BitwiseClearXor(System.Numerics.Vector<int> xor, System.Numerics.Vector<int> value, System.Numerics.Vector<int> mask) { throw null; }
@@ -6071,6 +6352,262 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> BitwiseSelectRightInverted(System.Numerics.Vector<ushort> select, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> BitwiseSelectRightInverted(System.Numerics.Vector<uint> select, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseSelectRightInverted(System.Numerics.Vector<ulong> select, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> ConvertToDoubleOdd(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingleEvenRoundToOdd(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> op1, System.Numerics.Vector<sbyte> op2, System.Numerics.Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> op1, System.Numerics.Vector<short> op2, System.Numerics.Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> op1, System.Numerics.Vector<sbyte> op2, System.Numerics.Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<long> op1, System.Numerics.Vector<short> op2, System.Numerics.Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<byte> FusedAddRoundedHalving(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> FusedAddRoundedHalving(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> FusedAddRoundedHalving(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> FusedAddRoundedHalving(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> FusedAddRoundedHalving(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> FusedAddRoundedHalving(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> FusedAddRoundedHalving(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> FusedAddRoundedHalving(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> FusedAddHalving(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> FusedAddHalving(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> FusedAddHalving(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> FusedAddHalving(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> FusedAddHalving(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> FusedAddHalving(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> FusedAddHalving(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> FusedAddHalving(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> FusedSubtractHalving(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> FusedSubtractHalving(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> FusedSubtractHalving(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> FusedSubtractHalving(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> FusedSubtractHalving(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> FusedSubtractHalving(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> FusedSubtractHalving(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> FusedSubtractHalving(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> InterleavingXorEvenOdd(System.Numerics.Vector<byte> odd, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> InterleavingXorEvenOdd(System.Numerics.Vector<short> odd, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> InterleavingXorEvenOdd(System.Numerics.Vector<int> odd, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> InterleavingXorEvenOdd(System.Numerics.Vector<long> odd, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> InterleavingXorEvenOdd(System.Numerics.Vector<sbyte> odd, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> InterleavingXorEvenOdd(System.Numerics.Vector<ushort> odd, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> InterleavingXorEvenOdd(System.Numerics.Vector<uint> odd, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> InterleavingXorEvenOdd(System.Numerics.Vector<ulong> odd, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> InterleavingXorOddEven(System.Numerics.Vector<byte> even, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> InterleavingXorOddEven(System.Numerics.Vector<short> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> InterleavingXorOddEven(System.Numerics.Vector<int> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> InterleavingXorOddEven(System.Numerics.Vector<long> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> InterleavingXorOddEven(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> InterleavingXorOddEven(System.Numerics.Vector<ushort> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> InterleavingXorOddEven(System.Numerics.Vector<uint> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> InterleavingXorOddEven(System.Numerics.Vector<ulong> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<int> Log2(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<long> Log2(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<double> MaxNumberPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> MaxNumberPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<byte> MaxPairwise(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> MaxPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> MaxPairwise(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MaxPairwise(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MaxPairwise(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> MaxPairwise(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> MaxPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MaxPairwise(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> MaxPairwise(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MaxPairwise(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> MinNumberPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> MinNumberPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<byte> MinPairwise(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> MinPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> MinPairwise(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MinPairwise(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MinPairwise(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> MinPairwise(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> MinPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MinPairwise(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> MinPairwise(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MinPairwise(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyAddBySelectedScalar(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyAddBySelectedScalar(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyAddBySelectedScalar(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyAddBySelectedScalar(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyAddBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyAddBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<byte> MultiplyAddRotateComplex(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyAddRotateComplex(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyAddRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyAddRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyAddRotateComplex(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyAddRotateComplex(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyAddRotateComplex(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyAddRotateComplex(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyAddRotateComplexBySelectedScalar(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyAddRotateComplexBySelectedScalar(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyAddRotateComplexBySelectedScalar(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyAddRotateComplexBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyBySelectedScalar(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalar(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalar(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyBySelectedScalar(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalar(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalar(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningEvenAndAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningEvenAndAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningEvenAndAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningEvenAndAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningEvenAndSubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningEvenAndSubtract(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningEvenAndSubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningEvenAndSubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningOddAndAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningOddAndAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningOddAndAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningOddAndAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyDoublingSaturateHigh(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndAddSaturateEvenOdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> leftEven, System.Numerics.Vector<sbyte> rightOdd) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndAddSaturateEvenOdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> leftEven, System.Numerics.Vector<short> rightOdd) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndAddSaturateEvenOdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> leftEven, System.Numerics.Vector<int> rightOdd) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndAddSaturateOdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndAddSaturateOdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndAddSaturateOdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndSubtractSaturateEven(System.Numerics.Vector<short> minuend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndSubtractSaturateEven(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndSubtractSaturateEven(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(System.Numerics.Vector<short> minuend, System.Numerics.Vector<sbyte> leftEven, System.Numerics.Vector<sbyte> rightOdd) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> leftEven, System.Numerics.Vector<short> rightOdd) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> leftEven, System.Numerics.Vector<int> rightOdd) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningAndSubtractSaturateOdd(System.Numerics.Vector<short> minuend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningAndSubtractSaturateOdd(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningAndSubtractSaturateOdd(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningSaturateEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningSaturateEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningSaturateEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningSaturateEvenBySelectedScalar(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningSaturateEvenBySelectedScalar(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingWideningSaturateOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningSaturateOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningSaturateOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingWideningSaturateOddBySelectedScalar(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingWideningSaturateOddBySelectedScalar(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyRoundedDoublingSaturateAndAddHigh(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingSaturateAndAddHigh(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingSaturateAndAddHigh(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingSaturateAndAddHigh(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyRoundedDoublingSaturateAndSubtractHigh(System.Numerics.Vector<sbyte> minuend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingSaturateAndSubtractHigh(System.Numerics.Vector<short> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingSaturateAndSubtractHigh(System.Numerics.Vector<int> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingSaturateAndSubtractHigh(System.Numerics.Vector<long> minuend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(System.Numerics.Vector<short> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(System.Numerics.Vector<int> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(System.Numerics.Vector<long> minuend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyRoundedDoublingSaturateHigh(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyRoundedDoublingSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyRoundedDoublingSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyRoundedDoublingSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplySubtractBySelectedScalar(System.Numerics.Vector<short> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplySubtractBySelectedScalar(System.Numerics.Vector<int> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplySubtractBySelectedScalar(System.Numerics.Vector<long> minuend, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplySubtractBySelectedScalar(System.Numerics.Vector<ushort> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplySubtractBySelectedScalar(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplySubtractBySelectedScalar(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningEvenAndAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningEvenAndAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningEvenAndAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningEvenAndAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningEvenAndAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningEvenAndAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<short> minuend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<ushort> minuend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningEvenAndSubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningOddAndAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningOddAndAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningOddAndAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningOddAndAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningOddAndAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningOddAndAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyWideningOddAndSubtract(System.Numerics.Vector<short> minuend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyWideningOddAndSubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyWideningOddAndSubtract(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> MultiplyWideningOddAndSubtract(System.Numerics.Vector<ushort> minuend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> MultiplyWideningOddAndSubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> MultiplyWideningOddAndSubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplex(System.Numerics.Vector<short> op1, System.Numerics.Vector<short> op2, System.Numerics.Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplex(System.Numerics.Vector<int> op1, System.Numerics.Vector<int> op2, System.Numerics.Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyAddRoundedDoublingSaturateHighRotateComplex(System.Numerics.Vector<long> op1, System.Numerics.Vector<long> op2, System.Numerics.Vector<long> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyAddRoundedDoublingSaturateHighRotateComplex(System.Numerics.Vector<sbyte> op1, System.Numerics.Vector<sbyte> op2, System.Numerics.Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(System.Numerics.Vector<short> op1, System.Numerics.Vector<short> op2, System.Numerics.Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(System.Numerics.Vector<int> op1, System.Numerics.Vector<int> op2, System.Numerics.Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
+        public static System.Numerics.Vector<sbyte> NegateSaturate(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<short> NegateSaturate(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> NegateSaturate(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> NegateSaturate(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> PolynomialMultiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> PolynomialMultiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> ReciprocalEstimate(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReciprocalSqrtEstimate(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRounded(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRounded(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRounded(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRounded(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<int> ShiftLeftAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }
@@ -6079,6 +6616,222 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftLogicalSaturate(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalSaturate(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalSaturate(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalSaturate(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningEven(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningEven(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLogicalRounded(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLogicalRounded(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLogicalRounded(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLogicalRounded(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLogicalRoundedSaturate(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLogicalRoundedSaturate(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLogicalRoundedSaturate(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLogicalRoundedSaturate(System.Numerics.Vector<ulong> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightAndInsert(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightAndInsert(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmeticAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightArithmeticNarrowingSaturateUnsignedOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticRounded(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticRounded(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmeticRounded(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticRounded(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticRoundedAdd(System.Numerics.Vector<short> addend, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticRoundedAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmeticRoundedAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticRoundedAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticRoundedNarrowingSaturateEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticRoundedNarrowingSaturateEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticRoundedNarrowingSaturateOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticRoundedNarrowingSaturateOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticRoundedNarrowingSaturateOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalAdd(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightLogicalAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRounded(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRounded(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRounded(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightLogicalRounded(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedAdd(System.Numerics.Vector<byte> addend, System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedAdd(System.Numerics.Vector<ushort> addend, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightLogicalRoundedAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalRoundedNarrowingSaturateOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractBorrowWideningEven(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractBorrowWideningEven(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractBorrowWideningOdd(System.Numerics.Vector<uint> op1, System.Numerics.Vector<uint> op2, System.Numerics.Vector<uint> op3) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractBorrowWideningOdd(System.Numerics.Vector<ulong> op1, System.Numerics.Vector<ulong> op2, System.Numerics.Vector<ulong> op3) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractHighNarrowingEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractHighNarrowingEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractHighNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractHighNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractHighNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractRoundedHighNarrowingEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractRoundedHighNarrowingOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static new System.Numerics.Vector<byte> SubtractSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static new System.Numerics.Vector<short> SubtractSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static new System.Numerics.Vector<int> SubtractSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static new System.Numerics.Vector<long> SubtractSaturate(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static new System.Numerics.Vector<sbyte> SubtractSaturate(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static new System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static new System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static new System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEven(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningEvenOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningEvenOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningEvenOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOdd(System.Numerics.Vector<long> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractWideningOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractWideningOddEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractWideningOddEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractWideningOddEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<byte> VectorTableLookup((System.Numerics.Vector<byte> data1, System.Numerics.Vector<byte> data2) table, System.Numerics.Vector<byte> indices) { throw null; }
+        public static  System.Numerics.Vector<ushort> VectorTableLookup((System.Numerics.Vector<ushort> data1, System.Numerics.Vector<ushort> data2) table, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static  System.Numerics.Vector<uint> VectorTableLookup((System.Numerics.Vector<uint> data1, System.Numerics.Vector<uint> data2) table, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<ulong> VectorTableLookup((System.Numerics.Vector<ulong> data1, System.Numerics.Vector<ulong> data2) table, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static  System.Numerics.Vector<float> VectorTableLookup((System.Numerics.Vector<float> data1, System.Numerics.Vector<float> data2) table, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<double> VectorTableLookup((System.Numerics.Vector<double> data1, System.Numerics.Vector<double> data2) table, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static  System.Numerics.Vector<sbyte> VectorTableLookup((System.Numerics.Vector<sbyte> data1, System.Numerics.Vector<sbyte> data2) table, System.Numerics.Vector<byte> indices) { throw null; }
+        public static  System.Numerics.Vector<short> VectorTableLookup((System.Numerics.Vector<short> data1, System.Numerics.Vector<short> data2) table, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static  System.Numerics.Vector<int> VectorTableLookup((System.Numerics.Vector<int> data1, System.Numerics.Vector<int> data2) table, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<long> VectorTableLookup((System.Numerics.Vector<long> data1, System.Numerics.Vector<long> data2) table, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static  System.Numerics.Vector<float> VectorTableLookupExtension(System.Numerics.Vector<float> defaultValues, System.Numerics.Vector<float> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<double> VectorTableLookupExtension(System.Numerics.Vector<double> defaultValues, System.Numerics.Vector<double> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static  System.Numerics.Vector<sbyte> VectorTableLookupExtension(System.Numerics.Vector<sbyte> defaultValues, System.Numerics.Vector<sbyte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static  System.Numerics.Vector<short> VectorTableLookupExtension(System.Numerics.Vector<short> defaultValues, System.Numerics.Vector<short> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static  System.Numerics.Vector<int> VectorTableLookupExtension(System.Numerics.Vector<int> defaultValues, System.Numerics.Vector<int> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<long> VectorTableLookupExtension(System.Numerics.Vector<long> defaultValues, System.Numerics.Vector<long> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<byte> VectorTableLookupExtension(System.Numerics.Vector<byte> defaultValues, System.Numerics.Vector<byte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static  System.Numerics.Vector<ushort> VectorTableLookupExtension(System.Numerics.Vector<ushort> defaultValues, System.Numerics.Vector<ushort> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static  System.Numerics.Vector<uint> VectorTableLookupExtension(System.Numerics.Vector<uint> defaultValues, System.Numerics.Vector<uint> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static  System.Numerics.Vector<ulong> VectorTableLookupExtension(System.Numerics.Vector<ulong> defaultValues, System.Numerics.Vector<ulong> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> value1, System.Numerics.Vector<byte> value2, System.Numerics.Vector<byte> value3) { throw null; }
+        public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> value1, System.Numerics.Vector<short> value2, System.Numerics.Vector<short> value3) { throw null; }
+        public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> value1, System.Numerics.Vector<int> value2, System.Numerics.Vector<int> value3) { throw null; }
+        public static System.Numerics.Vector<long> Xor(System.Numerics.Vector<long> value1, System.Numerics.Vector<long> value2, System.Numerics.Vector<long> value3) { throw null; }
+        public static System.Numerics.Vector<sbyte> Xor(System.Numerics.Vector<sbyte> value1, System.Numerics.Vector<sbyte> value2, System.Numerics.Vector<sbyte> value3) { throw null; }
+        public static System.Numerics.Vector<ushort> Xor(System.Numerics.Vector<ushort> value1, System.Numerics.Vector<ushort> value2, System.Numerics.Vector<ushort> value3) { throw null; }
+        public static System.Numerics.Vector<uint> Xor(System.Numerics.Vector<uint> value1, System.Numerics.Vector<uint> value2, System.Numerics.Vector<uint> value3) { throw null; }
+        public static System.Numerics.Vector<ulong> Xor(System.Numerics.Vector<ulong> value1, System.Numerics.Vector<ulong> value2, System.Numerics.Vector<ulong> value3) { throw null; }
+        public static System.Numerics.Vector<byte> XorRotateRight(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> XorRotateRight(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> XorRotateRight(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> XorRotateRight(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> XorRotateRight(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> XorRotateRight(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> XorRotateRight(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> XorRotateRight(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte count) { throw null; }
     }
 
     public enum SveMaskPattern : byte
@@ -6818,78 +7571,220 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<int> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<byte> BlendVariable(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, System.Runtime.Intrinsics.Vector128<byte> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> BlendVariable(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<double> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<short> BlendVariable(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, System.Runtime.Intrinsics.Vector128<short> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<int> BlendVariable(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, System.Runtime.Intrinsics.Vector128<int> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<long> BlendVariable(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right, System.Runtime.Intrinsics.Vector128<long> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<sbyte> BlendVariable(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, System.Runtime.Intrinsics.Vector128<sbyte> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> BlendVariable(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<float> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<ushort> BlendVariable(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right, System.Runtime.Intrinsics.Vector128<ushort> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<uint> BlendVariable(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right, System.Runtime.Intrinsics.Vector128<uint> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<ulong> BlendVariable(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, System.Runtime.Intrinsics.Vector128<ulong> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<byte> BlendVariable(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right, System.Runtime.Intrinsics.Vector256<byte> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> BlendVariable(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, System.Runtime.Intrinsics.Vector256<double> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<short> BlendVariable(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right, System.Runtime.Intrinsics.Vector256<short> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<int> BlendVariable(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right, System.Runtime.Intrinsics.Vector256<int> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<long> BlendVariable(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right, System.Runtime.Intrinsics.Vector256<long> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<sbyte> BlendVariable(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right, System.Runtime.Intrinsics.Vector256<sbyte> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> BlendVariable(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, System.Runtime.Intrinsics.Vector256<float> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<ushort> BlendVariable(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right, System.Runtime.Intrinsics.Vector256<ushort> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<uint> BlendVariable(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right, System.Runtime.Intrinsics.Vector256<uint> mask) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<ulong> BlendVariable(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right, System.Runtime.Intrinsics.Vector256<ulong> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Classify(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Classify(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Classify(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Classify(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ClassifyScalar(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ClassifyScalar(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> Compare(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> Compare(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> Compare(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> Compare(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<byte> CompareEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<int> CompareEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<long> CompareEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<short> CompareEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<uint> CompareEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<ulong> CompareEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<ushort> CompareEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<byte> CompareEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<int> CompareEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<long> CompareEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<short> CompareEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<uint> CompareEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<ulong> CompareEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<ushort> CompareEqual(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareLessThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareLessThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<int> CompareLessThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> CompareLessThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<short> CompareLessThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
-        public static new System.Runtime.Intrinsics.Vector128<short> CompareLessThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static new System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> CompareLessThan(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> CompareLessThan(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareLessThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareLessThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> CompareLessThan(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> CompareLessThan(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> CompareLessThan(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> CompareLessThan(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> CompareLessThan(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CompareLessThan(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<short> CompareLessThan(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> CompareLessThan(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareNotEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareNotEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareNotEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> CompareNotEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> CompareNotEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareNotEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareNotEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> CompareNotEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> CompareNotEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> CompareNotEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> CompareNotEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareNotEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> CompareNotEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> CompareNotEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareNotEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareNotEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> CompareNotEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> CompareNotEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareNotEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> CompareNotEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> CompareNotEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> CompareNotEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<byte> CompareNotEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<short> CompareNotEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<sbyte> CompareNotEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> CompareNotEqual(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareNotLessThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareNotLessThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareNotLessThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareNotLessThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareOrdered(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareOrdered(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareOrdered(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareOrdered(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<double> CompareUnordered(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector128<float> CompareUnordered(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<double> CompareUnordered(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+        public static new System.Runtime.Intrinsics.Vector256<float> CompareUnordered(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> Compress(System.Runtime.Intrinsics.Vector128<byte> merge, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Compress(System.Runtime.Intrinsics.Vector128<double> merge, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> Compress(System.Runtime.Intrinsics.Vector128<short> merge, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> Compress(System.Runtime.Intrinsics.Vector128<int> merge, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> Compress(System.Runtime.Intrinsics.Vector128<long> merge, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> Compress(System.Runtime.Intrinsics.Vector128<sbyte> merge, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Compress(System.Runtime.Intrinsics.Vector128<float> merge, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> Compress(System.Runtime.Intrinsics.Vector128<ushort> merge, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> Compress(System.Runtime.Intrinsics.Vector128<uint> merge, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> Compress(System.Runtime.Intrinsics.Vector128<ulong> merge, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> Compress(System.Runtime.Intrinsics.Vector256<byte> merge, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Compress(System.Runtime.Intrinsics.Vector256<double> merge, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> Compress(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> Compress(System.Runtime.Intrinsics.Vector256<int> merge, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> Compress(System.Runtime.Intrinsics.Vector256<long> merge, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> Compress(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Compress(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> Compress(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> Compress(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> Compress(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -7021,6 +7916,46 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<ulong> DetectConflicts(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> DivideScalar(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> DivideScalar(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> Expand(System.Runtime.Intrinsics.Vector128<byte> merge, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Expand(System.Runtime.Intrinsics.Vector128<double> merge, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> Expand(System.Runtime.Intrinsics.Vector128<short> merge, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> Expand(System.Runtime.Intrinsics.Vector128<int> merge, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> Expand(System.Runtime.Intrinsics.Vector128<long> merge, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> Expand(System.Runtime.Intrinsics.Vector128<sbyte> merge, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Expand(System.Runtime.Intrinsics.Vector128<float> merge, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> Expand(System.Runtime.Intrinsics.Vector128<ushort> merge, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> Expand(System.Runtime.Intrinsics.Vector128<uint> merge, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> Expand(System.Runtime.Intrinsics.Vector128<ulong> merge, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> Expand(System.Runtime.Intrinsics.Vector256<byte> merge, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Expand(System.Runtime.Intrinsics.Vector256<double> merge, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> Expand(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> Expand(System.Runtime.Intrinsics.Vector256<int> merge, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> Expand(System.Runtime.Intrinsics.Vector256<long> merge, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> Expand(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Expand(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> Expand(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> Expand(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> Expand(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Fixup(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Fixup(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Fixup(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, System.Runtime.Intrinsics.Vector256<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
@@ -7059,6 +7994,70 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> LeadingZeroCount(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+        public static new unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+        public static new unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static new unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+        public static new unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+        public static new unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static new unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+        public static new unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+        public static new unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static new unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+        public static new unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
+        public static new unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static new unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> Max(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> Max(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> Max(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -7067,6 +8066,26 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<ulong> Min(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> Min(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> Min(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> MultiplyLow(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> MultiplyLow(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -7257,15 +8276,6 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal V512() { }
             public new static bool IsSupported { get { throw null; } }
-            public static System.Runtime.Intrinsics.Vector512<int> DetectConflicts(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<uint> DetectConflicts(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<long> DetectConflicts(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<ulong> DetectConflicts(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<int> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<long> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<ulong> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
-
             public static System.Runtime.Intrinsics.Vector512<float> And(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> And(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> AndNot(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
@@ -7279,6 +8289,16 @@ namespace System.Runtime.Intrinsics.X86
             public static unsafe System.Runtime.Intrinsics.Vector512<int> BroadcastVector256ToVector512(int* address) { throw null; }
             public static unsafe System.Runtime.Intrinsics.Vector512<uint> BroadcastVector256ToVector512(uint* address) { throw null; }
             public static unsafe System.Runtime.Intrinsics.Vector512<float> BroadcastVector256ToVector512(float* address) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<double> Classify(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<float> Classify(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> Compress(System.Runtime.Intrinsics.Vector512<byte> merge, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<short> Compress(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<sbyte> Compress(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ushort> Compress(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -7299,6 +8319,18 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> DetectConflicts(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> DetectConflicts(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<long> DetectConflicts(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> DetectConflicts(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> Expand(System.Runtime.Intrinsics.Vector512<byte> merge, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<short> Expand(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<sbyte> Expand(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ushort> Expand(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector512<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<long> ExtractVector128(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<ulong> ExtractVector128(System.Runtime.Intrinsics.Vector512<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
@@ -7311,23 +8343,29 @@ namespace System.Runtime.Intrinsics.X86
             public static new System.Runtime.Intrinsics.Vector512<int> InsertVector256(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector256<int> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector512<uint> InsertVector256(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector256<uint> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static new System.Runtime.Intrinsics.Vector512<float> InsertVector256(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector256<float> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<long> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> LeadingZeroCount(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+            public static int MoveMask(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<long> MultiplyLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<byte> MultiShift(System.Runtime.Intrinsics.Vector512<byte> control, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<sbyte> MultiShift(System.Runtime.Intrinsics.Vector512<sbyte> control, System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Or(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> Or(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<sbyte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8x2(System.Runtime.Intrinsics.Vector512<byte> lower, System.Runtime.Intrinsics.Vector512<byte> indices, System.Runtime.Intrinsics.Vector512<byte> upper) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<sbyte> PermuteVar64x8x2(System.Runtime.Intrinsics.Vector512<sbyte> lower, System.Runtime.Intrinsics.Vector512<sbyte> indices, System.Runtime.Intrinsics.Vector512<sbyte> upper) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Range(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> Range(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Reduce(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> Reduce(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Xor(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> Xor(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
-
-            public static System.Runtime.Intrinsics.Vector512<sbyte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> control) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> control) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8x2(System.Runtime.Intrinsics.Vector512<byte> lower, System.Runtime.Intrinsics.Vector512<byte> indices, System.Runtime.Intrinsics.Vector512<byte> upper) { throw null; }
-            public static System.Runtime.Intrinsics.Vector512<sbyte> PermuteVar64x8x2(System.Runtime.Intrinsics.Vector512<sbyte> lower, System.Runtime.Intrinsics.Vector512<sbyte> indices, System.Runtime.Intrinsics.Vector512<sbyte> upper) { throw null; }
             public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512BW.X64
             {
                 internal X64() { }
@@ -7384,6 +8422,76 @@ namespace System.Runtime.Intrinsics.X86
                 internal X64() { }
                 public static new bool IsSupported { get { throw null; } }
             }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class AvxVnniInt8 : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxVnniInt8() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class AvxVnniInt16 : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxVnniInt16() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static Vector128<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static Vector256<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector128<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static Vector128<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static Vector256<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<int> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+        public static Vector256<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector256<uint> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+            public static Vector512<uint> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+            public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+            public static Vector512<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         }
     }
 
@@ -7452,6 +8560,14 @@ namespace System.Runtime.Intrinsics.X86
         public new unsafe static System.Runtime.Intrinsics.Vector512<short> LoadVector512(short* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<sbyte> LoadVector512(sbyte* address) { throw null; }
         public new unsafe static System.Runtime.Intrinsics.Vector512<ushort> LoadVector512(ushort* address) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
+        public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+        public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+        public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+        public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Max(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Max(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Max(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
@@ -7460,6 +8576,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> Min(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> Min(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> Min(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+        public static long MoveMask(System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static long MoveMask(System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> MultiplyAddAdjacent(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> MultiplyAddAdjacent(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> MultiplyHigh(System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
@@ -7526,9 +8648,29 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<byte> BlendVariable(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right, System.Runtime.Intrinsics.Vector128<byte> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> BlendVariable(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, System.Runtime.Intrinsics.Vector128<short> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> BlendVariable(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, System.Runtime.Intrinsics.Vector128<sbyte> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> BlendVariable(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right, System.Runtime.Intrinsics.Vector128<ushort> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> BlendVariable(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right, System.Runtime.Intrinsics.Vector256<byte> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> BlendVariable(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right, System.Runtime.Intrinsics.Vector256<short> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> BlendVariable(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right, System.Runtime.Intrinsics.Vector256<sbyte> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> BlendVariable(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right, System.Runtime.Intrinsics.Vector256<ushort> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> CompareEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> CompareEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> CompareEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> CompareEqual(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> CompareEqual(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> CompareEqual(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<sbyte> left, System.Runtime.Intrinsics.Vector256<sbyte> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
@@ -7574,6 +8716,22 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<byte> MaskLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<short> MaskLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> MaskLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ushort> MaskLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+            public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+            public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+            public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+            public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+            public static unsafe void MaskStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+            public static unsafe void MaskStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+            public static unsafe void MaskStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+            public static unsafe void MaskStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ushort> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> PermuteVar8x16x2(System.Runtime.Intrinsics.Vector128<short> lower, System.Runtime.Intrinsics.Vector128<short> indices, System.Runtime.Intrinsics.Vector128<short> upper) { throw null; }
@@ -7659,6 +8817,10 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<int> BroadcastVector256ToVector512(int* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<float> BroadcastVector256ToVector512(float* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<uint> BroadcastVector256ToVector512(uint* address) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Classify(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Classify(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ClassifyScalar(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ClassifyScalar(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
@@ -7691,6 +8853,23 @@ namespace System.Runtime.Intrinsics.X86
         public static new System.Runtime.Intrinsics.Vector512<int> InsertVector256(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector256<int> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector512<float> InsertVector256(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector256<float> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector512<uint> InsertVector256(System.Runtime.Intrinsics.Vector512<uint> value, System.Runtime.Intrinsics.Vector256<uint> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> MultiplyLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Or(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
@@ -7716,6 +8895,10 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<int> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Classify(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Classify(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Classify(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Classify(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
@@ -7864,6 +9047,18 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> CompareOrdered(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> CompareUnordered(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> CompareUnordered(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Compress(System.Runtime.Intrinsics.Vector512<double> merge, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> Compress(System.Runtime.Intrinsics.Vector512<int> merge, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> Compress(System.Runtime.Intrinsics.Vector512<long> merge, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Compress(System.Runtime.Intrinsics.Vector512<float> merge, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> Compress(System.Runtime.Intrinsics.Vector512<uint> merge, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> Compress(System.Runtime.Intrinsics.Vector512<ulong> merge, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, int value, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -7957,6 +9152,18 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> DuplicateEvenIndexed(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> DuplicateEvenIndexed(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> DuplicateOddIndexed(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Expand(System.Runtime.Intrinsics.Vector512<double> merge, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> Expand(System.Runtime.Intrinsics.Vector512<int> merge, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> Expand(System.Runtime.Intrinsics.Vector512<long> merge, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Expand(System.Runtime.Intrinsics.Vector512<float> merge, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> Expand(System.Runtime.Intrinsics.Vector512<uint> merge, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> Expand(System.Runtime.Intrinsics.Vector512<ulong> merge, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ExtractVector128(System.Runtime.Intrinsics.Vector512<byte> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ExtractVector128(System.Runtime.Intrinsics.Vector512<short> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
@@ -8073,6 +9280,30 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<ushort> LoadVector512(ushort* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<uint> LoadVector512(uint* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<ulong> LoadVector512(ulong* address) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> merge) { throw null; }
+        public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
+        public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector512<double> mask, System.Runtime.Intrinsics.Vector512<double> source) { throw null; }
+        public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector512<int> mask, System.Runtime.Intrinsics.Vector512<int> source) { throw null; }
+        public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector512<long> mask, System.Runtime.Intrinsics.Vector512<long> source) { throw null; }
+        public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector512<float> mask, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
+        public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector512<uint> mask, System.Runtime.Intrinsics.Vector512<uint> source) { throw null; }
+        public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector512<ulong> mask, System.Runtime.Intrinsics.Vector512<ulong> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Max(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Max(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Max(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
@@ -8085,6 +9316,13 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<float> Min(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> Min(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Min(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+        public static new int MoveMask(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static int MoveMask(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Multiply(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Multiply(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Multiply(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
@@ -8294,42 +9532,142 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<ulong> AlignRight64(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte mask) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> AlignRight64(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte mask) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> AlignRight64(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> BlendVariable(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<double> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> BlendVariable(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, System.Runtime.Intrinsics.Vector128<int> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> BlendVariable(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right, System.Runtime.Intrinsics.Vector128<long> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> BlendVariable(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<float> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> BlendVariable(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right, System.Runtime.Intrinsics.Vector128<uint> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> BlendVariable(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, System.Runtime.Intrinsics.Vector128<ulong> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> BlendVariable(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, System.Runtime.Intrinsics.Vector256<double> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> BlendVariable(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right, System.Runtime.Intrinsics.Vector256<int> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> BlendVariable(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right, System.Runtime.Intrinsics.Vector256<long> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> BlendVariable(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, System.Runtime.Intrinsics.Vector256<float> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> BlendVariable(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right, System.Runtime.Intrinsics.Vector256<uint> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> BlendVariable(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right, System.Runtime.Intrinsics.Vector256<ulong> mask) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Compare(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Compare(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Compare(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Compare(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> CompareEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> CompareEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> CompareEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> CompareEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> CompareEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> CompareEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> CompareGreaterThan(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareLessThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareLessThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<int> CompareLessThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> CompareLessThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareLessThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareLessThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> CompareLessThan(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> CompareLessThan(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> CompareLessThan(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> CompareLessThan(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareNotEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareNotEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<int> CompareNotEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> CompareNotEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> CompareNotEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> CompareNotEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareNotEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareNotEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> CompareNotEqual(System.Runtime.Intrinsics.Vector256<int> left, System.Runtime.Intrinsics.Vector256<int> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> CompareNotEqual(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> CompareNotEqual(System.Runtime.Intrinsics.Vector256<uint> left, System.Runtime.Intrinsics.Vector256<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> CompareNotEqual(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareNotGreaterThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareNotGreaterThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareNotLessThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareNotLessThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareNotLessThan(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareNotLessThan(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareNotLessThanOrEqual(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareOrdered(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareOrdered(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareOrdered(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareOrdered(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareUnordered(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> CompareUnordered(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> CompareUnordered(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> CompareUnordered(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Compress(System.Runtime.Intrinsics.Vector128<double> merge, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> Compress(System.Runtime.Intrinsics.Vector128<int> merge, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> Compress(System.Runtime.Intrinsics.Vector128<long> merge, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Compress(System.Runtime.Intrinsics.Vector128<float> merge, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> Compress(System.Runtime.Intrinsics.Vector128<uint> merge, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> Compress(System.Runtime.Intrinsics.Vector128<ulong> merge, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Compress(System.Runtime.Intrinsics.Vector256<double> merge, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> Compress(System.Runtime.Intrinsics.Vector256<int> merge, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> Compress(System.Runtime.Intrinsics.Vector256<long> merge, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Compress(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> Compress(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> Compress(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void CompressStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void CompressStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void CompressStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void CompressStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void CompressStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void CompressStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
@@ -8402,6 +9740,30 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithTruncation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Expand(System.Runtime.Intrinsics.Vector128<double> merge, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> Expand(System.Runtime.Intrinsics.Vector128<int> merge, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> Expand(System.Runtime.Intrinsics.Vector128<long> merge, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Expand(System.Runtime.Intrinsics.Vector128<float> merge, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> Expand(System.Runtime.Intrinsics.Vector128<uint> merge, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> Expand(System.Runtime.Intrinsics.Vector128<ulong> merge, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Expand(System.Runtime.Intrinsics.Vector256<double> merge, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<int> Expand(System.Runtime.Intrinsics.Vector256<int> merge, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> Expand(System.Runtime.Intrinsics.Vector256<long> merge, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Expand(System.Runtime.Intrinsics.Vector256<float> merge, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> Expand(System.Runtime.Intrinsics.Vector256<uint> merge, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> Expand(System.Runtime.Intrinsics.Vector256<ulong> merge, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> ExpandLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> ExpandLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> ExpandLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> ExpandLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> ExpandLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> ExpandLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Fixup(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, System.Runtime.Intrinsics.Vector128<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<float> Fixup(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, System.Runtime.Intrinsics.Vector128<int> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> Fixup(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right, System.Runtime.Intrinsics.Vector256<long> table, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
@@ -8414,6 +9776,54 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<float> GetMantissa(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> GetMantissa(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> GetMantissa(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoad(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoad(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoad(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoad(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoad(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoad(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<double> MaskLoadAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<int> MaskLoadAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<long> MaskLoadAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<float> MaskLoadAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<uint> MaskLoadAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ulong> MaskLoadAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> merge) { throw null; }
+            public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void MaskStore(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void MaskStore(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void MaskStore(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void MaskStore(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void MaskStore(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void MaskStore(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
+            public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector128<double> mask, System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
+            public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector128<int> mask, System.Runtime.Intrinsics.Vector128<int> source) { throw null; }
+            public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector128<long> mask, System.Runtime.Intrinsics.Vector128<long> source) { throw null; }
+            public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector128<float> mask, System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
+            public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector128<uint> mask, System.Runtime.Intrinsics.Vector128<uint> source) { throw null; }
+            public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> mask, System.Runtime.Intrinsics.Vector128<ulong> source) { throw null; }
+            public static unsafe void MaskStoreAligned(double* address, System.Runtime.Intrinsics.Vector256<double> mask, System.Runtime.Intrinsics.Vector256<double> source) { throw null; }
+            public static unsafe void MaskStoreAligned(int* address, System.Runtime.Intrinsics.Vector256<int> mask, System.Runtime.Intrinsics.Vector256<int> source) { throw null; }
+            public static unsafe void MaskStoreAligned(long* address, System.Runtime.Intrinsics.Vector256<long> mask, System.Runtime.Intrinsics.Vector256<long> source) { throw null; }
+            public static unsafe void MaskStoreAligned(float* address, System.Runtime.Intrinsics.Vector256<float> mask, System.Runtime.Intrinsics.Vector256<float> source) { throw null; }
+            public static unsafe void MaskStoreAligned(uint* address, System.Runtime.Intrinsics.Vector256<uint> mask, System.Runtime.Intrinsics.Vector256<uint> source) { throw null; }
+            public static unsafe void MaskStoreAligned(ulong* address, System.Runtime.Intrinsics.Vector256<ulong> mask, System.Runtime.Intrinsics.Vector256<ulong> source) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> Max(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> Max(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> Max(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -8567,6 +9977,70 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<sbyte> PermuteVar32x8x2(System.Runtime.Intrinsics.Vector256<sbyte> lower, System.Runtime.Intrinsics.Vector256<sbyte> indices, System.Runtime.Intrinsics.Vector256<sbyte> upper) { throw null; }
         }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512BW.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512Vbmi2 : System.Runtime.Intrinsics.X86.Avx512Vbmi
+    {
+        internal Avx512Vbmi2() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<byte> Compress(System.Runtime.Intrinsics.Vector512<byte> merge, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> Compress(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> Compress(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> Compress(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> source) { throw null; }
+        public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> source) { throw null; }
+        public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> source) { throw null; }
+        public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> Expand(System.Runtime.Intrinsics.Vector512<byte> merge, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> Expand(System.Runtime.Intrinsics.Vector512<short> merge, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> Expand(System.Runtime.Intrinsics.Vector512<sbyte> merge, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> Expand(System.Runtime.Intrinsics.Vector512<ushort> merge, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector512<byte> mask, System.Runtime.Intrinsics.Vector512<byte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector512<short> mask, System.Runtime.Intrinsics.Vector512<short> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector512<sbyte> mask, System.Runtime.Intrinsics.Vector512<sbyte> merge) { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector512<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector512<ushort> mask, System.Runtime.Intrinsics.Vector512<ushort> merge) { throw null; }
+        public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512Vbmi.VL
+        {
+            internal VL() { }
+            public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<byte> Compress(System.Runtime.Intrinsics.Vector128<byte> merge, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> Compress(System.Runtime.Intrinsics.Vector128<short> merge, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> Compress(System.Runtime.Intrinsics.Vector128<sbyte> merge, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> Compress(System.Runtime.Intrinsics.Vector128<ushort> merge, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> Compress(System.Runtime.Intrinsics.Vector256<byte> merge, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> Compress(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> Compress(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> Compress(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> source) { throw null; }
+            public static unsafe void CompressStore(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> source) { throw null; }
+            public static unsafe void CompressStore(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> source) { throw null; }
+            public static unsafe void CompressStore(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> source) { throw null; }
+            public static unsafe void CompressStore(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> source) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> Expand(System.Runtime.Intrinsics.Vector128<byte> merge, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> Expand(System.Runtime.Intrinsics.Vector128<short> merge, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> Expand(System.Runtime.Intrinsics.Vector128<sbyte> merge, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> Expand(System.Runtime.Intrinsics.Vector128<ushort> merge, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> Expand(System.Runtime.Intrinsics.Vector256<byte> merge, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<short> Expand(System.Runtime.Intrinsics.Vector256<short> merge, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> Expand(System.Runtime.Intrinsics.Vector256<sbyte> merge, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ushort> Expand(System.Runtime.Intrinsics.Vector256<ushort> merge, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector128<byte> mask, System.Runtime.Intrinsics.Vector128<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector128<short> mask, System.Runtime.Intrinsics.Vector128<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> mask, System.Runtime.Intrinsics.Vector128<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector128<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> mask, System.Runtime.Intrinsics.Vector128<ushort> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<byte> ExpandLoad(byte* address, System.Runtime.Intrinsics.Vector256<byte> mask, System.Runtime.Intrinsics.Vector256<byte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<short> ExpandLoad(short* address, System.Runtime.Intrinsics.Vector256<short> mask, System.Runtime.Intrinsics.Vector256<short> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<sbyte> ExpandLoad(sbyte* address, System.Runtime.Intrinsics.Vector256<sbyte> mask, System.Runtime.Intrinsics.Vector256<sbyte> merge) { throw null; }
+            public static unsafe System.Runtime.Intrinsics.Vector256<ushort> ExpandLoad(ushort* address, System.Runtime.Intrinsics.Vector256<ushort> mask, System.Runtime.Intrinsics.Vector256<ushort> merge) { throw null; }
+        }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512Vbmi.X64
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }

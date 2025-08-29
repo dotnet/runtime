@@ -57,7 +57,7 @@
 
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                            \
             if (StressLog::LogOn(facility, level))                                  \
-                StressLog::LogMsg(facility, level, StressLogMsg(msg, __VA_ARGS__)); \
+                StressLog::LogMsg(level, facility, StressLogMsg(msg, __VA_ARGS__)); \
             LOG((facility, level, msg, __VA_ARGS__));                               \
             } while(0)
 
@@ -97,7 +97,6 @@ enum LogFacility
     LF_GC       = 0x00000001,
     LF_GCALLOC  = 0x00000100,
     LF_GCROOTS  = 0x00080000,
-    LF_ALWAYS   = 0x80000000,
 };
 
 enum LogLevel
@@ -192,18 +191,24 @@ struct StressLogMsg
     }
 };
 
-template<>
-void* StressLogMsg::ConvertArgument(float arg) = delete;
-
 #if TARGET_64BIT
 template<>
 inline void* StressLogMsg::ConvertArgument(double arg)
 {
     return (void*)(size_t)(*((uint64_t*)&arg));
 }
+// COMPAT: Convert 32-bit floats to 64-bit doubles.
+template<>
+inline void* StressLogMsg::ConvertArgument(float arg)
+{
+    return StressLogMsg::ConvertArgument((double)arg);
+}
 #else
 template<>
 void* StressLogMsg::ConvertArgument(double arg) = delete;
+
+template<>
+void* StressLogMsg::ConvertArgument(float arg) = delete;
 
 // COMPAT: Truncate 64-bit integer arguments to 32-bit
 template<>
@@ -234,7 +239,7 @@ public:
 
     static void LogMsg(unsigned dprintfLevel, const StressLogMsg& msg)
     {
-        GCToEEInterface::LogStressMsg(LL_ALWAYS, LF_ALWAYS|(dprintfLevel<<16)|LF_GC, msg);
+        GCToEEInterface::LogStressMsg(LL_ALWAYS, (dprintfLevel<<16)|LF_GC, msg);
     }
 
     static void LogMsg(unsigned level, unsigned facility, const StressLogMsg& msg)

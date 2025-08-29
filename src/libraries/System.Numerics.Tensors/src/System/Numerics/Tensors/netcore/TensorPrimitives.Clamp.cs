@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -30,8 +28,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanSpanIntoSpan<T, ClampOperatorXMinMax<T>>(x, min, max, destination);
+        }
 
         /// <summary>
         /// Computes the element-wise result of clamping <paramref name="x"/> to within the inclusive range specified
@@ -52,8 +57,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, T max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, ClampOperatorXMinMax<T>>(x, min, max, destination);
+        }
 
         /// <summary>
         /// Computes the element-wise result of clamping <paramref name="x"/> to within the inclusive range specified
@@ -74,8 +86,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, T min, ReadOnlySpan<T> max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarSpanIntoSpan<T, ClampOperatorXMinMax<T>>(x, min, max, destination);
+        }
 
         /// <summary>
         /// Computes the element-wise result of clamping <paramref name="x"/> to within the inclusive range specified
@@ -96,8 +115,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, ClampOperatorMinMaxX<T>>(min, max, x, destination);
+        }
 
         /// <summary>
         /// Computes the element-wise result of clamping <paramref name="x"/> to within the inclusive range specified
@@ -123,6 +149,11 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_MinGreaterThanMax();
             }
 
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarScalarIntoSpan<T, ClampOperatorXMinMax<T>>(x, min, max, destination);
         }
 
@@ -143,8 +174,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, T max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMinMaxX<float>>(min, max, x, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarScalarIntoSpan<T, ClampOperatorMinMaxX<T>>(min, max, x, destination);
+        }
 
         /// <summary>
         /// Computes the element-wise result of clamping <paramref name="x"/> to within the inclusive range specified
@@ -163,8 +201,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, T min, ReadOnlySpan<T> max, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorMaxXMin<float>>(max, x, min, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarScalarIntoSpan<T, ClampOperatorMaxXMin<T>>(max, x, min, destination);
+        }
 
         /// <summary>T.Clamp(x, min, max)</summary>
         internal readonly struct ClampOperatorXMinMax<T> : ITernaryOperator<T>

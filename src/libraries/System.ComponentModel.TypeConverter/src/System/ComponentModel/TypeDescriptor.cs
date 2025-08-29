@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -3062,8 +3063,12 @@ namespace System.ComponentModel
                     throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
                 }
 
-                Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true)!;
-                _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor)!;
+                _comNativeDescriptor = (TypeDescriptionProvider)CreateComNativeDescriptor();
+
+                [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+                [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static extern object CreateComNativeDescriptor();
             }
 
             [return: NotNullIfNotNull(nameof(instance))]

@@ -35,302 +35,14 @@
 
 #ifndef DACCESS_COMPILE
 
-
-#ifdef TARGET_AMD64
-
-BOOL IsPreservedReg (X86Reg reg)
-{
-    UINT16 PreservedRegMask =
-          (1 << kRBX)
-        | (1 << kRBP)
-        | (1 << kRSI)
-        | (1 << kRDI)
-        | (1 << kR12)
-        | (1 << kR13)
-        | (1 << kR14)
-        | (1 << kR15);
-    return PreservedRegMask & (1 << reg);
-}
-
-#endif // TARGET_AMD64
-
-#ifdef TARGET_AMD64
-//-----------------------------------------------------------------------
-// InstructionFormat for near Jump and short Jump
-//-----------------------------------------------------------------------
-
-//X64EmitTailcallWithRSPAdjust
-class X64NearJumpSetup : public InstructionFormat
-{
-    public:
-        X64NearJumpSetup() : InstructionFormat(  InstructionFormat::k8|InstructionFormat::k32
-                                                       | InstructionFormat::k64Small | InstructionFormat::k64
-                                                      )
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT
-            switch (refsize)
-            {
-                case k8:
-                    return 0;
-
-                case k32:
-                    return 0;
-
-                case k64Small:
-                    return 5;
-
-                case k64:
-                    return 10;
-
-                default:
-                    _ASSERTE(!"unexpected refsize");
-                    return 0;
-
-            }
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT
-            if (k8 == refsize)
-            {
-                // do nothing, X64NearJump will take care of this
-            }
-            else if (k32 == refsize)
-            {
-                // do nothing, X64NearJump will take care of this
-            }
-            else if (k64Small == refsize)
-            {
-                UINT64 TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
-                _ASSERTE(FitsInU4(TargetAddress));
-
-                // mov eax, imm32  ; zero-extended
-                pOutBufferRW[0] = 0xB8;
-                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
-            }
-            else if (k64 == refsize)
-            {
-                // mov rax, imm64
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xB8;
-                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
-            }
-            else
-            {
-                _ASSERTE(!"unreached");
-            }
-        }
-
-        virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_GC_NOTRIGGER;
-            STATIC_CONTRACT_FORBID_FAULT;
-
-
-            if (fExternal)
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k8:
-                    // For external, we don't have enough info to predict
-                    // the offset.
-                    return FALSE;
-
-                case InstructionFormat::k32:
-                    return sizeof(PVOID) <= sizeof(UINT32);
-
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-            else
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k8:
-                    return FitsInI1(offset);
-
-                case InstructionFormat::k32:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64Small:
-                    // EmitInstruction emits a non-relative jmp for
-                    // k64Small.  We don't have enough info to predict the
-                    // target address.  (Even if we did, this would only
-                    // handle the set of unsigned offsets with bit 31 set
-                    // and no higher bits set, too uncommon/hard to test.)
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-        }
-};
-
-class X64NearJumpExecute : public InstructionFormat
-{
-    public:
-        X64NearJumpExecute() : InstructionFormat(  InstructionFormat::k8|InstructionFormat::k32
-                                                 | InstructionFormat::k64Small | InstructionFormat::k64
-                                                 )
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT
-            switch (refsize)
-            {
-                case k8:
-                    return 2;
-
-                case k32:
-                    return 5;
-
-                case k64Small:
-                    return 3;
-
-                case k64:
-                    return 3;
-
-                default:
-                    _ASSERTE(!"unexpected refsize");
-                    return 0;
-
-            }
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT
-            if (k8 == refsize)
-            {
-                pOutBufferRW[0] = 0xeb;
-                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
-            }
-            else if (k32 == refsize)
-            {
-                pOutBufferRW[0] = 0xe9;
-                *((int32_t*)(pOutBufferRW+1)) = (int32_t)fixedUpReference;
-            }
-            else if (k64Small == refsize)
-            {
-                // REX.W jmp rax
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xFF;
-                pOutBufferRW[2] = 0xE0;
-            }
-            else if (k64 == refsize)
-            {
-                // REX.W jmp rax
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xFF;
-                pOutBufferRW[2] = 0xE0;
-            }
-            else
-            {
-                _ASSERTE(!"unreached");
-            }
-        }
-
-        virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_GC_NOTRIGGER;
-            STATIC_CONTRACT_FORBID_FAULT;
-
-
-            if (fExternal)
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k8:
-                    // For external, we don't have enough info to predict
-                    // the offset.
-                    return FALSE;
-
-                case InstructionFormat::k32:
-                    return sizeof(PVOID) <= sizeof(UINT32);
-
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-            else
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k8:
-                    return FitsInI1(offset);
-
-                case InstructionFormat::k32:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64Small:
-                    // EmitInstruction emits a non-relative jmp for
-                    // k64Small.  We don't have enough info to predict the
-                    // target address.  (Even if we did, this would only
-                    // handle the set of unsigned offsets with bit 31 set
-                    // and no higher bits set, too uncommon/hard to test.)
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-        }
-};
-
-#endif
-
+#ifdef TARGET_X86
 //-----------------------------------------------------------------------
 // InstructionFormat for near Jump and short Jump
 //-----------------------------------------------------------------------
 class X86NearJump : public InstructionFormat
 {
     public:
-        X86NearJump() : InstructionFormat(  InstructionFormat::k8|InstructionFormat::k32
-#ifdef TARGET_AMD64
-                                          | InstructionFormat::k64Small | InstructionFormat::k64
-#endif // TARGET_AMD64
-                                          )
+        X86NearJump() : InstructionFormat(InstructionFormat::k8|InstructionFormat::k32)
         {
             LIMITED_METHOD_CONTRACT;
         }
@@ -345,13 +57,7 @@ class X86NearJump : public InstructionFormat
 
                 case k32:
                     return 5;
-#ifdef TARGET_AMD64
-                case k64Small:
-                    return 5 + 2;
 
-                case k64:
-                    return 12;
-#endif // TARGET_AMD64
                 default:
                     _ASSERTE(!"unexpected refsize");
                     return 0;
@@ -372,32 +78,6 @@ class X86NearJump : public InstructionFormat
                 pOutBufferRW[0] = 0xe9;
                 *((int32_t*)(pOutBufferRW+1)) = (int32_t)fixedUpReference;
             }
-#ifdef TARGET_AMD64
-            else if (k64Small == refsize)
-            {
-                UINT64 TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
-                _ASSERTE(FitsInU4(TargetAddress));
-
-                // mov eax, imm32  ; zero-extended
-                pOutBufferRW[0] = 0xB8;
-                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
-
-                // jmp rax
-                pOutBufferRW[5] = 0xFF;
-                pOutBufferRW[6] = 0xE0;
-            }
-            else if (k64 == refsize)
-            {
-                // mov rax, imm64
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xB8;
-                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
-
-                // jmp rax
-                pOutBufferRW[10] = 0xFF;
-                pOutBufferRW[11] = 0xE0;
-            }
-#endif // TARGET_AMD64
             else
             {
                 _ASSERTE(!"unreached");
@@ -423,13 +103,6 @@ class X86NearJump : public InstructionFormat
                 case InstructionFormat::k32:
                     return sizeof(PVOID) <= sizeof(UINT32);
 
-#ifdef TARGET_AMD64
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-#endif
                 case InstructionFormat::kAllowAlways:
                     return TRUE;
 
@@ -446,289 +119,6 @@ class X86NearJump : public InstructionFormat
                     return FitsInI1(offset);
 
                 case InstructionFormat::k32:
-#ifdef TARGET_AMD64
-                    return FitsInI4(offset);
-#else
-                    return TRUE;
-#endif
-
-#ifdef TARGET_AMD64
-                case InstructionFormat::k64Small:
-                    // EmitInstruction emits a non-relative jmp for
-                    // k64Small.  We don't have enough info to predict the
-                    // target address.  (Even if we did, this would only
-                    // handle the set of unsigned offsets with bit 31 set
-                    // and no higher bits set, too uncommon/hard to test.)
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-#endif
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-        }
-};
-
-
-//-----------------------------------------------------------------------
-// InstructionFormat for conditional jump. Set the variationCode
-// to members of X86CondCode.
-//-----------------------------------------------------------------------
-class X86CondJump : public InstructionFormat
-{
-    public:
-        X86CondJump(UINT allowedSizes) : InstructionFormat(allowedSizes)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-        LIMITED_METHOD_CONTRACT
-            return (refsize == k8 ? 2 : 6);
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-        LIMITED_METHOD_CONTRACT
-        if (refsize == k8)
-        {
-                pOutBufferRW[0] = static_cast<BYTE>(0x70 | variationCode);
-                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
-        }
-        else
-        {
-                pOutBufferRW[0] = 0x0f;
-                pOutBufferRW[1] = static_cast<BYTE>(0x80 | variationCode);
-                *((int32_t*)(pOutBufferRW+2)) = (int32_t)fixedUpReference;
-            }
-        }
-};
-
-
-//-----------------------------------------------------------------------
-// InstructionFormat for near call.
-//-----------------------------------------------------------------------
-class X86Call : public InstructionFormat
-{
-    public:
-        X86Call ()
-            : InstructionFormat(  InstructionFormat::k32
-#ifdef TARGET_AMD64
-                                | InstructionFormat::k64Small | InstructionFormat::k64
-#endif // TARGET_AMD64
-                                )
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            switch (refsize)
-            {
-            case k32:
-                return 5;
-
-#ifdef TARGET_AMD64
-            case k64Small:
-                return 5 + 2;
-
-            case k64:
-                return 10 + 2;
-#endif // TARGET_AMD64
-
-            default:
-                _ASSERTE(!"unexpected refsize");
-                return 0;
-            }
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT
-
-            switch (refsize)
-            {
-            case k32:
-                pOutBufferRW[0] = 0xE8;
-                *((int32_t*)(1+pOutBufferRW)) = (int32_t)fixedUpReference;
-                break;
-
-#ifdef TARGET_AMD64
-            case k64Small:
-                UINT64 TargetAddress;
-
-                TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
-                _ASSERTE(FitsInU4(TargetAddress));
-
-                // mov  eax,<fixedUpReference>  ; zero-extends
-                pOutBufferRW[0] = 0xB8;
-                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
-
-                // call rax
-                pOutBufferRW[5] = 0xff;
-                pOutBufferRW[6] = 0xd0;
-                break;
-
-            case k64:
-                // mov  rax,<fixedUpReference>
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xB8;
-                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
-
-                // call rax
-                pOutBufferRW[10] = 0xff;
-                pOutBufferRW[11] = 0xd0;
-                break;
-#endif // TARGET_AMD64
-
-            default:
-                _ASSERTE(!"unreached");
-                break;
-            }
-        }
-
-// For x86, the default CanReach implementation will suffice.  It only needs
-// to handle k32.
-#ifdef TARGET_AMD64
-        virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            if (fExternal)
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k32:
-                    // For external, we don't have enough info to predict
-                    // the offset.
-                    return FALSE;
-
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-            else
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k32:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64Small:
-                    // EmitInstruction emits a non-relative jmp for
-                    // k64Small.  We don't have enough info to predict the
-                    // target address.  (Even if we did, this would only
-                    // handle the set of unsigned offsets with bit 31 set
-                    // and no higher bits set, too uncommon/hard to test.)
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-        }
-#endif // TARGET_AMD64
-};
-
-
-//-----------------------------------------------------------------------
-// InstructionFormat for push imm32.
-//-----------------------------------------------------------------------
-class X86PushImm32 : public InstructionFormat
-{
-    public:
-        X86PushImm32(UINT allowedSizes) : InstructionFormat(allowedSizes)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            return 5;
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            pOutBufferRW[0] = 0x68;
-            // only support absolute pushimm32 of the label address. The fixedUpReference is
-            // the offset to the label from the current point, so add to get address
-            *((int32_t*)(1+pOutBufferRW)) = (int32_t)(fixedUpReference);
-        }
-};
-
-#if defined(TARGET_AMD64)
-//-----------------------------------------------------------------------
-// InstructionFormat for lea reg, [RIP relative].
-//-----------------------------------------------------------------------
-class X64LeaRIP : public InstructionFormat
-{
-    public:
-        X64LeaRIP() : InstructionFormat(InstructionFormat::k64Small)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            return 7;
-        }
-
-        virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
-        {
-            if (fExternal)
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k64Small:
-                    // For external, we don't have enough info to predict
-                    // the offset.
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-                case InstructionFormat::kAllowAlways:
-                    return TRUE;
-
-                default:
-                    _ASSERTE(0);
-                    return FALSE;
-                }
-            }
-            else
-            {
-                switch (refsize)
-                {
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
                 case InstructionFormat::kAllowAlways:
                     return TRUE;
 
@@ -738,41 +128,10 @@ class X64LeaRIP : public InstructionFormat
                 }
             }
         }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            X86Reg reg = (X86Reg)variationCode;
-            BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-            if (reg >= kR8)
-            {
-                rex |= REX_MODRM_REG_EXT;
-                reg = X86RegFromAMD64Reg(reg);
-            }
-
-            pOutBufferRW[0] = rex;
-            pOutBufferRW[1] = 0x8D;
-            pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
-            // only support absolute pushimm32 of the label address. The fixedUpReference is
-            // the offset to the label from the current point, so add to get address
-            *((int32_t*)(3+pOutBufferRW)) = (int32_t)(fixedUpReference);
-        }
 };
-
-#endif // TARGET_AMD64
-
-#if defined(TARGET_AMD64)
-static BYTE gX64NearJumpSetup[sizeof(X64NearJumpSetup)];
-static BYTE gX64NearJumpExecute[sizeof(X64NearJumpExecute)];
-static BYTE gX64LeaRIP[sizeof(X64LeaRIP)];
-#endif
 
 static BYTE gX86NearJump[sizeof(X86NearJump)];
-static BYTE gX86CondJump[sizeof(X86CondJump)];
-static BYTE gX86Call[sizeof(X86Call)];
-static BYTE gX86PushImm32[sizeof(X86PushImm32)];
+#endif // TARGET_X86
 
 /* static */ void StubLinkerCPU::Init()
 {
@@ -783,15 +142,9 @@ static BYTE gX86PushImm32[sizeof(X86PushImm32)];
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    new (gX86NearJump) X86NearJump();
-    new (gX86CondJump) X86CondJump( InstructionFormat::k8|InstructionFormat::k32);
-    new (gX86Call) X86Call();
-    new (gX86PushImm32) X86PushImm32(InstructionFormat::k32);
 
-#if defined(TARGET_AMD64)
-    new (gX64NearJumpSetup) X64NearJumpSetup();
-    new (gX64NearJumpExecute) X64NearJumpExecute();
-    new (gX64LeaRIP) X64LeaRIP();
+#ifdef TARGET_X86
+    new (gX86NearJump) X86NearJump();
 #endif
 }
 
@@ -821,22 +174,6 @@ VOID StubLinkerCPU::X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg)
 
     Emit8(0x89);
     Emit8(static_cast<UINT8>(0xC0 | (srcReg << 3) | destReg));
-}
-
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitMovSPReg(X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-    const X86Reg kESP = (X86Reg)4;
-    X86EmitMovRegReg(kESP, srcReg);
-}
-
-VOID StubLinkerCPU::X86EmitMovRegSP(X86Reg destReg)
-{
-    STANDARD_VM_CONTRACT;
-    const X86Reg kESP = (X86Reg)4;
-    X86EmitMovRegReg(destReg, kESP);
 }
 
 #ifdef TARGET_X86
@@ -880,32 +217,6 @@ VOID StubLinkerCPU::X86EmitPushImm32(UINT32 value)
 
 //---------------------------------------------------------------
 // Emits:
-//    PUSH <imm32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitPushImm32(CodeLabel &target)
-{
-    STANDARD_VM_CONTRACT;
-
-    EmitLabelRef(&target, reinterpret_cast<X86PushImm32&>(gX86PushImm32), 0);
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    PUSH <imm8>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitPushImm8(BYTE value)
-{
-    STANDARD_VM_CONTRACT;
-
-    Emit8(0x6a);
-    Emit8(value);
-    Push(sizeof(void*));
-}
-
-
-//---------------------------------------------------------------
-// Emits:
 //    PUSH <ptr>
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR10*/))
@@ -914,145 +225,7 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 
     X86EmitPushImm32((UINT_PTR) value);
 }
-#endif // TARGET_X86
 
-//---------------------------------------------------------------
-// Emits:
-//    XOR <reg32>,<reg32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitZeroOutReg(X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    // 32-bit results are zero-extended, so we only need the REX byte if
-    // it's an extended register.
-    if (reg >= kR8)
-    {
-        Emit8(REX_PREFIX_BASE | REX_MODRM_REG_EXT | REX_MODRM_RM_EXT);
-        reg = X86RegFromAMD64Reg(reg);
-    }
-#endif
-    Emit8(0x33);
-    Emit8(static_cast<UINT8>(0xc0 | (reg << 3) | reg));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    jmp [reg]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitJumpReg(X86Reg reg)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    Emit8(0xff);
-    Emit8(static_cast<BYTE>(0xe0) | static_cast<BYTE>(reg));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    CMP <reg32>,imm32
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCmpRegImm32(X86Reg reg, INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-#endif
-
-    if (FitsInI1(imm32)) {
-        Emit8(0x83);
-        Emit8(static_cast<UINT8>(0xF8 | reg));
-        Emit8((INT8)imm32);
-    } else {
-        Emit8(0x81);
-        Emit8(static_cast<UINT8>(0xF8 | reg));
-        Emit32(imm32);
-    }
-}
-
-#ifdef TARGET_AMD64
-//---------------------------------------------------------------
-// Emits:
-//    CMP [reg+offs], imm32
-//    CMP [reg], imm32
-//---------------------------------------------------------------
-VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-
-    X64EmitCmp32RegIndexImm32(reg, offs, imm32);
-}
-
-VOID StubLinkerCPU:: X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#else // TARGET_AMD64
-VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#endif // TARGET_AMD64
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-    //
-    // The binary representation of "cmp [mem], imm32" is :
-    // 1000-00sw  mod11-1r/m
-    //
-
-    unsigned wBit = (FitsInI1(imm32) ? 0 : 1);
-    Emit8(static_cast<UINT8>(0x80 | wBit));
-
-    unsigned modBits;
-    if (offs == 0)
-        modBits = 0;
-    else if (FitsInI1(offs))
-        modBits = 1;
-    else
-        modBits = 2;
-
-    Emit8(static_cast<UINT8>((modBits << 6) | 0x38 | reg));
-
-    if (offs)
-    {
-        if (FitsInI1(offs))
-            Emit8((INT8)offs);
-        else
-            Emit32(offs);
-    }
-
-    if (FitsInI1(imm32))
-        Emit8((INT8)imm32);
-    else
-        Emit32(imm32);
-}
 
 //---------------------------------------------------------------
 // Emits:
@@ -1063,93 +236,6 @@ VOID StubLinkerCPU::X86EmitNearJump(CodeLabel *target)
 {
     STANDARD_VM_CONTRACT;
     EmitLabelRef(target, reinterpret_cast<X86NearJump&>(gX86NearJump), 0);
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    Jcc <ofs8> or
-//    Jcc <ofs32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCondJump(CodeLabel *target, X86CondCode::cc condcode)
-{
-    STANDARD_VM_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<X86CondJump&>(gX86CondJump), condcode);
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    call <ofs32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCall(CodeLabel *target, int iArgBytes)
-{
-    STANDARD_VM_CONTRACT;
-
-    EmitLabelRef(target, reinterpret_cast<X86Call&>(gX86Call), 0);
-
-    INDEBUG(Emit8(0x90));   // Emit a nop after the call in debug so that
-                            // we know that this is a call that can directly call
-                            // managed code
-#ifndef TARGET_AMD64
-    Pop(iArgBytes);
-#endif // !TARGET_AMD64
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    ret n
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-#if defined(TARGET_AMD64) || defined(UNIX_X86_ABI)
-        PRECONDITION(wArgBytes == 0);
-#endif
-
-    }
-    CONTRACTL_END;
-
-    if (wArgBytes == 0)
-        Emit8(0xc3);
-    else
-    {
-        Emit8(0xc2);
-        Emit16(wArgBytes);
-    }
-
-#ifdef TARGET_X86
-    Pop(wArgBytes);
-#endif
-}
-
-#ifdef TARGET_X86
-VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (X86Reg r = kEAX; regSet > 0; r = (X86Reg)(r+1))
-        if (regSet & (1U<<r))
-        {
-            X86EmitPushReg(r);
-            regSet &= ~(1U<<r);
-        }
-}
-
-
-VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (X86Reg r = NumX86Regs; regSet > 0; r = (X86Reg)(r-1))
-        if (regSet & (1U<<r))
-        {
-            X86EmitPopReg(r);
-            regSet &= ~(1U<<r);
-        }
 }
 #endif // TARGET_X86
 
@@ -1181,10 +267,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
 {
     STANDARD_VM_CONTRACT;
 
-    if (dstreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0x89, srcreg, dstreg, ofs);
-    else
-        X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs);
+    X86EmitOffsetModRM(0x89, srcreg, dstreg, ofs);
 }
 
 #ifdef TARGET_X86
@@ -1196,153 +279,8 @@ VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
-    if(srcreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0xff, (X86Reg)0x6, srcreg, ofs);
-    else
-        X86EmitOp(0xff,(X86Reg)0x6, srcreg, ofs);
-
+    X86EmitOffsetModRM(0xff, (X86Reg)0x6, srcreg, ofs);
     Push(sizeof(void*));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    push dword ptr [<baseReg> + <indexReg>*<scale> + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitBaseIndexPush(
-        X86Reg baseReg,
-        X86Reg indexReg,
-        int32_t scale,
-        int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOffsetModRmSIB(0xff, (X86Reg)0x6, baseReg, indexReg, scale, ofs);
-    Push(sizeof(void*));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    push dword ptr [ESP + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSPIndexPush(int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    int8_t ofs8 = (int8_t) ofs;
-    if (ofs == (int32_t) ofs8)
-    {
-        // The offset can be expressed in a byte (can use the byte
-        // form of the push esp instruction)
-
-        BYTE code[] = {0xff, 0x74, 0x24, (BYTE)ofs8};
-        EmitBytes(code, sizeof(code));
-    }
-    else
-    {
-        // The offset requires 4 bytes (need to use the long form
-        // of the push esp instruction)
-
-        BYTE code[] = {0xff, 0xb4, 0x24, 0x0, 0x0, 0x0, 0x0};
-        *(int32_t *)(&code[3]) = ofs;
-        EmitBytes(code, sizeof(code));
-    }
-
-    Push(sizeof(void*));
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    pop dword ptr [<srcreg> + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    if(srcreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0x8f, (X86Reg)0x0, srcreg, ofs);
-    else
-        X86EmitOp(0x8f,(X86Reg)0x0, srcreg, ofs);
-
-    Pop(sizeof(void*));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//   sub esp, IMM
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSubEsp(INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (imm32 < 0x1000-100)
-    {
-        // As long as the esp size is less than 1 page plus a small
-        // safety fudge factor, we can just bump esp.
-        X86EmitSubEspWorker(imm32);
-    }
-    else
-    {
-        // Otherwise, must touch at least one byte for each page.
-        while (imm32 >= 0x1000)
-        {
-
-            X86EmitSubEspWorker(0x1000-4);
-            X86EmitPushReg(kEAX);
-
-            imm32 -= 0x1000;
-        }
-        if (imm32 < 500)
-        {
-            X86EmitSubEspWorker(imm32);
-        }
-        else
-        {
-            // If the remainder is large, touch the last byte - again,
-            // as a fudge factor.
-            X86EmitSubEspWorker(imm32-4);
-            X86EmitPushReg(kEAX);
-        }
-    }
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//   sub esp, IMM
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSubEspWorker(INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-    // On Win32, stacks must be faulted in one page at a time.
-        PRECONDITION(imm32 < 0x1000);
-    }
-    CONTRACTL_END;
-
-    if (!imm32)
-    {
-        // nop
-    }
-    else
-    {
-        X86_64BitOperands();
-
-        if (FitsInI1(imm32))
-        {
-            Emit16(0xec83);
-            Emit8((INT8)imm32);
-        }
-        else
-        {
-            Emit16(0xec81);
-            Emit32(imm32);
-        }
-
-        Push(imm32);
-    }
 }
 
 
@@ -1411,91 +349,38 @@ VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
     }
 }
 
-//---------------------------------------------------------------
-// Emits: add destReg, srcReg
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitAddRegReg(X86Reg destReg, X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitR2ROp(0x01, srcReg, destReg);
-}
-
-
-
-
-VOID StubLinkerCPU::X86EmitSubReg(X86Reg reg, INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-#endif
-
-    if (FitsInI1(imm32)) {
-        Emit8(0x83);
-        Emit8(static_cast<UINT8>(0xE8 | reg));
-        Emit8(static_cast<UINT8>(imm32));
-    } else {
-        Emit8(0x81);
-        Emit8(static_cast<UINT8>(0xE8 | reg));
-        Emit32(imm32);
-    }
-}
-
-//---------------------------------------------------------------
-// Emits: sub destReg, srcReg
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitSubRegReg(X86Reg destReg, X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitR2ROp(0x29, srcReg, destReg);
-}
 
 #if defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
-// movdqa destXmmreg, srcXmmReg
+// movaps destXmmreg, srcXmmReg
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
 {
     STANDARD_VM_CONTRACT;
+
     // There are several that could be used to mov xmm registers. MovAps is
     // what C++ compiler uses so let's use it here too.
-    X86EmitR2ROp(X86_INSTR_MOVAPS_R_RM, destXmmreg, srcXmmReg, k32BitOp);
-}
 
-//---------------------------------------------------------------
-// movdqa XmmN, [baseReg + offset]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-    X64EmitMovXmmWorker(0x66, 0x6F, Xmmreg, baseReg, ofs);
-}
+    BYTE rex = 0;
 
-//---------------------------------------------------------------
-// movdqa [baseReg + offset], XmmN
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-    X64EmitMovXmmWorker(0x66, 0x7F, Xmmreg, baseReg, ofs);
+    if (srcXmmReg >= kR8)
+    {
+        rex |= REX_MODRM_RM_EXT;
+        srcXmmReg = X86RegFromAMD64Reg(srcXmmReg);
+    }
+
+    if (destXmmreg >= kR8)
+    {
+        rex |= REX_MODRM_REG_EXT;
+        destXmmreg = X86RegFromAMD64Reg(destXmmreg);
+    }
+
+    if (rex)
+        Emit8(REX_PREFIX_BASE | rex);
+
+    Emit16(0x280F);
+    Emit8(static_cast<UINT8>(0300 | (destXmmreg << 3) | srcXmmReg));    
 }
 
 //---------------------------------------------------------------
@@ -1707,70 +592,10 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
     }
 }
 
-//---------------------------------------------------------------
-// Emits a MOD/RM for accessing a dword at [<baseReg> + <indexReg>*<scale> + ofs32]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-        PRECONDITION(indexReg != kESP_Unsafe);
-    }
-    CONTRACTL_END;
-
-    BYTE    codeBuffer[8];
-    BYTE*   code    = codeBuffer;
-    int     nBytes  = 0;
-
-#ifdef TARGET_AMD64
-    _ASSERTE(!"NYI");
-#endif
-    code[0] = opcode;
-    nBytes++;
-
-    BYTE scaleEnc = 0;
-    switch(scale)
-    {
-        case 1: scaleEnc = 0; break;
-        case 2: scaleEnc = 1; break;
-        case 4: scaleEnc = 2; break;
-        case 8: scaleEnc = 3; break;
-        default: _ASSERTE(!"Unexpected");
-    }
-
-    BYTE sib = static_cast<BYTE>((scaleEnc << 6) | (indexReg << 3) | baseReg);
-
-    if (FitsInI1(ofs))
-    {
-        code[1] = static_cast<BYTE>(0x44 | (opcodeOrReg << 3));
-        code[2] = sib;
-        code[3] = (BYTE)ofs;
-        nBytes += 3;
-        EmitBytes(codeBuffer, nBytes);
-    }
-    else
-    {
-        code[1] = static_cast<BYTE>(0x84 | (opcodeOrReg << 3));
-        code[2] = sib;
-        *(int32_t*)(&code[3]) = ofs;
-        nBytes += 6;
-        EmitBytes(codeBuffer, nBytes);
-    }
-}
-
-
 
 VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!imm)
-    {
-        X86EmitZeroOutReg(reg);
-        return;
-    }
 
     UINT cbimm = sizeof(void*);
 
@@ -1959,107 +784,19 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
 }
 
 
-// Emits
-//
-//    opcode altreg, modrmreg
-//
-// or
-//
-//    opcode modrmreg, altreg
-//
-// (the opcode determines which one comes first)
-//
-// For single-operand opcodes, "altreg" actually selects
-// an operation rather than a register.
-
-VOID StubLinkerCPU::X86EmitR2ROp (WORD opcode,
-                                  X86Reg altreg,
-                                  X86Reg modrmreg
-                        AMD64_ARG(X86OperandSize OperandSize /*= k64BitOp*/)
-                                  )
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        // All 2-byte opcodes start with 0x0f.
-        PRECONDITION(!(opcode >> 8) || (opcode & 0xff) == 0x0f);
-
-        PRECONDITION( ((UINT)altreg) < NumX86Regs );
-        PRECONDITION( ((UINT)modrmreg) < NumX86Regs );
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = 0;
-
-    if (modrmreg >= kR8)
-    {
-        rex |= REX_MODRM_RM_EXT;
-        modrmreg = X86RegFromAMD64Reg(modrmreg);
-    }
-
-    if (altreg >= kR8)
-    {
-        rex |= REX_MODRM_REG_EXT;
-        altreg = X86RegFromAMD64Reg(altreg);
-    }
-
-    if (k64BitOp == OperandSize)
-        rex |= REX_OPERAND_SIZE_64BIT;
-
-    if (rex)
-        Emit8(REX_PREFIX_BASE | rex);
-#endif // TARGET_AMD64
-
-    Emit8((BYTE)opcode);
-
-    if (opcode >> 8)
-        Emit8(opcode >> 8);
-
-    Emit8(static_cast<UINT8>(0300 | (altreg << 3) | modrmreg));
-}
-
-
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //   op altreg, [esp+ofs]
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
                                      X86Reg altreg,
-                                     int32_t ofs
-                           AMD64_ARG(X86OperandSize OperandSize /*= k64BitOp*/)
-                                     )
+                                     int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
-    BYTE    codeBuffer[8];
+    BYTE    codeBuffer[7];
     BYTE   *code = codeBuffer;
-    int     nBytes;
-
-#ifdef TARGET_AMD64
-    BYTE rex = 0;
-
-    if (k64BitOp == OperandSize)
-        rex |= REX_OPERAND_SIZE_64BIT;
-
-    if (altreg >= kR8)
-    {
-        rex |= REX_MODRM_REG_EXT;
-        altreg = X86RegFromAMD64Reg(altreg);
-    }
-
-    if (rex)
-    {
-        *code = (REX_PREFIX_BASE | rex);
-        code++;
-        nBytes = 1;
-    }
-    else
-#endif // TARGET_AMD64
-    {
-        nBytes = 0;
-    }
 
     code[0] = opcode;
     BYTE modrm = static_cast<BYTE>((altreg << 3) | 004);
@@ -2067,51 +804,24 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
     {
         code[1] = modrm;
         code[2] = 0044;
-        EmitBytes(codeBuffer, 3 + nBytes);
+        EmitBytes(codeBuffer, 3);
     }
     else if (FitsInI1(ofs))
     {
         code[1] = 0x40|modrm;
         code[2] = 0044;
         code[3] = (BYTE)ofs;
-        EmitBytes(codeBuffer, 4 + nBytes);
+        EmitBytes(codeBuffer, 4);
     }
     else
     {
         code[1] = 0x80|modrm;
         code[2] = 0044;
         *((int32_t*)(3+code)) = ofs;
-        EmitBytes(codeBuffer, 7 + nBytes);
+        EmitBytes(codeBuffer, 7);
     }
-
 }
-
-#ifdef _DEBUG
-//---------------------------------------------------------------
-// Emits:
-//     mov <reg32>,0xcccccccc
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitDebugTrashReg(X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-    Emit8(0xb8|reg);
-    Emit64(0xcccccccccccccccc);
-#else
-    Emit8(static_cast<UINT8>(0xb8 | reg));
-    Emit32(0xcccccccc);
 #endif
-}
-#endif //_DEBUG
 
 
 // Get X86Reg indexes of argument registers based on offset into ArgumentRegister
@@ -2143,70 +853,6 @@ static const X86Reg c_argRegs[] = {
 #endif
 
 #ifdef TARGET_X86
-
-#ifdef TARGET_UNIX
-namespace
-{
-    gc_alloc_context* STDCALL GetAllocContextHelper()
-    {
-        return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
-    }
-}
-#endif
-
-VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        // It doesn't make sense to have the destination register be preserved
-        PRECONDITION((preservedRegSet & (1 << dstreg)) == 0);
-        AMD64_ONLY(PRECONDITION(dstreg < 8)); // code below doesn't support high registers
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_UNIX
-
-    X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-    // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), 0);
-
-    // mov dstreg, eax
-    X86EmitMovRegReg(dstreg, kEAX);
-
-    X86EmitPopRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-#ifdef _DEBUG
-    // Trash caller saved regs that we were not told to preserve, and that aren't the dstreg.
-    preservedRegSet |= 1 << dstreg;
-    if (!(preservedRegSet & (1 << kEAX)))
-        X86EmitDebugTrashReg(kEAX);
-    if (!(preservedRegSet & (1 << kEDX)))
-        X86EmitDebugTrashReg(kEDX);
-    if (!(preservedRegSet & (1 << kECX)))
-        X86EmitDebugTrashReg(kECX);
-#endif // _DEBUG
-
-#else // TARGET_UNIX
-
-    BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
-    static const int regByteIndex = 2;
-
-    code[regByteIndex] |= (dstreg << 3);
-
-    EmitBytes(code, sizeof(code));
-    Emit32(offsetof(TEB, ThreadLocalStoragePointer));
-
-    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
-
-    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context) < INT_MAX);
-    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context));
-
-#endif // TARGET_UNIX
-}
-
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -2558,7 +1204,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     X86EmitAddReg(kR11, DelegateObject::GetOffsetOfMethodPtrAux());
     // Now jump to real target
     //   jmp r10
-    X86EmitR2ROp(0xff, (X86Reg)4, kR10);
+    static const BYTE bjmpr10[] = { 0x41, 0xff, 0xe2 };
+    EmitBytes(bjmpr10, sizeof(bjmpr10));
 
 #else // TARGET_AMD64
 

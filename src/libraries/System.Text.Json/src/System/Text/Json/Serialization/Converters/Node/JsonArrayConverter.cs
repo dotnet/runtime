@@ -25,19 +25,43 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartArray:
-                    return ReadList(ref reader, options.GetNodeOptions());
+                    return options.AllowDuplicateProperties
+                        ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
-                    Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedArray(reader.TokenType);
             }
         }
 
-        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions? options = null)
+        internal static JsonArray ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonArray(jElement, options);
+        }
+
+        internal static JsonArray ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
+
+            JsonArray jArray = new JsonArray(options);
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    return jArray;
+                }
+
+                JsonNode? item = JsonNodeConverter.ReadAsJsonNode(ref reader, options);
+                jArray.Add(item);
+            }
+
+            // JSON is invalid so reader would have already thrown.
+            Debug.Fail("End array token not found.");
+            ThrowHelper.ThrowJsonException();
+            return null;
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

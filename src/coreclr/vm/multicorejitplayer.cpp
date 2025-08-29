@@ -922,7 +922,7 @@ HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned module
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             CompileMethodInfoRecord(pModule, pMethod, true);
         }
@@ -1355,7 +1355,7 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
             m_stats.m_hr = COR_E_EXCEPTION;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return (DWORD) m_stats.m_hr;
 }

@@ -37,6 +37,8 @@ public:
         p.Run(option);
     }
 
+    static PhaseStatus AdjustThrowEdgeLikelihoods(Compiler* compiler);
+
     static constexpr weight_t epsilon = 0.001;
 
 private:

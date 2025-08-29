@@ -1002,15 +1002,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1049,8 +1057,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else
@@ -1080,15 +1092,23 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+#if MONO
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1124,8 +1144,12 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
+#if MONO
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (int)actualValue;
+#else
+                result = (int)actualValue;
+#endif
                 return true;
             }
             else

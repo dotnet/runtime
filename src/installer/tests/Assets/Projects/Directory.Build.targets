@@ -17,7 +17,7 @@
       <!-- When package versions are stabilized, they do not have version suffixes. Because these are
            non-shipping tests assets, the Version property will still include suffixes (unlike for shipping
            assets), so we explicitly use the ProductVersion (without suffixes) in the stabilized case. -->
-      <_UpdatedVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_UpdatedVersion>
+      <_UpdatedVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_UpdatedVersion>
     </PropertyGroup>
     <ItemGroup>
       <RuntimeFramework Version="$(_UpdatedVersion)"

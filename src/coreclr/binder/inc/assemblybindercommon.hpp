@@ -47,7 +47,7 @@ namespace BINDER_SPACE
                                    /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
 #if !defined(DACCESS_COMPILE)
-        static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
+        static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pDefaultBinder,
                                                       /* in */ AssemblyBinder *pBinder,

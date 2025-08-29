@@ -6,9 +6,9 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public class CoseMultiSignMessageTests_Sign : CoseMessageTests_Sign<AsymmetricAlgorithm>
+    public class CoseMultiSignMessageTests_Sign : CoseMessageTests_Sign<IDisposable>
     {
-        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().ToList();
+        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().Where(AlgorithmIsSupported).ToList();
 
         internal override CoseMessageKind MessageKind => CoseMessageKind.MultiSign;
 
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 CoseMultiSignMessage.SignEmbedded(content, signer, protectedHeaders, unprotectedHeaders, associatedData);
         }
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
             => MultiSignVerify(msg, key, content, expectedSignatures: 1, associatedData);
     }
 }

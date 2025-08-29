@@ -9,20 +9,20 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is the System.RuntimeMethodHandle equivalent to a <see cref="SystemReflectionMethodBaseValue"/> node.
-	/// </summary>
-	internal sealed partial record RuntimeMethodHandleValue : SingleValue
-	{
-		public RuntimeMethodHandleValue (in MethodProxy representedMethod)
-		{
-			RepresentedMethod = representedMethod;
-		}
+    /// <summary>
+    /// This is the System.RuntimeMethodHandle equivalent to a <see cref="SystemReflectionMethodBaseValue"/> node.
+    /// </summary>
+    internal sealed partial record RuntimeMethodHandleValue : SingleValue
+    {
+        public RuntimeMethodHandleValue(in MethodProxy representedMethod)
+        {
+            RepresentedMethod = representedMethod;
+        }
 
-		public readonly MethodProxy RepresentedMethod;
+        public readonly MethodProxy RepresentedMethod;
 
-		public override SingleValue DeepCopy () => this; // immutable value
+        public override SingleValue DeepCopy() => this; // immutable value
 
-		public override string ToString () => this.ValueToString ();
-	}
+        public override string ToString() => this.ValueToString();
+    }
 }

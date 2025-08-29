@@ -36,6 +36,10 @@ set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
 
+if (CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_I386)
+    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_win.c")
+endif()
+
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
@@ -211,6 +215,12 @@ endif ()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(CLR_CMAKE_HOST_ANDROID)
+if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     install (TARGETS System.IO.Compression.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        if (TARGET "${BROTLI_LIB}")
+            install (TARGETS ${BROTLI_LIB} DESTINATION sharedFramework COMPONENT runtime)
+        endif()
+    endforeach()
 endif()
