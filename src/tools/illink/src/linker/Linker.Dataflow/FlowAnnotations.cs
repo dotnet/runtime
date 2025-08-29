@@ -42,7 +42,23 @@ namespace ILLink.Shared.TrimAnalysis
         public bool RequiresDataFlowAnalysis(FieldDefinition field) =>
             GetAnnotations(field.DeclaringType).TryGetAnnotation(field, out _);
 
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameter genericParameter) =>
+        public bool HasGenericParameterAnnotation(TypeReference type)
+        {
+            if (type.ResolveToTypeDefinition(_context) is not TypeDefinition typeDefinition)
+                return false;
+
+            return GetAnnotations(typeDefinition).HasGenericParameterAnnotation();
+        }
+
+        public bool HasGenericParameterAnnotation(MethodReference method)
+        {
+            if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
+                return false;
+
+            return GetAnnotations(methodDefinition.DeclaringType).TryGetAnnotation(methodDefinition, out var annotation) && annotation.GenericParameterAnnotations != null;
+        }
+
+        public bool RequiresGenericArgumentDataFlow(GenericParameter genericParameter) =>
             GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
 
         internal DynamicallyAccessedMemberTypes GetParameterAnnotation(ParameterProxy param)
@@ -731,6 +747,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
+
+            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         readonly struct MethodAnnotations

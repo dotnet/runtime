@@ -572,7 +572,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 
         if (tgt != NULL)
         {
-            RETURN(MethodTable::GetMethodDescForSlotAddress(tgt));
+            RETURN(NonVirtualEntry2MethodDesc(tgt));
         }
 
         // The interface is not in the static class definition so we need to look at the
@@ -1833,7 +1833,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
         _ASSERTE(!throwOnConflict);
         return NULL;
     }
-    pMD = MethodTable::GetMethodDescForSlotAddress(pTgt);
+    pMD = NonVirtualEntry2MethodDesc(pTgt);
 
 #ifdef _DEBUG
     MethodDesc *pDispSlotMD = FindDispatchSlotForInterfaceMD(ownerType, pInterfaceMD, throwOnConflict).GetMethodDesc();
@@ -6199,33 +6199,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
 #endif // !DACCESS_COMPILE
 }
 
-
-//==========================================================================================
-MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative /*=FALSE*/)
-{
-    CONTRACT(MethodDesc *)
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        POSTCONDITION(RETVAL->m_pDebugMethodTable == NULL || // We must be in BuildMethdTableThrowing()
-                      RETVAL->SanityCheck());
-    }
-    CONTRACT_END;
-
-    MethodDesc* pMethodDesc = ExecutionManager::GetCodeMethodDesc(addr);
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-
-    pMethodDesc = MethodDesc::GetMethodDescFromStubAddr(addr, fSpeculative);
-
-lExit:
-
-    RETURN(pMethodDesc);
-}
-
 //==========================================================================================
 /* static*/
 BOOL MethodTable::ComputeContainsGenericVariables(Instantiation inst)
@@ -7880,7 +7853,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (fSharedVtableChunk)
         {
-            MethodDesc* pMD = GetMethodDescForSlotAddress(slotCode);
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc(slotCode);
             _ASSERTE(pMD->IsVersionableWithVtableSlotBackpatch() || pMD->GetStableEntryPoint() == slotCode);
         }
     }

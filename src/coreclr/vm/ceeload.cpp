@@ -4197,13 +4197,12 @@ static bool MethodSignatureContainsGenericVariables(SigParser& sp)
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
-VASigCookie *Module::GetVASigCookie(Signature vaSignature, MethodDesc* pMD, const SigTypeContext* typeContext)
+VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
 {
     CONTRACT(VASigCookie*)
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        PRECONDITION(pMD == NULL || pMD->IsPInvoke()); // Only PInvoke methods are embedded in VASig cookies.
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
@@ -4236,17 +4235,16 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, MethodDesc* pMD, cons
 #endif
     }
 
-    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, pMD, vaSignature, typeContext);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
 
     RETURN pCookie;
 }
 
-VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, MethodDesc* pMD, Signature vaSignature, const SigTypeContext* typeContext)
+VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext)
 {
     CONTRACT(VASigCookie*)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(pMD == NULL || pMD->IsPInvoke());
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
@@ -4262,10 +4260,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         for (UINT i = 0; i < pBlock->m_numCookies; i++)
         {
             VASigCookie* cookieMaybe = &pBlock->m_cookies[i];
-
-            // Check if the cookie targets the same MethodDesc.
-            if (cookieMaybe->pMethodDesc != pMD)
-                continue;
 
             // Check if the cookie has the same signature.
             if (cookieMaybe->signature.GetRawSig() == vaSignature.GetRawSig())
@@ -4355,7 +4349,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
             pCookie->pPInvokeILStub = (PCODE)NULL;
-            pCookie->pMethodDesc = pMD;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;

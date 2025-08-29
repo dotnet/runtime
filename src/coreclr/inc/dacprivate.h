@@ -623,7 +623,7 @@ struct MSLAYOUT DacpTieredVersionData
 };
 
 // for JITType
-enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT};
+enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT,TYPE_INTERPRETER};
 
 struct MSLAYOUT DacpCodeHeaderData
 {

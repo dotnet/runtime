@@ -187,6 +187,7 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*bool*/, IsDynamic, cdac_data<Assembly>::IsDynamic)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
 CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
@@ -699,6 +700,7 @@ CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, Datum, offsetof(InlinedCallFrame, m_Datum))
 #ifdef TARGET_ARM
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, SPAfterProlog, offsetof(InlinedCallFrame, m_pSPAfterProlog))
 #endif // TARGET_ARM
@@ -713,6 +715,7 @@ CDAC_TYPE_END(SoftwareExceptionFrame)
 CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
 CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
+CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_END(FramedMethodFrame)
 
 CDAC_TYPE_BEGIN(TransitionBlock)
@@ -736,6 +739,13 @@ CDAC_TYPE_FIELD(DebuggerEval, /*T_CONTEXT*/, TargetContext, offsetof(DebuggerEva
 CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
+
+CDAC_TYPE_BEGIN(StubDispatchFrame)
+CDAC_TYPE_SIZE(sizeof(StubDispatchFrame))
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, RepresentativeMTPtr, cdac_data<StubDispatchFrame>::RepresentativeMTPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*uint32*/, RepresentativeSlot, cdac_data<StubDispatchFrame>::RepresentativeSlot)
+CDAC_TYPE_END(StubDispatchFrame)
 
 #ifdef FEATURE_HIJACK
 CDAC_TYPE_BEGIN(ResumableFrame)
@@ -994,5 +1004,7 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
+
+CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBALS_END()

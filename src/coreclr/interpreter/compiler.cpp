@@ -2233,7 +2233,7 @@ int32_t InterpCompiler::GetDataForHelperFtn(CorInfoHelpFunc ftn)
 
     static_assert(sizeof(InterpHelperData) == sizeof(int32_t), "InterpHelperData must be the same size as an int32_t");
 
-    InterpHelperData result;
+    InterpHelperData result{};
     result.accessType = ftnLookup.accessType;
     int32_t dataItemIndex = GetDataItemIndex(ftnLookup.addr);
     result.addressDataItemIndex = dataItemIndex;
@@ -2378,6 +2378,36 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
         }
 
+        case NI_System_Threading_Interlocked_Exchange:
+        {
+            CHECK_STACK(2);
+            InterpType retType = GetInterpType(sig.retType);
+
+            int32_t opcode;
+            switch (retType)
+            {
+                case InterpTypeI4:
+                    opcode = INTOP_EXCHANGE_I4;
+                    break;
+                case InterpTypeI8:
+                    opcode = INTOP_EXCHANGE_I8;
+                    break;
+                default:
+                    return false;
+            }
+
+            AddIns(opcode);
+            m_pStackPointer -= 2;
+
+            int32_t addrVar = m_pStackPointer[0].var;
+            int32_t valueVar = m_pStackPointer[1].var;
+
+            PushInterpType(retType, nullptr);
+            m_pLastNewIns->SetSVars2(addrVar, valueVar);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
         {
             CORINFO_CLASS_HANDLE clsHnd = sig.sigInst.methInst[0];
@@ -2401,6 +2431,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         }
         case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
         {
+            if (sig.sigInst.methInstCount != 1)
+            {
+                assert(!mustExpand);
+                return false;
+            }
             CHECK_STACK(1);
 
             m_pStackPointer--;
@@ -2854,6 +2889,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetDVar(pThisStackInfo->var);
             }
         }
+
+#if DEBUG
+        if (InterpConfig.InterpHaltOnCall().contains(m_compHnd, resolvedCallToken.hMethod, resolvedCallToken.hClass, nullptr))
+            assert(!"HaltOnCall");
+#endif
     }
 
     if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
@@ -3929,6 +3969,18 @@ retry_emit:
                 {
                     EmitStind(interpType, resolvedToken.hClass, 0, false);
                 }
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_CPOBJ:
+            {
+                CHECK_STACK(2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                EmitLdind(interpType, resolvedToken.hClass, 0);
+                EmitStind(interpType, resolvedToken.hClass, 0, false);
                 m_ip += 5;
                 break;
             }
@@ -5135,7 +5187,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
                 EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
 
@@ -5495,7 +5547,9 @@ retry_emit:
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
                         {
-                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
+                            // The localloc instruction allocates size (type native unsigned int or U4) bytes from the local dynamic memory pool ...
+                            // So the size is currently U4 and needs to be promoted to U8
+                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
                             m_pStackPointer[-1].type = StackTypeI8;
                         }
 #endif
@@ -5608,6 +5662,21 @@ DO_LDFTN:
                         }
 
                         m_ip += 5;
+                        break;
+                    }
+                    case CEE_INITBLK:
+                    {
+                        if (volatile_)
+                        {
+                            AddIns(INTOP_MEMBAR);
+                            volatile_ = false;
+                        }
+
+                        CHECK_STACK(3);
+                        AddIns(INTOP_INITBLK);
+                        m_pStackPointer -= 3;
+                        m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                        m_ip++;
                         break;
                     }
                     case CEE_CPBLK:
@@ -6508,8 +6577,8 @@ void InterpCompiler::PrintPointer(void* pointer)
 
 void InterpCompiler::PrintHelperFtn(int32_t _data)
 {
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
 
     void *helperAddr = GetDataItemAtIndex(data.addressDataItemIndex);
     PrintPointer(helperAddr);
