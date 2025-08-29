@@ -627,16 +627,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             [Kept]
             [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
-            [ExpectedWarning("IL2112", "--RUC on AnnotatedRUCPublicMethods.RUCMethod--")]
             [RequiresUnreferencedCode("--RUC on AnnotatedRUCPublicMethods.RUCMethod--")]
             public void RUCMethod() { }
 
             [Kept]
-            [ExpectedWarning("IL2112", "--AnnotatedRUCPublicMethods--")]
             public void Method() { }
 
             [Kept]
-            [ExpectedWarning("IL2112", "--AnnotatedRUCPublicMethods--")]
             public static void StaticMethod() { }
         }
 

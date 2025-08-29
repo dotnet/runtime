@@ -652,6 +652,10 @@ namespace Mono.Linker
             if (originMember is FieldDefinition field)
                 return DoesFieldRequireUnreferencedCode(field, out attribute);
 
+            if (originMember is TypeDefinition type &&
+                TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(type, out attribute))
+                return true;
+
             if (originMember is not IMemberDefinition member)
                 return false;
 

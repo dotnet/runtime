@@ -236,6 +236,13 @@ namespace ILCompiler
             if (originMember is FieldDesc field)
                 return field.DoesFieldRequire(requiresAttribute, out attribute);
 
+            // For type symbols, check if the type itself has the requires attribute
+            // This allows a type's RUC to suppress warnings about the type using other RUC types
+            // (e.g., in generic constraints, base types, etc.)
+            if (originMember is TypeDesc type &&
+                DiagnosticUtilities.TryGetRequiresAttribute(type, requiresAttribute, out attribute))
+                return true;
+
             if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
             {
                 attribute = null;
