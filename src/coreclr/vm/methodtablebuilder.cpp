@@ -4311,7 +4311,7 @@ IS_VALUETYPE:
                     fIsByValue = FALSE; // we're going to treat it as the underlying type now
                     goto GOT_ELEMENT_TYPE;
                 }
-                
+
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type
                 if (!fIsStatic && pByValueClass->IsEnum())
                 {
@@ -6169,7 +6169,7 @@ MethodTableBuilder::InitMethodDesc(
                 pNewNMD->SetIsEarlyBound();
             }
 
-            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntrypoint();
+            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntryPoint();
         }
         break;
 
