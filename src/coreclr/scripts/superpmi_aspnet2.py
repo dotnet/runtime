@@ -43,7 +43,7 @@ def native_dll(name: str) -> str:
     return f"{prefix}{name}{ext}"
 
 def native_exe(name: str) -> str:
-    ext = ".exe" if sys.platform.startswith("win") else ".out"
+    ext = ".exe" if sys.platform.startswith("win") else ""
     return f"{name}{ext}"
 
 def native_script(name: str) -> str:
@@ -209,7 +209,7 @@ profiles:
     print("crank-agent is not running yet. Starting...")
     agent_process = subprocess.Popen(
         [
-            native_exe("crank-agent"),
+            str(tools_dir / native_exe("crank-agent")),
             "--url", f"http://*:{port}",
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
@@ -218,16 +218,16 @@ profiles:
     )
     print(f"Waiting up to 10s for crank-agent to start ...")
     time.sleep(10)
-    return agent_process
+    return agent_process, tools_dir / native_exe("crank"), localhost_yml
 
 # Build the crank-controller command for execution
-def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, config_path: Path):
+def build_crank_command(crank_app: Path, framework: str, runtime_bits_path: Path, scenario: str, config_path: Path):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
     spcorelib = "System.Private.CoreLib.dll"
     cmd = [
-        native_exe("crank"),
+        str(crank_app),
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/azure.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/ci.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/steadystate.profile.yml",
@@ -308,21 +308,19 @@ def main():
 
     agent_process = None
     try:
-        agent_process = setup_and_run_crank_agent(temp_root, CRANK_PORT, cli=args.cli)
+        agent_process, crank_app_path, config_path = setup_and_run_crank_agent(temp_root, CRANK_PORT, cli=args.cli)
 
         # Benchmarks
 
         crank_data_path = temp_root / "crank_data"
-        config_path = crank_data_path / "Localhost.yml"
         # print("### Running OrchardCMS benchmark... ###")
-        # run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="about-sqlite", config_path=config_path))
+        # run(build_crank_command(crank_app_path, args.tfm, runtime_bits_path, "about-sqlite", config_path))
 
         print("### Running JsonMVC benchmark... ###")
-        run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="mvc", config_path=config_path))
+        run(build_crank_command(crank_app_path, args.tfm, runtime_bits_path, "mvc", config_path))
 
         print("### Running NoMvcAuth benchmark... ###")
-        # run(build_crank_command(framework=args.tfm, runtime_bits_path=runtime_bits_path, scenario="NoMvcAuth", config_path=config_path))
-
+        # run(build_crank_command(crank_app_path, args.tfm, runtime_bits_path, "NoMvcAuth", config_path))
 
         print("Finished running benchmarks.")
 
