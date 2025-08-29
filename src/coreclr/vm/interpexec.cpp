@@ -158,6 +158,25 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
 #endif // !TARGET_WASM
 
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE void InvokePInvokeMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    {
+        GCX_PREEMP();
+        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+    }
+
+    inlinedCallFrame.Pop();
+}
+
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -213,23 +232,38 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
+template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
 {
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
 
-    void *addr = pMethod->pDataItems[data.addressDataItemIndex];
-    switch (data.accessType) {
+    void* addr = pMethod->pDataItems[data.addressDataItemIndex];
+    switch (data.accessType)
+    {
         case IAT_VALUE:
-            return (THelper)addr;
+            break;
         case IAT_PVALUE:
-            return *(THelper *)addr;
+            addr = *(void**)addr;
+            break;
         case IAT_PPVALUE:
-            return **(THelper **)addr;
+            addr = **(void***)addr;
+            break;
         default:
             COMPlusThrowHR(COR_E_EXECUTIONENGINE);
-            return (THelper)nullptr;
+            break;
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (!PortableEntryPoint::IsNativeEntryPoint((TADDR)addr))
+    {
+        _ASSERTE(pILTargetMethod != NULL);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
+        return NULL; // Return null to interpret this entrypoint
+    }
+    addr = PortableEntryPoint::GetActualCode((TADDR)addr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return (THelper)addr;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -1965,20 +1999,14 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InlinedCallFrame inlinedCallFrame;
-                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = pFrame;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-                    inlinedCallFrame.m_pThread = GetThread();
-                    inlinedCallFrame.m_Datum = NULL;
-                    inlinedCallFrame.Push();
-
+                    if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
-
-                    inlinedCallFrame.Pop();
+                    else
+                    {
+                        InvokePInvokeMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                    }
 
                     break;
                 }

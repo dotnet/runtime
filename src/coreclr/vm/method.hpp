@@ -415,10 +415,7 @@ public:
     Precode* GetOrCreatePrecode();
     void MarkPrecodeAsStableEntrypoint();
 
-
-    // Given a code address return back the MethodDesc whenever possible
-    //
-    static MethodDesc *  GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative = FALSE);
+    static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
 
 
     DWORD GetAttrs() const;
@@ -1576,6 +1573,13 @@ public:
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Ensure that the portable entrypoint is allocated, and the slot is filled
+    void EnsurePortableEntryPoint();
+
+    PCODE GetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
     // Returns the address of the native code.
@@ -3224,7 +3228,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
         return m_pImportThunkGlue;
+#else
+        return &m_ImportThunkGlue;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
     }
 
     LPVOID GetPInvokeTarget()
@@ -3244,7 +3252,7 @@ public:
 
         _ASSERTE(IsPInvoke());
 
-        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntrypoint());
+        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntryPoint());
     }
 #endif // !DACCESS_COMPILE
 

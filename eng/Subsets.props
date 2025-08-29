@@ -658,7 +658,7 @@
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
             <!-- Some source build configurations and musl need to work out packaging errors before they can be enabled -->
-            <_BuildCdacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetsLinuxMusl)' == 'true'">false</_BuildCdacPack>
+            <_BuildCdacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetsLinuxMusl)' == 'true' or '$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64'">false</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
