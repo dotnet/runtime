@@ -608,6 +608,9 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(TestNativeAOT)' == 'true'">
     <SmokeTestProject Include="$(RepoRoot)src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj"/>
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
