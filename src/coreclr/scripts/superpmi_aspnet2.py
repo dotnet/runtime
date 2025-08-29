@@ -44,7 +44,7 @@ def native_dll(name: str) -> str:
 
 
 # Run a command
-def run(cmd, cwd=None):
+def run(cmd, cwd=None, timeout_seconds=45*60):
     print(f"Running command: {' '.join(map(str, cmd))}")
     kwargs = {
         "stdin": subprocess.DEVNULL,
@@ -58,9 +58,16 @@ def run(cmd, cwd=None):
         kwargs["start_new_session"] = True
     proc = subprocess.Popen(cmd, **kwargs)
     try:
-        return proc.wait()
+        # Wait with a timeout; let the TimeoutExpired propagate so caller can decide what to do.
+        return proc.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        print(f"Process timed out after {timeout_seconds} seconds. Leaving process running and raising exception.")
+        raise
     except KeyboardInterrupt:
-        proc.terminate()
+        try:
+            proc.terminate()
+        except Exception:
+            pass
         print("Process terminated")
         return None
 
