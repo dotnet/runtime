@@ -2980,6 +2980,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     case CORINFO_TYPE_USHORT:
                     case CORINFO_TYPE_CHAR:
                         EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI4, INTOP_CONV_U2_I4);
+                        break;
                     default:
                         // No conversion/extension needed.
                         break;
