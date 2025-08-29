@@ -118,6 +118,7 @@ def ensure_git(dest: Path) -> str:
 
 # Install the .NET SDK using the official dotnet-install script.
 def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
+    print(f"Installing .NET SDK (channel: {channel}, install_dir: {install_dir})")
     url = "https://dot.net/v1/dotnet-install." + ("ps1" if platform.system() == "Windows" else "sh")
     retries = 3
     initial_delay_seconds = 5
@@ -318,29 +319,40 @@ def main():
     try:
         agent_process, crank_app_path, config_path = setup_and_run_crank_agent(temp_root)
 
-        print("### Running about-sqlite benchmark... ###")
-        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
-            "--scenario", "about-sqlite",
-            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"
-        )
+        scenarios = [
+            # OrchardCMS scenario
+            ("about-sqlite",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
 
-        print("### Running JsonMVC benchmark... ###")
-        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
-            "--scenario", "mvc",
-            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml"
-        )
+            # JsonMVC scenario
+            ("mvc",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml"),
 
-        print("### Running NoMvcAuth benchmark... ###")
-        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
-            "--scenario", "NoMvcAuth",
-            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"
-        )
+            # NoMvcAuth scenario
+            ("NoMvcAuth",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"),
 
-        print("### Running PlatformPlaintext benchmark... ###")
-        run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
-            "--scenario", "plaintext",
-            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"
-        )
+            # PlatformPlaintext scenario
+            ("plaintext",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
+        ]
+
+        for entry in scenarios:
+            scenario_name, *extra = entry
+            print(f"### Running {scenario_name} benchmark... ###")
+            run_crank_scenario(
+                crank_app_path,
+                args.tfm,
+                core_root_path,
+                config_path,
+                "--scenario",
+                scenario_name,
+                *extra,
+            )
 
         print("Finished running benchmarks.")
 
