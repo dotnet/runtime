@@ -222,10 +222,9 @@ namespace System.Threading
                     while (true)
                     {
                         int oldBits = *pHeader;
-                        for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
+                        if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
                         {
-                            LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
-                            oldBits = *pHeader;
+                            oldBits = SpinWait(pHeader);
                         }
 
                         // if unused for anything, try setting our thread id
@@ -316,10 +315,9 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-                    for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
+                    if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
                     {
-                        LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
-                        oldBits = *pHeader;
+                        oldBits = SpinWait(pHeader);
                     }
 
                     // if we own the lock
@@ -392,6 +390,19 @@ namespace System.Threading
                 // someone else owns or noone.
                 return false;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe int SpinWait(int* pHeader)
+        {
+            int oldBits = *pHeader;
+            for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
+            {
+                LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
+                oldBits = *pHeader;
+            }
+
+            return oldBits;
         }
     }
 }

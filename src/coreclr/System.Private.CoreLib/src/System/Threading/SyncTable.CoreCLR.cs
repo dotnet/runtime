@@ -9,6 +9,7 @@ namespace System.Threading
 {
     internal static partial class SyncTable
     {
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe int AssignEntry(object obj, int* pHeader)
         {
             int slot = AssignEntryInternal(ObjectHandleOnStack.Create(ref obj));
@@ -30,9 +31,16 @@ namespace System.Threading
             {
                 return GCHandle<Lock>.FromIntPtr(lockHandle).Target;
             }
-            object? lockObj = null;
-            GetLockObject(index, ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
-            return (Lock)lockObj!;
+
+            return GetLockObjectFallback(index, obj);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Lock GetLockObjectFallback(int index, object obj)
+            {
+                object? lockObj = null;
+                GetLockObject(index, ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
+                return (Lock)lockObj!;
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
