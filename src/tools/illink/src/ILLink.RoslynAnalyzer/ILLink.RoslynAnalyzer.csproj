@@ -10,7 +10,7 @@
     <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <!-- Type conflicts with imported type. Silence this for source build to allow building with the latest
          source-included type name parser, instead of the one that comes with Roslyn. -->
-    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS0436</NoWarn>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <!-- The analyzer needs to process deeply nested expressions in corelib.
          This can blow up the stack if using unoptimized code (due to large
