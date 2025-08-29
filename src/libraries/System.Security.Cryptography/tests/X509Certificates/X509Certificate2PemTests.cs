@@ -643,8 +643,7 @@ MII
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CreateFromPem_Dsa_Pkcs8_Success()
         {
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.DsaCertificate, TestData.DsaPkcs8Key))
@@ -654,8 +653,7 @@ MII
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CreateFromPem_Dsa_EncryptedPkcs8_Success()
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(

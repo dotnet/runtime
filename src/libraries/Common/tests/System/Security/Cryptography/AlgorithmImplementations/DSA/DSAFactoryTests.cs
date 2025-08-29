@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAFactoryTests
     {
-        public static bool IsNotSupported => !DSAFactory.IsSupported;
-
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DSACreateDefault_Equals_SameInstance()
         {
             using DSA dsa = DSAFactory.Create();
@@ -17,14 +16,14 @@ namespace System.Security.Cryptography.Dsa.Tests
             AssertExtensions.TrueExpression(dsa.Equals(dsa));
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DSACreateKeySize_Equals_SameInstance()
         {
             using DSA dsa = DSAFactory.Create(1024);
             AssertExtensions.TrueExpression(dsa.Equals(dsa));
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DsaCreate_Equals_DifferentInstance_FalseForSameKeyMaterial()
         {
             using DSA dsa1 = DSAFactory.Create();
@@ -34,7 +33,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             AssertExtensions.FalseExpression(dsa1.Equals(dsa2));
         }
 
-        [ConditionalFact(nameof(IsNotSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSANotSupported))]
         public static void DSACreate_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => DSAFactory.Create());

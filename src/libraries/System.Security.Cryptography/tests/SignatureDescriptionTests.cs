@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(sig.KeyAlgorithm);
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void Deformatter()
         {
             AsymmetricSignatureDeformatter def;
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(sig.CreateDigest());
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void Formatter()
         {
             SignatureDescription sig = new SignatureDescription();

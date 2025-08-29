@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
-    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSACryptoServiceProviderTests
     {
         const int PROV_DSS_DH = 13;

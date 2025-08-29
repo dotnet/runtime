@@ -4,11 +4,12 @@
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography.Dsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public class DSATests
     {
         [Fact]

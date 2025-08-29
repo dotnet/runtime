@@ -4,11 +4,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.Algorithms.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;

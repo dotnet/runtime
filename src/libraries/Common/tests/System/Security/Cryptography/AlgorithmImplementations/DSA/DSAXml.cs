@@ -3,11 +3,12 @@
 
 using System.Collections.Generic;
 using System.Xml.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [ConditionalClass(typeof(DSAFactory), nameof(DSAFactory.IsSupported))]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAXml
     {
         [Fact]

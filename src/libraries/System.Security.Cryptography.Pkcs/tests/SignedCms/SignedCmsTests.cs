@@ -511,10 +511,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
 #if NET

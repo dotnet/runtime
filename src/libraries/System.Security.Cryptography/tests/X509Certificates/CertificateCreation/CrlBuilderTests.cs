@@ -776,8 +776,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | PlatformSupport.AppleCrypto, "Not supported on Browser/Apple")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DsaNotDirectlySupported()
         {
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();

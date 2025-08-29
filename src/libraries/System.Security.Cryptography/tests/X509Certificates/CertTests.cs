@@ -61,8 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_DSA()
         {
             DSAParameters originalParameters = DSATestData.GetDSA1024Params();
@@ -282,8 +281,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void PublicPrivateKey_IndependentLifetimes_DSA()
         {
             X509Certificate2 loaded;

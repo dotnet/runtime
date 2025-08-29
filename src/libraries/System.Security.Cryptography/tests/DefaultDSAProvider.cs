@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
+
 namespace System.Security.Cryptography.Dsa.Tests
 {
     public class DefaultDSAProvider : IDSAProvider
@@ -25,11 +27,9 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             get
             {
-                return IsSupported && !PlatformDetection.IsWindows7;
+                return PlatformSupport.IsDSASupported && !PlatformDetection.IsWindows7;
             }
         }
-
-        public bool IsSupported => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
     }
 
     public partial class DSAFactory
