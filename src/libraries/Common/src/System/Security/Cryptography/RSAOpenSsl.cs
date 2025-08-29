@@ -861,10 +861,10 @@ namespace System.Security.Cryptography
             }
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
-                if (padding.PssSaltLength < RSASignaturePadding.PssSaltLengthMax)
+             /*   if (padding.PssSaltLength < RSASignaturePadding.PssSaltLengthMax)
                 {
                     throw PaddingModeNotSupported();
-                }
+                }*/
             }
             else
             {
