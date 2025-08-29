@@ -56,6 +56,9 @@ extends:
             isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
             isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
             isRollingBuild: ${{ variables.isRollingBuild }}
+          env:
+            MSBUILDUSESERVER: 1
+            DOTNET_CLI_USE_MSBUILD_SERVER: 1
 
       # Add iOS/tvOS jobs
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml

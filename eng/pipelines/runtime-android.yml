@@ -18,3 +18,6 @@ extends:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
           isRollingBuild: ${{ variables.isRollingBuild }}
+        env:
+          MSBUILDUSESERVER: 1
+          DOTNET_CLI_USE_MSBUILD_SERVER: 1

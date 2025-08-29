@@ -46,6 +46,8 @@ namespace Microsoft.DotNet.Cli.Build
             newArgs.Insert(0, command);
 
             return Command.Create(DotnetExecutablePath, newArgs)
+		        .EnvironmentVariable("MSBUILDUSESERVER", "1")
+		        .EnvironmentVariable("DOTNET_CLI_USE_MSBUILD_SERVER", "1")
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
                 .MultilevelLookup(false); // Avoid looking at machine state by default
         }
