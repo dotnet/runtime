@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -150,9 +151,13 @@ namespace System.Security.Cryptography.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void NamedAsymmetricAlgorithmCreate_DSA(string identifier, Type baseType)
         {
+            if (!PlatformSupport.IsDSASupported)
+            {
+                throw new SkipTestException("Platform does not support DSA.");
+            }
+
             using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))
             {
                 Assert.NotNull(created);
@@ -160,10 +165,9 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSANotAvailable))]
         [InlineData("DSA")]
         [InlineData("System.Security.Cryptography.DSA")]
-        [PlatformSpecific(PlatformSupport.MobileAppleCrypto)]
         public static void NamedAsymmetricAlgorithmCreate_DSA_NotSupported(string identifier)
         {
             Assert.Null(AsymmetricAlgorithm.Create(identifier));

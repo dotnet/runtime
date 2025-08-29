@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -675,9 +676,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
-        [SkipOnPlatform(PlatformSupport.AppleCrypto, "DSA is not available")]
         public static void AddCounterSigner_DSA()
         {
+            if (!PlatformSupport.IsDSASupported)
+            {
+                throw new SkipTestException("Platform does not support DSA.");
+            }
+
             AssertAddCounterSigner(
                 SubjectIdentifierType.IssuerAndSerialNumber,
                 signer =>
@@ -1090,8 +1095,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             SignedCms cms = new SignedCms();
 
-            // DSA is not supported on Apple platforms, so use ECDsa signed document instead
-            if (PlatformDetection.UsesAppleCrypto)
+            // DSA is not supported, so use ECDsa signed document instead
+            if (!PlatformSupport.IsDSASupported)
             {
                 cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
             }
