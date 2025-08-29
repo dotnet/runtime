@@ -341,6 +341,10 @@ namespace System.Runtime.Serialization
                     }
                     else if (valueType == Globals.TypeOfTimeSpan)
                         WriteTimeSpan((TimeSpan)value);
+                    else if (valueType == Globals.TypeOfDateOnly)
+                        WriteDateOnly((DateOnly)value);
+                    else if (valueType == Globals.TypeOfTimeOnly)
+                        WriteTimeOnly((TimeOnly)value);
                     else if (valueType == Globals.TypeOfGuid)
                         WriteGuid((Guid)value);
                     else if (valueType == Globals.TypeOfUri)
@@ -420,6 +424,10 @@ namespace System.Runtime.Serialization
                     }
                     else if (valueType == Globals.TypeOfTimeSpan)
                         WriteTimeSpan(((DataNode<TimeSpan>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfDateOnly)
+                        WriteDateOnly(((DataNode<DateOnly>)dataNode).GetValue());
+                    else if (valueType == Globals.TypeOfTimeOnly)
+                        WriteTimeOnly(((DataNode<TimeOnly>)dataNode).GetValue());
                     else if (valueType == Globals.TypeOfGuid)
                         WriteGuid(((DataNode<Guid>)dataNode).GetValue());
                     else if (valueType == Globals.TypeOfUri)
@@ -636,6 +644,30 @@ namespace System.Runtime.Serialization
         {
             WriteStartElementPrimitive(name, ns);
             WriteGuid(value);
+            WriteEndElementPrimitive();
+        }
+
+        internal void WriteDateOnly(DateOnly value)
+        {
+            writer.WriteRaw(XmlConvert.ToString(value));
+        }
+
+        internal void WriteDateOnly(DateOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteDateOnly(value);
+            WriteEndElementPrimitive();
+        }
+
+        internal void WriteTimeOnly(TimeOnly value)
+        {
+            writer.WriteRaw(XmlConvert.ToString(value));
+        }
+
+        internal void WriteTimeOnly(TimeOnly value, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteTimeOnly(value);
             WriteEndElementPrimitive();
         }
 

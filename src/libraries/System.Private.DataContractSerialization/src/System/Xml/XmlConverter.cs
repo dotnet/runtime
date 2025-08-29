@@ -282,6 +282,56 @@ namespace System.Xml
             return ToTimeSpan(ToString(buffer, offset, count));
         }
 
+        public static DateOnly ToDateOnly(string value)
+        {
+            try
+            {
+                return XmlConvert.ToDateOnly(value);
+            }
+            catch (ArgumentException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "DateOnly", exception);
+            }
+            catch (FormatException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "DateOnly", exception);
+            }
+            catch (OverflowException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "DateOnly", exception);
+            }
+        }
+
+        public static DateOnly ToDateOnly(byte[] buffer, int offset, int count)
+        {
+            return ToDateOnly(ToString(buffer, offset, count));
+        }
+
+        public static TimeOnly ToTimeOnly(string value)
+        {
+            try
+            {
+                return XmlConvert.ToTimeOnly(value);
+            }
+            catch (ArgumentException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeOnly", exception);
+            }
+            catch (FormatException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeOnly", exception);
+            }
+            catch (OverflowException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(value, "TimeOnly", exception);
+            }
+        }
+
+        public static TimeOnly ToTimeOnly(byte[] buffer, int offset, int count)
+        {
+            return ToTimeOnly(ToString(buffer, offset, count));
+        }
+
         public static Guid ToGuid(string value)
         {
             try

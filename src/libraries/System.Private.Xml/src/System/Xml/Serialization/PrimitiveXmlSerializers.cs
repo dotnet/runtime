@@ -214,6 +214,30 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"TimeSpan", @"", System.Xml.XmlConvert.ToString(timeSpan));
         }
 
+        internal void Write_DateOnly(object? o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"DateOnly", @"");
+                return;
+            }
+            DateOnly dateOnly = (DateOnly)o;
+            WriteElementStringRaw(@"DateOnly", @"", System.Xml.XmlConvert.ToString(dateOnly));
+        }
+
+        internal void Write_TimeOnly(object? o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"TimeOnly", @"");
+                return;
+            }
+            TimeOnly timeOnly = (TimeOnly)o;
+            WriteElementStringRaw(@"TimeOnly", @"", System.Xml.XmlConvert.ToString(timeOnly));
+        }
+
         internal void Write_char(object? o)
         {
             WriteStartDocument();
@@ -699,6 +723,66 @@ namespace System.Xml.Serialization
             return (object?)o;
         }
 
+        internal object? Read_DateOnly()
+        {
+            object? o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id21_DateOnly && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    if (Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(DateOnly);
+                    }
+                    else
+                    {
+                        o = System.Xml.XmlConvert.ToDateOnly(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object?)o;
+        }
+
+        internal object? Read_TimeOnly()
+        {
+            object? o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id22_TimeOnly && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    if (Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(TimeOnly);
+                    }
+                    else
+                    {
+                        o = System.Xml.XmlConvert.ToTimeOnly(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object?)o;
+        }
+
         internal object? Read_char()
         {
             object? o = null;
@@ -769,6 +853,8 @@ namespace System.Xml.Serialization
         private string _id8_double = null!;
         private string _id17_guid = null!;
         private string _id19_TimeSpan = null!;
+        private string _id21_DateOnly = null!;
+        private string _id22_TimeOnly = null!;
         private string _id2_Item = null!;
         private string _id13_unsignedShort = null!;
         private string _id18_char = null!;
@@ -793,6 +879,8 @@ namespace System.Xml.Serialization
             _id8_double = Reader.NameTable.Add(@"double");
             _id17_guid = Reader.NameTable.Add(@"guid");
             _id19_TimeSpan = Reader.NameTable.Add(@"TimeSpan");
+            _id21_DateOnly = Reader.NameTable.Add(@"DateOnly");
+            _id22_TimeOnly = Reader.NameTable.Add(@"TimeOnly");
             _id2_Item = Reader.NameTable.Add(@"");
             _id13_unsignedShort = Reader.NameTable.Add(@"unsignedShort");
             _id18_char = Reader.NameTable.Add(@"char");
