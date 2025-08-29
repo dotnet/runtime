@@ -3542,6 +3542,11 @@ void EECodeGenManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAlloc
                 pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
             }
 
+            if (pAllocator->m_pLastUsedInterpreterDynamicCodeHeap == ((void *) pHeapList))
+            {
+                pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+            }
+
             break;
         }
     }
