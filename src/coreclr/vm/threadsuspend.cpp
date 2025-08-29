@@ -2712,6 +2712,11 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         GCX_PREEMP_NO_DTOR_END();
     }
 
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+    // Make sure that this is cleared to enable redirects again
+    pThread->ResetThreadState(Thread::TS_GCSuspendRedirected);
+#endif
+
     // Once we get here the suspension is over!
     // We will restore the state as it was at the point of redirection
     // and continue normal execution.
