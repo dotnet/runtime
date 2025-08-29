@@ -100,24 +100,21 @@ namespace System
             }
         }
 
-        internal object? Target => GCHandle.InternalGet(_weakHandle);
+        internal object? Target => GCHandle.InternalGet(_weakHandle) ?? RehydrateTarget();
 
-        internal nint WeakHandle => _weakHandle;
-
-        internal T? RehydrateTarget<T>() where T: class?
+        private object? RehydrateTarget()
         {
-            T? target = null;
+            object? target = null;
             lock (this)
             {
                 if (_comInfo != null)
                 {
-                    // Check if the target is still null
-                    target = Unsafe.As<T?>(GCHandle.InternalGet(_weakHandle));
+                    // check if the target is still null
+                    target = GCHandle.InternalGet(_weakHandle);
                     if (target == null)
                     {
-                        // Resolve and reset. Perform runtime cast to catch bugs
-                        // in COM interop where it rehydrates wrong type.
-                        target = (T?)_comInfo.ResolveTarget();
+                        // resolve and reset
+                        target = _comInfo.ResolveTarget();
                         if (target != null)
                             GCHandle.InternalSet(_weakHandle, target);
                     }
@@ -150,10 +147,16 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ComAwareWeakReference GetFromTaggedReference(nint taggedHandle)
+        internal static object? GetTarget(nint taggedHandle)
         {
             Debug.Assert((taggedHandle & ComAwareBit) != 0);
-            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits));
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits)).Target;
+        }
+
+        internal static nint GetWeakHandle(nint taggedHandle)
+        {
+            Debug.Assert((taggedHandle & ComAwareBit) != 0);
+            return Unsafe.As<ComAwareWeakReference>(GCHandle.InternalGet(taggedHandle & ~HandleTagBits))._weakHandle;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
