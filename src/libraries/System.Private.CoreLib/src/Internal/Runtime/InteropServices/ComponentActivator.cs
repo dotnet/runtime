@@ -18,6 +18,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -56,6 +57,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -106,6 +108,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -139,6 +142,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
@@ -281,6 +285,7 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
@@ -350,7 +355,9 @@ namespace Internal.Runtime.InteropServices
             {
                 Delegate d = Delegate.CreateDelegate(delegateType, type, methodName);
 
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
+#pragma warning restore CA1416
 
                 lock (s_delegates)
                 {
