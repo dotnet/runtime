@@ -478,30 +478,33 @@ void PutArm32MovtConstant(UINT32* p, unsigned con)
 }
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/load/jalr)
 //*****************************************************************************
 INT64 GetRiscV64AuipcItype(UINT32 * pCode)
 {
     enum
     {
-        OpcodeAuipc = 0x00000017,
-        OpcodeAddi = 0x00000013,
-        OpcodeLd = 0x00003003,
-        OpcodeJalr = 0x00000067,
-        OpcodeUTypeMask = 0x0000007F,
-        OpcodeITypeMask = 0x0000307F,
+        OpcodeAuipc = 0x17,
+        OpcodeAddi = 0x13,
+        OpcodeLoad = 0x03,
+        OpcodeJalr = 0x67,
+        OpcodeMask = 0x7F,
+
+        Funct3AddiJalr = 0x0000,
+        Funct3Mask = 0x7000,
     };
 
     UINT32 auipc = pCode[0];
-    _ASSERTE((auipc & OpcodeUTypeMask) == OpcodeAuipc);
+    _ASSERTE((auipc & OpcodeMask) == OpcodeAuipc);
     int auipcRegDest = (auipc >> 7) & 0x1F;
     _ASSERTE(auipcRegDest != 0);
 
     INT64 hi20 = (INT32(auipc) >> 12) << 12;
 
     UINT32 iType = pCode[1];
-    UINT32 opcode = iType & OpcodeITypeMask;
-    _ASSERTE(opcode == OpcodeAddi || opcode == OpcodeLd || opcode == OpcodeJalr);
+    UINT32 opcode = iType & OpcodeMask;
+    UINT32 funct3 = iType & Funct3Mask;
+    _ASSERTE(opcode == OpcodeLoad || ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
     int iTypeRegSrc = (iType >> 15) & 0x1F;
     _ASSERTE(auipcRegDest == iTypeRegSrc);
 
