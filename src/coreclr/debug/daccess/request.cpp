@@ -271,6 +271,10 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
     {
         *pJITType = TYPE_PJIT;
     }
+    else if (IsMiOPTIL(dwType))
+    {
+        *pJITType = TYPE_INTERPRETER;
+    }
     else
     {
         *pJITType = TYPE_UNKNOWN;

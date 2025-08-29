@@ -232,23 +232,38 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
+template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
 {
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
 
-    void *addr = pMethod->pDataItems[data.addressDataItemIndex];
-    switch (data.accessType) {
+    void* addr = pMethod->pDataItems[data.addressDataItemIndex];
+    switch (data.accessType)
+    {
         case IAT_VALUE:
-            return (THelper)addr;
+            break;
         case IAT_PVALUE:
-            return *(THelper *)addr;
+            addr = *(void**)addr;
+            break;
         case IAT_PPVALUE:
-            return **(THelper **)addr;
+            addr = **(void***)addr;
+            break;
         default:
             COMPlusThrowHR(COR_E_EXECUTIONENGINE);
-            return (THelper)nullptr;
+            break;
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (!PortableEntryPoint::IsNativeEntryPoint((TADDR)addr))
+    {
+        _ASSERTE(pILTargetMethod != NULL);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
+        return NULL; // Return null to interpret this entrypoint
+    }
+    addr = PortableEntryPoint::GetActualCode((TADDR)addr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return (THelper)addr;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits

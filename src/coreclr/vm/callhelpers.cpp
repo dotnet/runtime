@@ -180,11 +180,11 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags)
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags)
 {
     CONTRACTL
     {

@@ -2233,7 +2233,7 @@ int32_t InterpCompiler::GetDataForHelperFtn(CorInfoHelpFunc ftn)
 
     static_assert(sizeof(InterpHelperData) == sizeof(int32_t), "InterpHelperData must be the same size as an int32_t");
 
-    InterpHelperData result;
+    InterpHelperData result{};
     result.accessType = ftnLookup.accessType;
     int32_t dataItemIndex = GetDataItemIndex(ftnLookup.addr);
     result.addressDataItemIndex = dataItemIndex;
@@ -6577,8 +6577,8 @@ void InterpCompiler::PrintPointer(void* pointer)
 
 void InterpCompiler::PrintHelperFtn(int32_t _data)
 {
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
 
     void *helperAddr = GetDataItemAtIndex(data.addressDataItemIndex);
     PrintPointer(helperAddr);
