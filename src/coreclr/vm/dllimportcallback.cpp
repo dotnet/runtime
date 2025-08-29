@@ -236,12 +236,12 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     }
 
 #ifdef FEATURE_INTERPRETER
-     PCODE pInterpreterTarget = pUMEntryThunkData->GetInterpreterTarget();
-     if (pInterpreterTarget != (PCODE)0)
-     {
-         t_MostRecentUMEntryThunkData = pUMEntryThunkData;
-         return pInterpreterTarget;
-     }
+    PCODE pInterpreterTarget = pUMEntryThunkData->GetInterpreterTarget();
+    if (pInterpreterTarget != (PCODE)0)
+    {
+        t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+        return pInterpreterTarget;
+    }
 #endif // FEATURE_INTERPRETER
 
     // Verify the current thread isn't in COOP mode.
