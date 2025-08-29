@@ -237,7 +237,7 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 
 #ifdef FEATURE_INTERPRETER
      PCODE pInterpreterTarget = pUMEntryThunkData->GetInterpreterTarget();
-     if (pInterpreterTarget != NULL)
+     if (pInterpreterTarget != (PCODE)0)
      {
          t_MostRecentUMEntryThunkData = pUMEntryThunkData;
          return pInterpreterTarget;
