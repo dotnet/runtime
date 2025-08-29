@@ -46,9 +46,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (!string.IsNullOrEmpty(architecture))
                 return command.EnvironmentVariable(Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix + architecture.ToUpper(), dotNetRoot);
 
+            // If we are clearing out the variable, make sure we clear out any architecture-specific one too
+            if (string.IsNullOrEmpty(dotNetRoot))
+                command = command.EnvironmentVariable($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{TestContext.BuildArchitecture}", dotNetRoot);
+
             return command
-                .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
-                .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
+                    .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
+                    .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
         }
 
         public static Command MultilevelLookup(this Command command, bool? enable)
