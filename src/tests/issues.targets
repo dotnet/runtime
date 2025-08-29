@@ -1707,8 +1707,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/**">
-          <Issue>NYI on Mono</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/HandlerThrows/*">
+            <Issue>https://github.com/dotnet/runtime/issues/47624</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/*">
+            <Issue>Test issue. The test relies on overriding the process return code.</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2184,6 +2187,12 @@
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/Foreign/**">
+            <Issue>llvmfullaot: EH problem</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/PInvoke/**">
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
 
