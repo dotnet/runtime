@@ -42,6 +42,13 @@ def native_dll(name: str) -> str:
     prefix = "" if sys.platform.startswith("win") else "lib"
     return f"{prefix}{name}{ext}"
 
+def native_exe(name: str) -> str:
+    ext = ".exe" if sys.platform.startswith("win") else ".out"
+    return f"{name}{ext}"
+
+def native_script(name: str) -> str:
+    ext = ".ps1" if sys.platform.startswith("win") else ".sh"
+    return f"{name}{ext}"
 
 # Run a command
 def run(cmd, cwd=None, timeout_seconds=45*60):
@@ -72,6 +79,7 @@ def run(cmd, cwd=None, timeout_seconds=45*60):
         return None
 
 
+# Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
 def download_mingit_windows(dest: str) -> str:
     # Map our arch key to MinGit asset suffix
     m = {"x64": "64-bit", "arm64": "arm64", "x86": "32-bit"}
@@ -97,7 +105,6 @@ def download_mingit_windows(dest: str) -> str:
     os.remove(zip_path)
     return git_dir
 
-
 def ensure_git(dest: Path) -> str:
     existing = shutil.which("git")
     if existing:
@@ -111,8 +118,7 @@ def ensure_git(dest: Path) -> str:
         return
 
 
-# Ensure .NET tools are installed and Localhost.yml is present
-def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
+def setup_and_run_crank_agent(workdir: Path, port: int, cli=None):
     data_dir = workdir / "crank_data"
     logs_dir = data_dir / "logs"
     build_dir = data_dir / "build"
@@ -152,7 +158,6 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
                         powershell_exe = "powershell.exe"
                     print(f"Using PowerShell executable: {powershell_exe}")
                     
-                    # Add better error handling and capture output
                     try:
                         result = subprocess.run([
                             powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path,
@@ -171,8 +176,7 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
             print(f"Using existing .NET SDK at: {dotnet_root_dir}")
 
         # Determine the dotnet executable to use for installing tools
-        dotnet_file = "dotnet.exe" if sys.platform == "win32" else "dotnet"
-        dotnet_exe = dotnet_root_dir / dotnet_file
+        dotnet_exe = dotnet_root_dir / native_exe("dotnet")
         run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"])
         run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"])
 
@@ -202,28 +206,16 @@ profiles:
         localhost_yml.write_text(yml, encoding="utf-8")
     else:
         print("Localhost.yml already present; skipping tool install/scaffold.")
-
-
-# Start the crank-agent
-def start_crank_agent(workdir: Path, port: int):
     print("crank-agent is not running yet. Starting...")
-    logs_dir = workdir / "crank_data" / "logs"
-    build_dir = workdir / "crank_data" / "build"
-    # Prefer DOTNET_ROOT if set (configured by ensure_tools_and_localhost_yaml),
-    # otherwise fall back to the local dotnet_home
-    env_dotnet_root = os.environ.get('DOTNET_ROOT')
-    dotnethome_dir = Path(env_dotnet_root) if env_dotnet_root else (workdir / "crank_data" / "dotnet_home")
-
     agent_process = subprocess.Popen(
         [
-            "crank-agent",
+            native_exe("crank-agent"),
             "--url", f"http://*:{port}",
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
         ]
     )
-
     print(f"Waiting up to 10s for crank-agent to start ...")
     time.sleep(10)
     return agent_process
@@ -235,7 +227,7 @@ def build_crank_command(framework: str, runtime_bits_path: Path, scenario: str, 
     coreclr = native_dll("coreclr")
     spcorelib = "System.Private.CoreLib.dll"
     cmd = [
-        "crank",
+        native_exe("crank"),
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/azure.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/ci.profile.yml",
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/steadystate.profile.yml",
@@ -295,9 +287,9 @@ def main():
     if args.cli:
         print(f"--cli: {args.cli}")
 
-    mcs_cmd = runtime_bits_path / ("mcs.exe" if sys.platform == "win32" else "mcs")
+    mcs_cmd = runtime_bits_path / native_exe("mcs")
     if not mcs_cmd.exists():
-        print(f"Error: mcs.exe not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
+        print(f"Error: mcs[.exe] not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
         sys.exit(2)
 
     # Create or use working directory for crank_data
@@ -314,10 +306,9 @@ def main():
     # Set current working directory to temp_root
     os.chdir(temp_root)
 
-    ensure_tools_and_localhost_yaml(temp_root, CRANK_PORT, cli=args.cli)
+    agent_process = None
     try:
-        agent_process = None
-        agent_process = start_crank_agent(temp_root, CRANK_PORT)
+        agent_process = setup_and_run_crank_agent(temp_root, CRANK_PORT, cli=args.cli)
 
         # Benchmarks
 
@@ -337,7 +328,6 @@ def main():
 
         # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
         print("Extracting .mc files from zip archives...")
-        produced_mch = False
         extracted_count = 0
         for z in pathlib.Path('.').glob('*.crank.zip'):
             with zipfile.ZipFile(z) as f:
@@ -361,30 +351,9 @@ def main():
                 "-recursive",
                 "-dedup",
                 "-thin",
-                "crank.mch",
-                "*.mc"
+                str(output_mch_path),
+                str(crank_data_path / "*.mc")
             ], check=True, cwd=str(crank_data_path))
-
-            # Move the produced crank.mch back to the workspace root
-            print(f"Moving produced crank.mch to {repo_dir / 'crank.mch'}")
-            shutil.copyfile(crank_data_path / "crank.mch", repo_dir / "crank.mch")
-            produced_mch = True
-            
-            # Copy the resulting MCH to the specified output file
-            if args.output_mch:
-                mch_src = repo_dir / "crank.mch"
-                if not mch_src.exists():
-                    print(f"Error: expected MCH not found at {mch_src}", file=sys.stderr)
-                    sys.exit(2)
-                out_path = output_mch_path
-                if out_path.exists() and out_path.is_dir():
-                    print(f"Error: --output_mch points to a directory, expected a file path: {out_path}", file=sys.stderr)
-                    sys.exit(2)
-                # Ensure the destination directory exists
-                if out_path.parent and not out_path.parent.exists():
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-                print(f"Copying {mch_src} -> {out_path}")
-                shutil.copyfile(mch_src, out_path)
         
     finally:
         print("Cleaning up...")

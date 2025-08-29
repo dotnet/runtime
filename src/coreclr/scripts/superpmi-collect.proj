@@ -173,6 +173,8 @@
     <HelixPreCommand Include="pkill corerun"/>
     <HelixPostCommand Include="pkill crank"/>
     <HelixPostCommand Include="pkill corerun"/>
+
+    <!-- Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands -->
     <HelixPreCommand Include="sudo tdnf install git -y"/>
     <HelixPreCommand Include="sudo tdnf update -y"/>
   </ItemGroup>
@@ -323,9 +325,9 @@
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) --output_mch $(WorkItemDirectory)$(FileSeparatorChar)$(OutputFileName).mch</Command>
+      <Command>$(WorkItemCommand) --output_mch $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>$(WorkItemDirectory)$(FileSeparatorChar)$(OutputFileName).mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(OutputFileName).mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup> 
 </Project>
