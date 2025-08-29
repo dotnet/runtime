@@ -11708,6 +11708,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
+            res->ClassTypeData.vmModule.SetRawPtr(NULL);
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
         }
