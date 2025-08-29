@@ -215,7 +215,6 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
-      - maccatalyst_x64
       - maccatalyst_arm64
     variables:
       # map dependencies variables to local variables

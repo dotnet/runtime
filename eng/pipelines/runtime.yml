@@ -1097,8 +1097,7 @@ extends:
             - ios_arm64
             - tvos_arm64
             - iossimulator_arm64
-            - tvossimulator_x64
-            - maccatalyst_x64
+            - tvossimulator_arm64
             - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
