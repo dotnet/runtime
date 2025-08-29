@@ -149,7 +149,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet2'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) --cli $(PerformanceDirectory)$(FileSeparatorChar)tools$(FileSeparatorChar)dotnet$(FileSeparatorChar)$(Architecture) </WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet2.py --core_root $(SuperPMIDirectory) </WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -161,17 +161,22 @@
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPreCommand Include="taskkill.exe /f /im crank.exe"/>
+    <HelixPreCommand Include="taskkill.exe /f /im crank-agent.exe"/>
+    <HelixPreCommand Include="winget install --id Git.Git -e --source winget"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im crank.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im crank-agent.exe"/>
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' and '$(CollectionType)' == 'aspnet2'">
-    <HelixPreCommand Include="sudo tdnf install git -y"/>
-    <HelixPreCommand Include="sudo tdnf update -y"/>
+  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT'">
+    <HelixPreCommand Include="pkill crank"/>
+    <HelixPreCommand Include="pkill corerun"/>
+    <HelixPostCommand Include="pkill crank"/>
+    <HelixPostCommand Include="pkill corerun"/>
+    <HelixPreCommand Include="tdnf install git -y"/>
+    <HelixPreCommand Include="tdnf update -y"/>
   </ItemGroup>
-  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' and '$(CollectionType)' == 'aspnet2'">
-    <HelixPreCommand Include="winget install --id Git.Git -e --source winget"/>
-  </ItemGroup>
-
 
   <!-- We're currently not using .dotnet on the Helix agents -->
   <!--
@@ -319,9 +324,9 @@
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) --output_mch $(OutputFileName).mch</Command>
+      <Command>$(WorkItemCommand) --output_mch $(WorkItemDirectory)$(FileSeparatorChar)$(OutputFileName).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(OutputFileName).mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>$(WorkItemDirectory)$(FileSeparatorChar)$(OutputFileName).mch</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup> 
 </Project>

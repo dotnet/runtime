@@ -310,6 +310,7 @@ def main():
         # Merge *.mc files into crank.mch
         if extracted_count == 0:
             print("No .mc files found in zip outputs; skipping merge.")
+            sys.exit(2)
         else:
             # Merge all .mc files into crank.mch, scanning recursively from tmp
             print(f"Extracted {extracted_count} .mc files; merging into crank.mch ...")

@@ -542,8 +542,8 @@ def main(main_args):
         setup_benchmark(workitem_payload_directory, arch)
     elif coreclr_args.collection_name == "aspnet2":
         # Nothing to prepare for aspnet2, its script is fully self-contained.
-        # But we'll reuse the same setup_benchmark as for benchmarks and realworld.
-        setup_benchmark(workitem_payload_directory, arch)
+        # Just make sure workitem_payload_directory folder exists:
+        os.makedirs(workitem_payload_directory, exist_ok=True)
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
