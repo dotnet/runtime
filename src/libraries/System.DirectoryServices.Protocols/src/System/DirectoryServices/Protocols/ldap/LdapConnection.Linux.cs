@@ -83,7 +83,7 @@ namespace System.DirectoryServices.Protocols
                 var timeout = new LDAP_TIMEVAL()
                 {
                     tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond),
-                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / (TimeSpan.TicksPerMillisecond * 1000))
+                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / 10) // Convert 100ns ticks to microseconds
                 };
 
                 int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);
@@ -91,8 +91,9 @@ namespace System.DirectoryServices.Protocols
                 // but the original URI setting success should be preserved
                 if (timeoutResult != 0)
                 {
-                    // Log or handle timeout setting failure if needed in the future
-                    // For now, we don't fail the connection
+                    // For debugging: we can add logging here in the future
+                    // The timeout setting failed, but we don't fail the connection
+                    // as network timeout might not be supported on all OpenLDAP versions
                 }
             }
 
