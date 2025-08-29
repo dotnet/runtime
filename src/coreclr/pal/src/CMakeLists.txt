@@ -101,8 +101,6 @@ if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
 endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)

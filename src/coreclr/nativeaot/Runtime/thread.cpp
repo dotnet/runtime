@@ -4,6 +4,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandleutilities.h"
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -1160,6 +1161,23 @@ bool Thread::CheckPendingRedirect(PCODE eip)
 
 #endif // TARGET_X86
 
+void Thread::SetInterrupted(bool isInterrupted)
+{
+    if (isInterrupted)
+    {
+        SetState(TSF_Interrupted);
+    }
+    else
+    {
+        ClearState(TSF_Interrupted);
+    }
+}
+
+bool Thread::CheckInterrupted()
+{
+    return IsStateSet(TSF_Interrupted);
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1278,6 +1296,49 @@ FCIMPL0(Object**, RhGetThreadStaticStorage)
 }
 FCIMPLEND
 
+#ifdef TARGET_UNIX
+#define NEWTHREAD_RETURN_TYPE size_t
+#else
+#define NEWTHREAD_RETURN_TYPE uint32_t
+#endif
+
+static NEWTHREAD_RETURN_TYPE RhThreadEntryPoint(void* pContext)
+{
+    // We will attach the thread early so that when the managed thread entrypoint
+    // starts running and performs its reverse p/invoke transition, the thread is
+    // already attached.
+    //
+    // This avoids potential deadlocks with module initializers that may be running
+    // as part of runtime initialization (in non-EXE scenario) and creating new
+    // threads. When RhThreadEntryPoint runs, the runtime must already be initialized
+    // enough to be able to run managed code so we don't need to wait for it to
+    // finish.
+
+    ThreadStore::AttachCurrentThread();
+
+    Thread * pThread = ThreadStore::GetCurrentThread();
+    pThread->SetDeferredTransitionFrameForNativeHelperThread();
+    pThread->DisablePreemptiveMode();
+
+    Object * pThreadObject = ObjectFromHandle((OBJECTHANDLE)pContext);
+    MethodTable* pMT = pThreadObject->GetMethodTable();
+
+    pThread->EnablePreemptiveMode();
+
+    NEWTHREAD_RETURN_TYPE (*pFn)(void*) = (NEWTHREAD_RETURN_TYPE (*)(void*))
+        pMT->GetTypeManagerPtr()
+        ->AsTypeManager()
+        ->GetClasslibFunction(ClasslibFunctionId::ThreadEntryPoint);
+
+    return pFn(pContext);
+}
+
+FCIMPL0(void*, RhGetThreadEntryPointAddress)
+{
+    return (void*)&RhThreadEntryPoint;
+}
+FCIMPLEND
+
 InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
 {
     return m_pInlinedThreadLocalStatics;
@@ -1322,6 +1383,43 @@ FCIMPL0(size_t, RhGetDefaultStackSize)
     return GetDefaultStackSizeSetting();
 }
 FCIMPLEND
+
+#ifdef TARGET_WINDOWS
+// Native APC callback for Thread.Interrupt
+// This callback sets the interrupt flag on the current thread
+static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (!pCurrentThread->IsInitialized())
+    {
+        // If the thread was interrupted before it was started
+        // the thread won't have been initialized.
+        // Attach the thread here if it's the first time we're seeing it.
+        ThreadStore::AttachCurrentThread();
+    }
+
+    pCurrentThread->SetInterrupted(true);
+}
+
+// Function to get the address of the interrupt APC callback
+FCIMPL0(void*, RhGetInterruptApcCallback)
+{
+    return (void*)InterruptApcCallback;
+}
+FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (pCurrentThread->CheckInterrupted())
+    {
+        pCurrentThread->SetInterrupted(false);
+        FC_RETURN_BOOL(true);
+    }
+    FC_RETURN_BOOL(false);
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)

@@ -30,6 +30,7 @@ struct InterpMethod
     InterpMethod *self;
 #endif
     CORINFO_METHOD_HANDLE methodHnd;
+    int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
     // This stub is used for calling the interpreted method from JITted/AOTed code
@@ -37,12 +38,13 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
 
-    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals, bool unmanagedCallersOnly)
+    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize, void** pDataItems, bool initLocals, bool unmanagedCallersOnly)
     {
 #if DEBUG
         this->self = this;
 #endif
         this->methodHnd = methodHnd;
+        this->argsSize = argsSize;
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;

@@ -218,7 +218,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
             PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
             if (tempEntryPoint != (PCODE)NULL)
             {
-                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromPrecode(tempEntryPoint, TRUE);
 
                 if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
                 {
@@ -270,6 +270,10 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
     else if (IsMiNative(dwType))
     {
         *pJITType = TYPE_PJIT;
+    }
+    else if (IsMiOPTIL(dwType))
+    {
+        *pJITType = TYPE_INTERPRETER;
     }
     else
     {
@@ -1343,7 +1347,7 @@ ClrDataAccess::GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *
     if (!codeInfo.IsValid())
     {
         // We may be able to walk stubs to find a method desc if it's not a jitted method.
-        MethodDesc *methodDescI = MethodTable::GetMethodDescForSlotAddress(TO_TADDR(ip));
+        MethodDesc *methodDescI = NonVirtualEntry2MethodDesc(TO_TADDR(ip));
         if (methodDescI == NULL)
         {
             hr = E_INVALIDARG;

@@ -11,10 +11,26 @@
 
 class dn_simdhash_ptr_ptr_holder
 {
-    dn_simdhash_ptr_ptr_t *Value;
 public:
-    dn_simdhash_ptr_ptr_holder() :
-        Value(nullptr)
+    dn_simdhash_ptr_ptr_foreach_func ValueDestroyCallback;
+
+private:
+    dn_simdhash_ptr_ptr_t *Value;
+
+    void free_hash_and_values()
+    {
+        if (Value == nullptr)
+            return;
+        if (ValueDestroyCallback)
+            dn_simdhash_ptr_ptr_foreach(Value, ValueDestroyCallback, nullptr);
+        dn_simdhash_free(Value);
+        Value = nullptr;
+    }
+
+public:
+    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_foreach_func valueDestroyCallback = nullptr)
+        : ValueDestroyCallback(valueDestroyCallback)
+        , Value(nullptr)
     {
     }
 
@@ -36,8 +52,7 @@ public:
     {
         if (this != &other)
         {
-            if (Value != nullptr)
-                dn_simdhash_free(Value);
+            free_hash_and_values();
             Value = other.Value;
             other.Value = nullptr;
         }
@@ -46,8 +61,7 @@ public:
 
     ~dn_simdhash_ptr_ptr_holder()
     {
-        if (Value != nullptr)
-            dn_simdhash_free(Value);
+        free_hash_and_values();
     }
 };
 

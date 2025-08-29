@@ -40,7 +40,9 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.TypeMetadata((MetadataType)_method.OwningType), "Owning type metadata");
+
+            var owningType = (MetadataType)_method.OwningType;
+            dependencies.Add(factory.TypeMetadata(owningType), "Owning type metadata");
 
             if (!_isMinimal)
             {
@@ -76,6 +78,12 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (TypeDesc parameterType in _method.Signature)
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), parameterType, _method);
+                }
+
+                if (_method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
+                    || owningType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
+                {
+                    dependencies.Add(factory.AnalysisCharacteristic("StackTraceHiddenMetadataPresent"), "Method is StackTraceHidden");
                 }
             }
 
