@@ -257,11 +257,11 @@ public:
             if (pPrecode->GetType() == PRECODE_INTERPRETER)
             {
                 m_pInterpretedTarget = entryPoint;
-                entryPoint = NULL;
+                entryPoint = (PCODE)0;
             }
         }
 
-        if (entryPoint != NULL)
+        if (entryPoint != (PCODE)0)
 #endif // FEATURE_INTERPRETER
         {
             m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
