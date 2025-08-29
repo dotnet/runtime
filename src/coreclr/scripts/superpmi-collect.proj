@@ -163,7 +163,6 @@
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPreCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPreCommand Include="taskkill.exe /f /im crank-agent.exe"/>
-    <HelixPreCommand Include="winget install --id Git.Git -e --source winget"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im crank-agent.exe"/>
@@ -174,8 +173,8 @@
     <HelixPreCommand Include="pkill corerun"/>
     <HelixPostCommand Include="pkill crank"/>
     <HelixPostCommand Include="pkill corerun"/>
-    <HelixPreCommand Include="tdnf install git -y"/>
-    <HelixPreCommand Include="tdnf update -y"/>
+    <HelixPreCommand Include="sudo tdnf install git -y"/>
+    <HelixPreCommand Include="sudo tdnf update -y"/>
   </ItemGroup>
 
   <!-- We're currently not using .dotnet on the Helix agents -->

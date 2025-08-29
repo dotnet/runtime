@@ -72,6 +72,45 @@ def run(cmd, cwd=None, timeout_seconds=45*60):
         return None
 
 
+def download_mingit_windows(dest: str) -> str:
+    # Map our arch key to MinGit asset suffix
+    m = {"x64": "64-bit", "arm64": "arm64", "x86": "32-bit"}
+    assets = requests.get("https://api.github.com/repos/git-for-windows/git/releases/latest", timeout=100).json()["assets"]
+    rx = re.compile(r"^MinGit-.*-(32-bit|64-bit|arm64)\.zip$", re.I)
+
+    arch = "x64"
+    mach = platform.machine().lower()
+    if "arm64" in mach:
+        arch = "arm64"
+    elif mach in ("x86", "i386", "i686"):
+        arch = "x86"
+
+    try:
+        asset = next(a for a in assets if rx.match(a["name"]) and m[arch] in a["name"])
+    except StopIteration:
+        raise RuntimeError(f"Unable to find MinGit asset for arch '{arch}'. Available assets: {[a['name'] for a in assets if 'MinGit' in a['name']]}")
+    os.makedirs(dest, exist_ok=True); zip_path = os.path.join(dest, asset["name"])
+    with requests.get(asset["browser_download_url"], stream=True) as r, open(zip_path,"wb") as f:
+        for c in r.iter_content(8192): f.write(c)
+    git_dir = os.path.join(dest,"git"); shutil.rmtree(git_dir, ignore_errors=True)
+    with zipfile.ZipFile(zip_path) as z: z.extractall(git_dir)
+    os.remove(zip_path)
+    return git_dir
+
+
+def ensure_git(dest: Path) -> str:
+    existing = shutil.which("git")
+    if existing:
+        print("git found")
+        return
+    if sys.platform == "win32":
+        print("git not found, downloading portable git...")
+        git_dir = download_mingit_windows(str(dest))
+        cmd_path = os.path.join(git_dir, "cmd")
+        os.environ["PATH"] = cmd_path + os.pathsep + os.environ.get("PATH", "")
+        return
+
+
 # Ensure .NET tools are installed and Localhost.yml is present
 def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     data_dir = workdir / "crank_data"
@@ -80,6 +119,8 @@ def ensure_tools_and_localhost_yaml(workdir: Path, port: int, cli=None):
     tools_dir = data_dir / "dotnet_tools"
     dotnethome_dir = data_dir / "dotnet_home"
     localhost_yml = data_dir / "Localhost.yml"
+
+    ensure_git(tools_dir)
 
     # If a CLI path is provided, use it as DOTNET_ROOT; otherwise default to our local dotnet_home
     dotnet_root_dir = Path(cli) if cli else dotnethome_dir
