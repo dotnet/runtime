@@ -305,7 +305,6 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "DSASecurityTransforms goes straight to OS, has different failure mode")]
         public static void ImportNonsensePublicParameters()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
