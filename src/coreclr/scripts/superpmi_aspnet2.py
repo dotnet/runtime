@@ -267,6 +267,7 @@ def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, co
         "--application.collectDependencies", "false",
         "--load.options.reuseBuild", "true",
         "--load.variables.duration", "30", # default 15s is not enough for Tier1 promotion
+        "--load.connections", "32",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
         "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
         "--application.environmentVariables", "SuperPMIShimLogPath=.",
@@ -338,8 +339,7 @@ def main():
         print("### Running PlatformPlaintext benchmark... ###")
         run_crank_scenario(crank_app_path, args.tfm, core_root_path, config_path,
             "--scenario", "plaintext",
-            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml",
-            "--load.connections", "512"
+            "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"
         )
 
         print("Finished running benchmarks.")
