@@ -3636,13 +3636,16 @@ interp_free_method (MonoMethod *method)
 	jit_mm_lock (jit_mm);
 
 	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
+	if (imethod) {
 #if HOST_BROWSER
-	mono_jiterp_free_method_data (method, imethod);
+		mono_jiterp_free_method_data (method, imethod);
 #endif
 
-	mono_interp_clear_data_items_patch_sites (imethod->data_items, imethod->n_data_items);
+		mono_interp_clear_data_items_patch_sites (imethod->data_items, imethod->n_data_items);
 
-	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+		mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+	}
+
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
