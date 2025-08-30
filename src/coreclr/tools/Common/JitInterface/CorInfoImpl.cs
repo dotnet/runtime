@@ -2226,7 +2226,7 @@ namespace Internal.JitInterface
         {
             int alignment = type.Context.Target.PointerSize;
 
-            if (type is MetadataType metadataType && metadataType.HasLayout())
+            if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
             {
                 if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
                 {

@@ -264,6 +264,8 @@ namespace ILCompiler
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
+            public override bool IsExtendedLayout => true;
+            public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override DefType BaseType => MetadataBaseType;
@@ -272,12 +274,6 @@ namespace ILCompiler
             public override DefType ContainingType => null;
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;
-
-            public override int GetInlineArrayLength()
-            {
-                Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-                throw new InvalidOperationException();
-            }
 
             public BoxedValueType(ModuleDesc owningModule, MetadataType valuetype)
             {

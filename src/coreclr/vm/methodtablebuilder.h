@@ -2998,6 +2998,9 @@ private:
 
     VOID    HandleGCForExplicitLayout();
 
+    VOID HandleCStructLayout(
+        MethodTable **);
+
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);
 
     VOID    CheckForNativeHFA();

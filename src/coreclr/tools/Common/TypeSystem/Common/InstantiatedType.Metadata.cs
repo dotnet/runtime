@@ -40,6 +40,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return _typeDef.IsExtendedLayout;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return _typeDef.IsAutoLayout;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -84,11 +100,6 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            return _typeDef.GetInlineArrayLength();
         }
 
         public override MetadataType GetNestedType(string name)

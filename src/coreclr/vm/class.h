@@ -338,7 +338,8 @@ class EEClassLayoutInfo
         {
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
-            Explicit
+            Explicit,
+            CStruct
         };
     private:
         enum {
@@ -484,6 +485,12 @@ class EEClassLayoutInfo
             MethodTable* pParentMT,
             Module* pModule,
             mdTypeDef cl
+        );
+
+        ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
         );
 
     private:
