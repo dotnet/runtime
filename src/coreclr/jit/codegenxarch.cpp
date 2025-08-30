@@ -2558,7 +2558,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         }
 #else  // !TARGET_X86
         static_assert((RBM_STACK_PROBE_HELPER_ARG & (RBM_SECRET_STUB_PARAM | RBM_DEFAULT_HELPER_CALL_TARGET)) ==
-                             RBM_NONE);
+                      RBM_NONE);
 
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, -(int)frameSize);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);

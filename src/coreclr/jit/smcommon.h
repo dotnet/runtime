@@ -19,7 +19,7 @@ static_assert(sizeof(SM_STATE_ID) == 1); // To conserve memory, we don't want to
 #define SM_STATE_ID_START 1
 
 static_assert(SM_STATE_ID_START == 1); // Make sure nobody changes it. We rely on this to map the SM_OPCODE
-                                              // to single-opcode states. For example, in GetWeightForOpcode().
+                                       // to single-opcode states. For example, in GetWeightForOpcode().
 
 struct JumpTableCell
 {

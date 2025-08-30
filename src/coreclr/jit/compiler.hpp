@@ -2102,8 +2102,8 @@ template <typename T>
 void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
     static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
+                   std::is_same<T, long long>::value || std::is_same<T, float>::value ||
+                   std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
 
     static_assert(sizeof(int64_t) == sizeof(long long));
 

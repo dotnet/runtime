@@ -2371,7 +2371,7 @@ protected:
             , idStorage()
         {
             static_assert((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
-                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
+                          offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()

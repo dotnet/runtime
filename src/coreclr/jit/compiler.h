@@ -9991,11 +9991,11 @@ public:
             // target from the register for the call (even in debug mode).
             // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
 #if defined(TARGET_AMD64)
-            static_assert(
-                (RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
+            static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                          RBM_NONE);
 #else
             static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
-                                 RBM_NONE);
+                          RBM_NONE);
 #endif
             if (JitConfig.JitForceControlFlowGuard())
                 return true;

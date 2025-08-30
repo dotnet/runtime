@@ -1361,8 +1361,8 @@ public:
         // Note that only GT_EQ to GT_GT are HIR nodes, GT_TEST and GT_BITTEST
         // nodes are backend nodes only.
 #ifdef TARGET_XARCH
-        static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE,
-                                           GT_BITTEST_EQ, GT_BITTEST_NE));
+        static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_BITTEST_EQ,
+                                    GT_BITTEST_NE));
         return (GT_EQ <= gtOper) && (gtOper <= GT_BITTEST_NE);
 #else
         static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
@@ -1587,8 +1587,8 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
-                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
+        static_assert(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND, GT_STOREIND,
+                                    GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
         return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
