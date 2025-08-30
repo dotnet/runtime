@@ -556,7 +556,7 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char* pChar = s)
+                fixed (char* pChar = &s.GetPinnableReference())
                 {
                     return GetByteCount(pChar + index, count);
                 }
@@ -644,14 +644,14 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char* pChar = s)
+                fixed (char* pChar = &s.GetPinnableReference())
                 {
                     int byteCount = GetByteCount(pChar + index, count);
                     if (byteCount == 0)
                         return Array.Empty<byte>();
 
                     byte[] bytes = new byte[byteCount];
-                    fixed (byte* pBytes = &bytes[0])
+                    fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
                     {
                         int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
                         Debug.Assert(byteCount == bytesReceived);
