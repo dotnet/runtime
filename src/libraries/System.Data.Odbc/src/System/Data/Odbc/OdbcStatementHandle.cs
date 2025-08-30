@@ -3,6 +3,7 @@
 
 using System.Data.Common;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.Odbc
 {
@@ -278,7 +279,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.SQLRETURN Statistics(string? tableCatalog,
+        internal unsafe ODBC32.SQLRETURN Statistics(string? tableCatalog,
                                            string? tableSchema,
                                            string tableName,
                                            short unique,
@@ -289,7 +290,7 @@ namespace System.Data.Odbc
             // MDAC Bug 75928 - SQLStatisticsW damages the string passed in
             // To protect the tablename we need to pass in a copy of that string
 
-            IntPtr pwszTableName = Marshal.StringToCoTaskMemUni(tableName);
+            ushort* pwszTableName = Utf16StringMarshaller.ConvertToUnmanaged(tableName);
             try
             {
                 retcode = Interop.Odbc.SQLStatisticsW(this,
@@ -297,14 +298,14 @@ namespace System.Data.Odbc
                                                       ODBC.ShortStringLength(tableCatalog),
                                                       tableSchema,
                                                       ODBC.ShortStringLength(tableSchema),
-                                                      pwszTableName,
+                                                      (IntPtr)pwszTableName,
                                                       ODBC.ShortStringLength(tableName),
                                                       unique,
                                                       accuracy);
             }
             finally
             {
-                Marshal.FreeCoTaskMem(pwszTableName);
+                Utf16StringMarshaller.Free(pwszTableName);
             }
 
             ODBC.TraceODBC(3, "SQLStatisticsW", retcode);

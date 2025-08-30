@@ -177,7 +177,7 @@ namespace System.DirectoryServices.AccountManagement
                     SidListEntry entry = new SidListEntry();
 
                     Debug.Assert(name.Name.Length % 2 == 0);
-                    entry.name = Marshal.PtrToStringUni(name.Name.Buffer, name.Name.Length / 2);
+                    entry.name = new string((char*)name.Name.Buffer, 0, name.Name.Length / 2);
 
                     // Get the domain associated with this name
                     Debug.Assert(name.DomainIndex < domains.Length);
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         Interop.LSA_TRUST_INFORMATION domain = domains[name.DomainIndex];
                         Debug.Assert(domain.Name.Length % 2 == 0);
-                        entry.sidIssuerName = Marshal.PtrToStringUni(domain.Name.Buffer, domain.Name.Length / 2);
+                        entry.sidIssuerName = new string((char*)domain.Name.Buffer, 0, domain.Name.Length / 2);
                     }
 
                     entry.pSid = pSids[i];
