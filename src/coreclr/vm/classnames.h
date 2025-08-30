@@ -84,11 +84,8 @@
 #define g_ReflectionParamInfoName "System.Reflection.ParameterInfo"
 #define g_ReflectionParamName "System.Reflection.RuntimeParameterInfo"
 #define g_ReflectionPropInfoName "System.Reflection.RuntimePropertyInfo"
-#define g_RuntimeArgumentHandleName      "RuntimeArgumentHandle"
 #define g_RuntimeFieldHandleClassName    "System.RuntimeFieldHandle"
-#define g_RuntimeFieldHandleInternalName        "RuntimeFieldHandleInternal"
 #define g_RuntimeMethodHandleClassName   "System.RuntimeMethodHandle"
-#define g_RuntimeMethodHandleInternalName        "RuntimeMethodHandleInternal"
 #define g_RuntimeTypeHandleClassName     "System.RuntimeTypeHandle"
 
 #define g_StackOverflowExceptionClassName "System.StackOverflowException"
