@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <SelfContained>true</SelfContained>
     <HasRuntimeOutput>false</HasRuntimeOutput>
     <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
