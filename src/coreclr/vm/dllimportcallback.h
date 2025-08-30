@@ -227,7 +227,7 @@ public:
 #ifdef FEATURE_INTERPRETER
     PCODE GetInterpreterTarget()
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
         return m_pInterpretedTarget;
     }
 #endif
