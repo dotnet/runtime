@@ -101,6 +101,9 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'realworld') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'aspnet2') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
