@@ -21,17 +21,18 @@ export function fromBigInt (x: bigint): CUInt64 {
 }
 
 export function dangerousToNumber (x: CUInt64): number {
-    return x[0] | x[1] << 32;
+    return x[0] + x[1] * 0x100000000;
 }
 
 export function fromNumber (x: number): CUInt64 {
     if (x < 0)
         throw new Error(`${x} is not a valid 64 bit integer`);
-    if ((x >> 32) > 0xFFFFFFFF)
-        throw new Error(`${x} is not a valid 64 bit integer`);
     if (Math.trunc(x) != x)
         throw new Error(`${x} is not a valid 64 bit integer`);
-    return [x & 0xFFFFFFFF, x >> 32];
+    const high = Math.floor(x / 0x100000000);
+    if (high > 0xFFFFFFFF)
+        throw new Error(`${x} is not a valid 64 bit integer`);
+    return [x & 0xFFFFFFFF, high];
 }
 
 export function pack32 (lo: number, hi: number): CUInt64 {
