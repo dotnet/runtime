@@ -97,39 +97,17 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 //-------------------------------------------------------------------------------------------------
 // Platform-specific defines
 
-#if defined(HOST_AMD64)
+#ifdef HOST_64BIT
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined(HOST_X86)
+#else // HOST_64BIT
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(HOST_ARM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_ARM64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#elif defined (HOST_WASM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_LOONGARCH64) || defined (HOST_RISCV64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#else
-#error Unsupported target architecture
-#endif
+#endif // HOST_64BIT
 
 #ifndef __GCENV_BASE_INCLUDED__
 
