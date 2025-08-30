@@ -118,52 +118,24 @@ def ensure_git(dest: Path) -> str:
 
 # Install the .NET SDK using the official dotnet-install script.
 def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
-    print(f"Installing .NET SDK (channel: {channel}, install_dir: {install_dir})")
-    url = "https://dot.net/v1/dotnet-install." + ("ps1" if platform.system() == "Windows" else "sh")
-    retries = 3
-    initial_delay_seconds = 5
-    last_err = None
-    for attempt in range(1, retries + 1):
-        try:
-            with tempfile.TemporaryDirectory() as tmp:
-                script_path = os.path.join(tmp, os.path.basename(url))
-                print(f"Downloading dotnet-install script (attempt {attempt}/{retries}) ...")
-                urllib.request.urlretrieve(url, script_path)
-
-                if script_path.endswith(".ps1"):
-                    # Find available PowerShell executable
-                    powershell_exe = "pwsh" if shutil.which("pwsh") else "powershell.exe"
-                    print(f"Using PowerShell executable: {powershell_exe}")
-                    args = [
-                        powershell_exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script_path,
-                        "-Channel", channel, "-InstallDir", str(install_dir)
-                    ]
-                    result = subprocess.run(args, capture_output=True, text=True, check=True)
-                    if result.stdout:
-                        print(result.stdout)
-                else:
-                    os.chmod(script_path, 0o755)
-                    cmd = [script_path, "-Channel", channel, "-InstallDir", str(install_dir)]
-                    subprocess.check_call(cmd)
-
-            # Success, return
-            return
-        except subprocess.CalledProcessError as e:
-            print(f"dotnet-install attempt {attempt}/{retries} failed with exit code {e.returncode}")
-            if getattr(e, "stdout", None):
-                print(e.stdout)
-            if getattr(e, "stderr", None):
-                print(e.stderr)
-            last_err = e
-        except Exception as e:
-            print(f"dotnet-install attempt {attempt}/{retries} failed: {e}")
-            last_err = e
-
-        if attempt < retries:
-            delay = min(initial_delay_seconds * (2 ** (attempt - 1)), 60)
-            print(f"Retrying in {delay} seconds ...")
-            time.sleep(delay)
-    raise RuntimeError(f"Failed to install .NET SDK after {retries} attempts") from last_err
+    install_dir.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        ch = channel.replace("'", "''")
+        di = str(install_dir).replace("'", "''")
+        ps_script = (
+            "[System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12;"
+            "Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1';"
+            f"$DotnetVersion='{ch}';$InstallDir='{di}';"
+            "& './dotnet-install.ps1' -Channel $DotnetVersion -InstallDir $InstallDir -NoPath"
+        )
+        subprocess.check_call(["powershell.exe","-NoProfile","-ExecutionPolicy", "Bypass","-Command", ps_script])
+    else:
+        with tempfile.TemporaryDirectory() as td:
+            script_path = Path(td) / "dotnet-install.sh"
+            with urllib.request.urlopen("https://dot.net/v1/dotnet-install.sh") as resp, open(script_path, "wb") as f:
+                f.write(resp.read())
+            os.chmod(script_path, 0o755)
+            subprocess.check_call([str(script_path),"--channel", channel,"--install-dir", str(install_dir),"--no-path"])
 
 
 # Prepare the environment and run crank-agent
@@ -188,7 +160,9 @@ def setup_and_run_crank_agent(workdir: Path):
     tools_dir.mkdir(parents=True, exist_ok=True)
 
     # Install .NET SDK needed for crank and crank-agent via dotnet-install public script.
-    install_dotnet_sdk(CRANK_SDK_CHANNEL, dotnethome_dir)
+    # it is currently 8.0, but let's be flexible and intall LTS as well.
+    install_dotnet_sdk("8.0", dotnethome_dir)
+    # install_dotnet_sdk("LTS", dotnethome_dir)
 
     # Determine the dotnet executable to use for installing tools
     dotnet_exe = dotnet_root_dir / native_exe("dotnet")

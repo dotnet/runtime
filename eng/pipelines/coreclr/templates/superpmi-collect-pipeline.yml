@@ -262,7 +262,7 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
-          - linux_arm
+          # - linux_arm # crank doesn't support arm32
           - linux_arm64
           - linux_x64
           - windows_x64
