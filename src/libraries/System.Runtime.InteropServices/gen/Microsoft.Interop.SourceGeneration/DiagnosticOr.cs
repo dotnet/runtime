@@ -30,6 +30,22 @@ namespace Microsoft.Interop
         /// </summary>
         public abstract ImmutableArray<DiagnosticInfo> Diagnostics { get; }
 
+        public DiagnosticOr<U> Bind<U>(Func<T, DiagnosticOr<U>> f)
+        {
+            return this switch
+            {
+                Diag d => new DiagnosticOr<U>.Diag(d.Diagnostics),
+                Val v => f(v.Value),
+                ValueAndDiagnostic vd => f(vd.Value).AddDiagnostics(vd.Diagnostics),
+                _ => throw new InvalidOperationException("Unrecognized variant of DiagnosticOr<T>")
+            };
+        }
+
+        public DiagnosticOr<U> Map<U>(Func<T, U> f)
+        {
+            return Bind(value => DiagnosticOr<U>.From(f(value)));
+        }
+
         private sealed record Diag : DiagnosticOr<T>
         {
             private readonly SequenceEqualImmutableArray<DiagnosticInfo> _diagnostics;
@@ -61,14 +77,24 @@ namespace Microsoft.Interop
             public override ImmutableArray<DiagnosticInfo> Diagnostics => _diagnostics.Array;
         }
 
+        private sealed record None : DiagnosticOr<T>
+        {
+            public static readonly None Instance = new();
+            private None() { }
+            public override bool HasValue => false;
+            public override bool HasDiagnostic => false;
+            public override T Value => throw new InvalidOperationException();
+            public override ImmutableArray<DiagnosticInfo> Diagnostics => throw new InvalidOperationException();
+        }
+
         /// <summary>
         /// Adds a diagnostic to the <see cref="DiagnosticOr{T}.Diagnostics"/> property
         /// </summary>
-        public DiagnosticOr<T> AddDiagnostic(DiagnosticInfo diagnostic) => this switch
+        private DiagnosticOr<T> AddDiagnostics(params ImmutableArray<DiagnosticInfo> diagnostics) => this switch
         {
-            Diag d => new Diag(d.Diagnostics.Add(diagnostic)),
-            Val v => new ValueAndDiagnostic(v.Value, ImmutableArray.Create(diagnostic)),
-            ValueAndDiagnostic vad => new ValueAndDiagnostic(vad.Value, vad.Diagnostics.Add(diagnostic)),
+            Diag d => new Diag(d.Diagnostics.AddRange(diagnostics)),
+            Val v => new ValueAndDiagnostic(v.Value, diagnostics),
+            ValueAndDiagnostic vad => new ValueAndDiagnostic(vad.Value, vad.Diagnostics.AddRange(diagnostics)),
             _ => throw new UnreachableException()
         };
 
@@ -96,6 +122,10 @@ namespace Microsoft.Interop
         /// </summary>
         public static DiagnosticOr<T> From(T value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
             Debug.Assert(value is not null);
             return new Val(value);
         }

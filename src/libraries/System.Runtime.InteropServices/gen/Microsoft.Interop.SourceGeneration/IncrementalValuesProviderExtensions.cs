@@ -14,7 +14,7 @@ namespace Microsoft.Interop
             return left
                 .Collect()
                 .Combine(right.Collect())
-                .SelectMany((data, ct) =>
+                .SelectMany(static (data, ct) =>
                 {
                     if (data.Left.Length != data.Right.Length)
                     {
@@ -44,7 +44,7 @@ namespace Microsoft.Interop
         public static IncrementalValuesProvider<TNode> SelectNormalized<TNode>(this IncrementalValuesProvider<TNode> provider)
             where TNode : SyntaxNode
         {
-            return provider.Select((node, ct) => node.NormalizeWhitespace());
+            return provider.Select(static (node, ct) => node.NormalizeWhitespace());
         }
 
         public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<T2>) Split<T, T2>(this IncrementalValuesProvider<(T, T2)> provider)
@@ -54,7 +54,7 @@ namespace Microsoft.Interop
 
         public static IncrementalValuesProvider<T> Concat<T>(this IncrementalValuesProvider<T> first, IncrementalValuesProvider<T> second)
         {
-            return first.Collect().Combine(second.Collect()).SelectMany((data, ct) => data.Left.AddRange(data.Right));
+            return first.Collect().Combine(second.Collect()).SelectMany(static (data, ct) => data.Left.AddRange(data.Right));
         }
     }
 }
