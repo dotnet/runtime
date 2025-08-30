@@ -15,15 +15,24 @@ namespace System.IO.Compression
     {
         private object _dummy;
         private int _dummyPrimitive;
+        public void AttachDictionary(System.IO.Compression.BrotliDictionary dictionary) { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class BrotliDictionary : System.IDisposable
+    {
+        internal BrotliDictionary() { }
+        public static System.IO.Compression.BrotliDictionary CreateFromBuffer(System.ReadOnlySpan<byte> buffer) { throw null; }
+        public static System.IO.Compression.BrotliDictionary CreateFromBuffer(System.ReadOnlySpan<byte> buffer, int quality) { throw null; }
+        public void Dispose() { }
     }
     public partial struct BrotliEncoder : System.IDisposable
     {
         private object _dummy;
         private int _dummyPrimitive;
         public BrotliEncoder(int quality, int window) { throw null; }
+        public void AttachDictionary(System.IO.Compression.BrotliDictionary dictionary) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -44,6 +53,7 @@ namespace System.IO.Compression
         public override bool CanWrite { get { throw null; } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public void AttachDictionary(System.IO.Compression.BrotliDictionary dictionary) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
         protected override void Dispose(bool disposing) { }
