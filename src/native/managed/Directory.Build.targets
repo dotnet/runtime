@@ -1,7 +1,11 @@
 <Project>
-    <Import Project=".\native-library.targets" Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'" />
-    <Import Project="..\..\..\Directory.Build.targets" />
-    <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
-    <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
+  <PropertyGroup>
+    <HasRuntimeOutput>false</HasRuntimeOutput>
+    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
+  </PropertyGroup>
+
+  <Import Project=".\native-library.targets" Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'" />
+  <Import Project="..\..\..\Directory.Build.targets" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
 </Project>
