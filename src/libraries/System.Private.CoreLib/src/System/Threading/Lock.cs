@@ -28,11 +28,7 @@ namespace System.Threading
         // The field's type is not ThreadId to try to retain the relative order of fields of intrinsic types. The type system
         // appears to place struct fields after fields of other types, in which case there can be a greater chance that
         // _owningThreadId is not in the same cache line as _state.
-#if TARGET_OSX && !NATIVEAOT
-        private ulong _owningThreadId;
-#else
         private uint _owningThreadId;
-#endif
 
         private uint _state; // see State for layout
         private uint _recursionCount;
@@ -57,6 +53,8 @@ namespace System.Threading
         {
             State.InitializeUseTrivialWaits(this, useTrivialWaits);
         }
+
+        internal int OwningManagedThreadId => (int)_owningThreadId;
 
         /// <summary>
         /// Enters the lock. Once the method returns, the calling thread would be the only thread that holds the lock.
