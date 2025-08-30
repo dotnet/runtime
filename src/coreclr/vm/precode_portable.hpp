@@ -14,6 +14,7 @@ class PortableEntryPoint final
 public: // static
     static bool IsNativeEntryPoint(TADDR addr);
     static void* GetActualCode(TADDR addr);
+    static void SetActualCode(TADDR addr, void* actualCode);
     static MethodDesc* GetMethodDesc(TADDR addr);
     static void* GetInterpreterData(TADDR addr);
     static void SetInterpreterData(TADDR addr, PCODE interpreterData);
@@ -31,6 +32,17 @@ private:
 
 public:
     void Init(MethodDesc* pMD);
+
+    // Query methods for entry point state.
+    bool IsInitialized() const { return _pMD != nullptr; }
+    bool IsByteCodeCompiled() const { return IsInitialized() && _pInterpreterData != nullptr; }
+    bool HasNativeCode() const { return IsInitialized() && _pActualCode != nullptr; }
+    bool IsReadyForR2R() const
+    {
+        // State when interpreted method was prepared to be called from R2R compiled code.
+        // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
+        return IsInitialized() && _pInterpreterData != nullptr && _pActualCode != nullptr;
+    }
 };
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
