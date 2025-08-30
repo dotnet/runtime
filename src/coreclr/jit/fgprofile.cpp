@@ -1943,6 +1943,10 @@ public:
                 m_functor(m_compiler, node);
             }
         }
+        if (node->OperIs(GT_LCLHEAP))
+        {
+            m_functor(m_compiler, node);
+        }
         return Compiler::WALK_CONTINUE;
     }
 };
@@ -2026,14 +2030,27 @@ public:
     {
     }
 
-    void operator()(Compiler* compiler, GenTree* call)
+    void operator()(Compiler* compiler, GenTree* tree)
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
                                                                ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
                                                                : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+
+        if (tree->OperIs(GT_LCLHEAP))
+        {
+            schemaElem.ILOffset = static_cast<int32_t>(tree->AsOpWithILOffset()->GetILOffset());
+        }
+        else if (tree->OperIs(GT_CALL))
+        {
+            schemaElem.ILOffset = static_cast<int32_t>(tree->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset);
+        }
+        else
+        {
+            unreached();
+        }
+
         m_schema.push_back(schemaElem);
         m_schemaCount++;
 
@@ -2267,12 +2284,24 @@ public:
             return;
         }
 
-        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
-               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+        int32_t ilOffset;
+        if (node->OperIs(GT_LCLHEAP))
+        {
+            ilOffset = node->AsOpWithILOffset()->GetILOffset();
+        }
+        else if (node->OperIs(GT_CALL))
+        {
+            assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
+                   node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+            ilOffset = static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset);
+        }
+        else
+        {
+            unreached();
+        }
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
-        if (countEntry.ILOffset !=
-            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+        if (countEntry.ILOffset != ilOffset)
         {
             return;
         }
@@ -2292,9 +2321,22 @@ public:
 
         *m_currentSchemaIndex += 2;
 
-        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+        GenTree** lenArgRef;
+        if (node->OperIs(GT_LCLHEAP))
+        {
+            lenArgRef = &node->AsOp()->gtOp1;
+        }
+        else if (node->OperIs(GT_CALL))
+        {
+            lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+        }
+        else
+        {
+            unreached();
+        }
 
-        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
+        // We have Memmove(dst, src, len) or LCLHEAP(len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for
+        // the len:
         //
         //  \--*  COMMA     long
         //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
@@ -2305,13 +2347,18 @@ public:
         //     |  \--*  CNS_INT   long   <hist>
         //     \--*  LCL_VAR   long   tmp
         //
-
         const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
         GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
         GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
         GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
         GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
         unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+
+        if (lengthNode->TypeGet() != TYP_I_IMPL)
+        {
+            lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ false, TYP_I_IMPL);
+        }
+
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
