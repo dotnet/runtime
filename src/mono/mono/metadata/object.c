@@ -1311,7 +1311,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
  *   The IMT slot is embedded into AOTed code, so this must return the same value
  * for the same method across all executions. This means:
  * - pointers shouldn't be used as hash values.
- * - mono_metadata_str_hash () should be used for hashing strings.
  */
 guint32
 mono_method_get_imt_slot (MonoMethod *method)
@@ -1348,8 +1347,8 @@ mono_method_get_imt_slot (MonoMethod *method)
 
 	/* Initialize hashes */
 	hashes [0] = m_class_get_name_hash (method->klass);
-	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
-	hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [1] = g_str_hash (m_class_get_name_space (method->klass));
+	hashes [2] = g_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
 		hashes [4 + i] = mono_metadata_type_hash (sig->params [i]);
