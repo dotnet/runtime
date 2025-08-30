@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions(Serializer.DefaultOptions);
             options.MakeReadOnly();
 
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<InheritedPersonWithRequiredMembers>();
             Assert.Equal(3, typeInfo.Properties.Count);
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembers>(options),
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions(Serializer.DefaultOptions);
             options.MakeReadOnly();
 
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers>();
             Assert.Equal(4, typeInfo.Properties.Count);
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers>(options),
@@ -191,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions(Serializer.DefaultOptions);
             options.MakeReadOnly();
 
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembersSetsRequiredMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<InheritedPersonWithRequiredMembersSetsRequiredMembers>();
             Assert.Equal(3, typeInfo.Properties.Count);
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembersSetsRequiredMembers>(options));
@@ -476,7 +476,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions(Serializer.DefaultOptions) { IncludeFields = true };
             options.MakeReadOnly();
 
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithRequiredField));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<ClassWithRequiredField>();
             Assert.Equal(1, typeInfo.Properties.Count);
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.Properties[0];
@@ -750,7 +750,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;
             options.MakeReadOnly();
-            return options.GetTypeInfo(typeof(T));
+            return options.GetTypeInfo<T>();
         }
 
         private static void AssertJsonTypeInfoHasRequiredProperties(JsonTypeInfo typeInfo, params string[] requiredProperties)

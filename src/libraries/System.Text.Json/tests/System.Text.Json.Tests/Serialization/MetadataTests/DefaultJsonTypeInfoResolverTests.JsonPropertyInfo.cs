@@ -1709,14 +1709,14 @@ namespace System.Text.Json.Serialization.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/76807
 
             // Sanity check -- metadata resolution for the unsupported type is failing
-            Assert.Throws<InvalidOperationException>(() => JsonSerializerOptions.Default.GetTypeInfo(typeof(UnsupportedType)));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializerOptions.Default.GetTypeInfo<UnsupportedType>());
 
             // Serialization works as expected
             string json = JsonSerializer.Serialize(new PocoWithIgnoredUnsupportedType());
             JsonTestHelper.AssertJsonEqual("{}", json);
 
             // Metadata is reported as expected
-            JsonTypeInfo jti = JsonSerializerOptions.Default.GetTypeInfo(typeof(PocoWithIgnoredUnsupportedType));
+            JsonTypeInfo jti = JsonSerializerOptions.Default.GetTypeInfo<PocoWithIgnoredUnsupportedType>();
             Assert.Equal(1, jti.Properties.Count);
             JsonPropertyInfo propertyInfo = jti.Properties[0];
             Assert.Null(propertyInfo.Get);

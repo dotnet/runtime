@@ -610,7 +610,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void GetValueKind_NumberHandling(JsonNumberHandling numberHandling, JsonValueKind expectedKind)
         {
             JsonSerializerOptions options = new(JsonSerializerOptions.Default) { NumberHandling = numberHandling };
-            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonTypeInfo<int> typeInfo = options.GetTypeInfo<int>();
             JsonValue value = JsonValue.Create(42, typeInfo);
             Assert.Equal(expectedKind, value.GetValueKind());
         }

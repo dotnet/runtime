@@ -1087,7 +1087,7 @@ namespace System.Text.Json.SourceGeneration
                     public {{typeInfoFQN}} {{typeInfoPropertyName}}
                     #nullable enable annotations
                     {
-                        get => _{{typeInfoPropertyName}} ??= ({{typeInfoFQN}}){{OptionsInstanceVariableName}}.GetTypeInfo(typeof({{typeFQN}}));
+                        get => _{{typeInfoPropertyName}} ??= {{OptionsInstanceVariableName}}.GetTypeInfo<{{typeFQN}}>();
                     }
 
                     private {{typeInfoFQN}} {{CreateTypeInfoMethodName(typeMetadata)}}({{JsonSerializerOptionsTypeRef}} {{OptionsLocalVariableName}})

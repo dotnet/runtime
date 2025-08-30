@@ -152,7 +152,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             CollectionWithPrivateElementType collection = CollectionWithPrivateElementType.CreatePopulatedInstance();
             string json = collection.GetExpectedJson();
 
-            Assert.True(Serializer.DefaultOptions.TryGetTypeInfo(typeof(CollectionWithPrivateElementType), out _));
+            Assert.True(Serializer.DefaultOptions.TryGetTypeInfo<CollectionWithPrivateElementType>(out _));
 
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(collection));
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<CollectionWithPrivateElementType>(json));
@@ -165,7 +165,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             DictionaryWithPrivateKeyAndValueType dictionary = DictionaryWithPrivateKeyAndValueType.CreatePopulatedInstance();
             string json = dictionary.GetExpectedJson();
 
-            Assert.True(Serializer.DefaultOptions.TryGetTypeInfo(typeof(DictionaryWithPrivateKeyAndValueType), out _));
+            Assert.True(Serializer.DefaultOptions.TryGetTypeInfo<DictionaryWithPrivateKeyAndValueType>(out _));
 
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary));
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<DictionaryWithPrivateKeyAndValueType>(json));

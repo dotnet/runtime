@@ -25,7 +25,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializerOptions options = UnspeakableTypeContext.Default.Options;
 
             // Context returns a JsonTypeInfo for the declared type
-            Assert.NotNull(options.GetTypeInfo(typeof(T)));
+            Assert.NotNull(options.GetTypeInfo<T>());
             // But fails when resolving one for the runtime type
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(envelope.Value.GetType()));
 

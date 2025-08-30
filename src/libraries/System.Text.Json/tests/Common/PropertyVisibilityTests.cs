@@ -1127,7 +1127,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ProtectedMembers()
         {
             var options = Serializer.CreateOptions(includeFields: true);
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithProtectedMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<ClassWithProtectedMembers>();
             Assert.Empty(typeInfo.Properties);
 
             var value = new ClassWithProtectedMembers();
@@ -1171,7 +1171,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PrivateProtectedMembers()
         {
             var options = Serializer.CreateOptions(includeFields: true);
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithPrivateProtectedMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<ClassWithPrivateProtectedMembers>();
             Assert.Empty(typeInfo.Properties);
 
             var value = new ClassWithPrivateProtectedMembers();
@@ -1215,7 +1215,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task InternalProtectedMembers()
         {
             var options = Serializer.CreateOptions(includeFields: true);
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithInternalProtectedMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<ClassWithInternalProtectedMembers>();
             Assert.Empty(typeInfo.Properties);
 
             var value = new ClassWithInternalProtectedMembers();

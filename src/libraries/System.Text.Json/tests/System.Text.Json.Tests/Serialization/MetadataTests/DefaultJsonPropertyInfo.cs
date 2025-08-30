@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = CreateOptions();
 
-            JsonTypeInfo? typeInfo = options.GetTypeInfo(typeof(ClassWithRequiredCustomAttributes));
+            JsonTypeInfo? typeInfo = options.GetTypeInfo<ClassWithRequiredCustomAttributes>();
             Assert.NotNull(typeInfo);
 
             Assert.Equal(3, typeInfo.Properties.Count);
@@ -385,7 +385,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = CreateOptions();
 
-            JsonTypeInfo? typeInfo = options.GetTypeInfo(typeof(DerivedClassHidingRequiredPropertyWithNonRequired));
+            JsonTypeInfo? typeInfo = options.GetTypeInfo<DerivedClassHidingRequiredPropertyWithNonRequired>();
             Assert.NotNull(typeInfo);
             Assert.Equal(1, typeInfo.Properties.Count);
 
@@ -393,7 +393,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(nameof(DerivedClassHidingRequiredPropertyWithNonRequired.RequiredProperty), propertyInfo.Name);
             Assert.False(propertyInfo.IsRequired);
 
-            typeInfo = options.GetTypeInfo(typeof(BaseClassWithRequiredProperties));
+            typeInfo = options.GetTypeInfo<BaseClassWithRequiredProperties>();
             Assert.NotNull(typeInfo);
             Assert.Equal(1, typeInfo.Properties.Count);
 

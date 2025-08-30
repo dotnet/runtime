@@ -468,7 +468,7 @@ namespace System.Text.Json.Serialization.Tests
             public readonly static CreationHandlingSetWithAttribute_PopulatedPropertyDeserializeInitiallyNull_TestBody Instance = new();
             public async Task Visit<T>(JsonSerializerWrapper serializer)
             {
-                JsonTypeInfoKind kind = serializer.DefaultOptions.GetTypeInfo(typeof(T)).Kind;
+                JsonTypeInfoKind kind = serializer.DefaultOptions.GetTypeInfo<T>().Kind;
                 Assert.True(kind is JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary);
                 string json = kind is JsonTypeInfoKind.Enumerable ? """{"Property":[1,2,3]}""" : """{"Property":{"a":1,"b":2,"c":3}}""";
 

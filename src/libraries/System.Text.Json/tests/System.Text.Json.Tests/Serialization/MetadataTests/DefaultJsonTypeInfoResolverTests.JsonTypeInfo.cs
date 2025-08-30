@@ -719,7 +719,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            JsonTypeInfo<SomeClass> jsonTypeInfo = Assert.IsAssignableFrom<JsonTypeInfo<SomeClass>>(options.GetTypeInfo(typeof(SomeClass)));
+            JsonTypeInfo<SomeClass> jsonTypeInfo = Assert.IsAssignableFrom<JsonTypeInfo<SomeClass>>(options.GetTypeInfo<SomeClass>());
             Assert.Equal(1, jsonTypeInfo.Properties.Count);
 
             JsonPropertyInfo propertyInfo = jsonTypeInfo.Properties[0];

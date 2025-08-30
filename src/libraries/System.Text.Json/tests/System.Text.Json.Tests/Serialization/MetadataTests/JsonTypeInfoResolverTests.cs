@@ -267,7 +267,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(resolver.GetTypeInfo(typeof(object), options));
 
             options.TypeInfoResolver = resolver;
-            Assert.IsAssignableFrom<JsonTypeInfo<object>>(options.GetTypeInfo(typeof(object)));
+            Assert.IsAssignableFrom<JsonTypeInfo<object>>(options.GetTypeInfo<object>());
         }
 
         public sealed class NullResolver : IJsonTypeInfoResolver

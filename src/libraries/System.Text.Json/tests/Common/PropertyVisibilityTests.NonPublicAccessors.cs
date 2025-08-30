@@ -441,7 +441,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
 
-            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithIgnoredAndPrivateMembers));
+            JsonTypeInfo typeInfo = options.GetTypeInfo<ClassWithIgnoredAndPrivateMembers>();
 
             // The contract surfaces the ignored properties but not the private ones
             Assert.Equal(2, typeInfo.Properties.Count);
