@@ -28,8 +28,6 @@ from pathlib import Path
 ##########################################################################################################
 
 CRANK_PORT = 5010
-CRANK_SDK_CHANNEL = "LTS"
-
 
 # Convert a filename to the appropriate native DLL name, e.g. "clrjit" -> "libclrjit.so" (on Linux)
 def native_dll(name: str) -> str:
@@ -160,9 +158,7 @@ def setup_and_run_crank_agent(workdir: Path):
     tools_dir.mkdir(parents=True, exist_ok=True)
 
     # Install .NET SDK needed for crank and crank-agent via dotnet-install public script.
-    # it is currently 8.0, but let's be flexible and intall LTS as well.
     install_dotnet_sdk("8.0", dotnethome_dir)
-    # install_dotnet_sdk("LTS", dotnethome_dir)
 
     # Determine the dotnet executable to use for installing tools
     dotnet_exe = dotnet_root_dir / native_exe("dotnet")
@@ -267,6 +263,7 @@ def main():
     parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
     parser.add_argument("--output_mch", required=True, help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
     parser.add_argument("--no_cleanup", action="store_true", help="If specified, do not clean up temporary files after execution.")
+    parser.add_argument("--work_dir", help="Optional path to a directory in which a new working directory will be created. If specified, a new subdirectory with a random name prefixed with 'aspnet2_' will be created inside this directory. Otherwise a system temp directory is used.")
     args = parser.parse_args()
 
     core_root_path = Path(args.core_root).expanduser().resolve()
@@ -276,6 +273,8 @@ def main():
     print(f"--core_root: {core_root_path}")
     print(f"--tfm: {args.tfm}")
     print(f"--output_mch: {output_mch_path}")
+    if args.work_dir:
+        print(f"--work_dir: {Path(args.work_dir).expanduser().resolve()}")
 
     mcs_cmd = core_root_path / native_exe("mcs")
     if not mcs_cmd.exists():
@@ -283,7 +282,12 @@ def main():
         sys.exit(2)
 
     # Create or use working directory for crank_data
-    temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_"))
+    if args.work_dir:
+        work_dir_base = Path(args.work_dir).expanduser().resolve()
+        work_dir_base.mkdir(parents=True, exist_ok=True)
+        temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_", dir=str(work_dir_base)))
+    else:
+        temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_"))
     print(f"Using temp work directory: {temp_root}")
 
     # Set current working directory to temp_root
