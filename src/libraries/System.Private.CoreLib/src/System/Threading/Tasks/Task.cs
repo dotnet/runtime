@@ -4936,10 +4936,15 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            ReadOnlySpan<Task> span =
-                tasks is List<Task> list ? CollectionsMarshal.AsSpan(list) :
-                tasks is Task[] array ? array :
-                CollectionsMarshal.AsSpan(new List<Task>(tasks));
+            ReadOnlySpan<Task> span;
+            if (tasks.GetType() == typeof(List<Task>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
+            {
+                span = CollectionsMarshal.AsSpan((List<Task>)tasks);
+            }
+            else
+            {
+                span = tasks is Task[] array ? array : CollectionsMarshal.AsSpan(new List<Task>(tasks));
+            }
 
             WaitAllCore(span, Timeout.Infinite, cancellationToken);
         }
@@ -5933,7 +5938,12 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            int? count = null;
+            if (tasks.GetType() == typeof(List<Task>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
+            {
+                return WhenAll(CollectionsMarshal.AsSpan((List<Task>)tasks));
+            }
+
+            int capacity = 0;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5941,18 +5951,13 @@ namespace System.Threading.Tasks
                     return WhenAll((ReadOnlySpan<Task>)taskArray);
                 }
 
-                if (tasks is List<Task> taskList)
-                {
-                    return WhenAll(CollectionsMarshal.AsSpan(taskList));
-                }
-
-                count = taskCollection.Count;
+                capacity = taskCollection.Count;
             }
 
             // Buffer the tasks into a temporary span. Small sets of tasks are common,
             // so for <= 8 we stack allocate.
-            ValueListBuilder<Task> builder = count is > 8 ?
-                new ValueListBuilder<Task>(count.Value) :
+            ValueListBuilder<Task> builder = capacity is > 8 ?
+                new ValueListBuilder<Task>(capacity) :
                 new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
             foreach (Task task in tasks)
             {
