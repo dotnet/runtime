@@ -28307,10 +28307,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 
             case NI_Sve_Scatter:
             case NI_Sve_Scatter16BitNarrowing:
+            case NI_Sve2_Scatter16BitNarrowing:
             case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter32BitNarrowing:
+            case NI_Sve2_Scatter32BitNarrowing:
             case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter8BitNarrowing:
+            case NI_Sve2_Scatter8BitNarrowing:
             case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
             case NI_Sve_ScatterWithByteOffsets:
                 addr = Op(2);
