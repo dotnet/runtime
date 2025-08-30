@@ -3745,7 +3745,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+    static_assert(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************

@@ -78,7 +78,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 {
     _ASSERTE(!"Don't call this function. It just does compile time checking\n");
 
-    // We use the C_ASSERT macro here to get a compile-time assert.
+    // We use the static_assert macro here to get a compile-time assert.
 
     // Make sure we don't have any duplicate numbers.
     // The switch statements in the main loops won't always catch this

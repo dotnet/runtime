@@ -1293,7 +1293,7 @@ private:
             case TYP_DOUBLE:
                 if (c->m_attribs == CEA_Handle)
                 {
-                    C_ASSERT(offsetof(VNHandle, m_cnsVal) == 0);
+                    static_assert(offsetof(VNHandle, m_cnsVal) == 0);
                     return (T) reinterpret_cast<VNHandle*>(c->m_defs)[offset].m_cnsVal;
                 }
 #ifdef DEBUG

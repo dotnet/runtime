@@ -195,7 +195,7 @@ class ComCallMethodDesc;
 #endif // FEATURE_COMINTEROP
 
 // Note: the value (-1) is used to generate the largest possible pointer value: this keeps frame addresses
-// increasing upward. Because we want to ensure that we don't accidentally change this, we have a C_ASSERT
+// increasing upward. Because we want to ensure that we don't accidentally change this, we have a static_assert
 // in stackwalk.cpp. Since it requires constant values as args, we need to define FRAME_TOP in two steps.
 // First we define FRAME_TOP_VALUE which we'll use when we do the compile-time check, then we'll define
 // FRAME_TOP in terms of FRAME_TOP_VALUE. Defining FRAME_TOP as a PTR_Frame means we don't have to type cast

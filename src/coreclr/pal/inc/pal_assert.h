@@ -16,15 +16,6 @@
 extern "C" {
 #endif
 
-#ifdef __cplusplus
-//
-// C_ASSERT() can be used to perform many compile-time assertions:
-//            type sizes, field offsets, etc.
-//
-#define C_ASSERT(e) static_assert(e, #e)
-
-#endif // __cplusplus
-
 #ifndef _ASSERTE
 #if defined(_DEBUG)
 #define _ASSERTE(e) do {                                        \

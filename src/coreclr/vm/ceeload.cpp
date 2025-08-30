@@ -4830,15 +4830,14 @@ void Module::ExpandAll()
 
 // Verify consistency of asmconstants.h
 
-// Wrap all C_ASSERT's in asmconstants.h with a class definition.  Many of the
+// Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
-// enclosing type.  (A C_ASSERT isn't a compiler intrinsic, just a magic
-// typedef that produces a compiler error when the condition is false.)
+// enclosing type.
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE
-#define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond, #cond);
+#define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond);
 #include "asmconstants.h"
 #endif // CROSSBITNESS_COMPILE
 };

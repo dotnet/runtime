@@ -2511,7 +2511,7 @@ enum __CorInfoHelpFunc {
 #define JITHELPER(code, pfnHelper, sig) __##code,
 #include "jithelpers.h"
 };
-#define JITHELPER(code, pfnHelper, sig) C_ASSERT((int)__##code == (int)code);
+#define JITHELPER(code, pfnHelper, sig) static_assert((int)__##code == (int)code);
 #include "jithelpers.h"
 
 #ifdef _DEBUG

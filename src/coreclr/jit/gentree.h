@@ -3377,8 +3377,8 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
     AsLngCon()->gtLconVal = val;
 #else
     // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
-    C_ASSERT(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
-    C_ASSERT(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
+    static_assert(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
+    static_assert(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
 
     SetIconValue(ssize_t(val));
 #endif
