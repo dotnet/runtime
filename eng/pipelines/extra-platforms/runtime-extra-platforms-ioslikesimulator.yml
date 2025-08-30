@@ -135,7 +135,6 @@ jobs:
             buildAllTestsAsStandalone: true
 
 #
-# iOS simulator
 # Build the whole product using CoreCLR and run functional tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml

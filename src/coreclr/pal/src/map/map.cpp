@@ -1955,9 +1955,13 @@ MAPmmapAndRecord(
             }
             else
             {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+                memcpy(pvBaseAddress, pvMappedFile, len + adjust);
+#else
                 PAL_JitWriteProtect(true);
                 memcpy(pvBaseAddress, pvMappedFile, len + adjust);
                 PAL_JitWriteProtect(false);
+#endif
             }
             if (-1 == munmap(pvMappedFile, len + adjust))
             {
