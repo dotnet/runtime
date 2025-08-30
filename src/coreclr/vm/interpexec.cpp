@@ -610,6 +610,10 @@ MAIN_LOOP:
                     MemoryBarrier();
                     ip++;
                     break;
+                case INTOP_GETSTUBCONTEXT:
+                    LOCAL_VAR(ip[1], void*) = pFrame->hiddenArgument;
+                    ip += 2;
+                    break;
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
