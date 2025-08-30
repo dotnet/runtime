@@ -3,6 +3,8 @@
   <assembly fullname="System.Private.CoreLib" />
   <assembly fullname="System.Reflection" />
   <assembly fullname="System.Collections" />
+  <assembly fullname="System.Collections.Immutable" />
+  <assembly fullname="System.Collections.NonGeneric" />
   <assembly fullname="System.Runtime.Serialization" />
   <assembly fullname="System.Runtime.Serialization.Json" />
   <assembly fullname="System.Text.Json" />

@@ -338,7 +338,7 @@ OPDEF(INTOP_LDIND_I4, "ldind.i4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_I8, "ldind.i8", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R4, "ldind.r4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R8, "ldind.r8", 4, 1, 1, InterpOpInt)
-OPDEF(INTOP_LDIND_O, "ldind.o", 4, 1, 1, InterpOpInt)
+// No LDIND_O, use LDIND_I
 OPDEF(INTOP_LDIND_VT, "ldind.vt", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_STIND_I1, "stind.i1", 4, 0, 2, InterpOpInt)
