@@ -4079,7 +4079,7 @@ template<> struct cdac_data<MethodTable>
 };
 
 #ifndef CROSSBITNESS_COMPILE
-static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+static_assert(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);

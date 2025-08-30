@@ -1040,8 +1040,6 @@ struct MSLAYOUT DacpJitCodeHeapInfo
     DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
 
-#include "static_assert.h"
-
 /* DAC datastructures are frozen as of dev11 shipping.  Do NOT add fields, remove fields, or change the fields of
  * these structs in any way.  The correct way to get new data out of the runtime is to create a new struct and
  * add a new function to the latest Dac<-->SOS interface to produce this data.

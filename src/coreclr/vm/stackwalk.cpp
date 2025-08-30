@@ -1113,7 +1113,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #endif // FEATURE_HIJACK
 
     // FRAME_TOP must not be 0/NULL.
-    static_assert_no_msg(FRAME_TOP_VALUE != 0);
+    static_assert(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 

@@ -479,7 +479,7 @@ private:
         bmtTypeHandle(
             bmtRTType * pRTType)
             : m_handle(HandleFromRTType(pRTType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
 
         //-----------------------------------------------------------------------------------------
         // Creates a type handle for a bmtMDType pointer. For ease of use, this conversion
@@ -487,7 +487,7 @@ private:
         bmtTypeHandle(
             bmtMDType * pMDType)
             : m_handle(HandleFromMDType(pMDType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -1126,14 +1126,14 @@ private:
         bmtMethodHandle(
             bmtRTMethod * pRTMethod)
             : m_handle(HandleFromRTMethod(pRTMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Constructor taking a bmtMDMethod*.
         bmtMethodHandle(
             bmtMDMethod * pMDMethod)
             : m_handle(HandleFromMDMethod(pMDMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.

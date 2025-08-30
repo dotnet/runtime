@@ -800,23 +800,23 @@ public:
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
 
 // Verify that the type for each precode is different
-static_assert_no_msg(StubPrecode::Type != PInvokeImportPrecode::Type);
-static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
-static_assert_no_msg(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(FixupPrecode::Type != PInvokeImportPrecode::Type);
-static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(PInvokeImportPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert(StubPrecode::Type != PInvokeImportPrecode::Type);
+static_assert(StubPrecode::Type != FixupPrecode::Type);
+static_assert(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert(FixupPrecode::Type != PInvokeImportPrecode::Type);
+static_assert(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert(PInvokeImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 
 // Verify that the base type for each precode fits into each specific precode type
-static_assert_no_msg(sizeof(Precode) <= sizeof(PInvokeImportPrecode));
-static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
-static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+static_assert(sizeof(Precode) <= sizeof(PInvokeImportPrecode));
+static_assert(sizeof(Precode) <= sizeof(FixupPrecode));
+static_assert(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
 #ifdef FEATURE_INTERPRETER
 // we are allocating InterpreterPrecode in the interleaved StubPrecodeHeap
 // (in Precode::AllocateInterpreterPrecode)
 // and so we need it to fit the data into the StubPrecode::CodeSize
-static_assert_no_msg(sizeof(InterpreterPrecodeData) <= StubPrecode::CodeSize);
+static_assert(sizeof(InterpreterPrecodeData) <= StubPrecode::CodeSize);
 #endif // FEATURE_INTERPRETER
 
 // A summary of the precode layout for diagnostic purposes

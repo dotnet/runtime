@@ -93,7 +93,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     curThread = GetThread();
 
-    static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
+    static_assert(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
     // If the current thread owns spinlock it cannot call managed code.

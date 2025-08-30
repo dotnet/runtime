@@ -106,9 +106,9 @@ public:
         m_jitFlags            = flags.GetFlagsRaw();
         m_instructionSetFlags = flags.GetInstructionSetFlags();
 
-        C_ASSERT(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
+        static_assert(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
 
-#define FLAGS_EQUAL(a, b) C_ASSERT((unsigned)(a) == (unsigned)(b))
+#define FLAGS_EQUAL(a, b) static_assert((unsigned)(a) == (unsigned)(b))
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT, JIT_FLAG_SPEED_OPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT, JIT_FLAG_SIZE_OPT);

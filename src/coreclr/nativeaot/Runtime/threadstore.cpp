@@ -415,7 +415,7 @@ FCIMPL1(void, RhpCancelThreadAbort, void* thread)
 }
 FCIMPLEND
 
-C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
+static_assert(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
 PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;

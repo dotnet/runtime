@@ -1101,7 +1101,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
     if (id == OptionalMember_##NAME) { \
         return offset; \
     } \
-    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
+    static_assert(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
     if (Has##NAME()) { \
         offset += sizeof(TYPE); \
     }

@@ -298,7 +298,7 @@ public:
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        static_assert_no_msg(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 
@@ -890,7 +890,7 @@ struct StressLogMsg
         , m_format(format)
         , m_args{ StressLog::ConvertArgument(args)... }
     {
-        static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
+        static_assert(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
 };
 

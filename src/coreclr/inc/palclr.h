@@ -53,15 +53,6 @@
 #define EMPTY_BASES_DECL
 #endif // !_MSC_VER
 
-//
-// CPP_ASSERT() can be used within a class definition, to perform a
-// compile-time assertion involving private names within the class.
-//
-// MS compiler doesn't allow redefinition of the typedef within a template.
-// gcc doesn't allow redefinition of the typedef within a class, though
-// it does at file scope.
-#define CPP_ASSERT(n, e) typedef char __C_ASSERT__##n[(e) ? 1 : -1];
-
 
 // PORTABILITY_ASSERT and PORTABILITY_WARNING macros are meant to be used to
 // mark places in the code that needs attention for portability. The usual

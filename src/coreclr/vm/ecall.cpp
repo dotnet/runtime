@@ -51,27 +51,27 @@ Utf8String, but String is similar.)
 
 // METHOD__STRING__CTORF_XXX has to be in same order as ECall::CtorCharXxx
 #define METHOD__STRING__CTORF_FIRST METHOD__STRING__CTORF_CHARARRAY
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
+static_assert(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
+static_assert(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
+static_assert(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
+static_assert(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
 
 // ECall::CtorCharXxx has to be in same order as METHOD__STRING__CTORF_XXX
 #define ECallCtor_First ECall::CtorCharArrayManaged
-static_assert_no_msg(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
-static_assert_no_msg(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
-static_assert_no_msg(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
-static_assert_no_msg(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
-static_assert_no_msg(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
-static_assert_no_msg(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
+static_assert(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
+static_assert(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
+static_assert(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
+static_assert(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
+static_assert(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
+static_assert(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
+static_assert(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
+static_assert(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
+static_assert(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
 
 #define NumberOfStringConstructors 9
 

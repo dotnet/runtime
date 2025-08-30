@@ -4506,7 +4506,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
 
     unsigned int jitOptimizationTier = (unsigned int)PrepareCodeConfig::GetJitOptimizationTier(pConfig, pMethodDesc);
-    static_assert_no_msg((unsigned int)PrepareCodeConfig::JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
+    static_assert((unsigned int)PrepareCodeConfig::JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
     _ASSERTE(jitOptimizationTier <= MethodFlagsJitOptimizationTierLowMask);
     _ASSERTE(((ulMethodFlags >> MethodFlagsJitOptimizationTierShift) & MethodFlagsJitOptimizationTierLowMask) == 0);
     ulMethodFlags |= jitOptimizationTier << MethodFlagsJitOptimizationTierShift;
@@ -4830,14 +4830,14 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     ULONG32 numMappings = 0;
     if (DebugInfoManager::GetRichDebugInfo(request, fpNew, NULL, &inlineTree, &numInlineTree, &mappings, &numMappings))
     {
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
+        static_assert((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
 
-        static_assert_no_msg((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
 
         const uint32_t inlineTreeNodeDataSize =
             sizeof(CORINFO_METHOD_HANDLE) +
