@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -89,6 +90,8 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetParentMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
 
     TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable) => throw new NotImplementedException();
+    TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
@@ -104,6 +107,7 @@ public interface IRuntimeTypeSystem : IContract
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
     uint GetTypeDefToken(TypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumVtableSlots(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumMethods(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
@@ -175,6 +179,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     TargetCodePointer GetNativeCode(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    TargetCodePointer GetMethodEntryPointIfExists(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     ushort GetSlotNumber(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
