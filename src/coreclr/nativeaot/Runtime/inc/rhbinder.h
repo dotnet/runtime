@@ -276,9 +276,7 @@ enum PInvokeTransitionFrameFlags
                                         // a return address pointing into the hijacked method and that method's
                                         // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x00004000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00008000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00004000,   // indicates that this is a frame for a hijacked call
 };
 #elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : uint64_t
@@ -333,9 +331,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000100000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000200000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
 };
 
 #elif defined(TARGET_LOONGARCH64)
@@ -388,9 +384,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // ra register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000080000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
 };
 
 #elif defined(TARGET_RISCV64)
@@ -437,9 +431,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
 
     PTFF_SAVE_RA        = 0x0000000040000000,
 
-    PTFF_THREAD_ABORT   = 0x0000000080000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
 };
 
 #else // TARGET_ARM
@@ -482,9 +474,7 @@ enum PInvokeTransitionFrameFlags
     PTFF_RAX_IS_BYREF   = 0x00020000,
 #endif
 
-    PTFF_THREAD_ABORT   = 0x00100000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00200000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00100000,   // indicates that this is a frame for a hijacked call
 };
 #endif // TARGET_ARM
 

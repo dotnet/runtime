@@ -359,16 +359,11 @@ PTFF_SAVE_ALL_PRESERVED equ 000000F7h   ;; NOTE: RBP is not included in this set
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved in hijack handler - in case it contains a GC ref
 PTFF_SAVE_ALL_SCRATCH   equ 00007F00h
-PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
-PTFF_THREAD_HIJACK      equ 00200000h   ;; indicates that this is a frame for a hijacked call
+PTFF_THREAD_HIJACK      equ 00100000h   ;; indicates that this is a frame for a hijacked call
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
-TrapThreadsFlags_AbortInProgress equ 1
-TrapThreadsFlags_TrapThreads     equ 2
-
-;; This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
-STATUS_NATIVEAOT_THREAD_ABORT      equ 43h
+TrapThreadsFlags_TrapThreads     equ 1
 
 ;;
 ;; CONSTANTS -- SYMBOLS

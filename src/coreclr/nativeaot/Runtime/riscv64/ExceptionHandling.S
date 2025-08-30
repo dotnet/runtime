@@ -486,10 +486,6 @@ LOCAL_LABEL(NotHijacked):
         ld  a2, rsp_offset_a2(sp)
         ld  a3, rsp_offset_a3(sp)
 
-        ld  a4, OFFSETOF__Thread__m_threadAbortException(a5)
-        sub a4, a4, a0
-        sd  a4, rsp_offset_is_not_handling_thread_abort(sp) // Non-zero if the exception is not ThreadAbortException
-
         addi  t3, a5, OFFSETOF__Thread__m_ThreadStateFlags
 
         addiw  a6, zero, -17  // Mask value (0xFFFFFFEF)
@@ -548,23 +544,6 @@ LOCAL_LABEL(PopExInfoLoop):
 LOCAL_LABEL(DonePopping):
         sd  a3, OFFSETOF__Thread__m_pExInfoStackHead(a1)  // Store the new head on the Thread
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
-
-        // Use `andi` with the immediate value 0
-        andi  a6, a3, (1 << TrapThreadsFlags_AbortInProgress_Bit)  // Apply the mask directly
-        beq   a6, zero, LOCAL_LABEL(NoAbort)
-
-        ld   a3, rsp_offset_is_not_handling_thread_abort(sp)
-        bne  a3, zero, LOCAL_LABEL(NoAbort)
-
-        // It was the ThreadAbortException, so rethrow it
-        // Reset SP
-        mv  a1, a0  // a1 <- continuation address as exception PC
-        li  a0, STATUS_NATIVEAOT_THREAD_ABORT
-        mv  sp, a2
-        tail  C_FUNC(RhpThrowHwEx)
-
-LOCAL_LABEL(NoAbort):
         // Reset SP and jump to continuation address
         mv  sp, a2
         jalr  zero, 0(a0)  // Jump to the continuation address

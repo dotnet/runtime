@@ -232,10 +232,6 @@ namespace System.Runtime
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThreadAbortException")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception RhpGetThreadAbortException();
-
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhCurrentNativeThreadId();
