@@ -173,6 +173,9 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
+    // Returns whether you may be able to get an IL address from a method desc
+    public virtual bool MayHaveILHeader(MethodDescHandle methodDesc);
 }
 ```
 
@@ -774,6 +777,7 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
+| `AsyncMethodData` | `Kind` | Kind enum of async method |
 
 
 The contract depends on the following other contracts
@@ -854,6 +858,12 @@ And the following enumeration definitions
     {
         Initialized = 0x0001,
         IsInitError = 0x0100,
+    }
+
+    internal enum AsyncMethodKind
+    {
+        RuntimeAsync = 2,
+        AsyncVariantThunk = 4,
     }
 
 ```

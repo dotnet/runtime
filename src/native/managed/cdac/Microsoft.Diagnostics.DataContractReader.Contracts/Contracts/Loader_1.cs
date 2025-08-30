@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -518,5 +520,70 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    private TargetPointer GetMDImport(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.PEAssembly;
+    }
+
+    private int GetRVAFromMetadata(ModuleHandle handle, int token)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        return methodDef.RelativeVirtualAddress;
+    }
+
+    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token)
+    {
+        // we need module
+        ILoader loader = this;
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        if (headerPtr == TargetPointer.Null)
+        {
+            int rva = GetRVAFromMetadata(handle, (int)token);
+            headerPtr = loader.GetILAddr(peAssembly, rva);
+        }
+        return headerPtr;
+    }
+
+    private static TEntry LookupSHash<TKey, TEntry>(SHash<TKey, TEntry> hashTable, TKey key)
+    {
+        if (hashTable.TableSize == 0)
+            return hashTable.Traits.Null();
+
+        uint hash = hashTable.Traits.Hash(key);
+        uint index = hash % hashTable.TableSize;
+        uint increment = 0;
+        while (true)
+        {
+            TEntry current = hashTable.Entries![(int)index];
+            if (hashTable.Traits.IsNull(current))
+                return hashTable.Traits.Null();
+            // we don't support the removal of entries
+            if (hashTable.Traits.Equals(key, hashTable.Traits.GetKey(current)))
+                return current;
+
+            if (increment == 0)
+                increment = (hash % (hashTable.TableSize - 1)) + 1;
+
+            index += increment;
+            if (index >= hashTable.TableSize)
+                index -= hashTable.TableSize;
+        }
+    }
+
+    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.DynamicILBlobTable == TargetPointer.Null)
+        {
+            return TargetPointer.Null;
+        }
+        DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
+        return LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }
