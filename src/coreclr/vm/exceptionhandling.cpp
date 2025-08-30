@@ -3239,13 +3239,16 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     // Sync managed exception state, for the managed thread, based upon any active exception tracker
     pThread->SyncManagedExceptionState(false);
 
-    ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
+        if (pCodeManager->ResumeAfterCatchNeedsUpdatedNonVolatileRegState())
+            ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
+
         pCodeManager->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, fIntercepted);
     }
     else
     {
+        ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
         if (fIntercepted)
         {
             ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);

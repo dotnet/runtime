@@ -335,6 +335,8 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 #endif // #ifndef DACCESS_COMPILE
 
+    virtual bool ResumeAfterCatchNeedsUpdatedNonVolatileRegState() { return true; }
+
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
@@ -610,6 +612,7 @@ class InterpreterCodeManager : public ICodeManager {
     VPTR_VTABLE_CLASS_AND_CTOR(InterpreterCodeManager, ICodeManager)
 
 public:
+    virtual bool ResumeAfterCatchNeedsUpdatedNonVolatileRegState() { return false; }
 
 
 #ifndef DACCESS_COMPILE

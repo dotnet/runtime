@@ -108,7 +108,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 
 #ifndef DACCESS_COMPILE
-    if (updateFloats)
+    if (updateFloats && CanUpdateFloats())
     {
         UpdateFloatingPointRegisters(pRD);
         // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
