@@ -221,6 +221,9 @@ namespace System.Net.Http
         {
             Debug.Assert(count > 0);
 
+            // Observe cancellation before initiating the native write.
+            token.ThrowIfCancellationRequested();
+
             _state.PinSendBuffer(buffer);
             _state.TcsInternalWriteDataToRequestStream =
                 new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -243,6 +246,9 @@ namespace System.Net.Http
 
         private Task<bool> InternalWriteEndDataAsync(CancellationToken token)
         {
+            // Observe cancellation before initiating the native write.
+            token.ThrowIfCancellationRequested();
+
             _state.TcsInternalWriteDataToRequestStream =
                 new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 

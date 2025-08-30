@@ -609,8 +609,8 @@ namespace System.Text
                 if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    Debug.Assert(fallbackBuffer == null || fallbackHelper.bFallingBack == false, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
-                    if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                    Debug.Assert(fallbackBuffer == null || !fallbackHelper.bFallingBack, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
+                    if (fallbackBuffer == null || !fallbackHelper.bFallingBack)
                     {
                         Debug.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (normal)");
                         chars--;                                        // don't use last char
