@@ -1126,7 +1126,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 cms = new SignedCms();
 
                 // DSA is not supported, so use ECDsa signed document instead
-                if (PlatformSupport.IsDSASupported)
+                if (!PlatformSupport.IsDSASupported)
                 {
                     cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
                 }
