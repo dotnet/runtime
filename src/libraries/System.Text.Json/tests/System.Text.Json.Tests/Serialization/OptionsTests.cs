@@ -704,9 +704,12 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Empty(options.TypeInfoResolverChain);
 
                 Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo<string>());
                 Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
                 Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
                 Assert.Null(typeInfo);
+                Assert.False(options.TryGetTypeInfo<string>(out JsonTypeInfo<string>? typeInfo2));
+                Assert.Null(typeInfo2);
 
                 InvalidOperationException ex;
 
@@ -748,6 +751,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Empty(options.TypeInfoResolverChain);
 
                 Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo<string>());
                 Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
 
                 InvalidOperationException ex;
@@ -763,6 +767,8 @@ namespace System.Text.Json.Serialization.Tests
 
                 Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
                 Assert.Null(typeInfo);
+                Assert.False(options.TryGetTypeInfo<string>(out JsonTypeInfo<string>? typeInfo2));
+                Assert.Null(typeInfo2);
 
                 Assert.False(options.IsReadOnly); // failed operations should not lock the instance
                 Assert.Empty(options.TypeInfoResolverChain);
@@ -773,6 +779,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(new[] { options.TypeInfoResolver }, options.TypeInfoResolverChain);
 
                 Assert.NotNull(options.GetTypeInfo(typeof(string)));
+                Assert.NotNull(options.GetTypeInfo<string>());
                 Assert.NotNull(options.GetConverter(typeof(string)));
 
                 string json = JsonSerializer.Serialize("string", options);
@@ -1483,6 +1490,7 @@ namespace System.Text.Json.Serialization.Tests
             options.MakeReadOnly();
 
             options.GetTypeInfo(typeof(List<List<List<string>>>)); // A type not in JsonContext.Default
+            options.GetTypeInfo<List<List<List<string>>>>();
 
             Assert.True(isModifierInvoked);
         }
@@ -1913,9 +1921,13 @@ namespace System.Text.Json.Serialization.Tests
             options.AddContext<JsonContext>();
 
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(BasicCompany)));
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo<BasicCompany>());
 
             Assert.False(options.TryGetTypeInfo(typeof(BasicCompany), out JsonTypeInfo? typeInfo));
             Assert.Null(typeInfo);
+
+            Assert.False(options.TryGetTypeInfo(out JsonTypeInfo<BasicCompany>? typeInfo2));
+            Assert.Null(typeInfo2);
         }
 
         [Theory]
@@ -1924,6 +1936,17 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            string json = JsonSerializer.Serialize(value, jsonTypeInfo);
+            Assert.Equal(expectedJson, json);
+            JsonSerializer.Deserialize(json, jsonTypeInfo);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTypeInfo_ResultsAreGeneric_Values))]
+        public static void GetTypeInfoGeneric_ResultsAreGeneric<T>(T value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo<T> jsonTypeInfo = options.GetTypeInfo<T>();
             string json = JsonSerializer.Serialize(value, jsonTypeInfo);
             Assert.Equal(expectedJson, json);
             JsonSerializer.Deserialize(json, jsonTypeInfo);
