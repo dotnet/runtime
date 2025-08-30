@@ -37,6 +37,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
 #include <minipal/memorybarrierprocesswide.h>
+#include <minipal/descriptorlimit.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -48,7 +49,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <string.h>
@@ -116,7 +116,6 @@ static minipal_mutex* init_critsec = NULL;
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
-static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
@@ -401,7 +400,7 @@ Initialize(
             goto CLEANUP1;
         }
 
-        if (!INIT_IncreaseDescriptorLimit())
+        if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
             // We can continue if this fails; we'll just have problems if
@@ -905,52 +904,6 @@ void PALInitUnlock(void)
 }
 
 /* Internal functions *********************************************************/
-
-/*++
-Function:
-    INIT_IncreaseDescriptorLimit [internal]
-
-Abstract:
-    Calls setrlimit(2) to increase the maximum number of file descriptors
-    this process can open.
-
-Return value:
-    TRUE if the call to setrlimit succeeded; FALSE otherwise.
---*/
-static BOOL INIT_IncreaseDescriptorLimit(void)
-{
-#ifdef TARGET_WASM
-    // WebAssembly cannot set limits
-    return TRUE;
-#endif
-#ifndef DONT_SET_RLIMIT_NOFILE
-    struct rlimit rlp;
-    int result;
-
-    result = getrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-    // Set our soft limit for file descriptors to be the same
-    // as the max limit.
-    rlp.rlim_cur = rlp.rlim_max;
-#ifdef __APPLE__
-    // Based on compatibility note in setrlimit(2) manpage for OSX,
-    // trim the limit to OPEN_MAX.
-    if (rlp.rlim_cur > OPEN_MAX)
-    {
-        rlp.rlim_cur = OPEN_MAX;
-    }
-#endif
-    result = setrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-#endif // !DONT_SET_RLIMIT_NOFILE
-    return TRUE;
-}
 
 /*++
 Function:

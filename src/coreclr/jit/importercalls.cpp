@@ -1098,9 +1098,10 @@ DONE:
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
-        // managed calling convention dictates that the callee widens the value. For explicit tailcalls we don't
-        // want to require this detail of the calling convention to bubble up to the tailcall helpers
-        bool allowWidening = isImplicitTailCall;
+        // managed calling convention dictates that the callee widens the value. For explicit tailcalls or async
+        // functions we don't want to require this detail of the calling convention to bubble up to helper
+        // infrastructure.
+        bool allowWidening = isImplicitTailCall && !call->AsCall()->IsAsync();
         if (canTailCall &&
             !impTailCallRetTypeCompatible(allowWidening, info.compRetType, info.compMethodInfo->args.retTypeClass,
                                           info.compCallConv, callRetTyp, sig->retTypeClass,
@@ -5842,27 +5843,24 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            if (varTypeIsLong(baseType))
             {
-                GenTree* op2 = impPopStack().val;
-                GenTree* op1 = impPopStack().val;
-
-                if (varTypeIsLong(baseType))
-                {
-                    hwintrinsic = NI_SSE42_X64_Crc32;
-                    op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
-                }
-                else
-                {
-                    hwintrinsic = NI_SSE42_Crc32;
-                    baseType    = genActualType(baseType);
-                }
-
-                result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
-
-                // We use the simdBaseJitType to bring the type of the second argument to codegen
-                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+                hwintrinsic = NI_X86Base_X64_Crc32;
+                op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
             }
+            else
+            {
+                hwintrinsic = NI_X86Base_Crc32;
+                baseType    = genActualType(baseType);
+            }
+
+            result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
+
+            // We use the simdBaseJitType to bring the type of the second argument to codegen
+            result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
 #elif defined(TARGET_ARM64)
             if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
             {
@@ -6107,14 +6105,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_SSE42_X64_PopCount : NI_SSE42_PopCount;
-                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
+            result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 #elif defined(TARGET_ARM64)
             // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
 #endif // TARGET_*
@@ -8309,6 +8304,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // instructions to directly compute round/ceiling/floor/truncate.
 
         case NI_System_Math_Abs:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
         case NI_System_Math_Max:
         case NI_System_Math_MaxMagnitude:
         case NI_System_Math_MaxMagnitudeNumber:
@@ -8322,14 +8319,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
-        case NI_System_Math_Sqrt:
-            return true;
-
-        case NI_System_Math_Ceiling:
-        case NI_System_Math_Floor:
         case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
-            return compOpportunisticallyDependsOn(InstructionSet_SSE42);
+            return true;
 
         case NI_System_Math_FusedMultiplyAdd:
             return compOpportunisticallyDependsOn(InstructionSet_AVX2);
@@ -10761,6 +10754,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     // Vector2/3/4 Matrix4x4, Quaternion, or Plane
                                     lookupMethodName = nullptr;
                                 }
+                            }
+                            else if (strcmp(methodName, "SquareRoot") == 0)
+                            {
+                                lookupMethodName = "Sqrt";
                             }
 
                             if (lookupMethodName != nullptr)

@@ -357,7 +357,7 @@ struct VASigCookie
 // allocation cost and allow proper bookkeeping.
 //
 
-struct VASigCookieBlock
+struct VASigCookieBlock final
 {
     enum {
 #ifdef _DEBUG
@@ -368,7 +368,7 @@ struct VASigCookieBlock
     };
 
     VASigCookieBlock    *m_Next;
-    UINT                 m_numcookies;
+    UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 

@@ -105,7 +105,9 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
 
 inline bool Is32BitInstruction(WORD opcode)
 {
-    return (opcode & 0b11) == 0b11;
+    bool is32 = ((opcode & 0b11) == 0b11);
+    assert(!is32 || ((opcode & 0b11111) != 0b11111)); // 48-bit and larger instructions unsupported
+    return is32;
 }
 
 #endif

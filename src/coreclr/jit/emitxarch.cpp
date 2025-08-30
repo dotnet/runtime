@@ -4024,7 +4024,6 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -7003,35 +7002,8 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        // Extract and store upper 4 bytes
-        emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
-    }
-    else if (tmpRegProvider != nullptr)
-    {
-        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
-        assert(isFloatReg(tmpReg));
-
-        // Extract upper 4 bytes from data
-        emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-
-        // Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
-    }
-    else
-    {
-        // We don't have temp regs - let's do two shuffles then
-
-        // [0,1,2,3] -> [2,3,0,1]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-
-        //  Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
-
-        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-    }
+    // Extract and store upper 4 bytes
+    emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
 }
 #endif // FEATURE_SIMD
 
@@ -13628,7 +13600,6 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;

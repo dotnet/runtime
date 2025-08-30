@@ -1587,7 +1587,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
     // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+    if (NonVirtualEntry2MethodDesc(actual) == NonVirtualEntry2MethodDesc(base))
     {
         return FALSE;
     }
@@ -1913,7 +1913,7 @@ static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, W
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare
     // the actual MethodDescs to detect match reliably.
-    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
+    return NonVirtualEntry2MethodDesc(actual) != NonVirtualEntry2MethodDesc(base);
 }
 
 extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)

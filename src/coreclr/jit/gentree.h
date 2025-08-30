@@ -4304,7 +4304,8 @@ enum GenTreeCallDebugFlags : unsigned int
     GTF_CALL_MD_DEVIRTUALIZED           = 0x00000002, // this call was devirtualized
     GTF_CALL_MD_UNBOXED                 = 0x00000004, // this call was optimized to use the unboxed entry point
     GTF_CALL_MD_GUARDED                 = 0x00000008, // this call was transformed by guarded devirtualization
-    GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED = 0x00000010, // this runtime lookup helper is expanded
+    GTF_CALL_MD_WAS_CANDIDATE           = 0x00000010, // this call is a (failed) inline candidate
+    GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED = 0x00000020, // this runtime lookup helper is expanded
 };
 
 inline constexpr GenTreeCallDebugFlags operator ~(GenTreeCallDebugFlags a)
@@ -5556,6 +5557,11 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallDebugFlags & GTF_CALL_MD_UNBOXED) != 0;
     }
+
+    bool WasInlineCandidate() const
+    {
+        return (gtCallDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
+    }
 #endif
 
     bool IsSuppressGCTransition() const
@@ -5572,6 +5578,11 @@ struct GenTreeCall final : public GenTree
     void SetIsGuarded()
     {
         gtCallDebugFlags |= GTF_CALL_MD_GUARDED;
+    }
+
+    void SetWasInlineCandidate()
+    {
+        gtCallDebugFlags |= GTF_CALL_MD_WAS_CANDIDATE;
     }
 #endif
 
