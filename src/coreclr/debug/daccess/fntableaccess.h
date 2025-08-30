@@ -74,7 +74,7 @@ typedef struct _FakeHpCodeHdr
 //
 class CheckDuplicatedStructLayouts
 {
-#define CHECK_OFFSET(cls, fld) static_assert_no_msg(offsetof(Fake##cls, fld) == offsetof(cls, fld))
+#define CHECK_OFFSET(cls, fld) static_assert(offsetof(Fake##cls, fld) == offsetof(cls, fld))
 
     CHECK_OFFSET(EEJitManager, m_pAllCodeHeaps);
 

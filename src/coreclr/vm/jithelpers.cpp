@@ -1878,8 +1878,8 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
-    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert(N >= S);
+    static_assert((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     // If table is not yet full, just add entries in
     // and increment the table index.

@@ -695,7 +695,7 @@ inline NativeCodeVersion::NativeCodeVersion()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -708,7 +708,7 @@ inline NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -752,7 +752,7 @@ inline bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
     return m_storageKind == rhs.m_storageKind && m_pVersionNode == rhs.m_pVersionNode;
 #else
     return m_pMethodDesc == rhs.m_pMethodDesc;

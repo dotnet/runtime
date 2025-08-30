@@ -578,9 +578,9 @@ public:
 #endif // !RIGHT_SIDE_COMPILE
 
 // We must be binary compatible w/ a pointer.
-static_assert_no_msg(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
+static_assert(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
 
-static_assert_no_msg(sizeof(void*) == sizeof(GeneralLsPointer));
+static_assert(sizeof(void*) == sizeof(GeneralLsPointer));
 
 
 
@@ -1250,7 +1250,7 @@ private:
 #define LEAF_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)NULL)
 #define ROOT_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)-1)
 
-static_assert_no_msg(sizeof(FramePointer) == sizeof(void*));
+static_assert(sizeof(FramePointer) == sizeof(void*));
 
 
 inline bool IsCloserToLeaf(FramePointer fp1, FramePointer fp2)
@@ -1864,43 +1864,43 @@ struct MSLAYOUT DebuggerMDANotification
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 9
 #ifdef TARGET_X86
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_X86
 #elif defined(TARGET_AMD64)
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_AMD64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_AMD64
 #elif defined(TARGET_ARM)
 #define DBG_TARGET_REGNUM_SP 13
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_ARM
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM
 #elif defined(TARGET_ARM64)
 #define DBG_TARGET_REGNUM_SP 31
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_ARM64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM64
 #elif defined(TARGET_LOONGARCH64)
 #define DBG_TARGET_REGNUM_SP 3
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_LOONGARCH64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
 #elif defined(TARGET_RISCV64)
 #define DBG_TARGET_REGNUM_SP 2
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_RISCV64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
 #elif defined(TARGET_WASM)
 #define DBG_TARGET_REGNUM_SP 0
@@ -2395,8 +2395,8 @@ struct MSLAYOUT DebuggerIPCEvent
 #define CorDBIPC_TRANSPORT_BUFFER_SIZE (((sizeof(DebuggerIPCEvent) + 7) / 8) * 8)
 
 // A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
-static_assert_no_msg(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
-static_assert_no_msg(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
+static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
+static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
 
 // 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
 #define LOG_MSG_PADDING         4

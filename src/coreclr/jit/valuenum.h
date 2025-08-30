@@ -301,12 +301,12 @@ private:
     static const unsigned VNFOA_KnownNonNullShift     = 5;
     static const unsigned VNFOA_SharedStaticShift     = 6;
 
-    static_assert_no_msg(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
-    static_assert_no_msg(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
-    static_assert_no_msg(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    static_assert_no_msg(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-    static_assert_no_msg(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
-    static_assert_no_msg(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
+    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -1548,7 +1548,7 @@ private:
             : m_func(func)
             , m_args{vns...}
         {
-            static_assert_no_msg(NumArgs == sizeof...(VNs));
+            static_assert(NumArgs == sizeof...(VNs));
         }
 
         bool operator==(const VNDefFuncApp& y) const
@@ -1636,7 +1636,7 @@ private:
         {
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
-            static_assert_no_msg(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
+            static_assert(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
             return reinterpret_cast<VNDefFuncAppFlexible*>(
                 (char*)m_defs + offsetWithinChunk * (sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs));
         }

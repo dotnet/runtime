@@ -7,9 +7,9 @@
 #include "corunix.hpp"
 #include <minipal/utils.h>
 
-#ifndef static_assert_no_msg
-#define static_assert_no_msg( cond ) static_assert( cond, #cond )
-#endif // !static_assert_no_msg
+#ifndef static_assert_nomsg
+#define static_assert_nomsg( cond ) static_assert( cond, #cond )
+#endif // !static_assert
 
 // The folder used for storing shared memory files and their lock files is defined in
 // the gSharedFilesPath global variable. The value of the variable depends on which
@@ -31,7 +31,7 @@
 #define SHARED_MEMORY_USER_SCOPED_RUNTIME_TEMP_DIRECTORY_NAME_PREFIX ".dotnet-uid"
 #define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME "shm"
 #define SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME "lockfiles"
-static_assert_no_msg(STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= STRING_LENGTH(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
+static_assert(STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= STRING_LENGTH(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
 
 #define SHARED_MEMORY_GLOBAL_DIRECTORY_NAME "global"
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
