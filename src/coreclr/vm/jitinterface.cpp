@@ -59,10 +59,6 @@
 #include "pgo.h"
 #endif
 
-#ifdef FEATURE_INTERPRETER
-#include "callstubgenerator.h"
-#endif
-
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
 
@@ -10871,12 +10867,22 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
+                InfoAccessType accessType;
+                LPVOID targetAddr;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                accessType = IAT_VALUE;
+                targetAddr = (LPVOID)helperMD->GetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
                 Precode* pPrecode = helperMD->GetPrecode();
                 _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+                accessType = IAT_PVALUE;
+                targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
                 if (pNativeEntrypoint != NULL)
                 {
-                    pNativeEntrypoint->accessType = IAT_PVALUE;
-                    pNativeEntrypoint->addr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+                    pNativeEntrypoint->accessType = accessType;
+                    pNativeEntrypoint->addr = targetAddr;
                 }
                 goto exit;
             }
@@ -11196,27 +11202,23 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 
 #ifdef FEATURE_INTERPRETER
 
+// Forward declare the function for mapping MetaSig to a cookie.
+LPVOID GetCookieForCalliSig(MetaSig* pMetaSig);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
     void* result = NULL;
-#ifndef TARGET_WASM
     JIT_TO_EE_TRANSITION();
-
-    Module* module = GetModule(szMetaSig->scope);
 
     Instantiation classInst = Instantiation((TypeHandle*) szMetaSig->sigInst.classInst, szMetaSig->sigInst.classInstCount);
     Instantiation methodInst = Instantiation((TypeHandle*) szMetaSig->sigInst.methInst, szMetaSig->sigInst.methInstCount);
     SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
+    Module* mod = GetModule(szMetaSig->scope);
 
-    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, module, &typeContext);
-    CallStubGenerator callStubGenerator;
-    result = callStubGenerator.GenerateCallStubForSig(sig);
+    MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+    result = GetCookieForCalliSig(&sig);
 
     EE_TO_JIT_TRANSITION();
-#else
-    PORTABILITY_ASSERT("GetCookieForInterpreterCalliSig is not supported on wasm yet");
-#endif // !TARGET_WASM
     return result;
 }
 

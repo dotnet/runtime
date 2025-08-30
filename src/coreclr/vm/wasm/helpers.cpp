@@ -470,6 +470,7 @@ void _DacGlobals::Initialize()
     /* no-op on wasm */
 }
 
+// Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
 extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
@@ -478,17 +479,66 @@ extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLeng
     return -1;
 }
 
-void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
-{
-    PORTABILITY_ASSERT("InvokeCalliStub is not implemented on wasm");
-}
-
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+}
+
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
+}
+
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
+{
+    _ASSERTE(ftn != (PCODE)NULL);
+    _ASSERTE(cookie != NULL);
+
+    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+}
+
+namespace
+{
+    void CallFuncVoidI32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fn)(int32_t) = (void (*)(int32_t))ftn;
+        (*fn)(((int32_t*)pArgs)[0]);
+    }
+
+    void CallFuncVoidI32I32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fn)(int32_t, int32_t) = (void (*)(int32_t, int32_t))ftn;
+        (*fn)(((int32_t*)pArgs)[0], ((int32_t*)pArgs)[2]);
+    }
+
+    void CallFuncVoidI32I32I32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fn)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))ftn;
+        (*fn)(((int32_t*)pArgs)[0], ((int32_t*)pArgs)[2], ((int32_t*)pArgs)[4]);
+    }
+}
+
+LPVOID GetCookieForCalliSig(MetaSig* pMetaSig)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(CheckPointer(pMetaSig));
+    _ASSERTE(pMetaSig->IsReturnTypeVoid());
+
+    int32_t numArgs = pMetaSig->NumFixedArgs();
+    switch (numArgs)
+    {
+        case 1: return (LPVOID)&CallFuncVoidI32;
+        case 2: return (LPVOID)&CallFuncVoidI32I32;
+        case 3: return (LPVOID)&CallFuncVoidI32I32I32;
+        default:
+            PORTABILITY_ASSERT("GetCookieForCalliSig: more than 3 arguments needs to be implemented");
+            break;
+    }
+
+    return NULL;
 }

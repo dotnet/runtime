@@ -29,6 +29,16 @@ void* PortableEntryPoint::GetActualCode(TADDR addr)
     return portableEntryPoint->_pActualCode;
 }
 
+void PortableEntryPoint::SetActualCode(TADDR addr, void* actualCode)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(actualCode != NULL);
+
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    _ASSERTE(portableEntryPoint->_pActualCode == NULL);
+    portableEntryPoint->_pActualCode = actualCode;
+}
+
 MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
 {
     STANDARD_VM_CONTRACT;
@@ -53,6 +63,7 @@ void PortableEntryPoint::SetInterpreterData(TADDR addr, PCODE interpreterData)
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE(portableEntryPoint->_pInterpreterData == NULL);
+    _ASSERTE(interpreterData != (PCODE)NULL);
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
 }
 

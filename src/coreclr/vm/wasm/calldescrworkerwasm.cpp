@@ -13,7 +13,7 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
     if (targetIp == NULL)
     {
         GCX_PREEMP();
-        pMethod->PrepareInitialCode(CallerGCMode::Coop);
+        (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMethod->GetInterpreterCode();
     }
 
