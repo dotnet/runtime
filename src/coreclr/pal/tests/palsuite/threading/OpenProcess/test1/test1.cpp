@@ -40,7 +40,6 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
     DWORD dwSize;
     DWORD dwRet;
 
-    HANDLE hMutex;
     HANDLE hChildProcess;
 
     char  rgchDirName[_MAX_DIR];
@@ -49,19 +48,11 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
 
     BOOL ret = FAIL;
     BOOL bChildDone = FALSE;
-    WCHAR wszMutexName[] = { 'T','E','S','T','1','\0' };
 
     /* initialize the PAL */
     if( PAL_Initialize(argc, argv) != 0 )
     {
 	    return( FAIL );
-    }
-
-    /* create a mutex to synchronize with the child process */
-    hMutex = CreateMutexW( NULL, TRUE, wszMutexName );
-    if( hMutex == NULL )
-    {
-        Fail( "ERROR:%lu:CreateMutex() call failed\r\n", GetLastError() );
     }
 
     /* zero our process and startup info structures */
@@ -83,14 +74,6 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
                                    rgchAbsPathName );
     if( dwSize == 0 )
     {
-        if( ReleaseMutex( hMutex ) == 0 )
-        {
-            Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
-        }
-        if( CloseHandle( hMutex ) == 0 )
-        {
-            Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
-        }
         Fail( "Palsuite Code: mkAbsoluteFilename() call failed.  Could ",
               "not build absolute path name to file\n.  Exiting.\n" );
     }
@@ -114,14 +97,6 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
     {
         dwError = GetLastError();
         free(rgchAbsPathNameW);
-        if( ReleaseMutex( hMutex ) == 0 )
-        {
-            Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
-        }
-        if( CloseHandle( hMutex ) == 0 )
-        {
-            Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
-        }
         Fail( "CreateProcess call failed with error code %d\n",
               dwError );
     }
@@ -136,19 +111,8 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
     if( hChildProcess == NULL )
     {
         dwError = GetLastError();
-        if( ReleaseMutex( hMutex ) == 0 )
-        {
-            Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
-        }
         Trace( "ERROR:%lu:OpenProcess call failed\n", dwError );
         goto cleanup2;
-    }
-
-    /* release the mutex so the child can proceed */
-    if( ReleaseMutex( hMutex ) == 0 )
-    {
-        Trace( "ERROR:%lu:ReleaseMutex() call failed\n", GetLastError() );
-        goto cleanup;
     }
 
     /* wait for the child process to complete, using the new handle */
@@ -214,11 +178,6 @@ cleanup2:
         ret = FAIL;
     }
     if( CloseHandle ( pi.hThread ) == 0 )
-    {
-        Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
-        ret = FAIL;
-    }
-    if( CloseHandle( hMutex ) == 0 )
     {
         Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
         ret = FAIL;
