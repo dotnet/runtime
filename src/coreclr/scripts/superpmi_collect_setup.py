@@ -414,9 +414,6 @@ def setup_benchmark(workitem_directory, arch):
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
-        run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0", "--architecture", arch, "--install-dir",
-                                 dotnet_directory, "--verbose"])
 
 
 def get_python_name():
@@ -519,15 +516,8 @@ def main(main_args):
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
-    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
+    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld" or coreclr_args.collection_name == "aspnet2":
       # create a directory with release runtime bits and a checked jit
-      print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
-      copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
-      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
-      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
-      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
-    elif coreclr_args.collection_name == "aspnet2":
-      # For aspnet2, use checked runtime bits
       print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
       jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)

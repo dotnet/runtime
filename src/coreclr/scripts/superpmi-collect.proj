@@ -77,10 +77,10 @@
 
   <!-- OS-specific settings for benchmarks collections -->
 
-  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld' or '$(CollectionName)' == 'aspnet2') and '$(AGENT_OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' == 'Windows_NT' ">
     <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
   </PropertyGroup>
-  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld' or '$(CollectionName)' == 'aspnet2') and '$(AGENT_OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'benchmarks' or '$(CollectionName)' == 'realworld') and '$(AGENT_OS)' != 'Windows_NT' ">
     <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
   </PropertyGroup>
 
@@ -161,18 +161,17 @@
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+
     <HelixPreCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPreCommand Include="taskkill.exe /f /im crank-agent.exe"/>
-    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im crank-agent.exe"/>
   </ItemGroup>
   
   <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT'">
-    <HelixPreCommand Include="pkill crank"/>
-    <HelixPreCommand Include="pkill corerun"/>
-    <HelixPostCommand Include="pkill crank"/>
-    <HelixPostCommand Include="pkill corerun"/>
+    <HelixPreCommand Include="pkill -f crank || true"/>
+    <HelixPostCommand Include="pkill -f crank || true"/>
 
     <!-- Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands -->
     <HelixPreCommand Include="sudo tdnf install git -y"/>
