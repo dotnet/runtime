@@ -1248,16 +1248,12 @@ void emitter::emitIns_R_AI(instruction  ins,
                            regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
-    assert(ins == INS_jal);    // for special.
+    assert(EA_IS_RELOC(attr));
+    assert(ins == INS_addi || emitInsIsLoad(ins));
     assert(isGeneralRegister(reg));
-    // INS_OPTS_RELOC: placeholders.  2-ins:
-    //  case:EA_HANDLE_CNS_RELOC
+    // 2-ins:
     //   auipc  reg, off-hi-20bits
-    //   addi   reg, reg, off-lo-12bits
-    //  case:EA_PTR_DSP_RELOC
-    //   auipc  reg, off-hi-20bits
-    //   ld     reg, reg, off-lo-12bits
+    //   ins    reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -1267,21 +1263,25 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     id->idInsOpt(INS_OPTS_RELOC);
 
+    id->idOpSize(EA_SIZE(attr));
     if (EA_IS_GCREF(attr))
     {
         /* A special value indicates a GCref pointer value */
         id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
     }
     else if (EA_IS_BYREF(attr))
     {
         /* A special value indicates a Byref pointer value */
         id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
     }
 
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = addr;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
 
     appendToCurIG(id);
 }
@@ -1744,7 +1744,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
         appendToCurIG(id);
     }
-    else if (size == EA_PTRSIZE)
+    else if (EA_SIZE(size) == EA_PTRSIZE)
     {
         assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
@@ -3204,23 +3204,14 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
 {
     BYTE* const     dstBase = dst;
     const regNumber reg1    = id->idReg1();
+    assert(isGeneralRegister(reg1));
 
+    *ins = id->idIns();
+    assert(*ins == INS_addi || emitInsIsLoad(*ins));
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
-
-    if (id->idIsCnsReloc())
-    {
-        *ins = INS_addi;
-    }
-    else
-    {
-        assert(id->idIsDspReloc());
-        *ins = INS_ld;
-    }
-
     dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
 
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
-
     return dst;
 }
 
@@ -5148,11 +5139,18 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-                cns -= off;
+                if (addr->IsIconHandle(GTF_ICON_FTN_ADDR))
+                {
+                    emitIns_R_AI(ins, EA_PTR_DSP_RELOC, dataReg, (size_t)cns, cns, addr->GetIconHandleFlag());
+                }
+                else
+                {
+                    ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                    cns -= off;
 
-                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+                    emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
+                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+                }
             }
             else if (isValidSimm12(offset))
             {
