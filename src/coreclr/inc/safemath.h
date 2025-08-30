@@ -29,8 +29,6 @@
 #endif
 #endif
 
-#include "static_assert.h"
-
 #include <type_traits>
 
 #ifdef FEATURE_PAL

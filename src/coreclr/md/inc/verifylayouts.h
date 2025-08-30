@@ -99,7 +99,6 @@
 #ifdef FEATURE_METADATA_VERIFY_LAYOUTS
 
 #include <stddef.h> // offsetof
-#include "static_assert.h"
 #include "metamodel.h"
 #include "mdinternalrw.h"
 

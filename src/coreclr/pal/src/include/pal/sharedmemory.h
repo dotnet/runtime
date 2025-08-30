@@ -7,10 +7,6 @@
 #include "corunix.hpp"
 #include <minipal/utils.h>
 
-#ifndef static_assert_nomsg
-#define static_assert_nomsg( cond ) static_assert( cond, #cond )
-#endif // !static_assert
-
 // The folder used for storing shared memory files and their lock files is defined in
 // the gSharedFilesPath global variable. The value of the variable depends on which
 // OS is being used, and if the application is running in a sandbox in Mac.

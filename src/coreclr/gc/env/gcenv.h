@@ -90,8 +90,6 @@
 
 #define LOGALWAYS(msg)
 
-#define static_assert_nomsg( cond ) static_assert( cond, #cond )
-
 enum LogFacility
 {
     LF_GC       = 0x00000001,

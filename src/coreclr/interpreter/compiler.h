@@ -4,7 +4,6 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
-#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"

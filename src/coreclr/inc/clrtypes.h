@@ -20,7 +20,6 @@
 #include "crtwrap.h"
 #include "winwrap.h"
 #include "staticcontract.h"
-#include "static_assert.h"
 
 #if HOST_64BIT
     #define POINTER_BITS (64)
