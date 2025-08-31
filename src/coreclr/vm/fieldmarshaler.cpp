@@ -402,7 +402,7 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
         MethodTable* pMT = GetNestedNativeMethodTable();
         if (pMT->IsBlittable())
         {
-            return pMT->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            return pMT->GetLayoutInfo()->GetAlignmentRequirement();
         }
         return pMT->GetNativeLayoutInfo()->GetLargestAlignmentRequirement();
     }

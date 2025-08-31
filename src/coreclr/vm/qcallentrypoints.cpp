@@ -177,6 +177,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeFieldHandle_GetEnCFieldAddr)
     DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
     DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
+    DllImportEntry(UnsafeAccessors_ResolveGenericParamToTypeHandle)
     DllImportEntry(StackTrace_GetStackFramesInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
@@ -336,6 +337,9 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
+#ifdef FEATURE_JAVAMARSHAL
+    DllImportEntry(GCHandle_InternalGetBridgeWait)
+#endif
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
@@ -424,17 +428,26 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
 #if defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWrappers_GetIUnknownImpl)
-    DllImportEntry(ComWrappers_TryGetComInstance)
-    DllImportEntry(ComWrappers_TryGetObject)
-    DllImportEntry(ComWrappers_TryGetOrCreateComInterfaceForObject)
-    DllImportEntry(ComWrappers_TryGetOrCreateObjectForComInstance)
-    DllImportEntry(ComWrappers_SetGlobalInstanceRegisteredForMarshalling)
-    DllImportEntry(ComWrappers_SetGlobalInstanceRegisteredForTrackerSupport)
+    DllImportEntry(ComWrappers_GetUntrackedAddRefRelease)
+    DllImportEntry(ComWrappers_AllocateRefCountedHandle)
+    DllImportEntry(ComWrappers_GetIReferenceTrackerTargetVftbl)
+    DllImportEntry(ComWrappers_GetTaggedImpl)
+    DllImportEntry(ComWrappers_RegisterIsRootedCallback)
+    DllImportEntry(TrackerObjectManager_HasReferenceTrackerManager)
+    DllImportEntry(TrackerObjectManager_TryRegisterReferenceTrackerManager)
+    DllImportEntry(TrackerObjectManager_RegisterNativeObjectWrapperCache)
+    DllImportEntry(TrackerObjectManager_IsGlobalPeggingEnabled)
 #endif
 #if defined(FEATURE_OBJCMARSHAL)
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
     DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+#endif
+#if defined(FEATURE_JAVAMARSHAL)
+    DllImportEntry(JavaMarshal_Initialize)
+    DllImportEntry(JavaMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(JavaMarshal_FinishCrossReferenceProcessing)
+    DllImportEntry(JavaMarshal_GetContext)
 #endif
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)
@@ -505,16 +518,14 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
 #endif
-    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
-    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
     DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
 #endif
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)
     DllImportEntry(ObjectToComWeakRef)
 #endif
@@ -537,6 +548,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
+    DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 };
 
 const void* QCallResolveDllImport(const char* name)

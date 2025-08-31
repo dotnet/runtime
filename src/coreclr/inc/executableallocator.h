@@ -267,7 +267,7 @@ public:
     void UnmapRW(void* pRW);
 
     // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
-    void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize);
+    void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
     // Free a set of thunks allocated from templates. pThunks must have been returned from AllocateThunksFromTemplate
     void FreeThunksFromTemplate(void *pThunks, size_t templateSize);

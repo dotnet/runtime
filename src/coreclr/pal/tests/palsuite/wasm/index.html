@@ -10,19 +10,15 @@
     <script>
         const disabledTestNamePatterns = [
             "exception_handling/RaiseException", // 3 tests, we don't have stack unwinding available from C native code
-            "file_io/GetFileAttributesEx", // blocks main thread
             "file_io/GetSystemTime", // blocks main thread
             "file_io/WriteFile/test5/paltest_writefile_test5", // infinite loop
             "file_io/SetFilePointer/test7/paltest_setfilepointer_test7", // tries to allocate 4GB of memory in MEMFS when run with chromedriver
             "filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1", // infinite loop and then chrome crashes
             "filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1",
-            "miscellaneous/GetTickCount", // blocks main thread
             "miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2", // MT test
             "miscellaneous/InterlockedDecrement/test2/paltest_interlockeddecrement_test2", // MT test
             "miscellaneous/InterlockedIncrement/test2/paltest_interlockedincrement_test2", // MT test
-            "miscellaneous/queryperformancecounter", // blocks main thread
             "threading/", // we're single-threaded
-            // "threading/CriticalSectionFunctions/test8/paltest_criticalsectionfunctions_test8", // blocks main thread
         ];
 
         const nextRunDelay = 50, reloadDelay = 50;

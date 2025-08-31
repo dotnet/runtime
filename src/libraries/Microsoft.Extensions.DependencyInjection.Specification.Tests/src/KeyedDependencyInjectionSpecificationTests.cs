@@ -793,7 +793,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             Assert.Null(provider.GetService<IService>());
 
-            for (int i=0; i<3; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var key = "service" + i;
                 var s1 = provider.GetKeyedService<IService>(key);
@@ -1098,23 +1098,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             public IServiceProvider ServiceProvider { get; }
         }
 
-            [Fact]
-            public void SimpleServiceKeyedResolution()
-            {
-                // Arrange
-                var services = new ServiceCollection();
-                services.AddKeyedTransient<ISimpleService, SimpleService>("simple");
-                services.AddKeyedTransient<ISimpleService, AnotherSimpleService>("another");
-                services.AddTransient<SimpleParentWithDynamicKeyedService>();
-                var provider = CreateServiceProvider(services);
-                var sut = provider.GetService<SimpleParentWithDynamicKeyedService>();
+        [Fact]
+        public void SimpleServiceKeyedResolution()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddKeyedTransient<ISimpleService, SimpleService>("simple");
+            services.AddKeyedTransient<ISimpleService, AnotherSimpleService>("another");
+            services.AddTransient<SimpleParentWithDynamicKeyedService>();
+            var provider = CreateServiceProvider(services);
+            var sut = provider.GetService<SimpleParentWithDynamicKeyedService>();
 
-                // Act
-                var result = sut!.GetService("simple");
+            // Act
+            var result = sut!.GetService("simple");
 
-                // Assert
-                Assert.True(result.GetType() == typeof(SimpleService));
-            }
+            // Assert
+            Assert.True(result.GetType() == typeof(SimpleService));
+        }
 
         public class SimpleParentWithDynamicKeyedService
         {
@@ -1138,5 +1138,89 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             public object GetService(Type serviceType) => throw new NotImplementedException();
         }
+
+#if NET10_0_OR_GREATER
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key");
+            services.AddKeyedSingleton<ServiceCreatedWithServiceKeyAttribute>("key");
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            ServiceUsingFromServiceKeyAttribute service = provider.GetRequiredKeyedService<ServiceUsingFromServiceKeyAttribute>("key");
+            Assert.Equal("key", service.OtherService.MyKey);
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute_NotFound()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key1");
+            services.AddKeyedSingleton<ServiceCreatedWithServiceKeyAttribute>("key2");
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<ServiceUsingFromServiceKeyAttribute>("key1"));
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute_NotFound_WithUnkeyed()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key1");
+            services.AddSingleton<ServiceCreatedWithServiceKeyAttribute>();
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<ServiceUsingFromServiceKeyAttribute>("key1"));
+        }
+
+        private class ServiceUsingFromServiceKeyAttribute : IService
+        {
+            public ServiceCreatedWithServiceKeyAttribute OtherService { get; }
+
+            public ServiceUsingFromServiceKeyAttribute([FromKeyedServices] ServiceCreatedWithServiceKeyAttribute otherService)
+            {
+                OtherService = otherService;
+            }
+        }
+
+        private class ServiceCreatedWithServiceKeyAttribute : IService
+        {
+            public string MyKey { get; }
+
+            public ServiceCreatedWithServiceKeyAttribute([ServiceKey] string myKey)
+            {
+                MyKey = myKey;
+            }
+        }
+
+        [Fact]
+        public void ResolveUnkeyedServiceWithFromServiceKeyAttributeWithNullKey()
+        {
+            ServiceCollection services = new();
+            services.AddSingleton<UnkeyedServiceWithFromServiceKeyAttributeWithNullKey>();
+            services.AddSingleton<Service>();
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            UnkeyedServiceWithFromServiceKeyAttributeWithNullKey service =
+                provider.GetRequiredService<UnkeyedServiceWithFromServiceKeyAttributeWithNullKey>();
+
+            Assert.NotNull(service.OtherService);
+        }
+
+        private class UnkeyedServiceWithFromServiceKeyAttributeWithNullKey : IService
+        {
+            public Service OtherService { get; }
+
+            public UnkeyedServiceWithFromServiceKeyAttributeWithNullKey([FromKeyedServices(null)] Service otherService)
+            {
+                OtherService = otherService;
+            }
+        }
+#endif
     }
 }

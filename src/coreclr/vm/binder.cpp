@@ -21,6 +21,8 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 #include "configuration.h"
+#include "conditionalweaktable.h"
+#include "interoplibinterface_comwrappers.h"
 
 //
 // Retrieve structures from ID.
@@ -1043,7 +1045,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1066,7 +1068,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1089,7 +1091,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1148,7 +1150,7 @@ void CoreLibBinder::CheckExtended()
             }
             minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         MethodDesc *pMD = MemberLoader::FindMethod(type.AsMethodTable(), td);
         _ASSERTE(pMD);
@@ -1168,10 +1170,10 @@ void CoreLibBinder::CheckExtended()
             }
         }
         else
-        if (pMD->IsNDirect())
+        if (pMD->IsPInvoke())
         {
-            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            NDirect::PopulateNDirectMethodDesc(pNMD);
+            PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+            PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
             if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {

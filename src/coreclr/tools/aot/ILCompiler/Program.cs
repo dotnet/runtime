@@ -94,7 +94,7 @@ namespace ILCompiler
             }
             var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
                 Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories,
-                Get(_command.TreatWarningsAsErrors), warningsAsErrors);
+                Get(_command.TreatWarningsAsErrors), warningsAsErrors, Get(_command.DisableGeneratedCodeHeuristics));
 
             // NativeAOT is full AOT and its pre-compiled methods can not be
             // thrown away at runtime if they mismatch in required ISAs or
@@ -108,7 +108,8 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize);
+                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                isReadyToRun: false);
 
             string systemModuleName = Get(_command.SystemModuleName);
             string reflectionData = Get(_command.ReflectionData);
@@ -192,12 +193,17 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+            TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
                 // Compiling just a single method
                 compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
+                if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
+                {
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext));
+                }
             }
             else
             {
@@ -307,6 +313,11 @@ namespace ILCompiler
                         throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
+
+                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
+                }
             }
 
             // Root whatever assemblies were specified on the command line
@@ -351,6 +362,7 @@ namespace ILCompiler
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
                 .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseSymbolOrder(Get(_command.OrderFile))
                 .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
@@ -389,7 +401,7 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger, Get(_command.DisableGeneratedCodeHeuristics));
 
             if (Get(_command.UseReachability) is string reachabilityInstrumentationFileName)
             {
@@ -412,7 +424,6 @@ namespace ILCompiler
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (Get(_command.ScanReflection))
@@ -468,7 +479,8 @@ namespace ILCompiler
             var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy(), flowAnnotations);
             builder
                 .UseILProvider(ilProvider)
-                .UsePreinitializationManager(preinitManager);
+                .UsePreinitializationManager(preinitManager)
+                .UseTypeMapManager(typeMapManager);
 
 #if DEBUG
             List<TypeDesc> scannerConstructedTypes = null;
@@ -491,6 +503,7 @@ namespace ILCompiler
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(parallelism)
                     .UseInteropStubManager(interopStubManager)
+                    .UseTypeMapManager(typeMapManager)
                     .UseLogger(logger);
 
                 string scanDgmlLogFileName = Get(_command.ScanDgmlLogFileName);
@@ -514,9 +527,11 @@ namespace ILCompiler
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
+                builder.UseTypeMapManager(scanResults.GetTypeMapManager());
+
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics());
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);
@@ -586,10 +601,14 @@ namespace ILCompiler
             compilationRoots.Add(metadataManager);
             compilationRoots.Add(interopStubManager);
 
+            MethodBodyFoldingMode foldingMode = string.IsNullOrEmpty(Get(_command.MethodBodyFolding))
+                ? MethodBodyFoldingMode.None
+                : Enum.Parse<MethodBodyFoldingMode>(Get(_command.MethodBodyFolding), ignoreCase: true);
+
             builder
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(Get(_command.CodegenOptions))
-                .UseMethodBodyFolding(enable: Get(_command.MethodBodyFolding))
+                .UseMethodBodyFolding(foldingMode)
                 .UseParallelism(parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)
@@ -787,12 +806,16 @@ namespace ILCompiler
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new ILCompilerRootCommand(args)
+            new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

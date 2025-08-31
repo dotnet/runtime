@@ -920,6 +920,7 @@ void DebuggerJitInfo::LazyInitBounds()
         BOOL fSuccess = DebugInfoManager::GetBoundariesAndVars(
             request,
             InteropSafeNew, NULL, // allocator
+            BoundsType::Instrumented,  // TODO We currently don't use the uninstrumented bounds here but we should and remove the instrumented bounds logic from the SetBoundaries function.
             &cMap, &pMap,
             &cVars, &pVars);
 
@@ -950,7 +951,7 @@ void DebuggerJitInfo::LazyInitBounds()
         // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /******************************************************************************
@@ -1044,6 +1045,12 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     m_sequenceMapCount = cMap;
 
     DebuggerILToNativeMap *m = m_sequenceMap;
+
+    // TODO: Consider removing the handling for the InstrumentedILMap here.
+    // since we now have the ability to get an uninstrumented IL offset mapping
+    // directly from the VM. This work was not done when adding the instrumented
+    // IL mapping due to the work ocurring too close to the shipping deadline for .NET 10.
+    // If we do so, we need to change the input to this function to be the uninstrumented IL offset mapping
 
     // For the instrumented-IL case, we need to remove all duplicate entries.
     // So we keep a record of the last old IL offset. If the current old IL

@@ -1426,7 +1426,6 @@ export function generateWasmBody (
                 break;
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
-                append_profiler_event(builder, ip, opcode);
                 ip = abort;
                 break;
 
@@ -3919,7 +3918,11 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             for (let j = 0; j < elementSize; j++)
                 builder.appendU8(i);
         }
-        builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+        if (runtimeHelpers.featureWasmRelaxedSimd) {
+            builder.appendSimd(WasmSimdOpcode.i8x16_relaxed_swizzle);
+        } else {
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+        }
         // multiply indices by 2 or 4 to scale from elt indices to byte indices
         builder.i32_const(elementCount === 4 ? 2 : 1);
         builder.appendSimd(WasmSimdOpcode.i8x16_shl);

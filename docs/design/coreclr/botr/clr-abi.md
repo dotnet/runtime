@@ -116,12 +116,12 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | risc-v  | a2  |
 
 ### Passing `Continuation` argument
-The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.
 
 ```
 call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
 
-call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
 ## AMD64-only: by-value value types
@@ -218,13 +218,9 @@ This section describes the conventions the JIT needs to follow when generating c
 
 ## Funclets
 
-For all platforms except Windows/x86 on CoreCLR, all managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
+For all platforms, managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
 
 The only way to enter a handler funclet is via a call. In the case of an exception, the call is from the VM's EH subsystem as part of exception dispatch/unwind. In the non-exceptional case, this is called local unwind or a non-local exit. In C# this is accomplished by simply falling-through/out of a try body or an explicit goto. In IL this is always accomplished via a LEAVE opcode, within a try body, targeting an IL offset outside the try body. In such cases the call is from the JITed code of the parent function.
-
-For Windows/x86 on CoreCLR, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested.
-
-For Windows/x86 on NativeAOT and Linux/x86, funclets are used just like on other platforms.
 
 ## Cloned finallys
 
@@ -234,7 +230,7 @@ RyuJIT attempts to speed the normal control flow by 'inlining' a called finally 
 
 In order to have proper forward progress and `Thread.Abort` semantics, there are restrictions on where a call-to-finally can be, and what the call site must look like. The return address can **NOT** be in the corresponding try body (otherwise the VM would think the finally protects itself). The return address **MUST** be within any outer protected region (so exceptions from the finally body are properly handled).
 
-JIT64, and RyuJIT for non-x86, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
+RyuJIT creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
 
 ## ThreadAbortException considerations
 
@@ -388,100 +384,6 @@ Any register value changes made in the funclet are lost. If a funclet wants to m
 
 Funclets are not required to preserve non-volatile registers.
 
-## Windows/x86 EH considerations
-
-The Windows/x86 model is somewhat different than non-Windows/x86 model. Windows/X86-specific concerns are mentioned here.
-
-### catch / filter-handler regions
-
-When leaving a `catch` or `filter-handler` region, the JIT calls the helper `CORINFO_JIT_ENDCATCH` (implemented in the VM by the `JIT_EndCatch` function) before transferring control to the target location. The code to call to `CORINFO_JIT_ENDCATCH` is within the catch region itself.
-
-### finally / fault regions
-
-"finally" clauses are invoked in the non-exceptional code by the generated JIT code, and in the exceptional case by the VM. "fault" clauses are only executed in exceptional cases by the VM.
-
-On entry to the finally or fault, the top of the stack is the address that should be jumped to on exit from the finally, using a "pop eax; jmp eax" sequence. A simple 'ret' could be used, but we avoid it to avoid potentially creating an unbalanced processor call/ret buffer stack, and messing up call/ret prediction.
-
-There are no register or other stack arguments to a 'finally' or 'fault'.
-
-### ShadowSP slots
-
-X86 exception handlers (e.g., catch, finally) do not establish their own frames. They don't (really) have prologs and epilogs. However, they do use the stack, and need to restore the stack pointer of the enclosing exception handling region when the handler completes executing.
-
-To implement this requirement, for any function with EH, we create a frame-local variable to store a stack of "Shadow SP" values, or ShadowSP slots. In the JIT, the local var is called lvaShadowSPslotsVar, and in dumps it is called "EHSlots". The variable is created in lvaMarkLocalVars() and is sized as follows:
-1. 1 slot is reserved for the VM (for ICodeManager::FixContext(ppEndRegion)).
-2. 1 slot for each handler nesting level (total: ehMaxHndNestingCount).
-3. 1 slot for a filter (we do this even if there aren't any filters; size optimization opportunity to not do this if there are no filters?)
-4. 1 slot for zero termination
-
-Note that the since a slot on x86 is 4 bytes, the minimum size is 16 bytes. The idea is to have 1 slot for each handler that could be possibly be invoked at the same time. For example, for:
-
-```cs
-	try {
-		...
-	} catch {
-		try {
-			...
-		} catch {
-			...
-		}
-	}
-```
-
-When the inner 'catch' is running, the outer 'catch' is also conceptually "on the stack", or in the middle of execution. So the maximum handler nesting count would be 2.
-
-The ShadowSP slots are filled in from the highest address downwards to the lowest address. The highest slot is reserved. The first address with a zero is a zero terminator. So, we always zero terminate by setting the second-to-highest slot to zero in the function prolog (if we didn't zero initialize all locals anyway).
-
-When calling a finally, we set the appropriate level to 0xFC (aka "finally call") and zero terminate the next-lower address.
-
-Thus, calling a finally from JIT generated code looks like:
-
-```asm
-	mov      dword ptr [L_02+0x4 ebp-10H], 0 // This must happen before the 0xFC is written
-	mov      dword ptr [L_02+0x8 ebp-0CH], 252 // 0xFC
-	push     G_M52300_IG07
-	jmp      SHORT G_M52300_IG04
-```
-
-In this case, `G_M52300_IG07` is not the address after the 'jmp', so a simple 'call' wouldn't work.
-
-The code this finally returns to looks like this:
-
-```asm
-	mov      dword ptr [L_02+0x8 ebp-0CH], 0
-	jmp      SHORT G_M52300_IG05
-```
-
-In this case, it zeros out the ShadowSP slot that it previously set to 0xFC, then jumps to the address that is the actual target of the leave from the finally.
-
-The JIT does this "end finally restore" by creating a GT_END_LFIN tree node, with the appropriate EH region ID as an operand, that generates this code.
-
-In the case of an exceptional 'finally' invocation, the VM sets up the 'return address' to whatever address it wants the JIT to return to.
-
-For catch handlers, the VM is completely in control of filling and reading the ShadowSP slots; the JIT just makes sure there is enough space.
-
-### ShadowSP slots frame location
-
-The ShadowSP slots are required to live in a very particular location, reported via the GC info header. Note that the GC info header does not contain an actual pointer or offset to the ShadowSP slots variable. Instead, the VM calculates the location from other data that does exist in the GC info header, as a negative offset from the EBP frame pointer (which must be established in functions with EH) using the function `GetFirstBaseSPslotPtr()` / `GetStartShadowSPSlotsOffset()`. The VM thus assumes the following frame layout:
-
-1. callee-saved registers <= EBP points to the top of this range
-2. GS cookie
-3. 1 slot if localloc is used (Saved localloc SP?)
-4. 1 slot for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG -- assumed for any function with EH, to avoid adding a flag to the GC info about whether it exists or not.
-5. ShadowSP slots
-
-(note, these don't have to be in this order for this calculation, but they possibly do need to be in this order for other calculations.) See also `GetEndShadowSPSlotsOffset()`.
-
-The VM walks the ShadowSP slots in the function `GetHandlerFrameInfo()`, and sets it in various functions such as `EECodeManager::FixContext()`.
-
-### JIT implementation: finally
-
-An aside on the JIT implementation for x86.
-
-The JIT creates BBJ_CALLFINALLY/BBJ_ALWAYS pairs for calling the 'finally' clause. The BBJ_CALLFINALLY block will have a series of CORINFO_JIT_ENDCATCH calls appended at the end, if we need to "leave" a series of nested catches before calling the finally handler (due to a single 'leave' opcode attempting to leave multiple levels of different types of handlers). Then, a GT_END_LFIN statement with EH region ID as an argument is added to the step block where the finally returns to. This is used to generate code to zero out the appropriate level of the ShadowSP slot array after the finally has been executed and the final EH nesting depth is known. The BBJ_CALLFINALLY block itself generates the code to insert the 0xFC value into the ShadowSP slot array. If the 'finally' is invoked by the VM, in exceptional cases, then the VM itself updates the ShadowSP slot array before invoking the 'finally'.
-
-At the end of a finally or filter, a GT_RETFILT is inserted. For a finally, this is a TYP_VOID which is just a placeholder. For a filter, it takes an argument which evaluates to the return value from the filter. On legacy JIT, this tree triggers the generation of both the return value load (for filters) and the "funclet" exit sequence, which is either a "pop eax; jmp eax" for a finally, or a "ret" for a filter. When processing the BBJ_EHFINALLYRET or BBJ_EHFILTERRET block itself (at the end of code generation for the block), nothing is generated. In RyuJIT, the GT_RETFILT only loads up the return value (for filters) and does nothing for finally, and the block type processing after all the tree processing triggers the exit sequence to be generated. There is no real difference between these, except to centralize all "exit sequence" generation in the same place.
-
 # EH Info, GC Info, and Hot & Cold Splitting
 
 All GC info offsets and EH info offsets treat the function and funclets as if it was one big method body. Thus all offsets are relative to the start of the main method. Funclets are assumed to always be at the end of (after) all of the main function code. Thus if the main function has any cold code, all funclets must be cold. Or conversely, if there is any hot funclet code, all of the main method must be hot.
@@ -634,6 +536,22 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 ## Generics
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
+
+# Portable entrypoints
+
+On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
+
+On platforms that do not allow dynamic code generation (Wasm), the runtime abstracts away execution strategies by allocating portable entrypoints for dynamically loaded methods. The `PortableEntryPoint` is a data structure that allows efficient transition to the desired execution strategy for the target method. When the runtime is configured to use portable entrypoints, the managed calling convention is modified as follows:
+
+- The native code to call is obtained by dereferencing the entrypoint
+
+- The entrypoint address is passed in as an extra last hidden argument. The extra hidden argument must be present in signatures of all methods. It is unused by the code of JITed or AOT-compiled methods.
+
+Pseudo code for a call with portable entrypoints:
+
+> `(*(void**)pfn)(arg0, arg1, ..., argN, pfn)`
+
+Portable entrypoints are used for Wasm with interpreter only currently. Note that portable entrypoints are unnecessary for Wasm with native AOT since native AOT does not support dynamic loading.
 
 # System V x86_64 support
 

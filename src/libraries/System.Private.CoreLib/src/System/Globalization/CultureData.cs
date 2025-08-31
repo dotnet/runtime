@@ -625,15 +625,11 @@ namespace System.Globalization
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
-            // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = [CalendarId.GREGORIAN];
-
-            if (!GlobalizationMode.InvariantNoLoad)
-            {
-                // Store for specific data about each calendar
-                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-                invariant._calendars[0] = CalendarData.Invariant;
-            }
+            // Calendar information is expensive size-wise, especially for AOT.
+            // CalendarData.Invariant is special cased in _waCalendars and _calendars
+            // accessors and gets initialized lazily.
+            // invariant._waCalendars
+            // invariant._calendars
 
             // Text information
             invariant._iReadingLayout = 0;
@@ -658,8 +654,7 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => s_Invariant ??= CreateCultureWithInvariantData();
-        private static CultureData? s_Invariant;
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
@@ -667,8 +662,11 @@ namespace System.Globalization
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
+            // The undetermined culture name "und" is not a real culture, but it resolves to the invariant culture because ICU typically normalizes it to an empty string.
+            const string UndeterminedCultureName = "und";
+
             // First do a shortcut for Invariant
-            if (string.IsNullOrEmpty(cultureName))
+            if (string.IsNullOrEmpty(cultureName) || cultureName.Equals(UndeterminedCultureName, StringComparison.OrdinalIgnoreCase))
             {
                 return Invariant;
             }
@@ -826,7 +824,7 @@ namespace System.Globalization
         private bool InitCompatibilityCultureData()
         {
             // for compatibility handle the deprecated ids: zh-chs, zh-cht
-            string cultureName = _sRealName!;
+            string cultureName = _sRealName;
 
             string fallbackCultureName;
             string realCultureName;
@@ -929,7 +927,7 @@ namespace System.Globalization
 
         // Parent name (which may be a custom locale/culture)
         // Ask using the real name, so that we get parents of neutrals
-        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName!, LocaleStringData.ParentName);
+        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName, LocaleStringData.ParentName);
 
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal string DisplayName
@@ -958,7 +956,7 @@ namespace System.Globalization
                     }
                 }
 
-                return localizedDisplayName!;
+                return localizedDisplayName;
             }
         }
 
@@ -1108,8 +1106,8 @@ namespace System.Globalization
         /// abbreviated windows language name (ie: enu) (non-standard, avoid this)
         /// </summary>
         internal string ThreeLetterWindowsLanguageName => _sAbbrevLang ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName!) :
-                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName!);
+                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName) :
+                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName);
 
         /// <summary>
         /// Localized name for this language
@@ -1153,7 +1151,7 @@ namespace System.Globalization
             {
                 if (_iGeoId == undef && !GlobalizationMode.Invariant)
                 {
-                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName!);
+                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName);
                 }
                 return _iGeoId;
             }
@@ -1230,8 +1228,8 @@ namespace System.Globalization
         /// Console fallback name (ie: locale to use for console apps for unicode-only locales)
         /// </summary>
         internal string SCONSOLEFALLBACKNAME => _sConsoleFallbackName ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetConsoleFallbackName(_sRealName!) :
-                                                                            IcuGetConsoleFallbackName(_sRealName!);
+                                                                            NlsGetConsoleFallbackName(_sRealName) :
+                                                                            IcuGetConsoleFallbackName(_sRealName);
 
         /// <summary>
         /// grouping of digits
@@ -1645,61 +1643,68 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null && !GlobalizationMode.Invariant)
+                if (_waCalendars == null)
                 {
-                    // We pass in an array of ints, and native side fills it up with count calendars.
-                    // We then have to copy that list to a new array of the right size.
-                    // Default calendar should be first
-                    CalendarId[] calendars = new CalendarId[23];
-                    Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
-
-                    int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
-
-                    // See if we had a calendar to add.
-                    if (count == 0)
+                    if (GlobalizationMode.Invariant || IsInvariantCulture)
                     {
-                        // Failed for some reason, just grab Gregorian from Invariant
-                        _waCalendars = Invariant._waCalendars!;
+                        // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                        // enum arrays into apps that otherwise wouldn't have them. This helps with size in AOT.
+                        _waCalendars = [CalendarId.GREGORIAN];
                     }
                     else
                     {
-                        // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
-                        // TODO: Is this hack necessary long-term?
-                        if (_sWindowsName == "zh-TW")
-                        {
-                            bool found = false;
+                        // We pass in an array of ints, and native side fills it up with count calendars.
+                        // We then have to copy that list to a new array of the right size.
+                        // Default calendar should be first
+                        CalendarId[] calendars = new CalendarId[23];
+                        Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
-                            // Do we need to insert calendar 4?
-                            for (int i = 0; i < count; i++)
+                        int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
+
+                        // See if we had a calendar to add.
+                        if (count == 0)
+                        {
+                            // Failed for some reason, just use Gregorian
+                            _waCalendars = Invariant.CalendarIds;
+                        }
+                        else
+                        {
+                            // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
+                            // TODO: Is this hack necessary long-term?
+                            if (_sWindowsName == "zh-TW")
                             {
-                                // Stop if we found calendar four
-                                if (calendars[i] == CalendarId.TAIWAN)
+                                bool found = false;
+
+                                // Do we need to insert calendar 4?
+                                for (int i = 0; i < count; i++)
                                 {
-                                    found = true;
-                                    break;
+                                    // Stop if we found calendar four
+                                    if (calendars[i] == CalendarId.TAIWAN)
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+
+                                // If not found then insert it
+                                if (!found)
+                                {
+                                    // Insert it as the 2nd calendar
+                                    count++;
+                                    // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
+                                    Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
+                                    calendars[1] = CalendarId.TAIWAN;
                                 }
                             }
 
-                            // If not found then insert it
-                            if (!found)
-                            {
-                                // Insert it as the 2nd calendar
-                                count++;
-                                // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
-                                Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
-                                calendars[1] = CalendarId.TAIWAN;
-                            }
+                            // It worked, remember the list
+                            CalendarId[] temp = new CalendarId[count];
+                            Array.Copy(calendars, temp, count);
+                            _waCalendars = temp;
                         }
-
-                        // It worked, remember the list
-                        CalendarId[] temp = new CalendarId[count];
-                        Array.Copy(calendars, temp, count);
-
-                        _waCalendars = temp;
                     }
                 }
-
-                return _waCalendars!;
+                return _waCalendars;
             }
         }
 
@@ -1735,8 +1740,17 @@ namespace System.Globalization
             // Make sure that calendar has data
             if (calendarData == null)
             {
-                Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
-                calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                if (calendarIndex == 0 && IsInvariantCulture)
+                {
+                    // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                    // invariant calendar data into apps that don't even need calendar.
+                    calendarData = CalendarData.Invariant;
+                }
+                else
+                {
+                    Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
+                    calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                }
                 _calendars[calendarIndex] = calendarData;
             }
 
@@ -1816,7 +1830,7 @@ namespace System.Globalization
             {
                 if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName!);
+                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName);
                 }
                 return _iDefaultAnsiCodePage;
             }
@@ -1831,7 +1845,7 @@ namespace System.Globalization
             {
                 if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultOemCodePage = GetOemCodePage(_sRealName!);
+                    _iDefaultOemCodePage = GetOemCodePage(_sRealName);
                 }
                 return _iDefaultOemCodePage;
             }
@@ -1846,7 +1860,7 @@ namespace System.Globalization
             {
                 if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultMacCodePage = GetMacCodePage(_sRealName!);
+                    _iDefaultMacCodePage = GetMacCodePage(_sRealName);
                 }
                 return _iDefaultMacCodePage;
             }
@@ -1861,7 +1875,7 @@ namespace System.Globalization
             {
                 if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName!);
+                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName);
                 }
                 return _iDefaultEbcdicCodePage;
             }

@@ -182,32 +182,9 @@ Disp::OpenRawScope(
     _ASSERTE(!IsOfReserved(dwOpenFlags));
 #endif //!FEATURE_METADATA_LOAD_TRUSTED_IMAGES
 
-    {
-    }
-
     if (IsOfReadOnly(dwOpenFlags) && IsOfReadWrite(dwOpenFlags))
     {   // Invalid combination of flags - ofReadOnly & ofWrite
         IfFailGo(E_INVALIDARG);
-    }
-    // If open-for-read, and there is already an open-for-read copy, return it.
-    if (IsOfReadOnly(dwOpenFlags))
-    {
-        RegMeta::FindCachedReadOnlyEntry(szFileName, dwOpenFlags, &pMeta);
-        if (pMeta != NULL)
-        {
-            // Return the requested interface.
-            hr = pMeta->QueryInterface(riid, (void **) ppIUnk);
-            if (FAILED(hr))
-            {
-                pMeta = NULL; // Don't delete cached RegMeta!
-            }
-            else
-            {
-                pMeta->Release(); // Give back refcount from QI
-            }
-
-            goto ErrExit;
-        }
     }
     // Create a new coclass for this guy.
     pMeta = new (nothrow) RegMeta();
@@ -228,13 +205,7 @@ Disp::OpenRawScope(
     // Obtain the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk) );
 
-    // Add the new RegMeta to the cache.  If this is read-only, any future opens will
-    //  find this entry.  If, due to another thread concurrently opening the same file,
-    //  there is already another copy in the cache, well, then there will be two
-    //  read-only copies in the cache.  This is considered to be somewhat of a corner
-    //  case, and the only harm is temporary memory usage.  All requests will be
-    //  satisfied by one or the other (depending on search algorithm), and eventually,
-    //  the "other" copy will be released.
+    // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
 #if defined(_DEBUG)
@@ -847,27 +818,13 @@ ErrExit:
     return hr;
 } // Disp::GetOption
 
-#if defined(FEATURE_METADATA_IN_VM)
-
-//---------------------------------------------------------------------------------------
-//
-// Process detach destruction.
-// Called from DllMain of clr.dll/RoMetadata.dll/MidlrtMd.dll.
-//
-void DeleteMetaData()
-{
-    LOADEDMODULES::DeleteStatics();
-}
-
-#endif //FEATURE_METADATA_IN_VM
-
 //
 // This is the entrypoint for usages of MetaData that need to start with the dispenser (e.g.
 // mscordbi.dll and profiling API).
 //
 // Notes:
 //    This could be merged with the class factory support.
-HRESULT InternalCreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
+HRESULT CreateMetaDataDispenser(REFIID riid, void ** pMetaDataDispenserOut)
 {
     _ASSERTE(pMetaDataDispenserOut != NULL);
     return Disp::CreateObject(riid, pMetaDataDispenserOut);

@@ -11,11 +11,11 @@ public class NibbleMapTestsBase
 {
     internal static Target CreateTarget(NibbleMapTestBuilderBase nibbleMapTestBuilder)
     {
-        MockMemorySpace.ReadContext readContext = new()
+        MockMemorySpace.MemoryContext memoryContext = new()
         {
             HeapFragments = new[] { nibbleMapTestBuilder.NibbleMapFragment }
         };
-        return new TestPlaceholderTarget(nibbleMapTestBuilder.Arch, readContext.ReadFromTarget);
+        return new TestPlaceholderTarget(nibbleMapTestBuilder.Arch, memoryContext.ReadFromTarget);
     }
 }
 

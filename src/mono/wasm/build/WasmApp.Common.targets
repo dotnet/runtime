@@ -22,9 +22,12 @@
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
       - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmPerfTracing)              - Enables diagnostic server tracing. Defaults to false.
+      - $(EnableDiagnostics)            - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
-      - $(WasmPerfInstrumentation)      - Enables CPU sampling instrumentation for diagnostic server. Defaults to false.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server.Possible values:
+                                            - all - enables all instrumentation
+                                            - none - disables all instrumentation
+                                            - N:SampleNamespace - enables instrumentation for the specified namespace
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
       - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
       - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization
@@ -125,12 +128,10 @@
       _ReadWasmProps;
       _SetWasmBuildNativeDefaults;
       _GetDefaultWasmAssembliesToBundle;
-      _WasmGetRuntimeConfigPath;
     </PrepareInputsForWasmBuildDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
-      _WasmGenerateRuntimeConfig;
     </WasmGenerateAppBundleDependsOn>
 
     <!-- FIXME: TMP: added _PrepareForWasmBuildNative as it used by emsdk cache as beforeTargets -->
@@ -152,7 +153,6 @@
       _WasmSelectRuntimeComponentsForLinking;
       _WasmCompileAssemblyBitCodeFilesForAOT;
       _WasmCalculateInitialHeapSizeFromBitcodeFiles;
-      _WasmGenerateRuntimeConfig;
       _WasmWriteRspForCompilingNativeSourceFiles;
       _WasmCompileNativeSourceFiles;
       _GenerateObjectFilesForSingleFileBundle;
@@ -240,7 +240,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -259,16 +260,14 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
-    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
-    <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
-    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
   <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
     <_MonoComponent Include="debugger" />
     <_MonoComponent Include="hot_reload" />
   </ItemGroup>
-  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true'">
     <_MonoComponent Include="diagnostics_tracing" />
+    <WasmEnvironmentVariable Condition="'$(WasmPerformanceInstrumentation)' != ''" Include="DOTNET_WasmPerformanceInstrumentation" Value="eventpipe,callspec=$(WasmPerformanceInstrumentation)" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -350,14 +349,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGetRuntimeConfigPath">
-    <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'" Returns="@(_WasmAssembliesInternal)">
     <WasmLoadAssembliesAndReferences
       Assemblies="@(_WasmAssembliesInternal)"
@@ -380,8 +371,8 @@
              Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
              Importance="Low" />
 
-    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
-             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)."
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(ProjectRuntimeConfigFilePath) != '' and !Exists($(ProjectRuntimeConfigFilePath))"
+             Text="Could not find $(ProjectRuntimeConfigFilePath) for $(_MainAssemblyPath)."
              Importance="Low" />
 
     <ItemGroup>
@@ -427,26 +418,6 @@
 
   <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
 
-  <Target Name="_WasmGenerateRuntimeConfig"
-          Inputs="$(_WasmRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
-
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
           Condition="('$(IsBrowserWasmProject)' == 'true' or '$(IsWasiProject)' == 'true') and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
@@ -480,16 +451,6 @@
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
       <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="_PrepareForNestedPublish" DependsOnTargets="_GetDefaultWasmAssembliesToBundle" Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
-    <PropertyGroup>
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_EmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
@@ -532,6 +493,11 @@
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
+
+    <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="$(WasmProfilers.Contains('browser')) and '$(RunAOTCompilation)' == 'true'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
@@ -714,7 +680,7 @@
       AOTProfilePath="$(AOTProfilePath)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"

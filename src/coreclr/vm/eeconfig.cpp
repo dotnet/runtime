@@ -112,6 +112,7 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
     fDisableOptimizedThreadStaticAccess = false;
+    fIsWriteBarrierCopyEnabled = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
@@ -170,10 +171,6 @@ HRESULT EEConfig::Init()
 
     fSuppressChecks = false;
     fConditionalContracts = false;
-#endif
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
 #ifdef _DEBUG
@@ -239,6 +236,8 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = false;
 #endif
+
+    runtimeAsync = false;
 
     return S_OK;
 }
@@ -467,10 +466,6 @@ HRESULT EEConfig::sync()
     }
 #endif // defined(FEATURE_READYTORUN)
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
-#endif
-
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
     pszBreakOnClassLoad = NarrowWideChar((LPWSTR)pszBreakOnClassLoad);
@@ -501,6 +496,8 @@ HRESULT EEConfig::sync()
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
     fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
+
+    fIsWriteBarrierCopyEnabled = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_UseGCWriteBarrierCopy) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
@@ -638,6 +635,25 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
+
+#if defined(FEATURE_INTERPRETER)
+    if (fTieredCompilation)
+    {
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
+        // do not work well together currently.
+        LPWSTR pwzInterpreterMaybe;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
+        if (pwzInterpreterMaybe && pwzInterpreterMaybe[0] != 0)
+        {
+            fTieredCompilation = false;
+        }
+        else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0)
+        {
+            fTieredCompilation = false;
+        }
+    }
+#endif
+
     if (fTieredCompilation)
     {
         fTieredCompilation_QuickJit =
@@ -767,6 +783,8 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
+    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
 
     return hr;
 }
@@ -998,7 +1016,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
         PRECONDITION(CheckPointer(str));
         INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;

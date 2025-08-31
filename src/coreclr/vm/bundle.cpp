@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "bundle.h"
+#include "hostinformation.h"
 #include <utilcode.h>
 #include <corhost.h>
 #include <sstring.h>
@@ -47,6 +48,10 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
     size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
     m_basePath.SetUTF8(bundlePath, (COUNT_T)baseLen);
     m_basePathLength = (COUNT_T)baseLen;
+
+    SString extractionPathMaybe;
+    if (HostInformation::GetProperty(HOST_PROPERTY_BUNDLE_EXTRACTION_PATH, extractionPathMaybe))
+        m_extractionPath.Set(extractionPathMaybe.GetUnicode());
 }
 
 BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const

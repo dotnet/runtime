@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -14,11 +15,32 @@ internal readonly struct Loader_1 : ILoader
 
     private enum ModuleFlags_1 : uint
     {
-        Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-        ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+        Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        ClassFreed = 0x4,
+        EditAndContinue = 0x8, // Edit and Continue is enabled for this module
+
+        ProfilerNotified = 0x10,
+        EtwNotified = 0x20,
+
+        ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        ProfilerDisableOptimizations = 0x80,
+        ProfilerDisableInlining = 0x100,
+
+        DebuggerUserOverridePriv = 0x400,
+        DebuggerAllowJitOptsPriv = 0x800,
+        DebuggerTrackJitInfoPriv = 0x1000,
+        DebuggerEnCEnabledPriv = 0x2000,
+        DebuggerPDBsCopied = 0x4000,
+        DebuggerIgnorePDbs = 0x8000,
+
+        IJWFixedUp = 0x80000,
+        BeingUnloaded = 0x100000,
     }
 
+    private enum PEImageFlags : uint
+    {
+        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+    };
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -26,15 +48,26 @@ internal readonly struct Loader_1 : ILoader
         _target = target;
     }
 
-    ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer)
+    ModuleHandle ILoader.GetModuleHandleFromModulePtr(TargetPointer modulePointer)
     {
         if (modulePointer == TargetPointer.Null)
             throw new ArgumentNullException(nameof(modulePointer));
 
         return new ModuleHandle(modulePointer);
     }
+    ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
+    {
+        if (assemblyPointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(assemblyPointer));
 
-    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+        if (assembly.Module == TargetPointer.Null)
+            throw new InvalidOperationException("Assembly does not have a module associated with it.");
+
+        return new ModuleHandle(assembly.Module);
+    }
+
+    IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
             throw new ArgumentNullException(nameof(appDomain));
@@ -112,6 +145,20 @@ internal readonly struct Loader_1 : ILoader
         return appDomain.RootAssembly;
     }
 
+    string ILoader.GetAppDomainFriendlyName()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.FriendlyName != TargetPointer.Null
+            ? _target.ReadUtf16String(appDomain.FriendlyName)
+            : string.Empty;
+    }
+
+    TargetPointer ILoader.GetModule(ModuleHandle handle)
+    {
+        return handle.Address;
+    }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -153,6 +200,64 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    private static bool IsMapped(Data.PEImageLayout peImageLayout)
+    {
+        return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)
+    {
+        Data.ImageDosHeader dosHeader = _target.ProcessedData.GetOrAdd<Data.ImageDosHeader>(imageLayout.Base);
+        return imageLayout.Base + (uint)dosHeader.Lfanew;
+    }
+
+    private TargetPointer RvaToSection(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer ntHeadersPtr = FindNTHeaders(imageLayout);
+        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
+        int offset = Data.ImageNTHeaders.OptionalHeaderOffset;
+        TargetPointer section = ntHeadersPtr + (uint)offset + ntHeaders.FileHeader.SizeOfOptionalHeader;
+        TargetPointer sectionEnd = section + Data.ImageSectionHeader.Size * ntHeaders.FileHeader.NumberOfSections;
+        while (section < sectionEnd)
+        {
+            Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+            if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.SizeOfRawData)
+            {
+                return section;
+            }
+            section += Data.ImageSectionHeader.Size;
+        }
+        return TargetPointer.Null;
+    }
+
+    private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer section = RvaToSection(rva, imageLayout);
+        if (section == TargetPointer.Null)
+            throw new InvalidOperationException("Failed to read from image.");
+
+        Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+        uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;
+        return offset;
+    }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    {
+        Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
+        if (assembly.PEImage == TargetPointer.Null)
+            throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(assembly.PEImage);
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+        uint offset;
+        if (IsMapped(peImageLayout))
+            offset = (uint)rva;
+        else
+            offset = RvaToOffset(rva, peImageLayout);
+        return peImageLayout.Base + offset;
+    }
+
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
         buffer = TargetPointer.Null;
@@ -169,6 +274,29 @@ internal readonly struct Loader_1 : ILoader
         size = growableSymbolStream.Size;
 
         return true;
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.AvailableTypeParams == TargetPointer.Null)
+            return [];
+
+        EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
+        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.InstMethodHashTable == TargetPointer.Null)
+            return [];
+
+        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.InstMethodHashTable);
+
+        return methodHashTable.Entries.Select(entry => entry.MethodDesc);
     }
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
@@ -196,10 +324,37 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ClassFreed))
+            flags |= ModuleFlags.ClassFreed;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerNotified))
+            flags |= ModuleFlags.ProfilerNotified;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EtwNotified))
+            flags |= ModuleFlags.EtwNotified;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOptimizations))
+            flags |= ModuleFlags.ProfilerDisableOptimizations;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableInlining))
+            flags |= ModuleFlags.ProfilerDisableInlining;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerUserOverridePriv))
+            flags |= ModuleFlags.DebuggerUserOverridePriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerAllowJitOptsPriv))
+            flags |= ModuleFlags.DebuggerAllowJitOptsPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerTrackJitInfoPriv))
+            flags |= ModuleFlags.DebuggerTrackJitInfoPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerEnCEnabledPriv))
+            flags |= ModuleFlags.DebuggerEnCEnabledPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerPDBsCopied))
+            flags |= ModuleFlags.DebuggerPDBsCopied;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerIgnorePDbs))
+            flags |= ModuleFlags.DebuggerIgnorePDbs;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.IJWFixedUp))
+            flags |= ModuleFlags.IJWFixedUp;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.BeingUnloaded))
+            flags |= ModuleFlags.BeingUnloaded;
+
         return flags;
     }
 
@@ -237,6 +392,15 @@ internal readonly struct Loader_1 : ILoader
         return module.Base;
     }
 
+    TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        Data.AssemblyBinder binder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(peAssembly.AssemblyBinder);
+        Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(binder.AssemblyLoadContext);
+        return objectHandle.Object;
+    }
+
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -250,27 +414,23 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
+    private static (bool Done, uint NextIndex) SearchLookupMap(uint index) => (true, index);
+    private delegate (bool Done, uint NextIndex) Delegate(uint index);
+    private IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table, uint index, Delegate iterator)
     {
-        uint rid = EcmaMetadataUtils.GetRowId(token);
-        ArgumentOutOfRangeException.ThrowIfZero(rid);
-        flags = new TargetNUInt(0);
-        if (table == TargetPointer.Null)
-            return TargetPointer.Null;
-        uint index = rid;
-        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        // have to read lookupMap an extra time upfront because only the first map
-        // has valid supportedFlagsMask
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        bool doneIterating;
         do
         {
-            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
             if (index < lookupMap.Count)
             {
                 TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
                 TargetPointer rawValue = _target.ReadPointer(entryAddress);
-                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
-                return rawValue & ~(supportedFlagsMask.Value);
+                yield return (rawValue, index);
+                (doneIterating, index) = iterator(index);
+                if (doneIterating)
+                    yield break;
             }
             else
             {
@@ -278,15 +438,54 @@ internal readonly struct Loader_1 : ILoader
                 index -= lookupMap.Count;
             }
         } while (table != TargetPointer.Null);
-        return TargetPointer.Null;
+    }
+
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    {
+        if (table == TargetPointer.Null)
+        {
+            flags = new TargetNUInt(0);
+            return TargetPointer.Null;
+        }
+
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
+        flags = new TargetNUInt(rval & supportedFlagsMask);
+        return rval & ~supportedFlagsMask;
+    }
+
+    IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)
+    {
+        if (table == TargetPointer.Null)
+            yield break;
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+        TargetNUInt flags = new TargetNUInt(0);
+        uint index = 1; // zero is invalid
+        foreach ((TargetPointer targetPointer, uint idx) in IterateModuleLookupMap(table, index, IterateLookupMap))
+        {
+            TargetPointer rval = targetPointer & ~supportedFlagsMask;
+            if (rval != TargetPointer.Null)
+                yield return (rval, idx);
+        }
     }
 
     bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer assembly = module.Assembly;
-        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsDynamic(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.IsDynamic;
     }
 
     bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
@@ -294,5 +493,30 @@ internal readonly struct Loader_1 : ILoader
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+    }
+
+    TargetPointer ILoader.GetGlobalLoaderAllocator()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.HighFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.LowFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetStubHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.StubHeap;
     }
 }

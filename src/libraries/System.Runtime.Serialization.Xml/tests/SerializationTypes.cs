@@ -750,8 +750,7 @@ namespace SerializationTypes
 
     public class CustomDocument
     {
-        private XmlDocument? _doc;
-        public XmlDocument Document => _doc ??= new XmlDocument();
+        public XmlDocument Document => field ??= new XmlDocument();
 
         [XmlAnyElement]
         public XmlNode[] Items

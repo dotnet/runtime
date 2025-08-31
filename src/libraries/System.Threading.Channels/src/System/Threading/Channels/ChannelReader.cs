@@ -69,7 +69,7 @@ namespace System.Threading.Channels
                     return new ValueTask<T>(fastItem);
                 }
             }
-            catch (Exception exc) when (!(exc is ChannelClosedException || exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not (ChannelClosedException or OperationCanceledException))
             {
                 return new ValueTask<T>(Task.FromException<T>(exc));
             }

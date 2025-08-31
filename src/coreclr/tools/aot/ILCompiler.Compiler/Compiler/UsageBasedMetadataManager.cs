@@ -312,29 +312,6 @@ namespace ILCompiler
             }
 
             MetadataType mdType = type as MetadataType;
-
-            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
-            // method bodies for all properties. It's common to have anonymous types used with reflection
-            // and it's hard to specify them in RD.XML.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
-            {
-                if (mdType != null &&
-                    mdType.HasInstantiation &&
-                    !mdType.IsGenericDefinition &&
-                    mdType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
-                    mdType.Name.Contains("AnonymousType"))
-                {
-                    foreach (MethodDesc method in type.GetMethods())
-                    {
-                        if (!method.Signature.IsStatic && method.IsSpecialName)
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
-                        }
-                    }
-                }
-            }
-
             ModuleDesc module = mdType?.Module;
             if (module != null && !_rootEntireAssembliesExaminedModules.Contains(module))
             {
@@ -428,13 +405,13 @@ namespace ILCompiler
             return false;
         }
 
-        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
-            bool hasFlowAnnotations = type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
+            bool allocatedWithFlowAnnotations = allocated && type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
 
-            if (hasFlowAnnotations)
+            if (allocatedWithFlowAnnotations)
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
@@ -443,7 +420,7 @@ namespace ILCompiler
                     "Type exists and GetType called on it"));
             }
 
-            if (hasFlowAnnotations
+            if (allocatedWithFlowAnnotations
                 && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */)
             {
                 // We have some flow annotations on this type.
@@ -741,25 +718,6 @@ namespace ILCompiler
             return _modulesWithMetadata;
         }
 
-        private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
-        {
-            // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
-            {
-                if (!IsReflectionBlocked(constructedType))
-                    yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
-            }
-        }
-
         public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -793,6 +751,15 @@ namespace ILCompiler
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
+        }
+
+        public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+            bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
+            if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, accessedType))
+            {
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting type");
             }
         }
 
@@ -880,8 +847,11 @@ namespace ILCompiler
                 reflectableTypes[typeWithMetadata] = MetadataCategory.Description;
             }
 
-            foreach (var constructedType in GetTypesWithRuntimeMapping())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
+                if (IsReflectionBlocked(constructedType))
+                    continue;
+
                 reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
 
                 // Also set the description bit if the definition is getting metadata.
@@ -1245,27 +1215,18 @@ namespace ILCompiler
         CompleteTypesOnly = 1,
 
         /// <summary>
-        /// Specifies that heuristic that makes anonymous types work should be applied.
-        /// </summary>
-        /// <remarks>
-        /// Generates method bodies for properties on anonymous types even if they're not
-        /// statically used.
-        /// </remarks>
-        AnonymousTypeHeuristic = 2,
-
-        /// <summary>
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
-        ReflectionILScanning = 4,
+        ReflectionILScanning = 2,
 
         /// <summary>
         /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        CreateReflectableArtifacts = 8,
+        CreateReflectableArtifacts = 4,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.
         /// </summary>
-        RootDefaultAssemblies = 16,
+        RootDefaultAssemblies = 8,
     }
 }

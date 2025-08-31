@@ -130,6 +130,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -226,6 +230,10 @@ NESTED_ENTRY RhpRethrow, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -308,9 +316,6 @@ FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 
     alloc_stack     stack_alloc_size
 
-    ;; Mirror clearing of AVX state done by regular method prologs
-    vzeroupper
-
     save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
     save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
     save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
@@ -329,9 +334,6 @@ endm
 ;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
 ;;
 FUNCLET_CALL_EPILOGUE macro
-    ;; Mirror clearing of AVX state done by regular method epilogs
-    vzeroupper
-
     movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
     movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
     movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
@@ -514,7 +516,7 @@ endif
         je      @f
 
         ;; It was the ThreadAbortException, so rethrow it
-        mov     rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov     rcx, STATUS_NATIVEAOT_THREAD_ABORT
         mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
         lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
 

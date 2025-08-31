@@ -624,7 +624,7 @@ namespace System.Threading.Channels.Tests
             Task t = waitToReadAsync ? (Task)c.Reader.WaitToReadAsync(ct).AsTask() : c.Reader.ReadAsync(ct).AsTask();
             Task r = t.ContinueWith(_ =>
             {
-                Assert.Equal(allowSynchronousContinuations && !cancelable, expectedId == Environment.CurrentManagedThreadId);
+                Assert.Equal(allowSynchronousContinuations, expectedId == Environment.CurrentManagedThreadId);
             }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
             Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);

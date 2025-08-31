@@ -185,7 +185,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeCo
     {
         mdToken tk;
         IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
-        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
+        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
         pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
         pSigBuilder->AppendByte(typ == ELEMENT_TYPE_CMOD_REQD); // "is required" byte
         pSigBuilder->AppendPointer(th.AsPtr());
@@ -387,6 +387,50 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeCon
     }
 }
 
+void SigPointer::CopyModOptsReqs(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    CorElementType typ;
+    IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    while (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    {
+        // Skip the custom modifier
+        IfFailThrowBF(GetByte(NULL), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Get the encoded token.
+        uint32_t token;
+        IfFailThrowBF(GetToken(&token), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Append the custom modifier and encoded token to the signature.
+        pSigBuilder->AppendElementType(typ);
+        pSigBuilder->AppendToken(token);
+
+        typ = ELEMENT_TYPE_END;
+        IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    }
+}
+
+void SigPointer::CopyExactlyOne(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    intptr_t beginExactlyOne = (intptr_t)m_ptr;
+    IfFailThrowBF(SkipExactlyOne(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    intptr_t endExactlyOne = (intptr_t)m_ptr;
+    pSigBuilder->AppendBlob((const PVOID)beginExactlyOne, endExactlyOne - beginExactlyOne);
+}
+
 void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
 {
     CONTRACTL
@@ -396,10 +440,10 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE
     }
     CONTRACTL_END
 
-    SigPointer spEnd(*this);
-    IfFailThrowBF(spEnd.SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
-    pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
-    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), spEnd.m_ptr - (m_ptr + 1));
+    PCCOR_SIGNATURE beginSignature = m_ptr;
+    IfFailThrowBF(SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(*beginSignature | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(beginSignature + 1), m_ptr - (beginSignature + 1));
 }
 #endif // DACCESS_COMPILE
 
@@ -1016,7 +1060,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return(th);
 }
 
@@ -3867,7 +3911,6 @@ MetaSig::CompareElementType(
                 pOtherModule = pModule1;
             }
 
-            // Internal types can only correspond to types or value types.
             switch (eOtherType)
             {
                 case ELEMENT_TYPE_OBJECT:
@@ -3895,7 +3938,7 @@ MetaSig::CompareElementType(
                         pOtherModule,
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
+                        ClassLoader::PermitUninstDefOrRef);
 
                     return (hInternal == hOtherType);
                 }
@@ -5690,6 +5733,12 @@ TokenPairList TokenPairList::AdjustForTypeSpec(TokenPairList *pTemplate, ModuleB
 
             result.m_bInTypeEquivalenceForbiddenScope = !IsTdInterface(dwAttrType);
         }
+    }
+    else if (elemType == ELEMENT_TYPE_INTERNAL)
+    {
+        TypeHandle typeHandle;
+        IfFailThrow(sig.GetPointer((void**)&typeHandle));
+        result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.IsInterface();
     }
     else
     {

@@ -1,4 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -782,7 +783,27 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
     regMaskTP killMask = RBM_NONE;
 #ifdef TARGET_XARCH
     assert(mulNode->OperIsMul());
-    if (!mulNode->OperIs(GT_MUL) || (((mulNode->gtFlags & GTF_UNSIGNED) != 0) && mulNode->gtOverflowEx()))
+    if (!mulNode->OperIs(GT_MUL))
+    {
+        // If we can use the mulx instruction, we don't need to kill RAX
+        if (mulNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // If on operand is contained, we define fixed RDX register for use, so we don't need to kill register.
+            if (mulNode->gtGetOp1()->isContained() || mulNode->gtGetOp2()->isContained())
+            {
+                killMask = RBM_NONE;
+            }
+            else
+            {
+                killMask = RBM_RDX;
+            }
+        }
+        else
+        {
+            killMask = RBM_RAX | RBM_RDX;
+        }
+    }
+    else if (mulNode->IsUnsigned() && mulNode->gtOverflowEx())
     {
         killMask = RBM_RAX | RBM_RDX;
     }
@@ -826,11 +847,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
-        if (call->TypeGet() == TYP_DOUBLE)
+        if (call->TypeIs(TYP_DOUBLE))
         {
             needDoubleTmpForFPCall = true;
         }
-        else if (call->TypeGet() == TYP_FLOAT)
+        else if (call->TypeIs(TYP_FLOAT))
         {
             needFloatTmpForFPCall = true;
         }
@@ -959,7 +980,7 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 #ifdef TARGET_XARCH
     switch (node->GetHWIntrinsicId())
     {
-        case NI_SSE2_MaskMove:
+        case NI_X86Base_MaskMove:
             // maskmovdqu uses edi as the implicit address register.
             // Although it is set as the srcCandidate on the address, if there is also a fixed
             // assignment for the definition of the address, resolveConflictingDefAndUse() may
@@ -983,14 +1004,28 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 // getKillSetForReturn: Determine the liveness kill set for a return node.
 //
 // Arguments:
-//    NONE (this kill set is independent of the details of the specific return.)
+//    returnNode - the return node
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskTP LinearScan::getKillSetForReturn()
+regMaskTP LinearScan::getKillSetForReturn(GenTree* returnNode)
 {
-    return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
-                                                : RBM_NONE;
+    regMaskTP killSet = RBM_NONE;
+
+    if (compiler->compIsProfilerHookNeeded())
+    {
+        killSet = compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+
+#if defined(TARGET_ARM)
+        // For arm methods with no return value R0 is also trashed.
+        if (returnNode->TypeIs(TYP_VOID))
+        {
+            killSet |= RBM_R0;
+        }
+#endif
+    }
+
+    return killSet;
 }
 
 //------------------------------------------------------------------------
@@ -1071,7 +1106,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // more details.
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             break;
 
         case GT_PROF_HOOK:
@@ -1826,13 +1861,6 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             }
         }
 
-        if (tree->OperIsPutArgSplit())
-        {
-            // While we have attempted to account for any "specialPutArg" defs above, we're only looking at RefPositions
-            // created for this node. We must be defining at least one register in the PutArgSplit, so conservatively
-            // add one less than the maximum number of registers args to 'minRegCount'.
-            minRegCount += MAX_REG_ARG - 1;
-        }
         for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
             RefPosition* newRefPosition    = &(*refPositionMark);
@@ -1962,7 +1990,7 @@ void LinearScan::buildPhysRegRecords()
     // callee trash and should appear at the end up the existing callee
     // trash set
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         regOrderFlt     = &lsraRegOrderFltEvex[0];
         regOrderFltSize = lsraRegOrderFltEvexSize;
@@ -1987,7 +2015,7 @@ void LinearScan::buildPhysRegRecords()
 #if defined(TARGET_XARCH)
     // xarch has mask registers available when EVEX is supported
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         for (unsigned int i = 0; i < lsraRegOrderMskSize; i++)
         {
@@ -2696,16 +2724,14 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
-                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
                     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
-                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
                     }
 
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
@@ -2745,7 +2771,7 @@ void LinearScan::buildIntervals()
     // If the last block has successors, create a RefTypeBB to record
     // what's live
 
-    if (prevBlock->NumSucc(compiler) > 0)
+    if (prevBlock->NumSucc() > 0)
     {
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
@@ -3069,6 +3095,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 #ifndef TARGET_ARM
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
+    setTgtPref(interval, tgtPrefUse3);
 #endif // !TARGET_ARM
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -3109,19 +3136,6 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
                 BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
             }
 
-            continue;
-        }
-#endif
-
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
-            for (unsigned int i = 0; i < regCount; i++)
-            {
-                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
-            }
-            srcCount += regCount;
             continue;
         }
 #endif
@@ -3835,6 +3849,14 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
 // Notes:
 //    The operands must already have been processed by buildRefPositionsForNode, and their
 //    RefInfoListNodes placed in the defList.
+//    For TARGET_XARCH:
+//              Case 1: APX is not supported at all – We do not need to worry about it at all
+//                      since high GPR doesn’t come into play at all. So, in effect, candidates are
+//                      limited to lowGPRs
+//              Case 2: APX is supported but EVEX support is not there – In this case, we need
+//                      to restrict candidates to just lowGPRs
+//              Case 3: APX support exists with EVEX support. – In this case, we do not need
+//                      to do anything. Can give LSRA access to all registers for this node
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
@@ -3846,13 +3868,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
         assert(op2 != nullptr);
         if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
         {
-            if (op1->isContainedIndir())
+            if (op1->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
             }
-            else
+            else if (op2->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, candidates);
             }
         }
         return BuildRMWUses(node, op1, op2, candidates, candidates);
@@ -3863,11 +3889,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() &&
-            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
-            candidates == RBM_NONE)
+        if (op1->isContainedIndir() && !getEvexIsSupported())
         {
-            srcCount += BuildOperandUses(op1, lowGprRegs);
+            if (candidates == RBM_NONE)
+            {
+                srcCount += BuildOperandUses(op1, lowGprRegs);
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
         else
 #endif
@@ -3877,11 +3909,18 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     }
     if (op2 != nullptr)
     {
-
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        if (op2->isContainedIndir() && !getEvexIsSupported())
         {
-            candidates = lowGprRegs;
+            if (candidates == RBM_NONE)
+            {
+                candidates = lowGprRegs;
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
 #endif
         srcCount += BuildOperandUses(op2, candidates);
@@ -3941,7 +3980,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
 
-    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -3982,14 +4020,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     defCandidates = allRegs(type);
 #endif // TARGET_X86
 
-#ifdef TARGET_AMD64
-    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
-    {
-        defCandidates = lowGprRegs;
-    }
-
-#endif // TARGET_AMD64
-
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
     {
@@ -4022,7 +4052,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     LclVarDsc*   varDsc   = compiler->lvaGetDesc(storeLoc);
 
     assert(compiler->lvaEnregMultiRegVars);
-    assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+    assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
     bool isMultiRegSrc = op1->IsMultiRegNode();
     // The source must be:
     // - a multi-reg source
@@ -4107,7 +4137,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && (storeLoc->TypeGet() == TYP_SIMD12))
+    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && storeLoc->TypeIs(TYP_SIMD12))
     {
 #ifdef TARGET_ARM64
         // Need an additional register to extract upper 4 bytes of Vector3,
@@ -4127,46 +4157,19 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
-        assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+        assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
         srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
         {
             BuildUse(op1, RBM_NONE, i);
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-        {
-            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
-            {
-                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
-                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
-
-                if (isCandidateVar(varDsc))
-                {
-                    // This internal register must be different from the target register.
-                    setInternalRegsDelayFree = true;
-                }
-            }
-        }
-#endif // FEATURE_SIMD && TARGET_X86
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*         bitCastSrc   = op1->gtGetOp1();
-        RegisterType     registerType = regType(bitCastSrc->TypeGet());
-        SingleTypeRegSet candidates   = RBM_NONE;
-#ifdef TARGET_AMD64
-        if (registerType == IntRegisterType)
-        {
-            candidates = lowGprRegs;
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            candidates = allRegs(registerType);
-        }
-        singleUseRef = BuildUse(bitCastSrc, candidates);
+        GenTree*     bitCastSrc   = op1->gtGetOp1();
+        RegisterType registerType = regType(bitCastSrc->TypeGet());
+        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4248,16 +4251,7 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-#ifdef TARGET_AMD64
-        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
-        {
-            BuildDef(tree, lowGprRegs);
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            BuildDef(tree);
-        }
+        BuildDef(tree);
     }
     return srcCount;
 }
@@ -4276,9 +4270,9 @@ int LinearScan::BuildReturn(GenTree* tree)
     GenTree* op1 = tree->AsOp()->GetReturnValue();
 
 #if !defined(TARGET_64BIT)
-    if (tree->TypeGet() == TYP_LONG)
+    if (tree->TypeIs(TYP_LONG))
     {
-        assert((op1->OperGet() == GT_LONG) && op1->isContained());
+        assert(op1->OperIs(GT_LONG) && op1->isContained());
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         BuildUse(loVal, RBM_LNGRET_LO.GetIntRegSet());
@@ -4287,7 +4281,7 @@ int LinearScan::BuildReturn(GenTree* tree)
     }
     else
 #endif // !defined(TARGET_64BIT)
-        if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
+        if (!tree->TypeIs(TYP_VOID) && !op1->isContained())
         {
             SingleTypeRegSet useCandidates = RBM_NONE;
 
@@ -4303,7 +4297,7 @@ int LinearScan::BuildReturn(GenTree* tree)
             if (varTypeIsStruct(tree))
             {
                 // op1 has to be either a lclvar or a multi-reg returning call
-                if ((op1->OperGet() == GT_LCL_VAR) && !op1->IsMultiRegLclVar())
+                if (op1->OperIs(GT_LCL_VAR) && !op1->IsMultiRegLclVar())
                 {
                     BuildUse(op1, useCandidates);
                 }
@@ -4611,6 +4605,8 @@ int LinearScan::BuildCmp(GenTree* tree)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
+#elif defined(TARGET_RISCV64)
+    assert(tree->OperIsCmpCompare() || tree->OperIs(GT_JCMP));
 #else
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
 #endif

@@ -247,6 +247,11 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
+            if (value is null)
+            {
+                return;
+            }
+
             // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
             // requires the former.  For value types, it won't matter as the type checks devolve into
             // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -287,7 +292,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                s = value?.ToString();
+                s = value.ToString();
             }
 
             if (s is not null)
@@ -306,6 +311,11 @@ namespace System.Runtime.CompilerServices
             if (_hasCustomFormatter)
             {
                 AppendCustomFormatter(value, format);
+                return;
+            }
+
+            if (value is null)
+            {
                 return;
             }
 
@@ -349,7 +359,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                s = value?.ToString();
+                s = value.ToString();
             }
 
             if (s is not null)

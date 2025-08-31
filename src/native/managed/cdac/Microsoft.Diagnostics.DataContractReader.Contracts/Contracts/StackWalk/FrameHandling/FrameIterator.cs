@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal sealed class FrameIterator
 {
-    private enum FrameType
+    internal enum FrameType
     {
         Unknown,
 
@@ -33,6 +33,19 @@ internal sealed class FrameIterator
         FaultingExceptionFrame,
 
         HijackFrame,
+
+        TailCallFrame,
+
+        /* Other Frame Types not handled by the iterator */
+        UnmanagedToManagedFrame,
+        ComMethodFrame,
+        ComPrestubMethodFrame,
+        ProtectValueClassFrame,
+        DebuggerClassInitMarkFrame,
+        DebuggerExitFrame,
+        DebuggerU2MCatchHandlerFrame,
+        ExceptionFilterFrame,
+        InterpreterFrame,
     }
 
     private readonly Target target;
@@ -113,6 +126,10 @@ internal sealed class FrameIterator
                 Data.HijackFrame hijackFrame = target.ProcessedData.GetOrAdd<Data.HijackFrame>(CurrentFrame.Address);
                 GetFrameHandler(context).HandleHijackFrame(hijackFrame);
                 return;
+            case FrameType.TailCallFrame:
+                Data.TailCallFrame tailCallFrame = target.ProcessedData.GetOrAdd<Data.TailCallFrame>(CurrentFrame.Address);
+                GetFrameHandler(context).HandleTailCallFrame(tailCallFrame);
+                return;
             default:
                 // Unknown Frame type. This could either be a Frame that we don't know how to handle,
                 // or a Frame that does not update the context.
@@ -140,6 +157,8 @@ internal sealed class FrameIterator
         return frameType.ToString();
     }
 
+    public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
+
     private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
@@ -160,9 +179,72 @@ internal sealed class FrameIterator
     {
         return context switch
         {
+            ContextHolder<X86Context> contextHolder => new X86FrameHandler(target, contextHolder),
             ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(target, contextHolder),
+            ContextHolder<ARMContext> contextHolder => new ARMFrameHandler(target, contextHolder),
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };
+    }
+
+    private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
+    {
+        if (target.PointerSize == 4)
+        {
+            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
+        }
+        else
+        {
+            return ((long)frame.Datum.Value & ~0xffff) != 0;
+        }
+    }
+
+    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
+    {
+        return frame.CallerReturnAddress != TargetPointer.Null;
+    }
+
+    public static TargetPointer GetMethodDescPtr(TargetPointer framePtr, Target target)
+    {
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(target, frame.Identifier);
+        switch (frameType)
+        {
+            case FrameType.FramedMethodFrame:
+            case FrameType.DynamicHelperFrame:
+            case FrameType.ExternalMethodFrame:
+            case FrameType.PrestubMethodFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.CLRToCOMMethodFrame:
+            case FrameType.InterpreterFrame:
+                Data.FramedMethodFrame framedMethodFrame = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
+                return framedMethodFrame.MethodDescPtr;
+            case FrameType.PInvokeCalliFrame:
+                return TargetPointer.Null;
+            case FrameType.StubDispatchFrame:
+                Data.StubDispatchFrame stubDispatchFrame = target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frame.Address);
+                if (stubDispatchFrame.MethodDescPtr != TargetPointer.Null)
+                {
+                    return stubDispatchFrame.MethodDescPtr;
+                }
+                else if (stubDispatchFrame.RepresentativeMTPtr != TargetPointer.Null)
+                {
+                    IRuntimeTypeSystem rtsContract = target.Contracts.RuntimeTypeSystem;
+                    TypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
+                    return rtsContract.GetMethodDescForSlot(mtHandle, (ushort)stubDispatchFrame.RepresentativeSlot);
+                }
+                else
+                {
+                    return TargetPointer.Null;
+                }
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+                if (InlinedCallFrameHasActiveCall(inlinedCallFrame) && InlinedCallFrameHasFunction(inlinedCallFrame, target))
+                    return inlinedCallFrame.Datum & ~(ulong)(target.PointerSize - 1);
+                else
+                    return TargetPointer.Null;
+            default:
+                return TargetPointer.Null;
+        }
     }
 }

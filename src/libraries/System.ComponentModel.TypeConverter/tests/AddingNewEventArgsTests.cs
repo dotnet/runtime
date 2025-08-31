@@ -17,7 +17,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("newObject")]
-        public void Ctor_NewObject(object newObject)
+        public void Ctor_NewObject(object? newObject)
         {
             var args = new AddingNewEventArgs(newObject);
             Assert.Same(newObject, args.NewObject);

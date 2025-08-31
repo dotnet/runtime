@@ -62,6 +62,23 @@ public:
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
 
+
+    struct bmtLayoutInfo
+    {
+        bmtLayoutInfo()
+            : nlFlags(nltNone),
+              packingSize(0),
+              layoutType(EEClassLayoutInfo::LayoutType::Auto)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        CorNativeLinkType nlFlags;
+        BYTE packingSize;
+        ULONG classSize;
+        EEClassLayoutInfo::LayoutType layoutType;
+    };
+
     MethodTableBuilder(
         MethodTable *       pHalfBakedMT,
         EEClass *           pHalfBakedClass,
@@ -101,7 +118,7 @@ public:
         Module *                   pModule,
         mdToken                    cl,
         BuildingInterfaceInfo_t *  pBuildingInterfaceList,
-        const LayoutRawFieldInfo * pLayoutRawFieldInfos,
+        const bmtLayoutInfo *      initialLayoutInfo,
         MethodTable *              pParentMethodTable,
         const bmtGenericsInfo *    bmtGenericsInfo,
         SigPointer                 parentInst,
@@ -172,7 +189,6 @@ private:
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
     BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
-    BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
     BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
@@ -205,7 +221,7 @@ private:
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetHasRVAStaticFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRVAStaticFields(); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -463,7 +479,7 @@ private:
         bmtTypeHandle(
             bmtRTType * pRTType)
             : m_handle(HandleFromRTType(pRTType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
 
         //-----------------------------------------------------------------------------------------
         // Creates a type handle for a bmtMDType pointer. For ease of use, this conversion
@@ -471,7 +487,7 @@ private:
         bmtTypeHandle(
             bmtMDType * pMDType)
             : m_handle(HandleFromMDType(pMDType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -1110,14 +1126,14 @@ private:
         bmtMethodHandle(
             bmtRTMethod * pRTMethod)
             : m_handle(HandleFromRTMethod(pRTMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Constructor taking a bmtMDMethod*.
         bmtMethodHandle(
             bmtMDMethod * pMDMethod)
             : m_handle(HandleFromMDMethod(pMDMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -2074,7 +2090,6 @@ private:
         bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
-        bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
         // These data members are specific to regular statics
         DWORD RegularStaticFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];            // Byte offset where to start placing fields of this size
@@ -2269,6 +2284,7 @@ private:
     bmtMethodImplInfo *bmtMethodImpl;
     const bmtGenericsInfo *bmtGenerics;
     bmtEnumFieldInfo *bmtEnumFields;
+    bmtLayoutInfo* bmtLayout;
 
     void SetBMTData(
         LoaderAllocator *bmtAllocator = NULL,
@@ -2285,7 +2301,8 @@ private:
         bmtGCSeriesInfo *bmtGCSeries = NULL,
         bmtMethodImplInfo *bmtMethodImpl = NULL,
         const bmtGenericsInfo *bmtGenerics = NULL,
-        bmtEnumFieldInfo *bmtEnumFields = NULL);
+        bmtEnumFieldInfo *bmtEnumFields = NULL,
+        bmtLayoutInfo *bmtLayout = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2641,7 +2658,6 @@ private:
     VOID
     InitializeFieldDescs(
         FieldDesc *,
-        const LayoutRawFieldInfo*,
         bmtInternalInfo*,
         const bmtGenericsInfo*,
         bmtMetaDataInfo*,
@@ -2653,10 +2669,9 @@ private:
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
-    // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void
-    VerifySelfReferencingStaticValueTypeFields_WithRVA(
-        MethodTable ** pByValueClassCache);
+    // Returns the CorElementType for the type referenced by typeDefOrRef, which must not be
+    // byreflike, and must be a valuetype of some form (enum or valuetype)
+    CorElementType GetCorElementTypeOfTypeDefOrRefForStaticField(Module* module, mdToken typeDefOrRef);
 
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
@@ -2683,8 +2698,8 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
         AsyncMethodKind     asyncKind
@@ -2900,9 +2915,7 @@ private:
     VOID
     PlaceThreadStaticFields();
 
-    VOID
-    PlaceInstanceFields(
-        MethodTable **);
+    VOID PlaceInstanceFields(MethodTable** pByValueClassCache);
 
     BOOL
     CheckForVtsEventMethod(
@@ -2951,7 +2964,17 @@ private:
 
     VOID SetFinalizationSemantics();
 
+    VOID
+    HandleAutoLayout(
+        MethodTable **);
+
+    VOID HandleSequentialLayout(
+        MethodTable **);
+
     VOID HandleExplicitLayout(
+        MethodTable **);
+
+    VOID ValidateExplicitLayout(
         MethodTable **pByValueClassCache);
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
@@ -3010,11 +3033,6 @@ private:
     VOID TestMethodImpl(
         bmtMethodHandle hDeclMethod,
         bmtMethodHandle hImplMethod);
-
-    // Heuristic to detemine if we would like instances of this class 8 byte aligned
-    BOOL ShouldAlign8(
-        DWORD dwR8Fields,
-        DWORD dwTotalFields);
 
     MethodTable * AllocateNewMT(Module *pLoaderModule,
                                 DWORD dwVtableSlots,

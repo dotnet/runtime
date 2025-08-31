@@ -63,7 +63,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a2, g_sw_ww_table
+    la.local  $a2, g_write_watch_table
     ld.d  $a2, $a2, 0
 #endif
 
@@ -345,45 +345,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-
-//
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrS0_S8 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
-//
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
-//
-// So, if ptrS0_S8 points into the MachState, we need to update
-// the register here.  That's what this macro does.
-//
-.macro RestoreRegMS regIndex, reg
-    // Incoming:
-    //
-    // $a0 = address of MachState
-    //
-    // $regIndex: Index of the register (s0-s8). For s0, index is 23.
-    //For s1, index is 24, and so on.
-    //
-    // $reg: Register name (e.g. s0, s1, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    addi.d  $a2, $a0,(MachState__captureCalleeSavedRegisters + ((\regIndex-23)*8))
-
-    //// Get the content of specified preserved register pointer from machine state
-    ld.d  $a3, $a0, (MachState__ptrCalleeSavedRegisters + ((\regIndex-23)*8))
-
-    bne  $a2, $a3, LOCAL_LABEL(NoRestore_\reg)
-
-    ld.d  $\reg, $a2, 0
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
-
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -398,91 +359,28 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-// INDEBUG_COMMA(HelperMethodFrame *pFrame)
-// MachState *pState
-// )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-#ifdef _DEBUG
-    ori  $a0, $a1, 0
-#endif
-
-    // If machine state is invalid, then simply exit
-    ld.w  $a1, $a0, MachState__isValid
-    beq  $a1, $zero, LOCAL_LABEL(Done)
-
-    RestoreRegMS  23, s0
-    RestoreRegMS  24, s1
-    RestoreRegMS  25, s2
-    RestoreRegMS  26, s3
-    RestoreRegMS  27, s4
-    RestoreRegMS  28, s5
-    RestoreRegMS  29, s6
-    RestoreRegMS  30, s7
-    RestoreRegMS  31, s8
-    RestoreRegMS  32, fp  //NOTE: here 32 is not the real fp register number.
-LOCAL_LABEL(Done):
-    // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-    // as it is used in the state machine to loop until it becomes zero.
-    // Refer to HELPER_METHOD_FRAME_END macro for details.
-    ori  $a0, $zero, 0
-    jirl  $r0, $ra, 0
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    st.w  $zero, $a0, MachState__isValid
-
-    st.d  $ra, $a0, LazyMachState_captureIp
-
-    // save $sp register.
-    st.d  $sp, $a0, LazyMachState_captureSp
-
-    // save non-volatile registers that can contain object references
-    addi.d  $a1, $a0, LazyMachState_captureCalleeSavedRegisters
-    st.d  $s0, $a1, 0
-    st.d  $s1, $a1, 8
-    st.d  $s2, $a1, 16
-    st.d  $s3, $a1, 24
-    st.d  $s4, $a1, 32
-    st.d  $s5, $a1, 40
-    st.d  $s6, $a1, 48
-    st.d  $s7, $a1, 56
-    st.d  $s8, $a1, 64
-    st.d  $fp, $a1, 72
-
-    jirl  $r0, $ra, 0
-LEAF_END LazyMachStateCaptureState, _TEXT
-
-// ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
 
     ori  $a0, $t2, 0
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     ori  $t4,$a0,0
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
     RESTORE_ARGUMENT_REGISTERS  $sp, 0x20
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  $t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
@@ -506,7 +404,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -525,7 +422,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -569,14 +465,13 @@ NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 //
-// $t2 = UMEntryThunk*
+// $t2 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -588,7 +483,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -704,39 +598,6 @@ LOCAL_LABEL(Fail):
     b       C_FUNC(ResolveWorkerAsmStub) // call the ResolveWorkerAsmStub method to transition into the VM
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-
-//NOTE:  Frame_Size = SIZEOF__ArgumentRegisters + SIZEOF__FloatArgumentRegisters + extra.
-//
-//     |gp   |
-//     |s0   |
-//     |$t2   |
-//     |t9   |
-//     |$a7   |
-//     |$a6   |
-//     |$a5   |
-//     |$a4   |
-//     |$a3   |
-//     |$a2   |
-//     |$a1   |
-//     |$a0   |
-//     |$ra   | $sp+8
-//     |fp   | $sp
-//
-//     |f19  | if needed.
-//     |f18  |
-//     |f17  |
-//     |f16  |
-//     |f15  |
-//     |f14  |
-//     |f13  |
-//     |f12  |
-//
-//#define UMThunkStub_Offset_t9    0x50
-#define UMThunkStub_Offset_Entry 0x58   // offset of saved UMEntryThunk *
-#define UMThunkStub_Offset_s0    0x60
-#define UMThunkStub_StackArgs    0x70   // Frame size.
-
-
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)
 //
@@ -828,7 +689,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // $a0 = throwable
     // $a1 = PC to invoke
-    // $a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // $a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -846,16 +707,16 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $fp, $a2, -8  // offset of fp in PCONTEXT relative to S0.
-    ld.d  $s0, $a2, 0
-    ld.d  $s1, $a2, 8
-    ld.d  $s2, $a2, 16
-    ld.d  $s3, $a2, 24
-    ld.d  $s4, $a2, 32
-    ld.d  $s5, $a2, 40
-    ld.d  $s6, $a2, 48
-    ld.d  $s7, $a2, 56
-    ld.d  $s8, $a2, 64
+    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
+    ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
+    ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
+    ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
+    ld.d  $s3, $a2, OFFSETOF__CONTEXT__S0+24
+    ld.d  $s4, $a2, OFFSETOF__CONTEXT__S0+32
+    ld.d  $s5, $a2, OFFSETOF__CONTEXT__S0+40
+    ld.d  $s6, $a2, OFFSETOF__CONTEXT__S0+48
+    ld.d  $s7, $a2, OFFSETOF__CONTEXT__S0+56
+    ld.d  $s8, $a2, OFFSETOF__CONTEXT__S0+64
 
     // Invoke the funclet
     jirl $ra, $a1, 0
@@ -1149,7 +1010,7 @@ LEAF_END JIT_PollGC, _TEXT
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ld.w  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
+    ld.d  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
     move  $t0, $a0     // Move first arg pointer to temp register
     move  $a0, $a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer

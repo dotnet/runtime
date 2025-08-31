@@ -5,25 +5,26 @@ import { mono_log_debug, mono_log_warn } from "./logging";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
-import { ResourceList } from "../types";
+import { JsAsset } from "../types";
 
-export async function importLibraryInitializers (libraryInitializers: ResourceList | undefined): Promise<void> {
+export async function importLibraryInitializers (libraryInitializers: JsAsset[] | undefined): Promise<void> {
     if (!libraryInitializers) {
         return;
     }
 
-    const initializerFiles = Object.keys(libraryInitializers);
-    await Promise.all(initializerFiles.map(f => importInitializer(f)));
+    await Promise.all((libraryInitializers ?? []).map(i => importInitializer(i!)));
 
-    async function importInitializer (path: string): Promise<void> {
+    async function importInitializer (asset: JsAsset): Promise<void> {
         try {
-            const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
-            mono_log_debug(() => `Attempting to import '${adjustedPath}' for ${path}`);
-            const initializer = await import(/*! webpackIgnore: true */ adjustedPath);
-
-            loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });
+            const path = asset.name!;
+            if (!asset.moduleExports) {
+                const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
+                mono_log_debug(() => `Attempting to import '${adjustedPath}' for ${asset}`);
+                asset.moduleExports = await import(/*! webpackIgnore: true */ adjustedPath);
+            }
+            loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: asset.moduleExports });
         } catch (error) {
-            mono_log_warn(`Failed to import library initializer '${path}': ${error}`);
+            mono_log_warn(`Failed to import library initializer '${asset}': ${error}`);
         }
     }
 }

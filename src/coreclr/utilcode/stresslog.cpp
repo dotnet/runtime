@@ -15,6 +15,7 @@
 #include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
+#include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -58,15 +59,11 @@ uint64_t getTimeStamp() {
 }
 
 #else // HOST_X86
-uint64_t getTimeStamp() {
+uint64_t getTimeStamp()
+{
     STATIC_CONTRACT_LEAF;
 
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-
-    QueryPerformanceCounter(&ret);
-
-    return ret.QuadPart;
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #endif // HOST_X86
@@ -127,10 +124,7 @@ uint64_t getTickFrequency()
 */
 uint64_t getTickFrequency()
 {
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
+    return (uint64_t)minipal_hires_tick_frequency();
 }
 
 #endif // HOST_X86
@@ -311,6 +305,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+#ifdef TARGET_WASM
+    return; // no modules on wasm
+#endif
     unsigned moduleIndex = 0;
 #ifdef MEMORY_MAPPED_STRESSLOG
     StressLogHeader* hdr = theLog.stressLogHeader;

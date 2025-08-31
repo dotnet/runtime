@@ -143,7 +143,7 @@ PALTEST(composite_object_management_semaphore_nonshared_paltest_semaphore_nonsha
     }
 
      /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     processStats.relationId = RELATION_ID;
     processStats.processId  = USE_PROCESS_COUNT;
 
@@ -294,7 +294,7 @@ void  PALAPI Run_Thread_semaphore_nonshared (LPVOID lpParam)
         Fail("Error while waiting for StartTest Event@ thread %d, RC is %d, Error is %d\n", Id, dwWaitResult, GetLastError());
     }
 
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
 
     for( i = 0; i < REPEAT_COUNT; i++ )
     {
