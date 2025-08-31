@@ -3276,7 +3276,7 @@ namespace System.Numerics.Tensors.Tests
     }
 
     /// <summary>
-    /// Test complex number type that implements IRootFunctions for testing StdDev consistency between
+    /// Test complex number type that implements IRootFunctions for testing consistency between
     /// TensorPrimitives.StdDev and Tensor.StdDev
     /// </summary>
     public readonly struct TestComplex(Complex value) : IRootFunctions<TestComplex>, IEquatable<TestComplex>
@@ -3285,7 +3285,14 @@ namespace System.Numerics.Tensors.Tests
         
         public double Real => _value.Real;
         public double Imaginary => _value.Imaginary;
-        
+
+        public static TestComplex One => new(Complex.One);
+        public static int Radix => 2;
+        public static TestComplex Zero => new(Complex.Zero);
+        public static TestComplex E => new(new(Math.E, 0));
+        public static TestComplex Pi => new(new(Math.PI, 0));
+        public static TestComplex Tau => new(new(Math.Tau, 0));
+
         public static TestComplex operator +(TestComplex left, TestComplex right) => new(left._value + right._value);
         public static TestComplex operator *(TestComplex left, TestComplex right) => new(left._value * right._value);
         public static TestComplex operator /(TestComplex left, TestComplex right) => new(left._value / right._value);
@@ -3307,7 +3314,7 @@ namespace System.Numerics.Tensors.Tests
         public static bool operator ==(TestComplex left, TestComplex right) => left.Equals(right);
         public static bool operator !=(TestComplex left, TestComplex right) => !left.Equals(right);
         
-        // Required interface implementations - not needed for StdDev, throw NotImplementedException
+        // Required interface implementations not needed for tests - throw NotImplementedException
         public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
         public static TestComplex Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
@@ -3350,12 +3357,6 @@ namespace System.Numerics.Tensors.Tests
         public static bool TryConvertToTruncating<TOther>(TestComplex value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
-        public static TestComplex One => new(Complex.One);
-        public static int Radix => 2;
-        public static TestComplex Zero => new(Complex.Zero);
-        public static TestComplex E => new(new(Math.E, 0));
-        public static TestComplex Pi => new(new(Math.PI, 0));
-        public static TestComplex Tau => new(new(Math.Tau, 0));
         public static TestComplex Cbrt(TestComplex x) => throw new NotImplementedException();
         public static TestComplex Hypot(TestComplex x, TestComplex y) => throw new NotImplementedException();
         public static TestComplex RootN(TestComplex x, int n) => throw new NotImplementedException();
