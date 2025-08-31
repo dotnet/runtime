@@ -2109,6 +2109,7 @@ namespace System.Numerics.Tensors
         {
             public static void Invoke(ref readonly T x, T y, ref T destination)
             {
+                // Absolute value is needed before squaring to support complex numbers
                 T diff = T.Abs(x - y);
                 destination += diff * diff;
             }
