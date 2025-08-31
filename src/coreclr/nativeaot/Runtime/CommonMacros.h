@@ -41,14 +41,6 @@
 #define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
-#ifdef __GNUC__
-#ifdef HOST_64BIT
-#define __int64     long
-#else // HOST_64BIT
-#define __int64     long long
-#endif // HOST_64BIT
-#endif // __GNUC__
-
 #ifndef FORCEINLINE
 #define FORCEINLINE __forceinline
 #endif
