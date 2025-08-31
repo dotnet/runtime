@@ -338,7 +338,7 @@ OPDEF(INTOP_LDIND_I4, "ldind.i4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_I8, "ldind.i8", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R4, "ldind.r4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R8, "ldind.r8", 4, 1, 1, InterpOpInt)
-OPDEF(INTOP_LDIND_O, "ldind.o", 4, 1, 1, InterpOpInt)
+// No LDIND_O, use LDIND_I
 OPDEF(INTOP_LDIND_VT, "ldind.vt", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_STIND_I1, "stind.i1", 4, 0, 2, InterpOpInt)
@@ -364,6 +364,11 @@ OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inli
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_GENERIC, "newobj.generic", 6, 1, 2, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
+
+// Tail calls
+OPDEF(INTOP_CALL_TAIL, "call.tail", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLI_TAIL, "calli", 5, 1, 2, InterpOpLdPtr)
+OPDEF(INTOP_CALLVIRT_TAIL, "callvirt.tail", 4, 1, 1, InterpOpMethodHandle)
 
 // The following helper call instructions exist in 2 variants, one for normal methods, and one for cases where a shared generic lookup is needed.
 // In the case where a shared generic lookup is needed an extra argument is passed as an svar, which is a pointer to the generic context.
@@ -392,6 +397,7 @@ OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
+OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
@@ -409,6 +415,8 @@ OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpNoArgs)
 OPDEF(INTOP_COMPARE_EXCHANGE_I8, "compare.exchange.i8", 5, 1, 3, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I4, "exchange.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I8, "exchange.i8", 4, 1, 2, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
