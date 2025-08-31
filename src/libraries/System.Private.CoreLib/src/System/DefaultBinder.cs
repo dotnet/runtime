@@ -11,8 +11,10 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
-    internal partial class DefaultBinder : Binder
+    internal class DefaultBinder : Binder
     {
+        internal static readonly DefaultBinder Instance = new DefaultBinder();
+
         // This method is passed a set of methods and must choose the best
         // fit.  The methods all have the same number of arguments and the object
         // array args.  On exit, this method will choice the best fit method

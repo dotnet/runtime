@@ -723,10 +723,7 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder =>
-            field ??
-            Interlocked.CompareExchange(ref field, new DefaultBinder(), null) ??
-            field;
+        public static Binder DefaultBinder => System.DefaultBinder.Instance;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
