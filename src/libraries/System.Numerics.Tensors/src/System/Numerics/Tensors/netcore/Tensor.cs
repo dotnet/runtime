@@ -4810,7 +4810,7 @@ namespace System.Numerics.Tensors
         {
             T mean = Average(x);
             T result = T.AdditiveIdentity;
-            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, mean, ref result);
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredMagnitudeDifferences<T>, T, T>(x, mean, ref result);
             T variance = result / T.CreateChecked(x.FlattenedLength);
             return T.Sqrt(variance);
 
