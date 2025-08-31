@@ -16,16 +16,17 @@ import urllib.request
 from pathlib import Path
 
 
-##########################################################################################################
+##################################################################################
 #
-#  This script sets up an environment for running crank-agent and crank-controller 
-#  (https://github.com/dotnet/crank) locally in order to run various ASP.NET benchmarks 
-#  (TechEmpower, OrchardCMS, etc.) and collect SPMI collections using the provided runtime bits.
+#  This script sets up an environment for running crank-agent and
+#  crank-controller (https://github.com/dotnet/crank) locally in 
+#  order to run various ASP.NET benchmarks (TechEmpower, OrchardCMS, etc.)
+#  and collect SPMI collections using the provided runtime bits.
 #
 #  Usage example:
-#    py superpmi_aspnet2.py --core_root C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output_mch aspnet.mch
+#    python superpmi_aspnet2.py --core_root C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output_mch aspnet2.mch
 #
-##########################################################################################################
+##################################################################################
 
 CRANK_PORT = 5010
 
@@ -73,6 +74,8 @@ def run(cmd, cwd=None, timeout_seconds=45*60):
 
 
 # Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
+# Our Windows Helix machines don't have git installed (and no winget) while crank relies on
+# it internally to download benchmarks.
 def ensure_git(dest: Path) -> str:
     existing = shutil.which("git")
     if existing:
@@ -114,7 +117,7 @@ def ensure_git(dest: Path) -> str:
         return
 
 
-# Install the .NET SDK using the official dotnet-install script.
+# Install .NET SDK using the official dotnet-install script.
 def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
     install_dir.mkdir(parents=True, exist_ok=True)
     if os.name == "nt":
@@ -159,13 +162,15 @@ def setup_and_run_crank_agent(workdir: Path):
 
     # Install .NET SDK needed for crank and crank-agent via dotnet-install public script.
     install_dotnet_sdk("8.0", dotnethome_dir)
+    # Be more agile and install the latest LTS version as well in case if crank moves to it
+    install_dotnet_sdk("LTS", dotnethome_dir)
 
-    # Determine the dotnet executable to use for installing tools
+    # Install crank-agent (runs benchmarks) and crank-controller (or just crank) that schedules them.
     dotnet_exe = dotnet_root_dir / native_exe("dotnet")
     run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"])
     run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"])
 
-    # Create a Localhost.yml to define the local environment
+    # Create a Localhost.yml to define the local environment since we can't access the PerfLab.
     yml = textwrap.dedent(
 f"""
 variables:
@@ -207,19 +212,11 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, config_path: Path, *extra_args: str):
+def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core_root_path: Path, config_path: Path, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
     spcorelib = "System.Private.CoreLib.dll"
-    # Try to infer scenario name from extra args for naming the output zip
-    scenario_name = None
-    for i, a in enumerate(extra_args):
-        if a == "--scenario" and i + 1 < len(extra_args):
-            scenario_name = str(extra_args[i + 1])
-            break
-    if scenario_name is None:
-        scenario_name = "scenario"
     cmd = [
         str(crank_app),
         "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/build/azure.profile.yml",
@@ -231,6 +228,7 @@ def run_crank_scenario(crank_app: Path, framework: str, core_root_path: Path, co
         "--config", "https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml",
         "--config", str(config_path),
         "--profile", "Localhost",
+        "--scenario", scenario_name,
         "--application.noGlobalJson", "false",
         "--application.framework", framework,
         "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
@@ -284,23 +282,24 @@ def main():
     if args.work_dir:
         work_dir_base = Path(args.work_dir).expanduser().resolve()
         work_dir_base.mkdir(parents=True, exist_ok=True)
-        temp_root = work_dir_base
     else:
-        temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_"))
-    print(f"Using temp work directory: {temp_root}")
+        # if not specified, use a temp directory
+        work_dir_base = Path(tempfile.mkdtemp(prefix="aspnet2_"))
+    print(f"Using temp work directory: {work_dir_base}")
 
-    # Set current working directory to temp_root
-    os.chdir(temp_root)
+    # Set current working directory to work_dir_base
+    os.chdir(work_dir_base)
 
     agent_process = None
     try:
-        agent_process, crank_app_path, config_path = setup_and_run_crank_agent(temp_root)
+        agent_process, crank_app_path, config_path = setup_and_run_crank_agent(work_dir_base)
 
         scenarios = [
             # OrchardCMS scenario
             # ("about-sqlite",
             #     # Extra args:
             #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
+            # TODO: re-enable it, currently it randomly fails with build errors.
 
             # JsonMVC scenario
             ("mvc",
@@ -323,11 +322,10 @@ def main():
             print(f"### Running {scenario_name} benchmark... ###")
             run_crank_scenario(
                 crank_app_path,
-                args.tfm,
+                scenario_name,
+                args.tf,
                 core_root_path,
                 config_path,
-                "--scenario",
-                scenario_name,
                 *extra,
             )
 
@@ -340,13 +338,13 @@ def main():
             with zipfile.ZipFile(z) as f:
                 for name in f.namelist():
                     if name.endswith('.mc'):
-                        f.extract(name, str(temp_root))
+                        f.extract(name, str(work_dir_base))
                         extracted_count += 1
             z.unlink(missing_ok=True)
 
         # Merge *.mc files into crank.mch
         if extracted_count == 0:
-            print("No .mc files found in zip outputs; skipping merge.")
+            print("Error: No .mc files found in zip outputs.")
             sys.exit(2)
         else:
             # Merge all .mc files into crank.mch, scanning recursively from tmp
@@ -358,14 +356,15 @@ def main():
                 "-dedup",
                 "-thin",
                 str(output_mch_path),
-                str(temp_root / "*.mc")
-            ], check=True, cwd=str(temp_root))
-        
+                str(work_dir_base / "*.mc")
+            ], check=True, cwd=str(work_dir_base))
+        print(f"Finished merging .mc files into {output_mch_path}")
+
     finally:
         print("Cleaning up...")
         if 'agent_process' in locals() and agent_process is not None:
             agent_process.terminate()
-        print("Done!")
+        print("Done.")
         sys.exit()
 
 if __name__ == "__main__":
