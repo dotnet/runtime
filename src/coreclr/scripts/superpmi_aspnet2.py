@@ -262,7 +262,6 @@ def main():
     parser.add_argument("--core_root", required=True, help="Path to built runtime bits (CORE_ROOT).")
     parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
     parser.add_argument("--output_mch", required=True, help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
-    parser.add_argument("--no_cleanup", action="store_true", help="If specified, do not clean up temporary files after execution.")
     parser.add_argument("--work_dir", help="Optional path to a directory in which a new working directory will be created. If specified, a new subdirectory with a random name prefixed with 'aspnet2_' will be created inside this directory. Otherwise a system temp directory is used.")
     args = parser.parse_args()
 
@@ -285,7 +284,7 @@ def main():
     if args.work_dir:
         work_dir_base = Path(args.work_dir).expanduser().resolve()
         work_dir_base.mkdir(parents=True, exist_ok=True)
-        temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_", dir=str(work_dir_base)))
+        temp_root = work_dir_base
     else:
         temp_root = Path(tempfile.mkdtemp(prefix="aspnet2_"))
     print(f"Using temp work directory: {temp_root}")
@@ -299,9 +298,9 @@ def main():
 
         scenarios = [
             # OrchardCMS scenario
-            ("about-sqlite",
-                # Extra args:
-                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
+            # ("about-sqlite",
+            #     # Extra args:
+            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
 
             # JsonMVC scenario
             ("mvc",
@@ -366,17 +365,8 @@ def main():
         print("Cleaning up...")
         if 'agent_process' in locals() and agent_process is not None:
             agent_process.terminate()
-        time.sleep(5)
-        
-        # Clean up only if not suppressed
-        if not args.no_cleanup:
-            print(f'Removing temp dir {temp_root}')
-            # remove the entire temp_root:
-            shutil.rmtree(temp_root, ignore_errors=True)
-        else:
-            print(f'Not removing temp dir {temp_root} due to --no_cleanup')
-
-    print("Done!")
+        print("Done!")
+        sys.exit()
 
 if __name__ == "__main__":
     main()
