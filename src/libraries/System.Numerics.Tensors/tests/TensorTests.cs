@@ -1159,7 +1159,7 @@ namespace System.Numerics.Tensors.Tests
             // Test case where Abs doesn't change the result (real numbers, positive values)
             yield return new object[] 
             { 
-                "Sequential numbers",
+                "Increasing numbers",
                 new float[] { 0f, 1f, 2f, 3f },
                 StdDev([0f, 1f, 2f, 3f])
             };
@@ -1172,7 +1172,7 @@ namespace System.Numerics.Tensors.Tests
                 0f
             };
             
-            // Test case with negative values where Abs could matter but doesn't for standard deviation
+            // Test case with negative values where Abs could matter (but doesn't for standard deviation)
             yield return new object[]
             {
                 "Mixed positive/negative",
@@ -1186,7 +1186,7 @@ namespace System.Numerics.Tensors.Tests
             // Test case where Abs is critical (complex numbers)
             yield return new object[]
             {
-                "Complex numbers from issue",
+                "Increasing numbers",
                 new TestComplex[] { new(new(1, 2)), new(new(3, 4)) }
             };
             
@@ -1197,7 +1197,7 @@ namespace System.Numerics.Tensors.Tests
                 new TestComplex[] { new(new(0, 1)), new(new(0, 2)), new(new(0, 3)) }
             };
             
-            // Test case with real complex numbers (should behave like floats)
+            // Test case with purely real numbers (should behave like floats)
             yield return new object[]
             {
                 "Real complex numbers",
@@ -1224,9 +1224,6 @@ namespace System.Numerics.Tensors.Tests
                 var reshapedResult = Tensor.StdDev(reshapedTensor.AsReadOnlyTensorSpan());
                 Assert.Equal(expectedStdDev, reshapedResult, precision: 5);
             }
-            
-            // Use testName in assertion message for clarity
-            Assert.True(true, $"Test case '{testName}' passed successfully");
         }
 
         [Theory, MemberData(nameof(StdDevComplexTestData))]
@@ -1240,9 +1237,6 @@ namespace System.Numerics.Tensors.Tests
             // Both should produce the same result - this is the key test for the fix
             Assert.Equal(tensorPrimitivesResult.Real, tensorResult.Real, precision: 10);
             Assert.Equal(tensorPrimitivesResult.Imaginary, tensorResult.Imaginary, precision: 10);
-            
-            // Use testName in assertion message for clarity
-            Assert.True(true, $"Test case '{testName}' passed successfully");
         }
 
         [Fact]
