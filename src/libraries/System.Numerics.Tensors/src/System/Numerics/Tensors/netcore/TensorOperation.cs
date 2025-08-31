@@ -2103,24 +2103,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        public struct SumOfSquaredMagnitudeDifferences<T>
-            : IBinaryOperation_Tensor_Scalar<T, T>
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>, ISubtractionOperators<T, T, T>, INumberBase<T>
-        {
-            public static void Invoke(ref readonly T x, T y, ref T destination)
-            {
-                T diff = T.Abs(x - y);
-                destination += diff * diff;
-            }
-            public static void Invoke(ReadOnlySpan<T> x, T y, Span<T> destination)
-            {
-                for (int i = 0; i < x.Length; i++)
-                {
-                    T diff = T.Abs(x[i] - y);
-                    destination[i] = diff * diff;
-                }
-            }
-        }
+
 
         public readonly struct SumOfSquares<T>
         : IUnaryReduction_Tensor<T, T>

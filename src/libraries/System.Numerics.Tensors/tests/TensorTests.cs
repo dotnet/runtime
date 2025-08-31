@@ -1174,7 +1174,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorStdDevComplexTests()
         {
-            // Test case from issue: Tensor.StdDev vs TensorPrimitivers.StdDev differences for Complex input
+            // Test case from issue: Tensor.StdDev vs TensorPrimitives.StdDev differences for Complex input
             var arr = new TestComplex[] { new(new(1, 2)), new(new(3, 4)) };
             var tensor = Tensor.Create(arr);
             
