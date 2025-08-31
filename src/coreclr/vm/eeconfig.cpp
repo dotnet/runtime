@@ -635,6 +635,25 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
+
+#if defined(FEATURE_INTERPRETER)
+    if (fTieredCompilation)
+    {
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
+        // do not work well together currently.
+        LPWSTR pwzInterpreterMaybe;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
+        if (pwzInterpreterMaybe && pwzInterpreterMaybe[0] != 0)
+        {
+            fTieredCompilation = false;
+        }
+        else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0)
+        {
+            fTieredCompilation = false;
+        }
+    }
+#endif
+
     if (fTieredCompilation)
     {
         fTieredCompilation_QuickJit =
