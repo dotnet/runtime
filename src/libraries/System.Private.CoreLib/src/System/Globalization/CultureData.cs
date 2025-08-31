@@ -444,8 +444,8 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
-                tempHashTable = Interlocked.CompareExchange(ref s_cachedRegions, tempHashTable, null) ?? tempHashTable;
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedRegions, newTable, null) ?? newTable;
             }
             else
             {
