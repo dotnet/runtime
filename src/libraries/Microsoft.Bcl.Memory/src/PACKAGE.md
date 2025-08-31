@@ -4,7 +4,11 @@ Provides `Index` and `Range` types to simplify slicing operations on collections
 Provides `Base64Url` for encoding data in a URL-safe manner on older .NET platforms.
 Provides `Utf8` for converting chunked data between UTF-8 and UTF-16 encodings on .NET Framework and .NET Standard 2.0.
 
-This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
+This library is not necessary nor recommended when targeting versions of .NET that include the relevant support:
+
+* `Index` and `Range`: .NET Core 3.0+, .NET 5+, and .NET Standard 2.1+
+* `System.Text.Unicode.Utf8`: .NET 5+
+* `System.Buffers.Text.Base64Url`: .NET 9+
 
 ## Key Features
 
