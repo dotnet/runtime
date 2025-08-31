@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+#
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+#
+#
+# Title: superpmi_aspnet2.py
+#
+# Notes:
+#
+#   Script to perform the superpmi collection for Techempower Benchmarks
+#   via "crank" (https://github.com/dotnet/crank).
+#
+# Usage example:
+#
+#   python superpmi_aspnet2.py --core_root C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output_mch aspnet2.mch
+#
+
 import argparse
 import os
 import re
@@ -16,19 +33,11 @@ import urllib.request
 from pathlib import Path
 
 
-##################################################################################
-#
-#  This script sets up an environment for running crank-agent and
-#  crank-controller (https://github.com/dotnet/crank) locally in 
-#  order to run various ASP.NET benchmarks (TechEmpower, OrchardCMS, etc.)
-#  and collect SPMI collections using the provided runtime bits.
-#
-#  Usage example:
-#    python superpmi_aspnet2.py --core_root C:\runtime\artifacts\bin\coreclr\windows.x64.Checked --output_mch aspnet2.mch
-#
-##################################################################################
-
 CRANK_PORT = 5010
+
+# Global variable to track the agent process for cleanup
+_crank_agent_process = None
+
 
 # Convert a filename to the appropriate native DLL name, e.g. "clrjit" -> "libclrjit.so" (on Linux)
 def native_dll(name: str) -> str:
@@ -46,26 +55,11 @@ def native_exe(name: str) -> str:
 # Run a command
 def run(cmd):
     print(f"Running command: {' '.join(map(str, cmd))}")
-    kwargs = {}
-    if sys.platform == "win32":
-        kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
-    else:
-        kwargs["start_new_session"] = True
-    
-    proc = subprocess.Popen(cmd, **kwargs)
-    try:
-        proc.wait()
-    except KeyboardInterrupt:
-        print("Keyboard interrupt received, terminating process...")
-        proc.terminate()
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            print("Process did not terminate gracefully, force killing...")
-            proc.kill()
-            proc.wait()
-        print("Process terminated")
-
+    proc = subprocess.Popen(cmd)
+    output,error = proc.communicate()
+    if proc.returncode != 0:
+        print("command failed")
+        
 
 # Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
 # Our Windows Helix machines don't have git installed (and no winget) while crank relies on
@@ -123,14 +117,14 @@ def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
             f"$DotnetVersion='{ch}';$InstallDir='{di}';"
             "& './dotnet-install.ps1' -Channel $DotnetVersion -InstallDir $InstallDir -NoPath"
         )
-        subprocess.check_call(["powershell.exe","-NoProfile","-ExecutionPolicy", "Bypass","-Command", ps_script])
+        run(["powershell.exe","-NoProfile","-ExecutionPolicy", "Bypass","-Command", ps_script])
     else:
         with tempfile.TemporaryDirectory() as td:
             script_path = Path(td) / "dotnet-install.sh"
             with urllib.request.urlopen("https://dot.net/v1/dotnet-install.sh") as resp, open(script_path, "wb") as f:
                 f.write(resp.read())
             os.chmod(script_path, 0o755)
-            subprocess.check_call([str(script_path),"--channel", channel,"--install-dir", str(install_dir),"--no-path"])
+            run([str(script_path),"--channel", channel,"--install-dir", str(install_dir),"--no-path"])
 
 
 # Prepare the environment and run crank-agent
@@ -191,6 +185,16 @@ profiles:
 
 
     print("Starting crank-agent...")
+    # Create process with proper flags for Windows process management
+    if sys.platform == "win32":
+        # On Windows, create a new process group and detach from console
+        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        start_new_session = False
+    else:
+        # On Unix-like systems, start a new session
+        creation_flags = 0
+        start_new_session = True
+    
     agent_process = subprocess.Popen( 
         [
             str(tools_dir / native_exe("crank-agent")),
@@ -200,8 +204,8 @@ profiles:
             "--dotnethome", str(dotnethome_dir),
         ],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-        start_new_session=sys.platform != "win32"
+        creationflags=creation_flags,
+        start_new_session=start_new_session
     )
     print(f"Waiting 10s for crank-agent to start ...")
     time.sleep(10)
@@ -209,7 +213,7 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core_root_path: Path, config_path: Path, dryrun: bool, *extra_args: str):
+def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work_dir: Path, core_root_path: Path, config_path: Path, dryrun: bool, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
@@ -232,9 +236,9 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core
         "--application.options.collectCounters", "false",
         "--application.collectDependencies", "false",
         "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "10",
-        "--load.variables.warmup", "10",
-        "--load.connections", "32",
+        "--load.variables.duration", "45",
+        "--load.variables.warmup", "15",
+        "--load.connections", "64",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
     ]
     
@@ -242,10 +246,8 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core
     if not dryrun:
         cmd.extend([
             "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
-            "--application.environmentVariables", "SuperPMIShimLogPath=.",
+            "--application.environmentVariables", f"SuperPMIShimLogPath={str(work_dir)}",
             "--application.environmentVariables", f"SuperPMIShimPath=./{clrjit}",
-            "--application.options.fetch", "true",
-            "--application.options.fetchOutput", scenario_name + ".crank.zip",
             "--application.options.outputFiles", str(core_root_path / spmi_shim),
             "--application.options.outputFiles", str(core_root_path / clrjit),
             "--application.options.outputFiles", str(core_root_path / coreclr),
@@ -306,9 +308,8 @@ def main():
     # Set current working directory to work_dir_base
     os.chdir(work_dir_base)
 
-    agent_process = None
     try:
-        agent_process, crank_app_path, config_path = setup_and_run_crank_agent(work_dir_base)
+        _crank_agent_process, crank_app_path, config_path = setup_and_run_crank_agent(work_dir_base)
 
         scenarios = [
             # OrchardCMS scenario
@@ -323,14 +324,14 @@ def main():
                 "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml"),
 
             # NoMvcAuth scenario
-            # ("NoMvcAuth",
-            #     # Extra args:
-            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"),
+            ("NoMvcAuth",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"),
 
-            # # PlatformPlaintext scenario
-            # ("plaintext",
-            #     # Extra args:
-            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
+            # PlatformPlaintext scenario
+            ("plaintext",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
         ]
 
         for entry in scenarios:
@@ -340,6 +341,7 @@ def main():
                 crank_app_path,
                 scenario_name,
                 args.tfm,
+                work_dir_base,
                 core_root_path,
                 config_path,
                 args.dryrun,
@@ -348,71 +350,60 @@ def main():
 
         print("Finished running benchmarks.")
 
-        # Skip .mc/.mch processing in dry run mode
-        if not args.dryrun:
-            # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
-            print("Extracting .mc files from zip archives...")
-            extracted_count = 0
-            for z in pathlib.Path('.').glob('*.crank.zip'):
-                with zipfile.ZipFile(z) as f:
-                    for name in f.namelist():
-                        if name.endswith('.mc'):
-                            f.extract(name, str(work_dir_base))
-                            extracted_count += 1
-                z.unlink(missing_ok=True)
-
-            # Merge *.mc files into crank.mch
-            if extracted_count == 0:
-                print("Error: No .mc files found in zip outputs.")
-                sys.exit(2)
-            else:
-                # Merge all .mc files into crank.mch, scanning recursively from tmp
-                print(f"Extracted {extracted_count} .mc files; merging into crank.mch ...")
-                run([
-                    str(mcs_cmd),
-                    "-merge",
-                    "-recursive",
-                    "-dedup",
-                    "-thin",
-                    str(output_mch_path),
-                    str(work_dir_base / "*.mc")
-                ])
-            print(f"Finished merging .mc files into {output_mch_path}")
-        else:
-            print("Dry run mode: Skipping SPMI data collection and .mch file generation.")
-
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     finally:
         print("Cleaning up...")
-        if 'agent_process' in locals() and agent_process is not None:
-            print(f"Terminating agent process {agent_process.pid}...")
-            agent_process.terminate()
-            try:
-                # Wait for process to terminate gracefully
-                agent_process.wait(timeout=10)
-                print(f"Agent process {agent_process.pid} terminated gracefully.")
-            except subprocess.TimeoutExpired:
-                print(f"Agent process {agent_process.pid} did not terminate gracefully, force killing...")
-                agent_process.kill()
+        if _crank_agent_process is not None:
+            print(f"Terminating agent process {_crank_agent_process.pid}...")
+            if sys.platform == "win32":
+                # On Windows, use taskkill first to terminate the entire process tree
                 try:
-                    agent_process.wait(timeout=5)
-                    print(f"Agent process {agent_process.pid} force killed.")
-                except subprocess.TimeoutExpired:
-                    print(f"Warning: Agent process {agent_process.pid} could not be killed.")
-                    if sys.platform == "win32":
-                        # On Windows, try to kill the entire process tree
-                        try:
-                            subprocess.run(["taskkill", "/F", "/T", "/PID", str(agent_process.pid)], 
-                                         check=False, capture_output=True)
-                            print(f"Used taskkill to terminate process tree for PID {agent_process.pid}")
-                        except Exception as e:
-                            print(f"Failed to use taskkill: {e}")
+                    result = subprocess.run(["taskkill", "/F", "/T", "/PID", str(_crank_agent_process.pid)])
+                except Exception as e:
+                    print(f"Failed to use taskkill: {e}")
+
+            try:    
+                _crank_agent_process.terminate()
+                _crank_agent_process.wait(timeout=10)
+                print(f"Agent process {_crank_agent_process.pid} terminated gracefully.")
+            except Exception as e:
+                print(f"Error during standard termination: {e}")
+
+            # Clear the global reference
+            _crank_agent_process = None
+
+        # Skip .mc/.mch processing in dry run mode
+        if not args.dryrun:
+            # Count number of *.mc files in work_dir_base:
+            mc_file_count = len(list(work_dir_base.glob("*.mc")))
+            if mc_file_count == 0:
+                print("Error: No .mc files found.")
+                sys.exit(2)
+
+            print(f"Merging {mc_file_count} .mc files into {output_mch_path}...")
+            run([
+                str(mcs_cmd),
+                "-merge",
+                "-recursive",
+                "-dedup",
+                "-thin",
+                str(output_mch_path),
+                str(work_dir_base / "*.mc")
+            ])
+            print(f"Finished merging .mc files into {output_mch_path}")
+            # delete all .mc files
+            for mc_file in work_dir_base.glob("*.mc"):
+                mc_file.unlink()
+        else:
+            print("Dry run mode: Skipping SPMI data collection and .mch file generation.")
+        
         # validate that mch file was created under non-dryrun:
-        if not args.dryrun and output_mch_path.exists():
+        if not args.dryrun and output_mch_path and output_mch_path.exists():
             print(f"Successfully created {output_mch_path}")
         print("Done.")
-        sys.exit()
 
 if __name__ == "__main__":
     main()
+    sys.exit(0)
