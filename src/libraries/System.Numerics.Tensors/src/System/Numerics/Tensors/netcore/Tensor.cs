@@ -4808,20 +4808,11 @@ namespace System.Numerics.Tensors
         public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            // Try to get the underlying span for optimal performance
-            ReadOnlySpan<nint> startIndexes = stackalloc nint[x.Rank];
-            if (x.TryGetSpan(startIndexes, (int)x.FlattenedLength, out ReadOnlySpan<T> span))
-            {
-                // Use TensorPrimitives.StdDev for optimal performance with vectorization
-                return TensorPrimitives.StdDev(span);
-            }
-            else
-            {
-                // For non-contiguous tensors, flatten to a temporary span
-                T[] temp = new T[x.FlattenedLength];
-                x.FlattenTo(temp);
-                return TensorPrimitives.StdDev<T>(temp);
-            }
+            T mean = Average(x);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredMagnitudeDifferences<T>, T, T>(x, mean, ref result);
+            T variance = result / T.CreateChecked(x.FlattenedLength);
+            return T.Sqrt(variance);
         }
         #endregion
 
