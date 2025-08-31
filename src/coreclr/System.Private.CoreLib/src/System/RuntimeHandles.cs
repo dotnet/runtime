@@ -1231,7 +1231,7 @@ namespace System
 
         internal static Type[]? GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[]? types = null;
+            Type[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             GC.KeepAlive(method);
             return types;
