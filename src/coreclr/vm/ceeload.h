@@ -357,7 +357,7 @@ struct VASigCookie
 // allocation cost and allow proper bookkeeping.
 //
 
-struct VASigCookieBlock
+struct VASigCookieBlock final
 {
     enum {
 #ifdef _DEBUG
@@ -368,7 +368,7 @@ struct VASigCookieBlock
     };
 
     VASigCookieBlock    *m_Next;
-    UINT                 m_numcookies;
+    UINT                 m_numCookies;
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
@@ -643,12 +643,12 @@ private:
         IS_BEING_UNLOADED           = 0x00100000,
     };
 
-    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
-    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
-    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
-    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
-    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
-    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
+    static_assert(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
 
     enum {
         // These are the values set in m_dwPersistedFlags.
