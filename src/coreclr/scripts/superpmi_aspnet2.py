@@ -51,11 +51,19 @@ def run(cmd):
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     else:
         kwargs["start_new_session"] = True
-    proc = subprocess.Popen(cmd, shell=True, **kwargs)
+    
+    proc = subprocess.Popen(cmd, **kwargs)
     try:
         proc.wait()
     except KeyboardInterrupt:
+        print("Keyboard interrupt received, terminating process...")
         proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            print("Process did not terminate gracefully, force killing...")
+            proc.kill()
+            proc.wait()
         print("Process terminated")
 
 
@@ -191,7 +199,9 @@ profiles:
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
         ],
-        shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+        start_new_session=sys.platform != "win32"
     )
     print(f"Waiting 10s for crank-agent to start ...")
     time.sleep(10)
@@ -378,8 +388,26 @@ def main():
         if 'agent_process' in locals() and agent_process is not None:
             print(f"Terminating agent process {agent_process.pid}...")
             agent_process.terminate()
-            time.sleep(10)
-            print(f"Agent process {agent_process.pid} terminated.")
+            try:
+                # Wait for process to terminate gracefully
+                agent_process.wait(timeout=10)
+                print(f"Agent process {agent_process.pid} terminated gracefully.")
+            except subprocess.TimeoutExpired:
+                print(f"Agent process {agent_process.pid} did not terminate gracefully, force killing...")
+                agent_process.kill()
+                try:
+                    agent_process.wait(timeout=5)
+                    print(f"Agent process {agent_process.pid} force killed.")
+                except subprocess.TimeoutExpired:
+                    print(f"Warning: Agent process {agent_process.pid} could not be killed.")
+                    if sys.platform == "win32":
+                        # On Windows, try to kill the entire process tree
+                        try:
+                            subprocess.run(["taskkill", "/F", "/T", "/PID", str(agent_process.pid)], 
+                                         check=False, capture_output=True)
+                            print(f"Used taskkill to terminate process tree for PID {agent_process.pid}")
+                        except Exception as e:
+                            print(f"Failed to use taskkill: {e}")
         # validate that mch file was created under non-dryrun:
         if not args.dryrun and output_mch_path.exists():
             print(f"Successfully created {output_mch_path}")
