@@ -4,11 +4,34 @@ Provides `Index` and `Range` types to simplify slicing operations on collections
 Provides `Base64Url` for encoding data in a URL-safe manner on older .NET platforms.
 Provides `Utf8` for converting chunked data between UTF-8 and UTF-16 encodings on .NET Framework and .NET Standard 2.0.
 
-This library is not necessary nor recommended when targeting versions of .NET that include the relevant support:
+This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
+
+## Target Framework Support
+
+The APIs provided by this package are included natively in the following target frameworks:
 
 * `Index` and `Range`: .NET Core 3.0+, .NET 5+, and .NET Standard 2.1+
 * `System.Text.Unicode.Utf8`: .NET 5+
 * `System.Buffers.Text.Base64Url`: .NET 9+
+
+## When You May Still Need This Package
+
+While this package is generally not needed for modern .NET applications, there are scenarios where it may still be required:
+
+### Multi-Targeting Scenarios
+
+If your library multi-targets and includes target frameworks that lack native support for these APIs (such as .NET Framework or .NET Standard 2.0), you should reference this package for **all** target frameworks. This ensures consistent behavior and prevents issues where transitive dependencies might not have access to these types.
+
+For example, a library targeting both `netstandard2.0` and `net8.0` should include the package reference for both targets, even though `net8.0` has native support.
+
+### Transitive Dependency Considerations
+
+In some cases, you may need to add a direct reference to this package to resolve issues with transitive dependencies that expect these types to be available. This typically occurs when:
+
+- A dependency library multi-targets but doesn't include this package for all target frameworks
+- You're consuming a library that relies on these types but targets an older framework
+
+In such cases, adding a top-level reference to Microsoft.Bcl.Memory can resolve missing type issues and ensure proper type forwarding.
 
 ## Key Features
 
