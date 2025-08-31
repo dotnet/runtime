@@ -206,7 +206,7 @@ namespace System
                             continue;
 
                         // a default value is available
-                        if (defaultValueBinding && args[index] == Type.Missing)
+                        if (defaultValueBinding && args[index] == Missing.Value)
                             continue;
 
                         // the argument was null, so it matches with everything
@@ -878,7 +878,7 @@ namespace System
 
             for (int i = 0; i < types.Length; i++)
             {
-                if (args != null && args[i] == Type.Missing)
+                if (args != null && args[i] == Missing.Value)
                     continue;
 
                 Type c1, c2;

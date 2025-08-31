@@ -287,7 +287,7 @@ namespace System.Reflection
                 if (IsOptional)
                 {
                     // If the argument is marked as optional then the default value is Missing.Value.
-                    defaultValue = Type.Missing;
+                    defaultValue = Missing.Value;
                 }
                 #endregion
             }
