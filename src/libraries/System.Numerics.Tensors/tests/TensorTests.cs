@@ -1252,7 +1252,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0f, Tensor.StdDev(upperLeft));
         }
 
-
         [Fact]
         public static void TensorSumTests()
         {
