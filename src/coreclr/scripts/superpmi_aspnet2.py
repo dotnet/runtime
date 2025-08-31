@@ -44,33 +44,19 @@ def native_exe(name: str) -> str:
 
 
 # Run a command
-def run(cmd, cwd=None, timeout_seconds=45*60):
+def run(cmd):
     print(f"Running command: {' '.join(map(str, cmd))}")
-    kwargs = {
-        "stdin": subprocess.DEVNULL,
-        "stdout": sys.stdout,
-        "stderr": subprocess.STDOUT,
-        "cwd": cwd,
-    }
-    # It doesn't download the resulting artifacts without this:
-    if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    kwargs = {}
+    if sys.platform == "win32":
+        kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     else:
         kwargs["start_new_session"] = True
-    proc = subprocess.Popen(cmd, **kwargs)
+    proc = subprocess.Popen(cmd, shell=True, **kwargs)
     try:
-        # Wait with a timeout; let the TimeoutExpired propagate so caller can decide what to do.
-        return proc.wait(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired:
-        print(f"Process timed out after {timeout_seconds} seconds. Leaving process running and raising exception.")
-        raise
+        proc.wait()
     except KeyboardInterrupt:
-        try:
-            proc.terminate()
-        except Exception:
-            pass
+        proc.terminate()
         print("Process terminated")
-        return None
 
 
 # Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
@@ -120,7 +106,7 @@ def ensure_git(dest: Path) -> str:
 # Install .NET SDK using the official dotnet-install script.
 def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
     install_dir.mkdir(parents=True, exist_ok=True)
-    if os.name == "nt":
+    if sys.platform == "win32":
         ch = channel.replace("'", "''")
         di = str(install_dir).replace("'", "''")
         ps_script = (
@@ -162,7 +148,7 @@ def setup_and_run_crank_agent(workdir: Path):
 
     # Install .NET SDK needed for crank and crank-agent via dotnet-install public script.
     install_dotnet_sdk("8.0", dotnethome_dir)
-    # Be more agile and install the latest LTS version as well in case if crank moves to it
+    # Be more flexible and install the latest LTS version as well in case if crank moves to it
     install_dotnet_sdk("LTS", dotnethome_dir)
 
     # Install crank-agent (runs benchmarks) and crank-controller (or just crank) that schedules them.
@@ -197,14 +183,15 @@ profiles:
 
 
     print("Starting crank-agent...")
-    agent_process = subprocess.Popen(
+    agent_process = subprocess.Popen( 
         [
             str(tools_dir / native_exe("crank-agent")),
             "--url", f"http://*:{CRANK_PORT}",
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
-        ]
+        ],
+        shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL
     )
     print(f"Waiting 10s for crank-agent to start ...")
     time.sleep(10)
@@ -212,7 +199,7 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core_root_path: Path, config_path: Path, *extra_args: str):
+def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core_root_path: Path, config_path: Path, dryrun: bool, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
@@ -235,19 +222,26 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core
         "--application.options.collectCounters", "false",
         "--application.collectDependencies", "false",
         "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "30", # default 15s is not enough for Tier1 promotion
+        "--load.variables.duration", "10",
+        "--load.variables.warmup", "10",
         "--load.connections", "32",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
-        "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
-        "--application.environmentVariables", "SuperPMIShimLogPath=.",
-        "--application.environmentVariables", f"SuperPMIShimPath=./{clrjit}",
-        "--application.options.fetch", "true",
-        "--application.options.fetchOutput", scenario_name + ".crank.zip",
-        "--application.options.outputFiles", str(core_root_path / spmi_shim),
-        "--application.options.outputFiles", str(core_root_path / clrjit),
-        "--application.options.outputFiles", str(core_root_path / coreclr),
-        "--application.options.outputFiles", str(core_root_path / spcorelib),
     ]
+    
+    # Only add SPMI collection environment variables and output files if not in dry run mode
+    if not dryrun:
+        cmd.extend([
+            "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
+            "--application.environmentVariables", "SuperPMIShimLogPath=.",
+            "--application.environmentVariables", f"SuperPMIShimPath=./{clrjit}",
+            "--application.options.fetch", "true",
+            "--application.options.fetchOutput", scenario_name + ".crank.zip",
+            "--application.options.outputFiles", str(core_root_path / spmi_shim),
+            "--application.options.outputFiles", str(core_root_path / clrjit),
+            "--application.options.outputFiles", str(core_root_path / coreclr),
+            "--application.options.outputFiles", str(core_root_path / spcorelib),
+        ])
+    
     # Append any extra scenario-specific arguments
     if extra_args:
         cmd.extend(extra_args)
@@ -257,26 +251,38 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, core
 # Main entry point
 def main():
     parser = argparse.ArgumentParser(description="Cross-platform crank runner.")
-    parser.add_argument("--core_root", required=True, help="Path to built runtime bits (CORE_ROOT).")
+    parser.add_argument("--core_root", help="Path to built runtime bits (CORE_ROOT).")
     parser.add_argument("--tfm", default="net10.0", help="Target Framework Moniker (e.g., net10.0).")
-    parser.add_argument("--output_mch", required=True, help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
+    parser.add_argument("--output_mch", help="File path to copy the resulting merged .mch to (expects a file path, not a directory).")
     parser.add_argument("--work_dir", help="Optional path to a directory in which a new working directory will be created. If specified, a new subdirectory with a random name prefixed with 'aspnet2_' will be created inside this directory. Otherwise a system temp directory is used.")
+    parser.add_argument("--dryrun", action="store_true", help="Run benchmarks only without collecting SPMI data or generating .mch files.")
     args = parser.parse_args()
 
-    core_root_path = Path(args.core_root).expanduser().resolve()
-    output_mch_path = Path(args.output_mch).expanduser().resolve()
+    # Validate required arguments when not in dry run mode
+    if not args.dryrun:
+        if not args.core_root:
+            parser.error("--core_root is required when not using --dryrun")
+        if not args.output_mch:
+            parser.error("--output_mch is required when not using --dryrun")
+
+    core_root_path = Path(args.core_root).expanduser().resolve() if args.core_root else None
+    output_mch_path = Path(args.output_mch).expanduser().resolve() if args.output_mch else None
 
     print("Running the script with the following parameters:")
-    print(f"--core_root: {core_root_path}")
+    if args.core_root:
+        print(f"--core_root: {core_root_path}")
     print(f"--tfm: {args.tfm}")
-    print(f"--output_mch: {output_mch_path}")
+    if args.output_mch:
+        print(f"--output_mch: {output_mch_path}")
     if args.work_dir:
         print(f"--work_dir: {Path(args.work_dir).expanduser().resolve()}")
+    print(f"--dryrun: {args.dryrun}")
 
-    mcs_cmd = core_root_path / native_exe("mcs")
-    if not mcs_cmd.exists():
-        print(f"Error: mcs[.exe] not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
-        sys.exit(2)
+    if not args.dryrun:
+        mcs_cmd = core_root_path / native_exe("mcs")
+        if not mcs_cmd.exists():
+            print(f"Error: mcs[.exe] not found at {mcs_cmd}. Ensure runtime bits include mcs.", file=sys.stderr)
+            sys.exit(2)
 
     # Create or use working directory for crank_data
     if args.work_dir:
@@ -307,14 +313,14 @@ def main():
                 "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/json.benchmarks.yml"),
 
             # NoMvcAuth scenario
-            ("NoMvcAuth",
-                # Extra args:
-                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"),
+            # ("NoMvcAuth",
+            #     # Extra args:
+            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/src/BenchmarksApps/Mvc/benchmarks.jwtapi.yml"),
 
-            # PlatformPlaintext scenario
-            ("plaintext",
-                # Extra args:
-                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
+            # # PlatformPlaintext scenario
+            # ("plaintext",
+            #     # Extra args:
+            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
         ]
 
         for entry in scenarios:
@@ -323,47 +329,60 @@ def main():
             run_crank_scenario(
                 crank_app_path,
                 scenario_name,
-                args.tf,
+                args.tfm,
                 core_root_path,
                 config_path,
+                args.dryrun,
                 *extra,
             )
 
         print("Finished running benchmarks.")
 
-        # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
-        print("Extracting .mc files from zip archives...")
-        extracted_count = 0
-        for z in pathlib.Path('.').glob('*.crank.zip'):
-            with zipfile.ZipFile(z) as f:
-                for name in f.namelist():
-                    if name.endswith('.mc'):
-                        f.extract(name, str(work_dir_base))
-                        extracted_count += 1
-            z.unlink(missing_ok=True)
+        # Skip .mc/.mch processing in dry run mode
+        if not args.dryrun:
+            # Extract .mc files from zip archives into crank_data/tmp instead of the current directory
+            print("Extracting .mc files from zip archives...")
+            extracted_count = 0
+            for z in pathlib.Path('.').glob('*.crank.zip'):
+                with zipfile.ZipFile(z) as f:
+                    for name in f.namelist():
+                        if name.endswith('.mc'):
+                            f.extract(name, str(work_dir_base))
+                            extracted_count += 1
+                z.unlink(missing_ok=True)
 
-        # Merge *.mc files into crank.mch
-        if extracted_count == 0:
-            print("Error: No .mc files found in zip outputs.")
-            sys.exit(2)
+            # Merge *.mc files into crank.mch
+            if extracted_count == 0:
+                print("Error: No .mc files found in zip outputs.")
+                sys.exit(2)
+            else:
+                # Merge all .mc files into crank.mch, scanning recursively from tmp
+                print(f"Extracted {extracted_count} .mc files; merging into crank.mch ...")
+                run([
+                    str(mcs_cmd),
+                    "-merge",
+                    "-recursive",
+                    "-dedup",
+                    "-thin",
+                    str(output_mch_path),
+                    str(work_dir_base / "*.mc")
+                ])
+            print(f"Finished merging .mc files into {output_mch_path}")
         else:
-            # Merge all .mc files into crank.mch, scanning recursively from tmp
-            print(f"Extracted {extracted_count} .mc files; merging into crank.mch ...")
-            subprocess.run([
-                str(mcs_cmd),
-                "-merge",
-                "-recursive",
-                "-dedup",
-                "-thin",
-                str(output_mch_path),
-                str(work_dir_base / "*.mc")
-            ], check=True, cwd=str(work_dir_base))
-        print(f"Finished merging .mc files into {output_mch_path}")
+            print("Dry run mode: Skipping SPMI data collection and .mch file generation.")
 
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
     finally:
         print("Cleaning up...")
         if 'agent_process' in locals() and agent_process is not None:
+            print(f"Terminating agent process {agent_process.pid}...")
             agent_process.terminate()
+            time.sleep(10)
+            print(f"Agent process {agent_process.pid} terminated.")
+        # validate that mch file was created under non-dryrun:
+        if not args.dryrun and output_mch_path.exists():
+            print(f"Successfully created {output_mch_path}")
         print("Done.")
         sys.exit()
 
