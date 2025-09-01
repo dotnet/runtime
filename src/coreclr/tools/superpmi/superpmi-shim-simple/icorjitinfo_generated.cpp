@@ -937,13 +937,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
-void* interceptor_ICJI::getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->getMethodSync(ftn, ppIndirection);
-}
-
 CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle)
 {
@@ -1014,12 +1007,6 @@ void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
     return original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
 }
 
-bool interceptor_ICJI::canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig)
-{
-    return original_ICorJitInfo->canGetCookieForPInvokeCalliSig(szMetaSig);
-}
-
 CORINFO_JUST_MY_CODE_HANDLE interceptor_ICJI::getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection)
@@ -1073,15 +1060,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection)
 {
-    return original_ICorJitInfo->getVarArgsHandle(pSig, ppIndirection);
-}
-
-bool interceptor_ICJI::canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    return original_ICorJitInfo->canGetVarArgsHandle(pSig);
+    return original_ICorJitInfo->getVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
 InfoAccessType interceptor_ICJI::constructStringLiteral(

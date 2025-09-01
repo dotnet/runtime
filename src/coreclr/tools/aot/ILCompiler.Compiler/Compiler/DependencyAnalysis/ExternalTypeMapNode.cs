@@ -36,14 +36,29 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var entry in _mapEntries)
             {
                 var (targetType, trimmingTargetType) = entry.Value;
-                yield return new CombinedDependencyListEntry(
-                    context.MaximallyConstructableType(targetType),
-                    context.NecessaryTypeSymbol(trimmingTargetType),
-                    "Type in external type map is cast target");
+                if (trimmingTargetType is not null)
+                {
+                    yield return new CombinedDependencyListEntry(
+                        context.MetadataTypeSymbol(targetType),
+                        context.NecessaryTypeSymbol(trimmingTargetType),
+                        "Type in external type map is cast target");
+                }
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            foreach (var entry in _mapEntries)
+            {
+                var (targetType, trimmingTargetType) = entry.Value;
+                if (trimmingTargetType is null)
+                {
+                    yield return new DependencyListEntry(
+                        context.MetadataTypeSymbol(targetType),
+                        "External type map entry target type");
+                }
+            }
+        }
 
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
         protected override string GetName(NodeFactory context) => $"External type map: {TypeMapGroup}";
@@ -62,9 +77,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var (targetType, trimmingTargetType) = entry.Value;
 
-                if (factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
+                if (trimmingTargetType is null
+                    || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
                 {
-                    IEETypeNode targetNode = factory.MaximallyConstructableType(targetType);
+                    IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
                     yield return (entry.Key, targetNode);
                 }

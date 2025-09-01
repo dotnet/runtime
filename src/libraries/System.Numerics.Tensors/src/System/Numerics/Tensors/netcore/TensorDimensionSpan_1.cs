@@ -27,8 +27,11 @@ namespace System.Numerics.Tensors
             _tensor = tensor;
             _length = TensorPrimitives.Product(tensor.Lengths[..dimension]);
             _dimension = dimension;
-            _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..]);
+            _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
+
+        /// <summary>Gets <c>true</c> if the slices that exist within the tracked dimension are dense; otherwise, <c>false</c>.</summary>
+        public bool IsDense => _sliceShape.IsDense;
 
         /// <summary>Gets the length of the tensor dimension span.</summary>
         public nint Length => _length;
@@ -45,10 +48,16 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 }
 
-                nint linearOffset = _tensor._shape.GetLinearOffset(index, _dimension);
+                nint linearOffset = _tensor._shape.GetLinearOffsetForDimension(index, _dimension);
                 return new TensorSpan<T>(ref Unsafe.Add(ref _tensor._reference, linearOffset), _sliceShape);
             }
         }
+
+        /// <summary>Defines an implicit conversion of a tensor dimension span to a readonly tensor dimension span.</summary>
+        /// <param name="tensorDimension">The tensor dimension span to convert to a readonly tensor dimension span.</param>
+        /// <returns>The tensor dimension span that corresponds to <paramref name="tensorDimension" />.</returns>
+        public static implicit operator ReadOnlyTensorDimensionSpan<T>(scoped in TensorDimensionSpan<T> tensorDimension) =>
+            new ReadOnlyTensorDimensionSpan<T>(tensorDimension._tensor, tensorDimension._dimension);
 
         /// <summary>Gets an enumerator for the readonly tensor dimension span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

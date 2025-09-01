@@ -8,8 +8,6 @@
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 
-#ifndef DACCESS_COMPILE
-
 AllocMemTracker::AllocMemTracker()
 {
     CONTRACTL
@@ -169,5 +167,3 @@ void AllocMemTracker::SuppressRelease()
 
     m_fReleased = TRUE;
 }
-
-#endif //#ifndef DACCESS_COMPILE

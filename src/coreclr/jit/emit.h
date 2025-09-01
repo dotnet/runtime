@@ -592,7 +592,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags) const;
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -663,35 +663,35 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
-        static_assert_no_msg(INS_count <= 512);
+        static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
-        static_assert_no_msg(INS_count <= 256);
+        static_assert(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
 // The format for the instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(IF_COUNT <= 128);
+        static_assert(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
-        static_assert_no_msg(IF_COUNT <= 1024);
+        static_assert(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
 #else
-        static_assert_no_msg(IF_COUNT <= 256);
+        static_assert(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
 #endif
 
@@ -844,10 +844,10 @@ protected:
         unsigned _idCustom5 : 1;
         unsigned _idCustom6 : 1;
 
-#define _idEvexbContext                                                                                                \
-    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
-                                     */
+#define _idEvexbContext  (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, rounding, SAE */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexZuContext _idCustom5 /* bits used for the APX-EVEX.zu context for promoted legacy instructions */
+
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
@@ -1734,10 +1734,21 @@ protected:
             return idGetEvexbContext() != 0;
         }
 
+        void idSetEvexBroadcastBit()
+        {
+            assert(!idIsEvexbContextSet());
+            _idCustom5 = 1;
+        }
+
+        void idSetEvexCompressedDisplacementBit()
+        {
+            assert(_idCustom6 == 0);
+            _idCustom6 = 1;
+        }
+
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(!idIsEvexbContextSet());
-            assert(idGetEvexbContext() == 0);
             unsigned value = static_cast<unsigned>(instOptions & INS_OPTS_EVEX_b_MASK);
 
             _idCustom5 = ((value >> 0) & 1);
@@ -1784,13 +1795,26 @@ protected:
 
         bool idIsEvexNdContextSet() const
         {
+            assert(IsApxNddCompatibleInstruction(_idIns));
             return _idEvexNdContext != 0;
+        }
+
+        bool idIsEvexZuContextSet() const
+        {
+            assert(IsApxZuCompatibleInstruction(_idIns));
+            return (_idEvexZuContext != 0);
         }
 
         void idSetEvexNdContext()
         {
             assert(!idIsEvexNdContextSet());
             _idEvexNdContext = 1;
+        }
+
+        void idSetEvexZuContext()
+        {
+            assert(!idIsEvexZuContextSet());
+            _idEvexZuContext = 1;
         }
 
         bool idIsEvexNfContextSet() const
@@ -2346,8 +2370,8 @@ protected:
             : idDebugInfo(nullptr)
             , idStorage()
         {
-            static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
-                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
+            static_assert((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
+                          offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()
@@ -2370,7 +2394,7 @@ protected:
 #endif // TARGET_ARM
 
     insUpdateModes emitInsUpdateMode(instruction ins);
-    insFormat      emitInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitInsModeFormat(instruction ins, insFormat base, bool useNDD = false);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
@@ -2381,14 +2405,14 @@ protected:
 
 #ifdef TARGET_XARCH
 
-    ssize_t emitGetInsCns(instrDesc* id);
-    ssize_t emitGetInsDsp(instrDesc* id);
-    ssize_t emitGetInsAmd(instrDesc* id);
+    ssize_t emitGetInsCns(instrDesc* id) const;
+    ssize_t emitGetInsDsp(instrDesc* id) const;
+    ssize_t emitGetInsAmd(instrDesc* id) const;
 
-    ssize_t  emitGetInsCIdisp(instrDesc* id);
-    unsigned emitGetInsCIargs(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id) const;
+    unsigned emitGetInsCIargs(instrDesc* id) const;
 
-    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
+    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2446,6 +2470,7 @@ protected:
     void emitDispEmbBroadcastCount(instrDesc* id) const;
     void emitDispEmbRounding(instrDesc* id) const;
     void emitDispEmbMasking(instrDesc* id) const;
+    void emitDispConstant(const instrDesc* id, bool skipComma = false) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -3720,7 +3745,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+    static_assert(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************
@@ -4100,12 +4125,12 @@ inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ss
  *  get stored in different places within the instruction descriptor.
  */
 
-inline ssize_t emitter::emitGetInsCns(instrDesc* id)
+inline ssize_t emitter::emitGetInsCns(instrDesc* id) const
 {
     return id->idIsLargeCns() ? ((instrDescCns*)id)->idcCnsVal : id->idSmallCns();
 }
 
-inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
+inline ssize_t emitter::emitGetInsDsp(instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {
@@ -4123,7 +4148,7 @@ inline ssize_t emitter::emitGetInsDsp(instrDesc* id)
  *  Get hold of the argument count for an indirect call.
  */
 
-inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
+inline unsigned emitter::emitGetInsCIargs(instrDesc* id) const
 {
     if (id->idIsLargeCall())
     {
@@ -4163,7 +4188,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_FULL)
     {
         // Embedded broadcast supported, so either loading scalar or full vector
-        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4182,7 +4207,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         {
             memSize = 16;
         }
-        else if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        else if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4194,7 +4219,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
     else if (tupleType == INS_TT_HALF)
     {
         // Embedded broadcast supported, so either loading scalar or half vector
-        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
         {
             memSize = GetInputSizeInBytes(id);
         }

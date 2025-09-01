@@ -871,32 +871,15 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static XmlQualifiedName? s_anytypeQualifiedName;
-        internal static XmlQualifiedName AnytypeQualifiedName => s_anytypeQualifiedName ??= new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_stringQualifiedName;
-        internal static XmlQualifiedName StringQualifiedName => s_stringQualifiedName ??= new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_defaultEnumBaseTypeName;
-        internal static XmlQualifiedName DefaultEnumBaseTypeName => s_defaultEnumBaseTypeName ??= new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
-
-        private static XmlQualifiedName? s_enumerationValueAnnotationName;
-        internal static XmlQualifiedName EnumerationValueAnnotationName => s_enumerationValueAnnotationName ??= new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_surrogateDataAnnotationName;
-        internal static XmlQualifiedName SurrogateDataAnnotationName => s_surrogateDataAnnotationName ??= new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_defaultValueAnnotation;
-        internal static XmlQualifiedName DefaultValueAnnotation => s_defaultValueAnnotation ??= new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_actualTypeAnnotationName;
-        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_isDictionaryAnnotationName;
-        internal static XmlQualifiedName IsDictionaryAnnotationName => s_isDictionaryAnnotationName ??= new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_isValueTypeName;
-        internal static XmlQualifiedName IsValueTypeName => s_isValueTypeName ??= new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName AnytypeQualifiedName => field ??= new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName StringQualifiedName => field ??= new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName DefaultEnumBaseTypeName => field ??= new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
+        internal static XmlQualifiedName EnumerationValueAnnotationName => field ??= new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName SurrogateDataAnnotationName => field ??= new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName DefaultValueAnnotation => field ??= new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName ActualTypeAnnotationName => field ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName IsDictionaryAnnotationName => field ??= new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName IsValueTypeName => field ??= new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
 
         // Property is not stored in a local because XmlSchemaAttribute is mutable.
         // The schema export process should not expose objects that may be modified later.

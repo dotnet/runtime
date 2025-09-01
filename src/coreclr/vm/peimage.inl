@@ -170,6 +170,9 @@ inline BOOL PEImage::HasLoadedLayout()
 
 inline PTR_PEImageLayout PEImage::GetLoadedLayout()
 {
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+    return GetFlatLayout();
+#endif
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 

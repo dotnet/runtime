@@ -3007,5 +3007,36 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
 #endif
         }
+
+        [Fact]
+        public void TestProvidersOrder()
+        {
+            string jsonConfig1 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider1A"",
+                    ""B"": ""Provider1B"",
+                },
+            }";
+
+            // Missing B in the second provider should not override the value from the first provider.
+            string jsonConfig2 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider2A"",
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig2)))
+                        .Build().GetSection("SimplePoco");
+
+            SimplePoco? result = configuration.Get<SimplePoco>();
+
+            Assert.NotNull(result);
+            Assert.Equal("Provider2A", result.A); // Value should come from the last provider
+            Assert.Equal("Provider1B", result.B); // B should not be overridden by the second provider
+        }
     }
 }

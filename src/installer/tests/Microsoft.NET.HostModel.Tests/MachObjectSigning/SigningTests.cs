@@ -19,138 +19,86 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.AccessControl;
+using Microsoft.NET.HostModel.Bundle;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
-    public class SigningTests
+    public class SigningTests :IClassFixture<SigningTests.SharedTestState>
     {
-        public static bool IsSigned(string filePath)
+        private SharedTestState sharedTestState;
+
+        public SigningTests(SharedTestState fixture)
         {
-            // Validate the signature if we can, otherwise, at least ensure there is a signature LoadCommand present
-            using (var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
-            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
-            using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
-            {
-                if (!MachObjectFile.Create(new MemoryMappedMachOViewAccessor(managedSignedAccessor)).HasSignature)
-                {
-                    return false;
-                }
-            }
-            if (Codesign.IsAvailable && Codesign.Run("--verify", filePath).ExitCode != 0)
-            {
-                return false;
-            }
-            return true;
+            sharedTestState = fixture;
         }
 
-        public static bool IsMachOImage(string filePath) => MachObjectFile.IsMachOImage(filePath);
-
-        static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
-        static List<string> GetTestFilePaths(TestArtifact testArtifact)
+        [Theory]
+        [MemberData(nameof(GetTestFilePaths), nameof(CanSignMachObject))]
+        public void CanSignMachObject(string filePath, TestArtifact _)
         {
-            List<(string Name, FileInfo File)> testData = TestData.MachObjects.GetAll().ToList();
-            List<string> testFilePaths = new();
-            foreach ((string name, FileInfo file) in testData)
-            {
-                string newFilePath = Path.Combine(testArtifact.Location, name);
-                File.Copy(file.FullName, newFilePath, true);
-                testFilePaths.Add(newFilePath);
-            }
+            string fileName = Path.GetFileName(filePath);
+            string originalFilePath = filePath;
+            string managedSignedPath = filePath + ".signed";
 
-            // If we're on mac, we can use the live built binaries to test against
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                foreach (var filePath in liveBuiltHosts)
-                {
-                    string fileName = Path.GetFileName(filePath);
-                    string testFilePath = Path.Combine(testArtifact.Location, fileName);
-                    File.Copy(filePath, testFilePath);
-                    testFilePaths.Add(testFilePath);
-                }
-            }
-
-            return testFilePaths;
+            // Managed signed file
+            AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+            Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
         }
 
-        [Fact]
-        public void CanSignMachObject()
+        [Theory]
+        [MemberData(nameof(GetTestFilePaths), nameof(CanRemoveSignature))]
+        public void CanRemoveSignature(string filePath, TestArtifact _)
         {
-            using var testArtifact = TestArtifact.Create(nameof(CanSignMachObject));
-            foreach (var filePath in GetTestFilePaths(testArtifact))
-            {
-                string fileName = Path.GetFileName(filePath);
-                string originalFilePath = filePath;
-                string managedSignedPath = filePath + ".signed";
-
-                // Managed signed file
-                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
-                Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
-            }
+            string fileName = Path.GetFileName(filePath);
+            string originalFilePath = filePath;
+            string managedSignedPath = filePath + ".signed";
+            RemoveSignature(originalFilePath, managedSignedPath);
+            Assert.False(IsSigned(managedSignedPath), $"Failed to remove signature from {filePath}");
         }
 
-        [Fact]
-        public void CanRemoveSignature()
+        [Theory]
+        [MemberData(nameof(GetTestFilePaths), nameof(CanUnsignAndResign))]
+        public void CanUnsignAndResign(string filePath, TestArtifact _)
         {
-            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignature));
-            foreach (var filePath in GetTestFilePaths(testArtifact))
-            {
-                string fileName = Path.GetFileName(filePath);
-                string originalFilePath = filePath;
-                string managedSignedPath = filePath + ".signed";
-                RemoveSignature(originalFilePath, managedSignedPath);
-                Assert.False(IsSigned(managedSignedPath), $"Failed to remove signature from {filePath}");
-            }
+            string fileName = Path.GetFileName(filePath);
+            string originalFilePath = filePath;
+            string managedSignedPath = filePath + ".signed";
+
+            // Managed signed file
+            AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+            Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
+
+            // Remove signature
+            RemoveSignature(managedSignedPath, managedSignedPath + ".unsigned");
+            Assert.False(IsSigned(managedSignedPath + ".unsigned"), $"Failed to remove signature from {filePath}");
+
+            // Resign
+            AdHocSignFile(managedSignedPath + ".unsigned", managedSignedPath + ".resigned", fileName);
+            Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
         }
 
-        [Fact]
-        public void CanUnsignAndResign()
-        {
-            using var testArtifact = TestArtifact.Create(nameof(CanUnsignAndResign));
-            foreach (var filePath in GetTestFilePaths(testArtifact))
-            {
-                string fileName = Path.GetFileName(filePath);
-                string originalFilePath = filePath;
-                string managedSignedPath = filePath + ".signed";
-
-                // Managed signed file
-                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
-                Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
-
-                // Remove signature
-                RemoveSignature(managedSignedPath, managedSignedPath + ".unsigned");
-                Assert.False(IsSigned(managedSignedPath + ".unsigned"), $"Failed to remove signature from {filePath}");
-
-                // Resign
-                AdHocSignFile(managedSignedPath + ".unsigned", managedSignedPath + ".resigned", fileName);
-                Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
-            }
-        }
-
-        [Fact]
+        [Theory]
+        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
-        void MatchesCodesignOutput()
+        void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
-            using var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
-            foreach (var filePath in GetTestFilePaths(testArtifact))
-            {
-                string fileName = Path.GetFileName(filePath);
-                string originalFilePath = filePath;
-                string codesignFilePath = filePath + ".codesigned";
-                string managedSignedPath = filePath + ".signed";
+            string fileName = Path.GetFileName(filePath);
+            string originalFilePath = filePath;
+            string codesignFilePath = filePath + ".codesigned";
+            string managedSignedPath = filePath + ".signed";
 
-                // Codesigned file
-                File.Copy(filePath, codesignFilePath);
-                Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-                Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0, $"'codesign --remove-signature {codesignFilePath}' failed!");
-                Codesign.Run("-s - -i " + fileName, codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
+            // Codesigned file
+            File.Copy(filePath, codesignFilePath);
+            Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
+            var (exitCode, stdErr) = Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath);
+            Assert.Equal(0, exitCode);
 
-                // Managed signed file
-                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+            // Managed signed file
+            AdHocSignFile(originalFilePath, managedSignedPath, fileName);
 
-                var check = Codesign.Run("-v", managedSignedPath);
-                check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
-                AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
-            }
+            (exitCode, stdErr) = Codesign.Run("-v", managedSignedPath);
+            Assert.Equal(0, exitCode);
+            AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
         }
 
         [Fact]
@@ -170,46 +118,97 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 File.SetUnixFileMode(signedPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
                 var result = Command.Create(signedPath).CaptureStdErr().CaptureStdOut().Execute();
-                result.ExitCode.Should().Be(0, result.StdErr);
+                Assert.Equal(0, result.ExitCode);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTestFilePaths), nameof(ReadSignedMachIsTheSameAsReadAndResigned))]
+        void ReadSignedMachIsTheSameAsReadAndResigned(string filePath, TestArtifact _)
+        {
+            string signedPath = filePath + ".signed";
+
+            AdHocSignFile(filePath, signedPath, filePath);
+            using (var mmap = MemoryMappedFile.CreateFromFile(signedPath))
+            using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
+            {
+                var signedMachFile = new MemoryMappedMachOViewAccessor(accessor);
+                var signedObject = MachObjectFile.Create(signedMachFile);
+                var resignedObject = MachObjectFile.Create(signedMachFile);
+                resignedObject.AdHocSignFile(signedMachFile, filePath);
+                MachObjectFile.AssertEquivalent(signedObject, resignedObject);
             }
         }
 
         [Fact]
-        void ReadSignedMachIsTheSameAsReadAndResigned()
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SigningAppHostPreservesEntitlements()
         {
-            using var testArtifact = TestArtifact.Create(nameof(ReadSignedMachIsTheSameAsReadAndResigned));
-            foreach (var fileName in GetTestFilePaths(testArtifact))
-            {
-                string signedPath = fileName + ".signed";
+            using var testDirectory = TestArtifact.Create(nameof(SigningAppHostPreservesEntitlements));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
+            File.Copy(Binaries.AppHost.FilePath, testAppHostPath);
+            string signedHostPath = testAppHostPath + ".signed";
 
-                AdHocSignFile(fileName, signedPath, fileName);
-                using (var mmap = MemoryMappedFile.CreateFromFile(signedPath))
-                using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
-                {
-                    var signedMachFile = new MemoryMappedMachOViewAccessor(accessor);
-                    var signedObject = MachObjectFile.Create(signedMachFile);
-                    var resignedObject = MachObjectFile.Create(signedMachFile);
-                    resignedObject.AdHocSignFile(signedMachFile, fileName);
-                    MachObjectFile.AssertEquivalent(signedObject, resignedObject);
-                }
-            }
+            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
+
+            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasEntitlementsBlob(signedHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(signedHostPath));
         }
 
         [Fact]
-        void RoundTripMachObjectFileIsTheSame()
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void BundledAppHostHasEntitlements()
         {
-            using var testArtifact = TestArtifact.Create(nameof(RoundTripMachObjectFileIsTheSame));
-            foreach (var fileName in GetTestFilePaths(testArtifact))
+            using var testDirectory = TestArtifact.Create(nameof(BundledAppHostHasEntitlements));
+            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
+            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
+            string signedHostPath = testAppHostPath + ".signed";
+
+            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
+            var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
+
+            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasEntitlementsBlob(bundlePath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
+            Assert.True(SigningTests.HasDerEntitlementsBlob(bundlePath));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void OverwritingExistingBundleClearsMacOsSignatureCache()
+        {
+            // Bundle to a single-file and ensure it is signed
+            string singleFile = sharedTestState.SelfContainedApp.Bundle();
+            Assert.True(SigningTests.IsSigned(singleFile));
+
+            var firstInode = Inode.GetInode(singleFile);
+
+            // Rebundle to the same location.
+            // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
+            string oldFile = singleFile;
+            string dir = Path.GetDirectoryName(singleFile);
+            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            Assert.True(singleFile == oldFile, "Rebundled app should have the same path as the original single-file app.");
+            var secondInode = Inode.GetInode(singleFile);
+            Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
+            // Ensure the MacOS signature cache is cleared
+            Assert.True(Codesign.Run("-v", singleFile).ExitCode == 0);
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            public SingleFileTestApp SelfContainedApp { get; }
+
+            public SharedTestState()
             {
-                using (var mmap = MemoryMappedFile.CreateFromFile(fileName))
-                using (var accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
-                {
-                    var machFile = new MemoryMappedMachOViewAccessor(accessor);
-                    var machObjectFile = MachObjectFile.Create(machFile);
-                    machObjectFile.Write(machFile);
-                    var rewrittenMachFile = MachObjectFile.Create(machFile);
-                    MachObjectFile.AssertEquivalent(machObjectFile, rewrittenMachFile);
-                }
+                SelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld");
+            }
+
+            public void Dispose()
+            {
+                SelfContainedApp.Dispose();
             }
         }
 
@@ -233,7 +232,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         /// <summary>
         /// AdHoc sign a test file. This should look similar to HostWriter.CreateAppHost.
         /// </summary>
-        public static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
+        internal static void AdHocSignFile(string originalFilePath, string managedSignedPath, string fileName)
         {
             Assert.NotEqual(originalFilePath, managedSignedPath);
             // Open the source host file.
@@ -257,7 +256,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
+#pragma warning disable xUnit1013 // Public method should be marked as test
         public static void AdHocSignFileInPlace(string managedSignedPath)
+#pragma warning restore xUnit1013 // Public method should be marked as test
         {
             var tmpFile = Path.GetTempFileName();
             var mode = File.GetUnixFileMode(managedSignedPath);
@@ -302,6 +303,77 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 MachObjectFile.RemoveCodeSignatureIfPresent(appHostDestinationStream);
             }
+        }
+
+        public static bool IsSigned(string filePath)
+        {
+            // Validate the signature if we can, otherwise, at least ensure there is a signature LoadCommand present
+            using (var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+            using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+            using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
+            {
+                if (!MachObjectFile.Create(new MemoryMappedMachOViewAccessor(managedSignedAccessor)).HasSignature)
+                {
+                    return false;
+                }
+            }
+            if (Codesign.IsAvailable && Codesign.Run("--verify", filePath).ExitCode != 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static bool IsMachOImage(string filePath) => MachObjectFile.IsMachOImage(filePath);
+
+        public static bool HasEntitlementsBlob(string filePath)
+        {
+            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
+            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+            {
+                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                return machObjectFile.EmbeddedSignatureBlob?.EntitlementsBlob != null;
+            }
+        }
+
+        public static bool HasDerEntitlementsBlob(string filePath)
+        {
+            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
+            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+            {
+                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                return machObjectFile.EmbeddedSignatureBlob?.DerEntitlementsBlob != null;
+            }
+        }
+
+        static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
+
+        public static Object[][] GetTestFilePaths(string testArtifactName)
+        {
+            List<object[]> arguments = [];
+            List<(string Name, FileInfo File)> testData = TestData.MachObjects.GetAll().ToList();
+            foreach ((string name, FileInfo file) in testData)
+            {
+                var testArtifact = TestArtifact.Create(testArtifactName + "-" + name);
+                string newFilePath = Path.Combine(testArtifact.Location, name);
+                File.Copy(file.FullName, newFilePath, true);
+                arguments.Add([newFilePath, testArtifact]);
+            }
+
+            // If we're on mac, we can use the live built binaries to test against
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                foreach (var filePath in liveBuiltHosts)
+                {
+                    string fileName = Path.GetFileName(filePath);
+                    var testArtifact = TestArtifact.Create(testArtifactName + "-" + fileName);
+                    string testFilePath = Path.Combine(testArtifact.Location, fileName);
+                    File.Copy(filePath, testFilePath);
+                    arguments.Add([testFilePath, testArtifact]);
+                }
+            }
+
+            return arguments.ToArray();
         }
     }
 }

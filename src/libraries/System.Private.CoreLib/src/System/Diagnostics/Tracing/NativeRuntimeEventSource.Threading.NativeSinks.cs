@@ -7,15 +7,6 @@ using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
-    // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // It contains the handwritten implementation of threading events.
-    // The events here do not call into the typical WriteEvent* APIs unlike most EventSources because that results in the
-    // events to be forwarded to EventListeners twice, once directly from the managed WriteEvent API, and another time
-    // from the mechanism in NativeRuntimeEventSource.ProcessEvents that forwards native runtime events to EventListeners.
-    // To prevent this, these events call directly into QCalls provided by the runtime (refer to NativeRuntimeEventSource.cs) which call
-    // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
-    // for the native platform.
-    // For implementation of these events not supporting native sinks, refer to NativeRuntimeEventSource.Threading.cs.
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "NativeRuntimeEventSource is a special case where event methods don't use WriteEvent/WriteEventCore but still need to be instance methods.")]
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {

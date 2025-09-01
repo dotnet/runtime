@@ -118,10 +118,8 @@ Console.WriteLine($"The location of System.Private.CoreLib.dll is '{typeof(objec
 The following command will build and publish your app:
 
 ```cmd
-dotnet publish -r win-x64
+dotnet publish --self-contained
 ```
-
-Adjust the `win-x64` to match your machine's OS and architecture.
 
 Running this little app should yield an output like the following:
 

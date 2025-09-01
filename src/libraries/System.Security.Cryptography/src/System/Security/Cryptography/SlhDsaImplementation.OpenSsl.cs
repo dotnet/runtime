@@ -50,6 +50,8 @@ namespace System.Security.Cryptography
                 _key?.Dispose();
                 _key = null!;
             }
+
+            base.Dispose(disposing);
         }
 
         internal static partial SlhDsaImplementation GenerateKeyCore(SlhDsaAlgorithm algorithm)
@@ -89,7 +91,7 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportSecretKey(_key, destination);
 
         internal static partial SlhDsaImplementation ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
@@ -102,9 +104,9 @@ namespace System.Security.Cryptography
         internal static partial SlhDsaImplementation ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsaImplementation ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static partial SlhDsaImplementation ImportPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(source.Length == algorithm.SecretKeySizeInBytes, $"Secret key was expected to be {algorithm.SecretKeySizeInBytes} bytes, but was {source.Length} bytes.");
+            Debug.Assert(source.Length == algorithm.PrivateKeySizeInBytes, $"Private key was expected to be {algorithm.PrivateKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
             return new SlhDsaImplementation(algorithm, key);
         }
