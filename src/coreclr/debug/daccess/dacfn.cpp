@@ -204,87 +204,6 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     return S_OK;
 }
 
-#ifdef TARGET_UNIX
-
-static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
-{
-    DAC_INSTANCE* inst = g_dacImpl->m_instances.Find((TADDR)address);
-    if (inst == nullptr || inst->size < size)
-    {
-        inst = g_dacImpl->m_instances.Alloc((TADDR)address, (ULONG32)size, DAC_PAL);
-        if (inst == nullptr)
-        {
-            return FALSE;
-        }
-        inst->noReport = 0;
-        HRESULT hr = DacReadAll((TADDR)address, inst + 1, (ULONG32)size, false);
-        if (FAILED(hr))
-        {
-            g_dacImpl->m_instances.ReturnAlloc(inst);
-            return FALSE;
-        }
-        if (!g_dacImpl->m_instances.Add(inst))
-        {
-            g_dacImpl->m_instances.ReturnAlloc(inst);
-            return FALSE;
-        }
-    }
-    memcpy(buffer, inst + 1, size);
-    return TRUE;
-}
-
-#ifdef HOST_WINDOWS
-// For the cross OS dac, we don't have the full pal layer
-// Use these minimal prototypes instead of the full pal header
-typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
-
-extern
-BOOL
-PAL_VirtualUnwindOutOfProc(PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
-#endif
-
-HRESULT
-DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
-{
-    if (!g_dacImpl)
-    {
-        DacError(E_UNEXPECTED);
-        UNREACHABLE();
-    }
-
-    // The DAC code doesn't use these context pointers but zero them out to be safe.
-    if (contextPointers != NULL)
-    {
-        memset(contextPointers, 0, sizeof(T_KNONVOLATILE_CONTEXT_POINTERS));
-    }
-
-    HRESULT hr = E_NOINTERFACE;
-
-#ifdef FEATURE_DATATARGET4
-    ReleaseHolder<ICorDebugDataTarget4> dt;
-    hr = g_dacImpl->m_pTarget->QueryInterface(IID_ICorDebugDataTarget4, (void **)&dt);
-    if (SUCCEEDED(hr))
-    {
-        hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
-    }
-#endif
-
-    if (hr == E_NOINTERFACE || hr == E_NOTIMPL)
-    {
-        hr = S_OK;
-
-        SIZE_T baseAddress = DacGlobalBase();
-        if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, nullptr, baseAddress, DacReadAllAdapter))
-        {
-            hr = E_FAIL;
-        }
-    }
-
-    return hr;
-}
-
-#endif // TARGET_UNIX
-
 // DacAllocVirtual - Allocate memory from the target process
 // Note: this is only available to clients supporting the legacy
 // ICLRDataTarget2 interface.  It's currently used by SOS for notification tables.
@@ -359,14 +278,6 @@ DacFreeVirtual(TADDR mem, ULONG32 size, ULONG32 typeFlags,
 PVOID
 DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool fReport)
 {
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (PVOID)addr;
-
-#else // !_PREFIX_
-
     if (!g_dacImpl)
     {
         DacError(E_UNEXPECTED);
@@ -482,8 +393,6 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
     }
 
     return inst + 1;
-
-#endif // !_PREFIX_
 }
 
 PVOID   DacInstantiateTypeByAddress(TADDR addr, ULONG32 size, bool throwEx)
@@ -500,14 +409,6 @@ PVOID   DacInstantiateTypeByAddressNoReport(TADDR addr, ULONG32 size, bool throw
 PVOID
 DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
 {
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (PVOID)addr;
-
-#else // !_PREFIX_
-
     if (!g_dacImpl)
     {
         DacError(E_UNEXPECTED);
@@ -652,8 +553,6 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
         g_dacImpl->m_instances.Supersede(oldInst);
     }
     return inst + 1;
-
-#endif // !_PREFIX_
 }
 
 #define LOCAL_STR_BUF 256
@@ -661,14 +560,6 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
 PSTR
 DacInstantiateStringA(TADDR addr, ULONG32 maxChars, bool throwEx)
 {
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (PSTR)addr;
-
-#else // !_PREFIX_
-
     HRESULT status;
 
     if (!g_dacImpl)
@@ -786,21 +677,11 @@ DacInstantiateStringA(TADDR addr, ULONG32 maxChars, bool throwEx)
         inst->usage = DAC_STRA;
     }
     return retVal;
-
-#endif // !_PREFIX_
 }
 
 PWSTR
 DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx)
 {
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (PWSTR)addr;
-
-#else // !_PREFIX_
-
     HRESULT status;
 
     if (!g_dacImpl)
@@ -918,21 +799,11 @@ DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx)
         inst->usage = DAC_STRW;
     }
     return retVal;
-
-#endif // !_PREFIX_
 }
 
 TADDR
 DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
 {
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (TADDR) ptr;
-
-#else // !_PREFIX_
-
     // Preserve special pointer values.
     if (ptr == NULL || ((TADDR) ptr == (TADDR)-1))
     {
@@ -960,7 +831,7 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
         {
             status = E_INVALIDARG;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (status != S_OK)
         {
@@ -981,8 +852,6 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
 
         return addr;
     }
-
-#endif // !_PREFIX_
 }
 
 // Similar to DacGetTargetAddrForHostAddr above except that ptr can represent any pointer within a host data
@@ -998,14 +867,6 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
     // will bound the amount of time it takes to report an error in the case where code has been incorrectly
     // DAC-ized.
     const DWORD kMaxSearchIterations = 100;
-
-#ifdef _PREFIX_
-
-    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
-    // so we just return the unmodified pointer for our PREFIX builds
-    return (TADDR) ptr;
-
-#else // !_PREFIX_
 
     // Preserve special pointer values.
     if (ptr == NULL || ((TADDR) ptr == (TADDR)-1))
@@ -1102,7 +963,7 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
         {
             status = E_INVALIDARG;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (status != S_OK)
         {
@@ -1123,7 +984,6 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
 
         return addr;
     }
-#endif // !_PREFIX_
 }
 
 TADDR

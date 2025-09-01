@@ -21,14 +21,16 @@ namespace System.Net.Http
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
+        private readonly IWebProxy? _proxy;
 
-        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
+        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, IWebProxy? proxy, bool autoRedirect = false)
         {
-            Debug.Assert(IsGloballyEnabled());
+            Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation);
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
             _propagator = propagator;
+            _proxy = proxy;
 
             // Prepare HeaderDescriptors for fields we need to clear when following redirects
             if (autoRedirect && _propagator.Fields is IReadOnlyCollection<string> fields && fields.Count > 0)
@@ -71,8 +73,6 @@ namespace System.Net.Http
             return activity;
         }
 
-        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
-
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (IsEnabled())
@@ -89,7 +89,7 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
+            // HttpClientHandler is responsible to call static GlobalHttpSettings.DiagnosticsHandler.IsEnabled before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
@@ -127,9 +127,9 @@ namespace System.Net.Http
 
                     if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
                     {
-                        activity.SetTag("server.address", requestUri.Host);
+                        activity.SetTag("server.address", DiagnosticsHelper.GetServerAddress(request, _proxy));
                         activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                        activity.SetTag("url.full", UriRedactionHelper.GetRedactedUriString(requestUri));
                     }
                 }
 
@@ -167,9 +167,10 @@ namespace System.Net.Http
                     _innerHandler.Send(request, cancellationToken);
                 return response;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 taskStatus = TaskStatus.Canceled;
+                exception = ex;
 
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
@@ -209,8 +210,16 @@ namespace System.Net.Http
                             activity.SetTag("error.type", errorType);
 
                             // The presence of error.type indicates that the conditions for setting Error status are also met.
-                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
+                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md#status
                             activity.SetStatus(ActivityStatusCode.Error);
+
+                            if (exception is not null)
+                            {
+                                // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/v1.45.0/specification/trace/exceptions.md.
+                                // Add the exception event with a timestamp matching the activity's end time
+                                // to ensure it falls within the activity's duration.
+                                activity.AddException(exception, timestamp: activity.StartTimeUtc + activity.Duration);
+                            }
                         }
                     }
 
@@ -347,12 +356,14 @@ namespace System.Net.Http
         {
             _propagator.Inject(currentActivity, request, static (carrier, key, value) =>
             {
-                if (carrier is HttpRequestMessage request &&
-                    key is not null &&
-                    HeaderDescriptor.TryGet(key, out HeaderDescriptor descriptor) &&
-                    !request.Headers.TryGetHeaderValue(descriptor, out _))
+                if (carrier is HttpRequestMessage request && key is not null)
                 {
-                    request.Headers.TryAddWithoutValidation(descriptor, value);
+                    HeaderDescriptor descriptor = request.Headers.GetHeaderDescriptor(key);
+
+                    if (!request.Headers.Contains(descriptor))
+                    {
+                        request.Headers.Add(descriptor, value);
+                    }
                 }
             });
             request.MarkPropagatorStateInjectedByDiagnosticsHandler();

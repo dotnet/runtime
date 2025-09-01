@@ -10,8 +10,8 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        CliRootCommand rootCommand = new();
-        var verboseOption = new CliOption<bool>("-v", "--verbose") {Recursive = true, Description = "Verbose"};
+        RootCommand rootCommand = new();
+        var verboseOption = new Option<bool>("-v", "--verbose") {Recursive = true, Description = "Verbose"};
         rootCommand.Add(verboseOption);
         rootCommand.Add(new DiagramDirective());
         rootCommand.Add(new ComposeCommand(verboseOption));

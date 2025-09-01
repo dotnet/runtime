@@ -166,6 +166,8 @@ switch (testCase) {
     case "EnvVariablesTest":
         dotnet.withEnvironmentVariable("foo", "bar");
         break;
+    case "HttpNoStreamingTest":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -207,9 +209,16 @@ try {
                 }
 
                 await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                exports.LazyLoadingTest.Run();
+                await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
+                const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
+                const resLazy = LazyLibrary.Foo.Bar();
+                exit(resLazy == 42 ? 0 : 1);
             }
-            exports.LazyLoadingTest.Run();
-            exit(0);
+            else {
+                exports.LazyLoadingTest.Run();
+                exit(0);
+            }
             break;
         case "LibraryInitializerTest":
             exit(0);
@@ -256,6 +265,29 @@ try {
             exports.MemoryTest.Run();
             exit(0);
             break;
+        case "HttpNoStreamingTest":
+            console.log("not ready yet")
+            const myExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            const httpNoStreamingTest = myExportsHttp.HttpTest.HttpNoStreamingTest;
+            console.log("ready");
+            if (config.runtimeConfig.runtimeOptions.configProperties) {
+                const configProperties = config.runtimeConfig.runtimeOptions.configProperties;
+                console.log("configProperties: " + Object.keys(configProperties).length);
+                const wasmEnableStreamingResponse = configProperties["System.Net.Http.WasmEnableStreamingResponse"];
+                if (wasmEnableStreamingResponse === undefined) {
+                    exit(2);
+                }
+                if (wasmEnableStreamingResponse === true) {
+                    exit(3);
+                }
+            }
+
+            const retHttp = await httpNoStreamingTest();
+            document.getElementById("out").innerHTML = retHttp;
+            console.debug(`ret: ${retHttp}`);
+
+            exit(retHttp == 42 ? 0 : 1);
+            break;
         case "EnvVariablesTest":
             console.log("not ready yet")
             const myExportsEnv = await getAssemblyExports(config.mainAssemblyName);
@@ -287,10 +319,12 @@ try {
             break;
         case "BrowserProfilerTest":
             console.log("not ready yet")
-            const origMeasure = globalThis.performance.measure
+            let foundB = false;
             globalThis.performance.measure = (method, options) => {
                 console.log(`performance.measure: ${method}`);
-                origMeasure(method, options);
+                if (method === "TestMeaning") {
+                    foundB = true;
+                }
             };
             const myExportsB = await getAssemblyExports(config.mainAssemblyName);
             const testMeaningB = myExportsB.BrowserProfilerTest.TestMeaning;
@@ -300,7 +334,7 @@ try {
             document.getElementById("out").innerHTML = retB;
             console.debug(`ret: ${retB}`);
 
-            exit(retB == 42 ? 0 : 1);
+            exit(foundB && retB == 42 ? 0 : 1);
 
             break;
         case "OverrideBootConfigName":

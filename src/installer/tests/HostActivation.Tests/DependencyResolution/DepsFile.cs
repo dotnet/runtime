@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -45,6 +46,37 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Execute()
                 .Should().Pass()
                 .And.HaveResolvedAssembly(dependencyPath);
+        }
+
+        [Fact]
+        public void DepsJsonWithUtf8Bom()
+        {
+            // Test that .deps.json files with UTF8 BOM are parsed correctly
+            TestApp app = sharedState.FrameworkReferenceApp;
+
+            // Create a copy of the existing deps.json with UTF8 BOM
+            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath),
+                Path.GetFileNameWithoutExtension(sharedState.DepsJsonPath) + "_bom.deps.json");
+
+            try
+            {
+                // Read the original deps.json content and write with UTF8 BOM
+                string jsonContent = File.ReadAllText(sharedState.DepsJsonPath, Encoding.UTF8);
+                FileUtils.WriteAllTextWithUtf8Bom(depsJsonWithBom, jsonContent);
+
+                // Test that the app can be executed with the BOM deps.json
+                string dependencyPath = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), $"{SharedTestState.DependencyName}.dll");
+                sharedState.DotNetWithNetCoreApp.Exec("exec", Constants.DepsFile.CommandLineArgument, depsJsonWithBom, app.AppDll)
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveResolvedAssembly(dependencyPath);
+            }
+            finally
+            {
+                // Clean up
+                FileUtils.DeleteFileIfPossible(depsJsonWithBom);
+            }
         }
 
         public class SharedTestState : SharedTestStateBase

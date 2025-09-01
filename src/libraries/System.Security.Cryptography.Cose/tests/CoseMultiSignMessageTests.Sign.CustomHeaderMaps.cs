@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Cose.Tests
             return getProtectedMap ? signature.ProtectedHeaders : signature.UnprotectedHeaders;
         }
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
             => MultiSignVerify(msg, key, content, expectedSignatures: 1, associatedData);
     }
 

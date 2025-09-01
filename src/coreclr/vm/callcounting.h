@@ -150,7 +150,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
@@ -261,7 +261,7 @@ private:
     private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
-        LoaderHeap *m_heap;
+        InterleavedLoaderHeap *m_heap;
         RangeList m_heapRangeList;
 
     public:
@@ -273,7 +273,7 @@ private:
         void Reset();
         const CallCountingStub *AllocateStub(CallCount *remainingCallCountCell, PCODE targetForMethod);
     private:
-        LoaderHeap *AllocateHeap();
+        InterleavedLoaderHeap *AllocateHeap();
     #endif // !DACCESS_COMPILE
 
     public:

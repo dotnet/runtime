@@ -258,7 +258,7 @@ LogEnv::LogEnv(ICorJitInfo* aCompHnd)
 }
 
 /*****************************************************************************/
-extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();
@@ -299,7 +299,7 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
         // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
         // thus falling back to the fallback JIT. Setting DOTNET_AltJitSkipOnAssert=1 chooses this "skip"
         // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
-        // the first assert for any function, but we don't want to kill the whole ngen process on the
+        // the first assert for any function, but we don't want to kill the whole process on the
         // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
         if (JitConfig.AltJitSkipOnAssert() != 0)
         {

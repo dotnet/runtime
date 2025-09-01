@@ -66,18 +66,6 @@ typedef void (*GCEnumCallback)(
 );
 
 /******************************************************************************
-  The stackwalker maintains some state on behalf of ICodeManager.
-*/
-
-const int CODEMAN_STATE_SIZE = 512;
-
-struct CodeManState
-{
-    DWORD       dwIsSet; // Is set to 0 by the stackwalk as appropriate
-    BYTE        stateBuf[CODEMAN_STATE_SIZE];
-};
-
-/******************************************************************************
    These flags are used by some functions, although not all combinations might
    make sense for all functions.
 */
@@ -169,7 +157,6 @@ virtual void FixContext(ContextType     ctxType,
                         DWORD           dwRelOffset,
                         DWORD           nestingLevel,
                         OBJECTREF       thrownObject,
-                        CodeManState   *pState,
                         size_t       ** ppShadowSP,             // OUT
                         size_t       ** ppEndRegion) = 0;       // OUT
 #endif // !FEATURE_EH_FUNCLETS
@@ -183,8 +170,7 @@ virtual void FixContext(ContextType     ctxType,
 virtual TADDR GetAmbientSP(PREGDISPLAY     pContext,
                            EECodeInfo     *pCodeInfo,
                            DWORD           dwRelOffset,
-                           DWORD           nestingLevel,
-                           CodeManState   *pState) = 0;
+                           DWORD           nestingLevel) = 0;
 #endif // TARGET_X86
 
 /*
@@ -201,10 +187,15 @@ virtual ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo) = 0;
     (if UpdateAllRegs), callee-UNsaved registers are trashed)
     Returns success of operation.
 */
-virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
+virtual bool UnwindStackFrame(PREGDISPLAY     pRD,
                               EECodeInfo     *pCodeInfo,
-                              unsigned        flags,
-                              CodeManState   *pState) = 0;
+                              unsigned        flags) = 0;
+
+virtual void UnwindStackFrame(T_CONTEXT *pContext) = 0;
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) = 0;
+#endif // FEATURE_EH_FUNCLETS
 
 /*
     Is the function currently at a "GC safe point" ?
@@ -261,8 +252,7 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 */
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
-                               unsigned        flags,
-                               CodeManState  * pState) = 0;
+                               unsigned        flags) = 0;
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -271,7 +261,7 @@ virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
 virtual bool IsInPrologOrEpilog(DWORD  relPCOffset,
                                 GCInfoToken gcInfoToken,
                                 size_t* prologSize) = 0;
-
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized methods only)
 */
@@ -279,6 +269,7 @@ virtual bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags) = 0;
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -317,6 +308,12 @@ virtual BOOL            LeaveFinally(GCInfoToken gcInfoToken,
 virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    unsigned offset,
                                    PCONTEXT pCtx)=0;
+#else // FEATURE_EH_FUNCLETS
+virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted) = 0;
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD) = 0;
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -337,7 +334,6 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
-
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
@@ -373,7 +369,6 @@ void FixContext(ContextType     ctxType,
                 DWORD           dwRelOffset,
                 DWORD           nestingLevel,
                 OBJECTREF       thrownObject,
-                CodeManState   *pState,
                 size_t       ** ppShadowSP,             // OUT
                 size_t       ** ppEndRegion);           // OUT
 #endif // !FEATURE_EH_FUNCLETS
@@ -388,8 +383,7 @@ virtual
 TADDR GetAmbientSP(PREGDISPLAY     pContext,
                    EECodeInfo     *pCodeInfo,
                    DWORD           dwRelOffset,
-                   DWORD           nestingLevel,
-                   CodeManState   *pState);
+                   DWORD           nestingLevel);
 #endif // TARGET_X86
 
 /*
@@ -409,10 +403,12 @@ ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo);
 */
 virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
-                unsigned        flags,
-                CodeManState   *pState);
+                unsigned        flags);
+
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
 
 #ifdef HAS_LIGHTUNWIND
 enum LightUnwindFlag
@@ -497,9 +493,9 @@ PTR_VOID GetExactGenericsToken(PREGDISPLAY     pContext,
                                EECodeInfo *    pCodeInfo);
 
 static
-PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
+PTR_VOID GetExactGenericsToken(TADDR           sp,
+                               TADDR           fp,
                                EECodeInfo *    pCodeInfo);
-
 
 #endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
@@ -510,8 +506,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
-                       unsigned        flags,
-                       CodeManState  * pState);
+                       unsigned        flags);
 
 
 #ifndef USE_GC_INFO_DECODER
@@ -524,6 +519,7 @@ bool IsInPrologOrEpilog(
                 GCInfoToken gcInfoToken,
                 size_t*     prologSize);
 
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
@@ -532,6 +528,7 @@ bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -566,6 +563,13 @@ virtual BOOL LeaveFinally(GCInfoToken gcInfoToken,
 virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          unsigned offset,
                          PCONTEXT pCtx);
+#else // FEATURE_EH_FUNCLETS
+virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -586,7 +590,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
-    static void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
+    virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
     static size_t GetCallerSp( PREGDISPLAY  pRD );
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
@@ -598,21 +602,6 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif
 
 };
-
-#ifdef TARGET_X86
-#include "gc_unwind_x86.h"
-
-/*****************************************************************************
-  How the stackwalkers buffer will be interpreted
-*/
-
-struct CodeManStateBuf
-{
-    DWORD       hdrInfoSize;
-    hdrInfo     hdrInfoBody;
-};
-
-#endif
 
 #ifdef FEATURE_INTERPRETER
 
@@ -632,7 +621,6 @@ void FixContext(ContextType     ctxType,
                 DWORD           dwRelOffset,
                 DWORD           nestingLevel,
                 OBJECTREF       thrownObject,
-                CodeManState   *pState,
                 size_t       ** ppShadowSP,             // OUT
                 size_t       ** ppEndRegion)            // OUT
 {
@@ -651,8 +639,7 @@ virtual
 TADDR GetAmbientSP(PREGDISPLAY     pContext,
                    EECodeInfo     *pCodeInfo,
                    DWORD           dwRelOffset,
-                   DWORD           nestingLevel,
-                   CodeManState   *pState)
+                   DWORD           nestingLevel)
 {
     // Interpreter-TODO: Implement this if needed
     _ASSERTE(FALSE);
@@ -663,17 +650,22 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
 virtual
 ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return 0;
 }
 
 virtual
 bool UnwindStackFrame(
-                PREGDISPLAY     pContext,
+                PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
-                unsigned        flags,
-                CodeManState   *pState);
+                unsigned        flags);
+
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
+
+#ifdef FEATURE_EH_FUNCLETS
+virtual 
+void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
+#endif // FEATURE_EH_FUNCLETS
 
 virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
@@ -711,11 +703,8 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
-                       unsigned        flags,
-                       CodeManState  * pState)
+                       unsigned        flags)
 {
-    // Interpreter-TODO: Implement this if needed
-    _ASSERTE(FALSE);
     return NULL;
 }
 
@@ -732,6 +721,7 @@ bool IsInPrologOrEpilog(
     return false;
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 virtual
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
@@ -742,6 +732,7 @@ bool IsInSynchronizedRegion(
     _ASSERTE(FALSE);
     return false;
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 virtual
@@ -791,6 +782,12 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
     // Interpreter-TODO: Implement this if needed
     _ASSERTE(FALSE);
 }
+#else // FEATURE_EH_FUNCLETS
+virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION

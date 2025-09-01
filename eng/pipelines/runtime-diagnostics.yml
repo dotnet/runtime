@@ -1,13 +1,5 @@
 trigger: none
 
-schedules:
-  - cron: "0 10 * * *" # run at 10:00 (UTC) which is 2:00 (PST).
-    displayName: Runtime Diagnostics scheduled run
-    branches:
-      include:
-      - main
-    always: true
-
 resources:
   repositories:
     - repository: diagnostics
@@ -26,9 +18,77 @@ schedules:
     - main
   always: true
 
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/**
+    - src/native/managed/cdac/**
+    - src/coreclr/debug/runtimeinfo/**
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig)
+            nameSuffix: AllSubsets_CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
+            postBuildSteps:
+            - powershell: |
+                $versionDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\testhost\net*\shared\Microsoft.NETCore.App" | Select-Object -ExpandProperty FullName
+                Write-Host "##vso[task.setvariable variable=versionDir]$versionDir"
+              displayName: 'Set Path to Shared Framework Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(versionDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                displayName: Build Assets
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            name: Windows
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+            timeoutInMinutes: 360
+            dependsOn:
+            - build_windows_x64_release_AllSubsets_CoreCLR
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+                  displayName: 'Runtime Build Artifacts'
+            postBuildSteps:
+            - task: PublishTestResults@2
+              inputs:
+                testResultsFormat: xUnit
+                testResultsFiles: '**/*.xml'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                testRunTitle: 'Tests $(_PhaseName)'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                mergeTestResults: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()

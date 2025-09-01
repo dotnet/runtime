@@ -1008,7 +1008,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitPrevGCrefRegs = emitThisGCrefRegs;
         emitPrevByrefRegs = emitThisByrefRegs;
 
-        emitForceStoreGCState = false;
+        if (emitAddedLabel)
+        {
+            // Reset emitForceStoreGCState only after seeing label. It will keep
+            // marking IGs with IGF_GC_VARS flag until that.
+            emitForceStoreGCState = false;
+            emitAddedLabel        = false;
+        }
     }
 
 #ifdef DEBUG
@@ -1277,6 +1283,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrevByrefRegs = RBM_NONE;
 
     emitForceStoreGCState = false;
+    emitAddedLabel        = false;
 
 #ifdef DEBUG
 
@@ -1622,7 +1629,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     //     ARM - This is currently broken on TARGET_ARM
     //     When nopSize is odd we misalign emitCurIGsize
     //
-    if (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !emitInInstrumentation &&
+    if (!emitComp->IsAot() && !emitInInstrumentation &&
         !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
         !emitIGisInEpilog(emitCurIG) &&
         emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
@@ -1704,13 +1711,13 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #endif
 
     // Make sure that idAddrUnion is just a union of various pointer sized things
-    C_ASSERT(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
-    C_ASSERT(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
 #ifdef TARGET_XARCH
-    C_ASSERT(sizeof(emitter::emitAddrMode) <= sizeof(void*));
+    static_assert(sizeof(emitter::emitAddrMode) <= sizeof(void*));
 #endif // TARGET_XARCH
-    C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
-    C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
+    static_assert(sizeof(emitLclVarAddr) <= sizeof(void*));
+    static_assert(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
     emitInsCount++;
 
@@ -1755,7 +1762,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
-    // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
+    // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
         && emitComp->opts.compReloc
@@ -2811,6 +2818,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    bool currIGWasNonEmpty = emitCurIGnonEmpty();
+
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
     if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
@@ -2839,10 +2848,28 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         }
     }
 
+    emitAddedLabel = true;
+
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
     {
+#if FEATURE_LOOP_ALIGN
+
+        if (!currIGWasNonEmpty && (emitAlignLastGroup != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG->igNext == emitCurIG))
+        {
+            // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
+            // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
+            // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
+            // notice a loop that encloses another loop, this information helps in removing the align field from
+            // such loops.
+            // We need to only update emitAlignLastGroup because we do not align intermingled or overlapping loops.
+            emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
+        }
+#endif // FEATURE_LOOP_ALIGN
+
         emitNxtIG();
     }
     else
@@ -3564,7 +3591,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3588,7 +3616,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) || // too many args
         (argCnt < 0)                   // caller pops arguments
                                        // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id;
 
@@ -3605,6 +3634,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3648,7 +3678,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3668,7 +3699,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
         (argCnt < 0)                             // caller pops arguments
                                                  // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3685,6 +3717,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3749,6 +3782,31 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
 
     assert(!"Unsupported insFmt");
     return IS_NONE;
+}
+
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
 }
 #endif // TARGET_XARCH
 
@@ -4444,6 +4502,7 @@ void emitter::emitRecomputeIGoffsets()
         ig->igOffs = offs;
         assert(IsCodeAligned(ig->igOffs));
         offs += ig->igSize;
+        assert(offs >= ig->igOffs); // must not overflow
     }
 
     /* Set the total code size */
@@ -4465,7 +4524,7 @@ void emitter::emitRecomputeIGoffsets()
 //    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
@@ -6515,7 +6574,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
+            assert(emitComp->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -6766,9 +6825,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     // These are the heuristics we use to decide whether or not to force the
     // code to be 16-byte aligned.
     //
-    // 1. For ngen code with IBC data, use 16-byte alignment if the method
+    // 1. For AOT code with IBC data, use 16-byte alignment if the method
     //    has been called more than ScenarioHotWeight times.
-    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
+    // 2. For JITed code and AOT code without IBC data, use 16-byte alignment
     //    when the code is 16 bytes or smaller. We align small getters/setters
     //    because of they are penalized heavily on certain hardware when not 16-byte
     //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
@@ -6864,9 +6923,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
-        // in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+        // For AOT, codeBlock will not be necessarily aligned, but it is aligned in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->IsAot());
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
@@ -7066,7 +7124,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(dsc->lvTracked);
                 assert(dsc->lvRefCnt() != 0);
 
-                assert(dsc->TypeGet() == TYP_REF || dsc->TypeGet() == TYP_BYREF);
+                assert(dsc->TypeIs(TYP_REF, TYP_BYREF));
 
                 assert(indx < emitComp->lvaTrackedCount);
 
@@ -7082,7 +7140,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 }
 #endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
-                if (dsc->TypeGet() == TYP_BYREF)
+                if (dsc->TypeIs(TYP_BYREF))
                 {
                     offs |= byref_OFFSET_FLAG;
                 }
@@ -8164,35 +8222,138 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#if defined(TARGET_XARCH)
-CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// emitSimdConst: Create a simd data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+// Note:
+// Access to inline data is 'abstracted' by a special type of static member
+// (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+// to constant data, not a real static field.
+//
+CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
 {
-    unsigned cnsSize  = 32;
-    unsigned cnsAlign = cnsSize;
+    unsigned  cnsSize  = EA_SIZE(attr);
+    unsigned  cnsAlign = cnsSize;
+    var_types dataType = (cnsSize >= 8) ? emitComp->getSIMDTypeForSize(cnsSize) : TYP_FLOAT;
 
+#ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
     {
         cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
+#endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
+    UNATIVE_OFFSET cnum = emitDataConst(constValue, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+//------------------------------------------------------------------------
+// emitSimdConstCompressedLoad: Create a simd data section constant,
+//   compressing it if possible, and emit an appropiate instruction
+//   to load or broadcast the constant to a register.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
+//    targetReg  - The target register
+//
+void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg)
 {
-    unsigned cnsSize  = 64;
-    unsigned cnsAlign = cnsSize;
+    assert(EA_SIZE(attr) >= 8 && EA_SIZE(attr) <= 64);
 
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    unsigned    cnsSize  = EA_SIZE(attr);
+    unsigned    dataSize = cnsSize;
+    instruction ins      = (cnsSize == 8) ? INS_movsd_simd : INS_movups;
+
+    // Most constant vectors tend to have repeated values, so we will first check to see if
+    // we can replace a full vector load with a smaller broadcast.
+
+    if ((dataSize == 64) && (constValue->v256[1] == constValue->v256[0]))
     {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512));
+        dataSize = 32;
+        ins      = INS_vbroadcastf32x8;
     }
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
+    if ((dataSize == 32) && (constValue->v128[1] == constValue->v128[0]))
+    {
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+        dataSize = 16;
+        ins      = INS_vbroadcastf32x4;
+    }
 
+    if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
+    {
+        dataSize = 8;
+        ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
+    }
+
+    // `vbroadcastss` fills the full SIMD register, so we can't do this last step if the
+    // original constant was smaller than a full reg (e.g. TYP_SIMD8)
+
+    if ((dataSize == 8) && (cnsSize >= 16) && (constValue->u32[1] == constValue->u32[0]))
+    {
+        if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            dataSize = 4;
+            ins      = INS_vbroadcastss;
+        }
+    }
+
+    if (dataSize < cnsSize)
+    {
+        // We found a broadcast match, so emit the broadcast instruction and return.
+        // Here we use the original emitAttr for the instruction, because we need to
+        // produce a register of the original constant's size, filled with the pattern.
+
+        CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(dataSize));
+        emitIns_R_C(ins, attr, targetReg, hnd, 0);
+        return;
+    }
+
+    // Otherwise, if the upper lanes and/or elements of the constant are zero, we can use a
+    // smaller load, because all scalar and vector memory load instructions zero the uppers.
+
+    simd32_t zeroValue = {};
+
+    if ((dataSize == 64) && (constValue->v256[1] == zeroValue))
+    {
+        dataSize = 32;
+    }
+
+    if ((dataSize == 32) && (constValue->v128[1] == zeroValue.v128[0]))
+    {
+        dataSize = 16;
+    }
+
+    if ((dataSize == 16) && (constValue->u64[1] == 0))
+    {
+        dataSize = 8;
+        ins      = INS_movsd_simd;
+    }
+
+    if ((dataSize == 8) && (constValue->u32[1] == 0))
+    {
+        dataSize = 4;
+        ins      = INS_movss;
+    }
+
+    // Here we set the emitAttr to the size of the actual load. It will zero extend
+    // up to the native SIMD register size.
+
+    attr = EA_ATTR(dataSize);
+
+    CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, attr);
+    emitIns_R_C(ins, attr, targetReg, hnd, 0);
+}
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -8470,7 +8631,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 switch (data->dsDataType)
                 {
                     case TYP_FLOAT:
-                        assert(data->dsSize >= 4);
+                        if (data->dsSize < 4)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
+                        }
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
@@ -8478,7 +8642,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                         break;
 
                     case TYP_DOUBLE:
-                        assert(data->dsSize >= 8);
+                        if (data->dsSize < 8)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
+                        }
                         printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
@@ -8499,7 +8666,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             case 2:
-                                assert((data->dsSize % 2) == 0);
+                                if ((data->dsSize % 2) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%2 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
                                 for (j = 2; j < 24; j += 2)
                                 {
@@ -8512,7 +8682,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
                             case 12:
                             case 4:
-                                assert((data->dsSize % 4) == 0);
+                                if ((data->dsSize % 4) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%4 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                                 for (j = 4; j < 24; j += 4)
                                 {
@@ -8527,7 +8700,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                             case 32:
                             case 16:
                             case 8:
-                                assert((data->dsSize % 8) == 0);
+                                if ((data->dsSize % 8) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
@@ -8539,7 +8715,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             default:
-                                assert(!"unexpected elemSize");
+                                printf("\t<Unexpected elemSize %d)\n", elemSize);
                                 break;
                         }
                 }
@@ -10444,7 +10620,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     return result;
 }
 
-#if !defined(JIT32_GCENCODER)
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
 //
@@ -10536,4 +10711,3 @@ void emitter::emitEnableGC()
         JITDUMP("Enable GC: still %u no-gc requests\n", emitNoGCRequestCount);
     }
 }
-#endif // !defined(JIT32_GCENCODER)

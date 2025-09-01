@@ -19,6 +19,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="name">The locale name that ICU returns.</param>
         /// <param name="extension">The extension part in the original culture name.</param>
+        /// <param name="originalName">The original input culture name.</param>
         /// <param name="collationStart">The index of the collation in the name.</param>
         /// <remarks>
         /// BCP 47 specifications allow for extensions in the locale name, following the format language-script-region-extensions-collation. However,
@@ -29,7 +30,7 @@ namespace System.Globalization
         /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
         /// we still include it in the name to distinguish it from the name without the extension.
         /// </remarks>
-        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, out int collationStart)
+        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, string originalName, out int collationStart)
         {
             Debug.Assert(name is not null);
             Debug.Assert(name.Length <= ICU_ULOC_FULLNAME_CAPACITY);
@@ -38,6 +39,16 @@ namespace System.Globalization
             bool changed = false;
             Span<char> buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
             int bufferIndex = 0;
+
+            // Using `Undetermined` language (e.g. `und-US`), the returned name from ICU getName is `_US`. We return back the original language `und`
+            if (name.Length > 1 && (name[0] == '-' || name[0] == '_') && originalName.StartsWith("und", StringComparison.OrdinalIgnoreCase))
+            {
+                buffer[bufferIndex++] = 'u';
+                buffer[bufferIndex++] = 'n';
+                buffer[bufferIndex++] = 'd';
+
+                changed = true;
+            }
 
             for (int i = 0; i < name.Length && bufferIndex < ICU_ULOC_FULLNAME_CAPACITY; i++)
             {
@@ -141,7 +152,7 @@ namespace System.Globalization
 
             Debug.Assert(_sWindowsName != null);
 
-            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, out int collationStart);
+            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, _sRealName, out int collationStart);
 
             _iLanguage = LCID;
             if (_iLanguage == 0)

@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <Description>Abstractions for modifying .NET host binaries</Description>
     <IsShipping>false</IsShipping>
-    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">true</IsPackable>
+    <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
@@ -14,16 +14,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
-    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
     <DefineConstants>$(DefineConstants);HOST_MODEL</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+  <!-- Manually reference these assemblies which are provided by MSBuild / .NET SDK -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageDownloadAndReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" Folder="lib/net461" />
+    <PackageDownloadAndReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" Folder="lib/net462" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,5 +34,7 @@
     <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
   </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
 </Project>

@@ -26,25 +26,21 @@ namespace
         _X("latestMinor"),
         _X("latestMajor"),
     };
+
+    int get_feature_band(const fx_ver_t& version)
+    {
+        // SDK versions encode both the feature band and patch version in the SemVer patch version.
+        // They have the form x.y.znn, where z is the feature band and nn is the patch version.
+        // To get the feature band, we divide the SemVer patch by 100
+        return version.get_patch() / 100;
+    }
 }
 
 sdk_resolver::sdk_resolver(bool allow_prerelease)
-    : sdk_resolver({}, sdk_roll_forward_policy::latest_major, allow_prerelease)
-{
-}
-
-sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease)
-    : requested_version(std::move(version))
-    , roll_forward(roll_forward)
-    , allow_prerelease(allow_prerelease)
-    , has_custom_paths(false)
-{
-}
-
-const pal::string_t& sdk_resolver::global_file_path() const
-{
-    return global_file;
-}
+    : roll_forward{sdk_roll_forward_policy::latest_major}
+    , allow_prerelease{allow_prerelease}
+    , has_custom_paths{false}
+{ }
 
 const fx_ver_t& sdk_resolver::get_requested_version() const
 {
@@ -121,14 +117,14 @@ std::vector<pal::string_t> sdk_resolver::get_search_paths(const pal::string_t& d
     else
     {
         // Use custom paths specified in the global.json
-        pal::string_t json_dir = get_directory(global_file);
+        pal::string_t json_dir = get_directory(global_json.path);
         for (const pal::string_t& path : paths)
         {
             if (path == _X("$host$"))
             {
                 locations.push_back(dotnet_root);
             }
-            else if (pal::is_path_rooted(path))
+            else if (pal::is_path_fully_qualified(path))
             {
                 locations.push_back(path);
             }
@@ -166,10 +162,10 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
             main_error_prefix,
             requested.c_str());
 
-        bool has_global_file = !global_file.empty();
+        bool has_global_file = global_json.is_data_used();
         if (has_global_file)
         {
-            trace::error(_X("global.json file: %s"), global_file.c_str());
+            trace::error(_X("global.json file: %s"), global_json.path.c_str());
             if (has_custom_paths)
             {
                 trace::error(_X("  Search paths:"));
@@ -188,7 +184,7 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
         trace::error(_X(""));
         if (has_global_file)
         {
-            trace::error(_X("Install the [%s] .NET SDK or update [%s] to match an installed SDK."), requested.c_str(), global_file.c_str());
+            trace::error(_X("Install the [%s] .NET SDK or update [%s] to match an installed SDK."), requested.c_str(), global_json.path.c_str());
         }
         else
         {
@@ -200,7 +196,7 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
         trace::error(_X("%s%s"), main_error_prefix, no_sdk_message);
         if (has_custom_paths && paths.empty())
         {
-            trace::error(_X("%sEmpty search paths specified in global.json file: %s"), main_error_prefix, global_file.c_str());
+            trace::error(_X("%sEmpty search paths specified in global.json file: %s"), main_error_prefix, global_json.path.c_str());
         }
     }
 
@@ -237,14 +233,27 @@ sdk_resolver sdk_resolver::from_nearest_global_file(const pal::string_t& cwd, bo
 {
     sdk_resolver resolver{ allow_prerelease };
 
-    if (!resolver.parse_global_file(find_nearest_global_file(cwd)))
-    {
-        // Fall back to a default SDK resolver
-        resolver = sdk_resolver{ allow_prerelease };
+    pal::string_t global_file_path = find_nearest_global_file(cwd);
 
-        trace::warning(
-            _X("Ignoring SDK settings in global.json: the latest installed .NET SDK (%s prereleases) will be used"),
-            resolver.allow_prerelease ? _X("including") : _X("excluding"));
+    if (global_file_path.empty())
+    {
+        resolver.global_json.state = global_file_info::state::not_found;
+    }
+    else
+    {
+        global_file_info global_file = resolver.parse_global_file(global_file_path);
+        if (!global_file.is_data_used())
+        {
+            // Fall back to a default SDK resolver
+            resolver = sdk_resolver{ allow_prerelease };
+
+            trace::verbose(_X("Invalid global.json [%s]:\n  %s"), global_file.path.c_str(), global_file.error_message.c_str());
+            trace::warning(
+                _X("Ignoring SDK settings in global.json: the latest installed .NET SDK (%s prereleases) will be used"),
+                resolver.allow_prerelease ? _X("including") : _X("excluding"));
+        }
+
+        resolver.global_json = std::move(global_file);
     }
 
     // If the requested version is a prerelease, always allow prerelease versions
@@ -312,22 +321,27 @@ pal::string_t sdk_resolver::find_nearest_global_file(const pal::string_t& cwd)
     return {};
 }
 
-bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
+sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string_t& global_file_path)
 {
+    global_file_info ret;
     if (global_file_path.empty())
     {
         // Missing global.json is treated as success (use default resolver)
-        return true;
+        ret.state = global_file_info::state::not_found;
+        return ret;
     }
 
     trace::verbose(_X("--- Resolving SDK information from global.json [%s]"), global_file_path.c_str());
+    ret.path = global_file_path;
 
     // After we're done parsing `global_file_path`, none of its contents will be referenced
     // from the data private to json_parser_t; it's safe to declare it on the stack.
     json_parser_t json;
     if (!json.parse_file(global_file_path))
     {
-        return false;
+        ret.error_message = json.get_error_message();
+        ret.state = global_file_info::state::invalid_json;
+        return ret;
     }
 
     const auto& sdk = json.document().FindMember(_X("sdk"));
@@ -335,13 +349,16 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         // Missing SDK is treated as success (use default resolver)
         trace::verbose(_X("Value 'sdk' is missing or null in [%s]"), global_file_path.c_str());
-        return true;
+        ret.state = global_file_info::state::valid;
+        return ret;
     }
+
+    ret.state = global_file_info::state::invalid_data;
 
     if (!sdk->value.IsObject())
     {
-        trace::warning(_X("Expected a JSON object for the 'sdk' value in [%s]"), global_file_path.c_str());
-        return false;
+        ret.error_message = _X("Expected a JSON object for the 'sdk' value");
+        return ret;
     }
 
     const auto& version_value = sdk->value.FindMember(_X("version"));
@@ -353,18 +370,14 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         if (!version_value->value.IsString())
         {
-            trace::warning(_X("Expected a string for the 'sdk/version' value in [%s]"), global_file_path.c_str());
-            return false;
+            ret.error_message = _X("Expected a string for the 'sdk/version' value");
+            return ret;
         }
 
         if (!fx_ver_t::parse(version_value->value.GetString(), &requested_version, false))
         {
-            trace::warning(
-                _X("Version '%s' is not valid for the 'sdk/version' value in [%s]"),
-                version_value->value.GetString(),
-                global_file_path.c_str()
-            );
-            return false;
+            ret.error_message = utils::format_string(_X("Version '%s' is not valid for the 'sdk/version' value"), version_value->value.GetString());
+            return ret;
         }
 
         // The default policy when a version is specified is 'patch'
@@ -380,30 +393,22 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         if (!roll_forward_value->value.IsString())
         {
-            trace::warning(_X("Expected a string for the 'sdk/rollForward' value in [%s]"), global_file_path.c_str());
-            return false;
+            ret.error_message = _X("Expected a string for the 'sdk/rollForward' value");
+            return ret;
         }
 
         roll_forward = to_policy(roll_forward_value->value.GetString());
         if (roll_forward == sdk_roll_forward_policy::unsupported)
         {
-            trace::warning(
-                _X("The roll-forward policy '%s' is not supported for the 'sdk/rollForward' value in [%s]"),
-                roll_forward_value->value.GetString(),
-                global_file_path.c_str()
-            );
-            return false;
+            ret.error_message = utils::format_string(_X("The roll-forward policy '%s' is not supported for the 'sdk/rollForward' value"), roll_forward_value->value.GetString());
+            return ret;
         }
 
         // All policies other than 'latestMajor' require a version to operate
         if (roll_forward != sdk_roll_forward_policy::latest_major && requested_version.is_empty())
         {
-            trace::warning(
-                _X("The roll-forward policy '%s' requires a 'sdk/version' value in [%s]"),
-                roll_forward_value->value.GetString(),
-                global_file_path.c_str()
-            );
-            return false;
+            ret.error_message = utils::format_string(_X("The roll-forward policy '%s' requires a 'sdk/version' value"), roll_forward_value->value.GetString());
+            return ret;
         }
     }
 
@@ -416,8 +421,8 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         if (!allow_prerelease_value->value.IsBool())
         {
-            trace::warning(_X("Expected a boolean for the 'sdk/allowPrerelease' value in [%s]"), global_file_path.c_str());
-            return false;
+            ret.error_message = _X("Expected a boolean for the 'sdk/allowPrerelease' value");
+            return ret;
         }
 
         allow_prerelease = allow_prerelease_value->value.GetBool();
@@ -434,8 +439,8 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         if (!paths_value->value.IsArray())
         {
-            trace::warning(_X("Expected an array for 'sdk/paths' value in [%s]"), global_file_path.c_str());
-            return false;
+            ret.error_message = _X("Expected an array for 'sdk/paths' value");
+            return ret;
         }
 
         has_custom_paths = true;
@@ -446,7 +451,7 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
             const auto& path = paths_array[i];
             if (!path.IsString())
             {
-                trace::warning(_X("Ignoring non-string 'sdk/paths[%d]' value in [%s]"), global_file_path.c_str());
+                trace::warning(_X("Ignoring non-string 'sdk/paths[%u]' value in [%s]"), i, global_file_path.c_str());
                 continue;
             }
 
@@ -459,15 +464,25 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
     {
         if (!error_message_value->value.IsString())
         {
-            trace::warning(_X("Expected a string for the 'sdk/errorMessage' value in [%s]"), global_file_path.c_str());
-            return false;
+            ret.error_message = _X("Expected a string for the 'sdk/errorMessage' value");
+            return ret;
         }
 
         error_message = error_message_value->value.GetString();
     }
 
-    global_file = std::move(global_file_path);
-    return true;
+    // SDK feature bands start at 1, so a version with a feature band < 1 is not a valid version.
+    // We want to provide an error message, but we should still use the settings in the global.json
+    // and not fall back to the default resolver.
+    if (!requested_version.is_empty() && get_feature_band(requested_version) < 1)
+    {
+        ret.error_message = utils::format_string(_X("Version '%s' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, %d.%d.100"), requested_version.as_str().c_str(), requested_version.get_major(), requested_version.get_minor());
+        ret.state = global_file_info::state::__invalid_data_no_fallback;
+        return ret;
+    }
+
+    ret.state = global_file_info::state::valid;
+    return ret;
 }
 
 bool sdk_resolver::matches_policy(const fx_ver_t& current) const
@@ -487,8 +502,8 @@ bool sdk_resolver::matches_policy(const fx_ver_t& current) const
         return true;
     }
 
-    int requested_feature = requested_version.get_patch() / 100;
-    int current_feature = current.get_patch() / 100;
+    int requested_feature = get_feature_band(requested_version);
+    int current_feature = get_feature_band(current);
 
     int requested_minor = requested_version.get_minor();
     int current_minor = current.get_minor();
@@ -543,7 +558,7 @@ bool sdk_resolver::is_better_match(const fx_ver_t& current, const fx_ver_t& prev
         is_policy_use_latest() ||
         (current.get_major() == previous.get_major() &&
          current.get_minor() == previous.get_minor() &&
-         (current.get_patch() / 100) == (previous.get_patch() / 100)))
+         (get_feature_band(current) == get_feature_band(previous))))
     {
         // Accept the later of the versions
         // This will also handle stable and prerelease comparisons

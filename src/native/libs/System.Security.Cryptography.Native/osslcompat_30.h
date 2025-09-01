@@ -111,6 +111,7 @@ int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
 int EVP_PKEY_get_utf8_string_param(const EVP_PKEY *pkey, const char *key_name, char *str, size_t max_buf_sz, size_t *out_len);
 int EVP_PKEY_get_octet_string_param(const EVP_PKEY *pkey, const char *key_name, unsigned char *buf, size_t max_buf_sz, size_t *out_len);
+int EVP_PKEY_is_a(const EVP_PKEY *pkey, const char *name);
 EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX *libctx,
                                          EVP_PKEY *pkey,
                                          const char *propquery);

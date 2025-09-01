@@ -17,25 +17,73 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize = false)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize, bool isReadyToRun)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
-            // Ready to run images are built with certain instruction set baselines
+            // Images are built with certain instruction set baselines
+            //
+            // For NativeAOT, this represents the minimum hardware required to run.
+            // Older hardware will not work
+            //
+            // For ReadyToRun, this represents the presumed majority hardware.
+            // Older hardware (down to the NAOT baseline) will still work, but may have more jitting on startup
+
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
-            }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
-            {
-                if (targetOS == TargetOS.OSX)
+                if (isReadyToRun && (targetOS != TargetOS.OSX))
                 {
-                    // For osx-arm64 we know that apple-m1 is a baseline
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                    // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");
                 }
                 else
                 {
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                    // Otherwise, we require SSE4.2 and POPCNT
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v2");
+                }
+            }
+            else if (targetArchitecture == TargetArchitecture.ARM64)
+            {
+                if ((targetOS == TargetOS.OSX) || (targetOS == TargetOS.MacCatalyst))
+                {
+                    // Apple has six targets today:
+                    // * OSX
+                    // * MacCatalyst
+                    // * iOS
+                    // * iOSSimulator
+                    // * tvOS
+                    // * tvOSSimulator
+                    //
+                    // For osx-arm64 and maccatalyst, we know that the baseline is apple-m1
+                    // For iOS, tvOS, and the simulator variants it can be older
+
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else if (isReadyToRun)
+                {
+                    if (targetOS == TargetOS.Windows)
+                    {
+                        // ReadyToRun on Windows can presume armv8.2-a and RCPC
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("armv8.2-a");
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                    }
+                    else
+                    {
+                        // While Unix needs a lower baseline due to things like Raspberry PI
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                    }
+                }
+                else
+                {
+                    // We require armv8-a everywhere
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
+
+                    if (targetOS == TargetOS.Windows)
+                    {
+                        // However, Windows also requires LSE
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                    }
                 }
             }
 
@@ -187,64 +235,59 @@ namespace System.CommandLine
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
                 // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("serialize");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("waitpkg");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("x86serialize");
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
+
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
-                    // TODO: Enable optimistic usage of AVX2 once we validate it doesn't break Vector<T> usage
-                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-
-                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
-                    {
-                        optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    }
-
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
+
+                    // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
+                    // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
+
+                    if (!supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
+                    {
+                        maxVectorTBitWidth = 128;
+                    }
                 }
 
-                Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F))
+                Debug.Assert(InstructionSet.X64_AVX512 == InstructionSet.X86_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512))
                 {
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ_VL));
-
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v3");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
+
                 }
             }
             else if (allowOptimistic && targetArchitecture is TargetArchitecture.ARM64)
             {
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
             }
 
             // Vector<T> can always be part of the optimistic set, we only want to optionally exclude it from the supported set
@@ -255,8 +298,8 @@ namespace System.CommandLine
 
             if (throttleAvx512)
             {
-                Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512F))
+                Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512))
                 {
                     Debug.Assert(InstructionSet.X86_Vector256 == InstructionSet.X64_Vector256);
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);

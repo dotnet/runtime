@@ -68,20 +68,20 @@ System.Net.Http.WinHttpHandler</PackageDescription>
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"
-             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs"
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs"
              Link="Common\System\Net\Security\CertificateHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Windows.cs"
+             Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="System\Net\Http\CachedCertificateValue.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
-    <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpChannelBinding.cs" />
     <Compile Include="System\Net\Http\WinHttpChunkMode.cs" />
     <Compile Include="System\Net\Http\WinHttpCookieContainerAdapter.cs" />
@@ -96,6 +96,8 @@ System.Net.Http.WinHttpHandler</PackageDescription>
     <Compile Include="System\Net\Http\WinHttpTraceHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTrailersHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTransportContext.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -115,6 +117,7 @@ System.Net.Http.WinHttpHandler</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 

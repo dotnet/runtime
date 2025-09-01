@@ -132,7 +132,7 @@ struct ee_alloc_context
 
 struct RuntimeThreadLocals
 {
-    ee_alloc_context        m_eeAllocContext;               
+    ee_alloc_context        m_eeAllocContext;
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
@@ -214,6 +214,7 @@ public:
                                                     //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
+        TSF_Interrupted         = 0x00000200,       // Set to indicate Thread.Interrupt() has been called on this thread
     };
 private:
 
@@ -320,6 +321,7 @@ public:
     bool                IsCurrentThreadInCooperativeMode();
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
+    PInvokeTransitionFrame* GetTransitionFrameForSampling();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
@@ -389,6 +391,9 @@ public:
     void                SetPendingRedirect(PCODE eip);
     bool                CheckPendingRedirect(PCODE eip);
 #endif
+
+    void                SetInterrupted(bool isInterrupted);
+    bool                CheckInterrupted();
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

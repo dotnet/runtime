@@ -98,9 +98,17 @@ namespace System.Linq.Tests
             await foreach (T item in source.WithCancellation(cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await Task.Yield();
+                await default(ForceYieldingAwaiter);
                 yield return item;
             }
+        }
+
+        private readonly struct ForceYieldingAwaiter : INotifyCompletion
+        {
+            public ForceYieldingAwaiter GetAwaiter() => this;
+            public bool IsCompleted => false;
+            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(s => ((Action)s)(), continuation);
+            public void GetResult() { }
         }
 
         public static TrackingAsyncEnumerable<T> Track<T>(this IAsyncEnumerable<T> source) =>
@@ -152,6 +160,18 @@ namespace System.Linq.Tests
                 parent.DisposeAsyncCount++;
                 return source.DisposeAsync();
             }
+        }
+    }
+
+    public sealed class TrackingSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                SetSynchronizationContext(this);
+                d(state);
+            });
         }
     }
 }

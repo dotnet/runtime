@@ -305,7 +305,11 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
 #ifndef DACCESS_COMPILE
 
 ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
-    ExceptionTrackerBase(pExceptionRecord, pExceptionContext, pThread->GetExceptionState()->GetCurrentExceptionTracker()),
+    m_pPrevNestedInfo(pThread->GetExceptionState()->GetCurrentExceptionTracker()),
+    m_hThrowable{},
+    m_ptrs({pExceptionRecord, pExceptionContext}),
+    m_fDeliveredFirstChanceNotification(FALSE),
+    m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0),
     m_pExContext(&m_exContext),
     m_exception((Object*)NULL),
     m_kind(exceptionKind),
@@ -342,6 +346,11 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
         memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
         m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_FULL | CONTEXT_EXCEPTION_ACTIVE);
     }
+
+#ifndef TARGET_UNIX
+    // Init the WatsonBucketTracker
+    m_WatsonBucketTracker.Init();
+#endif // !TARGET_UNIX
 }
 
 #if defined(TARGET_UNIX)
@@ -380,6 +389,8 @@ void ExInfo::ReleaseResources()
 // static
 void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 {
+    STRESS_LOG1(LF_EH, LL_INFO100, "Popping ExInfos below SP=%p\n", targetSp);
+
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 #if defined(DEBUGGING_SUPPORTED)
     DWORD_PTR dwInterceptStackFrame = 0;

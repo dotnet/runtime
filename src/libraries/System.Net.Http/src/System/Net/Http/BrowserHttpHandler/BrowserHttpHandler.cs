@@ -113,8 +113,7 @@ namespace System.Net.Http
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = true;
 
-        private Dictionary<string, object?>? _properties;
-        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+        public IDictionary<string, object?> Properties => field ??= new Dictionary<string, object?>();
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -271,7 +270,9 @@ namespace System.Net.Http
                         Memory<byte> bufferMemory = buffer.AsMemory();
                         // http_wasm_fetch_byte makes a copy of the bytes synchronously, so we can un-pin it synchronously
                         using MemoryHandle pinBuffer = bufferMemory.Pin();
+#pragma warning disable CA2025
                         fetchPromise = BrowserHttpInterop.FetchBytes(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues, pinBuffer, buffer.Length);
+#pragma warning restore
                     }
                 }
                 else
@@ -383,8 +384,10 @@ namespace System.Net.Http
 
             // http_wasm_transform_stream_write makes a copy of the bytes synchronously, so we can dispose the handle synchronously
             using MemoryHandle pinBuffer = buffer.Pin();
+#pragma warning disable CA2025
             Task writePromise = BrowserHttpInterop.TransformStreamWriteUnsafe(_controller._jsController, buffer, pinBuffer);
             return BrowserHttpInterop.CancellationHelper(writePromise, cancellationToken, _controller._jsController);
+#pragma warning restore
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -487,7 +490,7 @@ namespace System.Net.Http
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(stream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);

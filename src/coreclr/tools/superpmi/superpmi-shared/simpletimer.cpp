@@ -4,18 +4,14 @@
 #include "standardpch.h"
 #include "logging.h"
 #include "simpletimer.h"
+#include "minipal/time.h"
 
 SimpleTimer::SimpleTimer()
 {
-    start.QuadPart = 0;
-    stop.QuadPart  = 0;
+    start = 0;
+    stop  = 0;
 
-    BOOL retVal = ::QueryPerformanceFrequency(&proc_freq);
-    if (retVal == FALSE)
-    {
-        LogDebug("SimpleTimer::SimpleTimer unable to QPF. error was 0x%08x", ::GetLastError());
-        DEBUG_BREAK;
-    }
+    proc_freq = minipal_hires_tick_frequency();
 }
 
 SimpleTimer::~SimpleTimer()
@@ -24,22 +20,12 @@ SimpleTimer::~SimpleTimer()
 
 void SimpleTimer::Start()
 {
-    BOOL retVal = ::QueryPerformanceCounter(&start);
-    if (retVal == FALSE)
-    {
-        LogDebug("SimpleTimer::Start unable to QPC. error was 0x%08x", ::GetLastError());
-        DEBUG_BREAK;
-    }
+    start = minipal_hires_ticks();
 }
 
 void SimpleTimer::Stop()
 {
-    BOOL retVal = ::QueryPerformanceCounter(&stop);
-    if (retVal == FALSE)
-    {
-        LogDebug("SimpleTimer::Stop unable to QPC. error was 0x%08x", ::GetLastError());
-        DEBUG_BREAK;
-    }
+    stop = minipal_hires_ticks();
 }
 
 double SimpleTimer::GetMilliseconds()
@@ -49,5 +35,5 @@ double SimpleTimer::GetMilliseconds()
 
 double SimpleTimer::GetSeconds()
 {
-    return ((stop.QuadPart - start.QuadPart) / (double)proc_freq.QuadPart);
+    return ((stop - start) / (double)proc_freq);
 }

@@ -74,7 +74,7 @@
 #endif
 #define SM(varname, args, retval)       METASIG_BODY( SM_ ## varname, args retval )
 #define IM(varname, args, retval)       METASIG_BODY( IM_ ## varname, args retval )
-#define GM(varname, n, conv, args, retval) METASIG_BODY( GM_ ## varname, args retval )
+#define GM(varname, conv, n, args, retval) METASIG_BODY( GM_ ## varname, args retval )
 #define Fld(varname, val)               METASIG_BODY( Fld_ ## varname, val )
 #endif
 
@@ -169,8 +169,8 @@
 
 
 // static methods:
-DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType, P(u) C(ASSEMBLY) F F, C(CLASS)))
+DEFINE_METASIG_T(SM(Int_IntPtr_IntPtr_RetException, i I I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType, P(u) C(ASSEMBLY) F F I, C(CLASS)))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(IntPtr_UInt_VoidPtr_RetObj, I K P(v), j))
@@ -179,6 +179,7 @@ DEFINE_METASIG(SM(VoidPtr_RetVoidPtr, P(v), P(v)))
 DEFINE_METASIG(SM(Obj_VoidPtr_RetVoidPtr, j P(v), P(v)))
 DEFINE_METASIG(SM(Obj_IntPtr_RetObj, j I, j))
 DEFINE_METASIG(SM(Obj_RefIntPtr_RetVoid, j r(I), v))
+DEFINE_METASIG(SM(Obj_RefBool_RetVoid, j r(F), v))
 DEFINE_METASIG(SM(Obj_IntPtr_RetVoid, j I, v))
 DEFINE_METASIG(SM(Obj_IntPtr_RetBool, j I, F))
 DEFINE_METASIG(SM(Obj_IntPtr_IntPtr_Int_RetIntPtr, j I I i, I))
@@ -192,10 +193,8 @@ DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RetIntPtr, j I r(I), I))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
-DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
-DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
+DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
+DEFINE_METASIG_T(SM(ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt, C(MANAGED_OBJECT_WRAPPER_HOLDER) r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v)))
@@ -331,7 +330,6 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
-DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))
@@ -448,7 +446,6 @@ DEFINE_METASIG(IM(Int_RetBool, i, F))
 DEFINE_METASIG(IM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(IM(Int_Int_Int_RetVoid, i i i, v))
 DEFINE_METASIG(IM(Int_Int_Int_Int_RetVoid, i i i i, v))
-DEFINE_METASIG_T(IM(Obj_EventArgs_RetVoid, j C(EVENT_ARGS), v))
 
 DEFINE_METASIG_T(IM(Exception_RetVoid, C(EXCEPTION), v))
 
@@ -563,6 +560,28 @@ DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
 DEFINE_METASIG_T(SM(RefDec_RetVoid, r(g(DECIMAL)), v))
 
+DEFINE_METASIG_T(IM(Exception_RetTaskOfT, C(EXCEPTION), GI(C(TASK_1), 1, G(0))))
+DEFINE_METASIG_T(IM(T_RetTaskOfT, G(0), GI(C(TASK_1), 1, G(0))))
+
+DEFINE_METASIG_T(IM(Exception_RetTask, C(EXCEPTION), C(TASK)))
+DEFINE_METASIG_T(IM(RetTask, _, C(TASK)))
+
+DEFINE_METASIG_T(IM(Exception_RetValueTaskOfT, C(EXCEPTION), GI(g(VALUETASK_1), 1, G(0))))
+DEFINE_METASIG_T(IM(T_RetValueTaskOfT, G(0), GI(g(VALUETASK_1), 1, G(0))))
+
+DEFINE_METASIG_T(IM(Exception_RetValueTask, C(EXCEPTION), g(VALUETASK)))
+DEFINE_METASIG_T(IM(RetValueTask, _, g(VALUETASK)))
+
+DEFINE_METASIG_T(GM(Exception_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(EXCEPTION), GI(C(TASK_1), 1, M(0))))
+DEFINE_METASIG_T(GM(T_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), GI(C(TASK_1), 1, M(0))))
+DEFINE_METASIG_T(GM(Exception_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(EXCEPTION), GI(g(VALUETASK_1), 1, M(0))))
+DEFINE_METASIG_T(GM(T_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), GI(g(VALUETASK_1), 1, M(0))))
+
+DEFINE_METASIG_T(SM(RetTask, , C(TASK)))
+DEFINE_METASIG_T(SM(RetValueTask, , g(VALUETASK)))
+DEFINE_METASIG_T(SM(Exception_RetTask, C(EXCEPTION), C(TASK)))
+DEFINE_METASIG_T(SM(Exception_RetValueTask, C(EXCEPTION), g(VALUETASK)))
+
 DEFINE_METASIG(GM(RefT_T_T_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0)) M(0) M(0), M(0)))
 DEFINE_METASIG(SM(RefObject_Object_Object_RetObject, r(j) j j, j))
 DEFINE_METASIG(SM(RefByte_Byte_Byte_RetByte, r(b) b b, b))
@@ -604,6 +623,13 @@ DEFINE_METASIG(IM(VoidPtr_Int_RetVoid, P(v) i, v))
 DEFINE_METASIG(SM(PtrByte_RetStr, P(b), s))
 DEFINE_METASIG(SM(Str_RetPtrByte, s, P(b)))
 DEFINE_METASIG(SM(PtrByte_RetVoid, P(b), v))
+
+DEFINE_METASIG_T(SM(RetContinuation, , C(CONTINUATION)))
+DEFINE_METASIG(GM(T_RetVoid, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), v))
+DEFINE_METASIG_T(SM(Continuation_RetTask, C(CONTINUATION), C(TASK)))
+DEFINE_METASIG_T(GM(Continuation_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(CONTINUATION), GI(C(TASK_1), 1, M(0))))
+DEFINE_METASIG_T(SM(Continuation_RetValueTask, C(CONTINUATION), g(VALUETASK)))
+DEFINE_METASIG_T(GM(Continuation_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(CONTINUATION), GI(g(VALUETASK_1), 1, M(0))))
 
 // Undefine macros in case we include the file again in the compilation unit
 

@@ -43,7 +43,7 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
@@ -450,6 +450,46 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)(context->Rbp);
 }
 
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rdi = (DWORD64)value;
+#else
+    context->Rcx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rdi);
+#else
+    return (TADDR)(context->Rcx);
+#endif
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rsi = (DWORD64)value;
+#else
+    context->Rdx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rsi);
+#else
+    return (TADDR)(context->Rdx);
+#endif
+}
+
 extern "C" TADDR GetCurrentSP();
 
 // Emits:
@@ -507,13 +547,7 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct HijackArgs
 {
-#ifndef FEATURE_MULTIREG_RETURN
-    union
-    {
-        ULONG64 Rax;
-        ULONG64 ReturnValue[1];
-    };
-#else // !FEATURE_MULTIREG_RETURN
+#ifdef UNIX_AMD64_ABI
     union
     {
         struct
@@ -523,7 +557,18 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // !FEATURE_MULTIREG_RETURN
+#else // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rax;
+        ULONG64 ReturnValue[1];
+    };
+#endif // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rcx;
+        ULONG64 AsyncRet;
+    };
     CalleeSavedRegisters Regs;
 #ifdef TARGET_WINDOWS
     ULONG64 Rsp;

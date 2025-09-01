@@ -60,7 +60,7 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -279,6 +279,29 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    SetReg(context, 0, value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetReg(context, 0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    SetReg(context, 1, value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetReg(context, 1);
+}
 
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
@@ -305,7 +328,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
         mem = 0;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -448,7 +471,6 @@ class StubLinkerCPU : public StubLinker
 {
 
 private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec);
     void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
@@ -483,32 +505,16 @@ public:
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
-#ifdef _DEBUG
-    void EmitNop() { Emit32(0xD503201F); }
-#endif
-    void EmitBreakPoint() { Emit32(0xD43E0000); }
     void EmitMovConstant(IntReg target, UINT64 constant);
-    void EmitCmpImm(IntReg reg, int imm);
-    void EmitCmpReg(IntReg Xn, IntReg Xm);
-    void EmitCondFlagJump(CodeLabel * target, UINT cond);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
 
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
 
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
-
     void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
     void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
 
-    void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
-
-    void EmitCallRegister(IntReg reg);
-
     void EmitRet(IntReg reg);
-
-
 };
 
 
@@ -532,6 +538,12 @@ struct HijackArgs
          };
         size_t ReturnValue[2];
     };
+    union
+    {
+        DWORD64 X2;
+        size_t AsyncRet;
+    };
+    DWORD64 Pad;
     union
     {
         struct {

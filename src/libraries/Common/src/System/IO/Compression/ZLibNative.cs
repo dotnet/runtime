@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 namespace System.IO.Compression
@@ -280,6 +281,17 @@ namespace System.IO.Compression
                 }
             }
 
+            public unsafe ErrorCode InflateReset2_(int windowBits)
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+
+                fixed (ZStream* stream = &_zStream)
+                {
+                    return Interop.ZLib.InflateReset2_(stream, windowBits);
+                }
+            }
+
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -306,7 +318,7 @@ namespace System.IO.Compression
             }
 
             // This can work even after XxflateEnd().
-            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
+            public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? string.Empty;
         }
 
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,

@@ -45,6 +45,7 @@ internal static class ReflectionTest
         TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
+        Test113750Regression.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
@@ -75,6 +76,8 @@ internal static class ReflectionTest
         Test105034Regression.Run();
         TestMethodsNeededFromNativeLayout.Run();
         TestFieldAndParamMetadata.Run();
+        TestActivationWithoutConstructor.Run();
+        TestNestedMakeGeneric.Run();
 
         //
         // Mostly functionality tests
@@ -95,6 +98,8 @@ internal static class ReflectionTest
         TestEntryPoint.Run();
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
+        TestActivatingThingsInSignature.Run();
+        TestDelegateInvokeFromEvent.Run();
 
         return 100;
     }
@@ -856,6 +861,60 @@ internal static class ReflectionTest
         }
     }
 
+    class TestActivationWithoutConstructor
+    {
+        public static void Run()
+        {
+            {
+                object o = Activator.CreateInstance(typeof(StructForCreateInstanceDirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceDirect<>)))
+                    throw new Exception();
+            }
+
+            {
+                object o = CreateInstance(typeof(StructForCreateInstanceIndirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceIndirect<>)))
+                    throw new Exception();
+
+                static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t)
+                    => Activator.CreateInstance(t);
+            }
+
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(typeof(StructForGetUninitializedObject<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForGetUninitializedObject<>)))
+                    throw new Exception();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetTheType() => typeof(Atom);
+        }
+
+        class Atom;
+
+        struct StructForCreateInstanceDirect<T> where T : class;
+        struct StructForCreateInstanceIndirect<T> where T : class;
+        struct StructForGetUninitializedObject<T> where T : class;
+    }
+
+    class TestNestedMakeGeneric
+    {
+        class Outie<T> where T : class;
+        class Innie<T> where T : class;
+        class Atom;
+
+        public static void Run()
+        {
+            Type inner = typeof(Innie<>).MakeGenericType(GetAtom());
+            Type outer = typeof(Outie<>).MakeGenericType(inner);
+
+            Console.WriteLine(Activator.CreateInstance(outer));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+        }
+    }
+
     class TestCreateDelegate
     {
         internal class Greeter
@@ -1199,6 +1258,22 @@ internal static class ReflectionTest
             {
                 _i = i;
             }
+        }
+    }
+
+    class Test113750Regression
+    {
+        class Atom;
+
+        public static void Run()
+        {
+            var arr = Array.CreateInstance(GetAtom(), 0);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+
+            if (!(arr is Atom[]))
+                throw new Exception();
         }
     }
 
@@ -2898,6 +2973,50 @@ internal static class ReflectionTest
 
             Expression<CdeclDelegate> cdecl = x => Method(x);
             if (cdecl.Compile()(null) != "Cdecl")
+                throw new Exception();
+        }
+    }
+
+    class TestActivatingThingsInSignature
+    {
+        public static unsafe void Run()
+        {
+            var mi = typeof(TestActivatingThingsInSignature).GetMethod(nameof(MethodWithThingsInSignature));
+            var p = mi.GetParameters();
+
+            var d = typeof(TestActivatingThingsInSignature).GetMethod(nameof(Run)).CreateDelegate(p[0].ParameterType);
+            Console.WriteLine(d.ToString());
+
+            Span<byte> storage = stackalloc byte[sizeof(MyStruct)];
+            var s = RuntimeHelpers.Box(ref MemoryMarshal.GetReference(storage), p[1].ParameterType.TypeHandle);
+            Console.WriteLine(s.ToString());
+
+            var a = Array.CreateInstanceFromArrayType(p[2].ParameterType, 0);
+            Console.WriteLine(a.ToString());
+        }
+
+        public void MethodWithThingsInSignature(MyDelegate d, MyStruct s, MyArrayElementStruct[] a) { }
+
+        public delegate void MyDelegate();
+
+        public struct MyStruct;
+
+        public struct MyArrayElementStruct;
+    }
+
+    class TestDelegateInvokeFromEvent
+    {
+        class MyClass
+        {
+            public event EventHandler<int> MyEvent { add { } remove { } }
+        }
+
+        static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
+
+        public static unsafe void Run()
+        {
+            var invokeMethod = s_eventInfo.EventHandlerType.GetMethod("Invoke");
+            if (invokeMethod.Name != "Invoke")
                 throw new Exception();
         }
     }

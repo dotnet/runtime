@@ -56,8 +56,8 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
         }
     }
 
-    jit->environment.getIntConfigValue   = nullptr;
-    jit->environment.getStingConfigValue = nullptr;
+    jit->environment.getIntConfigValue    = nullptr;
+    jit->environment.getStringConfigValue = nullptr;
 
     if (st1 != nullptr)
         st1->Start();
@@ -244,7 +244,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags, &os);
         CORJIT_FLAGS jitFlags;
-        pParam->pThis->mc->repGetJitFlags(&jitFlags, sizeof(jitFlags));
+        pParam->pThis->getJitFlags(&jitFlags, sizeof(jitFlags));
 
         pParam->results.IsMinOpts =
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
@@ -297,6 +297,14 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
                     break;
 
+                case IMAGE_FILE_MACHINE_LOONGARCH64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+                    break;
+
+                case IMAGE_FILE_MACHINE_RISCV64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64);
+                    break;
+
                 default:
                     LogError("Unknown target architecture");
                     break;
@@ -308,6 +316,17 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             if (!matchesTargetArch)
             {
                 jitResult = CORJIT_OK;
+            }
+            else
+            {
+                // If the target matches, but the JIT is an altjit and the user specified RunAltJitCode=0,
+                // then the JIT will also return CORJIT_SKIPPED, to prevent the generated code from being used.
+                // However, we don't want to treat that as a replay failure.
+                if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT) &&
+                    (pParam->pThis->jitHost->getIntConfigValue("RunAltJitCode", 1) == 0))
+                {
+                    jitResult = CORJIT_OK;
+                }
             }
         }
 
@@ -445,6 +464,22 @@ const char* JitInstance::getOption(const char* key, LightWeightMap<DWORD, DWORD>
     return (const char*)options->GetBuffer(options->Get(keyIndex));
 }
 
+// Returns extended flags for a particular compilation instance, adjusted for altjit.
+// This is a helper call; it does not record the call in the CompileResult.
+uint32_t JitInstance::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
+{
+    uint32_t ret = mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
+}
+
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
@@ -507,7 +542,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     }
     PAL_ENDTRY
 
-    Assert(environment.getIntConfigValue == nullptr && environment.getStingConfigValue == nullptr);
+    Assert(environment.getIntConfigValue == nullptr && environment.getStringConfigValue == nullptr);
     environment = mc->cloneEnvironment();
 
     return param.result;
@@ -527,10 +562,10 @@ bool JitInstance::resetConfig(MethodContext* firstContext)
         environment.getIntConfigValue = nullptr;
     }
 
-    if (environment.getStingConfigValue != nullptr)
+    if (environment.getStringConfigValue != nullptr)
     {
-        delete environment.getStingConfigValue;
-        environment.getStingConfigValue = nullptr;
+        delete environment.getStringConfigValue;
+        environment.getStringConfigValue = nullptr;
     }
 
     mc                   = firstContext;

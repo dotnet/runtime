@@ -239,41 +239,28 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_Vector256_op_Inequality:
                 case NI_Vector512_op_Equality:
                 case NI_Vector512_op_Inequality:
-                case NI_SSE_CompareScalarOrderedEqual:
-                case NI_SSE_CompareScalarOrderedNotEqual:
-                case NI_SSE_CompareScalarOrderedLessThan:
-                case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE_CompareScalarOrderedGreaterThan:
-                case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedEqual:
-                case NI_SSE_CompareScalarUnorderedNotEqual:
-                case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedLessThan:
-                case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedEqual:
-                case NI_SSE2_CompareScalarOrderedNotEqual:
-                case NI_SSE2_CompareScalarOrderedLessThan:
-                case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarOrderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedEqual:
-                case NI_SSE2_CompareScalarUnorderedNotEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThan:
-                case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedGreaterThan:
-                case NI_SSE41_TestC:
-                case NI_SSE41_TestZ:
-                case NI_SSE41_TestNotZAndNotC:
+                case NI_X86Base_CompareScalarOrderedEqual:
+                case NI_X86Base_CompareScalarOrderedNotEqual:
+                case NI_X86Base_CompareScalarOrderedLessThan:
+                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarOrderedGreaterThan:
+                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedEqual:
+                case NI_X86Base_CompareScalarUnorderedNotEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThan:
+                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedGreaterThan:
+                case NI_X86Base_TestC:
+                case NI_X86Base_TestZ:
+                case NI_X86Base_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
-                case NI_SSE2_Extract:
-                case NI_SSE41_Extract:
-                case NI_SSE41_X64_Extract:
+                case NI_X86Base_Extract:
+                case NI_X86Base_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -286,12 +273,12 @@ bool IntegralRange::Contains(int64_t value) const
                     }
                     break;
 
-                case NI_BMI1_TrailingZeroCount:
-                case NI_BMI1_X64_TrailingZeroCount:
-                case NI_LZCNT_LeadingZeroCount:
-                case NI_LZCNT_X64_LeadingZeroCount:
-                case NI_POPCNT_PopCount:
-                case NI_POPCNT_X64_PopCount:
+                case NI_AVX2_LeadingZeroCount:
+                case NI_AVX2_TrailingZeroCount:
+                case NI_AVX2_X64_LeadingZeroCount:
+                case NI_AVX2_X64_TrailingZeroCount:
+                case NI_X86Base_PopCount:
+                case NI_X86Base_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
@@ -675,6 +662,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             {
                 optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
             }
+
+            JITDUMP("Cross-block table size %u (for %u tracked locals)\n", optMaxAssertionCount, lvaTrackedCount);
         }
         else
         {
@@ -777,10 +766,14 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
     if (curAssertion->op1.kind == O1K_LCLVAR)
     {
-        printf("V%02u", curAssertion->op1.lcl.lclNum);
-        if (curAssertion->op1.lcl.ssaNum != SsaConfig::RESERVED_SSA_NUM)
+        if (!optLocalAssertionProp)
         {
-            printf(".%02u", curAssertion->op1.lcl.ssaNum);
+            printf("LCLVAR");
+            vnStore->vnDump(this, curAssertion->op1.vn);
+        }
+        else
+        {
+            printf("V%02u", curAssertion->op1.lclNum);
         }
     }
     else if (curAssertion->op1.kind == O1K_EXACT_TYPE)
@@ -872,18 +865,14 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         switch (curAssertion->op2.kind)
         {
             case O2K_LCLVAR_COPY:
-                printf("V%02u", curAssertion->op2.lcl.lclNum);
-                if (curAssertion->op1.lcl.ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    printf(".%02u", curAssertion->op1.lcl.ssaNum);
-                }
+                printf("V%02u", curAssertion->op2.lclNum);
                 break;
 
             case O2K_CONST_INT:
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         printf("Exact Type MT(0x%p)", dspPtr(iconVal));
                     }
@@ -903,7 +892,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
                     ssize_t iconVal = curAssertion->op2.u1.iconVal;
-                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                    if (IsAot())
                     {
                         printf("MT(0x%p)", dspPtr(iconVal));
                     }
@@ -923,8 +912,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 }
                 else
                 {
-                    var_types op1Type = curAssertion->op1.kind == O1K_VN ? vnStore->TypeOfVN(curAssertion->op1.vn)
-                                                                         : lvaGetRealType(curAssertion->op1.lcl.lclNum);
+                    var_types op1Type = !optLocalAssertionProp ? vnStore->TypeOfVN(curAssertion->op1.vn)
+                                                               : lvaGetRealType(curAssertion->op1.lclNum);
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -1147,7 +1136,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
-        while ((op1->gtOper == GT_ADD) && (op1->gtType == TYP_BYREF))
+        while (op1->OperIs(GT_ADD) && op1->TypeIs(TYP_BYREF))
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
@@ -1168,8 +1157,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(op1->AsLclVar()->GetLclNum()))
         {
             assertion.op1.kind       = O1K_LCLVAR;
-            assertion.op1.lcl.lclNum = op1->AsLclVarCommon()->GetLclNum();
-            assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+            assertion.op1.lclNum     = op1->AsLclVarCommon()->GetLclNum();
             assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.assertionKind  = assertionKind;
             assertion.op2.kind       = O2K_CONST_INT;
@@ -1195,15 +1183,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
         {
             /* Skip over a GT_COMMA node(s), if necessary */
-            while (op2->gtOper == GT_COMMA)
+            while (op2->OperIs(GT_COMMA))
             {
                 op2 = op2->AsOp()->gtOp2;
             }
 
-            assertion.op1.kind       = O1K_LCLVAR;
-            assertion.op1.lcl.lclNum = lclNum;
-            assertion.op1.vn         = optConservativeNormalVN(op1);
-            assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+            assertion.op1.kind   = O1K_LCLVAR;
+            assertion.op1.lclNum = lclNum;
+            assertion.op1.vn     = optConservativeNormalVN(op1);
 
             switch (op2->gtOper)
             {
@@ -1241,12 +1228,21 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     assertion.op2.kind = op2Kind;
                     assertion.op2.vn   = optConservativeNormalVN(op2);
 
-                    if (op2->gtOper == GT_CNS_INT)
+                    if (op2->OperIs(GT_CNS_INT))
                     {
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
-                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
+                        if (varTypeIsSmall(lclVar))
                         {
-                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
+                            {
+                                // This assertion would be saying that a small local is equal to a value
+                                // outside its range. It means this block is unreachable. Avoid creating
+                                // such impossible assertions which can hit assertions in other places.
+                                goto DONE_ASSERTION;
+                            }
+
+                            iconVal = truncatedIconVal;
                             if (!optLocalAssertionProp)
                             {
                                 assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
@@ -1257,7 +1253,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
                     else
                     {
-                        noway_assert(op2->gtOper == GT_CNS_DBL);
+                        noway_assert(op2->OperIs(GT_CNS_DBL));
                         /* If we have an NaN value then don't record it */
                         if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
@@ -1278,13 +1274,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                 {
                     if (!optLocalAssertionProp)
                     {
-                        // O2K_LCLVAR_COPY is not useful for global assertion prop
+                        // O2K_LCLVAR_COPY is local assertion prop only
                         goto DONE_ASSERTION;
                     }
 
-                    //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
-                    //
                     if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
@@ -1333,15 +1327,30 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    assertion.op2.kind       = O2K_LCLVAR_COPY;
-                    assertion.op2.vn         = optConservativeNormalVN(op2);
-                    assertion.op2.lcl.lclNum = lclNum2;
-                    assertion.op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
+                    assertion.op2.kind   = O2K_LCLVAR_COPY;
+                    assertion.op2.vn     = optConservativeNormalVN(op2);
+                    assertion.op2.lclNum = lclNum2;
 
                     // Ok everything has been set and the assertion looks good
                     assertion.assertionKind = assertionKind;
 
                     goto DONE_ASSERTION;
+                }
+
+                case GT_CALL:
+                {
+                    if (optLocalAssertionProp)
+                    {
+                        GenTreeCall* const call = op2->AsCall();
+                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                        {
+                            assertion.assertionKind  = OAK_NOT_EQUAL;
+                            assertion.op2.kind       = O2K_CONST_INT;
+                            assertion.op2.u1.iconVal = 0;
+                            goto DONE_ASSERTION;
+                        }
+                    }
+                    break;
                 }
 
                 default:
@@ -1440,7 +1449,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     // Is Local assertion prop?
     if (!vnBased)
     {
-        if (tree->OperGet() == GT_CNS_INT)
+        if (tree->OperIs(GT_CNS_INT))
         {
             *pConstant = tree->AsIntCon()->IconValue();
             *pFlags    = tree->GetIconHandleFlag();
@@ -1604,7 +1613,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     {
         assert(newAssertion->op1.kind == O1K_LCLVAR);
 
-        unsigned        lclNum = newAssertion->op1.lcl.lclNum;
+        unsigned        lclNum = newAssertion->op1.lclNum;
         BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
         unsigned        bvIndex = 0;
         while (iter.NextElem(&bvIndex))
@@ -1666,11 +1675,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         assert(newAssertion->op1.kind == O1K_LCLVAR);
 
         // Mark the variables this index depends on
-        unsigned lclNum = newAssertion->op1.lcl.lclNum;
+        unsigned lclNum = newAssertion->op1.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), optAssertionCount - 1);
         if (newAssertion->op2.kind == O2K_LCLVAR_COPY)
         {
-            lclNum = newAssertion->op2.lcl.lclNum;
+            lclNum = newAssertion->op2.lclNum;
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), optAssertionCount - 1);
         }
     }
@@ -1719,23 +1728,10 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
     }
     switch (assertion->op2.kind)
     {
-        case O2K_CONST_INT:
-        {
-            // The only flags that can be set are those in the GTF_ICON_HDL_MASK.
-            switch (assertion->op1.kind)
-            {
-                case O1K_EXACT_TYPE:
-                case O1K_SUBTYPE:
-                    break;
-                case O1K_LCLVAR:
-                    assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
-                    break;
-                default:
-                    break;
-            }
-        }
-        break;
+        case O2K_SUBRANGE:
+        case O2K_LCLVAR_COPY:
+            assert(optLocalAssertionProp);
+            break;
 
         case O2K_ZEROOBJ:
         {
@@ -2074,25 +2070,25 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
-    if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
+    if (!op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
 
     // If op1 is lcl and op2 is const or lcl, create assertion.
-    if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
+    if (op1->OperIs(GT_LCL_VAR) && (op2->OperIsConst() || op2->OperIs(GT_LCL_VAR))) // Fix for Dev10 851483
     {
         // Watch out for cases where long local(s) are implicitly truncated.
         //
         LclVarDsc* const lcl1Dsc = lvaGetDesc(op1->AsLclVarCommon());
-        if ((lcl1Dsc->TypeGet() == TYP_LONG) && (op1->TypeGet() != TYP_LONG))
+        if (lcl1Dsc->TypeIs(TYP_LONG) && !op1->TypeIs(TYP_LONG))
         {
             return NO_ASSERTION_INDEX;
         }
         if (op2->OperIs(GT_LCL_VAR))
         {
             LclVarDsc* const lcl2Dsc = lvaGetDesc(op2->AsLclVarCommon());
-            if ((lcl2Dsc->TypeGet() == TYP_LONG) && (op2->TypeGet() != TYP_LONG))
+            if (lcl2Dsc->TypeIs(TYP_LONG) && !op2->TypeIs(TYP_LONG))
             {
                 return NO_ASSERTION_INDEX;
             }
@@ -2113,19 +2109,19 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
-    if (((op1->gtOper != GT_IND) || (op1->AsOp()->gtOp1->gtOper != GT_LCL_VAR)) &&
-        ((op2->gtOper == GT_IND) && (op2->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
+    if ((!op1->OperIs(GT_IND) || !op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)) &&
+        (op2->OperIs(GT_IND) && op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
     {
         std::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
-    if ((op1->gtOper == GT_IND) && (op1->AsOp()->gtOp1->gtOper == GT_LCL_VAR))
+    if (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
-    if ((op2->gtOper != GT_CNS_INT) && (op1->gtOper == GT_CNS_INT))
+    if (!op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_CNS_INT))
     {
         std::swap(op1, op2);
     }
@@ -2388,7 +2384,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
-                               ? (curAssertion->op1.lcl.lclNum == tree->AsLclVarCommon()->GetLclNum())
+                               ? (curAssertion->op1.lclNum == tree->AsLclVarCommon()->GetLclNum())
                                : (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair));
             if (!isEqual)
             {
@@ -2677,7 +2673,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 if (castFrom != NO_CLASS_HANDLE)
                 {
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
-                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    // Constant prop may fail to propagate compile time class handles, so verify we have
+                    // a handle before invoking the runtime.
+                    if ((castTo != NO_CLASS_HANDLE) &&
+                        info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects
@@ -2769,7 +2768,7 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
 //
 GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
-    if (tree->OperGet() == GT_JTRUE)
+    if (tree->OperIs(GT_JTRUE))
     {
         // Treat JTRUE separately to extract side effects into respective statements rather
         // than using a COMMA separated op1.
@@ -2809,7 +2808,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             float value = vnStore->ConstantValue<float>(vnCns);
 
-            if (tree->TypeGet() == TYP_INT)
+            if (tree->TypeIs(TYP_INT))
             {
                 // Same sized reinterpretation of bits to integer
                 conValTree = gtNewIconNode(*(reinterpret_cast<int*>(&value)));
@@ -2827,7 +2826,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             double value = vnStore->ConstantValue<double>(vnCns);
 
-            if (tree->TypeGet() == TYP_LONG)
+            if (tree->TypeIs(TYP_LONG))
             {
                 conValTree = gtNewLconNode(*(reinterpret_cast<INT64*>(&value)));
             }
@@ -2890,7 +2889,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
         case TYP_REF:
         {
-            if (tree->TypeGet() == TYP_REF)
+            if (tree->TypeIs(TYP_REF))
             {
                 const size_t value = vnStore->ConstantValue<size_t>(vnCns);
                 if (value == 0)
@@ -3203,11 +3202,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
     if (lclNumIsCSE(lclNum))
     {
-        return nullptr;
+        // Ignore the CSE flag in Global Assertion Prop for checked bound as those usually
+        // unlock more opportunities for BCE.
+        if (optLocalAssertionProp || !vnStore->IsVNCheckedBound(optConservativeNormalVN(tree)))
+        {
+            return nullptr;
+        }
     }
 
-    GenTree* newTree       = tree;
-    bool     propagateType = false;
+    GenTree* newTree = tree;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3224,14 +3227,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
+            // Don't propagate non-nulll non-static handles if we need to report relocs.
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && (curAssertion->op2.u1.iconVal != 0))
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
-                {
-                    propagateType = true;
-                }
-                else
+                if (curAssertion->op2.GetIconFlag() != GTF_ICON_STATIC_HDL)
                 {
                     return nullptr;
                 }
@@ -3251,20 +3250,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL) && !tree->TypeIs(TYP_REF))
                 {
-                    if (tree->TypeIs(TYP_BYREF))
-                    {
-                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
-                        return nullptr;
-                    }
-                    propagateType = true;
+                    // If the tree is not a TYP_REF, we should not propagate an ICON TYP_REF
+                    // into it, as it may lead to incorrect code generation.
+                    return nullptr;
                 }
 
-                if (propagateType)
-                {
-                    newTree->ChangeType(tree->TypeGet());
-                }
+                newTree->ChangeType(tree->TypeGet());
             }
             else
             {
@@ -3439,42 +3433,30 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
                                         GenTreeLclVarCommon* tree,
                                         Statement* stmt      DEBUGARG(AssertionIndex index))
 {
+    assert(optLocalAssertionProp);
+
     const AssertionDsc::AssertionDscOp1& op1 = curAssertion->op1;
     const AssertionDsc::AssertionDscOp2& op2 = curAssertion->op2;
 
-    noway_assert(op1.lcl.lclNum != op2.lcl.lclNum);
+    noway_assert(op1.lclNum != op2.lclNum);
 
     const unsigned lclNum = tree->GetLclNum();
 
     // Make sure one of the lclNum of the assertion matches with that of the tree.
-    if (op1.lcl.lclNum != lclNum && op2.lcl.lclNum != lclNum)
+    if (op1.lclNum != lclNum && op2.lclNum != lclNum)
     {
         return nullptr;
     }
 
     // Extract the matching lclNum and ssaNum, as well as the field sequence.
     unsigned copyLclNum;
-    unsigned copySsaNum;
-    if (op1.lcl.lclNum == lclNum)
+    if (op1.lclNum == lclNum)
     {
-        copyLclNum = op2.lcl.lclNum;
-        copySsaNum = op2.lcl.ssaNum;
+        copyLclNum = op2.lclNum;
     }
     else
     {
-        copyLclNum = op1.lcl.lclNum;
-        copySsaNum = op1.lcl.ssaNum;
-    }
-
-    if (!optLocalAssertionProp)
-    {
-        // Extract the ssaNum of the matching lclNum.
-        unsigned ssaNum = (op1.lcl.lclNum == lclNum) ? op1.lcl.ssaNum : op2.lcl.ssaNum;
-
-        if (ssaNum != tree->GetSsaNum())
-        {
-            return nullptr;
-        }
+        copyLclNum = op1.lclNum;
     }
 
     LclVarDsc* const copyVarDsc = lvaGetDesc(copyLclNum);
@@ -3487,7 +3469,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     }
 
     // Make sure we can perform this copy prop.
-    if (optCopyProp_LclVarScore(lclVarDsc, copyVarDsc, curAssertion->op1.lcl.lclNum == lclNum) <= 0)
+    if (optCopyProp_LclVarScore(lclVarDsc, copyVarDsc, curAssertion->op1.lclNum == lclNum) <= 0)
     {
         return nullptr;
     }
@@ -3507,7 +3489,6 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     }
 
     tree->SetLclNum(copyLclNum);
-    tree->SetSsaNum(copySsaNum);
 
     // Copy prop and last-use copy elision happens at the same time in morph.
     // This node may potentially not be a last use of the new local.
@@ -3625,7 +3606,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         if (optLocalAssertionProp)
         {
             // Check lclNum in Local Assertion Prop
-            if (curAssertion->op1.lcl.lclNum == lclNum)
+            if (curAssertion->op1.lclNum == lclNum)
             {
                 return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
@@ -3749,7 +3730,7 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
     // does not kill the zerobj assertion for s.
     //
     unsigned const       dstLclNum      = store->GetLclNum();
-    bool const           dstLclIsStruct = lvaGetDesc(dstLclNum)->TypeGet() == TYP_STRUCT;
+    bool const           dstLclIsStruct = lvaGetDesc(dstLclNum)->TypeIs(TYP_STRUCT);
     AssertionIndex const dstIndex =
         optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, dstLclNum, dstLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT, 0,
                                            assertions);
@@ -4134,7 +4115,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
             continue;
         }
 
-        if ((curAssertion->op1.kind == op1Kind) && (curAssertion->op1.lcl.lclNum == lclNum) &&
+        if ((curAssertion->op1.kind == op1Kind) && (curAssertion->op1.lclNum == lclNum) &&
             (curAssertion->op2.kind == op2Kind))
         {
             bool constantIsEqual  = (curAssertion->op2.u1.iconVal == cnsVal);
@@ -4196,7 +4177,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
         // Look for matching exact type assertions based on vtable accesses. E.g.:
         //
-        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op1:       VNF_InvariantNonNullLoad(myObj) or in other words: a vtable access
         //   op2:       'MyType' class handle
         //   Assertion: 'myObj's type is exactly MyType
         //
@@ -4205,7 +4186,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
+                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
                 return assertionIndex;
             }
@@ -4310,6 +4291,11 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
     assert(node->IsPhiDefn());
 
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
@@ -4318,6 +4304,22 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
             return AssertVisit::Abort;
         }
     }
@@ -4456,6 +4458,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // and if all of them are known to be non-null, we can bash the comparison to true/false.
     if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
     {
+        JITDUMP("Checking PHI [%06u] arguments for non-nullness\n", dspTreeID(op1))
         auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
             return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
         };
@@ -4499,19 +4502,19 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             {
                 printf("%d\n", vnStore->ConstantValue<int>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_LONG)
+            else if (op1->TypeIs(TYP_LONG))
             {
                 printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_DOUBLE)
+            else if (op1->TypeIs(TYP_DOUBLE))
             {
                 printf("%f\n", vnStore->ConstantValue<double>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_FLOAT)
+            else if (op1->TypeIs(TYP_FLOAT))
             {
                 printf("%f\n", vnStore->ConstantValue<float>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_REF)
+            else if (op1->TypeIs(TYP_REF))
             {
                 // The only constant of TYP_REF that ValueNumbering supports is 'null'
                 if (vnStore->ConstantValue<size_t>(vnCns) == 0)
@@ -4523,7 +4526,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
-            else if (op1->TypeGet() == TYP_BYREF)
+            else if (op1->TypeIs(TYP_BYREF))
             {
                 printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
@@ -4544,7 +4547,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
-        else if (op1->TypeGet() == TYP_LONG)
+        else if (op1->TypeIs(TYP_LONG))
         {
             op1->BashToConst(vnStore->ConstantValue<INT64>(vnCns));
 
@@ -4553,7 +4556,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
-        else if (op1->TypeGet() == TYP_DOUBLE)
+        else if (op1->TypeIs(TYP_DOUBLE))
         {
             double constant = vnStore->ConstantValue<double>(vnCns);
             op1->BashToConst(constant);
@@ -4564,7 +4567,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // assertion we have made.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
-        else if (op1->TypeGet() == TYP_FLOAT)
+        else if (op1->TypeIs(TYP_FLOAT))
         {
             float constant = vnStore->ConstantValue<float>(vnCns);
             op1->BashToConst(constant);
@@ -4572,11 +4575,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // See comments for TYP_DOUBLE.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
-        else if (op1->TypeGet() == TYP_REF)
+        else if (op1->TypeIs(TYP_REF))
         {
             op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
-        else if (op1->TypeGet() == TYP_BYREF)
+        else if (op1->TypeIs(TYP_BYREF))
         {
             op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
         }
@@ -4589,7 +4592,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
         // set foldResult to either 0 or 1
         bool foldResult = assertionKindIsEqual;
-        if (tree->gtOper == GT_NE)
+        if (tree->OperIs(GT_NE))
         {
             foldResult = !foldResult;
         }
@@ -4669,19 +4672,19 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
  */
 GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+    assert(tree->OperIs(GT_EQ) || tree->OperIs(GT_NE));
 
     GenTree* op1 = tree->AsOp()->gtOp1;
     GenTree* op2 = tree->AsOp()->gtOp2;
 
     // For Local AssertionProp we only can fold when op1 is a GT_LCL_VAR
-    if (op1->gtOper != GT_LCL_VAR)
+    if (!op1->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
 
     // For Local AssertionProp we only can fold when op2 is a GT_CNS_INT
-    if (op2->gtOper != GT_CNS_INT)
+    if (!op2->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }
@@ -4741,7 +4744,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Return either CNS_INT 0 or CNS_INT 1.
     bool foldResult = (constantIsEqual == assertionKindIsEqual);
-    if (tree->gtOper == GT_NE)
+    if (tree->OperIs(GT_NE))
     {
         foldResult = !foldResult;
     }
@@ -4990,7 +4993,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && // kind
                 (curAssertion->op1.kind == O1K_LCLVAR) &&         // op1
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
-                (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
+                (curAssertion->op1.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
                 return true;
             }
@@ -5030,6 +5033,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
             }
         }
     }
+
     return false;
 }
 
@@ -5324,6 +5328,50 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
+    GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
+    ValueNum          vnCurIdx   = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
+    ValueNum          vnCurLen   = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
+
+    auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
+        JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
+        DISPTREE(tree);
+        if (arrBndsChk != stmt->GetRootNode())
+        {
+            // Defer the removal.
+            arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
+            return nullptr;
+        }
+
+        GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+        return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+    };
+
+    // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) && (funcApp.m_func == VNF_ADD))
+    {
+        if (!vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        {
+            // Normalize constants to be on the right side
+            std::swap(funcApp.m_args[0], funcApp.m_args[1]);
+        }
+
+        Range rng = Range(Limit(Limit::keUnknown));
+        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
+            RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
+        {
+            // Lower known limit of ArrLen:
+            const int lenLowerLimit = rng.LowerLimit().GetConstant();
+
+            // Negative delta in the array access (ArrLen + -CNS)
+            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+            }
+        }
+    }
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -5340,38 +5388,21 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
-
-        // Set 'isRedundant' to true if we can determine that 'arrBndsChk' can be
-        // classified as a redundant bounds check using 'curAssertion'
-        bool isRedundant = false;
-#ifdef DEBUG
-        const char* dbgMsg = "Not Set";
-#endif
-
         // Do we have a previous range check involving the same 'vnLen' upper bound?
         if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
-            ValueNum vnCurIdx = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
-
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
             if (curAssertion->op1.bnd.vnIdx == vnCurIdx)
             {
-                isRedundant = true;
-#ifdef DEBUG
-                dbgMsg = "a[i] followed by a[i]";
-#endif
+                return dropBoundsCheck(INDEBUG("a[i] followed by a[i]"));
             }
             // Are we using zero as the index?
             // It can always be considered as redundant with any previous value
             //       a[*] followed by a[0]
             else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->GetIndex()->TypeGet()))
             {
-                isRedundant = true;
-#ifdef DEBUG
-                dbgMsg = "a[*] followed by a[0]";
-#endif
+                return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
             // Do we have two constant indexes?
             else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
@@ -5392,10 +5423,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
                     {
-                        isRedundant = true;
-#ifdef DEBUG
-                        dbgMsg = "a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2";
-#endif
+                        return dropBoundsCheck(INDEBUG("a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2"));
                     }
                 }
             }
@@ -5404,35 +5432,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
-
-        if (!isRedundant)
-        {
-            continue;
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in " FMT_BB ":\n", dbgMsg,
-                   assertionIndex, compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
-        }
-#endif
-        if (arrBndsChk == stmt->GetRootNode())
-        {
-            // We have a top-level bounds check node.
-            // This can happen when trees are broken up due to inlining.
-            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
-            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
-
-            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
-        }
-
-        // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
-        arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
-
-        return nullptr;
     }
 
     return nullptr;
@@ -5620,6 +5619,150 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
     {
         optImpliedByConstAssertion(curAssertion, activeAssertions);
     }
+}
+
+//------------------------------------------------------------------------
+// optCreateJumpTableImpliedAssertions: Create assertions for the switch statement
+//     for each of its jump targets.
+//
+// Arguments:
+//     switchBb - The switch statement block.
+//
+// Returns:
+//     true if any modifications were made, false otherwise.
+//
+bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
+{
+    assert(!optLocalAssertionProp);
+    assert(switchBb->KindIs(BBJ_SWITCH));
+    assert(switchBb->lastStmt() != nullptr);
+    bool modified = false;
+
+    GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
+    assert(switchTree->OperIs(GT_SWITCH));
+
+    // Case count is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->GetCaseCount() <= INT32_MAX);
+
+    ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
+    if (opVN == ValueNumStore::NoVN)
+    {
+        return modified;
+    }
+
+    if (vnStore->TypeOfVN(opVN) != TYP_INT)
+    {
+        // Should probably be an assert instead - GT_SWITCH is expected to be TYP_INT.
+        return modified;
+    }
+
+    // Typically, the switch value is ADD(X, -cns), so we actually want to create the assertions for X
+    int offset = 0;
+    vnStore->PeelOffsetsI32(&opVN, &offset);
+
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->GetCaseCount());
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->GetCases();
+    bool       hasDefault = switchBb->GetSwitchTargets()->HasDefaultCase();
+
+    for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
+    {
+        // The value for each target is jmpTargetIdx - offset.
+        if (CheckedOps::SubOverflows(jmpTargetIdx, offset, false))
+        {
+            continue;
+        }
+        int value = jmpTargetIdx - offset;
+
+        // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
+        FlowEdge* const   edge   = jumpTable[jmpTargetIdx];
+        BasicBlock* const target = edge->getDestinationBlock();
+        if (target->GetUniquePred(this) != switchBb)
+        {
+            // Target block is potentially reachable from multiple blocks (outside the switch).
+            continue;
+        }
+
+        if (edge->getDupCount() > 1)
+        {
+            // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
+            continue;
+        }
+
+        AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
+
+        // Is this target a default case?
+        if (hasDefault && (jmpTargetIdx == jumpCount - 1))
+        {
+            // For default case we can create "X >= maxValue" assertion. Example:
+            //
+            //   void Test(ReadOnlySpan<byte> name)
+            //   {
+            //       switch (name.Length)
+            //       {
+            //           case 0: ...
+            //           case 1: ...
+            //           ...
+            //           case 7: ...
+            //           default: %name.Length is >= 8 here%
+            //       }
+            //
+            if ((value > 0) && !vnStore->IsVNConstant(opVN))
+            {
+                AssertionDsc dsc   = {};
+                dsc.assertionKind  = OAK_NOT_EQUAL;
+                dsc.op2.kind       = O2K_CONST_INT;
+                dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
+                dsc.op2.u1.iconVal = 0;
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+                if (vnStore->IsVNNeverNegative(opVN))
+                {
+                    // Create "X >= value" assertion (both operands are never negative)
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
+                }
+                else
+                {
+                    // Create "X u>= value" assertion
+                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
+                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
+                }
+                newAssertIdx = optAddAssertion(&dsc);
+            }
+            else
+            {
+                continue;
+            }
+        }
+        else
+        {
+            // Create "VN == value" assertion.
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_EQUAL;
+            dsc.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
+            dsc.op1.vn         = opVN;
+            dsc.op1.kind       = O1K_LCLVAR;
+            dsc.op2.vn         = vnStore->VNForIntCon(value);
+            dsc.op2.u1.iconVal = value;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            newAssertIdx = optAddAssertion(&dsc);
+        }
+
+        if (newAssertIdx.HasAssertion())
+        {
+            // TODO-Cleanup: We shouldn't attach assertions to nodes in Global Assertion Prop.
+            // It limits the ability to create multiple assertions for the same node.
+            GenTree* tree = gtNewNothingNode();
+            fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
+
+            modified = true;
+            tree->SetAssertionInfo(newAssertIdx);
+        }
+    }
+
+    return modified;
 }
 
 /*****************************************************************************
@@ -5812,166 +5955,6 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
     }
 }
 
-/*****************************************************************************
- *
- *  Given a copy assertion and a dependent assertion this method computes the
- *  set of implied assertions that are also true.
- *  For copy assertions, exact SSA num and LCL nums should match, because
- *  we don't have kill sets and we depend on their value num for dataflow.
- */
-
-void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionDsc* depAssertion, ASSERT_TP& result)
-{
-    noway_assert(copyAssertion->IsCopyAssertion());
-
-    // Get the copyAssert's lcl/ssa nums.
-    unsigned copyAssertLclNum = BAD_VAR_NUM;
-    unsigned copyAssertSsaNum = SsaConfig::RESERVED_SSA_NUM;
-
-    // Check if copyAssertion's op1 or op2 matches the depAssertion's op1.
-    if (depAssertion->op1.lcl.lclNum == copyAssertion->op1.lcl.lclNum)
-    {
-        copyAssertLclNum = copyAssertion->op2.lcl.lclNum;
-        copyAssertSsaNum = copyAssertion->op2.lcl.ssaNum;
-    }
-    else if (depAssertion->op1.lcl.lclNum == copyAssertion->op2.lcl.lclNum)
-    {
-        copyAssertLclNum = copyAssertion->op1.lcl.lclNum;
-        copyAssertSsaNum = copyAssertion->op1.lcl.ssaNum;
-    }
-    // Check if copyAssertion's op1 or op2 matches the depAssertion's op2.
-    else if (depAssertion->op2.kind == O2K_LCLVAR_COPY)
-    {
-        if (depAssertion->op2.lcl.lclNum == copyAssertion->op1.lcl.lclNum)
-        {
-            copyAssertLclNum = copyAssertion->op2.lcl.lclNum;
-            copyAssertSsaNum = copyAssertion->op2.lcl.ssaNum;
-        }
-        else if (depAssertion->op2.lcl.lclNum == copyAssertion->op2.lcl.lclNum)
-        {
-            copyAssertLclNum = copyAssertion->op1.lcl.lclNum;
-            copyAssertSsaNum = copyAssertion->op1.lcl.ssaNum;
-        }
-    }
-
-    if (copyAssertLclNum == BAD_VAR_NUM || copyAssertSsaNum == SsaConfig::RESERVED_SSA_NUM)
-    {
-        return;
-    }
-
-    // Get the depAssert's lcl/ssa nums.
-    unsigned depAssertLclNum = BAD_VAR_NUM;
-    unsigned depAssertSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    if ((depAssertion->op1.kind == O1K_LCLVAR) && (depAssertion->op2.kind == O2K_LCLVAR_COPY))
-    {
-        if ((depAssertion->op1.lcl.lclNum == copyAssertion->op1.lcl.lclNum) ||
-            (depAssertion->op1.lcl.lclNum == copyAssertion->op2.lcl.lclNum))
-        {
-            depAssertLclNum = depAssertion->op2.lcl.lclNum;
-            depAssertSsaNum = depAssertion->op2.lcl.ssaNum;
-        }
-        else if ((depAssertion->op2.lcl.lclNum == copyAssertion->op1.lcl.lclNum) ||
-                 (depAssertion->op2.lcl.lclNum == copyAssertion->op2.lcl.lclNum))
-        {
-            depAssertLclNum = depAssertion->op1.lcl.lclNum;
-            depAssertSsaNum = depAssertion->op1.lcl.ssaNum;
-        }
-    }
-
-    if (depAssertLclNum == BAD_VAR_NUM || depAssertSsaNum == SsaConfig::RESERVED_SSA_NUM)
-    {
-        return;
-    }
-
-    // Is depAssertion a constant store of a 32-bit integer?
-    // (i.e  GT_LVL_VAR X == GT_CNS_INT)
-    bool depIsConstAssertion = ((depAssertion->assertionKind == OAK_EQUAL) && (depAssertion->op1.kind == O1K_LCLVAR) &&
-                                (depAssertion->op2.kind == O2K_CONST_INT));
-
-    // Search the assertion table for an assertion on op1 that matches depAssertion
-    // The matching assertion is the implied assertion.
-    for (AssertionIndex impIndex = 1; impIndex <= optAssertionCount; impIndex++)
-    {
-        AssertionDsc* impAssertion = optGetAssertion(impIndex);
-
-        //  The impAssertion must be different from the copy and dependent assertions
-        if (impAssertion == copyAssertion || impAssertion == depAssertion)
-        {
-            continue;
-        }
-
-        if (!AssertionDsc::SameKind(depAssertion, impAssertion))
-        {
-            continue;
-        }
-
-        bool op1MatchesCopy =
-            (copyAssertLclNum == impAssertion->op1.lcl.lclNum) && (copyAssertSsaNum == impAssertion->op1.lcl.ssaNum);
-
-        bool usable = false;
-        switch (impAssertion->op2.kind)
-        {
-            case O2K_SUBRANGE:
-                usable = op1MatchesCopy && impAssertion->op2.u2.Contains(depAssertion->op2.u2);
-                break;
-
-            case O2K_CONST_DOUBLE:
-                // Exact memory match because of positive and negative zero
-                usable = op1MatchesCopy &&
-                         (memcmp(&impAssertion->op2.dconVal, &depAssertion->op2.dconVal, sizeof(double)) == 0);
-                break;
-
-            case O2K_CONST_INT:
-                usable = op1MatchesCopy && (impAssertion->op2.u1.iconVal == depAssertion->op2.u1.iconVal);
-                break;
-
-            case O2K_LCLVAR_COPY:
-                // Check if op1 of impAssertion matches copyAssertion and also op2 of impAssertion matches depAssertion.
-                if (op1MatchesCopy && (depAssertLclNum == impAssertion->op2.lcl.lclNum &&
-                                       depAssertSsaNum == impAssertion->op2.lcl.ssaNum))
-                {
-                    usable = true;
-                }
-                else
-                {
-                    // Otherwise, op2 of impAssertion should match copyAssertion and also op1 of impAssertion matches
-                    // depAssertion.
-                    usable = ((copyAssertLclNum == impAssertion->op2.lcl.lclNum &&
-                               copyAssertSsaNum == impAssertion->op2.lcl.ssaNum) &&
-                              (depAssertLclNum == impAssertion->op1.lcl.lclNum &&
-                               depAssertSsaNum == impAssertion->op1.lcl.ssaNum));
-                }
-                break;
-
-            default:
-                // leave 'usable' = false;
-                break;
-        }
-
-        if (usable)
-        {
-            BitVecOps::AddElemD(apTraits, result, impIndex - 1);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                AssertionDsc* firstAssertion = optGetAssertion(1);
-                printf("\nCompiler::optImpliedByCopyAssertion: copyAssertion #%02d and depAssertion #%02d, implies "
-                       "assertion #%02d",
-                       (copyAssertion - firstAssertion) + 1, (depAssertion - firstAssertion) + 1,
-                       (impAssertion - firstAssertion) + 1);
-            }
-#endif
-            // If the depAssertion is a const assertion then any other assertions that it implies could also imply a
-            // subrange assertion.
-            if (depIsConstAssertion)
-            {
-                optImpliedByConstAssertion(impAssertion, result);
-            }
-        }
-    }
-}
-
 #include "dataflow.h"
 
 /*****************************************************************************
@@ -6148,7 +6131,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (tree->gtOper == GT_JTRUE)
+                if (tree->OperIs(GT_JTRUE))
                 {
                     // A GT_TRUE is always the last node in a tree, so we can break here
                     assert((tree->gtNext == nullptr) && (stmt->GetNextStmt() == nullptr));
@@ -6371,7 +6354,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
 
     // Don't propagate floating-point constants into a TYP_STRUCT LclVar
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
-    if (tree->TypeGet() == TYP_STRUCT)
+    if (tree->TypeIs(TYP_STRUCT))
     {
         return WALK_CONTINUE;
     }
@@ -6492,7 +6475,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 {
     ASSERT_TP empty   = BitVecOps::UninitVal();
     GenTree*  newTree = nullptr;
-    if (tree->OperGet() == GT_CALL)
+    if (tree->OperIs(GT_CALL))
     {
         newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
     }
@@ -6594,10 +6577,10 @@ PhaseStatus Compiler::optAssertionPropMain()
     INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
     // First discover all assertions and record them in the table.
+    ArrayStack<BasicBlock*> switchBlocks(getAllocator(CMK_AssertionProp));
     for (BasicBlock* const block : Blocks())
     {
-        compCurBB = block;
-
+        compCurBB           = block;
         fgRemoveRestOfBlock = false;
 
         Statement* stmt = block->firstStmt();
@@ -6642,6 +6625,16 @@ PhaseStatus Compiler::optAssertionPropMain()
             // Advance the iterator
             stmt = stmt->GetNextStmt();
         }
+
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            switchBlocks.Push(block);
+        }
+    }
+
+    for (int i = 0; i < switchBlocks.Height(); i++)
+    {
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
     }
 
     if (optAssertionCount == 0)

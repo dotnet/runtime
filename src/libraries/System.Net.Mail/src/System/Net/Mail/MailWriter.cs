@@ -40,7 +40,7 @@ namespace System.Net.Mail
         internal override void Close()
         {
             _bufferBuilder.Append("\r\n"u8);
-            Flush(null);
+            Flush();
             _stream.Close();
         }
 

@@ -29,19 +29,19 @@ namespace System.Net.Test.Common
 
         public const long MaxHeaderListSize = 0x6;
 
-        private readonly QuicStream _stream;
+        public QuicStream Stream { get; }
 
-        public bool CanRead => _stream.CanRead;
-        public bool CanWrite => _stream.CanWrite;
+        public bool CanRead => Stream.CanRead;
+        public bool CanWrite => Stream.CanWrite;
 
         public Http3LoopbackStream(QuicStream stream)
         {
-            _stream = stream;
+            Stream = stream;
         }
 
-        public ValueTask DisposeAsync() => _stream.DisposeAsync();
+        public ValueTask DisposeAsync() => Stream.DisposeAsync();
 
-        public long StreamId => _stream.Id;
+        public long StreamId => Stream.Id;
 
         public async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
@@ -54,7 +54,7 @@ namespace System.Net.Test.Common
         {
             var buffer = new byte[MaximumVarIntBytes];
             int bytesWritten = EncodeHttpInteger(streamType, buffer);
-            await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
+            await Stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
         public async Task SendSettingsFrameAsync(SettingsEntry[] settingsEntries)
@@ -129,7 +129,7 @@ namespace System.Net.Test.Common
             // Slice off final byte so the payload is not complete
             payload = payload.Slice(0, payload.Length - 1);
 
-            await _stream.WriteAsync(payload).ConfigureAwait(false);
+            await Stream.WriteAsync(payload).ConfigureAwait(false);
         }
 
         public async Task SendDataFrameAsync(ReadOnlyMemory<byte> data)
@@ -156,13 +156,13 @@ namespace System.Net.Test.Common
             bytesWritten += EncodeHttpInteger(frameType, buffer.AsSpan(bytesWritten));
             bytesWritten += EncodeHttpInteger(payloadLength, buffer.AsSpan(bytesWritten));
 
-            await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
+            await Stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
         public async Task SendFrameAsync(long frameType, ReadOnlyMemory<byte> framePayload)
         {
             await SendFrameHeaderAsync(frameType, framePayload.Length).ConfigureAwait(false);
-            await _stream.WriteAsync(framePayload).ConfigureAwait(false);
+            await Stream.WriteAsync(framePayload).ConfigureAwait(false);
         }
 
         static int EncodeHttpInteger(long longToEncode, Span<byte> buffer)
@@ -286,7 +286,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                _stream.CompleteWrites();
+                Stream.CompleteWrites();
             }
         }
 
@@ -327,7 +327,7 @@ namespace System.Net.Test.Common
 
         private HttpRequestData ParseHeaders(ReadOnlySpan<byte> buffer)
         {
-            HttpRequestData request = new HttpRequestData { RequestId = Http3LoopbackConnection.GetRequestId(_stream) };
+            HttpRequestData request = new HttpRequestData { RequestId = Http3LoopbackConnection.GetRequestId(Stream) };
 
             (int prefixLength, int requiredInsertCount, int deltaBase) = QPackTestDecoder.DecodePrefix(buffer);
             if (requiredInsertCount != 0 || deltaBase != 0) throw new Exception("QPack dynamic table not yet supported.");
@@ -371,7 +371,7 @@ namespace System.Net.Test.Common
                     }
                     else
                     {
-                        int bytesRead = await _stream.ReadAsync(new byte[1]).ConfigureAwait(false);
+                        int bytesRead = await Stream.ReadAsync(new byte[1]).ConfigureAwait(false);
                         if (bytesRead != 0)
                         {
                             throw new Exception($"Unexpected data received while waiting for client cancllation.");
@@ -388,7 +388,7 @@ namespace System.Net.Test.Common
             {
                 try
                 {
-                    await _stream.WritesClosed.ConfigureAwait(false);
+                    await Stream.WritesClosed.ConfigureAwait(false);
                 }
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
@@ -425,7 +425,7 @@ namespace System.Net.Test.Common
 
         public void Abort(long errorCode, QuicAbortDirection direction = QuicAbortDirection.Both)
         {
-            _stream.Abort(direction, errorCode);
+            Stream.Abort(direction, errorCode);
         }
 
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()
@@ -441,7 +441,7 @@ namespace System.Net.Test.Common
 
             while (totalBytesRead != payloadLength)
             {
-                int bytesRead = await _stream.ReadAsync(payload.AsMemory(totalBytesRead)).ConfigureAwait(false);
+                int bytesRead = await Stream.ReadAsync(payload.AsMemory(totalBytesRead)).ConfigureAwait(false);
                 if (bytesRead == 0) throw new Exception("Unable to read frame; unexpected end of stream.");
 
                 totalBytesRead += bytesRead;
@@ -460,7 +460,7 @@ namespace System.Net.Test.Common
 
             do
             {
-                bytesRead = await _stream.ReadAsync(buffer.AsMemory(bufferActiveLength++, 1)).ConfigureAwait(false);
+                bytesRead = await Stream.ReadAsync(buffer.AsMemory(bufferActiveLength++, 1)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     return bufferActiveLength == 1 ? (long?)null : throw new Exception("Unable to read varint; unexpected end of stream.");

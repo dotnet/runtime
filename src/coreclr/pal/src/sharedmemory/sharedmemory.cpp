@@ -582,12 +582,7 @@ int SharedMemoryHelpers::CreateOrOpenFile(
 void SharedMemoryHelpers::CloseFile(int fileDescriptor)
 {
     _ASSERTE(fileDescriptor != -1);
-
-    int closeResult;
-    do
-    {
-        closeResult = close(fileDescriptor);
-    } while (closeResult != 0 && errno == EINTR);
+    close(fileDescriptor);
 }
 
 int SharedMemoryHelpers::ChangeMode(LPCSTR path, mode_t mode)
@@ -841,7 +836,7 @@ SharedMemoryId::SharedMemoryId(LPCSTR name, bool isUserScope)
     m_userScopeUid = isUserScope ? geteuid() : (uid_t)0;
 
     // The uid_t is converted to UINT32 to create a directory name, verify that it's valid
-    static_assert_no_msg(sizeof(uid_t) <= sizeof(UINT32));
+    static_assert(sizeof(uid_t) <= sizeof(UINT32));
     if ((uid_t)(UINT32)m_userScopeUid != m_userScopeUid)
     {
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
@@ -1481,7 +1476,7 @@ void SharedMemoryProcessDataHeader::DecRefCount()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SharedMemoryManager
 
-CRITICAL_SECTION SharedMemoryManager::s_creationDeletionProcessLock;
+minipal_mutex SharedMemoryManager::s_creationDeletionProcessLock;
 int SharedMemoryManager::s_creationDeletionLockFileDescriptor = -1;
 
 SharedMemoryManager::UserScopeUidAndFileDescriptor *SharedMemoryManager::s_userScopeUidToCreationDeletionLockFDs;
@@ -1497,7 +1492,7 @@ SIZE_T SharedMemoryManager::s_creationDeletionFileLockOwnerThreadId = SharedMemo
 
 void SharedMemoryManager::StaticInitialize()
 {
-    InitializeCriticalSection(&s_creationDeletionProcessLock);
+    minipal_mutex_init(&s_creationDeletionProcessLock);
 }
 
 void SharedMemoryManager::StaticClose()
@@ -1522,7 +1517,7 @@ void SharedMemoryManager::AcquireCreationDeletionProcessLock()
     _ASSERTE(!IsCreationDeletionProcessLockAcquired());
     _ASSERTE(!IsCreationDeletionFileLockAcquired());
 
-    EnterCriticalSection(&s_creationDeletionProcessLock);
+    minipal_mutex_enter(&s_creationDeletionProcessLock);
 #ifdef _DEBUG
     s_creationDeletionProcessLockOwnerThreadId = THREADSilentGetCurrentThreadId();
 #endif // _DEBUG
@@ -1536,7 +1531,7 @@ void SharedMemoryManager::ReleaseCreationDeletionProcessLock()
 #ifdef _DEBUG
     s_creationDeletionProcessLockOwnerThreadId = SharedMemoryHelpers::InvalidThreadId;
 #endif // _DEBUG
-    LeaveCriticalSection(&s_creationDeletionProcessLock);
+    minipal_mutex_leave(&s_creationDeletionProcessLock);
 }
 
 void SharedMemoryManager::AcquireCreationDeletionFileLock(SharedMemorySystemCallErrors *errors, const SharedMemoryId *id)

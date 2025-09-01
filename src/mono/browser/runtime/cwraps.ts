@@ -46,7 +46,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
-    [false, "mono_wasm_load_runtime", null, ["number"]],
+    [false, "mono_wasm_load_runtime", null, ["number", "number", "number", "number"]],
     [true, "mono_wasm_change_debugger_log_level", "void", ["number"]],
 
     [true, "mono_wasm_assembly_load", "number", ["string"]],
@@ -60,7 +60,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These three need to be lazy because they may be missing
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_wasm_profiler_init_browser_devtools", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
@@ -130,9 +130,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_end_catch", "void", []],
     [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
     [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_jiterp_prof_enter", "void", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing && !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_jiterp_prof_leave", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_enter", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableEventPipe && !runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler, "mono_jiterp_prof_leave", "void", ["number", "number"]],
 
     ...threading_cwraps,
 ];
@@ -153,7 +153,7 @@ export interface t_ThreadingCwraps {
 
 export interface t_ProfilerCwraps {
     mono_wasm_profiler_init_aot(desc: string): void;
-    mono_wasm_profiler_init_browser(desc: string): void;
+    mono_wasm_profiler_init_browser_devtools(desc: string): void;
     mono_wasm_profiler_init_log(desc: string): void;
 }
 
@@ -173,7 +173,7 @@ export interface t_Cwraps {
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
-    mono_wasm_load_runtime(debugLevel: number): void;
+    mono_wasm_load_runtime(debugLevel: number, propertyCount:number, propertyKeys:CharPtrPtr, propertyValues:CharPtrPtr): void;
     mono_wasm_change_debugger_log_level(value: number): void;
 
     mono_wasm_assembly_load(name: string): MonoAssembly;

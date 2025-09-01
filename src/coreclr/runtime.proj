@@ -46,11 +46,13 @@
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
       <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
-      <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
+      <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(PortableTargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCLR_CMAKE_ICU_DIR=$(_IcuDir)&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -77,6 +79,7 @@
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
       <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
       <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
+      <_CoreClrBuildArg Condition="'$(ClrCdacSubset)' == 'true'" Include= "-component cdac" />
     </ItemGroup>
 
     <PropertyGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
@@ -85,8 +88,8 @@
 
     <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DANDROID_STL=c++_static&quot;"/>
-      
-      <!-- 
+
+      <!--
         Only apply this setting on non-windows builds. Our windows build has a hard
         time with a value that has spaces in it.
       -->
@@ -105,14 +108,33 @@
     <PropertyGroup>
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
-      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))"> </_CoreClrBuildPreSource>
-      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; </_CoreClrBuildPreSource>
+      <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ')</_CoreClrBuildCommand>
     </PropertyGroup>
 
-    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Message Text="Executing $(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
-    <Exec Command="$(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
+    <Message Text="Executing $(_CoreClrBuildCommand)" Importance="High" />
+    <Exec Command="$(_CoreClrBuildCommand)"
           IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
+  <Target Name="CreateNativeAotBreadcrumbs"
+          AfterTargets="BuildRuntime"
+          Condition="'$(ClrNativeAotSubset)' == 'true' or '$(ClrFullNativeBuild)' == 'true'">
+
+    <!-- Create breadcrumb to disable dynamic linking of release crt for debug runtime -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
+      Overwrite="true"
+      Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
+
+    <!-- Create breadcrumb to add additional libraries for non-portable builds -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/nonportable.txt"
+      Overwrite="true"
+      Condition="'$(TargetsWindows)'!='true' and '$(PortableBuild)' != 'true'" />
+    <Delete
+      Files="$(RuntimeBinDir)/aotsdk/nonportable.txt"
+      Condition="'$(TargetsWindows)'=='true' or '$(PortableBuild)' == 'true'" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />

@@ -170,7 +170,7 @@ namespace System.Reflection
             if (type.IsClass)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsInterface)
+            if (type.IsActualInterface)
                 return CustomAttributeEncoding.Object;
 
             if (type.IsActualValueType)
@@ -253,10 +253,10 @@ namespace System.Reflection
             m_scope = scope;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
-            if (m_ctor!.DeclaringType!.IsGenericType)
+            if (m_ctor.DeclaringType!.IsGenericType)
             {
                 MetadataImport metadataScope = m_scope.MetadataImport;
-                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null);
                 m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
@@ -1270,12 +1270,12 @@ namespace System.Reflection
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
-            while (type != (RuntimeType)typeof(object) && type != null)
+            do
             {
                 AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
-            }
+            } while (type != (RuntimeType)typeof(object) && type != null);
 
             object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
@@ -1641,13 +1641,6 @@ namespace System.Reflection
             // Ensure that to consider a duplicate attribute type AllowMultiple is true
             if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
                 return false;
-
-            // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
-            // should be filtered out of the GetCustomAttributes path.
-            if ((attributeType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
-            {
-                return false;
-            }
 
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caCtorToken);
@@ -2270,7 +2263,7 @@ namespace System.Reflection
 
         internal static StructLayoutAttribute? GetStructLayoutCustomAttribute(RuntimeType type)
         {
-            if (type.IsInterface || type.HasElementType || type.IsGenericParameter)
+            if (type.IsActualInterface || type.HasElementType || type.IsGenericParameter)
                 return null;
 
             LayoutKind layoutKind = LayoutKind.Auto;

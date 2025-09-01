@@ -19,6 +19,14 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif // FEATURE_EH_FUNCLETS
+
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
 
@@ -262,7 +270,7 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 continue;
             }
 #ifdef FEATURE_EH_FUNCLETS
-            else if (g_isNewExceptionHandlingEnabled && pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
             {
                 // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                 MethodDesc *pMD = pIter->m_crawl.GetFunction();
@@ -462,11 +470,11 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     while (pFrame != FRAME_TOP)
     {
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {
@@ -515,11 +523,11 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
     while (pFrame != FRAME_TOP)
     {
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {
@@ -614,9 +622,9 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 
     StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
 
-    // Ask the ExceptionTracker to figure out the answer.
+    // Ask the ExInfo to figure out the answer.
     // Don't try to compare the StackFrames/FramePointers ourselves.
-    return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
+    return ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
 
 #else // !FEATURE_EH_FUNCLETS
     return FALSE;
@@ -969,12 +977,12 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     if (pCF->IsFunclet())
     {
         DWORD dwParentOffset;
-        StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset);
+        StackFrame sfParent = ExInfo::FindParentStackFrameEx(pCF, &dwParentOffset);
 
         //
         // For funclets, fpParentOrSelf is the FramePointer of the parent.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
+        // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfParent.SP);
@@ -982,12 +990,12 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     }
     else
     {
-        StackFrame sfSelf = ExceptionTracker::GetStackFrameForParentCheck(pCF);
+        StackFrame sfSelf = ExInfo::GetStackFrameForParentCheck(pCF);
 
         //
         // For non-funclets, fpParentOrSelf is the FramePointer of the current frame itself.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
+        // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);

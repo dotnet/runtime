@@ -101,8 +101,6 @@ if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
 endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
@@ -201,7 +199,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
   sharedmemory/sharedmemory.cpp
-  sync/cs.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp
   synchobj/mutex.cpp
@@ -224,11 +221,15 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
-add_library(coreclrpal
-  STATIC
+add_library(coreclrpal_objects
+  OBJECT
   ${SOURCES}
   ${ARCH_SOURCES}
   ${PLATFORM_SOURCES}
+)
+
+add_library(coreclrpal STATIC
+  $<TARGET_OBJECTS:coreclrpal_objects>
   ${LIBUNWIND_OBJECTS}
 )
 

@@ -22,6 +22,10 @@ namespace System.Threading
         // We will not adjust higher than this though.
         private const int MaxIdRefreshRate = 5000;
 
+        // a speed check will determine refresh rate of the cache and will report if caching is not advisable.
+        // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
+        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
+
         private static int RefreshCurrentProcessorId()
         {
             int currentProcessorId = Thread.GetCurrentProcessorNumber();
@@ -44,6 +48,9 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetCurrentProcessorId()
         {
+            if (s_isProcessorNumberReallyFast)
+                return Thread.GetCurrentProcessorNumber();
+
             int currentProcessorIdCache = t_currentProcessorIdCache--;
             if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
             {

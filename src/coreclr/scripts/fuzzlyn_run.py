@@ -34,6 +34,7 @@ parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
 parser.add_argument("-run_duration", help="Run duration in minutes")
+parser.add_argument("-runtime_async", action="store_true", help="Test runtime async")
 is_windows = platform.system() == "Windows"
 
 
@@ -80,6 +81,11 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set run_duration")
 
+    coreclr_args.verify(args,
+                        "runtime_async",
+                        lambda unused: True,
+                        "Unable to set runtime_async")
+
     return coreclr_args
 
 def extract_jit_assertion_error(text):
@@ -119,7 +125,7 @@ class ReduceExamples(threading.Thread):
 
             if new_line:
                 evt = json.loads(new_line)
-                # Only reduce BadResult examples since crashes take very long to reduce.
+                # Do not reduce crash examples since those take a very long to reduce.
                 # We will still report crashes, just not with a reduced example.
                 if evt["Kind"] == "ExampleFound":
                     ex = evt["Example"]
@@ -147,7 +153,7 @@ class ReduceExamples(threading.Thread):
                             "--seed", str(ex['Seed']),
                             "--collect-spmi-to", spmi_collections_path,
                             "--output", output_path]
-                        run_command(cmd)
+                        run_command(cmd, _timeout=60*25)
                         if path.exists(output_path):
                             num_reduced += 1
                             if num_reduced >= 5:
@@ -156,6 +162,8 @@ class ReduceExamples(threading.Thread):
 
                             if ex_assert_err is not None:
                                 self.reduced_jit_asserts.add(ex_assert_err)
+                        else:
+                            print("  Reduction failed, output file not present")
 
 
 def main(main_args):
@@ -204,13 +212,18 @@ def main(main_args):
             reduce_examples = ReduceExamples(fp, temp_location, path_to_tool, path_to_corerun, exit_evt)
             reduce_examples.start()
 
-            run_command([
+            command = [
                 path_to_tool,
                 "--seconds-to-run", str(run_duration),
                 "--output-events-to", summary_file_path,
                 "--host", path_to_corerun,
                 "--parallelism", "-1",
-                "--known-errors", "dotnet/runtime"],
+                "--known-errors", "dotnet/runtime"]
+
+            if coreclr_args.runtime_async:
+                command.extend(["--gen-extensions", "default,async,runtimeasync"])
+
+            run_command(command,
                 _exit_on_fail=True, _output_file=upload_fuzzer_output_path)
 
             exit_evt.set()

@@ -1288,6 +1288,31 @@ void CryptoNative_RegisterLegacyAlgorithms(void)
 #endif
 }
 
+int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
+{
+    int32_t ret = 0;
+
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return 0;
+    }
+
+    EVP_SIGNATURE* sigAlg = NULL;
+
+    sigAlg = EVP_SIGNATURE_fetch(NULL, algorithm, NULL);
+    if (sigAlg)
+    {
+        ret = 1;
+        EVP_SIGNATURE_free(sigAlg);
+    }
+#endif
+
+    (void)algorithm;
+    return ret;
+}
+
 #ifdef NEED_OPENSSL_1_0
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;

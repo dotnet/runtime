@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+
 namespace System.Net.Http
 {
     /// <summary>
@@ -10,15 +14,19 @@ namespace System.Net.Http
     {
         internal static class DiagnosticsHandler
         {
+            [FeatureSwitchDefinition("System.Net.Http.EnableActivityPropagation")]
             public static bool EnableActivityPropagation { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.EnableActivityPropagation",
                 "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION",
                 true);
+        }
 
-            public static bool DisableUriRedaction { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
-                "System.Net.Http.DisableUriRedaction",
-                "DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION",
-                false);
+        internal static class MetricsHandler
+        {
+            [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
+            public static bool IsGloballyEnabled { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Diagnostics.Metrics.Meter.IsSupported",
+                true);
         }
 
         internal static class SocketsHttpHandler
@@ -31,12 +39,16 @@ namespace System.Net.Http
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
                 true);
 
-            // Default to allowing HTTP/3, but enable that to be overridden by an
+            // Default to allowing HTTP/3 on platforms where we have QUIC, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
+            [SupportedOSPlatformGuard("linux")]
+            [SupportedOSPlatformGuard("macOS")]
+            [SupportedOSPlatformGuard("windows")]
+            [FeatureSwitchDefinition("System.Net.SocketsHttpHandler.Http3Support")]
             public static bool AllowHttp3 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.SocketsHttpHandler.Http3Support",
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT",
-                true);
+                (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS());
 
             // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
             public static bool DisableDynamicHttp2WindowSizing { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

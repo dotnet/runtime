@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
@@ -26,6 +26,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -36,6 +37,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
+    <Compile Include="..\Common\AsyncEnumerableTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\AsyncEnumerableTests.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Concurrent.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.cs" />
@@ -70,12 +72,14 @@
     <Compile Include="..\Common\JsonSchemaExporterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="..\Common\JsonSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.TestTypes.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\JsonTestSerializerOptions.cs" Link="CommonTest\System\Text\Json\JsonTestSerializerOptions.cs" />
     <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
     <Compile Include="..\Common\NullableAnnotationsTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
+    <Compile Include="..\Common\PipeJsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PipeJsonSerializerWrapper.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
@@ -142,6 +146,7 @@
     <Compile Include="NewtonsoftTests\JsonSerializerTests.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
+    <Compile Include="Serialization\AsyncEnumerableTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
@@ -179,7 +184,9 @@
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
     <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
+    <Compile Include="Serialization\Pipe.ReadTests.cs" />
     <Compile Include="Serialization\Pipe.WriteTests.cs" />
+    <Compile Include="Serialization\PipeTests.cs" />
     <Compile Include="Serialization\RequiredKeywordTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DomTests.cs" />
@@ -224,7 +231,6 @@
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\StreamTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />
-    <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\StreamTests.ChunkedReaderStream.cs" />
@@ -271,7 +277,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj"  />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />

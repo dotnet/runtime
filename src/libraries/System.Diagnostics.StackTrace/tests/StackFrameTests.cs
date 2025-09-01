@@ -76,7 +76,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
-        public void Ctor_Filename_LineNumber(string fileName, int lineNumber)
+        public void Ctor_Filename_LineNumber(string? fileName, int lineNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());
@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN, 0)]
         [InlineData("", 0, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("FileName", 1, 2)]
-        public void Ctor_Filename_LineNumber_ColNumber(string fileName, int lineNumber, int columnNumber)
+        public void Ctor_Filename_LineNumber_ColNumber(string? fileName, int lineNumber, int columnNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber, columnNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());

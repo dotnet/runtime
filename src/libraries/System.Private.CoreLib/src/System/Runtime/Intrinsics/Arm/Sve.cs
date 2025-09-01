@@ -1443,373 +1443,373 @@ namespace System.Runtime.Intrinsics.Arm
         // Conditionally extract element after last
 
         /// <summary>
-        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t defaultScalar, svuint8_t data)</para>
         ///   <para>  CLASTA Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> defaultValue, Vector<byte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<byte> ConditionalExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint8_t svclasta[_n_u8](svbool_t pg, uint8_t fallback, svuint8_t data)</para>
+        ///   <para>uint8_t svclasta[_n_u8](svbool_t pg, uint8_t defaultValue, svuint8_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static byte ConditionalExtractAfterLastActiveElement(Vector<byte> mask, byte defaultValues, Vector<byte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static byte ConditionalExtractAfterLastActiveElement(Vector<byte> mask, byte defaultValue, Vector<byte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t defaultScalar, svfloat64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractAfterLastActiveElement(Vector<double> mask, Vector<double> defaultValue, Vector<double> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<double> ConditionalExtractAfterLastActiveElement(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>float64_t svclasta[_n_f64](svbool_t pg, float64_t fallback, svfloat64_t data)</para>
+        ///   <para>float64_t svclasta[_n_f64](svbool_t pg, float64_t defaultValue, svfloat64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static double ConditionalExtractAfterLastActiveElement(Vector<double> mask, double defaultValues, Vector<double> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static double ConditionalExtractAfterLastActiveElement(Vector<double> mask, double defaultValue, Vector<double> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t defaultScalar, svint16_t data)</para>
         ///   <para>  CLASTA Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractAfterLastActiveElement(Vector<short> mask, Vector<short> defaultValue, Vector<short> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<short> ConditionalExtractAfterLastActiveElement(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int16_t svclasta[_n_s16](svbool_t pg, int16_t fallback, svint16_t data)</para>
+        ///   <para>int16_t svclasta[_n_s16](svbool_t pg, int16_t defaultValue, svint16_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static short ConditionalExtractAfterLastActiveElement(Vector<short> mask, short defaultValues, Vector<short> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static short ConditionalExtractAfterLastActiveElement(Vector<short> mask, short defaultValue, Vector<short> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t defaultScalar, svint32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractAfterLastActiveElement(Vector<int> mask, Vector<int> defaultValue, Vector<int> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<int> ConditionalExtractAfterLastActiveElement(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int32_t svclasta[_n_s32](svbool_t pg, int32_t fallback, svint32_t data)</para>
+        ///   <para>int32_t svclasta[_n_s32](svbool_t pg, int32_t defaultValue, svint32_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static int ConditionalExtractAfterLastActiveElement(Vector<int> mask, int defaultValues, Vector<int> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static int ConditionalExtractAfterLastActiveElement(Vector<int> mask, int defaultValue, Vector<int> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t defaultScalar, svint64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractAfterLastActiveElement(Vector<long> mask, Vector<long> defaultValue, Vector<long> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<long> ConditionalExtractAfterLastActiveElement(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int64_t svclasta[_n_s64](svbool_t pg, int64_t fallback, svint64_t data)</para>
+        ///   <para>int64_t svclasta[_n_s64](svbool_t pg, int64_t defaultValue, svint64_t data)</para>
         ///   <para>  CLASTA Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static long ConditionalExtractAfterLastActiveElement(Vector<long> mask, long defaultValues, Vector<long> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static long ConditionalExtractAfterLastActiveElement(Vector<long> mask, long defaultValue, Vector<long> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t defaultScalar, svint8_t data)</para>
         ///   <para>  CLASTA Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultValue, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<sbyte> ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int8_t svclasta[_n_s8](svbool_t pg, int8_t fallback, svint8_t data)</para>
+        ///   <para>int8_t svclasta[_n_s8](svbool_t pg, int8_t defaultValue, svint8_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static sbyte ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, sbyte defaultValues, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static sbyte ConditionalExtractAfterLastActiveElement(Vector<sbyte> mask, sbyte defaultValue, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t defaultScalar, svfloat32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractAfterLastActiveElement(Vector<float> mask, Vector<float> defaultValue, Vector<float> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<float> ConditionalExtractAfterLastActiveElement(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>float32_t svclasta[_n_f32](svbool_t pg, float32_t fallback, svfloat32_t data)</para>
+        ///   <para>float32_t svclasta[_n_f32](svbool_t pg, float32_t defaultValue, svfloat32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static float ConditionalExtractAfterLastActiveElement(Vector<float> mask, float defaultValues, Vector<float> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static float ConditionalExtractAfterLastActiveElement(Vector<float> mask, float defaultValue, Vector<float> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t defaultScalar, svuint16_t data)</para>
         ///   <para>  CLASTA Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultValue, Vector<ushort> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<ushort> ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint16_t svclasta[_n_u16](svbool_t pg, uint16_t fallback, svuint16_t data)</para>
+        ///   <para>uint16_t svclasta[_n_u16](svbool_t pg, uint16_t defaultValue, svuint16_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static ushort ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, ushort defaultValues, Vector<ushort> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static ushort ConditionalExtractAfterLastActiveElement(Vector<ushort> mask, ushort defaultValue, Vector<ushort> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t defaultScalar, svuint32_t data)</para>
         ///   <para>  CLASTA Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> defaultValue, Vector<uint> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<uint> ConditionalExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint32_t svclasta[_n_u32](svbool_t pg, uint32_t fallback, svuint32_t data)</para>
+        ///   <para>uint32_t svclasta[_n_u32](svbool_t pg, uint32_t defaultValue, svuint32_t data)</para>
         ///   <para>  CLASTA Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static uint ConditionalExtractAfterLastActiveElement(Vector<uint> mask, uint defaultValues, Vector<uint> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static uint ConditionalExtractAfterLastActiveElement(Vector<uint> mask, uint defaultValue, Vector<uint> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t defaultScalar, svuint64_t data)</para>
         ///   <para>  CLASTA Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultValue, Vector<ulong> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
+        public static Vector<ulong> ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) => ConditionalExtractAfterLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint64_t svclasta[_n_u64](svbool_t pg, uint64_t fallback, svuint64_t data)</para>
+        ///   <para>uint64_t svclasta[_n_u64](svbool_t pg, uint64_t defaultValue, svuint64_t data)</para>
         ///   <para>  CLASTA Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static ulong ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
+        public static ulong ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, ulong defaultValue, Vector<ulong> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValue, data);
 
 
         // Conditionally extract element after last
 
         /// <summary>
-        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclasta[_u8](svbool_t pg, svuint8_t defaultValues, svuint8_t data)</para>
         ///   <para>  CLASTA Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<byte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultValues, Vector<byte> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclasta[_f64](svbool_t pg, svfloat64_t defaultValues, svfloat64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<double> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultValues, Vector<double> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclasta[_s16](svbool_t pg, svint16_t defaultValues, svint16_t data)</para>
         ///   <para>  CLASTA Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<short> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultValues, Vector<short> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclasta[_s32](svbool_t pg, svint32_t defaultValues, svint32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<int> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultValues, Vector<int> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclasta[_s64](svbool_t pg, svint64_t defaultValues, svint64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<long> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultValues, Vector<long> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclasta[_s8](svbool_t pg, svint8_t defaultValues, svint8_t data)</para>
         ///   <para>  CLASTA Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<sbyte> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultValues, Vector<sbyte> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclasta[_f32](svbool_t pg, svfloat32_t defaultValues, svfloat32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<float> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultValues, Vector<float> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclasta[_u16](svbool_t pg, svuint16_t defaultValues, svuint16_t data)</para>
         ///   <para>  CLASTA Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<ushort> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultValues, Vector<ushort> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclasta[_u32](svbool_t pg, svuint32_t defaultValues, svuint32_t data)</para>
         ///   <para>  CLASTA Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<uint> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultValues, Vector<uint> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclasta[_u64](svbool_t pg, svuint64_t defaultValues, svuint64_t data)</para>
         ///   <para>  CLASTA Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
+        public static Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultValues, Vector<ulong> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultValues, data);
 
 
         // Conditionally extract last element
 
         /// <summary>
-        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t defaultScalar, svuint8_t data)</para>
         ///   <para>  CLASTB Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractLastActiveElement(Vector<byte> mask, Vector<byte> defaultValue, Vector<byte> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<byte> ConditionalExtractLastActiveElement(Vector<byte> mask, Vector<byte> defaultScalar, Vector<byte> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint8_t svclastb[_n_u8](svbool_t pg, uint8_t fallback, svuint8_t data)</para>
+        ///   <para>uint8_t svclastb[_n_u8](svbool_t pg, uint8_t defaultValue, svuint8_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static byte ConditionalExtractLastActiveElement(Vector<byte> mask, byte defaultValues, Vector<byte> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static byte ConditionalExtractLastActiveElement(Vector<byte> mask, byte defaultValue, Vector<byte> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t defaultScalar, svfloat64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractLastActiveElement(Vector<double> mask, Vector<double> defaultValue, Vector<double> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<double> ConditionalExtractLastActiveElement(Vector<double> mask, Vector<double> defaultScalar, Vector<double> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>float64_t svclastb[_n_f64](svbool_t pg, float64_t fallback, svfloat64_t data)</para>
+        ///   <para>float64_t svclastb[_n_f64](svbool_t pg, float64_t defaultValue, svfloat64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static double ConditionalExtractLastActiveElement(Vector<double> mask, double defaultValues, Vector<double> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static double ConditionalExtractLastActiveElement(Vector<double> mask, double defaultValue, Vector<double> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t defaultScalar, svint16_t data)</para>
         ///   <para>  CLASTB Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractLastActiveElement(Vector<short> mask, Vector<short> defaultValue, Vector<short> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<short> ConditionalExtractLastActiveElement(Vector<short> mask, Vector<short> defaultScalar, Vector<short> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int16_t svclastb[_n_s16](svbool_t pg, int16_t fallback, svint16_t data)</para>
+        ///   <para>int16_t svclastb[_n_s16](svbool_t pg, int16_t defaultValue, svint16_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static short ConditionalExtractLastActiveElement(Vector<short> mask, short defaultValues, Vector<short> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static short ConditionalExtractLastActiveElement(Vector<short> mask, short defaultValue, Vector<short> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t defaultScalar, svint32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractLastActiveElement(Vector<int> mask, Vector<int> defaultValue, Vector<int> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<int> ConditionalExtractLastActiveElement(Vector<int> mask, Vector<int> defaultScalar, Vector<int> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int32_t svclastb[_n_s32](svbool_t pg, int32_t fallback, svint32_t data)</para>
+        ///   <para>int32_t svclastb[_n_s32](svbool_t pg, int32_t defaultValue, svint32_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static int ConditionalExtractLastActiveElement(Vector<int> mask, int defaultValues, Vector<int> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static int ConditionalExtractLastActiveElement(Vector<int> mask, int defaultValue, Vector<int> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t defaultScalar, svint64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractLastActiveElement(Vector<long> mask, Vector<long> defaultValue, Vector<long> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<long> ConditionalExtractLastActiveElement(Vector<long> mask, Vector<long> defaultScalar, Vector<long> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int64_t svclastb[_n_s64](svbool_t pg, int64_t fallback, svint64_t data)</para>
+        ///   <para>int64_t svclastb[_n_s64](svbool_t pg, int64_t defaultValue, svint64_t data)</para>
         ///   <para>  CLASTB Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static long ConditionalExtractLastActiveElement(Vector<long> mask, long defaultValues, Vector<long> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static long ConditionalExtractLastActiveElement(Vector<long> mask, long defaultValue, Vector<long> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t defaultScalar, svint8_t data)</para>
         ///   <para>  CLASTB Btied, Pg, Btied, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultValue, Vector<sbyte> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<sbyte> ConditionalExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> defaultScalar, Vector<sbyte> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>int8_t svclastb[_n_s8](svbool_t pg, int8_t fallback, svint8_t data)</para>
+        ///   <para>int8_t svclastb[_n_s8](svbool_t pg, int8_t defaultValue, svint8_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.B</para>
         /// </summary>
-        public static sbyte ConditionalExtractLastActiveElement(Vector<sbyte> mask, sbyte defaultValues, Vector<sbyte> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static sbyte ConditionalExtractLastActiveElement(Vector<sbyte> mask, sbyte defaultValue, Vector<sbyte> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t defaultScalar, svfloat32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractLastActiveElement(Vector<float> mask, Vector<float> defaultValue, Vector<float> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<float> ConditionalExtractLastActiveElement(Vector<float> mask, Vector<float> defaultScalar, Vector<float> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>float32_t svclastb[_n_f32](svbool_t pg, float32_t fallback, svfloat32_t data)</para>
+        ///   <para>float32_t svclastb[_n_f32](svbool_t pg, float32_t defaultValue, svfloat32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static float ConditionalExtractLastActiveElement(Vector<float> mask, float defaultValues, Vector<float> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static float ConditionalExtractLastActiveElement(Vector<float> mask, float defaultValue, Vector<float> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t defaultScalar, svuint16_t data)</para>
         ///   <para>  CLASTB Htied, Pg, Htied, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultValue, Vector<ushort> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<ushort> ConditionalExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> defaultScalar, Vector<ushort> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint16_t svclastb[_n_u16](svbool_t pg, uint16_t fallback, svuint16_t data)</para>
+        ///   <para>uint16_t svclastb[_n_u16](svbool_t pg, uint16_t defaultValue, svuint16_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.H</para>
         /// </summary>
-        public static ushort ConditionalExtractLastActiveElement(Vector<ushort> mask, ushort defaultValues, Vector<ushort> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static ushort ConditionalExtractLastActiveElement(Vector<ushort> mask, ushort defaultValue, Vector<ushort> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t defaultScalar, svuint32_t data)</para>
         ///   <para>  CLASTB Stied, Pg, Stied, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractLastActiveElement(Vector<uint> mask, Vector<uint> defaultValue, Vector<uint> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<uint> ConditionalExtractLastActiveElement(Vector<uint> mask, Vector<uint> defaultScalar, Vector<uint> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint32_t svclastb[_n_u32](svbool_t pg, uint32_t fallback, svuint32_t data)</para>
+        ///   <para>uint32_t svclastb[_n_u32](svbool_t pg, uint32_t defaultValue, svuint32_t data)</para>
         ///   <para>  CLASTB Wtied, Pg, Wtied, Zdata.S</para>
         /// </summary>
-        public static uint ConditionalExtractLastActiveElement(Vector<uint> mask, uint defaultValues, Vector<uint> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static uint ConditionalExtractLastActiveElement(Vector<uint> mask, uint defaultValue, Vector<uint> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
         /// <summary>
-        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t defaultScalar, svuint64_t data)</para>
         ///   <para>  CLASTB Dtied, Pg, Dtied, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultValue, Vector<ulong> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
+        public static Vector<ulong> ConditionalExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) => ConditionalExtractLastActiveElement(mask, defaultScalar, data);
 
         /// <summary>
-        ///   <para>uint64_t svclastb[_n_u64](svbool_t pg, uint64_t fallback, svuint64_t data)</para>
+        ///   <para>uint64_t svclastb[_n_u64](svbool_t pg, uint64_t defaultValue, svuint64_t data)</para>
         ///   <para>  CLASTB Xtied, Pg, Xtied, Zdata.D</para>
         /// </summary>
-        public static ulong ConditionalExtractLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
+        public static ulong ConditionalExtractLastActiveElement(Vector<ulong> mask, ulong defaultValue, Vector<ulong> data) => ConditionalExtractLastActiveElement(mask, defaultValue, data);
 
 
         // Conditionally extract last element
 
         /// <summary>
-        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)</para>
+        ///   <para>svuint8_t svclastb[_u8](svbool_t pg, svuint8_t defaultValues, svuint8_t data)</para>
         ///   <para>  CLASTB Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<byte> ConditionalExtractLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> fallback, Vector<byte> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<byte> ConditionalExtractLastActiveElementAndReplicate(Vector<byte> mask, Vector<byte> defaultValues, Vector<byte> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t fallback, svfloat64_t data)</para>
+        ///   <para>svfloat64_t svclastb[_f64](svbool_t pg, svfloat64_t defaultValues, svfloat64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<double> ConditionalExtractLastActiveElementAndReplicate(Vector<double> mask, Vector<double> fallback, Vector<double> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<double> ConditionalExtractLastActiveElementAndReplicate(Vector<double> mask, Vector<double> defaultValues, Vector<double> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t fallback, svint16_t data)</para>
+        ///   <para>svint16_t svclastb[_s16](svbool_t pg, svint16_t defaultValues, svint16_t data)</para>
         ///   <para>  CLASTB Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<short> ConditionalExtractLastActiveElementAndReplicate(Vector<short> mask, Vector<short> fallback, Vector<short> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<short> ConditionalExtractLastActiveElementAndReplicate(Vector<short> mask, Vector<short> defaultValues, Vector<short> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t fallback, svint32_t data)</para>
+        ///   <para>svint32_t svclastb[_s32](svbool_t pg, svint32_t defaultValues, svint32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<int> ConditionalExtractLastActiveElementAndReplicate(Vector<int> mask, Vector<int> fallback, Vector<int> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<int> ConditionalExtractLastActiveElementAndReplicate(Vector<int> mask, Vector<int> defaultValues, Vector<int> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t fallback, svint64_t data)</para>
+        ///   <para>svint64_t svclastb[_s64](svbool_t pg, svint64_t defaultValues, svint64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<long> ConditionalExtractLastActiveElementAndReplicate(Vector<long> mask, Vector<long> fallback, Vector<long> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<long> ConditionalExtractLastActiveElementAndReplicate(Vector<long> mask, Vector<long> defaultValues, Vector<long> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t fallback, svint8_t data)</para>
+        ///   <para>svint8_t svclastb[_s8](svbool_t pg, svint8_t defaultValues, svint8_t data)</para>
         ///   <para>  CLASTB Ztied.B, Pg, Ztied.B, Zdata.B</para>
         /// </summary>
-        public static Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> fallback, Vector<sbyte> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<sbyte> ConditionalExtractLastActiveElementAndReplicate(Vector<sbyte> mask, Vector<sbyte> defaultValues, Vector<sbyte> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t fallback, svfloat32_t data)</para>
+        ///   <para>svfloat32_t svclastb[_f32](svbool_t pg, svfloat32_t defaultValues, svfloat32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<float> ConditionalExtractLastActiveElementAndReplicate(Vector<float> mask, Vector<float> fallback, Vector<float> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<float> ConditionalExtractLastActiveElementAndReplicate(Vector<float> mask, Vector<float> defaultValues, Vector<float> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t fallback, svuint16_t data)</para>
+        ///   <para>svuint16_t svclastb[_u16](svbool_t pg, svuint16_t defaultValues, svuint16_t data)</para>
         ///   <para>  CLASTB Ztied.H, Pg, Ztied.H, Zdata.H</para>
         /// </summary>
-        public static Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> fallback, Vector<ushort> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<ushort> ConditionalExtractLastActiveElementAndReplicate(Vector<ushort> mask, Vector<ushort> defaultValues, Vector<ushort> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t fallback, svuint32_t data)</para>
+        ///   <para>svuint32_t svclastb[_u32](svbool_t pg, svuint32_t defaultValues, svuint32_t data)</para>
         ///   <para>  CLASTB Ztied.S, Pg, Ztied.S, Zdata.S</para>
         /// </summary>
-        public static Vector<uint> ConditionalExtractLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> fallback, Vector<uint> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<uint> ConditionalExtractLastActiveElementAndReplicate(Vector<uint> mask, Vector<uint> defaultValues, Vector<uint> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
         /// <summary>
-        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t fallback, svuint64_t data)</para>
+        ///   <para>svuint64_t svclastb[_u64](svbool_t pg, svuint64_t defaultValues, svuint64_t data)</para>
         ///   <para>  CLASTB Ztied.D, Pg, Ztied.D, Zdata.D</para>
         /// </summary>
-        public static Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> fallback, Vector<ulong> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
+        public static Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultValues, Vector<ulong> data) => ConditionalExtractLastActiveElementAndReplicate(mask, defaultValues, data);
 
 
         // Conditionally select elements
@@ -2087,49 +2087,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakAfterMask(Vector<byte> mask, Vector<byte> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<byte> CreateBreakAfterMask(Vector<byte> totalMask, Vector<byte> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakAfterMask(Vector<short> mask, Vector<short> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<short> CreateBreakAfterMask(Vector<short> totalMask, Vector<short> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakAfterMask(Vector<int> mask, Vector<int> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<int> CreateBreakAfterMask(Vector<int> totalMask, Vector<int> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakAfterMask(Vector<long> mask, Vector<long> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<long> CreateBreakAfterMask(Vector<long> totalMask, Vector<long> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> mask, Vector<sbyte> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> mask, Vector<ushort> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> totalMask, Vector<ushort> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakAfterMask(Vector<uint> mask, Vector<uint> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<uint> CreateBreakAfterMask(Vector<uint> totalMask, Vector<uint> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> mask, Vector<ulong> srcMask) => CreateBreakAfterMask(mask, srcMask);
+        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> totalMask, Vector<ulong> fromMask) => CreateBreakAfterMask(totalMask, fromMask);
 
 
         // Break after first true condition, propagating from previous partition
@@ -2189,49 +2189,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> mask, Vector<byte> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> totalMask, Vector<byte> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakBeforeMask(Vector<short> mask, Vector<short> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<short> CreateBreakBeforeMask(Vector<short> totalMask, Vector<short> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakBeforeMask(Vector<int> mask, Vector<int> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<int> CreateBreakBeforeMask(Vector<int> totalMask, Vector<int> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakBeforeMask(Vector<long> mask, Vector<long> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<long> CreateBreakBeforeMask(Vector<long> totalMask, Vector<long> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> mask, Vector<sbyte> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> mask, Vector<ushort> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> totalMask, Vector<ushort> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> mask, Vector<uint> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> totalMask, Vector<uint> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> mask, Vector<ulong> srcMask) => CreateBreakBeforeMask(mask, srcMask);
+        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> totalMask, Vector<ulong> fromMask) => CreateBreakBeforeMask(totalMask, fromMask);
 
 
         // Break before first true condition, propagating from previous partition
@@ -2432,49 +2432,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> mask, Vector<byte> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> mask, Vector<short> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> totalMask, Vector<short> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> mask, Vector<int> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> totalMask, Vector<int> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> mask, Vector<long> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> totalMask, Vector<long> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> mask, Vector<sbyte> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> totalMask, Vector<sbyte> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> mask, Vector<uint> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) => CreateMaskForFirstActiveElement(totalMask, fromMask);
 
 
         // Find next active predicate
@@ -2483,25 +2483,25 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpnext_b8(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> mask, Vector<byte> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) => CreateMaskForNextActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpnext_b16(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.H, Pg, Ptied.H</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) => CreateMaskForNextActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpnext_b32(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.S, Pg, Ptied.S</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> mask, Vector<uint> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) => CreateMaskForNextActiveElement(totalMask, fromMask);
 
         /// <summary>
         ///   <para>svbool_t svpnext_b64(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.D, Pg, Ptied.D</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) => CreateMaskForNextActiveElement(totalMask, fromMask);
 
 
         // Set predicate elements to true
@@ -2945,6 +2945,251 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> DuplicateSelectedScalarToVector(Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector(data, index);
 
+
+        // Extract element after last
+
+        /// <summary>
+        ///   <para>svuint8_t svlasta[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint8_t svlasta[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractAfterLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svfloat64_t svlasta[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractAfterLastActiveElement(Vector<double> mask, Vector<double> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>float64_t svlasta[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractAfterLastActiveElementScalar(Vector<double> mask, Vector<double> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint16_t svlasta[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractAfterLastActiveElement(Vector<short> mask, Vector<short> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int16_t svlasta[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractAfterLastActiveElementScalar(Vector<short> mask, Vector<short> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint32_t svlasta[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractAfterLastActiveElement(Vector<int> mask, Vector<int> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int32_t svlasta[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractAfterLastActiveElementScalar(Vector<int> mask, Vector<int> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint64_t svlasta[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractAfterLastActiveElement(Vector<long> mask, Vector<long> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int64_t svlasta[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractAfterLastActiveElementScalar(Vector<long> mask, Vector<long> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint8_t svlasta[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int8_t svlasta[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractAfterLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svfloat32_t svlasta[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractAfterLastActiveElement(Vector<float> mask, Vector<float> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>float32_t svlasta[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractAfterLastActiveElementScalar(Vector<float> mask, Vector<float> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint16_t svlasta[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint16_t svlasta[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractAfterLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint32_t svlasta[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint32_t svlasta[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractAfterLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint64_t svlasta[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> data) => ExtractAfterLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint64_t svlasta[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractAfterLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) => ExtractAfterLastActiveElementScalar(mask, data);
+
+
+        // Extract last element
+
+        /// <summary>
+        ///   <para>svuint8_t svlastb[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractLastActiveElement(Vector<byte> mask, Vector<byte> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint8_t svlastb[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svfloat64_t svlastb[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractLastActiveElement(Vector<double> mask, Vector<double> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>float64_t svlastb[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractLastActiveElementScalar(Vector<double> mask, Vector<double> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint16_t svlastb[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractLastActiveElement(Vector<short> mask, Vector<short> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int16_t svlastb[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractLastActiveElementScalar(Vector<short> mask, Vector<short> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint32_t svlastb[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractLastActiveElement(Vector<int> mask, Vector<int> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int32_t svlastb[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractLastActiveElementScalar(Vector<int> mask, Vector<int> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint64_t svlastb[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractLastActiveElement(Vector<long> mask, Vector<long> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int64_t svlastb[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractLastActiveElementScalar(Vector<long> mask, Vector<long> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svint8_t svlastb[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>int8_t svlastb[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svfloat32_t svlastb[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractLastActiveElement(Vector<float> mask, Vector<float> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>float32_t svlastb[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractLastActiveElementScalar(Vector<float> mask, Vector<float> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint16_t svlastb[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint16_t svlastb[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint32_t svlastb[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractLastActiveElement(Vector<uint> mask, Vector<uint> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint32_t svlastb[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) => ExtractLastActiveElementScalar(mask, data);
+
+        /// <summary>
+        ///   <para>svuint64_t svlastb[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> data) => ExtractLastActiveElement(mask, data);
+
+        /// <summary>
+        ///   <para>uint64_t svlastb[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) => ExtractLastActiveElementScalar(mask, data);
 
         /// <summary>
         ///   <para>svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)</para>
@@ -5453,7 +5698,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svldnf1ub_s16(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt16(address);
+        public static unsafe Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(Vector<short> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt16(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5462,7 +5707,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1ub_s32(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(Vector<int> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt32(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5471,7 +5716,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1ub_s64(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(Vector<long> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5480,7 +5725,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svldnf1ub_u16(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt16(address);
+        public static unsafe Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(Vector<ushort> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt16(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5489,7 +5734,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1ub_u32(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(Vector<uint> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt32(mask, address);
 
 
         // Load 8-bit data and zero-extend, non-faulting
@@ -5498,7 +5743,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1ub_u64(svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(Vector<ulong> mask, byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -5659,7 +5904,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1sh_s32(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(Vector<int> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5668,7 +5913,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sh_s64(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(Vector<long> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5677,7 +5922,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1sh_u32(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(Vector<uint> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(mask, address);
 
 
         // Load 16-bit data and sign-extend, non-faulting
@@ -5686,7 +5931,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sh_u64(svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(Vector<ulong> mask, short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 16-bit data and sign-extend, first-faulting</para>
@@ -5758,7 +6003,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sw_s64(svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(Vector<long> mask, int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 32-bit data and sign-extend, non-faulting
@@ -5767,7 +6012,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sw_u64(svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(Vector<ulong> mask, int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 32-bit data and sign-extend, first-faulting</para>
@@ -5809,61 +6054,61 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint8_t svldnf1[_u8](svbool_t pg, const uint8_t *base)</para>
         ///   <para>  LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<byte> LoadVectorNonFaulting(byte* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<byte> LoadVectorNonFaulting(Vector<byte> mask, byte* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svfloat64_t svldnf1[_f64](svbool_t pg, const float64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<double> LoadVectorNonFaulting(double* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<double> LoadVectorNonFaulting(Vector<double> mask, double* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint16_t svldnf1[_s16](svbool_t pg, const int16_t *base)</para>
         ///   <para>  LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorNonFaulting(short* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<short> LoadVectorNonFaulting(Vector<short> mask, short* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint32_t svldnf1[_s32](svbool_t pg, const int32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorNonFaulting(int* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<int> LoadVectorNonFaulting(Vector<int> mask, int* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint64_t svldnf1[_s64](svbool_t pg, const int64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorNonFaulting(long* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<long> LoadVectorNonFaulting(Vector<long> mask, long* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svint8_t svldnf1[_s8](svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<sbyte> LoadVectorNonFaulting(sbyte* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<sbyte> LoadVectorNonFaulting(Vector<sbyte> mask, sbyte* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svfloat32_t svldnf1[_f32](svbool_t pg, const float32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<float> LoadVectorNonFaulting(float* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<float> LoadVectorNonFaulting(Vector<float> mask, float* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint16_t svldnf1[_u16](svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorNonFaulting(ushort* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<ushort> LoadVectorNonFaulting(Vector<ushort> mask, ushort* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint32_t svldnf1[_u32](svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorNonFaulting(uint* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<uint> LoadVectorNonFaulting(Vector<uint> mask, uint* address) => LoadVectorNonFaulting(mask, address);
 
         /// <summary>
         ///   <para>svuint64_t svldnf1[_u64](svbool_t pg, const uint64_t *base)</para>
         ///   <para>  LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorNonFaulting(ulong* address) => LoadVectorNonFaulting(address);
+        public static unsafe Vector<ulong> LoadVectorNonFaulting(Vector<ulong> mask, ulong* address) => LoadVectorNonFaulting(mask, address);
 
 
         // Unextended load, non-temporal
@@ -5935,7 +6180,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint16_t svldnf1sb_s16(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(address);
+        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(Vector<short> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -5944,7 +6189,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1sb_s32(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(Vector<int> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -5953,7 +6198,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1sb_s64(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(Vector<long> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -5962,7 +6207,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint16_t svldnf1sb_u16(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(address);
+        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(Vector<ushort> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -5971,7 +6216,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1sb_u32(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(Vector<uint> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(mask, address);
 
 
         // Load 8-bit data and sign-extend, non-faulting
@@ -5980,7 +6225,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1sb_u64(svbool_t pg, const int8_t *base)</para>
         ///   <para>  LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(Vector<ulong> mask, sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(mask, address);
 
 
         ///   <para> Load 8-bit data and sign-extend, first-faulting</para>
@@ -6082,7 +6327,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint32_t svldnf1uh_s32(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt32(address);
+        public static unsafe Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(Vector<int> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt32(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6091,7 +6336,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1uh_s64(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(Vector<long> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6100,7 +6345,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint32_t svldnf1uh_u32(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt32(address);
+        public static unsafe Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(Vector<uint> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt32(mask, address);
 
 
         // Load 16-bit data and zero-extend, non-faulting
@@ -6109,7 +6354,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1uh_u64(svbool_t pg, const uint16_t *base)</para>
         ///   <para>  LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(Vector<ulong> mask, ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -6179,7 +6424,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldnf1uw_s64(svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToInt64(address);
+        public static unsafe Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(Vector<long> mask, uint* address) => LoadVectorUInt32NonFaultingZeroExtendToInt64(mask, address);
 
 
         // Load 32-bit data and zero-extend, non-faulting
@@ -6188,7 +6433,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svuint64_t svldnf1uw_u64(svbool_t pg, const uint32_t *base)</para>
         ///   <para>  LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToUInt64(address);
+        public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32NonFaultingZeroExtendToUInt64(mask, address);
 
 
         /// <summary>
@@ -7413,22 +7658,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
 
 
-        // Prefetch bytes
-
-        /// <summary>
-        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
-        /// </summary>
-        public static unsafe void PrefetchBytes(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchBytes(mask, address, prefetchType);
-
-
         // Prefetch halfwords
 
         /// <summary>
         ///   <para>void svprfh(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFH op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt16(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt16(mask, address, prefetchType);
+        public static unsafe void Prefetch16Bit(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch16Bit(mask, address, prefetchType);
 
 
         // Prefetch words
@@ -7437,7 +7673,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfw(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFW op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt32(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt32(mask, address, prefetchType);
+        public static unsafe void Prefetch32Bit(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch32Bit(mask, address, prefetchType);
 
 
         // Prefetch doublewords
@@ -7446,7 +7682,16 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfd(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFD op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
+        public static unsafe void Prefetch64Bit(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch64Bit(mask, address, prefetchType);
+
+
+        // Prefetch bytes
+
+        /// <summary>
+        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
+        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
+        /// </summary>
+        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch8Bit(mask, address, prefetchType);
 
 
         // Reciprocal estimate
@@ -8577,6 +8822,54 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter16BitNarrowing(mask, addresses, data);
 
+        /// <summary>
+        /// void svst1h_scatter_[s32]index[_s32](svbool_t pg, int16_t *base, svint32_t indices, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<int> mask, short* address, Vector<int> indices, Vector<int> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u32]index[_s32](svbool_t pg, int16_t *base, svuint32_t indices, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<int> mask, short* address, Vector<uint> indices, Vector<int> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s32]index[_u32](svbool_t pg, uint16_t *base, svint32_t indices, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, ushort* address, Vector<int> indices, Vector<uint> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u32]index[_u32](svbool_t pg, uint16_t *base, svuint32_t indices, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, ushort* address, Vector<uint> indices, Vector<uint> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) => Scatter16BitNarrowing(mask, address, indices, data);
+
 
         // Truncate to 16 bits and store
 
@@ -8642,6 +8935,30 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  ST1W Zdata.D, Pg, [Zbases.D, #0]</para>
         /// </summary>
         public static void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) => Scatter32BitNarrowing(mask, address, indices, data);
+
+        /// <summary>
+        /// void svst1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) => Scatter32BitNarrowing(mask, address, indices, data);
 
 
         // Truncate to 32 bits and store
@@ -8749,6 +9066,81 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]</para>
         /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+
+        // Non-truncating store
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<int> offsets, Vector<int> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<int> offsets, Vector<float> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<int> offsets, Vector<uint> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) => Scatter(mask, address, offsets, data);
+
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void ScatterWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter(mask, address, offsets, data);
 
 
         // Write to the first-fault register
@@ -9772,49 +10164,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<short> mask, Vector<short> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<int> mask, Vector<int> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<long> mask, Vector<long> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> rightMask) => TestAnyTrue(mask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestAnyTrue(mask, srcMask);
+        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> rightMask) => TestAnyTrue(mask, rightMask);
 
 
         // Test whether the first active element is true
@@ -9823,49 +10215,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestFirstTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestFirstTrue(mask, srcMask);
+        public static bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestFirstTrue(leftMask, rightMask);
 
 
         // Test whether the last active element is true
@@ -9874,49 +10266,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestLastTrue(leftMask, rightMask);
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestLastTrue(mask, srcMask);
+        public static bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestLastTrue(leftMask, rightMask);
 
 
         // Interleave even elements from two inputs

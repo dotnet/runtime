@@ -365,7 +365,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public unsafe void ReleasePromiseHolder(nint holderGCHandle)
+        public void ReleasePromiseHolder(nint holderGCHandle)
         {
 #if FEATURE_WASM_MANAGED_THREADS
             lock (this)
@@ -396,8 +396,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     handle.Free();
                 }
 #if FEATURE_WASM_MANAGED_THREADS
-                Marshal.FreeHGlobal((IntPtr)holder.State);
-                holder.State = null;
+                unsafe
+                {
+                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    holder.State = null;
+                }
 #endif
             }
         }

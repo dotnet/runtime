@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -68,22 +70,22 @@ internal static partial class Interop
         internal static unsafe string? GetX509RootStorePath(out bool defaultPath)
         {
             byte usedDefault;
-            IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
+            byte* ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
-            return Marshal.PtrToStringUTF8(ptr);
+            return Utf8StringMarshaller.ConvertToManaged(ptr);
         }
 
         internal static unsafe string? GetX509RootStoreFile()
         {
             byte unused;
-            return Marshal.PtrToStringUTF8(GetX509RootStoreFile_private(&unused));
+            return Utf8StringMarshaller.ConvertToManaged(GetX509RootStoreFile_private(&unused));
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
-        private static unsafe partial IntPtr GetX509RootStorePath_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStorePath_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
-        private static unsafe partial IntPtr GetX509RootStoreFile_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStoreFile_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(
@@ -101,6 +103,29 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
+
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int CryptoNative_IsSignatureAlgorithmAvailable(string algorithm);
+
+        internal static string? IsSignatureAlgorithmAvailable(string algorithm)
+        {
+            const int Available = 1;
+            const int NotAvailable = 0;
+
+            int ret = CryptoNative_IsSignatureAlgorithmAvailable(algorithm);
+            return ret switch
+            {
+                Available => algorithm,
+                NotAvailable => null,
+                int other => throw Fail(other),
+            };
+
+            static CryptographicException Fail(int result)
+            {
+                Debug.Fail($"Unexpected result {result} from {nameof(CryptoNative_IsSignatureAlgorithmAvailable)}");
+                return new CryptographicException();
+            }
+        }
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {

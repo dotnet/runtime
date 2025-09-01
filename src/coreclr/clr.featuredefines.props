@@ -2,11 +2,21 @@
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
+        <FeatureEHFunclets>true</FeatureEHFunclets>
+        <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
+        <FeatureJavaMarshal>true</FeatureJavaMarshal>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 
@@ -22,11 +32,12 @@
         <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
-    <PropertyGroup Condition="!('$(TargetsWindows)' == 'true' AND '$(Platform)' == 'x86')">
-        <FeatureEHFunclets>true</FeatureEHFunclets>
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
+        <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
     <PropertyGroup>
+        <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
@@ -36,6 +47,8 @@
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureEHFunclets)' == 'true'">$(DefineConstants);FEATURE_EH_FUNCLETS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
+        <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>

@@ -1,17 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: VirtualCallStub.CPP
-//
+
 // This file contains the virtual call stub manager and caches
-//
-
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 #include "array.h"
@@ -67,6 +57,8 @@ UINT32 g_mono_miss_counter = 0;         //# of times expected MT did not match a
 UINT32 g_poly_call_counter = 0;         //# of times resolve stubs entered
 UINT32 g_poly_miss_counter = 0;         //# of times cache missed (resolve stub)
 
+EXTERN_C UINT32 g_chained_lookup_call_counter;
+EXTERN_C UINT32 g_chained_lookup_miss_counter;
 UINT32 g_chained_lookup_call_counter = 0;   //# of hits in a chained lookup
 UINT32 g_chained_lookup_miss_counter = 0;   //# of misses in a chained lookup
 
@@ -83,11 +75,7 @@ UINT32 g_bucket_space_dead = 0;         //# of bytes of abandoned buckets not ye
 // This is the number of times a successful chain lookup will occur before the
 // entry is promoted to the front of the chain. This is declared as extern because
 // the default value (CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT) is defined in the header.
-#ifdef TARGET_ARM64
-extern "C" size_t g_dispatch_cache_chain_success_counter;
-#else
-extern size_t g_dispatch_cache_chain_success_counter;
-#endif
+EXTERN_C size_t g_dispatch_cache_chain_success_counter;
 
 #define DECLARE_DATA
 #include "virtualcallstub.h"
@@ -190,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (g_hStubLogFile == INVALID_HANDLE_VALUE) {
         g_hStubLogFile = NULL;
@@ -691,7 +679,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              pIndCellRangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              pIndCellRangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -700,7 +688,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              &cache_entry_rangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -1206,7 +1194,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         DBG_ADDR(slot), DBG_ADDR(pHolder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN(pHolder);
@@ -1491,7 +1479,7 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
     if (!objectType->IsComObjectType()
         && !objectType->IsIDynamicInterfaceCastable())
     {
-        CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+        CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
     }
 #endif // _DEBUG
 
@@ -1569,7 +1557,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     return target;
 }
 
-/* Resolve to a method and return its address or NULL if there is none 
+/* Resolve to a method and return its address or NULL if there is none
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from
    the actual call site.  Hence our strategy is to either return a target address
@@ -1767,7 +1755,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
 #ifndef TARGET_X86
     // Have we failed the dispatch stub too many times?
@@ -1812,16 +1800,23 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
 }
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
+#if defined(TARGET_X86)
 void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
 {
     VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
 }
+
+#ifdef CHAIN_LOOKUP
+ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem)
+{
+    return VirtualCallStubManager::PromoteChainEntry(pElem);
+}
+#endif
 #endif
 
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
@@ -1955,7 +1950,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     /////////////////////////////////////////////////////////////////////////////////////
     // If we failed to find a target in either the resolver or cache entry hash tables,
@@ -1970,7 +1965,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (!objectType->IsComObjectType()
             && !objectType->IsIDynamicInterfaceCastable())
         {
-            CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+            CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
         }
 #endif // _DEBUG
     }
@@ -2247,7 +2242,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     // Target can be NULL only if we can't resolve to an address
     _ASSERTE(target != (PCODE)NULL);
@@ -2327,11 +2322,6 @@ VirtualCallStubManager::Resolver(
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != (PCODE)NULL)
-                implSlot = DispatchSlot(pDirectTarget);
-
             // Only patch to a target if it's not going to call the prestub.
             fShouldPatch = TRUE;
         }
@@ -2488,8 +2478,8 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-    // This is called when trying to create a HelperMethodFrame, which means there are
-    // potentially managed references on the stack that are not yet protected.
+    // This is called in a context where managed references on the stack may not be fully protected,
+    // so garbage collection must be forbidden here.
     GCX_FORBID();
 
     if (token.IsTypedToken())
@@ -2529,7 +2519,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
 #ifndef DACCESS_COMPILE
 
     MethodTable * pMT = GetTypeFromToken(token);
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 
@@ -2844,7 +2834,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                        );
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -2865,7 +2855,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -2905,7 +2895,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                        DispatchStub::e_TYPE_LONG);
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -2926,7 +2916,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3024,7 +3014,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3057,7 +3047,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3096,7 +3086,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     e->pNext  = NULL;
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress((PCODE)addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc((PCODE)addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         pMD->RecordAndBackpatchEntryPointSlot(
@@ -3972,7 +3962,7 @@ static const UINT16 tokenHashBits[32] =
     // Note if you change the number of bits in CALL_STUB_CACHE_NUM_BITS
     // then we have to recompute the hash function
     // Though making the number of bits smaller should still be OK
-    static_assert_no_msg(CALL_STUB_CACHE_NUM_BITS <= 12);
+    static_assert(CALL_STUB_CACHE_NUM_BITS <= 12);
 
     while (token)
     {
@@ -4274,7 +4264,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
     VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
 
-    return pMT->GetMethodDescForSlotAddress(target);
+    return NonVirtualEntry2MethodDesc(target);
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #endif

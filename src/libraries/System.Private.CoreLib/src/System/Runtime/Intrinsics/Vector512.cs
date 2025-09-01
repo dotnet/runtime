@@ -5,8 +5,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
@@ -29,7 +27,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operting on 512-bit vectors.</summary>
-    public static unsafe class Vector512
+    public static class Vector512
     {
         internal const int Size = 64;
 
@@ -51,6 +49,84 @@ namespace System.Runtime.Intrinsics
         {
             [Intrinsic]
             get => IsHardwareAccelerated;
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector512<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <inheritdoc cref="Vector128.get_E{T}" />
+            public static Vector512<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Pi{T}" />
+            public static Vector512<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Tau{T}" />
+            public static Vector512<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector512<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <inheritdoc cref="Vector128.get_Epsilon{T}" />
+            public static Vector512<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NaN{T}" />
+            public static Vector512<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeInfinity{T}" />
+            public static Vector512<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeZero{T}" />
+            public static Vector512<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <inheritdoc cref="Vector128.get_PositiveInfinity{T}" />
+            public static Vector512<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector512<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <inheritdoc cref="Vector128.get_NegativeOne{T}" />
+            public static Vector512<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -79,14 +155,27 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Adds two vectors to compute their sum.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to add with <paramref name="right" />.</param>
-        /// <param name="right">The vector to add with <paramref name="left" />.</param>
-        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="Vector128.Add{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector512<T> Add<T>(Vector512<T> left, Vector512<T> right) => left + right;
+
+        /// <inheritdoc cref="Vector128.AddSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> AddSaturate<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left + right;
+            }
+            else
+            {
+                return Create(
+                    Vector256.AddSaturate(left._lower, right._lower),
+                    Vector256.AddSaturate(left._upper, right._upper)
+                );
+            }
+        }
 
         /// <inheritdoc cref="Vector256.All{T}(Vector256{T}, T)" />
         [Intrinsic]
@@ -159,11 +248,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector512<TFrom>, Vector512<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector512<TFrom>, Vector512<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Byte&gt;" />.</summary>
@@ -2003,11 +2088,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.AsUInt32())).As<uint, T>();
+                return ~IsZero(AndNot(Vector512<float>.PositiveInfinity.AsUInt32(), vector.AsUInt32())).As<uint, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.AsUInt64())).As<ulong, T>();
+                return ~IsZero(AndNot(Vector512<double>.PositiveInfinity.AsUInt64(), vector.AsUInt64())).As<ulong, T>();
             }
             return Vector512<T>.AllBitsSet;
         }
@@ -2082,11 +2167,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+                return Equals(vector, Vector512<float>.NegativeInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+                return Equals(vector, Vector512<double>.NegativeInfinity.As<double, T>());
             }
             return Vector512<T>.Zero;
         }
@@ -2157,11 +2242,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector512<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector512<double>.PositiveInfinity.As<double, T>());
             }
             return Vector512<T>.Zero;
         }
@@ -2342,7 +2427,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector512<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector512<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2352,7 +2437,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadAligned<T>(T* source)
+        public static unsafe Vector512<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
 
@@ -2372,7 +2457,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector512<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+        public static unsafe Vector512<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2721,107 +2806,143 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see langword="Vector512&lt;Double&gt;" /> instances into one <see langword="Vector512&lt;Single&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;Single&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<TResult> Narrow<TSource, TResult>(Vector512<TSource> lower, Vector512<TSource> upper)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
+        {
+            Unsafe.SkipInit(out Vector512<TResult> result);
+
+            for (int i = 0; i < Vector512<TSource>.Count; i++)
+            {
+                TResult value = TResult.CreateTruncating(lower.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector512<TSource>.Count; i < Vector512<TResult>.Count; i++)
+            {
+                TResult value = TResult.CreateTruncating(upper.GetElementUnsafe(i - Vector512<TSource>.Count));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{double}, Vector128{double})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Narrow(Vector512<double> lower, Vector512<double> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<double, float>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;Int16&gt;" /> instances into one <see langword="Vector512&lt;SByte&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;SByte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{short}, Vector128{short})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<sbyte> Narrow(Vector512<short> lower, Vector512<short> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<short, sbyte>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;Int32&gt;" /> instances into one <see langword="Vector512&lt;Int16&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;Int16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{int}, Vector128{int})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<short> Narrow(Vector512<int> lower, Vector512<int> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<int, short>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;Int64&gt;" /> instances into one <see langword="Vector512&lt;Int32&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;Int32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{long}, Vector128{long})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<int> Narrow(Vector512<long> lower, Vector512<long> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<long, int>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;UInt16&gt;" /> instances into one <see langword="Vector512&lt;Byte&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;Byte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ushort}, Vector128{ushort})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<byte> Narrow(Vector512<ushort> lower, Vector512<ushort> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<ushort, byte>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;UInt32&gt;" /> instances into one <see langword="Vector512&lt;UInt16&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;UInt16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{uint}, Vector128{uint})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<ushort> Narrow(Vector512<uint> lower, Vector512<uint> upper)
-        {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
-        }
+            => Narrow<uint, ushort>(lower, upper);
 
-        /// <summary>Narrows two <see langword="Vector512&lt;UInt64&gt;" /> instances into one <see langword="Vector512&lt;UInt32&gt;" />.</summary>
-        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector512&lt;UInt32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ulong}, Vector128{ulong})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<uint> Narrow(Vector512<ulong> lower, Vector512<ulong> upper)
+            => Narrow<ulong, uint>(lower, upper);
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<TResult> NarrowWithSaturation<TSource, TResult>(Vector512<TSource> lower, Vector512<TSource> upper)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
         {
-            return Create(
-                Vector256.Narrow(lower._lower, lower._upper),
-                Vector256.Narrow(upper._lower, upper._upper)
-            );
+            Unsafe.SkipInit(out Vector512<TResult> result);
+
+            for (int i = 0; i < Vector512<TSource>.Count; i++)
+            {
+                TResult value = TResult.CreateSaturating(lower.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector512<TSource>.Count; i < Vector512<TResult>.Count; i++)
+            {
+                TResult value = TResult.CreateSaturating(upper.GetElementUnsafe(i - Vector512<TSource>.Count));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
         }
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{double}, Vector128{double})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> NarrowWithSaturation(Vector512<double> lower, Vector512<double> upper)
+            => NarrowWithSaturation<double, float>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{short}, Vector128{short})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<sbyte> NarrowWithSaturation(Vector512<short> lower, Vector512<short> upper)
+            => NarrowWithSaturation<short, sbyte>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{int}, Vector128{int})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<short> NarrowWithSaturation(Vector512<int> lower, Vector512<int> upper)
+            => NarrowWithSaturation<int, short>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{long}, Vector128{long})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<int> NarrowWithSaturation(Vector512<long> lower, Vector512<long> upper)
+            => NarrowWithSaturation<long, int>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ushort}, Vector128{ushort})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<byte> NarrowWithSaturation(Vector512<ushort> lower, Vector512<ushort> upper)
+            => NarrowWithSaturation<ushort, byte>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{uint}, Vector128{uint})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<ushort> NarrowWithSaturation(Vector512<uint> lower, Vector512<uint> upper)
+            => NarrowWithSaturation<uint, ushort>(lower, upper);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ulong}, Vector128{ulong})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<uint> NarrowWithSaturation(Vector512<ulong> lower, Vector512<ulong> upper)
+            => NarrowWithSaturation<ulong, uint>(lower, upper);
 
         /// <summary>Negates a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3020,7 +3141,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector256.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector256.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector256.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 
@@ -3037,7 +3158,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector256.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector256.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector256.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 
@@ -3706,7 +3827,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector256.Cos(Vector256{double})" />
+        /// <inheritdoc cref="Vector256.SinCos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<double> Sin, Vector512<double> Cos) SinCos(Vector512<double> vector)
         {
@@ -3726,7 +3847,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector256.Cos(Vector256{float})" />
+        /// <inheritdoc cref="Vector256.SinCos(Vector256{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<float> Sin, Vector512<float> Cos) SinCos(Vector512<float> vector)
         {
@@ -3768,7 +3889,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector512<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector512<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3778,7 +3899,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector512<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector512<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
 
@@ -3798,7 +3919,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector512<T> source, T* destination) => source.StoreAligned(destination);
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector512<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3830,14 +3951,27 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
-        /// <summary>Subtracts two vectors to compute their difference.</summary>
-        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
-        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="Vector128.Subtract{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector512<T> Subtract<T>(Vector512<T> left, Vector512<T> right) => left - right;
+
+        /// <inheritdoc cref="Vector128.SubtractSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> SubtractSaturate<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left - right;
+            }
+            else
+            {
+                return Create(
+                    Vector256.SubtractSaturate(left._lower, right._lower),
+                    Vector256.SubtractSaturate(left._upper, right._upper)
+                );
+            }
+        }
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>

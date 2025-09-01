@@ -32,10 +32,7 @@ namespace System.Formats.Asn1
         /// <seealso cref="WriteEnumeratedValue{T}(T,Asn1Tag?)"/>
         public void WriteEnumeratedValue(Enum value, Asn1Tag? tag = null)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             WriteEnumeratedValue(tag?.AsPrimitive() ?? Asn1Tag.Enumerated, value.GetType(), value);
         }

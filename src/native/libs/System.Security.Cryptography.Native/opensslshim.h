@@ -132,6 +132,14 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
 c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
+#ifndef OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING
+#define OSSL_SIGNATURE_PARAM_MESSAGE_ENCODING "message-encoding"
+#endif
+
+#ifndef OSSL_PKEY_PARAM_ML_DSA_SEED
+#define OSSL_PKEY_PARAM_ML_DSA_SEED "seed"
+#endif
+
 #ifndef OSSL_PKEY_PARAM_ML_KEM_SEED
 #define OSSL_PKEY_PARAM_ML_KEM_SEED   "seed"
 #endif
@@ -154,6 +162,14 @@ c_static_assert(EVP_PKEY_KEYPAIR == 135);
 #define EVP_PKEY_PUBLIC_KEY 134
 #else
 c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
+#endif
+
+#ifndef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
+#define OSSL_SIGNATURE_PARAM_CONTEXT_STRING "context-string"
+#endif
+
+#ifndef OSSL_SIGNATURE_PARAM_MU
+#define OSSL_SIGNATURE_PARAM_MU "mu"
 #endif
 
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
@@ -244,6 +260,16 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
 #undef HAVE_OPENSSL_SHA3_SQUEEZE
 #define HAVE_OPENSSL_SHA3_SQUEEZE 1
 int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
+#endif
+
+#if !HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+#undef HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+#define HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT 1
+EVP_SIGNATURE *EVP_SIGNATURE_fetch(OSSL_LIB_CTX *ctx, const char *algorithm, const char *properties);
+void EVP_SIGNATURE_free(EVP_SIGNATURE *signature);
+int EVP_PKEY_sign_message_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *algo, const OSSL_PARAM params[]);
+int EVP_PKEY_verify_message_init(EVP_PKEY_CTX *ctx, EVP_SIGNATURE *algo, const OSSL_PARAM params[]);
+const char *EVP_PKEY_get0_type_name(const EVP_PKEY *key);
 #endif
 
 #if !HAVE_OPENSSL_ENGINE
@@ -525,11 +551,12 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_PKEY_fromdata_init) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
     RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
-    LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get0_type_name) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_RSA) \
+    LIGHTUP_FUNCTION(EVP_PKEY_is_a) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
@@ -539,9 +566,11 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_sign) \
     REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
+    LIGHTUP_FUNCTION(EVP_PKEY_sign_message_init) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
+    LIGHTUP_FUNCTION(EVP_PKEY_verify_message_init) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_bn_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_utf8_string_param) \
     LIGHTUP_FUNCTION(EVP_PKEY_get_octet_string_param) \
@@ -556,6 +585,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_sha3_512) \
     LIGHTUP_FUNCTION(EVP_shake128) \
     LIGHTUP_FUNCTION(EVP_shake256) \
+    LIGHTUP_FUNCTION(EVP_SIGNATURE_fetch) \
+    LIGHTUP_FUNCTION(EVP_SIGNATURE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
@@ -695,6 +726,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_do_handshake) \
     REQUIRED_FUNCTION(SSL_free) \
     REQUIRED_FUNCTION(SSL_get_ciphers) \
+    REQUIRED_FUNCTION(SSL_get_sigalgs) \
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
@@ -1089,24 +1121,29 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_fromdata_init EVP_PKEY_fromdata_init_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
 #define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
-#define EVP_PKEY_get_octet_string_param EVP_PKEY_get_octet_string_param_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
+#define EVP_PKEY_get0_type_name EVP_PKEY_get0_type_name_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
 #define EVP_PKEY_get1_RSA EVP_PKEY_get1_RSA_ptr
+#define EVP_PKEY_is_a EVP_PKEY_is_a_ptr
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
 #define EVP_PKEY_CTX_new_from_name EVP_PKEY_CTX_new_from_name_ptr
 #define EVP_PKEY_CTX_new_from_pkey EVP_PKEY_CTX_new_from_pkey_ptr
+#define EVP_PKEY_CTX_new_from_name EVP_PKEY_CTX_new_from_name_ptr
+#define EVP_PKEY_CTX_set_params EVP_PKEY_CTX_set_params_ptr
 #define EVP_PKEY_public_check EVP_PKEY_public_check_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
 #define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
+#define EVP_PKEY_sign_message_init EVP_PKEY_sign_message_init_ptr
 #define EVP_PKEY_sign EVP_PKEY_sign_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
+#define EVP_PKEY_verify_message_init EVP_PKEY_verify_message_init_ptr
 #define EVP_PKEY_verify EVP_PKEY_verify_ptr
 #define EVP_PKEY_get_bn_param EVP_PKEY_get_bn_param_ptr
 #define EVP_PKEY_get_utf8_string_param EVP_PKEY_get_utf8_string_param_ptr
@@ -1122,6 +1159,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_sha3_512 EVP_sha3_512_ptr
 #define EVP_shake128 EVP_shake128_ptr
 #define EVP_shake256 EVP_shake256_ptr
+#define EVP_SIGNATURE_fetch EVP_SIGNATURE_fetch_ptr
+#define EVP_SIGNATURE_free EVP_SIGNATURE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
@@ -1263,6 +1302,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_do_handshake SSL_do_handshake_ptr
 #define SSL_free SSL_free_ptr
 #define SSL_get_ciphers SSL_get_ciphers_ptr
+#define SSL_get_sigalgs SSL_get_sigalgs_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_certificate SSL_get_certificate_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr

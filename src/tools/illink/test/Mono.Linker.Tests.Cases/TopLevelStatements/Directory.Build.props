@@ -7,4 +7,8 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../../Mono.Linker.Tests.Cases.Expectations/Support/DynamicallyAccessedMembersAttribute.cs" Link="Support\DynamicallyAccessedMembersAttribute.cs" />
+  </ItemGroup>
+
 </Project>

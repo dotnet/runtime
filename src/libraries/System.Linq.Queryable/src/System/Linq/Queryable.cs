@@ -3,8 +3,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -178,6 +180,103 @@ namespace System.Linq
             return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing an inner join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void JoinEx1()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { magnus, terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Create a list of Person-Pet pairs where
+        ///     // each element is an anonymous type that contains a
+        ///     // Pet's name and the name of the Person that owns the Pet.
+        ///     var query =
+        ///         people.Join(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person.Name, Pet = pet.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName,
+        ///             obj.Pet);
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  Hedlund, Magnus - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of an inner join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of matching elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("Join`4", typeof(Enumerable))]
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
         {
@@ -194,6 +293,105 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing an inner join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void JoinEx1()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { magnus, terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Join the list of Person objects and the list of Pet objects
+        ///     // to create a list of person-pet pairs where each element is
+        ///     // an anonymous type that contains the name of pet and the name
+        ///     // of the person that owns the pet.
+        ///     var query =
+        ///         people.AsQueryable().Join(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person.Name, Pet = pet.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName,
+        ///             obj.Pet);
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  Hedlund, Magnus - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of an inner join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of matching elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("Join`4", typeof(Enumerable))]
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
@@ -242,6 +440,104 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a left outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void LeftJoin()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { magnus, terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Create a list of Person-Pet pairs where
+        ///     // each element is an anonymous type that contains a
+        ///     // Pet's name and the name of the Person that owns the Pet.
+        ///     var query =
+        ///         people.AsQueryable().LeftJoin(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person.Name, Pet = pet?.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName,
+        ///             obj.Pet ?? "NONE");
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  Hedlund, Magnus - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        ///  Chapkin, Tom - NONE
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of a left outer join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />, plus a pair for each element in <paramref name="outer" /> that has no matches in <paramref name="inner" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector)
         {
@@ -258,6 +554,105 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a left outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void LeftJoin()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { magnus, terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Create a list of Person-Pet pairs where
+        ///     // each element is an anonymous type that contains a
+        ///     // Pet's name and the name of the Person that owns the Pet.
+        ///     var query =
+        ///         people.AsQueryable().LeftJoin(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person.Name, Pet = pet?.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName,
+        ///             obj.Pet ?? "NONE");
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  Hedlund, Magnus - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        ///  Chapkin, Tom - NONE
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of a left outer join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />, plus a pair for each element in <paramref name="outer" /> that has no matches in <paramref name="inner" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
@@ -472,6 +867,103 @@ namespace System.Linq
                     source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a right outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void LeftJoin()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Create a list of Person-Pet pairs where
+        ///     // each element is an anonymous type that contains a
+        ///     // Pet's name and the name of the Person that owns the Pet.
+        ///     var query =
+        ///         people.AsQueryable().RightJoin(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person?.Name, Pet = pet.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName ?? "NONE",
+        ///             obj.Pet);
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  NONE - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of a right outer join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />, plus a pair for each element in <paramref name="inner" /> that has no matches in <paramref name="outer" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("RightJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector)
         {
@@ -488,6 +980,104 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <typeparamref name="TResult" /> that are obtained by performing a right outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        /// <example>
+        /// <para>
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// </para>
+        /// <code>
+        /// class Person
+        /// {
+        ///     public string Name { get; set; }
+        /// }
+        ///
+        /// class Pet
+        /// {
+        ///     public string Name { get; set; }
+        ///     public Person Owner { get; set; }
+        /// }
+        ///
+        /// public static void LeftJoin()
+        /// {
+        ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
+        ///     Person terry = new Person { Name = "Adams, Terry" };
+        ///     Person charlotte = new Person { Name = "Weiss, Charlotte" };
+        ///     Person tom = new Person { Name = "Chapkin, Tom" };
+        ///
+        ///     Pet barley = new Pet { Name = "Barley", Owner = terry };
+        ///     Pet boots = new Pet { Name = "Boots", Owner = terry };
+        ///     Pet whiskers = new Pet { Name = "Whiskers", Owner = charlotte };
+        ///     Pet daisy = new Pet { Name = "Daisy", Owner = magnus };
+        ///
+        ///     List{Person} people = new List{Person} { terry, charlotte, tom };
+        ///     List{Pet} pets = new List{Pet} { barley, boots, whiskers, daisy };
+        ///
+        ///     // Create a list of Person-Pet pairs where
+        ///     // each element is an anonymous type that contains a
+        ///     // Pet's name and the name of the Person that owns the Pet.
+        ///     var query =
+        ///         people.AsQueryable().RightJoin(pets,
+        ///             person => person,
+        ///             pet => pet.Owner,
+        ///             (person, pet) =>
+        ///                 new { OwnerName = person?.Name, Pet = pet.Name });
+        ///
+        ///     foreach (var obj in query)
+        ///     {
+        ///         Console.WriteLine(
+        ///             "{0} - {1}",
+        ///             obj.OwnerName ?? "NONE",
+        ///             obj.Pet);
+        ///     }
+        /// }
+        ///
+        /// /*
+        ///  This code produces the following output:
+        ///
+        ///  NONE - Daisy
+        ///  Adams, Terry - Barley
+        ///  Adams, Terry - Boots
+        ///  Weiss, Charlotte - Whiskers
+        /// */
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <para>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}" /> whose type argument is one of the <see cref="Func{T,TResult}" /> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}" />.
+        /// </para>
+        /// <para>
+        /// The <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> method
+        /// generates a <see cref="MethodCallExpression" /> that represents calling
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// </para>
+        /// <para>
+        /// The query behavior that occurs as a result of executing an expression tree that represents calling
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
+        /// depends on the implementation of the type of the <paramref name="outer" /> parameter.
+        /// The expected behavior is that of a right outer join.
+        /// The <paramref name="outerKeySelector" /> and <paramref name="innerKeySelector" /> functions are used to extract keys from <paramref name="outer" /> and <paramref name="inner" />, respectively.
+        /// These keys are compared for equality to match elements from each sequence.
+        /// A pair of elements is stored for each element in <paramref name="inner" /> that matches an element in <paramref name="outer" />, plus a pair for each element in <paramref name="inner" /> that has no matches in <paramref name="outer" />.
+        /// Then the <paramref name="resultSelector" /> function is invoked to project a result object from each pair of elements.
+        /// </para>
+        /// </remarks>
         [DynamicDependency("RightJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
@@ -1780,11 +2370,14 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
         /// <param name="source">A sequence of values to determine the minimum value of.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
-        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <param name="comparer">The <see cref="IComparer{TSource}" /> to compare elements.</param>
         /// <returns>The value with the minimum key in the sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TSource}" /> interface.</exception>
         [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        [Obsolete(Obsoletions.QueryableMinByMaxByTSourceObsoleteMessage, DiagnosticId=Obsoletions.QueryableMinByMaxByTSourceObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [OverloadResolutionPriority(-1)]
         public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1797,6 +2390,30 @@ namespace System.Linq
                     source.Expression,
                     Expression.Quote(keySelector),
                     Expression.Constant(comparer, typeof(IComparer<TSource>))));
+        }
+
+        /// <summary>Returns the minimum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <returns>The value with the minimum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        [DynamicDependency("MinBy`2", typeof(Enumerable))]
+        public static TSource? MinBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MinBy).Method,
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Max`1", typeof(Enumerable))]
@@ -1870,11 +2487,14 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
         /// <param name="source">A sequence of values to determine the maximum value of.</param>
         /// <param name="keySelector">A function to extract the key for each element.</param>
-        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <param name="comparer">The <see cref="IComparer{TSource}" /> to compare elements.</param>
         /// <returns>The value with the maximum key in the sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TSource}" /> interface.</exception>
         [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        [Obsolete(Obsoletions.QueryableMinByMaxByTSourceObsoleteMessage, DiagnosticId=Obsoletions.QueryableMinByMaxByTSourceObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [OverloadResolutionPriority(-1)]
         public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TSource>? comparer)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -1887,6 +2507,30 @@ namespace System.Linq
                     source.Expression,
                     Expression.Quote(keySelector),
                     Expression.Constant(comparer, typeof(IComparer<TSource>))));
+        }
+
+        /// <summary>Returns the maximum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <returns>The value with the maximum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        [DynamicDependency("MaxBy`2", typeof(Enumerable))]
+        public static TSource? MaxBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, TSource?>(MaxBy).Method,
+                    source.Expression,
+                    Expression.Quote(keySelector),
+                    Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]

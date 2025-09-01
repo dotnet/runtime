@@ -45,7 +45,7 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
-#ifndef _INC_WINDOWS
+#ifdef TARGET_UNIX
 // -----------------------------------------------------------------------------------------------------------
 //
 // Aliases for Win32 types
@@ -80,12 +80,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define S_OK                                   0x0
 #define E_FAIL                                 0x80004005
 #define E_OUTOFMEMORY                          0x8007000E
-#define COR_E_EXECUTIONENGINE                  0x80131506
-#define CLR_E_GC_BAD_AFFINITY_CONFIG           0x8013200A
-#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
-#define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
-#define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
-#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
@@ -99,8 +93,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#define C_ASSERT(cond) static_assert( cond, #cond )
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
@@ -337,6 +329,14 @@ inline uint8_t BitScanReverse64(uint32_t *bitIndex, uint64_t mask)
     return mask != 0 ? TRUE : FALSE;
 #endif // _MSC_VER
 }
+#endif // TARGET_UNIX
+
+#define COR_E_EXECUTIONENGINE                  0x80131506
+#define CLR_E_GC_BAD_AFFINITY_CONFIG           0x8013200A
+#define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
+#define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
+#define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
+#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 // Aligns a size_t to the specified alignment. Alignment must be a power
 // of two.
@@ -382,13 +382,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
     size_t as_size_t = reinterpret_cast<size_t>(ptr);
     return reinterpret_cast<void*>(ALIGN_DOWN(as_size_t, alignment));
 }
-
-typedef struct _PROCESSOR_NUMBER {
-    uint16_t Group;
-    uint8_t Number;
-    uint8_t Reserved;
-} PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
-#endif // _INC_WINDOWS
 
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -465,7 +458,7 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
-#define PREFIX_ASSUME(cond) ASSERT(cond)
+#define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
 #define UI64(_literal) _literal##ULL
 

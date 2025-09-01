@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -214,6 +214,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="Arg_BitArrayTypeUnsupported" xml:space="preserve">
+    <value>Only supported array types for CopyTo on BitArrays are Boolean[], Int32[] and Byte[].</value>
+  </data>
   <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
     <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
   </data>
@@ -237,6 +240,9 @@
   </data>
   <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
     <value>The collection's comparer does not support the requested operation.</value>
+  </data>
+  <data name="InvalidOperation_TypeMapMissingEntryAssembly" xml:space="preserve">
+    <value>Entry assembly is required but was not found.</value>
   </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Not enough space available in the buffer.</value>
@@ -627,8 +633,8 @@
   <data name="Arg_NamedParamTooBig" xml:space="preserve">
     <value>Named parameter array cannot be bigger than argument array.</value>
   </data>
-  <data name="Arg_NDirectBadObject" xml:space="preserve">
-    <value>No PInvoke conversion exists for value passed to Object-typed parameter.</value>
+  <data name="Arg_PInvokeBadObject" xml:space="preserve">
+    <value>No PInvoke conversion exists for the value passed to an Object-typed parameter.</value>
   </data>
   <data name="Arg_Need1DArray" xml:space="preserve">
     <value>Array was not a one-dimensional array.</value>
@@ -875,6 +881,9 @@
   </data>
   <data name="Argument_ArrayParsingError" xml:space="preserve">
     <value>Error parsing array spec.</value>
+  </data>
+  <data name="Argument_ArrayTooLarge" xml:space="preserve">
+    <value>The input array length must not exceed Int32.MaxValue / {0}. Otherwise BitArray.Length would exceed Int32.MaxValue.</value>
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
@@ -2978,6 +2987,9 @@
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
     <value>ByRef to void return values are not supported in reflection invocation.</value>
   </data>
+  <data name="NotSupported_Async" xml:space="preserve">
+    <value>Async infrastructure methods are not supported in reflection invocation.</value>
+  </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>
   </data>
@@ -3001,6 +3013,9 @@
   </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
+  </data>
+  <data name="NotSupported_TypeBuilderInstantiation_ResolvingMembers" xml:space="preserve">
+    <value>TypeBuilder generic instantiation does not support resolving members. Use TypeBuilder.{0} instead.</value>
   </data>
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
@@ -3400,6 +3415,9 @@
   </data>
   <data name="SemaphoreSlim_Wait_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
+  </data>
+  <data name="SemaphoreSlim_Wait_TimeSpanTimeoutWrong" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), or be non-negative.</value>
   </data>
   <data name="Serialization_BadParameterInfo" xml:space="preserve">
     <value>Non existent ParameterInfo. Position bigger than member's parameters length.</value>
@@ -3905,6 +3923,12 @@
   <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
     <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeJavaMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize JavaMarshal.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectGCHandleType" xml:space="preserve">
+    <value>Attempt to get context from an unsupport GCHandle type.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
@@ -4187,6 +4211,9 @@
   <data name="ClassLoad_InlineArrayExplicit" xml:space="preserve">
     <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'.  Assembly: '{1}'.</value>
   </data>
+  <data name="ClassLoad_InlineArrayExplicitSize" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit size. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
   </data>
@@ -4354,5 +4381,40 @@
   </data>
   <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
     <value>VariantWrappers cannot be stored in Variants.</value>
+  </data>
+  <data name="NotImplemented_CreateObjectWithUserState" xml:space="preserve">
+    <value>Creating an object wrapper for a COM instance with user state is not implemented.</value>
+  </data>
+  <data name="PlatformNotSupported_DynamicEntrypoint" xml:space="preserve">
+    <value>Dynamic entrypoint allocation is not supported in the current environment.</value>
+  </data>  <data name="Arg_InvalidOperationException_CannotReleaseUnownedMutex" xml:space="preserve">
+    <value>Cannot release a lock that is not owned by the current thread.</value>
+  </data>
+  <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
+    <value>Failed to initialize pthread mutex</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
+  <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
+    <value>The file '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_FilePermissionsIncorrect" xml:space="preserve">
+    <value>The file '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
+    <value>The path '{0}' exists but is not a directory.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
+    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
 </root>
