@@ -40,8 +40,10 @@
 
 #if defined(_MSC_VER)
 #define NOINLINE __declspec(noinline)
+#define FORCEINLINE __forceinline
 #else
 #define NOINLINE __attribute__((noinline))
+#define FORCEINLINE __attribute__((always_inline)) inline
 #endif
 
 #if defined(_MSC_VER)

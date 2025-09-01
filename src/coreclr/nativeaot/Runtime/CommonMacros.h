@@ -41,10 +41,6 @@
 #define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
-#ifndef FORCEINLINE
-#define FORCEINLINE __forceinline
-#endif
-
 #ifdef __GNUC__
 #define __forceinline __attribute__((always_inline)) inline
 #endif // __GNUC__

@@ -143,14 +143,6 @@ extern bool g_arm64_atomics_present;
 
 #define UNALIGNED
 
-#ifndef FORCEINLINE
-#if _MSC_VER < 1200
-#define FORCEINLINE inline
-#else
-#define FORCEINLINE __forceinline
-#endif
-#endif
-
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
 #define NOOPT_ATTRIBUTE optnone

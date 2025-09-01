@@ -1657,14 +1657,6 @@ typedef enum
 //*****************************************************************************
 //*****************************************************************************
 
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
-
 
 // We need a version that is FORCEINLINE on retail and NOINLINE on debug
 
