@@ -25,7 +25,7 @@ private: // static
     static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
 
 private:
-    VolatilePtr<BYTE> _pActualCode;
+    Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
 

@@ -224,9 +224,9 @@ void* DispatchCallSimple(
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef TARGET_WASM
     callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE);
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -537,7 +537,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.pTarget = m_pCallTarget;
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = m_argIt.GetArgSize();
-#endif
+#endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
 

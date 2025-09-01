@@ -40,7 +40,7 @@ void* PortableEntryPoint::GetActualCode(TADDR addr)
     }
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pActualCode != (BYTE*)NULL);
+    _ASSERTE(portableEntryPoint->_pActualCode != (void*)NULL);
     return portableEntryPoint->_pActualCode;
 }
 
@@ -50,8 +50,8 @@ void PortableEntryPoint::SetActualCode(TADDR addr, void* actualCode)
     _ASSERTE(actualCode != NULL);
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pActualCode == (BYTE*)NULL || portableEntryPoint->_pActualCode == (BYTE*)actualCode);
-    portableEntryPoint->_pActualCode = (BYTE*)actualCode;
+    _ASSERTE(portableEntryPoint->_pActualCode == (void*)NULL || portableEntryPoint->_pActualCode == actualCode);
+    portableEntryPoint->_pActualCode = actualCode;
 }
 
 MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
