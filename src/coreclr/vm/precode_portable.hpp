@@ -13,6 +13,8 @@ class PortableEntryPoint final
 {
 public: // static
     static bool IsNativeEntryPoint(TADDR addr);
+    static TADDR MarkNativeEntryPoint(TADDR entryPoint);
+
     static void* GetActualCode(TADDR addr);
     static void SetActualCode(TADDR addr, void* actualCode);
     static MethodDesc* GetMethodDesc(TADDR addr);

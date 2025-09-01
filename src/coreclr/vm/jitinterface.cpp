@@ -10896,7 +10896,13 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     if (pNativeEntrypoint != NULL)
     {
         pNativeEntrypoint->accessType = IAT_VALUE;
-        pNativeEntrypoint->addr = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
+        TADDR entryPoint = GetEEFuncEntryPoint(pfnHelper);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        entryPoint = PortableEntryPoint::MarkNativeEntryPoint(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+        pNativeEntrypoint->addr = (LPVOID)entryPoint;
     }
 
 exit: ;
