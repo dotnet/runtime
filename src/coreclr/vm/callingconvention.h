@@ -491,31 +491,31 @@ public:
 
                 while (typ == ELEMENT_TYPE_VALUETYPE &&
                     pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()	||
-                    pMT->GetNumInstanceFieldBytes() == 4	
-                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.	
-                {	
-                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
+                    pMT->GetNumInstanceFieldBytes() == 4
+                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.
+                {
+                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
                     CorElementType type = pFD->GetFieldType();
 
                     bool exitLoop = false;
-                    switch (type)	
+                    switch (type)
                     {
                         case ELEMENT_TYPE_VALUETYPE:
                         {
-                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
-                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
+                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?
+                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
                             pMT = fldHnd.GetMethodTable();
                             FALLTHROUGH;
-                        }	
+                        }
                         case ELEMENT_TYPE_PTR:
                         case ELEMENT_TYPE_I:
                         case ELEMENT_TYPE_U:
-                        case ELEMENT_TYPE_I4:	
+                        case ELEMENT_TYPE_I4:
                         case ELEMENT_TYPE_U4:
-                        {	
+                        {
                             typ = type;
-                            break;	
+                            break;
                         }
                         default:
                             exitLoop = true;
@@ -853,7 +853,7 @@ public:
             pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
-        else 
+        else
 #endif // UNIX_AMD64_ABI
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
@@ -1874,11 +1874,14 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_WASM)
-    int cbArg = ALIGN_UP(StackElemSize(argSize), TARGET_POINTER_SIZE);
+    // See duplicate definition in interpreter code.
+#define INTERP_STACK_SLOT_SIZE 8
+    int cbArg = ALIGN_UP(StackElemSize(argSize), INTERP_STACK_SLOT_SIZE);
+#undef INTERP_STACK_SLOT_SIZE
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
-    
+
     m_ofsStack += cbArg;
-    
+
     return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");

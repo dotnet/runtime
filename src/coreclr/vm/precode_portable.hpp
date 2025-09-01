@@ -38,7 +38,7 @@ public:
     // Query methods for entry point state.
     bool IsValid() const;
 
-    bool IsByteCodeCompiled() const
+    bool HasInterpreterCode() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
@@ -52,7 +52,7 @@ public:
         return _pActualCode != nullptr;
     }
 
-    bool IsReadyForR2R() const
+    bool IsPreparedForNativeCall() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
