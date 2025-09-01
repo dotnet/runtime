@@ -180,7 +180,6 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - ios_arm64
-      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

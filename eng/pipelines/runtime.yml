@@ -1097,7 +1097,6 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            - tvos_arm64
             - iossimulator_arm64
             - maccatalyst_arm64
           variables:
