@@ -5654,6 +5654,9 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         // varargs goes through vararg PInvoke stub
         //
         pStub = TheVarargPInvokeStub(pNMD->HasRetBuffArg());
+
+        // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
+        (void)pNMD->GetOrCreatePrecode();
     }
 
     if (pNMD->IsEarlyBound())

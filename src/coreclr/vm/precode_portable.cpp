@@ -25,7 +25,7 @@ void* PortableEntryPoint::GetActualCode(TADDR addr)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pActualCode != NULL);
+    _ASSERTE(portableEntryPoint->_pActualCode != (BYTE*)NULL);
     return portableEntryPoint->_pActualCode;
 }
 
@@ -35,8 +35,8 @@ void PortableEntryPoint::SetActualCode(TADDR addr, void* actualCode)
     _ASSERTE(actualCode != NULL);
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pActualCode == NULL);
-    portableEntryPoint->_pActualCode = actualCode;
+    _ASSERTE(portableEntryPoint->_pActualCode == (BYTE*)NULL || portableEntryPoint->_pActualCode == (BYTE*)actualCode);
+    portableEntryPoint->_pActualCode = (BYTE*)actualCode;
 }
 
 MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
@@ -73,7 +73,7 @@ PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(TADDR addr)
     _ASSERTE(addr != NULL);
 
     PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)addr;
-    _ASSERTE(portableEntryPoint->_canary == CANARY_VALUE);
+    _ASSERTE(portableEntryPoint->IsValid());
     return portableEntryPoint;
 }
 
@@ -84,6 +84,13 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pMD = pMD;
     _pInterpreterData = NULL;
     INDEBUG(_canary = CANARY_VALUE);
+}
+
+bool PortableEntryPoint::IsValid() const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(_canary == CANARY_VALUE);
+    return _pMD != nullptr;
 }
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;

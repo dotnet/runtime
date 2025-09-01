@@ -75,6 +75,42 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 }
 #endif // !TARGET_WASM
 
+#ifdef _DEBUG
+void DBG_PrintInterpreterStack()
+{
+    Thread* pThread = GetThread();
+
+    int32_t frameCount = 0;
+
+    // Get the "capital F" frame and start walking.
+    for (Frame* pFrame = pThread->GetFrame(); pFrame != FRAME_TOP; pFrame = pFrame->PtrNextFrame())
+    {
+        fprintf(stderr, "Frame (%s): %p\n", Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()), pFrame);
+        if (pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame)
+        {
+            fprintf(stderr, "    Skipping %p\n", pFrame);
+            continue;
+        }
+
+        // Walk the current block of managed frames.
+        InterpreterFrame* pInterpFrame = (InterpreterFrame*)pFrame;
+        InterpMethodContextFrame* cxtFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+        while (cxtFrame != NULL)
+        {
+            MethodDesc* currentMD = ((MethodDesc*)cxtFrame->startIp->Method->methodHnd);
+
+            size_t irOffset = ((size_t)cxtFrame->ip - (size_t)(&cxtFrame->startIp[1])) / sizeof(size_t);
+            fprintf(stderr, "%4d) %s::%s, IR_%04zx\n",
+                frameCount++,
+                currentMD->GetMethodTable()->GetDebugClassName(),
+                currentMD->GetName(),
+                irOffset);
+            cxtFrame = cxtFrame->pParent;
+        }
+    }
+}
+#endif // _DEBUG
+
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -402,6 +438,9 @@ static void CallPreStub(MethodDesc *pMD, CallerGCMode callerGCMode = CallerGCMod
 {
     STATIC_STANDARD_VM_CONTRACT;
     _ASSERTE(pMD != NULL);
+
+    if (!pMD->IsPointingToPrestub())
+        return;
 
     struct Param
     {
@@ -1734,9 +1773,25 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_P:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        int stackOffset = pMethod->allocaSize;
+                        callArgsOffset = stackOffset;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
                     ip += 4;
                     break;
@@ -1754,9 +1809,26 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PS:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
                     void* helperArg = pMethod->pDataItems[ip[4]];
 
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        int stackOffset = pMethod->allocaSize;
+                        callArgsOffset = stackOffset;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = LOCAL_VAR(ip[2], void*);
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
                     ip += 5;
                     break;
@@ -1803,8 +1875,24 @@ MAIN_LOOP:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
 
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4]);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        int stackOffset = pMethod->allocaSize;
+                        callArgsOffset = stackOffset;
 
+                        // Pass arguments to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = LOCAL_VAR(ip[3], void*);
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[3], void*));
                     ip += 6;
                     break;

@@ -224,9 +224,13 @@ void* DispatchCallSimple(
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
 
-#ifdef TARGET_WASM
-    PORTABILITY_ASSERT("wasm need to fill call description data");
-#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    callDescrData.pMD = PortableEntryPoint::GetMethodDesc(pTargetAddress);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE);
+
+    TransitionBlock block{};
+    callDescrData.pTransitionBlock = &block;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {

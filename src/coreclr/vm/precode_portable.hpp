@@ -23,7 +23,7 @@ private: // static
     static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
 
 private:
-    void* _pActualCode;
+    VolatilePtr<BYTE> _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
 
@@ -34,14 +34,29 @@ public:
     void Init(MethodDesc* pMD);
 
     // Query methods for entry point state.
-    bool IsInitialized() const { return _pMD != nullptr; }
-    bool IsByteCodeCompiled() const { return IsInitialized() && _pInterpreterData != nullptr; }
-    bool HasNativeCode() const { return IsInitialized() && _pActualCode != nullptr; }
+    bool IsValid() const;
+
+    bool IsByteCodeCompiled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pInterpreterData != nullptr;
+    }
+
+    bool HasNativeCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pActualCode != nullptr;
+    }
+
     bool IsReadyForR2R() const
     {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
         // State when interpreted method was prepared to be called from R2R compiled code.
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
-        return IsInitialized() && _pInterpreterData != nullptr && _pActualCode != nullptr;
+        return _pInterpreterData != nullptr && _pActualCode != nullptr;
     }
 };
 

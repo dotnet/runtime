@@ -1967,7 +1967,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CONTRACTL
     {
         THROWS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMDDelegateInvoke));
         PRECONDITION(CheckPointer(pArgs));
         PRECONDITION(CheckPointer(pRet));

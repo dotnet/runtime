@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include "../../interpreter/interpretershared.h"
+
 extern "C" void STDCALL CallCountingStubCode()
 {
     PORTABILITY_ASSERT("CallCountingStubCode is not implemented on wasm");
@@ -504,22 +506,150 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
 
 namespace
 {
-    void CallFuncVoidI32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
+#define ARG(i) *((int32_t*)(pArgs + (i * INTERP_STACK_SLOT_SIZE)))
+
+    void CallFunc_Void_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        void (*fn)(int32_t) = (void (*)(int32_t))ftn;
-        (*fn)(((int32_t*)pArgs)[0]);
+        void (*fptr)(void) = (void (*)(void))pcode;
+        (*fptr)();
     }
 
-    void CallFuncVoidI32I32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    void CallFunc_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        void (*fn)(int32_t, int32_t) = (void (*)(int32_t, int32_t))ftn;
-        (*fn)(((int32_t*)pArgs)[0], ((int32_t*)pArgs)[2]);
+        void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
+        (*fptr)(ARG(0));
     }
 
-    void CallFuncVoidI32I32I32(PCODE ftn, int8_t *pArgs, int8_t *pRet)
+    void CallFunc_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        void (*fn)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))ftn;
-        (*fn)(((int32_t*)pArgs)[0], ((int32_t*)pArgs)[2], ((int32_t*)pArgs)[4]);
+        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1));
+    }
+
+    void CallFunc_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2));
+    }
+
+    void CallFunc_Void_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(void) = (int32_t (*)(void))pcode;
+        *(int32_t*)pRet = (*fptr)();
+    }
+
+    void CallFunc_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0));
+    }
+
+    void CallFunc_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1));
+    }
+
+    void CallFunc_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2));
+    }
+
+#undef ARG
+}
+
+namespace
+{
+    enum class CalliSigThunk
+    {
+        Unknown,
+        Void_RetVoid,
+        I32_RetVoid,
+        I32_I32_RetVoid,
+        I32_I32_I32_RetVoid,
+        Void_RetI32,
+        I32_RetI32,
+        I32_I32_RetI32,
+        I32_I32_I32_RetI32,
+    };
+
+    bool ConvertibleToI32(CorElementType argType)
+    {
+            // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
+            switch (argType)
+            {
+                case ELEMENT_TYPE_BOOLEAN:
+                case ELEMENT_TYPE_CHAR:
+                case ELEMENT_TYPE_I1:
+                case ELEMENT_TYPE_U1:
+                case ELEMENT_TYPE_I2:
+                case ELEMENT_TYPE_U2:
+                case ELEMENT_TYPE_I4:
+                case ELEMENT_TYPE_U4:
+                case ELEMENT_TYPE_STRING:
+                case ELEMENT_TYPE_PTR:
+                case ELEMENT_TYPE_BYREF:
+                case ELEMENT_TYPE_VALUETYPE:
+                case ELEMENT_TYPE_CLASS:
+                case ELEMENT_TYPE_ARRAY:
+                case ELEMENT_TYPE_TYPEDBYREF:
+                case ELEMENT_TYPE_I:
+                case ELEMENT_TYPE_U:
+                case ELEMENT_TYPE_FNPTR:
+                case ELEMENT_TYPE_SZARRAY:
+                    return true;
+                default:
+                    return false;
+            }
+    }
+
+    // This is a simple signature computation routine for signatures currently supported in the wasm environment.
+    // Note: Currently only validates void return type and i32 wasm convertible arguments.
+    CalliSigThunk ComputeCalliSigThunk(MetaSig sig)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(sizeof(int32_t) == sizeof(void*));
+
+        // Ensure an unmanaged calling convention.
+        BYTE callConv = sig.GetCallingConvention();
+        switch (callConv)
+        {
+            case IMAGE_CEE_CS_CALLCONV_C:
+            case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                break;
+            default:
+                return CalliSigThunk::Unknown;
+        }
+
+        // Check return value
+        bool returnsVoid = sig.IsReturnTypeVoid();
+        if (!returnsVoid && !ConvertibleToI32(sig.GetReturnType()))
+            return CalliSigThunk::Unknown;
+
+        CalliSigThunk baseType = returnsVoid ? CalliSigThunk::Void_RetVoid : CalliSigThunk::Void_RetI32;
+
+        // Ensure all arguments are wasm i32 compatible types.
+        for (CorElementType argType = sig.NextArg();
+            argType != ELEMENT_TYPE_END;
+            argType = sig.NextArg())
+        {
+            if (!ConvertibleToI32(argType))
+                return CalliSigThunk::Unknown;
+        }
+
+        int32_t numArgs = sig.NumFixedArgs();
+        switch (numArgs)
+        {
+            case 0: return baseType;
+            case 1: return (CalliSigThunk)((int)baseType + 1);
+            case 2: return (CalliSigThunk)((int)baseType + 2);
+            case 3: return (CalliSigThunk)((int)baseType + 3);
+            default: return CalliSigThunk::Unknown;
+        };
     }
 }
 
@@ -527,18 +657,21 @@ LPVOID GetCookieForCalliSig(MetaSig* pMetaSig)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(CheckPointer(pMetaSig));
-    _ASSERTE(pMetaSig->IsReturnTypeVoid());
 
-    int32_t numArgs = pMetaSig->NumFixedArgs();
-    switch (numArgs)
+    CalliSigThunk thunkType = ComputeCalliSigThunk(*pMetaSig);
+    switch (thunkType)
     {
-        case 1: return (LPVOID)&CallFuncVoidI32;
-        case 2: return (LPVOID)&CallFuncVoidI32I32;
-        case 3: return (LPVOID)&CallFuncVoidI32I32I32;
-        default:
-            PORTABILITY_ASSERT("GetCookieForCalliSig: more than 3 arguments needs to be implemented");
-            break;
+        case CalliSigThunk::Void_RetVoid: return (LPVOID)&CallFunc_Void_RetVoid;
+        case CalliSigThunk::I32_RetVoid: return (LPVOID)&CallFunc_I32_RetVoid;
+        case CalliSigThunk::I32_I32_RetVoid: return (LPVOID)&CallFunc_I32_I32_RetVoid;
+        case CalliSigThunk::I32_I32_I32_RetVoid: return (LPVOID)&CallFunc_I32_I32_I32_RetVoid;
+        case CalliSigThunk::Void_RetI32: return (LPVOID)&CallFunc_Void_RetI32;
+        case CalliSigThunk::I32_RetI32: return (LPVOID)&CallFunc_I32_RetI32;
+        case CalliSigThunk::I32_I32_RetI32: return (LPVOID)&CallFunc_I32_I32_RetI32;
+        case CalliSigThunk::I32_I32_I32_RetI32: return (LPVOID)&CallFunc_I32_I32_I32_RetI32;
+        default: break;
     }
 
+    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
     return NULL;
 }

@@ -2303,10 +2303,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-        // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
-        if (IsVarArg())
-            GetOrCreatePrecode();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsFCall())

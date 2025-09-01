@@ -33,6 +33,13 @@ extern "C" {
 
 #ifndef _ASSERTE
 #if defined(_DEBUG)
+
+#ifdef FEATURE_INTERPRETER
+extern void DBG_PrintInterpreterStack();
+#else // !FEATURE_INTERPRETER
+#define DBG_PrintInterpreterStack() ((void)0)
+#endif // FEATURE_INTERPRETER
+
 #define _ASSERTE(e) do {                                        \
         if (!(e)) {                                             \
             fprintf (stderr,                                    \
@@ -43,6 +50,7 @@ extern "C" {
                      "\tProcess:    %d\n",                      \
                      #e, __LINE__, __FILE__, __FUNCTION__,      \
                      GetCurrentProcessId());                    \
+            DBG_PrintInterpreterStack();                        \
             DebugBreak();                                       \
         }                                                       \
     }while (0)
