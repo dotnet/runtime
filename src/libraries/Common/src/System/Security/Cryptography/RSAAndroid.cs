@@ -657,7 +657,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(padding != null);
                 signature = null;
 
-                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding.Mode != RSASignaturePaddingMode.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }
@@ -726,7 +726,7 @@ namespace System.Security.Cryptography
             {
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
-                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding.Mode != RSASignaturePaddingMode.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }

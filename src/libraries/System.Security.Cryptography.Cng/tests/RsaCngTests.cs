@@ -15,12 +15,15 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class RsaCngTests
     {
-        [Fact]
-        public static void SignVerifyHashRoundTrip()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(32)]
+        [InlineData(64)]
+        public static void SignVerifyHashRoundTrip(int saltLength)
         {
             byte[] message = "781021abcd982139a8bc91387870ac01".HexToByteArray();
             byte[] hash = SHA1.Create().ComputeHash(message);
-            TestSignVerifyHashRoundTrip(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pss, 0x100);
+            TestSignVerifyHashRoundTrip(hash, HashAlgorithmName.SHA1, RSASignaturePadding.CreatePss(saltLength), 0x100);
         }
 
         private static void TestSignVerifyHashRoundTrip(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding paddingMode, int expectedSignatureLength)
