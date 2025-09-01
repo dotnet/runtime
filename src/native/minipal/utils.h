@@ -39,6 +39,12 @@
 #endif
 
 #if defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+
+#if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else
 #define LIBC_CALLBACK

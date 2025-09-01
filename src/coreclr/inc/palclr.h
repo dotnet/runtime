@@ -11,6 +11,8 @@
 #ifndef __PALCLR_H__
 #define __PALCLR_H__
 
+#include <minipal/utils.h>
+
 #if defined(HOST_WINDOWS)
 
 // This macro is used to standardize the wide character string literals between UNIX and Windows.
@@ -38,14 +40,6 @@
 #define NOTHROW_DECL __attribute__((nothrow))
 #endif // !_MSC_VER
 #endif // !NOTHROW_DECL
-
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE __attribute__((noinline))
-#endif // !_MSC_VER
-#endif // !NOINLINE
 
 #ifdef _MSC_VER
 #define EMPTY_BASES_DECL __declspec(empty_bases)

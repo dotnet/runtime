@@ -49,14 +49,6 @@
 #define __forceinline __attribute__((always_inline)) inline
 #endif // __GNUC__
 
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE __attribute__((noinline))
-#endif
-#endif
-
 #ifndef __GCENV_BASE_INCLUDED__
 
 #include <cstdint>

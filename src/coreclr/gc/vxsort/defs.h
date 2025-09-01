@@ -4,6 +4,8 @@
 #ifndef VXSORT_DEFS_H
 #define VXSORT_DEFS_H
 
+#include <minipal/utils.h>
+
 #if _MSC_VER
 #ifdef _M_X86
 #define ARCH_X86
@@ -30,19 +32,16 @@
 #ifdef __clang__
 #define mess_up_cmov()
 #define INLINE __attribute__((always_inline))
-#define NOINLINE __attribute__((noinline))
 #else
 // MSVC
 #include <intrin.h>
 #define mess_up_cmov() _ReadBarrier();
 #define INLINE __forceinline
-#define NOINLINE __declspec(noinline)
 #endif
 #else
 // GCC + Clang
 #define mess_up_cmov()
 #define INLINE __attribute__((always_inline))
-#define NOINLINE __attribute__((noinline))
 #endif
 
 using std::max;

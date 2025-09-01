@@ -1676,16 +1676,6 @@ typedef enum
 #endif
 #endif
 
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#elif defined __GNUC__
-#define NOINLINE __attribute__ ((noinline))
-#else
-#define NOINLINE
-#endif
-#endif // !NOINLINE
-
 // return true if it is a primitive type, i.e. only need to store CorElementType
 FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
 {
