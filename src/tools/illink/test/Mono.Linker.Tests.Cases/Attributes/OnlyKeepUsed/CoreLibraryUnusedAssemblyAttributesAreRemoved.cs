@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
     [SetupLinkerArgument("--used-attrs-only", "true")]
     [RemovedAttributeInAssembly(PlatformAssemblies.CoreLib, typeof(AssemblyDescriptionAttribute))]
 #if !NET
-	[RemovedAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
+    [RemovedAttributeInAssembly("System.dll", typeof(AssemblyDescriptionAttribute))]
 #endif
     public class CoreLibraryUnusedAssemblyAttributesAreRemoved
     {

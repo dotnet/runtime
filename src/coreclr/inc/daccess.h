@@ -290,9 +290,9 @@
 //
 //     SystemDomain::m_appDomainIndexList;
 //
-//     extern DWORD gThreadTLSIndex;
+//     extern DWORD g_TlsIndex;
 //
-//     DWORD gThreadTLSIndex = TLS_OUT_OF_INDEXES;
+//     DWORD g_TlsIndex = TLS_OUT_OF_INDEXES;
 //
 // Modified Code:
 //
@@ -312,9 +312,9 @@
 //
 //     SVAL_IMPL(ArrayListStatic, SystemDomain, m_appDomainIndexList);
 //
-//     GVAL_DECL(DWORD, gThreadTLSIndex);
+//     GVAL_DECL(DWORD, g_TlsIndex);
 //
-//     GVAL_IMPL_INIT(DWORD, gThreadTLSIndex, TLS_OUT_OF_INDEXES);
+//     GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 //
 // When declaring the variable, the first argument declares the
 // variable's type and the second argument declares the variable's

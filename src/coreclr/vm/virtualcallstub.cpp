@@ -1479,7 +1479,7 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
     if (!objectType->IsComObjectType()
         && !objectType->IsIDynamicInterfaceCastable())
     {
-        CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+        CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
     }
 #endif // _DEBUG
 
@@ -1965,7 +1965,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         if (!objectType->IsComObjectType()
             && !objectType->IsIDynamicInterfaceCastable())
         {
-            CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+            CONSISTENCY_CHECK(!NonVirtualEntry2MethodDesc(target)->IsGenericMethodDefinition());
         }
 #endif // _DEBUG
     }
@@ -2322,11 +2322,6 @@ VirtualCallStubManager::Resolver(
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != (PCODE)NULL)
-                implSlot = DispatchSlot(pDirectTarget);
-
             // Only patch to a target if it's not going to call the prestub.
             fShouldPatch = TRUE;
         }
@@ -2839,7 +2834,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                        );
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -2900,7 +2895,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                        DispatchStub::e_TYPE_LONG);
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc(addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         EntryPointSlots::SlotType slotType;
@@ -3091,7 +3086,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     e->pNext  = NULL;
 
 #ifdef FEATURE_CODE_VERSIONING
-    MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress((PCODE)addrOfCode);
+    MethodDesc *pMD = NonVirtualEntry2MethodDesc((PCODE)addrOfCode);
     if (pMD->IsVersionableWithVtableSlotBackpatch())
     {
         pMD->RecordAndBackpatchEntryPointSlot(
@@ -3967,7 +3962,7 @@ static const UINT16 tokenHashBits[32] =
     // Note if you change the number of bits in CALL_STUB_CACHE_NUM_BITS
     // then we have to recompute the hash function
     // Though making the number of bits smaller should still be OK
-    static_assert_no_msg(CALL_STUB_CACHE_NUM_BITS <= 12);
+    static_assert(CALL_STUB_CACHE_NUM_BITS <= 12);
 
     while (token)
     {
@@ -4269,7 +4264,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
     VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
 
-    return pMT->GetMethodDescForSlotAddress(target);
+    return NonVirtualEntry2MethodDesc(target);
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #endif

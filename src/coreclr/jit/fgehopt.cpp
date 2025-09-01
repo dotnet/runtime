@@ -1607,7 +1607,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    assert(block->GetEhfTargets()->bbeCount == 0);
+                    assert(block->GetEhfTargets()->GetSuccCount() == 0);
                     block->SetKind(BBJ_EHFAULTRET);
                 }
             }
@@ -2505,7 +2505,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     //
     // We need to clone to the entire try region plus any
     // enclosed regions and any enclosing mutual protect regions,
-    // plus all the the associated handlers and filters and any
+    // plus all the associated handlers and filters and any
     // regions they enclose, plus any callfinallies that follow.
     //
     // This is necessary because try regions can't have multiple entries, or

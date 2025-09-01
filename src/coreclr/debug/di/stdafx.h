@@ -29,7 +29,6 @@ using std::max;
 #include "ex.h"
 
 #include "sigparser.h"
-#include "corpub.h"
 #include "rspriv.h"
 
 // This is included to deal with GCC limitations around templates.

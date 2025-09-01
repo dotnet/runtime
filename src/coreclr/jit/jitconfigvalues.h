@@ -394,7 +394,6 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT, and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
@@ -409,6 +408,7 @@ RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                
 RELEASE_CONFIG_INTEGER(EnableAVX512VP2INTERSECT,    "EnableAVX512VP2INTERSECT",  1) // Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXIFMA,               "EnableAVXIFMA",             1) // Allows AVXIFMA and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVXVNNIINT,            "EnableAVXVNNIINT",          1) // Allows VEX AVXVNNIINT+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableGFNI,                  "EnableGFNI",                1) // Allows GFNI and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSHA,                   "EnableSHA",                 1) // Allows SHA and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableVAES,                  "EnableVAES",                1) // Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled
@@ -435,6 +435,7 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",    
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
 RELEASE_CONFIG_INTEGER(EnableApxPPX,                "EnableApxPPX",              0) // Allows APX PPX feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              0)  // Allows APX ZU feature to be disabled
 
 // clang-format on
 
@@ -583,7 +584,7 @@ OPT_CONFIG_INTEGER(JitDoIfConversion, "JitDoIfConversion", 1)                   
 OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions", 1) // Perform optimization of mask
                                                                                     // conversions
 
-RELEASE_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods

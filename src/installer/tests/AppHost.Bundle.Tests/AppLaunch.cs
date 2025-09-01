@@ -6,7 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
@@ -58,6 +60,34 @@ namespace AppHost.Bundle.Tests
             string singleFile = selfContained
                 ? sharedTestState.SelfContainedApp.Bundle()
                 : sharedTestState.FrameworkDependentApp.Bundle();
+
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained);
+
+            if (OperatingSystem.IsMacOS())
+            {
+                string fatApp = MakeUniversalBinary(singleFile, RuntimeInformation.OSArchitecture);
+
+                // Run the fat app
+                RunTheApp(fatApp, selfContained);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
+                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
+            }
+        }
+
+        [Fact]
+        private void NonAsciiCharacterSelfContainedApp()
+        {
+            // Bundle to a single-file
+            bool selfContained = true;
+            string singleFile = sharedTestState.SpecialCharacterSelfContainedApp.Bundle();
 
             // Run the bundled app
             RunTheApp(singleFile, selfContained);
@@ -184,17 +214,20 @@ namespace AppHost.Bundle.Tests
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }
+            public SingleFileTestApp SpecialCharacterSelfContainedApp { get; }
 
             public SharedTestState()
             {
                 FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("HelloWorld");
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld");
+                SpecialCharacterSelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld_中文");
             }
 
             public void Dispose()
             {
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
+                SpecialCharacterSelfContainedApp.Dispose();
             }
         }
     }

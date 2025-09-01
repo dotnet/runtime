@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using ILLink.RoslynAnalyzer;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             //
             // The analyzer doesn't do constant propagation of the boolean, so it doesn't know that
             // the return value is always false when TestFeatures.IsUnreferencedCodeSupported is false.
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool AndGuard => TestFeatures.IsUnreferencedCodeSupported && OtherCondition();
 
@@ -139,7 +139,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool IfReturnTrueGuard
             {
@@ -151,7 +151,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool ElseReturnTrueGuard
             {
@@ -208,7 +208,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool AssertReturnTrueGuard
             {
@@ -242,7 +242,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool TernaryIfGuard => TestFeatures.IsUnreferencedCodeSupported ? true : false;
 
@@ -252,7 +252,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool TernaryElseGuard => !TestFeatures.IsUnreferencedCodeSupported ? false : true;
 
@@ -289,7 +289,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class InvalidGuardBodies
         {
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool ReturnTrueGuard => true;
 
@@ -299,7 +299,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool OtherConditionGuard => OtherCondition();
 
@@ -309,7 +309,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool OrGuard => TestFeatures.IsUnreferencedCodeSupported || OtherCondition();
 
@@ -319,7 +319,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool NotGuard => !TestFeatures.IsUnreferencedCodeSupported;
 
@@ -329,7 +329,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool EqualsFalseGuard => TestFeatures.IsUnreferencedCodeSupported == false;
 
@@ -339,7 +339,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool FalseEqualsGuard => false == TestFeatures.IsUnreferencedCodeSupported;
 
@@ -349,7 +349,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool NotEqualsTrueGuard => TestFeatures.IsUnreferencedCodeSupported != true;
 
@@ -359,7 +359,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool TrueNotEqualsGuard => true != TestFeatures.IsUnreferencedCodeSupported;
 
@@ -369,7 +369,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool IsNotTrueGuard => TestFeatures.IsUnreferencedCodeSupported is not true;
 
@@ -379,7 +379,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool IsFalseGuard => TestFeatures.IsUnreferencedCodeSupported is false;
 
@@ -389,7 +389,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool IfReturnFalseGuard
             {
@@ -407,7 +407,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool ElseReturnFalseGuard
             {
@@ -426,7 +426,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "")]
+            [ExpectedWarning("IL4000", nameof(RequiresUnreferencedCodeAttribute), Tool.Analyzer, "FeatureGuards shouldn't rely on constant propagation.")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool AssertNotReturnTrueGuard
             {

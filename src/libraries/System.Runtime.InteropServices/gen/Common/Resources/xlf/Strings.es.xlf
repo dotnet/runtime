@@ -394,7 +394,7 @@
       </trans-unit>
       <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">El código generado no puede acceder al tipo "{0}" especificado como "GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller". El tipo debe tener al menos accesibilidad "interna". {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
@@ -439,7 +439,7 @@
       </trans-unit>
       <trans-unit id="GenericDelegatesNotSupported">
         <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
-        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <target state="translated">No se admite la serialización de un delegado genérico. Considere la posibilidad de usar un puntero de función en su lugar.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -624,7 +624,7 @@
       </trans-unit>
       <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
         <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
-        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <target state="translated">El tipo especificado como "GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller" no es un tipo de serializador válido.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

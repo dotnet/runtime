@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,14 +31,14 @@ internal sealed class CodeDirectoryBlob : IBlob
         var data = blob.Data;
         var cdHeader = MemoryMarshal.Read<CodeDirectoryHeader>(data);
 
-        int identifierDataOffset = GetDataOffset(cdHeader._identifierOffset.ConvertFromBigEndian());
+        int identifierDataOffset = GetDataOffset(cdHeader.IdentifierOffset);
         int nullTerminatorIndex = data.AsSpan().Slice(identifierDataOffset).IndexOf((byte)0x00);
         string identifier = Encoding.UTF8.GetString(data, identifierDataOffset, nullTerminatorIndex);
 
-        var specialSlotCount = cdHeader._specialSlotCount.ConvertFromBigEndian();
-        var codeSlotCount = cdHeader._codeSlotCount.ConvertFromBigEndian();
+        var specialSlotCount = cdHeader.SpecialSlotCount;
+        var codeSlotCount = cdHeader.CodeSlotCount;
         var hashSize = cdHeader.HashSize;
-        var hashesDataOffset = GetDataOffset(cdHeader._hashesOffset.ConvertFromBigEndian());
+        var hashesDataOffset = GetDataOffset(cdHeader.HashesOffset);
 
         var specialSlotHashes = new byte[specialSlotCount][];
         var codeHashes = new byte[codeSlotCount][];
@@ -97,16 +98,38 @@ internal sealed class CodeDirectoryBlob : IBlob
         + SpecialSlotCount * HashSize
         + CodeSlotCount * HashSize;
 
+    public string Identifier => _identifier;
+    public CodeDirectoryFlags Flags => _cdHeader.Flags;
+    public CodeDirectoryVersion Version => _cdHeader.Version;
+    public IReadOnlyList<IReadOnlyList<byte>> SpecialSlotHashes => _specialSlotHashes;
+
+    // Properties for test assertions only
+    internal IReadOnlyList<IReadOnlyList<byte>> CodeHashes => _codeHashes;
+    internal ulong ExecutableSegmentBase => _cdHeader.ExecSegmentBase;
+    internal ulong ExecutableSegmentLimit => _cdHeader.ExecSegmentLimit;
+    internal ExecutableSegmentFlags ExecutableSegmentFlags => _cdHeader.ExecSegmentFlags;
+
+    private uint SpecialSlotCount => _cdHeader.SpecialSlotCount;
+    private uint CodeSlotCount => _cdHeader.CodeSlotCount;
+    private byte HashSize => _cdHeader.HashSize;
+    private uint HashesOffset => _cdHeader.HashesOffset;
+
     public static CodeDirectoryBlob Create(
         IMachOFileReader accessor,
         long signatureStart,
         string identifier,
         RequirementsBlob requirementsBlob,
+        EntitlementsBlob? entitlementsBlob = null,
+        DerEntitlementsBlob? derEntitlementsBlob = null,
         HashType hashType = HashType.SHA256,
         uint pageSize = MachObjectFile.DefaultPageSize)
     {
         uint codeSlotCount = GetCodeSlotCount((uint)signatureStart, pageSize);
-        uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
+        uint specialCodeSlotCount = (uint)(derEntitlementsBlob != null
+            ? CodeDirectorySpecialSlot.DerEntitlements
+            : entitlementsBlob != null
+                ? CodeDirectorySpecialSlot.Entitlements
+                : CodeDirectorySpecialSlot.Requirements);
 
         var specialSlotHashes = new byte[specialCodeSlotCount][];
         var codeHashes = new byte[codeSlotCount][];
@@ -121,12 +144,29 @@ internal sealed class CodeDirectoryBlob : IBlob
         // Fill in the CodeDirectory hashes
 
         // Special slot hashes
+        // -7 is the der entitlements blob hash
+        if (derEntitlementsBlob != null)
+        {
+            using var derStream = new MemoryStreamWriter((int)derEntitlementsBlob.Size);
+            derEntitlementsBlob.Write(derStream, 0);
+            specialSlotHashes[(int)CodeDirectorySpecialSlot.DerEntitlements - 1] = hasher.ComputeHash(derStream.GetBuffer());
+        }
+
+        // -5 is the entitlements blob hash
+        if (entitlementsBlob != null)
+        {
+            using var entStream = new MemoryStreamWriter((int)entitlementsBlob.Size);
+            entitlementsBlob.Write(entStream, 0);
+            specialSlotHashes[(int)CodeDirectorySpecialSlot.Entitlements - 1] = hasher.ComputeHash(entStream.GetBuffer());
+        }
+
         // -2 is the requirements blob hash
         using (var reqStream = new MemoryStreamWriter((int)requirementsBlob.Size))
         {
             requirementsBlob.Write(reqStream, 0);
             specialSlotHashes[(int)CodeDirectorySpecialSlot.Requirements - 1] = hasher.ComputeHash(reqStream.GetBuffer());
         }
+
         // -1 is the CMS blob hash (which is empty -- nothing to hash)
 
         // Reverse special slot hashes
@@ -160,29 +200,44 @@ internal sealed class CodeDirectoryBlob : IBlob
     [StructLayout(LayoutKind.Sequential)]
     internal struct CodeDirectoryHeader
     {
-        public CodeDirectoryVersion _version;
-        public CodeDirectoryFlags _flags;
-        public uint _hashesOffset;
-        public uint _identifierOffset;
-        public uint _specialSlotCount;
-        public uint _codeSlotCount;
-        public uint _executableLength;
+        private CodeDirectoryVersion _version;
+        private CodeDirectoryFlags _flags;
+        private uint _hashesOffset;
+        private uint _identifierOffset;
+        private uint _specialSlotCount;
+        private uint _codeSlotCount;
+        private uint _executableLength;
         public byte HashSize;
         public HashType HashType;
         public byte Platform;
         public byte Log2PageSize;
 #pragma warning disable CA1805 // Do not initialize unnecessarily
-        public readonly uint _reserved = 0;
-        public readonly uint _scatterOffset = 0;
-        public readonly uint _teamIdOffset = 0;
-        public readonly uint _reserved2 = 0;
+        private readonly uint _reserved = 0;
+        private readonly uint _scatterOffset = 0;
+        private readonly uint _teamIdOffset = 0;
+        private readonly uint _reserved2 = 0;
 #pragma warning restore CA1805 // Do not initialize unnecessarily
-        public ulong _codeLimit64;
-        public ulong _execSegmentBase;
-        public ulong _execSegmentLimit;
-        public ExecutableSegmentFlags _execSegmentFlags;
+        private ulong _codeLimit64;
+        private ulong _execSegmentBase;
+        private ulong _execSegmentLimit;
+        private ExecutableSegmentFlags _execSegmentFlags;
 
         public static readonly uint Size = GetSize();
+
+        public CodeDirectoryVersion Version => (CodeDirectoryVersion)((uint)_version).ConvertFromBigEndian();
+        public CodeDirectoryFlags Flags => (CodeDirectoryFlags)((uint)_flags).ConvertFromBigEndian();
+        public uint HashesOffset => _hashesOffset.ConvertFromBigEndian();
+        public uint IdentifierOffset => _identifierOffset.ConvertFromBigEndian();
+        public uint SpecialSlotCount => _specialSlotCount.ConvertFromBigEndian();
+        public uint CodeSlotCount => _codeSlotCount.ConvertFromBigEndian();
+        public ulong ExecSegmentBase => _execSegmentBase.ConvertFromBigEndian();
+        public ulong ExecSegmentLimit
+        {
+            get => _execSegmentLimit.ConvertFromBigEndian();
+            private set => _execSegmentLimit = value < uint.MaxValue ? 0 : value.ConvertToBigEndian();
+        }
+        public ExecutableSegmentFlags ExecSegmentFlags => (ExecutableSegmentFlags)((ulong)_execSegmentFlags).ConvertFromBigEndian();
+
         private static unsafe uint GetSize() => (uint)sizeof(CodeDirectoryHeader);
 
         public CodeDirectoryHeader(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags)
@@ -203,12 +258,15 @@ internal sealed class CodeDirectoryBlob : IBlob
             _execSegmentLimit = execSegmentLimit.ConvertToBigEndian();
             _execSegmentFlags = (ExecutableSegmentFlags)((ulong)execSegmentFlags).ConvertToBigEndian();
         }
-    }
 
-    public uint HashesOffset => _cdHeader._hashesOffset.ConvertFromBigEndian();
-    public uint SpecialSlotCount => _cdHeader._specialSlotCount.ConvertFromBigEndian();
-    public uint CodeSlotCount => _cdHeader._codeSlotCount.ConvertFromBigEndian();
-    public byte HashSize => _cdHeader.HashSize;
+        public static bool AreEqual(CodeDirectoryHeader first, CodeDirectoryHeader second)
+        {
+            // Ignore the exec segment limit for equality checks, as it may differ between codesign and the managed implementation.
+            first.ExecSegmentLimit = 0;
+            second.ExecSegmentLimit = 0;
+            return first.Equals(second);
+        }
+    }
 
     public override bool Equals(object? obj)
     {
@@ -220,10 +278,7 @@ internal sealed class CodeDirectoryBlob : IBlob
 
         CodeDirectoryHeader thisHeader = _cdHeader;
         CodeDirectoryHeader otherHeader = other._cdHeader;
-        // Ignore the exec segment limit for equality checks, as it may differ
-        thisHeader._execSegmentLimit = 0;
-        otherHeader._execSegmentLimit = 0;
-        if (!thisHeader.Equals(otherHeader))
+        if (!CodeDirectoryHeader.AreEqual(thisHeader, otherHeader))
         {
             return false;
         }
@@ -267,7 +322,7 @@ internal sealed class CodeDirectoryBlob : IBlob
         accessor.WriteUInt32BigEndian(offset + sizeof(uint), Size);
         accessor.Write(offset + sizeof(uint) * 2, ref _cdHeader);
         var identifierBytes = Encoding.UTF8.GetBytes(_identifier);
-        Debug.Assert(sizeof(uint) * 2 + CodeDirectoryHeader.Size == _cdHeader._identifierOffset.ConvertFromBigEndian());
+        Debug.Assert(sizeof(uint) * 2 + CodeDirectoryHeader.Size == _cdHeader.IdentifierOffset);
         accessor.WriteExactly(offset + sizeof(uint) * 2 + CodeDirectoryHeader.Size, identifierBytes);
         accessor.WriteByte(offset + sizeof(uint) * 2 + CodeDirectoryHeader.Size + identifierBytes.Length, 0x00); // null terminator
         int specialSlotHashesOffset = (int)(offset + sizeof(uint) * 2 + CodeDirectoryHeader.Size + identifierBytes.Length + 1);

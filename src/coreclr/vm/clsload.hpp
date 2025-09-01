@@ -533,6 +533,13 @@ private:
 
 
 public:
+
+    CrstBase *GetAvailableTypesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_AvailableTypesLock;
+    }
+
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
     // For everything except parameterized types and methods the choice is easy.

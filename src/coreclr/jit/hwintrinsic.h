@@ -525,15 +525,12 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic         lookupId(Compiler*         comp,
-                                           CORINFO_SIG_INFO* sig,
-                                           const char*       className,
-                                           const char*       methodName,
-                                           const char*       innerEnclosingClassName,
-                                           const char*       outerEnclosingClassName);
-    static CORINFO_InstructionSet lookupIsa(const char* className,
-                                            const char* innerEnclosingClassName,
-                                            const char* outerEnclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
+                                   const char*       className,
+                                   const char*       methodName,
+                                   const char*       innerEnclosingClassName,
+                                   const char*       outerEnclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -1278,6 +1275,9 @@ struct HWIntrinsicInfo
             }
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             {
                 assert(sig->numArgs == 5);
                 *imm1Pos = 0;

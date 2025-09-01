@@ -1712,6 +1712,15 @@ enum CorInfoContinuationFlags
     // OSR method saved in the beginning of 'Data', or -1 if the continuation
     // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // If this bit is set the continuation should continue on the thread
+    // pool.
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
+    // If this bit is set the continuation has a SynchronizationContext
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
+    // If this bit is set the continuation has a TaskScheduler
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1737,6 +1746,9 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
     // Method handle for AsyncHelpers.RestoreExecutionContext
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -3129,12 +3141,6 @@ public:
             CORINFO_CONST_LOOKUP *  pResult
             ) = 0;
 
-    // get the synchronization handle that is passed to monXstatic function
-    virtual void* getMethodSync(
-            CORINFO_METHOD_HANDLE   ftn,
-            void**                  ppIndirection = NULL
-            ) = 0;
-
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
@@ -3198,12 +3204,6 @@ public:
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
-            ) = 0;
-
-    // returns true if a VM cookie can be generated for it (might be false due to cross-module
-    // inlining, in which case the inlining should be aborted)
-    virtual bool canGetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO*   szMetaSig
             ) = 0;
 
     // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
@@ -3291,13 +3291,8 @@ public:
     // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
     virtual CORINFO_VARARGS_HANDLE getVarArgsHandle(
             CORINFO_SIG_INFO       *pSig,
+            CORINFO_METHOD_HANDLE   methHnd,
             void                  **ppIndirection = NULL
-            ) = 0;
-
-    // returns true if a VM cookie can be generated for it (might be false due to cross-module
-    // inlining, in which case the inlining should be aborted)
-    virtual bool canGetVarArgsHandle(
-            CORINFO_SIG_INFO       *pSig
             ) = 0;
 
     // Allocate a string literal on the heap and return a handle to it

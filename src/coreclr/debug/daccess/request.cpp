@@ -218,7 +218,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
             PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
             if (tempEntryPoint != (PCODE)NULL)
             {
-                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromPrecode(tempEntryPoint, TRUE);
 
                 if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
                 {
@@ -270,6 +270,10 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
     else if (IsMiNative(dwType))
     {
         *pJITType = TYPE_PJIT;
+    }
+    else if (IsMiOPTIL(dwType))
+    {
+        *pJITType = TYPE_INTERPRETER;
     }
     else
     {
@@ -362,7 +366,7 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             currentPtr->codeType = managerPtr->GetCodeType();
 
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
-            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
+            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pAllCodeHeaps);
         }
     }
     else if (pNeeded)
@@ -528,7 +532,7 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
     SOSDacEnter();
 
     EEJitManager *pJitManager = PTR_EEJitManager(TO_TADDR(jitManager));
-    HeapList *heapList = pJitManager->m_pCodeHeap;
+    HeapList *heapList = pJitManager->m_pAllCodeHeaps;
 
     if (codeHeaps)
     {
@@ -1343,7 +1347,7 @@ ClrDataAccess::GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *
     if (!codeInfo.IsValid())
     {
         // We may be able to walk stubs to find a method desc if it's not a jitted method.
-        MethodDesc *methodDescI = MethodTable::GetMethodDescForSlotAddress(TO_TADDR(ip));
+        MethodDesc *methodDescI = NonVirtualEntry2MethodDesc(TO_TADDR(ip));
         if (methodDescI == NULL)
         {
             hr = E_INVALIDARG;
@@ -2434,31 +2438,25 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         if (addr != HOST_CDADDR(SystemDomain::System()))
         {
             PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-            appdomainData->DomainLocalBlock = 0;
-            appdomainData->pDomainLocalModules = 0;
 
             appdomainData->dwId = DefaultADID;
-            appdomainData->appDomainStage = (DacpAppDomainDataStage)pAppDomain->m_Stage.Load();
-            if (pAppDomain->IsActive())
+
+            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+            CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+            while (i.Next(pAssembly.This()))
             {
-                // The assembly list is not valid in a closed appdomain.
-                AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                    kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-                while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                 {
-                    if (pAssembly->IsLoaded())
-                    {
-                        appdomainData->AssemblyCount++;
-                    }
+                    appdomainData->AssemblyCount++;
                 }
+            }
 
-                AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-                while (j.Next())
-                {
-                    appdomainData->FailedAssemblyCount++;
-                }
+            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+            while (j.Next())
+            {
+                appdomainData->FailedAssemblyCount++;
             }
         }
     }
@@ -3164,11 +3162,11 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     if (data == NULL)
         return E_INVALIDARG;
 
-    static_assert_no_msg(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
-    static_assert_no_msg(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
-    static_assert_no_msg(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
-    static_assert_no_msg(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
-    static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
+    static_assert(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
+    static_assert(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
+    static_assert(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
+    static_assert(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
+    static_assert(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
     *data = {};
@@ -5030,15 +5028,15 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
     PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
-    INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
+    INT_PTR AssemblyLoadContextHandle = pBinder->GetAssemblyLoadContext();
 
-    TADDR managedAssemblyLoadContextAddr = 0;
-    if (managedAssemblyLoadContextHandle != 0)
+    TADDR AssemblyLoadContextAddr = 0;
+    if (AssemblyLoadContextHandle != 0)
     {
-        DacReadAll(managedAssemblyLoadContextHandle,&managedAssemblyLoadContextAddr,sizeof(TADDR),true);
+        DacReadAll(AssemblyLoadContextHandle,&AssemblyLoadContextAddr,sizeof(TADDR),true);
     }
 
-    *assemblyLoadContext = TO_CDADDR(managedAssemblyLoadContextAddr);
+    *assemblyLoadContext = TO_CDADDR(AssemblyLoadContextAddr);
 
     SOSDacLeave();
     return hr;

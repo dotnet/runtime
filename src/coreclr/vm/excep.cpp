@@ -946,8 +946,8 @@ bool EHRangeTreeNode::TryContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1023,8 +1023,8 @@ bool EHRangeTreeNode::HandlerContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1099,8 +1099,8 @@ bool EHRangeTreeNode::FilterContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1416,10 +1416,10 @@ EHRangeTreeNode *EHRangeTree::FindNextMostSpecificContainer(EHRangeTreeNode *pNo
     // keep a reasonable default around.
     EHRangeTreeNode *pNodeCandidate = pNodeSearch;
 
-    USHORT cSubRanges = pNodeSearch->m_containees.Count();
+    INT32 cSubRanges = pNodeSearch->m_containees.Count();
     EHRangeTreeNode **ppNodeCur = pNodeSearch->m_containees.Table();
 
-    for (int i = 0; i < cSubRanges; i++, ppNodeCur++)
+    for (INT32 i = 0; i < cSubRanges; i++, ppNodeCur++)
     {
         if ((*ppNodeCur)->Contains(addr) &&
             pNodeCandidate->Contains((*ppNodeCur)))
@@ -3223,21 +3223,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
-        ||IsExceptionOfType(kThreadAbortException, pThrowable)
-        ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
 BOOL IsUncatchable(OBJECTREF *pThrowable)
 {
     CONTRACTL {
@@ -3567,8 +3552,14 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 #ifdef HOST_WINDOWS
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
-                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in 
+                // checked builds of Windows OS. 
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not 
+                // match a valid return address on the stack.
+                bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
+                RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
+                                       pExceptionInfo == NULL || fAvoidReportContextToRaiseFailFast ? NULL : pExceptionInfo->ContextRecord,
                                        0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
@@ -4934,8 +4925,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
-    BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
 
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
@@ -4945,37 +4934,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
         {
             EX_TRY
             {
-                // If this isn't ThreadAbortException, we want to print a stack trace to indicate why this thread abruptly
-                // terminated. Exceptions kill threads rarely enough that an uncached name check is reasonable.
-                BOOL        dump = TRUE;
-
-                if (/*IsStackOverflow ||*/
-                    !pThread->DetermineIfGuardPagePresent() ||
-                    IsOutOfMemory)
+                if (!pThread->DetermineIfGuardPagePresent())
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
-                    // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
+                    // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
-                    dump = FALSE;
-
-                    if (IsOutOfMemory)
-                    {
-                        PrintToStdErrA("Out of memory.\n");
-                    }
-                    else
-                    {
-                        PrintToStdErrA("Stack overflow.\n");
-                    }
+                    PrintToStdErrA("Stack overflow.\n");
                 }
-                else if (IsAsyncThreadException(&throwable))
-                {
-                    // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
-                }
-
-                // Finally, should we print the message?
-                if (dump)
+                else
                 {
                     // this is stack heavy because of the CQuickWSTRBase, so we break it out
                     // and don't have to carry the weight through our other code paths.
@@ -4984,14 +4950,22 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             }
             EX_CATCH
             {
-                LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
+                if (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
+                {
+                    // Try to print a short message at least.
+                    PrintToStdErrA("Out of memory.\n");
+                }
+                else
+                {
+                    LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
 
-                _ASSERTE(buf_size > 6);
-                wcscpy_s(buf, buf_size, W("\n   "));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
-                wcscat_s(buf, buf_size, W("\n"));
+                    _ASSERTE(buf_size > 6);
+                    wcscpy_s(buf, buf_size, W("\n   "));
+                    UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    wcscat_s(buf, buf_size, W("\n"));
 
-                PrintToStdErrW(buf);
+                    PrintToStdErrW(buf);
+                }
             }
             EX_END_CATCH
         }
@@ -7360,6 +7334,12 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
+#ifdef FEATURE_INTERPRETER
+            if ((pEntryFrame != FRAME_TOP) && (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
+            }
+#endif // FEATURE_INTERPRETER
             DispatchManagedException(orThrowable);
         }
     }
@@ -10833,7 +10813,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10846,7 +10826,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
@@ -10892,7 +10872,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

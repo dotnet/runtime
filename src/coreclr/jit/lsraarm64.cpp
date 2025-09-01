@@ -780,7 +780,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 
@@ -789,7 +789,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
@@ -1710,6 +1710,9 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
+                case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                     // This API has two immediates, one of which is used to index pairs of floats in a vector.
                     // For a vector width of 128 bits, this means the index's range is [0, 1],
                     // which means we will skip the above jump table register check,
@@ -1734,6 +1737,9 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex:
+                case NI_Sve2_DotProductRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
 
@@ -2164,9 +2170,31 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
+            case NI_Sve2_MultiplyAddBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
+            case NI_Sve2_MultiplySubtractBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndSubtract:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOddAndSubtract:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven:
+            case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
+            case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh:
+            case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalar:
+            case NI_Sve2_MultiplyBySelectedScalarWideningEven:
+            case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+            case NI_Sve2_MultiplyDoublingBySelectedScalarSaturateHigh:
+            case NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar:
+            case NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar:
+            case NI_Sve2_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
                 isLowVectorOpNum = (opNum == 2);
                 break;
             default:
@@ -2176,6 +2204,10 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
         if (isLowVectorOpNum)
         {
             unsigned baseElementSize = genTypeSize(intrin.baseType);
+            if (intrin.id == NI_Sve2_DotProductRotateComplexBySelectedIndex)
+            {
+                baseElementSize = intrin.baseType == TYP_BYTE ? 4 : 8;
+            }
 
             if (baseElementSize == 8)
             {
@@ -2183,7 +2215,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             }
             else
             {
-                assert(baseElementSize == 4);
+                assert(baseElementSize <= 4);
                 opCandidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
             }
         }
@@ -2287,8 +2319,8 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             assert(delayFreeOp != nullptr);
             break;
 
-        case NI_Sve2_AddCarryWideningLower:
-        case NI_Sve2_AddCarryWideningUpper:
+        case NI_Sve2_AddCarryWideningEven:
+        case NI_Sve2_AddCarryWideningOdd:
             // RMW operates on the third op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(3);

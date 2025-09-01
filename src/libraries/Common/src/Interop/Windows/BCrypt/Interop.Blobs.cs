@@ -79,6 +79,15 @@ internal static partial class Interop
         }
 
         /// <summary>
+        ///     Peel off the next "count" bytes in blob and copy them into the destination.
+        /// </summary>
+        internal static void Consume(ReadOnlySpan<byte> blob, ref int offset, int count, Span<byte> destination)
+        {
+            blob.Slice(offset, count).CopyTo(destination);
+            offset += count;
+        }
+
+        /// <summary>
         ///     Magic numbers identifying blob types
         /// </summary>
         internal enum KeyBlobMagicNumber : int

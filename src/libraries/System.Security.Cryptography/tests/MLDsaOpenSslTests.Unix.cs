@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography.Tests
             return new MLDsaOpenSsl(key);
         }
 
-        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        protected override MLDsa ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
             return new MLDsaOpenSsl(key);
@@ -119,8 +120,8 @@ namespace System.Security.Cryptography.Tests
             byte[] seed = mldsa.ExportMLDsaPrivateSeed();
             Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, seed.Length);
 
-            byte[] secretKey = mldsa.ExportMLDsaSecretKey();
-            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, secretKey.Length);
+            byte[] privateKey = mldsa.ExportMLDsaPrivateKey();
+            Assert.Equal(mldsa.Algorithm.PrivateKeySizeInBytes, privateKey.Length);
 
             // usable
             byte[] data = [ 1, 2, 3 ];
@@ -128,6 +129,11 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
             mldsa.SignData(data, signature, context);
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
+
+            byte[] hash = HashInfo.Sha256.GetHash(data);
+            signature.AsSpan().Fill(0);
+            mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, context);
+            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
         }
     }
 }

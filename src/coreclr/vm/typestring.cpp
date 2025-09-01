@@ -577,7 +577,7 @@ void TypeString::AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pI
 
 // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
 // and enclose each parameter in square brackets to disambiguate the commas
-// The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
+// The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly
 void TypeString::AppendInst(SString& ss, Instantiation inst, DWORD format)
 {
     CONTRACT_VOID
@@ -668,9 +668,8 @@ void TypeString::AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType k
     }
 }
 
-// Append a representation of the type t to the string s
-// The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-
+// Append a representation of the type to the string
+// The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly
 void TypeString::AppendType(SString& ss, TypeHandle ty, DWORD format)
 {
     CONTRACT_VOID
@@ -875,9 +874,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 #ifdef DACCESS_COMPILE
         pAssemblyName.SetUTF8(pAssembly->GetSimpleName());
 #else
-        pAssembly->GetDisplayName(pAssemblyName,
-                                  ASM_DISPLAYF_PUBLIC_KEY_TOKEN | ASM_DISPLAYF_CONTENT_TYPE |
-                                  (format & FormatNoVersion ? 0 : ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE));
+        pAssembly->GetDisplayName(pAssemblyName, ASM_DISPLAYF_FULL);
 #endif
 
         tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
@@ -1184,9 +1181,7 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, const TypeKey *pTypeKey, DW
 #ifdef DACCESS_COMPILE
         pAssemblyName.SetUTF8(pAssembly->GetSimpleName());
 #else
-        pAssembly->GetDisplayName(pAssemblyName,
-                                  ASM_DISPLAYF_PUBLIC_KEY_TOKEN | ASM_DISPLAYF_CONTENT_TYPE |
-                                  (format & FormatNoVersion ? 0 : ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE));
+        pAssembly->GetDisplayName(pAssemblyName, ASM_DISPLAYF_FULL);
 #endif
         tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
     }
