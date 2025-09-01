@@ -5142,7 +5142,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                 if (addr->IsIconHandle(GTF_ICON_FTN_ADDR))
                 {
-                    emitIns_R_AI(ins, EA_PTR_DSP_RELOC, dataReg, (size_t)cns, cns, addr->GetIconHandleFlag());
+                    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+                    emitIns_R_AI(ins, attr, dataReg, (size_t)cns, cns, addr->GetIconHandleFlag());
                 }
                 else
                 {
