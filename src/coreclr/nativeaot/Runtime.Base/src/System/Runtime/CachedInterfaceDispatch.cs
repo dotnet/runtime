@@ -113,6 +113,10 @@ namespace System.Runtime
             return result;
         }
 
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        private static extern bool DynamicInterfaceCastablePresent();
+
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
@@ -125,7 +129,7 @@ namespace System.Runtime
                                                                               cellInfo.InterfaceSlot,
                                                                               flags: default,
                                                                               ppGenericContext: null);
-                if (pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
+                if (DynamicInterfaceCastablePresent() && pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
                 {
                     // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
                     // This will either give us the appropriate result, or throw.

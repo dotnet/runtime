@@ -3191,7 +3191,7 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescPtrFromIpEx(TADDR funcIp, VMPTR_Method
     }
 
     // Otherwise try to see if a method desc is available for the method that isn't jitted by walking the code stubs.
-    MethodDesc* pMD = MethodTable::GetMethodDescForSlotAddress(PINSTRToPCODE(funcIp));
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(PINSTRToPCODE(funcIp));
 
     if (pMD == NULL)
         return E_INVALIDARG;
@@ -7323,6 +7323,23 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     EX_CATCH_HRESULT(hr);
     return hr;
 }
+
+HRESULT DacDbiInterfaceImpl::GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (vmModule.IsNull() || pVmDomainAssembly == NULL)
+        return E_INVALIDARG;
+
+    Module *pModule = vmModule.GetDacPtr();
+    if (pModule == NULL)
+        return E_INVALIDARG;
+
+    *pVmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    pVmDomainAssembly->SetHostPtr(pModule->GetDomainAssembly());
+
+    return S_OK;
+}   
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),

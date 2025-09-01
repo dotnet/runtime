@@ -263,8 +263,8 @@
     <AndroidAppBuilderTask
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        EnvironmentVariables="@(AndroidEnv)"
         ForceInterpreter="$(MonoInterp)"
-        InvariantGlobalization="$(InvariantGlobalization)"
         RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"
@@ -421,7 +421,7 @@
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
       <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false</_ConfigurationProperties>
       <_ForceRestore Condition="'$(_ForceRestore)' == 'true'">-f</_ForceRestore>
-      <DotnetRestoreCommand>"$(DotNetTool)" restore $(_ForceRestore) -r $(RuntimeIdentifier) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore $(_ForceRestore) -r $(RuntimeIdentifier) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true /p:RuntimeIdentifier=$(RuntimeIdentifier) $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
@@ -443,10 +443,10 @@
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114123 
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114123
     The groups 2..n are disabled for browser target because they get OOM kill in CI.
     -->
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" 
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1"
         Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'"
     />
   </Target>

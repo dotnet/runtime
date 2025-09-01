@@ -2538,11 +2538,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
-        // have either good profile weights or are rarelyRun
+        // have either good profile weights or are rarely run
         //
-        if (bJump->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            trueTarget->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+        if ((bJump->hasProfileWeight() || bJump->isRunRarely()) &&
+            (bDest->hasProfileWeight() || bDest->isRunRarely()) &&
+            (trueTarget->hasProfileWeight() || trueTarget->isRunRarely()))
         {
             haveProfileWeights = true;
 
@@ -3132,7 +3132,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLY block to the same weight as the BBJ_CALLFINALLYRET block and
                 // mark it rarely run.
                 bPrev->bbWeight = block->bbWeight;
-                bPrev->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3147,7 +3146,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLYRET block to the same weight as the BBJ_CALLFINALLY block and
                 // mark it rarely run.
                 block->bbWeight = bPrev->bbWeight;
-                block->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {

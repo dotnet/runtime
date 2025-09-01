@@ -12,13 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// Make sure the interop data are present even without reflection
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.All)]
-    internal class __BlockAllReflectionAttribute : Attribute { }
-}
-
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
 namespace PInvokeTests
@@ -314,7 +307,7 @@ namespace PInvokeTests
         [UnmanagedCallersOnly]
         internal unsafe static void UnmanagedMethod(byte* address, byte value) => *address = value;
 
-        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
         internal unsafe static void StdcallMethod(byte* address, byte value) => *address = value;
 
         internal enum MagicEnum
@@ -687,7 +680,7 @@ namespace PInvokeTests
             funcDelegate(0x204);
             ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
 		}
-		
+
 		private static unsafe void TestFunctionPointers()
 		{
             IntPtr procAddress = GetNativeFuncFunctionPointer();

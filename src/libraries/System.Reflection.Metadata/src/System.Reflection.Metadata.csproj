@@ -123,7 +123,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\TypeName.cs" />
     <Compile Include="System\Reflection\Metadata\TypeNameParser.cs" />
     <Compile Include="System\Reflection\Metadata\TypeNameParserHelpers.cs" />
-    <Compile Include="System\Reflection\Metadata\TypeNameParserOptions.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeNameParseOptions.cs" />
     <Compile Include="System\Reflection\Metadata\BlobReader.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\Constant.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\ConstantTypeCode.cs" />

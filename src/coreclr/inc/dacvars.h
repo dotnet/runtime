@@ -195,10 +195,6 @@ DEFINE_DACVAR(BOOL, Debugger__s_fCanChangeNgenFlags, Debugger::s_fCanChangeNgenF
 DEFINE_DACVAR(PTR_DebuggerPatchTable, DebuggerController__g_patches, DebuggerController::g_patches)
 DEFINE_DACVAR(BOOL, DebuggerController__g_patchTableValid, DebuggerController::g_patchTableValid)
 
-DEFINE_DACVAR(SIZE_T, dac__gLowestFCall, ::gLowestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gHighestFCall, ::gHighestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gFCallMethods, ::gFCallMethods)
-
 DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)

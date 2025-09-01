@@ -63,14 +63,6 @@
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
   </PropertyGroup>
 
-
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Net.Http.WasmEnableStreamingResponse"
-                                        Condition="'$(WasmEnableStreamingResponse)' != ''"
-                                        Value="$(WasmEnableStreamingResponse)"
-                                        Trim="true" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>

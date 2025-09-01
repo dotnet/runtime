@@ -267,7 +267,7 @@ public:
 private:
     static const uintptr_t FIELD_KIND_MASK = 0b11;
 
-    static_assert_no_msg(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
+    static_assert(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
 
     uintptr_t m_fieldHandleAndKind;
     ssize_t   m_offset;
@@ -333,7 +333,18 @@ class GenTreeOperandIterator;
 
 struct Statement;
 
-/*****************************************************************************/
+enum HandleKindFlag
+{
+    HKF_INVARIANT = 1, // Points to invariant data.
+    HKF_NONNULL   = 2, // Points to non-null data.
+};
+
+enum class HandleKindIndex : unsigned
+{
+#define HANDLE_KIND(name, description, flags) name,
+#include "handlekinds.h"
+    COUNT
+};
 
 // Forward declarations of the subtypes
 #define GTSTRUCT_0(fn, en)                   struct GenTree##fn;
@@ -354,7 +365,7 @@ struct Statement;
 //------------------------------------------------------------------------
 // GenTreeFlags: a bitmask of flags for GenTree stored in gtFlags
 //
-enum GenTreeFlags : unsigned int
+enum GenTreeFlags : unsigned
 {
     GTF_EMPTY         = 0,
 
@@ -507,28 +518,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
-    GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
-    GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
-    GTF_ICON_CLASS_HDL          = 0x02000000, // GT_CNS_INT -- constant is a class handle
-    GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
-    GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
-    GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0x0B000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0x0C000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0x0D000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0x0E000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0x0F000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0x10000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR     = 0x11000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x12000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
-    GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
-    GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
-    GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
+#define HANDLE_KIND_INDEX_SHIFT 24
+    GTF_ICON_HDL_MASK           = (~0u) << HANDLE_KIND_INDEX_SHIFT, // 0xFF000000, bits used by the handle types.
+#define HANDLE_KIND(name, description, flags) name = (static_cast<unsigned>(HandleKindIndex::name) + 1) << HANDLE_KIND_INDEX_SHIFT,
+#include "handlekinds.h"
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -596,6 +589,14 @@ inline GenTreeFlags& operator ^=(GenTreeFlags& a, GenTreeFlags b)
 // region. In such cases, even stores to locals will have to be restricted.
 #define GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) \
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
+
+inline unsigned HandleKindToHandleKindIndex(GenTreeFlags kind)
+{
+    assert((kind & GTF_ICON_HDL_MASK) != 0);
+    unsigned index = (kind >> HANDLE_KIND_INDEX_SHIFT) - 1;
+    assert(index < static_cast<unsigned>(HandleKindIndex::COUNT));
+    return index;
+}
 
 #if defined(DEBUG)
 
@@ -1171,13 +1172,13 @@ public:
     static bool OperIsConst(genTreeOps gtOper)
     {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
+        static_assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_MSK);
 #elif defined(FEATURE_SIMD)
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
+        static_assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_VEC);
 #else
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+        static_assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_STR);
 #endif
     }
@@ -1199,13 +1200,13 @@ public:
 
     static bool OperIsLocal(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        static_assert(AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 
     static bool OperIsAnyLocal(genTreeOps gtOper)
     {
-        static_assert_no_msg(
+        static_assert(
             AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_LCL_ADDR);
     }
@@ -1360,11 +1361,11 @@ public:
         // Note that only GT_EQ to GT_GT are HIR nodes, GT_TEST and GT_BITTEST
         // nodes are backend nodes only.
 #ifdef TARGET_XARCH
-        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE,
-                                           GT_BITTEST_EQ, GT_BITTEST_NE));
+        static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_BITTEST_EQ,
+                                    GT_BITTEST_NE));
         return (GT_EQ <= gtOper) && (gtOper <= GT_BITTEST_NE);
 #else
-        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
+        static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
         return (GT_EQ <= gtOper) && (gtOper <= GT_TEST_NE);
 #endif
     }
@@ -1377,7 +1378,7 @@ public:
     // Oper is a compare that generates a cmp instruction (as opposed to a test instruction).
     static bool OperIsCmpCompare(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+        static_assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
         return (GT_EQ <= gtOper) && (gtOper <= GT_GT);
     }
 
@@ -1586,8 +1587,8 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
-                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
+        static_assert(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND, GT_STOREIND,
+                                    GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
         return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -1715,7 +1716,6 @@ public:
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
-    bool OperIsVectorConditionalSelect() const;
     bool OperIsVectorFusedMultiplyOp() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
@@ -2324,6 +2324,7 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
     static bool HandleKindDataIsInvariant(GenTreeFlags flags);
+    static bool HandleKindDataIsNotNull(GenTreeFlags flags);
 
     bool IsCall() const
     {
@@ -3376,8 +3377,8 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
     AsLngCon()->gtLconVal = val;
 #else
     // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
-    C_ASSERT(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
-    C_ASSERT(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
+    static_assert(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
+    static_assert(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
 
     SetIconValue(ssize_t(val));
 #endif
@@ -3446,7 +3447,7 @@ inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
 template <typename T>
 inline void GenTreeIntConCommon::SetValueTruncating(T value)
 {
-    static_assert_no_msg(
+    static_assert(
         (std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
 
     if (TypeIs(TYP_LONG))
@@ -3562,7 +3563,7 @@ class SsaNumInfo final
     static const int OUTLINED_INDEX_LOW_MASK = OUTLINED_ENCODING_BIT - 1;
     static const int OUTLINED_INDEX_HIGH_MASK =
         ~(COMPOSITE_ENCODING_BIT | OUTLINED_ENCODING_BIT | OUTLINED_INDEX_LOW_MASK);
-    static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0); // A lot in the encoding relies on this.
+    static_assert(SsaConfig::RESERVED_SSA_NUM == 0); // A lot in the encoding relies on this.
 
     int m_value;
 
@@ -3737,7 +3738,7 @@ static const unsigned PACKED_GTF_SPILLED = 2;
 //
 inline GenTreeFlags GetMultiRegSpillFlagsByIdx(MultiRegSpillFlags flags, unsigned idx)
 {
-    static_assert_no_msg(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
+    static_assert(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
     assert(idx < MAX_MULTIREG_COUNT);
 
     unsigned     bits       = flags >> (idx * 2); // It doesn't matter that we possibly leave other high bits here.
@@ -3769,7 +3770,7 @@ inline GenTreeFlags GetMultiRegSpillFlagsByIdx(MultiRegSpillFlags flags, unsigne
 //
 inline MultiRegSpillFlags SetMultiRegSpillFlagsByIdx(MultiRegSpillFlags oldFlags, GenTreeFlags flagsToSet, unsigned idx)
 {
-    static_assert_no_msg(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
+    static_assert(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
     assert(idx < MAX_MULTIREG_COUNT);
 
     MultiRegSpillFlags newFlags = oldFlags;
@@ -4303,7 +4304,8 @@ enum GenTreeCallDebugFlags : unsigned int
     GTF_CALL_MD_DEVIRTUALIZED           = 0x00000002, // this call was devirtualized
     GTF_CALL_MD_UNBOXED                 = 0x00000004, // this call was optimized to use the unboxed entry point
     GTF_CALL_MD_GUARDED                 = 0x00000008, // this call was transformed by guarded devirtualization
-    GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED = 0x00000010, // this runtime lookup helper is expanded
+    GTF_CALL_MD_WAS_CANDIDATE           = 0x00000010, // this call is a (failed) inline candidate
+    GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED = 0x00000020, // this runtime lookup helper is expanded
 };
 
 inline constexpr GenTreeCallDebugFlags operator ~(GenTreeCallDebugFlags a)
@@ -4359,8 +4361,42 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    // The following information is used to implement the proper observable handling of `ExecutionContext`,
+    // `SynchronizationContext` and `TaskScheduler` in async methods.
+    //
+    // The breakdown of the handling is as follows:
+    //
+    // - For custom awaitables there is no special handling of `SynchronizationContext` or `TaskScheduler`. All the
+    // handling that exists is custom implemented by the user. In this case "ContinuationContextHandling == None" and
+    // "SaveAndRestoreSynchronizationContextField == false".
+    //
+    // - For custom awaitables there _is_ special handling of `ExecutionContext`: when the custom awaitable suspends,
+    // the JIT ensures that the `ExecutionContext` will be captured on suspension and restored when the continuation is
+    // running. This is represented by "ExecutionContextHandling == AsyncSaveAndRestore".
+    //
+    // - For task awaits there is special handling of `SynchronizationContext` and `TaskScheduler` in multiple ways:
+    //
+    //   * The JIT ensures that `Thread.CurrentThread._synchronizationContext` is saved and restored around
+    //   synchronously finishing calls. This is represented by "SaveAndRestoreSynchronizationContextField == true".
+    //
+    //   * The JIT/runtime/BCL ensure that when the callee suspends, the caller will eventually be resumed on the
+    //   `SynchronizationContext`/`TaskScheduler` present before the call started, depending on the configuration of the
+    //   task await by the user. This resumption can be inlined if the `SynchronizationContext` is current when the
+    //   continuation is about to run, and otherwise will be posted to it. This is represented by
+    //   "ContinuationContextHandling == ContinueOnCapturedContext/ContinueOnThreadPool".
+    //
+    //   * When the callee suspends restoration of `Thread.CurrentThread._synchronizationContext` is left up to the
+    //   custom implementation of the `SynchronizationContext`, it must not be done by the JIT.
+    //
+    // - For task awaits the runtime/BCL ensure that `Thread.CurrentThread._executionContext` is captured before the
+    // call and restored after it. This happens consistently regardless of whether the callee finishes synchronously or
+    // not. This is represented by "ExecutionContextHandling == SaveAndRestore".
+    //
+    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    bool                        SaveAndRestoreSynchronizationContextField = false;
+    bool                        HasSuspensionIndicatorDef                 = false;
+    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4633,6 +4669,7 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG
@@ -4847,6 +4884,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
@@ -5020,7 +5058,7 @@ struct GenTreeCall final : public GenTree
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
         // Used for async calls
-        const AsyncCallInfo* asyncInfo;
+        AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5078,7 +5116,7 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync(const AsyncCallInfo* info)
+    void SetIsAsync(AsyncCallInfo* info)
     {
         assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
@@ -5519,6 +5557,11 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallDebugFlags & GTF_CALL_MD_UNBOXED) != 0;
     }
+
+    bool WasInlineCandidate() const
+    {
+        return (gtCallDebugFlags & GTF_CALL_MD_WAS_CANDIDATE) != 0;
+    }
 #endif
 
     bool IsSuppressGCTransition() const
@@ -5535,6 +5578,11 @@ struct GenTreeCall final : public GenTree
     void SetIsGuarded()
     {
         gtCallDebugFlags |= GTF_CALL_MD_GUARDED;
+    }
+
+    void SetWasInlineCandidate()
+    {
+        gtCallDebugFlags |= GTF_CALL_MD_WAS_CANDIDATE;
     }
 #endif
 
@@ -6538,34 +6586,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 #else
         return false;
 #endif
-    }
-
-    bool OperIsVectorConditionalSelect() const
-    {
-        switch (GetHWIntrinsicId())
-        {
-#if defined(TARGET_XARCH)
-            case NI_Vector128_ConditionalSelect:
-            case NI_Vector256_ConditionalSelect:
-            case NI_Vector512_ConditionalSelect:
-            {
-                return true;
-            }
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-            case NI_AdvSimd_BitwiseSelect:
-            case NI_Sve_ConditionalSelect:
-            {
-                return true;
-            }
-#endif // TARGET_ARM64
-
-            default:
-            {
-                return false;
-            }
-        }
     }
 
     bool OperIsVectorFusedMultiplyOp() const
@@ -9194,18 +9214,18 @@ public:
         assert(GenTree::OperIsCompare(oper));
         static constexpr unsigned s_codes[] = {EQ, NE, SLT, SLE, SGE, SGT, EQ, NE, NC, C};
 
-        static_assert_no_msg(s_codes[GT_EQ - GT_EQ] == EQ);
-        static_assert_no_msg(s_codes[GT_NE - GT_EQ] == NE);
-        static_assert_no_msg(s_codes[GT_LT - GT_EQ] == SLT);
-        static_assert_no_msg(s_codes[GT_LE - GT_EQ] == SLE);
-        static_assert_no_msg(s_codes[GT_GE - GT_EQ] == SGE);
-        static_assert_no_msg(s_codes[GT_GT - GT_EQ] == SGT);
-        static_assert_no_msg(s_codes[GT_TEST_EQ - GT_EQ] == EQ);
-        static_assert_no_msg(s_codes[GT_TEST_NE - GT_EQ] == NE);
+        static_assert(s_codes[GT_EQ - GT_EQ] == EQ);
+        static_assert(s_codes[GT_NE - GT_EQ] == NE);
+        static_assert(s_codes[GT_LT - GT_EQ] == SLT);
+        static_assert(s_codes[GT_LE - GT_EQ] == SLE);
+        static_assert(s_codes[GT_GE - GT_EQ] == SGE);
+        static_assert(s_codes[GT_GT - GT_EQ] == SGT);
+        static_assert(s_codes[GT_TEST_EQ - GT_EQ] == EQ);
+        static_assert(s_codes[GT_TEST_NE - GT_EQ] == NE);
 #ifdef TARGET_XARCH
         // Generated via bt instruction that sets C flag to the specified bit.
-        static_assert_no_msg(s_codes[GT_BITTEST_EQ - GT_EQ] == NC);
-        static_assert_no_msg(s_codes[GT_BITTEST_NE - GT_EQ] == C);
+        static_assert(s_codes[GT_BITTEST_EQ - GT_EQ] == NC);
+        static_assert(s_codes[GT_BITTEST_NE - GT_EQ] == C);
 #endif
 
         unsigned code = s_codes[oper - GT_EQ];
@@ -10215,7 +10235,7 @@ inline GenTreeFlags GenTree::GetLastUseBit(int fieldIndex) const
 {
     assert(fieldIndex < 4);
     assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_ADDR, GT_COPY, GT_RELOAD));
-    static_assert_no_msg((1 << FIELD_LAST_USE_SHIFT) == GTF_VAR_FIELD_DEATH0);
+    static_assert((1 << FIELD_LAST_USE_SHIFT) == GTF_VAR_FIELD_DEATH0);
     return (GenTreeFlags)(1 << (FIELD_LAST_USE_SHIFT + fieldIndex));
 }
 

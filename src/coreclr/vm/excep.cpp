@@ -3223,21 +3223,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
-        ||IsExceptionOfType(kThreadAbortException, pThrowable)
-        ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
 BOOL IsUncatchable(OBJECTREF *pThrowable)
 {
     CONTRACTL {
@@ -4940,8 +4925,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
-    BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
 
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
@@ -4951,37 +4934,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
         {
             EX_TRY
             {
-                // If this isn't ThreadAbortException, we want to print a stack trace to indicate why this thread abruptly
-                // terminated. Exceptions kill threads rarely enough that an uncached name check is reasonable.
-                BOOL        dump = TRUE;
-
-                if (/*IsStackOverflow ||*/
-                    !pThread->DetermineIfGuardPagePresent() ||
-                    IsOutOfMemory)
+                if (!pThread->DetermineIfGuardPagePresent())
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
-                    // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
+                    // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
-                    dump = FALSE;
-
-                    if (IsOutOfMemory)
-                    {
-                        PrintToStdErrA("Out of memory.\n");
-                    }
-                    else
-                    {
-                        PrintToStdErrA("Stack overflow.\n");
-                    }
+                    PrintToStdErrA("Stack overflow.\n");
                 }
-                else if (IsAsyncThreadException(&throwable))
-                {
-                    // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
-                }
-
-                // Finally, should we print the message?
-                if (dump)
+                else
                 {
                     // this is stack heavy because of the CQuickWSTRBase, so we break it out
                     // and don't have to carry the weight through our other code paths.
@@ -4990,14 +4950,22 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             }
             EX_CATCH
             {
-                LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
+                if (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
+                {
+                    // Try to print a short message at least.
+                    PrintToStdErrA("Out of memory.\n");
+                }
+                else
+                {
+                    LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
 
-                _ASSERTE(buf_size > 6);
-                wcscpy_s(buf, buf_size, W("\n   "));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
-                wcscat_s(buf, buf_size, W("\n"));
+                    _ASSERTE(buf_size > 6);
+                    wcscpy_s(buf, buf_size, W("\n   "));
+                    UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    wcscat_s(buf, buf_size, W("\n"));
 
-                PrintToStdErrW(buf);
+                    PrintToStdErrW(buf);
+                }
             }
             EX_END_CATCH
         }
@@ -10845,7 +10813,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10858,7 +10826,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
@@ -10904,7 +10872,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

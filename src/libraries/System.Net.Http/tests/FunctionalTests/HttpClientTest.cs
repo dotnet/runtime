@@ -246,7 +246,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("/something.html")]
-        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string uri)
+        public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string? uri)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
@@ -257,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("/")]
-        public async Task GetAsync_BaseAddress_ValidUri_Success(string uri)
+        public async Task GetAsync_BaseAddress_ValidUri_Success(string? uri)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {

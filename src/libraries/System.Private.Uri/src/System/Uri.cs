@@ -950,7 +950,8 @@ namespace System
                 }
                 else
                 {
-                    ArrayBuilder<string> pathSegments = default;
+                    var pathSegments = new ValueListBuilder<string>(4);
+
                     int current = 0;
                     while (current < path.Length)
                     {
@@ -959,10 +960,12 @@ namespace System
                         {
                             next = path.Length - 1;
                         }
-                        pathSegments.Add(path.Substring(current, (next - current) + 1));
+                        pathSegments.Append(path.Substring(current, (next - current) + 1));
                         current = next + 1;
                     }
-                    segments = pathSegments.ToArray();
+
+                    segments = pathSegments.AsSpan().ToArray();
+                    pathSegments.Dispose();
                 }
 
                 return segments;
@@ -4438,7 +4441,11 @@ namespace System
             if (InFact(Flags.ShouldBeCompressed) && dest.Length - offset > 0)
             {
                 // It will also convert back slashes if needed
-                dest.Length = offset + Compress(dest.RawChars.Slice(offset, dest.Length - offset), _syntax);
+                dest.Length = offset + UriHelper.Compress(
+                    dest.RawChars.Slice(offset, dest.Length - offset),
+                    _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes),
+                    _syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath));
+
                 if (dest[start] == '\\')
                     dest[start] = '/';
 
@@ -4576,131 +4583,10 @@ namespace System
 
         private static void Compress(char[] dest, int start, ref int destLength, UriParser syntax)
         {
-            destLength = start + Compress(dest.AsSpan(start, destLength - start), syntax);
-        }
-
-        //
-        // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
-        //
-        // The passed syntax controls whether to use aggressive compression or the one specified in RFC 2396
-        //
-        private static int Compress(Span<char> span, UriParser syntax)
-        {
-            if (syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
-            {
-                span.Replace('\\', '/');
-            }
-
-            int slashCount = 0;
-            int lastSlash = 0;
-            int dotCount = 0;
-            int removeSegments = 0;
-
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                char ch = span[i];
-
-                // compress multiple '/' for file URI
-                if (ch == '/')
-                {
-                    ++slashCount;
-                }
-                else
-                {
-                    if (slashCount > 1)
-                    {
-                        // else preserve repeated slashes
-                        lastSlash = i + 1;
-                    }
-                    slashCount = 0;
-                }
-
-                if (ch == '.')
-                {
-                    ++dotCount;
-                    continue;
-                }
-                else if (dotCount != 0)
-                {
-                    bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
-                        && (dotCount > 2 || ch != '/');
-
-                    // Cases:
-                    // /./                  = remove this segment
-                    // /../                 = remove this segment, mark next for removal
-                    // /....x               = DO NOT TOUCH, leave as is
-                    // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
-                    if (!skipSegment && ch == '/')
-                    {
-                        if ((lastSlash == i + dotCount + 1 // "/..../"
-                                || (lastSlash == 0 && i + dotCount + 1 == span.Length)) // "/..."
-                            && (dotCount <= 2))
-                        {
-                            //  /./ or /.<eos> or /../ or /..<eos>
-
-                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
-                            lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
-                            span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
-                            span = span.Slice(0, span.Length - (lastSlash - i - 1));
-
-                            lastSlash = i;
-                            if (dotCount == 2)
-                            {
-                                // We have 2 dots in between like /../ or /..<eos>,
-                                // Mark next segment for removal and remove this /../ or /..
-                                ++removeSegments;
-                            }
-                            dotCount = 0;
-                            continue;
-                        }
-                    }
-                    // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
-                    dotCount = 0;
-
-                    // Here all other cases go such as
-                    // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
-                }
-
-                // Now we may want to remove a segment because of previous /../
-                if (ch == '/')
-                {
-                    if (removeSegments != 0)
-                    {
-                        --removeSegments;
-
-                        span.Slice(lastSlash + 1).CopyTo(span.Slice(i + 1));
-                        span = span.Slice(0, span.Length - (lastSlash - i));
-                    }
-                    lastSlash = i;
-                }
-            }
-
-            if (span.Length != 0 && syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath))
-            {
-                if (slashCount <= 1)
-                {
-                    if (removeSegments != 0 && span[0] != '/')
-                    {
-                        //remove first not rooted segment
-                        lastSlash++;
-                        span.Slice(lastSlash).CopyTo(span);
-                        return span.Length - lastSlash;
-                    }
-                    else if (dotCount != 0)
-                    {
-                        // If final string starts with a segment looking like .[...]/ or .[...]<eos>
-                        // then we remove this first segment
-                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
-                        {
-                            dotCount += lastSlash == 0 ? 0 : 1;
-                            span.Slice(dotCount).CopyTo(span);
-                            return span.Length - dotCount;
-                        }
-                    }
-                }
-            }
-
-            return span.Length;
+            destLength = start + UriHelper.Compress(
+                dest.AsSpan(start, destLength - start),
+                syntax.InFact(UriSyntaxFlags.ConvertPathSlashes),
+                syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath));
         }
 
         //

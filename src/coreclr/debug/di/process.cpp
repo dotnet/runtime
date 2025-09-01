@@ -13666,7 +13666,7 @@ bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
 #ifndef DBG_FORCE_CONTINUE
 #define DBG_FORCE_CONTINUE MY_DBG_FORCE_CONTINUE
 #else
-static_assert_no_msg(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
+static_assert(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
 #endif
 
 DWORD GetDbgContinueFlag()
@@ -15240,7 +15240,10 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
 
     if (pAppDomain != NULL)
     {
-        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmDomainAssembly));
+        VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+        _ASSERTE(!vmModule.IsNull());
+        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)
         {
             return pModule->LookupClass(classToken);

@@ -785,7 +785,7 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This!.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
                 return new ManagedObjectWrapperHolder(value, c);
             }, new { This = this, flags });
 
@@ -1289,7 +1289,7 @@ namespace System.Runtime.InteropServices
 
         private sealed class RcwCache
         {
-            private readonly Lock _lock = new Lock(useTrivialWaits: true);
+            private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
             private readonly Dictionary<IntPtr, GCHandle> _cache = [];
 
             /// <summary>
@@ -1301,7 +1301,8 @@ namespace System.Runtime.InteropServices
             /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.</returns>
             public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
-                lock (_lock)
+                _lock.EnterWriteLock();
+                try
                 {
                     Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
                     ref GCHandle rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
@@ -1336,11 +1337,16 @@ namespace System.Runtime.InteropServices
                     // Return our target object.
                     return (wrapper, comProxy);
                 }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
             }
 
             public object? FindProxyForComInstance(IntPtr comPointer)
             {
-                lock (_lock)
+                _lock.EnterReadLock();
+                try
                 {
                     if (_cache.TryGetValue(comPointer, out GCHandle existingHandle))
                     {
@@ -1357,11 +1363,16 @@ namespace System.Runtime.InteropServices
 
                     return null;
                 }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
             }
 
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                lock (_lock)
+                _lock.EnterWriteLock();
+                try
                 {
                     // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                     // in the time between the GC cleared the contents of the GC handle but before the
@@ -1375,6 +1386,10 @@ namespace System.Runtime.InteropServices
                         _cache.Remove(comPointer);
                         cachedRef.Free();
                     }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
                 }
             }
         }

@@ -39,7 +39,6 @@ namespace Microsoft.Interop
         /// </code>
         /// </summary>
         public StatementSyntax GenerateClearUnmanagedDestination(StubIdentifierContext context)
-
         {
             // <GetUnmanagedValuesDestination>.Clear();
             return MethodInvocationStatement(
@@ -284,7 +283,7 @@ namespace Microsoft.Interop
             statements.Add(GenerateContentsMarshallingStatement(
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
+                        IdentifierName(managedSpanIdentifier),
                         IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.Marshal));
@@ -295,7 +294,6 @@ namespace Microsoft.Interop
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(CollectionSource.TypeInfo, context);
 
             // ReadOnlySpan<TUnmanagedElement> <nativeSpan> = <GetUnmanagedValuesSource>
             // Span<T> <managedSpan> = <GetManagedValuesDestination>
@@ -311,7 +309,9 @@ namespace Microsoft.Interop
                     CollectionSource.GetManagedValuesDestination(context)),
                 GenerateContentsMarshallingStatement(
                     context,
-                    IdentifierName(numElementsIdentifier),
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeSpanIdentifier),
+                        IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
         }
@@ -356,7 +356,9 @@ namespace Microsoft.Interop
                 unmanagedValuesDeclaration,
                 GenerateContentsMarshallingStatement(
                     context,
-                    IdentifierName(numElementsIdentifier),
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(managedSpanIdentifier),
+                        IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
         }
@@ -460,7 +462,9 @@ namespace Microsoft.Interop
                 managedValuesDestination,
                 GenerateContentsMarshallingStatement(
                     context,
-                    IdentifierName(numElementsIdentifier),
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeSpanIdentifier),
+                        IdentifierName("Length")),
                     new FreeAlwaysOwnedOriginalValueGenerator(elementMarshaller),
                     stagesToGenerate));
         }

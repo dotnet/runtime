@@ -1294,7 +1294,9 @@ namespace System
         public static object? ChangeType(object? value, System.TypeCode typeCode, System.IFormatProvider? provider) { throw null; }
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
+        public static byte[] FromHexString(System.ReadOnlySpan<byte> utf8Source) { throw null; }
         public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
+        public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<byte> utf8Source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static byte[] FromHexString(string s) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(string source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
@@ -1738,7 +1740,9 @@ namespace System
         public static bool TryFromBase64Chars(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryFromBase64String(string s, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
+        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input) where TInput : allows ref struct where TOutput : allows ref struct;
@@ -8889,7 +8893,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
+    [System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -9028,6 +9033,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -9035,6 +9041,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -13367,6 +13374,11 @@ namespace System.Runtime.CompilerServices
     {
         NoStringInterning = 8,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    public sealed class CompilerLoweringPreserveAttribute : System.Attribute
+    {
+        public CompilerLoweringPreserveAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Module)]
     public partial class CompilationRelaxationsAttribute : System.Attribute
     {
@@ -13579,6 +13591,13 @@ namespace System.Runtime.CompilerServices
     public sealed partial class ExtensionAttribute : System.Attribute
     {
         public ExtensionAttribute() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Delegate, Inherited = false)]
+    public sealed partial class ExtensionMarkerAttribute : System.Attribute
+    {
+        public ExtensionMarkerAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     public sealed partial class FixedAddressValueTypeAttribute : System.Attribute
@@ -14114,7 +14133,9 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
         public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressGreaterThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressLessThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         public static bool IsNullRef<T>(ref readonly T source) where T : allows ref struct { throw null; }
         public static ref T NullRef<T>() where T : allows ref struct { throw null; }
         public static T ReadUnaligned<T>(scoped ref readonly byte source) where T : allows ref struct { throw null; }

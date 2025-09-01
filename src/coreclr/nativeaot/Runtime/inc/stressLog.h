@@ -312,7 +312,7 @@ public:
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        C_ASSERT(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 
@@ -344,18 +344,25 @@ public:
 };
 
 
-template<>
-void* StressLog::ConvertArgument(float arg) = delete;
-
 #if TARGET_64BIT
 template<>
 inline void* StressLog::ConvertArgument(double arg)
 {
     return (void*)(size_t)(*((uint64_t*)&arg));
 }
+
+// COMPAT: Convert 32-bit floats to 64-bit doubles.
+template<>
+inline void* StressLog::ConvertArgument(float arg)
+{
+    return StressLog::ConvertArgument((double)arg);
+}
 #else
 template<>
 void* StressLog::ConvertArgument(double arg) = delete;
+
+template<>
+void* StressLog::ConvertArgument(float arg) = delete;
 
 // COMPAT: Truncate 64-bit integer arguments to 32-bit
 template<>

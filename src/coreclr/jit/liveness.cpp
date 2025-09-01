@@ -66,9 +66,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 
         if (compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
-            // If this is an enregisterable variable that is not marked doNotEnregister,
+            // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
-            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(varDsc->lvDoNotEnregister || varDsc->lvDefinedViaAddress ||
+                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
@@ -822,7 +823,7 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
     }
 
     // TODO: we should generate the code for saving to/restoring
-    //       from the inlined N/Direct frame instead.
+    //       from the inlined PInvoke frame instead.
 
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())

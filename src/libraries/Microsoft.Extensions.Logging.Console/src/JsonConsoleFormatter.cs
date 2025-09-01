@@ -89,12 +89,12 @@ namespace Microsoft.Extensions.Logging.Console
                             writer.WriteString("Message", stateMessage);
                         }
                         if (stateProperties != null)
+                        {
+                            foreach (KeyValuePair<string, object?> item in stateProperties)
                             {
-                                foreach (KeyValuePair<string, object?> item in stateProperties)
-                                {
-                                    WriteItem(writer, item);
-                                }
+                                WriteItem(writer, item);
                             }
+                        }
                         writer.WriteEndObject();
                     }
                     WriteScopeInformation(writer, scopeProvider);

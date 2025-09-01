@@ -6,17 +6,38 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 
+using Internal.IL.Stubs;
+using Internal.TypeSystem;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
     public sealed class ObjectDataInterner
     {
+        private readonly bool _genericsOnly;
         private Dictionary<ISymbolNode, ISymbolNode> _symbolRemapping;
 
-        public static ObjectDataInterner Null { get; } = new ObjectDataInterner() { _symbolRemapping = new() };
+        public static ObjectDataInterner Null { get; } = new ObjectDataInterner(genericsOnly: false) { _symbolRemapping = new() };
 
-        public bool IsNull => _symbolRemapping != null && _symbolRemapping.Count == 0;
+        public ObjectDataInterner(bool genericsOnly)
+        {
+            _genericsOnly = genericsOnly;
+        }
+
+        public bool CanFold(MethodDesc method)
+        {
+            if (this == Null)
+                return false;
+
+            if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
+                return true;
+
+            if (method.GetTypicalMethodDefinition() is ValueTypeGetFieldHelperMethodOverride)
+                return true;
+
+            return false;
+        }
 
         private void EnsureMap(NodeFactory factory)
         {
@@ -34,11 +55,14 @@ namespace ILCompiler
             {
                 previousMethodHash = methodHash;
                 previousSymbolRemapping = symbolRemapping;
-                methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping));
+                methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping, _genericsOnly));
                 symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>((int)(1.05 * (previousSymbolRemapping?.Count ?? 0)));
 
                 foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
                 {
+                    if (!CanFold(body.Method))
+                        continue;
+
                     // We don't track special unboxing thunks as virtual method use related so ignore them
                     if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
                         continue;
@@ -107,9 +131,10 @@ namespace ILCompiler
         {
             private readonly NodeFactory _factory;
             private readonly Dictionary<ISymbolNode, ISymbolNode> _interner;
+            private readonly bool _genericsOnly;
 
-            public MethodInternComparer(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> interner)
-                => (_factory, _interner) = (factory, interner);
+            public MethodInternComparer(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> interner, bool genericsOnly)
+                => (_factory, _interner, _genericsOnly) = (factory, interner, genericsOnly);
 
             public int GetHashCode(MethodInternKey key) => key.HashCode;
 
@@ -159,6 +184,10 @@ namespace ILCompiler
             public bool Equals(MethodInternKey a, MethodInternKey b)
             {
                 if (a.HashCode != b.HashCode)
+                    return false;
+
+                if (_genericsOnly
+                    && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
                     return false;
 
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);

@@ -1754,8 +1754,8 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert_no_msg(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1812,7 +1812,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1935,8 +1935,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
+    static_assert(VPTR_OFFS == 0);
     assert(onStack || object->TypeIs(TYP_REF));
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     return result;
 }
 
@@ -2100,11 +2101,11 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 template <typename T>
 void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
+    static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                   std::is_same<T, long long>::value || std::is_same<T, float>::value ||
+                   std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
 
-    static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
+    static_assert(sizeof(int64_t) == sizeof(long long));
 
     var_types typeOfValue = TYP_UNDEF;
     if (std::is_floating_point<T>::value)
@@ -4232,19 +4233,8 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         // The struct is not enregistered
         return PROMOTION_TYPE_DEPENDENT;
     }
-    if (!varDsc->lvIsParam)
-    {
-        // The struct is a register candidate
-        return PROMOTION_TYPE_INDEPENDENT;
-    }
 
-// We have a parameter that could be enregistered
-#if defined(TARGET_ARM)
-    // TODO-Cleanup: return INDEPENDENT for arm32.
-    return PROMOTION_TYPE_DEPENDENT;
-#else  // !TARGET_ARM
     return PROMOTION_TYPE_INDEPENDENT;
-#endif // !TARGET_ARM
 }
 
 /*****************************************************************************
@@ -4713,7 +4703,21 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        GenTreeCall* call = AsCall();
+        if (call->IsAsync())
+        {
+            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
+            if (suspendedArg != nullptr)
+            {
+                bool isEntire = comp->lvaLclExactSize(suspendedArg->GetLclNum()) == 1;
+                if (visitor(LocalDef(suspendedArg, isEntire, suspendedArg->GetLclOffs(), 1)) == VisitResult::Abort)
+                {
+                    return VisitResult::Abort;
+                }
+            }
+        }
+
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
@@ -4755,7 +4759,17 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        GenTreeCall* call = AsCall();
+        if (call->IsAsync())
+        {
+            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
+            if ((suspendedArg != nullptr) && (visitor(suspendedArg) == VisitResult::Abort))
+            {
+                return VisitResult::Abort;
+            }
+        }
+
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
             return visitor(lclAddr);
@@ -5385,6 +5399,171 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     }
 
     return BasicBlockVisit::Continue;
+}
+
+//-----------------------------------------------------------
+// gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+
+// Arguments:
+//    tree              - The tree to check
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Return Value:
+//     True if 'tree' exceeds the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity)
+{
+    struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ComplexityVisitor(Compiler* comp, unsigned limit, TFunc getComplexity)
+            : GenTreeVisitor<ComplexityVisitor>(comp)
+            , m_complexity(0)
+            , m_limit(limit)
+            , m_getComplexity(getComplexity)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_complexity += m_getComplexity(*use);
+            return (m_complexity > m_limit) ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+    private:
+        unsigned       m_complexity;
+        const unsigned m_limit;
+        TFunc          m_getComplexity;
+    };
+
+    assert(tree != nullptr);
+
+    ComplexityVisitor visitor(this, limit, getComplexity);
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    return (result == WALK_ABORT);
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a block exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//   True if the trees in the block exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (Statement* const stmt : Statements())
+    {
+        const unsigned slack = limit - localCount;
+        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a range of blocks exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//    True if the trees in the block range exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (BasicBlock* const block : *this)
+    {
+        const unsigned slack = limit - localCount;
+        if (block->ComplexityExceeds(comp, slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optLoopComplexityExceeds: Check if the trees in a loop exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//     True if the trees in 'loop' exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(loop != nullptr);
+
+    unsigned loopComplexity = 0;
+    auto     getComplexity  = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        loopComplexity += treeComplexity;
+        return treeComplexity;
+    };
+
+    BasicBlockVisit const result = loop->VisitLoopBlocks([&](BasicBlock* block) {
+        assert(limit >= loopComplexity);
+        const unsigned slack = limit - loopComplexity;
+        return block->ComplexityExceeds(this, slack, getComplexity) ? BasicBlockVisit::Abort
+                                                                    : BasicBlockVisit::Continue;
+    });
+
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/

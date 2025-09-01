@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
 #include "ecall.h"
@@ -1416,7 +1416,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     m_s1 = NoRange; // indicates that there is no active range of stack arguments
     m_s2 = 0;
     m_routineIndex = 0;
-    m_totalStackSize = 0;
+    m_totalStackSize = argIt.SizeOfArgStack();
 #if LOG_COMPUTE_CALL_STUB
     printf("ComputeCallStub\n");
 #endif
@@ -1527,7 +1527,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     }
     else if (m_s1 != NoRange)
     {
-        m_totalStackSize += m_s2 - m_s1 + 1;
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
     }
@@ -1571,7 +1570,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     {
         // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
         // store the routine for the range
-        m_totalStackSize += m_s2 - m_s1 + 1;
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
         m_s1 = NoRange;
@@ -1650,7 +1648,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            m_totalStackSize += m_s2 - m_s1 + 1;
             pRoutines[m_routineIndex++] = GetStackRoutine();
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
             m_s1 = argLocDesc.m_byteStackIndex;
@@ -1688,18 +1685,28 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // we always process single argument passed by reference using single routine.
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
+        int unalignedArgSize = pArgIt->GetArgSize();
+        // For the interpreter-to-native transition we need to make sure that we properly align the offsets
+        //  to interpreter stack slots. Otherwise a VT of i.e. size 12 will misalign the stack offset during
+        //  loads and we will start loading garbage into registers.
+        // We don't need to do this for native-to-interpreter transitions because the Store_Ref_xxx helpers
+        //  automatically do alignment of the stack offset themselves when updating the stack offset,
+        //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
+        int alignedArgSize = m_interpreterToNative
+            ? ALIGN_UP(unalignedArgSize, 8)
+            : unalignedArgSize;
+
         if (argLocDesc.m_cGenReg == 1)
         {
             pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
-            pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
+            pRoutines[m_routineIndex++] = alignedArgSize;
             m_r1 = NoRange;
         }
         else
         {
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
-            pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
-            m_totalStackSize += argLocDesc.m_byteStackSize;
+            pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
             m_s1 = NoRange;
         }
     }
@@ -1839,7 +1846,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                     break;
                             }
                                 break;
-#ifdef FEATURE_SIMD
                             case CORINFO_HFA_ELEM_VECTOR64:
                                 switch (thReturnValueType.GetSize())
                                 {
@@ -1860,7 +1866,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                         break;
                                 }
                                 break;
-#endif
                         default:
                             _ASSERTE(!"HFA type is not supported");
                             break;
@@ -1897,4 +1902,4 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
     return ReturnTypeVoid;
 }
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !TARGET_WASM

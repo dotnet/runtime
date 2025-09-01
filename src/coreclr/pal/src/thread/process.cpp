@@ -93,6 +93,9 @@ extern "C"
         }                                                                   \
     } while (false)
 
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -130,21 +133,6 @@ CObjectType CorUnix::otProcess(
                 CObjectType::ThreadReleaseHasNoSideEffects,
                 CObjectType::NoOwner
                 );
-
-//
-// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
-//
-static int s_flushUsingMemBarrier = 0;
-
-//
-// Helper memory page used by the FlushProcessWriteBuffers
-//
-static int* s_helperPage = 0;
-
-//
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-//
-pthread_mutex_t flushProcessWriteBuffersMutex;
 
 CAllowedObjectTypes aotProcess(otiProcess);
 
@@ -202,7 +190,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #define CLR_SEM_MAX_NAMELEN MAX_PATH
 #endif
 
-static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
@@ -1401,21 +1389,217 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
-/*++
-    PAL_NotifyRuntimeStarted
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName = "co";
 
-    Signals the debugger waiting for runtime startup notification to continue and
-    waits until the debugger signals us to continue.
+#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
 
-Parameters:
-    None
+typedef enum
+{
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
 
-Return value:
-    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
---*/
+typedef enum
+{
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
+
+static
+int
+OpenPipe(const char* name, int mode)
+{
+    int fd = -1;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while (fd == -1)
+    {
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
+    return fd;
+}
+
+static
+void
+ClosePipe(int fd)
+{
+    if (fd != -1)
+    {
+        while (close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static
+RuntimeEventsOverPipes
+NotifyRuntimeUsingPipes()
+{
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
+
+    PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' pipe\n", continuePipeName);
+
+    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", continuePipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening startup '%s' pipe\n", startupPipeName);
+
+    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", startupPipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: sending started event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
+
+        if (offset != bytesToWrite)
+        {
+            TRACE("NotifyRuntimeUsingPipes: write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            goto exit;
+        }
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: waiting on continue event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+        }
+        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
+
+        if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
+        {
+            TRACE("NotifyRuntimeUsingPipes: received continue event\n");
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: received invalid event\n");
+            goto exit;
+        }
+    }
+
+    result = RuntimeEventsOverPipes_Succeeded;
+
+exit:
+
+    if (startupPipeFd != -1)
+    {
+        ClosePipe(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        ClosePipe(continuePipeFd);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+
+static
 BOOL
-PALAPI
-PAL_NotifyRuntimeStarted()
+NotifyRuntimeUsingSemaphores()
 {
     char startupSemName[CLR_SEM_MAX_NAMELEN];
     char continueSemName[CLR_SEM_MAX_NAMELEN];
@@ -1436,13 +1620,13 @@ PAL_NotifyRuntimeStarted()
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
-    TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
+    TRACE("NotifyRuntimeUsingSemaphores: opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
     // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
     startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
-        TRACE("sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingSemaphores: sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
         goto exit;
     }
 
@@ -1465,7 +1649,7 @@ PAL_NotifyRuntimeStarted()
     {
         if (EINTR == errno)
         {
-            TRACE("sem_wait() failed with EINTR; re-waiting");
+            TRACE("NotifyRuntimeUsingSemaphores: sem_wait() failed with EINTR; re-waiting");
             continue;
         }
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1485,6 +1669,45 @@ exit:
         sem_close(continueSem);
     }
     return launched;
+}
+
+/*++
+    PAL_NotifyRuntimeStarted
+
+    Signals the debugger waiting for runtime startup notification to continue and
+    waits until the debugger signals us to continue.
+
+Parameters:
+    None
+
+Return value:
+    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
+--*/
+BOOL
+PALAPI
+PAL_NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    RuntimeEventsOverPipes result = NotifyRuntimeUsingPipes();
+    switch (result)
+    {
+    case RuntimeEventsOverPipes_Disabled:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake disabled, try semaphores\n");
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Failed:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake failed\n");
+        return FALSE;
+    case RuntimeEventsOverPipes_Succeeded:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake succeeded\n");
+        return TRUE;
+    default:
+        // Unexpected result.
+        return FALSE;
+    }
+#else
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
 }
 
 LPCSTR
@@ -1510,7 +1733,7 @@ const int SEMAPHORE_ENCODED_NAME_LENGTH =
     sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
     SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
 
-static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
+static_assert(MAX_APPLICATION_GROUP_ID_LENGTH
     + 1 /* For / */
     + 2 /* For ST/CO name prefix */
     + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
@@ -2572,70 +2795,6 @@ PROCAbort(int signal, siginfo_t* siginfo)
     abort();
 }
 
-/*++
-Function:
-  InitializeFlushProcessWriteBuffers
-
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
---*/
-BOOL
-InitializeFlushProcessWriteBuffers()
-{
-    _ASSERTE(s_helperPage == 0);
-    _ASSERTE(s_flushUsingMemBarrier == 0);
-
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
-    {
-        // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
-        {
-            s_flushUsingMemBarrier = TRUE;
-            return TRUE;
-        }
-    }
-#endif
-
-#ifdef TARGET_APPLE
-    return TRUE;
-#else
-    s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-
-    if(s_helperPage == MAP_FAILED)
-    {
-        return FALSE;
-    }
-
-    // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
-    _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
-
-    // Locking the page ensures that it stays in memory during the two mprotect
-    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-    // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(s_helperPage, GetVirtualPageSize());
-
-    if (status != 0)
-    {
-        return FALSE;
-    }
-
-    status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
-    if (status != 0)
-    {
-        munlock(s_helperPage, GetVirtualPageSize());
-    }
-
-    return status == 0;
-#endif // TARGET_APPLE
-}
-
 #define FATAL_ASSERT(e, msg) \
     do \
     { \
@@ -2646,77 +2805,6 @@ InitializeFlushProcessWriteBuffers()
         } \
     } \
     while(0)
-
-/*++
-Function:
-  FlushProcessWriteBuffers
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-FlushProcessWriteBuffers()
-{
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
-    if (s_flushUsingMemBarrier)
-    {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
-        FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
-    }
-    else
-#endif
-    if (s_helperPage != 0)
-    {
-        int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-        // Changing a helper memory page protection from read / write to no access
-        // causes the OS to issue IPI to flush TLBs on all processors. This also
-        // results in flushing the processor buffers.
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
-
-        // Ensure that the page is dirty before we change the protection so that
-        // we prevent the OS from skipping the global TLB flush.
-        InterlockedIncrement(s_helperPage);
-
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
-
-        status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
-    }
-#ifdef TARGET_APPLE
-    else
-    {
-        mach_msg_type_number_t cThreads;
-        thread_act_t *pThreads;
-        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
-        CHECK_MACH("task_threads()", machret);
-
-        uintptr_t sp;
-        uintptr_t registerValues[128];
-
-        // Iterate through each of the threads in the list.
-        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
-        {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
-            {
-                CHECK_MACH("thread_get_register_pointer_values()", machret);
-            }
-
-            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
-            CHECK_MACH("mach_port_deallocate()", machret);
-        }
-        // Deallocate the thread list now we're done with it.
-        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
-        CHECK_MACH("vm_deallocate()", machret);
-    }
-#endif // TARGET_APPLE
-}
 
 /*++
 Function:

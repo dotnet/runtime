@@ -34,7 +34,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
 
-    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -226,7 +227,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
-    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect. Follow a migration path at TODO: PLACEHOLDER FOR LINK" Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
+    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />

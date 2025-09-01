@@ -13,13 +13,13 @@
 
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
-    <_UsePThreads />
-    <_UsePThreads Condition="'$(WasmEnableThreads)' == 'true'"> usepthreads</_UsePThreads>
-
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
 
-    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_UsePThreads)</_BuildNativeArgs>
+    <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
+
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_CMakeArgs)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -50,16 +50,14 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
-      <_BuildNativePreSource Condition="'$(TargetsBrowser)' == 'true'">source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; </_BuildNativePreSource>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
 
     <ItemGroup>
@@ -73,8 +71,8 @@
     <Copy SourceFiles="@(_IcuArtifacts)" DestinationFolder="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_BuildNativeOutConfig)'))" SkipUnchangedFiles="true" />
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to error in release branches -->
-    <Message Text="$(_BuildNativePreSource)&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" Importance="High"/>
-    <Exec Command="$(_BuildNativePreSource)&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
+    <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
+    <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <!-- 
@@ -99,15 +97,12 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
-        <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
-        <_BuildNativePreSource Condition="'$(TargetsBrowser)' == 'true'">call &quot;$([MSBuild]::NormalizePath('$(RepoRoot)src/mono/browser/emsdk', 'emsdk_env.cmd'))&quot; &amp;&amp; </_BuildNativePreSource>
+        <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
-    <Message Text="$(_BuildNativePreSource)&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="$(_BuildNativePreSource)&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
+    <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
+    <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <UsingTask TaskName="AndroidLibBuilderTask"

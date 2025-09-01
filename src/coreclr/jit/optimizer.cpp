@@ -1901,12 +1901,83 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
+    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
+    const bool     haveProfileWeights   = fgIsUsingProfileWeights();
+    const weight_t weightPreheader      = preheader->bbWeight;
+    const weight_t weightCond           = condBlock->bbWeight;
+    const weight_t weightStayInLoopSucc = stayInLoopSucc->bbWeight;
+
+    // If we have profile data then we calculate the number of times
+    // the loop will iterate into loopIterations
+    if (haveProfileWeights)
+    {
+        assert(preheader->hasProfileWeight());
+        assert(condBlock->hasProfileWeight());
+        assert(stayInLoopSucc->hasProfileWeight());
+
+        // If this while loop never iterates then don't bother transforming
+        //
+        if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
+                    loop->GetIndex(), preheader->bbNum);
+            return false;
+        }
+
+        // Determine average iteration count
+        //
+        //   weightTop is the number of time this loop executes
+        //   weightTest is the number of times that we consider entering or remaining in the loop
+        //   loopIterations is the average number of times that this loop iterates
+        //
+        // If profile is inaccurate, use other data to provide a credible estimate.
+        // The value should at least be >= weightPreheader.
+        //
+        const weight_t loopEntries = max(weightPreheader, weightCond - weightStayInLoopSucc);
+        loopIterations             = weightStayInLoopSucc / loopEntries;
+    }
+
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int sizeLimit = JitConfig.JitLoopInversionSizeLimit();
-    if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
+    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    if (invertSizeLimit >= 0)
     {
-        return false;
+        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
+        bool      mightBenefitFromCloning = false;
+        unsigned  loopSize                = 0;
+
+        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
+        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
+        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
+            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
+            loopSize++;
+            return 1;
+        };
+
+        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+        if (loopSize > (unsigned)invertSizeLimit)
+        {
+            // Don't try to invert oversize loops if they don't show cloning potential,
+            // or if they're too big to be cloned anyway.
+            JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
+            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
+            if (!mightBenefitFromCloning || tooBigToClone)
+            {
+                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
+                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                return false;
+            }
+
+            // If the loop shows cloning potential, tolerate some excess size.
+            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
+            if (loopSize > liberalInvertSizeLimit)
+            {
+                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
+                return false;
+            }
+
+            JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
+        }
     }
 
     unsigned estDupCostSz = 0;
@@ -1919,68 +1990,6 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             GenTree* tree = stmt->GetRootNode();
             gtPrepareCost(tree);
             estDupCostSz += tree->GetCostSz();
-        }
-    }
-
-    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights   = false;
-    weight_t const weightPreheader      = preheader->bbWeight;
-    weight_t const weightCond           = condBlock->bbWeight;
-    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
-
-    // If we have profile data then we calculate the number of times
-    // the loop will iterate into loopIterations
-    if (fgIsUsingProfileWeights())
-    {
-        // Only rely upon the profile weight when all three of these blocks
-        // have good profile weights
-        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight() && stayInLoopSucc->hasProfileWeight())
-        {
-            // If this while loop never iterates then don't bother transforming
-            //
-            if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
-            {
-                JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
-                        loop->GetIndex(), preheader->bbNum);
-                return false;
-            }
-
-            haveProfileWeights = true;
-
-            // We generally expect weightCond > weightStayInLoopSucc
-            //
-            // Tolerate small inconsistencies...
-            //
-            if (!fgProfileWeightsConsistent(weightPreheader + weightStayInLoopSucc, weightCond))
-            {
-                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT
-                        ", cond " FMT_WT "\n",
-                        weightPreheader, weightStayInLoopSucc, weightCond);
-            }
-            else
-            {
-                // Determine average iteration count
-                //
-                //   weightTop is the number of time this loop executes
-                //   weightTest is the number of times that we consider entering or remaining in the loop
-                //   loopIterations is the average number of times that this loop iterates
-                //
-                weight_t loopEntries = weightCond - weightStayInLoopSucc;
-
-                // If profile is inaccurate, try and use other data to provide a credible estimate.
-                // The value should at least be >= weightBlock.
-                //
-                if (loopEntries < weightPreheader)
-                {
-                    loopEntries = weightPreheader;
-                }
-
-                loopIterations = weightStayInLoopSucc / loopEntries;
-            }
-        }
-        else
-        {
-            JITDUMP("Missing profile data for loop!\n");
         }
     }
 
@@ -2343,7 +2352,6 @@ void Compiler::optResetLoopInfo()
         if (!block->hasProfileWeight())
         {
             block->bbWeight = BB_UNITY_WEIGHT;
-            block->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 }
@@ -2864,47 +2872,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     return true;
 }
 
-//------------------------------------------------------------------------
-// optLoopComplexityExceeds: Check if the number of nodes in the loop exceeds some limit
-//
-// Arguments:
-//     loop  - the loop to compute the number of nodes in
-//     limit - limit on the number of nodes
-//
-// Returns:
-//     true if the number of nodes exceeds the limit
-//
-bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit)
-{
-    assert(loop != nullptr);
-
-    // See if loop size exceeds the limit.
-    //
-    unsigned size = 0;
-
-    BasicBlockVisit const result = loop->VisitLoopBlocks([this, limit, &size](BasicBlock* block) {
-        assert(limit >= size);
-        unsigned const slack     = limit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), limit);
-        return true;
-    }
-
-    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, limit);
-    return false;
-}
-
 //-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
@@ -2933,15 +2900,6 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     else
     {
         block->RemoveFlags(BBF_PROF_WEIGHT);
-    }
-
-    if (newWeight == BB_ZERO_WEIGHT)
-    {
-        block->SetFlags(BBF_RUN_RARELY);
-    }
-    else
-    {
-        block->RemoveFlags(BBF_RUN_RARELY);
     }
 }
 
@@ -3703,7 +3661,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     //
     // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
     // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
-    // or side-effect dependent things. Note that HoistVisitor uses `m_beforeSideEffect` to determine if it's
+    // or side-effect dependent things. Note that HoistVisitor uses `m_canHoistSideEffects` to determine if it's
     // ok to hoist a side-effect. It allows this only for the first block (the entry block), before any
     // side-effect has been seen. After the first block, it assumes that there has been a side effect and
     // no further side-effect can be hoisted. It is true that we don't analyze any program behavior in the
@@ -3713,7 +3671,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
     // and it is safe to evaluate the tree early.
     //
-    ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
+    assert(m_dfsTree != nullptr);
+    BitVecTraits traits(m_dfsTree->PostOrderTraits());
+    BitVec       defExec(BitVecOps::MakeEmpty(&traits));
 
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
     // Note that these are not necessarily definitely executed. However, it is a heuristic that they will
@@ -3771,7 +3731,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
             }
         }
         JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
-        defExec.Push(childPreHead);
+        BitVecOps::AddElemD(&traits, defExec, childPreHead->bbPostorderNum);
     }
 
     if (loop->ExitEdges().size() == 1)
@@ -3796,7 +3756,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
-            defExec.Push(cur);
+            BitVecOps::AddElemD(&traits, defExec, cur->bbPostorderNum);
             cur = cur->bbIDom;
         }
 
@@ -3812,9 +3772,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     }
 
     JITDUMP("  --  " FMT_BB " (header block)\n", loop->GetHeader()->bbNum);
-    defExec.Push(loop->GetHeader());
+    BitVecOps::AddElemD(&traits, defExec, loop->GetHeader()->bbPostorderNum);
 
-    optHoistLoopBlocks(loop, &defExec, hoistCtxt);
+    optHoistLoopBlocks(loop, &traits, defExec, hoistCtxt);
 
     unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
@@ -3823,7 +3783,10 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     return numHoisted > 0;
 }
 
-bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt)
+bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
+                                          FlowGraphNaturalLoop* loop,
+                                          LoopHoistContext*     hoistCtxt,
+                                          bool                  defExecuted)
 {
     bool loopContainsCall = m_loopSideEffects[loop->GetIndex()].ContainsCall;
 
@@ -3893,6 +3856,14 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
     // the variables that are read/written inside the loop should
     // always be a subset of the InOut variables for the loop
     assert(loopVarCount <= varInOutCount);
+
+    // If this tree isn't guaranteed to execute every loop iteration,
+    // consider hoisting it only if it is expensive.
+    //
+    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)))
+    {
+        return false;
+    }
 
     // When loopVarCount >= availRegCount we believe that all of the
     // available registers will get used to hold LclVars inside the loop.
@@ -4112,17 +4083,14 @@ void LoopSideEffects::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE s
 //
 // Arguments:
 //    loop - The loop
-//    blocks - A stack of blocks belonging to the loop
+//    traits - Bit vector traits for 'defExecuted'
+//    defExecuted - Bit vector of definitely executed blocks in the loop
 //    hoistContext - The loop hoist context
 //
-// Assumptions:
-//    The `blocks` stack contains the definitely-executed blocks in
-//    the loop, in the execution order, starting with the loop entry
-//    block on top of the stack.
-//
-void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
-                                  ArrayStack<BasicBlock*>* blocks,
-                                  LoopHoistContext*        hoistContext)
+void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
+                                  BitVecTraits*         traits,
+                                  BitVec                defExecuted,
+                                  LoopHoistContext*     hoistContext)
 {
     class HoistVisitor : public GenTreeVisitor<HoistVisitor>
     {
@@ -4157,10 +4125,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         };
 
         ArrayStack<Value>     m_valueStack;
-        bool                  m_beforeSideEffect;
+        bool                  m_canHoistSideEffects;
         FlowGraphNaturalLoop* m_loop;
         LoopHoistContext*     m_hoistContext;
         BasicBlock*           m_currentBlock;
+        BitVecTraits*         m_traits;
+        BitVec                m_defExec;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -4283,43 +4253,65 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
             UseExecutionOrder = true,
         };
 
-        HoistVisitor(Compiler* compiler, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistContext)
+        HoistVisitor(Compiler*             compiler,
+                     FlowGraphNaturalLoop* loop,
+                     LoopHoistContext*     hoistContext,
+                     BitVecTraits*         traits,
+                     BitVec                defExec)
             : GenTreeVisitor(compiler)
             , m_valueStack(compiler->getAllocator(CMK_LoopHoist))
-            , m_beforeSideEffect(true)
+            , m_canHoistSideEffects(true)
             , m_loop(loop)
             , m_hoistContext(hoistContext)
             , m_currentBlock(nullptr)
+            , m_traits(traits)
+            , m_defExec(defExec)
         {
         }
 
         void HoistBlock(BasicBlock* block)
         {
             m_currentBlock = block;
-            for (Statement* const stmt : block->NonPhiStatements())
+
+            const weight_t blockWeight = block->getBBWeight(m_compiler);
+
+            JITDUMP("\n    HoistBlock " FMT_BB " (weight=%6s) of loop " FMT_LP " (head: " FMT_BB ")\n", block->bbNum,
+                    refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), m_loop->GetIndex(),
+                    m_loop->GetHeader()->bbNum);
+
+            if (blockWeight < (BB_UNITY_WEIGHT / 10))
             {
-                WalkTree(stmt->GetRootNodePointer(), nullptr);
-                Value& top = m_valueStack.TopRef();
-                assert(top.Node() == stmt->GetRootNode());
-
-                // hoist the top node?
-                if (top.m_hoistable)
+                JITDUMP("      block weight is too small to perform hoisting.\n");
+            }
+            else
+            {
+                for (Statement* const stmt : block->NonPhiStatements())
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loop, m_hoistContext);
-                }
-                else
-                {
-                    JITDUMP("      [%06u] %s: %s\n", dspTreeID(top.Node()),
-                            top.m_invariant ? "not hoistable" : "not invariant", top.m_failReason);
-                }
+                    WalkTree(stmt->GetRootNodePointer(), nullptr);
+                    Value& top = m_valueStack.TopRef();
+                    assert(top.Node() == stmt->GetRootNode());
 
-                m_valueStack.Reset();
+                    // hoist the top node?
+                    if (top.m_hoistable)
+                    {
+                        const bool defExecuted = BitVecOps::IsMember(m_traits, m_defExec, block->bbPostorderNum);
+                        m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loop, m_hoistContext, defExecuted);
+                    }
+                    else
+                    {
+                        JITDUMP("      [%06u] %s: %s\n", dspTreeID(top.Node()),
+                                top.m_invariant ? "not hoistable" : "not invariant", top.m_failReason);
+                    }
+
+                    m_valueStack.Reset();
+                }
             }
 
-            // Only unconditionally executed blocks in the loop are visited (see optHoistThisLoop)
-            // so after we're done visiting the first block we need to assume the worst, that the
-            // blocks that are not visited have side effects.
-            m_beforeSideEffect = false;
+            assert(!m_canHoistSideEffects || (block == m_loop->GetHeader()));
+            // After visiting the first block (which is expected to always be
+            // the loop header) we can no longer hoist out side effecting trees
+            // as the next blocks could be conditionally executed.
+            m_canHoistSideEffects = false;
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -4495,7 +4487,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
 
                 if (treeIsHoistable)
                 {
-                    if (!m_beforeSideEffect)
+                    if (!m_canHoistSideEffects)
                     {
                         // For now, we give up on an expression that might raise an exception if it is after the
                         // first possible global side effect (and we assume we're after that if we're not in the first
@@ -4522,11 +4514,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 }
             }
 
-            // Next check if we need to set 'm_beforeSideEffect' to false.
+            // Next check if we need to set 'm_canHoistSideEffects' to false.
             //
             // If we have already set it to false then we can skip these checks
             //
-            if (m_beforeSideEffect)
+            if (m_canHoistSideEffects)
             {
                 // Is the value of the whole tree loop invariant?
                 if (!treeIsInvariant)
@@ -4534,12 +4526,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     // We have a tree that is not loop invariant and we thus cannot hoist
                     assert(treeIsHoistable == false);
 
-                    // Check if we should clear m_beforeSideEffect.
-                    // If 'tree' can throw an exception then we need to set m_beforeSideEffect to false.
+                    // Check if we should clear m_canHoistSideEffects.
+                    // If 'tree' can throw an exception then we need to set m_canHoistSideEffects to false.
                     // Note that calls are handled below
                     if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
                     {
-                        m_beforeSideEffect = false;
+                        m_canHoistSideEffects = false;
                     }
                 }
 
@@ -4555,19 +4547,19 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     GenTreeCall* call = tree->AsCall();
                     if (!call->IsHelperCall())
                     {
-                        m_beforeSideEffect = false;
+                        m_canHoistSideEffects = false;
                     }
                     else
                     {
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
-                            m_beforeSideEffect = false;
+                            m_canHoistSideEffects = false;
                         }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
                         {
-                            m_beforeSideEffect = false;
+                            m_canHoistSideEffects = false;
                         }
 
                         // Additional check for helper calls that throw exceptions
@@ -4579,7 +4571,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                             // Does this helper call throw?
                             if (!s_helperCallProperties.NoThrow(helpFunc))
                             {
-                                m_beforeSideEffect = false;
+                                m_canHoistSideEffects = false;
                             }
                         }
                     }
@@ -4600,8 +4592,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     if (isGloballyVisibleStore)
                     {
                         INDEBUG(failReason = "store to globally visible memory");
-                        treeIsHoistable    = false;
-                        m_beforeSideEffect = false;
+                        treeIsHoistable       = false;
+                        m_canHoistSideEffects = false;
                     }
                 }
             }
@@ -4655,7 +4647,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
 
                         if (IsHoistableOverExcepSibling(value.Node(), hasExcep))
                         {
-                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loop, m_hoistContext);
+                            const bool defExecuted =
+                                BitVecOps::IsMember(m_traits, m_defExec, m_currentBlock->bbPostorderNum);
+                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loop, m_hoistContext,
+                                                          defExecuted);
                         }
 
                         // Don't hoist this tree again.
@@ -4701,36 +4696,20 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         }
     };
 
-    HoistVisitor visitor(this, loop, hoistContext);
-
-    while (!blocks->Empty())
-    {
-        BasicBlock* block       = blocks->Pop();
-        weight_t    blockWeight = block->getBBWeight(this);
-
-        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " (head: " FMT_BB ")\n",
-                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loop->GetIndex(),
-                loop->GetHeader()->bbNum);
-
-        if (blockWeight < (BB_UNITY_WEIGHT / 10))
-        {
-            JITDUMP("      block weight is too small to perform hoisting.\n");
-            continue;
-        }
-
+    HoistVisitor visitor(this, loop, hoistContext, traits, defExecuted);
+    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) -> BasicBlockVisit {
         visitor.HoistBlock(block);
-    }
+        return BasicBlockVisit::Continue;
+    });
 
     hoistContext->ResetHoistedInCurLoop();
 }
 
-void Compiler::optHoistCandidate(GenTree*              tree,
-                                 BasicBlock*           treeBb,
-                                 FlowGraphNaturalLoop* loop,
-                                 LoopHoistContext*     hoistCtxt)
+void Compiler::optHoistCandidate(
+    GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted)
 {
     // It must pass the hoistable profitability tests for this loop level
-    if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt))
+    if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt, defExecuted))
     {
         JITDUMP("   ... not profitable to hoist\n");
         return;

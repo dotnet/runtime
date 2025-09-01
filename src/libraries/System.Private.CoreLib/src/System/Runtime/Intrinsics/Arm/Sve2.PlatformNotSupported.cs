@@ -28,6 +28,46 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get => IsSupported; }
         }
 
+
+        // Saturating absolute value
+
+        /// <summary>
+        /// svint8_t svqabs[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svqabs[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svqabs[_s8]_z(svbool_t pg, svint8_t op)
+        ///   SQABS Ztied.B, Pg/M, Zop.B
+        ///   SQABS Ztied.B, Pg/M, Ztied.B
+        /// </summary>
+        public static Vector<sbyte> AbsSaturate(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqabs[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svqabs[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svqabs[_s16]_z(svbool_t pg, svint16_t op)
+        ///   SQABS Ztied.H, Pg/M, Zop.H
+        ///   SQABS Ztied.H, Pg/M, Ztied.H
+        /// </summary>
+        public static Vector<short> AbsSaturate(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqabs[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svqabs[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svqabs[_s32]_z(svbool_t pg, svint32_t op)
+        ///   SQABS Ztied.S, Pg/M, Zop.S
+        ///   SQABS Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<int> AbsSaturate(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqabs[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svqabs[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svqabs[_s64]_z(svbool_t pg, svint64_t op)
+        ///   SQABS Ztied.D, Pg/M, Zop.D
+        ///   SQABS Ztied.D, Pg/M, Ztied.D
+        /// </summary>
+        public static Vector<long> AbsSaturate(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
         // Absolute difference and accumulate
 
         /// <summary>
@@ -473,6 +513,55 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AddPairwiseWideningAndAdd(Vector<ulong> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+        // Complex add with rotate
+
+        /// <summary>
+        /// svuint8_t svcadd[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.B, Ztied1.B, Zop2.B, #imm_rotation
+        /// </summary>
+        public static Vector<byte> AddRotateComplex(Vector<byte> left, Vector<byte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svcadd[_s16](svint16_t op1, svint16_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.H, Ztied1.H, Zop2.H, #imm_rotation
+        /// </summary>
+        public static Vector<short> AddRotateComplex(Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svcadd[_s32](svint32_t op1, svint32_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.S, Ztied1.S, Zop2.S, #imm_rotation
+        /// </summary>
+        public static Vector<int> AddRotateComplex(Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcadd[_s64](svint64_t op1, svint64_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.D, Ztied1.D, Zop2.D, #imm_rotation
+        /// </summary>
+        public static Vector<long> AddRotateComplex(Vector<long> left, Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svcadd[_s8](svint8_t op1, svint8_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.B, Ztied1.B, Zop2.B, #imm_rotation
+        /// </summary>
+        public static Vector<sbyte> AddRotateComplex(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svcadd[_u16](svuint16_t op1, svuint16_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.H, Ztied1.H, Zop2.H, #imm_rotation
+        /// </summary>
+        public static Vector<ushort> AddRotateComplex(Vector<ushort> left, Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svcadd[_u32](svuint32_t op1, svuint32_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.S, Ztied1.S, Zop2.S, #imm_rotation
+        /// </summary>
+        public static Vector<uint> AddRotateComplex(Vector<uint> left, Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svcadd[_u64](svuint64_t op1, svuint64_t op2, uint64_t imm_rotation)
+        ///   CADD Ztied1.D, Ztied1.D, Zop2.D, #imm_rotation
+        /// </summary>
+        public static Vector<ulong> AddRotateComplex(Vector<ulong> left, Vector<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
 
         // Rounding add narrow high part (bottom)
 
@@ -633,6 +722,32 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQADD Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static new Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Saturating complex add with rotate
+
+        /// <summary>
+        /// svint16_t svqcadd[_s16](svint16_t op1, svint16_t op2, uint64_t imm_rotation)
+        ///   SQCADD Ztied1.H, Ztied1.H, Zop2.H, #imm_rotation
+        /// </summary>
+        public static Vector<short> AddSaturateRotateComplex(Vector<short> op1, Vector<short> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqcadd[_s32](svint32_t op1, svint32_t op2, uint64_t imm_rotation)
+        ///   SQCADD Ztied1.S, Ztied1.S, Zop2.S, #imm_rotation
+        /// </summary>
+        public static Vector<int> AddSaturateRotateComplex(Vector<int> op1, Vector<int> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqcadd[_s64](svint64_t op1, svint64_t op2, uint64_t imm_rotation)
+        ///   SQCADD Ztied1.D, Ztied1.D, Zop2.D, #imm_rotation
+        /// </summary>
+        public static Vector<long> AddSaturateRotateComplex(Vector<long> op1, Vector<long> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqcadd[_s8](svint8_t op1, svint8_t op2, uint64_t imm_rotation)
+        ///   SQCADD Ztied1.B, Ztied1.B, Zop2.B, #imm_rotation
+        /// </summary>
+        public static Vector<sbyte> AddSaturateRotateComplex(Vector<sbyte> op1, Vector<sbyte> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
 
         // Saturating add with signed addend
 
@@ -1081,6 +1196,53 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        // Complex dot product
+
+        /// <summary>
+        /// svint32_t svcdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcdot[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svcdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplexBySelectedIndex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcdot_lane[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplexBySelectedIndex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        // Up convert long (top)
+
+        /// <summary>
+        /// svfloat64_t svcvtlt_f64[_f32]_m(svfloat64_t inactive, svbool_t pg, svfloat32_t op)
+        /// svfloat64_t svcvtlt_f64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTLT Ztied.D, Pg/M, Zop.S
+        ///   FCVTLT Ztied.D, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<double> ConvertToDoubleOdd(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        // Down convert, rounding to odd
+
+        /// <summary>
+        /// svfloat32_t svcvtx_f32[_f64]_m(svfloat32_t inactive, svbool_t pg, svfloat64_t op)
+        /// svfloat32_t svcvtx_f32[_f64]_x(svbool_t pg, svfloat64_t op)
+        /// svfloat32_t svcvtx_f32[_f64]_z(svbool_t pg, svfloat64_t op)
+        ///   FCVTX Ztied.S, Pg/M, Zop.D
+        ///   FCVTX Ztied.S, Pg/M, Ztied.D
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingleEvenRoundToOdd(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
         // Halving add
 
         /// <summary>
@@ -1395,6 +1557,201 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        // Base 2 logarithm as integer
+
+        /// <summary>
+        /// svint32_t svlogb[_f32]_m(svint32_t inactive, svbool_t pg, svfloat32_t op)
+        /// svint32_t svlogb[_f32]_x(svbool_t pg, svfloat32_t op)
+        /// svint32_t svlogb[_f32]_z(svbool_t pg, svfloat32_t op)
+        ///   FLOGB Ztied.S, Pg/M, Zop.S
+        ///   FLOGB Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<int> Log2(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svlogb[_f64]_m(svint64_t inactive, svbool_t pg, svfloat64_t op)
+        /// svint64_t svlogb[_f64]_x(svbool_t pg, svfloat64_t op)
+        /// svint64_t svlogb[_f64]_z(svbool_t pg, svfloat64_t op)
+        ///   FLOGB Ztied.D, Pg/M, Zop.D
+        ///   FLOGB Ztied.D, Pg/M, Ztied.D
+        /// </summary>
+        public static Vector<long> Log2(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        // Maximum number pairwise
+
+        /// <summary>
+        /// svfloat64_t svmaxnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAXNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MaxNumberPairwise(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svmaxnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAXNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MaxNumberPairwise(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        // Maximum pairwise
+
+        /// <summary>
+        /// svuint8_t svmaxp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmaxp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> MaxPairwise(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svmaxp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MaxPairwise(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svmaxp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmaxp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MaxPairwise(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svmaxp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmaxp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MaxPairwise(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svmaxp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmaxp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MaxPairwise(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svmaxp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmaxp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MaxPairwise(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svmaxp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MaxPairwise(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svmaxp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmaxp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> MaxPairwise(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svmaxp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmaxp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> MaxPairwise(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svmaxp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmaxp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> MaxPairwise(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Minimum number pairwise
+
+        /// <summary>
+        /// svfloat64_t svminnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMINNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MinNumberPairwise(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svminnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMINNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MinNumberPairwise(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        // Minimum pairwise
+
+        /// <summary>
+        /// svuint8_t svminp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svminp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> MinPairwise(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svminp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MinPairwise(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svminp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svminp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MinPairwise(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svminp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svminp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MinPairwise(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svminp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svminp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MinPairwise(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svminp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svminp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MinPairwise(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svminp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MinPairwise(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svminp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svminp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> MinPairwise(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svminp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svminp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> MinPairwise(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svminp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svminp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> MinPairwise(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
         // Multiply-add, addend first
 
@@ -1433,6 +1790,120 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MLA Ztied1.D, Zop2.D, Zop3.D[imm_index]
         /// </summary>
         public static Vector<ulong> MultiplyAddBySelectedScalar(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        // Complex multiply-add with rotate
+
+        /// <summary>
+        /// svuint8_t svcmla[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.B, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static Vector<byte> MultiplyAddRotateComplex(Vector<byte> addend, Vector<byte> left, Vector<byte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svcmla[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.H, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static Vector<short> MultiplyAddRotateComplex(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svcmla[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.S, Zop2.S, Zop3.S, #imm_rotation
+        /// </summary>
+        public static Vector<int> MultiplyAddRotateComplex(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcmla[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.D, Zop2.D, Zop3.D, #imm_rotation
+        /// </summary>
+        public static Vector<long> MultiplyAddRotateComplex(Vector<long> addend, Vector<long> left, Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svcmla[_s8](svint8_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.B, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static Vector<sbyte> MultiplyAddRotateComplex(Vector<sbyte> addend, Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svcmla[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.H, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static Vector<ushort> MultiplyAddRotateComplex(Vector<ushort> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svcmla[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.S, Zop2.S, Zop3.S, #imm_rotation
+        /// </summary>
+        public static Vector<uint> MultiplyAddRotateComplex(Vector<uint> addend, Vector<uint> left, Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svcmla[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3, uint64_t imm_rotation)
+        ///   CMLA Ztied1.D, Zop2.D, Zop3.D, #imm_rotation
+        /// </summary>
+        public static Vector<ulong> MultiplyAddRotateComplex(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        // Complex multiply-add with rotate
+
+        /// <summary>
+        /// svint16_t svcmla_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CMLA Ztied1.H, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<short> MultiplyAddRotateComplexBySelectedScalar(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svcmla_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CMLA Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<int> MultiplyAddRotateComplexBySelectedScalar(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svcmla_lane[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CMLA Ztied1.H, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<ushort> MultiplyAddRotateComplexBySelectedScalar(Vector<ushort> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svcmla_lane[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CMLA Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<uint> MultiplyAddRotateComplexBySelectedScalar(Vector<uint> addend, Vector<uint> left, Vector<uint> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        // Saturating rounding doubling complex multiply-add high with rotate
+
+        /// <summary>
+        /// svint16_t svqrdcmlah[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.H, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static unsafe Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<short> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdcmlah[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.S, Zop2.S, Zop3.S, #imm_rotation
+        /// </summary>
+        public static unsafe Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<int> op1, Vector<int> op2, Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdcmlah[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.D, Zop2.D, Zop3.D, #imm_rotation
+        /// </summary>
+        public static unsafe Vector<long> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<long> op1, Vector<long> op2, Vector<long> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqrdcmlah[_s8](svint8_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.B, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static unsafe Vector<sbyte> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<sbyte> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqrdcmlah_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.H, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<short> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdcmlah_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   SQRDCMLAH Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<int> op1, Vector<int> op2, Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
 
 
         // Multiply-add long (bottom)
@@ -1765,6 +2236,54 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
 
 
+        // Saturating doubling multiply high with index
+
+        /// <summary>
+        /// svint16_t svqdmulh_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmulh_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmulh_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply high
+
+        /// <summary>
+        /// svint8_t svqdmulh[_s8](svint8_t op1, svint8_t op2)
+        ///   SQDMULH Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyDoublingSaturateHigh(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqdmulh[_s16](svint16_t op1, svint16_t op2)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MultiplyDoublingSaturateHigh(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmulh[_s32](svint32_t op1, svint32_t op2)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MultiplyDoublingSaturateHigh(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmulh[_s64](svint64_t op1, svint64_t op2)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MultiplyDoublingSaturateHigh(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+
         // Multiply long (bottom)
 
         /// <summary>
@@ -1935,6 +2454,468 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
+
+        // Saturating doubling multiply-add long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmlalb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateEven(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlalb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateEven(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlalb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateEven(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-add long (bottom × top)
+
+        /// <summary>
+        /// svint16_t svqdmlalbt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALBT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<short> addend, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlalbt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALBT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<int> addend, Vector<short> leftEven, Vector<short> rightOdd) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlalbt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALBT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<long> addend, Vector<int> leftEven, Vector<int> rightOdd) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-add long (top)
+
+        /// <summary>
+        /// svint16_t svqdmlalt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateOdd(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlalt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateOdd(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlalt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateOdd(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-subtract long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmlslb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlslb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlslb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-subtract long (bottom × top)
+
+        /// <summary>
+        /// svint16_t svqdmlslbt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLBT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<short> minuend, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlslbt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLBT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<int> minuend, Vector<short> leftEven, Vector<short> rightOdd) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlslbt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLBT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<long> minuend, Vector<int> leftEven, Vector<int> rightOdd) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-subtract long (top)
+
+        /// <summary>
+        /// svint16_t svqdmlslt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmlslt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<int> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlslt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<long> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-add long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmlalb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLALB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlalb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLALB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-add long with index (top)
+
+        /// <summary>
+        /// svint32_t svqdmlalt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLALT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlalt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLALT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-subtract long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmlslb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLSLB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlslb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLSLB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply-subtract long (top)
+
+        /// <summary>
+        /// svint32_t svqdmlslt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLSLT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmlslt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLSLT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmullb[_s16](svint8_t op1, svint8_t op2)
+        ///   SQDMULLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningSaturateEven(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmullb[_s32](svint16_t op1, svint16_t op2)
+        ///   SQDMULLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmullb[_s64](svint32_t op1, svint32_t op2)
+        ///   SQDMULLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmullb_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULLB Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateEvenBySelectedScalar(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmullb_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULLB Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateEvenBySelectedScalar(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply long (top)
+
+        /// <summary>
+        /// svint16_t svqdmullt[_s16](svint8_t op1, svint8_t op2)
+        ///   SQDMULLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningSaturateOdd(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqdmullt[_s32](svint16_t op1, svint16_t op2)
+        ///   SQDMULLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateOdd(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmullt[_s64](svint32_t op1, svint32_t op2)
+        ///   SQDMULLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating doubling multiply long with index (top)
+
+        /// <summary>
+        /// svint32_t svqdmullt_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULLT Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateOddBySelectedScalar(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqdmullt_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULLT Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateOddBySelectedScalar(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply high with index
+
+        /// <summary>
+        /// svint16_t svqrdmulh_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmulh_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmulh_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply-add high
+
+        /// <summary>
+        /// svint8_t svqrdmlah[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   SQRDMLAH Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<sbyte> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqrdmlah[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   SQRDMLAH Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<short> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmlah[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   SQRDMLAH Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<int> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmlah[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   SQRDMLAH Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<long> addend, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply-subtract high
+
+        /// <summary>
+        /// svint8_t svqrdmlsh[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   SQRDMLSH Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<sbyte> minuend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqrdmlsh[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   SQRDMLSH Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<short> minuend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmlsh[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   SQRDMLSH Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<int> minuend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmlsh[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   SQRDMLSH Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<long> minuend, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply-add high with index
+
+        /// <summary>
+        /// svint16_t svqrdmlah_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmlah_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmlah_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<long> addend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply-subtract high with index
+
+        /// <summary>
+        /// svint16_t svqrdmlsh_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<short> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmlsh_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<int> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmlsh_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<long> minuend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating rounding doubling multiply high
+
+        /// <summary>
+        /// svint8_t svqrdmulh[_s8](svint8_t op1, svint8_t op2)
+        ///   SQRDMULH Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateHigh(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqrdmulh[_s16](svint16_t op1, svint16_t op2)
+        ///   SQRDMULH Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateHigh(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqrdmulh[_s32](svint32_t op1, svint32_t op2)
+        ///   SQRDMULH Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateHigh(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqrdmulh[_s64](svint64_t op1, svint64_t op2)
+        ///   SQRDMULH Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateHigh(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Saturating negate
+
+        /// <summary>
+        /// svint8_t svqneg[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svqneg[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svqneg[_s8]_z(svbool_t pg, svint8_t op)
+        ///   SQNEG Ztied.B, Pg/M, Zop.B
+        ///   SQNEG Ztied.B, Pg/M, Ztied.B
+        /// </summary>
+        public static Vector<sbyte> NegateSaturate(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqneg[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svqneg[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svqneg[_s16]_z(svbool_t pg, svint16_t op)
+        ///   SQNEG Ztied.H, Pg/M, Zop.H
+        ///   SQNEG Ztied.H, Pg/M, Ztied.H
+        /// </summary>
+        public static Vector<short> NegateSaturate(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqneg[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svqneg[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svqneg[_s32]_z(svbool_t pg, svint32_t op)
+        ///   SQNEG Ztied.S, Pg/M, Zop.S
+        ///   SQNEG Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<int> NegateSaturate(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqneg[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svqneg[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svqneg[_s64]_z(svbool_t pg, svint64_t op)
+        ///   SQNEG Ztied.D, Pg/M, Zop.D
+        ///   SQNEG Ztied.D, Pg/M, Ztied.D
+        /// </summary>
+        public static Vector<long> NegateSaturate(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        // Reciprocal estimate
+
+        /// <summary>
+        /// svuint32_t svrecpe[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svrecpe[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svrecpe[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   URECPE Ztied.S, Pg/M, Zop.S
+        ///   URECPE Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<uint> ReciprocalEstimate(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        // Reciprocal square root estimate
+
+        /// <summary>
+        /// svuint32_t svrsqrte[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svrsqrte[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svrsqrte[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   URSQRTE Ztied.S, Pg/M, Zop.S
+        ///   URSQRTE Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<uint> ReciprocalSqrtEstimate(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
         // Rounding shift left
 
@@ -2335,12 +3316,6 @@ namespace System.Runtime.Intrinsics.Arm
         // Saturating shift right narrow (bottom)
 
         /// <summary>
-        /// svuint8_t svqshrnb[_n_u16](svuint16_t op1, uint64_t imm2)
-        ///   UQSHRNB Zresult.B, Zop1.H, #imm2
-        /// </summary>
-        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// svint16_t svqshrnb[_n_s32](svint32_t op1, uint64_t imm2)
         ///   SQSHRNB Zresult.H, Zop1.S, #imm2
         /// </summary>
@@ -2358,26 +3333,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<sbyte> ShiftRightArithmeticNarrowingSaturateEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svuint16_t svqshrnb[_n_u32](svuint32_t op1, uint64_t imm2)
-        ///   UQSHRNB Zresult.H, Zop1.S, #imm2
-        /// </summary>
-        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint32_t svqshrnb[_n_u64](svuint64_t op1, uint64_t imm2)
-        ///   UQSHRNB Zresult.S, Zop1.D, #imm2
-        /// </summary>
-        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateEven(Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
-
 
         // Saturating shift right narrow (top)
-
-        /// <summary>
-        /// svuint8_t svqshrnt[_n_u16](svuint8_t even, svuint16_t op1, uint64_t imm2)
-        ///   UQSHRNT Ztied.B, Zop1.H, #imm2
-        /// </summary>
-        public static Vector<byte> ShiftRightArithmeticNarrowingSaturateOdd(Vector<byte> even, Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16_t svqshrnt[_n_s32](svint16_t even, svint32_t op1, uint64_t imm2)
@@ -2396,18 +3353,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SQSHRNT Ztied.B, Zop1.H, #imm2
         /// </summary>
         public static Vector<sbyte> ShiftRightArithmeticNarrowingSaturateOdd(Vector<sbyte> even, Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint16_t svqshrnt[_n_u32](svuint16_t even, svuint32_t op1, uint64_t imm2)
-        ///   UQSHRNT Ztied.H, Zop1.S, #imm2
-        /// </summary>
-        public static Vector<ushort> ShiftRightArithmeticNarrowingSaturateOdd(Vector<ushort> even, Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// svuint32_t svqshrnt[_n_u64](svuint32_t even, svuint64_t op1, uint64_t imm2)
-        ///   UQSHRNT Ztied.S, Zop1.D, #imm2
-        /// </summary>
-        public static Vector<uint> ShiftRightArithmeticNarrowingSaturateOdd(Vector<uint> even, Vector<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
 
         // Saturating shift right unsigned narrow (bottom)
