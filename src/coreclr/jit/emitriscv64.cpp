@@ -3209,6 +3209,7 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
     *ins = id->idIns();
     assert(*ins == INS_addi || emitInsIsLoad(*ins));
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+    emitGCregDeadUpd(reg1, dst);
     dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
 
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
