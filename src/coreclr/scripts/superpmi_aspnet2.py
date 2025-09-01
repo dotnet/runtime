@@ -53,8 +53,7 @@ def native_exe(name: str) -> str:
 
 
 # Run a command with retries
-def run(cmd):
-    retries = 3
+def run_command(cmd, retries=1):
     print(f"Running command: {' '.join(map(str, cmd))}")
     attempt = 0
     while True:
@@ -66,13 +65,14 @@ def run(cmd):
             print(f"Failed to start command: {e}")
             returncode = -1
         if returncode == 0:
-            return
+            return True
         attempt += 1
         if attempt > retries:
             print(f"command failed after {retries} attempts")
             break
-        print(f"Command failed with return code {returncode}, retrying ({attempt}/{retries}) after {delay_seconds}s...")
+        print(f"Command failed with return code {returncode}")
         time.sleep(3)
+    return False
 
 
 # Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
@@ -131,14 +131,14 @@ def install_dotnet_sdk(channel: str, install_dir: Path) -> None:
             f"$DotnetVersion='{ch}';$InstallDir='{di}';"
             "& './dotnet-install.ps1' -Channel $DotnetVersion -InstallDir $InstallDir -NoPath"
         )
-        run(["powershell.exe","-NoProfile","-ExecutionPolicy", "Bypass","-Command", ps_script])
+        run_command(["powershell.exe","-NoProfile","-ExecutionPolicy", "Bypass","-Command", ps_script], retries=3)
     else:
         with tempfile.TemporaryDirectory() as td:
             script_path = Path(td) / "dotnet-install.sh"
             with urllib.request.urlopen("https://dot.net/v1/dotnet-install.sh") as resp, open(script_path, "wb") as f:
                 f.write(resp.read())
             os.chmod(script_path, 0o755)
-            run([str(script_path),"--channel", channel,"--install-dir", str(install_dir),"--no-path"])
+            run_command([str(script_path),"--channel", channel,"--install-dir", str(install_dir),"--no-path"], retries=3)
 
 
 # Prepare the environment and run crank-agent
@@ -169,8 +169,8 @@ def setup_and_run_crank_agent(workdir: Path):
 
     # Install crank-agent (runs benchmarks) and crank-controller (or just crank) that schedules them.
     dotnet_exe = dotnet_root_dir / native_exe("dotnet")
-    run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"])
-    run([dotnet_exe, "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"])
+    run_command([str(dotnet_exe), "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Agent", "--version", "0.2.0-*"], retries=3)
+    run_command([str(dotnet_exe), "tool", "install", "--tool-path", str(tools_dir), "Microsoft.Crank.Controller", "--version", "0.2.0-*"], retries=3)
 
     # Create a Localhost.yml to define the local environment since we can't access the PerfLab.
     yml = textwrap.dedent(
@@ -181,7 +181,6 @@ variables:
     applicationPort: {CRANK_PORT}
     applicationScheme: http
     loadPort: {CRANK_PORT}
-    serverPort: 5014
     loadScheme: http
 profiles:
     Localhost:
@@ -252,16 +251,16 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--load.options.reuseBuild", "true",
         "--load.variables.duration", "45",
         "--load.variables.warmup", "15",
-        "--load.connections", "64",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
     ]
     
     # Only add SPMI collection environment variables and output files if not in dry run mode
     if not dryrun:
         cmd.extend([
-            "--application.environmentVariables", f"COMPlus_JitName={spmi_shim}",
+            "--application.environmentVariables", f"DOTNET_JitName={spmi_shim}",
             "--application.environmentVariables", f"SuperPMIShimLogPath={str(work_dir)}",
             "--application.environmentVariables", f"SuperPMIShimPath=./{clrjit}",
+            "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
             "--application.options.outputFiles", str(core_root_path / spmi_shim),
             "--application.options.outputFiles", str(core_root_path / clrjit),
             "--application.options.outputFiles", str(core_root_path / coreclr),
@@ -271,7 +270,7 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
     # Append any extra scenario-specific arguments
     if extra_args:
         cmd.extend(extra_args)
-    run(cmd)
+    run_command(cmd, retries=3)
 
 
 # Main entry point
@@ -398,20 +397,49 @@ def main():
                 print("Error: No .mc files found.")
                 sys.exit(2)
 
-            print(f"Merging {mc_file_count} .mc files into {output_mch_path}...")
-            run([
+            print(f"Merging {mc_file_count} .mc files...")
+
+            # Merge
+            run_command([
                 str(mcs_cmd),
                 "-merge",
                 "-recursive",
                 "-dedup",
                 "-thin",
-                str(output_mch_path),
+                "temp.mch",
                 str(work_dir_base / "*.mc")
             ])
+
+            # clean
+            jitlib = str(core_root_path / native_dll("clrjit"))
+            run_command([str(core_root_path / native_exe("superpmi")), "-v", "ewmi", "-f", "fail.mcl", jitlib, "temp.mch"])
+
+            # strip
+            if os.path.isfile("fail.mcl") and os.stat("fail.mcl").st_size != 0:
+                print("Replay had failures, cleaning...")
+                run_command([str(mcs_cmd), "-strip", "fail.mcl", "temp.mch", str(output_mch_path)])
+            else:
+                print("Replay was clean...")
+                shutil.copy2("temp.mch", str(output_mch_path))
+
+            # index
+            run_command([str(mcs_cmd), "-toc", str(output_mch_path)])
+
+            # overall summary
+            print("Merged summary for " + str(output_mch_path))
+            run_command([str(mcs_cmd), "-jitflags", str(output_mch_path)])
+
             print(f"Finished merging .mc files into {output_mch_path}")
+
             # delete all .mc files
             for mc_file in work_dir_base.glob("*.mc"):
                 mc_file.unlink()
+
+            # delete temp.mch and fail.mcl if they exist
+            if os.path.exists("temp.mch"):
+                os.remove("temp.mch")
+            if os.path.exists("fail.mcl"):
+                os.remove("fail.mcl")
         else:
             print("Dry run mode: Skipping SPMI data collection and .mch file generation.")
         

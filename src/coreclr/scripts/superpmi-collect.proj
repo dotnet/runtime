@@ -330,7 +330,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) --output_mch $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(OutputFileName).mch</DownloadFilesFromResults>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup> 
 </Project>
