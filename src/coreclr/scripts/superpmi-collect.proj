@@ -172,9 +172,7 @@
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
 
-    <HelixPreCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPreCommand Include="taskkill.exe /f /im crank-agent.exe"/>
-    <HelixPostCommand Include="taskkill.exe /f /im crank.exe"/>
     <HelixPostCommand Include="taskkill.exe /f /im crank-agent.exe"/>
   </ItemGroup>
   

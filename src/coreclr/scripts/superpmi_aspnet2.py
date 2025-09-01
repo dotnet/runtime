@@ -230,10 +230,8 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--config", str(config_path),
         "--profile", "Localhost",
         "--scenario", scenario_name,
-        "--application.noGlobalJson", "false",
         "--application.framework", framework,
         "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
-        "--application.options.collectCounters", "false",
         "--application.collectDependencies", "false",
         "--load.options.reuseBuild", "true",
         "--load.variables.duration", "45",
@@ -304,6 +302,9 @@ def main():
         # if not specified, use a temp directory
         work_dir_base = Path(tempfile.mkdtemp(prefix="aspnet2_"))
     print(f"Using temp work directory: {work_dir_base}")
+
+    work_dir_base = work_dir_base / "crank_data"
+    work_dir_base.mkdir(parents=True, exist_ok=True)
 
     # Set current working directory to work_dir_base
     os.chdir(work_dir_base)
