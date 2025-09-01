@@ -2422,11 +2422,6 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
-
-                char message[256];
-                _snprintf_s(message, ArrLen(message), _TRUNCATE, "Unhandled oper in genGetInsForOper() - float: %s",
-                            GenTree::OpName(oper));
-                NYIRAW(message);
                 NO_WAY("Unhandled oper in genGetInsForOper() - float");
                 break;
         }
