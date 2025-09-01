@@ -472,7 +472,7 @@ namespace System.IO
             {
                 Debug.Assert(recursive);
 
-                RemoveDirectoryRecursive(fullPath, 0);
+                RemoveDirectoryRecursive(fullPath, depth: 0);
             }
         }
 
