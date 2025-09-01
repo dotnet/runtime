@@ -186,7 +186,7 @@
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\RuntimeType.cs" />
+    <Compile Include="System\RuntimeType.NativeAot.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
@@ -240,6 +240,7 @@
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
   </ItemGroup>
@@ -302,14 +303,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MMap.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
       <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -324,9 +319,6 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs">
       <Link>Utilities\TypeHashingAlgorithms.cs</Link>
-    </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>

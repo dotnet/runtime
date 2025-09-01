@@ -135,7 +135,6 @@ LWM(GetSpecialCopyHelper, DWORDLONG, DWORDLONG)
 LWM(GetThreadTLSIndex, DWORD, DLD)
 LWM(GetTokenTypeAsHandle, GetTokenTypeAsHandleValue, DWORDLONG)
 LWM(GetTypeForBox, DWORDLONG, DWORDLONG)
-LWM(GetTypeForBoxOnStack, DWORDLONG, DWORDLONG)
 LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);

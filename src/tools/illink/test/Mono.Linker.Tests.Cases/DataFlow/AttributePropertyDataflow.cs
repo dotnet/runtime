@@ -5,11 +5,13 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [Kept]
     [ExpectedNoWarnings]
+    [SetupIlcWholeProgramAnalysis]
     class AttributePropertyDataflow
     {
         public static void Main()

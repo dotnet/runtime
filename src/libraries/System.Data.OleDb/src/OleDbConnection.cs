@@ -19,8 +19,11 @@ namespace System.Data.OleDb
     //    it won't happen if you directly create the provider and set its properties
     // 2. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
     [DefaultEvent("InfoMessage")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
+        internal const string TrimWarning = "OleDbConnection is not AOT-compatible.";
+
         private static readonly object EventInfoMessage = new object();
 
         public OleDbConnection(string? connectionString) : this()

@@ -280,7 +280,7 @@ int command_line::parse_args_for_sdk_command(
     return parse_args(host_info, 1, argc, argv, false, host_mode_t::muxer, new_argoff, app_candidate, opts);
 }
 
-void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path, bool skip_sdk_info_output)
+void command_line::print_muxer_info(const pal::string_t &dotnet_root, const sdk_resolver::global_file_info &global_json, bool skip_sdk_info_output)
 {
     pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
     trace::println(_X("\n")
@@ -322,9 +322,32 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal:
     }
 
     trace::println(_X("\n")
-        _X("global.json file:\n")
-        _X("  %s"),
-        global_json_path.empty() ? _X("Not found") : global_json_path.c_str());
+        _X("global.json file:"));
+    switch (global_json.state)
+    {
+        case sdk_resolver::global_file_info::state::not_found:
+            trace::println(_X("  Not found"));
+            break;
+        case sdk_resolver::global_file_info::state::valid:
+            trace::println(_X("  %s"), global_json.path.c_str());
+            break;
+        case sdk_resolver::global_file_info::state::invalid_json:
+        case sdk_resolver::global_file_info::state::invalid_data:
+        case sdk_resolver::global_file_info::state::__invalid_data_no_fallback:
+            trace::println(_X("  Invalid [%s]"), global_json.path.c_str());
+            if (!global_json.error_message.empty())
+            {
+                trace::println(_X("    %s"), global_json.error_message.c_str());
+            }
+            if (global_json.state != sdk_resolver::global_file_info::state::__invalid_data_no_fallback)
+            {
+                trace::println(_X("    Invalid global.json is ignored for SDK resolution."));
+            }
+            break;
+        case sdk_resolver::global_file_info::state::__last:
+            assert(false && "Unexpected __last state");
+            break;
+    }
 
     trace::println(_X("\n")
         _X("Learn more:\n")

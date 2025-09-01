@@ -57,6 +57,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
             new(nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots), DataType.int16),
+            new(nameof(Data.MethodTableAuxiliaryData.Flags), DataType.uint32),
         ]
     };
 
@@ -162,6 +163,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.Assembly.Module), DataType.pointer),
             new(nameof(Data.Assembly.IsCollectible), DataType.uint8),
+            new(nameof(Data.Assembly.IsDynamic), DataType.uint8),
             new(nameof(Data.Assembly.Error), DataType.pointer),
             new(nameof(Data.Assembly.NotifyFlags), DataType.uint32),
             new(nameof(Data.Assembly.Level), DataType.uint32),

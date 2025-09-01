@@ -1450,16 +1450,12 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
-             Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
-             Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\DSA.Create.SecurityTransforms.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />

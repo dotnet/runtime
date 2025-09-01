@@ -1684,6 +1684,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
+            op2         = NormalizeIndexToNativeSized(op2);
+            node->Op(2) = op2;
+
             bool isContainableMemory = IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1);
 
             if (isContainableMemory || !op2->OperIsConst())
@@ -3862,6 +3865,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_AddRotateComplex:
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
             case NI_Sve2_ShiftLeftAndInsert:
+            case NI_Sve2_AddRotateComplex:
+            case NI_Sve2_AddSaturateRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
@@ -4078,6 +4083,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_MultiplyAddRotateComplex:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex:
             case NI_Sve2_DotProductRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
@@ -4136,6 +4143,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
             case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));

@@ -187,6 +187,7 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*bool*/, IsDynamic, cdac_data<Assembly>::IsDynamic)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
 CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
@@ -276,10 +277,17 @@ CDAC_TYPE_FIELD(MethodTable, /*pointer*/, PerInstInfo, cdac_data<MethodTable>::P
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_data<MethodTable>::AuxiliaryData)
 CDAC_TYPE_END(MethodTable)
 
+CDAC_TYPE_BEGIN(DynamicStaticsInfo)
+CDAC_TYPE_SIZE(sizeof(DynamicStaticsInfo))
+CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, GCStatics, offsetof(DynamicStaticsInfo, m_pGCStatics))
+CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, NonGCStatics, offsetof(DynamicStaticsInfo, m_pNonGCStatics))
+CDAC_TYPE_END(DynamicStaticsInfo)
+
 CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
 CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*pointer*/, LoaderModule, offsetof(MethodTableAuxiliaryData, m_pLoaderModule))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*int16*/, OffsetToNonVirtualSlots, offsetof(MethodTableAuxiliaryData, m_offsetToNonVirtualSlots))
+CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*uint32*/, Flags, offsetof(MethodTableAuxiliaryData, m_dwFlags))
 CDAC_TYPE_END(MethodTableAuxiliaryData)
 
 CDAC_TYPE_BEGIN(EEClass)
@@ -547,6 +555,7 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, RuntimeFunctions, cdac_data<ReadyTo
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
 
@@ -613,15 +622,26 @@ CDAC_TYPE_FIELD(RangeSection, /*pointer*/, HeapList, cdac_data<RangeSection>::He
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, R2RModule, cdac_data<RangeSection>::R2RModule)
 CDAC_TYPE_END(RangeSection)
 
+CDAC_TYPE_BEGIN(EEJitManager)
+CDAC_TYPE_INDETERMINATE(EEJitManager)
+CDAC_TYPE_FIELD(EEJitManager, /*bool*/, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
+CDAC_TYPE_END(EEJitManager)
+
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 #ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
+
+CDAC_TYPE_BEGIN(PatchpointInfo)
+CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
+CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
+CDAC_TYPE_END(PatchpointInfo)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
@@ -680,6 +700,7 @@ CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, Datum, offsetof(InlinedCallFrame, m_Datum))
 #ifdef TARGET_ARM
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, SPAfterProlog, offsetof(InlinedCallFrame, m_pSPAfterProlog))
 #endif // TARGET_ARM
@@ -694,6 +715,7 @@ CDAC_TYPE_END(SoftwareExceptionFrame)
 CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
 CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
+CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_END(FramedMethodFrame)
 
 CDAC_TYPE_BEGIN(TransitionBlock)
@@ -717,6 +739,13 @@ CDAC_TYPE_FIELD(DebuggerEval, /*T_CONTEXT*/, TargetContext, offsetof(DebuggerEva
 CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
+
+CDAC_TYPE_BEGIN(StubDispatchFrame)
+CDAC_TYPE_SIZE(sizeof(StubDispatchFrame))
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, RepresentativeMTPtr, cdac_data<StubDispatchFrame>::RepresentativeMTPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*uint32*/, RepresentativeSlot, cdac_data<StubDispatchFrame>::RepresentativeSlot)
+CDAC_TYPE_END(StubDispatchFrame)
 
 #ifdef FEATURE_HIJACK
 CDAC_TYPE_BEGIN(ResumableFrame)
@@ -920,6 +949,11 @@ CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
 #endif
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
+#endif // FEATURE_ON_STACK_REPLACEMENT
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
@@ -935,6 +969,7 @@ CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
+CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMASK)
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
@@ -969,5 +1004,7 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
+
+CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBALS_END()
