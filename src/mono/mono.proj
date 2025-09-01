@@ -530,6 +530,8 @@ JS_ENGINES = [NODE_JS]
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=maccatalyst" />
       <_MonoCMakeArgs Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
+      <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
+      <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
