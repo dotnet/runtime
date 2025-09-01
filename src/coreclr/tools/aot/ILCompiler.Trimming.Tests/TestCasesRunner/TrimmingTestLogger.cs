@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using ILCompiler;
 using ILCompiler.Logging;
@@ -24,9 +25,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public TextWriter Writer => _infoWriter;
 
-        public List<MessageContainer> GetLoggedMessages()
+        public ImmutableArray<MessageContainer> GetLoggedMessages()
         {
-            return _messageContainers;
+            return _messageContainers.ToImmutableArray();
         }
 
         public void WriteError(MessageContainer error)

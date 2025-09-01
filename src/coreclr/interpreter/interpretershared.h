@@ -30,7 +30,8 @@ struct InterpMethod
     InterpMethod *self;
 #endif
     CORINFO_METHOD_HANDLE methodHnd;
-    int32_t argsSize, allocaSize;
+    int32_t argsSize;
+    int32_t allocaSize;
     void** pDataItems;
     // This stub is used for calling the interpreted method from JITted/AOTed code
     CallStubHeader *pCallStub;
