@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,13 +25,15 @@ namespace ILCompiler
         private readonly SubstitutionProvider _substitutionProvider;
         private readonly DevirtualizationManager _devirtualizationManager;
         private readonly MetadataManager _metadataManager;
+        private readonly HashSet<string> _characteristics;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null, IEnumerable<string> characteristics = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
             _metadataManager = metadataManager;
+            _characteristics = characteristics != null ? new HashSet<string>(characteristics) : null;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -39,6 +42,13 @@ namespace ILCompiler
             if (substitution != null)
             {
                 return substitution.EmitIL(method);
+            }
+
+            if (TryGetCharacteristicValue(method, out bool characteristicEnabled))
+            {
+                return new ILStubMethodIL(method,
+                    [characteristicEnabled ? (byte)ILOpCode.Ldc_i4_1 : (byte)ILOpCode.Ldc_i4_0, (byte)ILOpCode.Ret],
+                    [], []);
             }
 
             // BEGIN TEMPORARY WORKAROUND
@@ -819,6 +829,11 @@ namespace ILCompiler
                         {
                             return true;
                         }
+                        else if (TryGetCharacteristicValue(method, out bool characteristic))
+                        {
+                            constant = characteristic ? 1 : 0;
+                            return true;
+                        }
                         else
                         {
                             constant = 0;
@@ -1125,6 +1140,19 @@ namespace ILCompiler
                 return false;
 
             return true;
+        }
+
+        private bool TryGetCharacteristicValue(MethodDesc maybeCharacteristicMethod, out bool value)
+        {
+            if (maybeCharacteristicMethod.IsIntrinsic
+                && maybeCharacteristicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
+            {
+                value = _characteristics == null || _characteristics.Contains(maybeCharacteristicMethod.Name);
+                return true;
+            }
+
+            value = false;
+            return false;
         }
 
         private sealed class SubstitutedMethodIL : MethodIL

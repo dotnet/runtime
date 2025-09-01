@@ -82,27 +82,49 @@ namespace System
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
+        private static ulong s_crashingThreadId;
+
 #if NATIVEAOT
         [System.Runtime.RuntimeExport("OnUnhandledException")]
 #endif
         internal static void OnUnhandledException(object e)
         {
-#if NATIVEAOT
-            RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
-#endif
-            if (UnhandledException is UnhandledExceptionEventHandler handlers)
+            ulong currentThreadId = Thread.CurrentOSThreadId;
+            ulong previousCrashingThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            if (previousCrashingThreadId == 0)
             {
-                UnhandledExceptionEventArgs args = new(e, isTerminating: true);
-                foreach (UnhandledExceptionEventHandler handler in Delegate.EnumerateInvocationList(handlers))
+#if NATIVEAOT
+                RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+#endif
+                if (UnhandledException is UnhandledExceptionEventHandler handlers)
                 {
-                    try
+                    UnhandledExceptionEventArgs args = new(e, isTerminating: true);
+                    foreach (UnhandledExceptionEventHandler handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        handler(/* AppDomain */ null!, args);
-                    }
-                    catch
-                    {
+                        try
+                        {
+                            handler(/* AppDomain */ null!, args);
+                        }
+                        catch
+                        {
+                        }
                     }
                 }
+            }
+            else
+            {
+                if (s_crashingThreadId == previousCrashingThreadId)
+                {
+                    Environment.FailFast("OnUnhandledException called recursively");
+                }
+
+                // If we are already in the process of handling an unhandled
+                // exception, we do not want to raise the event again. We wait
+                // here while the other thread raises the unhandled exception.
+                // Waiting is important because it is possible upon returning, this thread
+                // could call some rude abort method that would terminate the process
+                // before the other thread finishes raising the unhandled exception.
+                Thread.Sleep(-1);
             }
         }
 

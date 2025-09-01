@@ -259,7 +259,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 
     if (pData == NULL)
     {
-        static_assert_no_msg(sizeof(UMEntryThunk) == sizeof(StubPrecode));
+        static_assert(sizeof(UMEntryThunk) == sizeof(StubPrecode));
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
