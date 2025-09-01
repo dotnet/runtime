@@ -116,12 +116,12 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | risc-v  | a2  |
 
 ### Passing `Continuation` argument
-The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.
 
 ```
 call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
 
-call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
 ## AMD64-only: by-value value types
@@ -536,6 +536,22 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 ## Generics
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
+
+# Portable entrypoints
+
+On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
+
+On platforms that do not allow dynamic code generation (Wasm), the runtime abstracts away execution strategies by allocating portable entrypoints for dynamically loaded methods. The `PortableEntryPoint` is a data structure that allows efficient transition to the desired execution strategy for the target method. When the runtime is configured to use portable entrypoints, the managed calling convention is modified as follows:
+
+- The native code to call is obtained by dereferencing the entrypoint
+
+- The entrypoint address is passed in as an extra last hidden argument. The extra hidden argument must be present in signatures of all methods. It is unused by the code of JITed or AOT-compiled methods.
+
+Pseudo code for a call with portable entrypoints:
+
+> `(*(void**)pfn)(arg0, arg1, ..., argN, pfn)`
+
+Portable entrypoints are used for Wasm with interpreter only currently. Note that portable entrypoints are unnecessary for Wasm with native AOT since native AOT does not support dynamic loading.
 
 # System V x86_64 support
 

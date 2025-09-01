@@ -133,10 +133,15 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Reads and writes to inner streams are happening on different thread, so the exception does not propagate");
+            }
+
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new ThrowingDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
@@ -210,10 +215,15 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task Write_InvokedSynchronously()
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Reads and writes to inner streams are happening on different thread, so we're calling InnerStream Read/Write async.");
+            }
+
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new PreReadWriteActionDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))

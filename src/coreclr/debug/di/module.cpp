@@ -27,7 +27,7 @@ CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
     VMPTR_DomainAssembly    vmDomainAssembly)
-: CordbBase(pProcess, vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly), enumCordbModule),
+: CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
@@ -65,12 +65,12 @@ CordbModule::CordbModule(
         pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
+        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
     }
     else
     {
-        // Not yet implemented
-        m_pAppDomain = pProcess->GetSharedAppDomain();
+        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG
@@ -4354,7 +4354,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
     else
@@ -4726,8 +4726,6 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
     _ASSERTE(!"Invalid opcode!");
     return -1;
-#elif defined(TARGET_RISCV64)
-    return MAX_INSTRUCTION_LENGTH;
 #else
 #error Platform not implemented
 #endif

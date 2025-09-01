@@ -353,8 +353,8 @@ class SsaDefArray
     unsigned m_arraySize;
     unsigned m_count;
 
-    static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0);
-    static_assert_no_msg(SsaConfig::FIRST_SSA_NUM == 1);
+    static_assert(SsaConfig::RESERVED_SSA_NUM == 0);
+    static_assert(SsaConfig::FIRST_SSA_NUM == 1);
 
     // Get the minimum valid SSA number.
     unsigned GetMinSsaNum() const
@@ -601,8 +601,7 @@ public:
     unsigned char lvIsMultiRegDest : 1; // true if this is a multireg LclVar struct that is stored from a multireg node
 
 #ifdef DEBUG
-    unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
-                                               // pointer.
+    unsigned char lvDefinedViaAddress : 1; // True when this local may have LCL_ADDRs representing definitions
 #endif
 
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -753,14 +752,14 @@ public:
     }
 
 #ifdef DEBUG
-    void SetHiddenBufferStructArg(char value)
+    void SetDefinedViaAddress(char value)
     {
-        lvHiddenBufferStructArg = value;
+        lvDefinedViaAddress = value;
     }
 
-    bool IsHiddenBufferStructArg() const
+    bool IsDefinedViaAddress() const
     {
-        return lvHiddenBufferStructArg;
+        return lvDefinedViaAddress;
     }
 #endif
 
@@ -3000,7 +2999,7 @@ public:
 
     GenTree* gtNewJmpTableNode();
 
-    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
+    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags);
 
     GenTreeIntCon*   gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
@@ -3481,13 +3480,13 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
-    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+    void gtAnnotateNewArrLen(GenTree* arrLen);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
 
-    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank);
 
-    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank);
 
     void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
@@ -3530,10 +3529,10 @@ public:
         return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
-    GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
+    GenTree* gtNewNullCheck(GenTree* addr);
 
     var_types gtTypeForNullCheck(GenTree* tree);
-    void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+    void gtChangeOperToNullCheck(GenTree* tree);
 
     GenTree* gtNewAtomicNode(
         genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand = nullptr);
@@ -3603,11 +3602,11 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    // Returns "true" iff the complexity (not formally defined, but first interpretation
-    // is #of nodes in subtree) of "tree" is greater than "limit".
+    // Returns "true" iff the complexity (defined by 'getComplexity') of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
-    // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
+    // before they have been set, if 'getComplexity' is independent of them.)
+    template <typename TFunc>
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -3741,6 +3740,7 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -4428,6 +4428,9 @@ private:
 #ifdef DEBUG
         PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
 #endif
+        // This call is a task await
+        PREFIX_IS_TASK_AWAIT = 0x00000080,
+        PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4485,9 +4488,16 @@ protected:
 
     // Enumerator de-abstraction support
     //
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    struct InferredGdvEntry
+    {
+        CORINFO_CLASS_HANDLE m_classHandle;
+        unsigned m_likelihood;
+    };
 
-    // Map is only set on the root instance.
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, InferredGdvEntry> VarToLikelyClassMap;
+
+    // Maps are only set on the root instance.
     //
     NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
     bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
@@ -4503,6 +4513,20 @@ protected:
         return compiler->impEnumeratorGdvLocalMap;
     }
 
+    VarToLikelyClassMap* impEnumeratorLikelyTypeMap = nullptr;
+    bool hasEnumeratorLikelyTypeMap() { return impInlineRoot()->impEnumeratorLikelyTypeMap != nullptr; }
+    VarToLikelyClassMap* getImpEnumeratorLikelyTypeMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorLikelyTypeMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorLikelyTypeMap = new (alloc) VarToLikelyClassMap(alloc);
+        }
+
+        return compiler->impEnumeratorLikelyTypeMap;
+    }
+
     bool hasUpdatedTypeLocals = false;
 
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
@@ -4514,7 +4538,7 @@ protected:
     };
 
     bool impIsPrimitive(CorInfoType type);
-    bool impILConsumesAddr(const BYTE* codeAddr);
+    bool impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
@@ -4574,6 +4598,10 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags);
+
+    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
@@ -4738,11 +4766,6 @@ protected:
     void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                 CORINFO_SIG_INFO*    sig,
                                 unsigned             immNumber,
-                                var_types            simdBaseType,
-                                CorInfoType          simdBaseJitType,
-                                CORINFO_CLASS_HANDLE op1ClsHnd,
-                                CORINFO_CLASS_HANDLE op2ClsHnd,
-                                CORINFO_CLASS_HANDLE op3ClsHnd,
                                 unsigned*            immSimdSize,
                                 var_types*           immSimdBaseType);
 
@@ -4844,7 +4867,7 @@ public:
 
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
-    bool impMatchAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
+    bool impMatchTaskAwaitPattern(const BYTE * codeAddr, const BYTE * codeEndp, int* configVal);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5525,6 +5548,10 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    PhaseStatus SaveAsyncContexts();
+    BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
+    void ValidateNoAsyncSavesNecessary();
+    void ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
@@ -6021,45 +6048,6 @@ public:
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
-public:
-    // For many purposes, it is desirable to be able to enumerate the *distinct* targets of a switch statement,
-    // skipping duplicate targets.  (E.g., in flow analyses that are only interested in the set of possible targets.)
-    // SwitchUniqueSuccSet contains the non-duplicated switch successor edges.
-    // Code that modifies the flowgraph (such as by renumbering blocks) must call Compiler::InvalidateUniqueSwitchSuccMap,
-    // and code that modifies the targets of a switch block must call Compiler::fgInvalidateSwitchDescMapEntry.
-    // If the unique targets of a switch block are needed later, they will be recomputed, ensuring they're up-to-date.
-    struct SwitchUniqueSuccSet
-    {
-        unsigned   numDistinctSuccs; // Number of distinct targets of the switch.
-        FlowEdge** nonDuplicates;    // Array of "numDistinctSuccs", containing all the distinct switch target
-                                     // successor edges.
-    };
-
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
-
-private:
-    // Maps BasicBlock*'s that end in switch statements to SwitchUniqueSuccSets that allow
-    // iteration over only the distinct successors.
-    BlockToSwitchDescMap* m_switchDescMap = nullptr;
-
-public:
-    BlockToSwitchDescMap* GetSwitchDescMap(bool createIfNull = true)
-    {
-        if ((m_switchDescMap == nullptr) && createIfNull)
-        {
-            m_switchDescMap = new (getAllocator()) BlockToSwitchDescMap(getAllocator());
-        }
-        return m_switchDescMap;
-    }
-
-    SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
-
-    bool GetDescriptorForSwitchIfAvailable(BasicBlock* switchBlk, SwitchUniqueSuccSet* res);
-
-    void fgRemoveSuccFromSwitchDescMapEntry(BasicBlock* switchBlk, FlowEdge* edge);
-
-    void fgInvalidateSwitchDescMapEntry(BasicBlock* switchBlk);
-
     BasicBlock* fgFirstBlockOfHandler(BasicBlock* block);
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
@@ -6146,8 +6134,6 @@ public:
 
     bool fgExpandRarelyRunBlocks();
 
-    bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
-
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
     PhaseStatus fgHeadTailMerge(bool early);
@@ -6233,8 +6219,6 @@ public:
     PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgDedupReturnComparison(BasicBlock* block);
-
-    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
     bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
@@ -6690,15 +6674,6 @@ private:
     GenTree* fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    bool canMorphVectorOperandToMask(GenTree* node);
-    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
-    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
-    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
-#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
@@ -6997,13 +6972,13 @@ protected:
 
     // Hoist all expressions in "blocks" that are invariant in "loop"
     // outside of that loop.
-    void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
+    void optHoistLoopBlocks(FlowGraphNaturalLoop* loop, BitVecTraits* traits, BitVec blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of "loop"
-    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
+    bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Performs the hoisting "tree" into the PreHeader for "loop"
-    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
+    void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
     // Note the new SSA uses in tree
     void optRecordSsaUses(GenTree* tree, BasicBlock* block);
@@ -7033,8 +7008,8 @@ private:
 public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
-    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -7055,7 +7030,8 @@ public:
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
-    bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit);
+    template <typename TFunc>
+    bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity);
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
@@ -7364,7 +7340,7 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
+    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -7648,14 +7624,6 @@ public:
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
     bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
-#if DEBUG
-    void optCheckFlagsAreSet(unsigned    methodFlag,
-                             const char* methodFlagStr,
-                             unsigned    bbFlag,
-                             const char* bbFlagStr,
-                             GenTree*    tree,
-                             BasicBlock* basicBlock);
-#endif
 
     PhaseStatus optInductionVariables();
 
@@ -7802,7 +7770,7 @@ public:
             {
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
-                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
+                static_assert((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
 
                 GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
@@ -8335,6 +8303,8 @@ public:
     const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
+    void eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token);
+
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
@@ -8365,6 +8335,11 @@ public:
     bool            eeInfoInitialized = false;
 
     CORINFO_EE_INFO* eeGetEEInfo();
+
+    CORINFO_ASYNC_INFO asyncInfo;
+    bool               asyncInfoInitialized = false;
+
+    CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();
@@ -9602,6 +9577,13 @@ private:
         return false;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSet lookupInstructionSet(const char* className);
+    CORINFO_InstructionSet lookupIsa(const char* className,
+                                     const char* innerEnclosingClassName,
+                                     const char* outerEnclosingClassName);
+#endif // FEATURE_HW_INTRINSICS
+
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
@@ -9717,6 +9699,17 @@ public:
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 
+    //------------------------------------------------------------------------
+    // canUseApxEvexEncoding - Answer the question: Are APX-EVEX encodings supported on this target.
+    //
+    // Returns:
+    //    `true` if APX-EVEX encoding is supported, `false` if not.
+    //
+    bool canUseApxEvexEncoding() const
+    {
+        return canUseApxEncoding() && canUseEvexEncoding();
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9824,6 +9817,8 @@ public:
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
+    bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
+    bool compMustSaveAsyncContexts    = false; // There is an async call that needs capture/restore of async contexts.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -9849,8 +9844,6 @@ public:
     bool compPostImportationCleanupDone = false;
     bool compLSRADone                   = false;
     bool compRationalIRForm             = false;
-
-    bool compUsesThrowHelper = false; // There is a call to a THROW_HELPER for the compiled method.
 
     bool compGeneratingProlog       = false;
     bool compGeneratingEpilog       = false;
@@ -9904,8 +9897,9 @@ public:
             compSupportsISA = isas;
         }
 
-        unsigned compFlags; // method attributes
-        unsigned instrCount = 0;
+        unsigned compFlags;          // method attributes
+        unsigned instrCount     = 0; // number of IL opcodes
+        unsigned callInstrCount = 0; // number of IL opcodes (calls only).
         unsigned lvRefCount;
 
         codeOptimize compCodeOpt; // what type of code optimizations
@@ -9997,11 +9991,11 @@ public:
             // target from the register for the call (even in debug mode).
             // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
 #if defined(TARGET_AMD64)
-            static_assert_no_msg(
-                (RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
+            static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                          RBM_NONE);
 #else
-            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
-                                 RBM_NONE);
+            static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                          RBM_NONE);
 #endif
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
@@ -10364,7 +10358,7 @@ public:
 
     const char* printfAlloc(const char* format, ...);
 
-    const char* convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String);
+    void convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src, size_t utf16SrcLen, char* utf8Dst, size_t utf8DstLen);
 
 #endif // DEBUG
 
@@ -11263,7 +11257,7 @@ public:
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
-#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
+#define DEFAULT_INLINE_BUDGET 22 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
@@ -11627,8 +11621,8 @@ protected:
     {
         assert(compiler != nullptr);
 
-        static_assert_no_msg(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
-        static_assert_no_msg(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
+        static_assert(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
+        static_assert(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

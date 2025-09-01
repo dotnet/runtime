@@ -1179,7 +1179,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 
         // Ok, we haven't cancelled it yet, so go ahead and send the UM chain.
-        FrameInfo f;
+        FrameInfo f = {};
         FramePointer fpRoot = d->GetUMChainEnd();
         FramePointer fpLeaf = GetSP(d->GetUMChainStartRD());
 
@@ -1503,7 +1503,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
               (pPrevFrame->GetFrameType() == Frame::TYPE_EXIT) &&
               !HasExitRuntime(pPrevFrame, d, NULL) )
     {
-        // This is for the inlined NDirectMethodFrameGeneric case.  We have not exit the runtime yet, so the current
+        // This is for the inlined PInvokeMethodFrameGeneric case.  We have not exit the runtime yet, so the current
         // frame should still be regarded as the leaf frame.
         d->info.fIsLeaf = true;
     }

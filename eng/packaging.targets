@@ -250,9 +250,9 @@
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
       <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)\$(_referringTargetFramework)\'))" />
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(_referringTargetFramework)/'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
-                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)%(Filename)%(Extension)"
                                    TargetFramework="$(_referringTargetFramework)"
                                    Condition="'$(IncludeSymbols)' == 'true'" />
       <!-- Remove symbol from the non symbol package. -->

@@ -1522,6 +1522,8 @@ void Compiler::fgAllocEHTable()
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
+    memset(compHndBBtab, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
+
     compHndBBtabCount = info.compXcptnsCount;
 }
 
@@ -1742,7 +1744,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //
 // Notes:
 //
-//  Note that changes the size of the exception table.
+//  Note that this changes the size of the exception table.
 //  All the blocks referring to the various index values are updated.
 //  The new table entries are not filled in.
 //
@@ -1868,7 +1870,7 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
         // yet, such as when we add an EH region for synchronized methods that don't already have one,
         // we start at zero, so we need to make sure the new table has at least one entry.
         //
-        unsigned newHndBBtabAllocCount = max(1u, compHndBBtabAllocCount + newCount);
+        unsigned newHndBBtabAllocCount = max(1u, newCount);
         noway_assert(compHndBBtabAllocCount < newHndBBtabAllocCount); // check for overflow
 
         if (newHndBBtabAllocCount > MAX_XCPTN_INDEX)
@@ -1882,6 +1884,10 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
         compHndBBtabAllocCount = newHndBBtabAllocCount;
 
         EHblkDsc* newTable = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
+
+        // Zero the storage
+
+        memset(newTable, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
 
         // Move over the stuff before the new entries
 
@@ -2131,7 +2137,7 @@ void Compiler::fgSortEHTable()
 //
 //      The benefit of this is that adding a block to an EH region will not require examining every EH region,
 //      looking for possible shared "first" blocks to adjust. It also makes it easier to put code at the top
-//      of a particular EH region, especially for loop optimizations.
+//      of a particular EH region.
 //
 //      These empty blocks (BB08, BB09) will generate no code (unless some code is subsequently placed into them),
 //      and will have the same native code offset as BB01 after code is generated. There may be labels generated

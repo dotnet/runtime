@@ -9,8 +9,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
-#pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
-
 namespace System.Net
 {
     /// <summary>
@@ -52,26 +50,11 @@ namespace System.Net
                 ThrowArgumentOutOfRangeException();
             }
 
-            if (HasNonZeroBitsAfterNetworkPrefix(baseAddress, prefixLength))
-            {
-                ThrowInvalidBaseAddressException();
-            }
-
-            _baseAddress = baseAddress;
+            _baseAddress = ClearNonZeroBitsAfterNetworkPrefix(baseAddress, prefixLength);
             PrefixLength = prefixLength;
 
             [DoesNotReturn]
             static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException(nameof(prefixLength));
-
-            [DoesNotReturn]
-            static void ThrowInvalidBaseAddressException() => throw new ArgumentException(SR.net_bad_ip_network_invalid_baseaddress, nameof(baseAddress));
-        }
-
-        // Non-validating ctor
-        private IPNetwork(IPAddress baseAddress, int prefixLength, bool _)
-        {
-            _baseAddress = baseAddress;
-            PrefixLength = prefixLength;
         }
 
         /// <summary>
@@ -203,11 +186,10 @@ namespace System.Net
 
                 if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
-                    prefixLength <= GetMaxPrefixLength(address) &&
-                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
+                    prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }
@@ -232,11 +214,10 @@ namespace System.Net
 
                 if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
-                    prefixLength <= GetMaxPrefixLength(address) &&
-                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
+                    prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }
@@ -247,28 +228,40 @@ namespace System.Net
 
         private static int GetMaxPrefixLength(IPAddress baseAddress) => baseAddress.AddressFamily == AddressFamily.InterNetwork ? 32 : 128;
 
-        private static bool HasNonZeroBitsAfterNetworkPrefix(IPAddress baseAddress, int prefixLength)
+        private static IPAddress ClearNonZeroBitsAfterNetworkPrefix(IPAddress baseAddress, int prefixLength)
         {
             if (baseAddress.AddressFamily == AddressFamily.InterNetwork)
             {
-                // The cast to long ensures that the mask becomes 0 for the case where 'prefixLength == 0'.
-                uint mask = (uint)((long)uint.MaxValue << (32 - prefixLength));
+                // Bitwise shift works only for lower 5-bits count operands.
+                if (prefixLength == 0)
+                {
+                    // Corresponds to 0.0.0.0
+                    return IPAddress.Any;
+                }
+
+                uint mask = uint.MaxValue << (32 - prefixLength);
                 if (BitConverter.IsLittleEndian)
                 {
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return (baseAddress.PrivateAddress & mask) != baseAddress.PrivateAddress;
+                uint newAddress = baseAddress.PrivateAddress & mask;
+                return newAddress == baseAddress.PrivateAddress
+                    ? baseAddress
+                    : new IPAddress(newAddress);
             }
             else
             {
+                // Bitwise shift works only for lower 7-bits count operands.
+                if (prefixLength == 0)
+                {
+                    // Corresponds to [::]
+                    return IPAddress.IPv6Any;
+                }
+
                 UInt128 value = default;
                 baseAddress.TryWriteBytes(MemoryMarshal.AsBytes(new Span<UInt128>(ref value)), out int bytesWritten);
                 Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
-                if (prefixLength == 0)
-                {
-                    return value != UInt128.Zero;
-                }
 
                 UInt128 mask = UInt128.MaxValue << (128 - prefixLength);
                 if (BitConverter.IsLittleEndian)
@@ -276,7 +269,10 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return (value & mask) != value;
+                UInt128 newAddress = value & mask;
+                return newAddress == value
+                    ? baseAddress
+                    : new IPAddress(MemoryMarshal.AsBytes(new Span<UInt128>(ref newAddress)));
             }
         }
 

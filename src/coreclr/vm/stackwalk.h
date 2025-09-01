@@ -769,7 +769,6 @@ private:
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
 #ifdef FEATURE_INTERPRETER
-    bool          m_walkingInterpreterFrames;
     // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
     // but we need to restore the original values after we are done with all the interpreted frames belonging to
     // that InterpExecMethod.

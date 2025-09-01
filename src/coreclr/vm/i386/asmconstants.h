@@ -105,7 +105,7 @@ ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
 #endif // FEATURE_EH_FUNCLETS
 
 #define VASigCookie__StubOffset 4
-ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
+ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
 
 #ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32

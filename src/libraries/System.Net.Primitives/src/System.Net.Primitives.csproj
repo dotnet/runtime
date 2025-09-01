@@ -163,15 +163,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Intrinsics" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

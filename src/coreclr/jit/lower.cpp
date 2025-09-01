@@ -150,34 +150,7 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    // Quick early-out for unary cases
-    //
-    if (node->gtNext == endExclusive)
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive);
 }
 
 //------------------------------------------------------------------------
@@ -196,42 +169,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
-    assert((node != nullptr) && (endExclusive != nullptr));
-
-    if (ignoreNode == nullptr)
-    {
-        return IsInvariantInRange(node, endExclusive);
-    }
-
-    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (node->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, node);
-
-    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirInvariantInRange(comp, node, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
@@ -258,50 +196,7 @@ bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
                                        GenTree* endExclusive,
                                        GenTree* ignoreNode) const
 {
-    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
-
-    if ((rangeEnd->gtNext == endExclusive) ||
-        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
-    {
-        return true;
-    }
-
-    if (rangeStart->OperConsumesFlags())
-    {
-        return false;
-    }
-
-    m_scratchSideEffects.Clear();
-    GenTree* cur = rangeStart;
-    while (true)
-    {
-        m_scratchSideEffects.AddNode(comp, cur);
-
-        if (cur == rangeEnd)
-        {
-            break;
-        }
-
-        cur = cur->gtNext;
-        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
-    }
-
-    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
-    {
-        assert((cur != nullptr) && "Expected first node to precede end node");
-        if (cur == ignoreNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return m_scratchSideEffects.IsLirRangeInvariantInRange(comp, rangeStart, rangeEnd, endExclusive, ignoreNode);
 }
 
 //------------------------------------------------------------------------
@@ -789,6 +684,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerReturnSuspend(node);
             break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+        case GT_CNS_MSK:
+            return LowerCnsMask(node->AsMskCon());
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
         default:
             break;
     }
@@ -944,9 +844,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // jumpCnt is the number of elements in the jump table array.
     // jumpTab is the actual pointer to the jump table array.
     // targetCnt is the number of unique targets in the jump table array.
-    const unsigned   jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
-    FlowEdge** const jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
-    const unsigned   targetCnt = originalSwitchBB->NumSucc(comp);
+    // uniqueSuccs is the array of the switch's unique successors.
+    const unsigned   jumpCnt     = originalSwitchBB->GetSwitchTargets()->GetCaseCount();
+    FlowEdge** const jumpTab     = originalSwitchBB->GetSwitchTargets()->GetCases();
+    unsigned         targetCnt   = originalSwitchBB->GetSwitchTargets()->GetSuccCount();
+    FlowEdge** const uniqueSuccs = originalSwitchBB->GetSwitchTargets()->GetSuccs();
 
 // GT_SWITCH must be a top-level node with no use.
 #ifdef DEBUG
@@ -968,10 +870,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
 
         // Remove extra predecessor links if there was more than one case.
-        for (unsigned i = 1; i < jumpCnt; ++i)
-        {
-            comp->fgRemoveRefPred(jumpTab[i]);
-        }
+        const unsigned dupCount = originalSwitchBB->GetTargetEdge()->getDupCount();
+        originalSwitchBB->GetTargetEdge()->decrementDupCount(dupCount - 1);
+        originalSwitchBB->GetTarget()->bbRefs -= (dupCount - 1);
 
         // We have to get rid of the GT_SWITCH node but a child might have side effects so just assign
         // the result of the child subtree to a temp.
@@ -1053,7 +954,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(originalSwitchBB->TargetIs(afterDefaultCondBlock));
     assert(originalSwitchBB->JumpsToNext());
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
-    assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
+    assert(afterDefaultCondBlock->GetSwitchTargets()->HasDefaultCase());
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
@@ -1097,36 +998,16 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
-    FlowEdge* uniqueSucc = nullptr;
-    if (targetCnt == 2)
+    if ((targetCnt == 2) && (defaultEdge->getDupCount() == 0))
     {
-        uniqueSucc = jumpTab[0];
-        noway_assert(jumpCnt >= 2);
-        for (unsigned i = 1; i < jumpCnt - 1; i++)
-        {
-            if (jumpTab[i] != uniqueSucc)
-            {
-                uniqueSucc = nullptr;
-                break;
-            }
-        }
-    }
-    if (uniqueSucc != nullptr)
-    {
-        // If the unique successor immediately follows this block, we have nothing to do -
-        // it will simply fall-through after we remove the switch, below.
-        // Otherwise, make this a BBJ_ALWAYS.
-        // Now, fixup the predecessor links to uniqueSucc's target block.  In the original jumpTab:
-        //   jumpTab[i-1] was the default target, which we handled above,
-        //   jumpTab[0] is the first target, and we'll leave that predecessor link.
-        // Remove any additional predecessor links to uniqueSucc's target block.
-        for (unsigned i = 1; i < jumpCnt - 1; ++i)
-        {
-            assert(jumpTab[i] == uniqueSucc);
-            comp->fgRemoveRefPred(uniqueSucc);
-        }
-
+        // The default case was peeled off, and we have only one other unique successor.
+        // Jump directly to this remaining successor.
+        FlowEdge* const uniqueSucc = (uniqueSuccs[0] == defaultEdge) ? uniqueSuccs[1] : uniqueSuccs[0];
+        assert(uniqueSucc != defaultEdge);
         afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
+        const unsigned dupCount = uniqueSucc->getDupCount();
+        uniqueSucc->decrementDupCount(dupCount - 1);
+        uniqueSucc->getDestinationBlock()->bbRefs -= (dupCount - 1);
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
@@ -1309,9 +1190,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         if (afterDefaultCondBlock->hasProfileWeight())
         {
             bool profileInconsistent = false;
-            for (unsigned i = 0; i < jumpCnt - 1; i++)
+            for (unsigned i = 0; i < targetCnt; i++)
             {
-                BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
+                BasicBlock* const targetBlock = uniqueSuccs[i]->getDestinationBlock();
                 targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                 profileInconsistent |= (targetBlock->NumSucc() > 0);
             }
@@ -1341,7 +1222,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
 #ifdef TARGET_64BIT
-            if (tempLclType != TYP_I_IMPL)
+            if (RISCV64_ONLY(!comp->compOpportunisticallyDependsOn(InstructionSet_Zba)&&) // shXadd.uw 0-extends index
+                tempLclType != TYP_I_IMPL)
             {
                 // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
                 // Note that the switch value is unsigned so the cast should be unsigned as well.
@@ -1355,23 +1237,28 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
             // This block no longer has a default switch case.
-            // If no other cases branch to this successor, remove it from the switch map entry.
+            // If no other cases branch to this successor, remove it from the unique successor table.
             if (defaultEdge->getDupCount() == 0)
             {
-                comp->fgRemoveSuccFromSwitchDescMapEntry(afterDefaultCondBlock, defaultEdge);
+                for (unsigned i = 0; i < targetCnt; i++)
+                {
+                    FlowEdge* const edge = uniqueSuccs[i];
+                    if (edge == defaultEdge)
+                    {
+                        afterDefaultCondBlock->GetSwitchTargets()->RemoveSucc(i);
+                        break;
+                    }
+                }
+
+                assert(targetCnt == (afterDefaultCondBlock->GetSwitchTargets()->GetSuccCount() + 1));
+                targetCnt--;
             }
 
-            afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
+            afterDefaultCondBlock->GetSwitchTargets()->RemoveDefaultCase();
 
             // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
             // the default case. But if the remaining likelihood is zero (default likelihood was 1.0),
             // we don't know the case likelihoods. Instead, divide likelihood evenly among all cases.
-            //
-            // First, rebuild the unique succ set
-            //
-            Compiler::SwitchUniqueSuccSet successors = comp->GetDescriptorForSwitch(afterDefaultCondBlock);
-
-            // Then fix each successor edge
             //
             if (Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001))
             {
@@ -1380,9 +1267,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // jumpCnt-1 here because we peeled the default after copying this value.
                 weight_t const newLikelihood       = 1.0 / (jumpCnt - 1);
                 bool           profileInconsistent = false;
-                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    FlowEdge* const edge          = uniqueSuccs[i];
                     weight_t const  oldEdgeWeight = edge->getLikelyWeight();
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
                     weight_t const newEdgeWeight = edge->getLikelyWeight();
@@ -1407,9 +1294,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
                 JITDUMP("Scaling switch block " FMT_BB " likelihoods by " FMT_WT "\n", afterDefaultCondBlock->bbNum,
                         scaleFactor);
-                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    FlowEdge* const edge          = uniqueSuccs[i];
                     weight_t        newLikelihood = scaleFactor * edge->getLikelihood();
 
                     if (newLikelihood > 1.0)
@@ -1421,11 +1308,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                     edge->setLikelihood(newLikelihood);
                 }
             }
-        }
-        else
-        {
-            // 'afterDefaultCondBlock' is no longer a switch block. Remove its switch map entry.
-            comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
         }
     }
 
@@ -4427,6 +4309,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
             //
 
+            andOp1->ClearContained();
             GenTree* notNode               = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
             cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
             BlockRange().InsertAfter(andOp1, notNode);
@@ -5105,7 +4988,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
         unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
-        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
 
@@ -5425,6 +5308,27 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             GenTree* bitCast = comp->gtNewBitCastNode(regType, regEntry->GetNode());
             BlockRange().InsertBefore(fieldList, bitCast);
             regEntry->SetNode(bitCast);
+        }
+
+        // If this is the last entry then try to optimize out unnecessary
+        // normalizing casts, similar to how LowerRetSingleRegStructLclVar
+        // avoids inserting them.
+        if ((i == numRegs - 1) && varTypeUsesIntReg(regType))
+        {
+            GenTree* node = regEntry->GetNode();
+            // If this is a truncation that affects only bits after the return
+            // size then it can be removed. Those bits are undefined in all our
+            // ABIs for structs.
+            while (node->OperIs(GT_CAST) && !node->gtOverflow() && (genActualType(node->CastFromType()) == TYP_INT) &&
+                   (genActualType(node->CastToType()) == TYP_INT) &&
+                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
+            {
+                GenTree* op = node->AsCast()->CastOp();
+                regEntry->SetNode(op);
+                op->ClearContained();
+                node->gtBashToNOP();
+                node = op;
+            }
         }
 
         if (fieldListPrev->gtNext != fieldList)
@@ -5881,7 +5785,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
             {
                 JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
                         Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->SetIsAsync();
+                node->AsCall()->SetIsAsync(new (comp, CMK_Async) AsyncCallInfo);
             }
 
             BlockRange().Remove(asyncCont);
@@ -7358,8 +7262,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    const bool hasRcpc2 = comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !hasRcpc2)
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
@@ -7402,7 +7306,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(hasRcpc2);
+        assert(comp->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
+
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;
@@ -8736,15 +8641,16 @@ void Lowering::FindInducedParameterRegisterLocals()
     {
         hasRegisterKill |= node->IsCall();
 
-        GenTreeLclVarCommon* storeLcl;
-        if (node->DefinesLocal(comp, &storeLcl))
-        {
-            storedToLocals.Emplace(storeLcl->GetLclNum(), true);
-            continue;
-        }
+        auto visitDefs = [&](GenTreeLclVarCommon* lcl) {
+            storedToLocals.Emplace(lcl->GetLclNum(), true);
+            return GenTree::VisitResult::Continue;
+        };
+
+        node->VisitLocalDefNodes(comp, visitDefs);
 
         if (node->OperIs(GT_LCL_ADDR))
         {
+            // Model these as stored to, since we cannot reason about them in the same way.
             storedToLocals.Emplace(node->AsLclVarCommon()->GetLclNum(), true);
             continue;
         }
@@ -9804,7 +9710,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             LIR::Use nodeUse;
             BlockRange().TryGetUse(node, &nodeUse);
             GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
-            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone);
             BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
             LowerNode(nullcheck);
         }
@@ -11257,7 +11163,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
     {
-        comp->gtChangeOperToNullCheck(ind, block);
+        comp->gtChangeOperToNullCheck(ind);
         ind->ClearUnusedValue();
     }
     else if (!useNullCheck && !ind->OperIs(GT_IND))
@@ -11596,6 +11502,22 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
+// CanConvertOpToCCMP : Checks whether operand can be converted to CCMP
+//
+// Arguments:
+//    operand - operand to check for CCMP conversion
+//    tree    - parent of the operand
+//
+// Return Value:
+//    true if operand can be converted to CCMP
+//
+bool Lowering::CanConvertOpToCCMP(GenTree* operand, GenTree* tree)
+{
+    return operand->OperIsCmpCompare() && varTypeIsIntegralOrI(operand->gtGetOp1()) &&
+           IsInvariantInRange(operand, tree);
+}
+
+//------------------------------------------------------------------------
 // TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
 //
 // Arguments:
@@ -11636,16 +11558,22 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     // by TryLowerConditionToFlagsNode.
     //
     GenCondition cond1;
-    if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
-        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
-        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
+    bool         canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
+    bool         canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
+
+    if (canConvertOp2ToCCMP &&
+        (!canConvertOp1ToCCMP ||
+         ((op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+          (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()))) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
     {
         // Fall through, converting op2 to the CCMP
     }
-    else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
-             (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
-             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
+    else if (canConvertOp1ToCCMP &&
+             (!op1->gtGetOp1()->isContained() || op1->gtGetOp1()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp1())) &&
+             (op1->gtGetOp2() == nullptr || !op1->gtGetOp2()->isContained() || op1->gtGetOp2()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp2())) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);
@@ -11753,6 +11681,40 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
         BlockRange().Remove(op1);
     }
     return result;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::NormalizeIndexToNativeSized:
+//   Prepare to use an index for address calculations by ensuring it is native sized.
+//
+//  Arguments:
+//    index - The index that may be an int32
+//
+// Returns:
+//    The node itself, or a cast added on top of the node to perform normalization.
+//
+// Remarks:
+//    May insert a cast or may bash the node type in place for constants. Does
+//    not replace the use.
+//
+GenTree* Lowering::NormalizeIndexToNativeSized(GenTree* index)
+{
+    if (genActualType(index) == TYP_I_IMPL)
+    {
+        return index;
+    }
+
+    if (index->OperIsConst())
+    {
+        index->gtType = TYP_I_IMPL;
+        return index;
+    }
+    else
+    {
+        GenTree* cast = comp->gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+        BlockRange().InsertAfter(index, cast);
+        return cast;
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 

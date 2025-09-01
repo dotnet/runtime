@@ -4,57 +4,13 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
-#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
 #include <new>
-
-#include "../../native/containers/dn-simdhash.h"
-#include "../../native/containers/dn-simdhash-specializations.h"
-#include "../../native/containers/dn-simdhash-utils.h"
-
-class dn_simdhash_ptr_ptr_holder
-{
-    dn_simdhash_ptr_ptr_t *Value;
-public:
-    dn_simdhash_ptr_ptr_holder() :
-        Value(nullptr)
-    {
-    }
-
-    dn_simdhash_ptr_ptr_t* GetValue()
-    {
-        if (!Value)
-            Value = dn_simdhash_ptr_ptr_new(0, nullptr);
-        return Value;
-    }
-
-    dn_simdhash_ptr_ptr_holder(const dn_simdhash_ptr_ptr_holder&) = delete;
-    dn_simdhash_ptr_ptr_holder& operator=(const dn_simdhash_ptr_ptr_holder&) = delete;
-    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
-    {
-        Value = other.Value;
-        other.Value = nullptr;
-    }
-    dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
-    {
-        if (this != &other)
-        {
-            if (Value != nullptr)
-                dn_simdhash_free(Value);
-            Value = other.Value;
-            other.Value = nullptr;
-        }
-        return *this;
-    }
-
-    ~dn_simdhash_ptr_ptr_holder()
-    {
-        if (Value != nullptr)
-            dn_simdhash_free(Value);
-    }
-};
+#include "failures.h"
+#include "simdhash.h"
+#include "intrinsics.h"
 
 struct InterpException
 {
@@ -67,16 +23,7 @@ struct InterpException
     const CorJitResult m_result;
 };
 
-#if defined(__GNUC__) || defined(__clang__)
-#define INTERPRETER_NORETURN    __attribute__((noreturn))
-#else
-#define INTERPRETER_NORETURN    __declspec(noreturn)
-#endif
-
-INTERPRETER_NORETURN void NO_WAY(const char* message);
-INTERPRETER_NORETURN void BADCODE(const char* message);
-INTERPRETER_NORETURN void NOMEM();
-
+class InterpreterStackMap;
 class InterpCompiler;
 
 class InterpDataItemIndexMap
@@ -159,7 +106,7 @@ public:
 
         const size_t sizeOfStruct = sizeof(InterpGenericLookup);
 
-        static_assert_no_msg(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        static_assert(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
         return GetDataItemIndexForT(lookup);
     }
 
@@ -411,6 +358,7 @@ struct InterpVar
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
+    unsigned int pinned : 1; // Indicates that the var had the 'pinned' modifier in IL
 
     InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
     {
@@ -426,6 +374,7 @@ struct InterpVar
         global = false;
         ILGlobal = false;
         alive = false;
+        pinned = false;
     }
 };
 
@@ -528,10 +477,15 @@ private:
 #endif // DEBUG
     }
 
-#ifdef DEBUG
     CORINFO_CLASS_HANDLE m_classHnd;
+    #ifdef DEBUG
     TArray<char> m_methodName;
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    bool m_verbose = true;
+#else
     bool m_verbose = false;
+#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
@@ -540,18 +494,17 @@ private:
     dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
     bool PointerInNameMap(void* ptr)
     {
-        if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL))
-        {
-            return true;
-        }
-        return false;
+        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
     }
     void AddPointerToNameMap(void* ptr, const char* name)
     {
-        dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name);
+        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
     void PrintNameInPointerMap(void* ptr);
-#endif
+#endif // DEBUG
+
+    dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
+    InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -584,7 +537,7 @@ private:
     void* GetDataItemAtIndex(int32_t index);
     void* GetAddrOfDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
-    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
+    int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
@@ -731,13 +684,14 @@ private:
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
 
-    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset);
+    void CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argClass, InterpType interpType, int32_t *pOffset, bool pinned = false);
 
     // Stack
     StackInfo *m_pStackPointer, *m_pStackBase;
     int32_t m_stackCapacity;
 
     void CheckStackHelper(int n);
+    void CheckStackExact(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
@@ -753,7 +707,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
-    bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
@@ -801,7 +755,7 @@ private:
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
     void PrintPointer(void* pointer);
-    void PrintHelperFtn(void* helperAddr);
+    void PrintHelperFtn(int32_t _data);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
@@ -847,9 +801,9 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     }
 
     // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
-    static_assert_no_msg(sizeof(VarSizedData) == sizeof(void*));
-    static_assert_no_msg(sizeof(T) % sizeof(void*) == 0);
-    static_assert_no_msg(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+    static_assert(sizeof(VarSizedData) == sizeof(void*));
+    static_assert(sizeof(T) % sizeof(void*) == 0);
+    static_assert(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
 
     void** LookupAsPtrs = (void**)&lookup;
     int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);
@@ -865,7 +819,10 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
-    dn_simdhash_ght_insert(hash, (void*)pLookup, (void*)(size_t)dataItemIndex);
+    checkAddedNew(dn_simdhash_ght_try_insert(
+        hash, (void*)pLookup, (void*)(size_t)dataItemIndex, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE
+    ));
+
     return dataItemIndex;
 }
 

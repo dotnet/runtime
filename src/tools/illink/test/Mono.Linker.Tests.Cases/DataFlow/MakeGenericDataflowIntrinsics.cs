@@ -38,10 +38,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void TestRecognizedConstraint() => typeof(GenConstrained<>).MakeGenericType(GrabUnknownType());
 
             [ExpectedWarning("IL2055", nameof(Type.MakeGenericType))]
-            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestUnknownOwningType() => GrabUnknownType().MakeGenericType(typeof(object));
 
-            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestUnknownArgument() => typeof(Gen<>).MakeGenericType(GrabUnknownType());
         }
 
@@ -70,10 +70,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void TestRecognizedConstraint() => typeof(MakeGenericMethod).GetMethod(nameof(GenConstrained)).MakeGenericMethod(GrabUnknownType());
 
             [ExpectedWarning("IL2060", nameof(MethodInfo.MakeGenericMethod))]
-            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestUnknownOwningMethod() => GrabUnknownMethod().MakeGenericMethod(typeof(object));
 
-            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public static void TestUnknownArgument() => typeof(MakeGenericMethod).GetMethod(nameof(Gen)).MakeGenericMethod(GrabUnknownType());
         }
     }

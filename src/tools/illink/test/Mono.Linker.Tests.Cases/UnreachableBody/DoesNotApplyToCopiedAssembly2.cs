@@ -16,16 +16,16 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
         public static void Main()
         {
 #if OTHER_INCLUDED
-			UsedToMarkMethod (null);
+            UsedToMarkMethod(null);
 #endif
         }
 
 #if OTHER_INCLUDED
-		[Kept]
-		static void UsedToMarkMethod (Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
-		{
-			f.Method ();
-		}
+        [Kept]
+        static void UsedToMarkMethod(Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor.Foo f)
+        {
+            f.Method();
+        }
 #endif
     }
 }

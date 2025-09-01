@@ -499,9 +499,12 @@ namespace R2RDump
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RDumpRootCommand().UseVersion())
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+            new R2RDumpRootCommand().UseVersion()
+            .Parse(args,
+                new ParserConfiguration()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                })
+            .Invoke();
     }
 }

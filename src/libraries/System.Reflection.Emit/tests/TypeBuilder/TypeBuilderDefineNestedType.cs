@@ -160,7 +160,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData((TypeAttributes)0x00040800, "attr")]
         [InlineData((TypeAttributes)(-1), null)]
         [InlineData((TypeAttributes)(-5000), "attr")]
-        public void DefineNestedType_InvalidAttributes_ThrowsArgumentException(TypeAttributes attributes, string paramName)
+        public void DefineNestedType_InvalidAttributes_ThrowsArgumentException(TypeAttributes attributes, string? paramName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             AssertExtensions.Throws<ArgumentException>(paramName, () => type.DefineNestedType("Name", attributes));

@@ -89,13 +89,16 @@ struct CloneInfo : public GuardInfo
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
 
+    // The initial GDV guard block, if any.
+    BasicBlock* m_guardBlock = nullptr;
+
+    // The block where the enumerator var is assigned.
+    BasicBlock* m_defBlock = nullptr;
+
     // Where the enumerator allocation happens
     GenTree*    m_allocTree  = nullptr;
     Statement*  m_allocStmt  = nullptr;
     BasicBlock* m_allocBlock = nullptr;
-
-    // Block holding the GDV test that decides if the enumerator will be allocated
-    BasicBlock* m_domBlock = nullptr;
 
     // Blocks to clone (in order), and a set representation
     // of the same

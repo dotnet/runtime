@@ -202,7 +202,6 @@ namespace JIT.HardwareIntrinsics.Arm
             _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
-
         public bool IsSupported => {Isa}.IsSupported;
 
         public bool Succeeded { get; set; }
@@ -267,9 +266,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunSameLclVarScenario_UnsafeRead));
 
-            var op = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
-            var op1 = op;
-            var op2 = op;
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray1Ptr);
             var result = {Isa}.{Method}(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -290,10 +288,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunSameClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld1, _fld1);
+            var _fld1_op2Base = Unsafe.As<{Op1VectorType}<{Op1BaseType}>, {Op2VectorType}<{Op2BaseType}>>(ref _fld1);
+
+            var result = {Isa}.{Method}(_fld1, _fld1_op2Base);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld1, _fld1, _dataTable.outArrayPtr);
+            ValidateResult(_fld1, _fld1_op2Base, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -538,7 +538,7 @@ namespace JIT.HardwareIntrinsics.Arm
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation(string.Empty);
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sve2)}.{nameof({Isa}.{Method})}<Int32>(Vector<Int16>, Vector<Int16>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sve2)}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>, Vector<{Op2BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

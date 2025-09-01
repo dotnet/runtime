@@ -373,11 +373,7 @@ class OffsetsTool:
 		outfile = self.args.outfile
 		validate_outfile = self.args.validate_outfile
 		target = self.target
-
-		if validate_outfile:
-			f = ComparableFile ()
-		else:
-			f = open (outfile, 'w')
+		f = ComparableFile ()
 
 		f.write ("#ifndef USED_CROSS_COMPILER_OFFSETS\n")
 		if target.arch_define:
@@ -435,9 +431,18 @@ class OffsetsTool:
 		f.write ("#endif //USED_CROSS_COMPILER_OFFSETS check\n")
 		f.close ()
 
-		if validate_outfile and f.compare (outfile):
-			print ("Offsets file has changed.", file=sys.stderr)
-			f.dump (outfile + ".new")
+		if os.path.isfile (outfile):
+			if f.compare (outfile):
+				if validate_outfile:
+					print ("Offsets file has changed, writing new offsets to " + outfile + ".new", file=sys.stderr)
+					f.dump (outfile + ".new")
+				else:
+					print ("Offsets file has changed, updating " + outfile)
+					f.dump (outfile)
+			else:
+				print ("Offsets file is up to date, no changes to " + outfile)
+		else:
+			f.dump (outfile)
 
 tool = OffsetsTool ()
 tool.parse_args ()

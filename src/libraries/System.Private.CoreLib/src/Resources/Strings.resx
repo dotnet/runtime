@@ -633,8 +633,8 @@
   <data name="Arg_NamedParamTooBig" xml:space="preserve">
     <value>Named parameter array cannot be bigger than argument array.</value>
   </data>
-  <data name="Arg_NDirectBadObject" xml:space="preserve">
-    <value>No PInvoke conversion exists for value passed to Object-typed parameter.</value>
+  <data name="Arg_PInvokeBadObject" xml:space="preserve">
+    <value>No PInvoke conversion exists for the value passed to an Object-typed parameter.</value>
   </data>
   <data name="Arg_Need1DArray" xml:space="preserve">
     <value>Array was not a one-dimensional array.</value>
@@ -2987,6 +2987,9 @@
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
     <value>ByRef to void return values are not supported in reflection invocation.</value>
   </data>
+  <data name="NotSupported_Async" xml:space="preserve">
+    <value>Async infrastructure methods are not supported in reflection invocation.</value>
+  </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>
   </data>
@@ -3010,6 +3013,9 @@
   </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
+  </data>
+  <data name="NotSupported_TypeBuilderInstantiation_ResolvingMembers" xml:space="preserve">
+    <value>TypeBuilder generic instantiation does not support resolving members. Use TypeBuilder.{0} instead.</value>
   </data>
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
@@ -3409,6 +3415,9 @@
   </data>
   <data name="SemaphoreSlim_Wait_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
+  </data>
+  <data name="SemaphoreSlim_Wait_TimeSpanTimeoutWrong" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), or be non-negative.</value>
   </data>
   <data name="Serialization_BadParameterInfo" xml:space="preserve">
     <value>Non existent ParameterInfo. Position bigger than member's parameters length.</value>
@@ -3914,6 +3923,12 @@
   <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
     <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeJavaMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize JavaMarshal.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectGCHandleType" xml:space="preserve">
+    <value>Attempt to get context from an unsupport GCHandle type.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
@@ -4196,6 +4211,9 @@
   <data name="ClassLoad_InlineArrayExplicit" xml:space="preserve">
     <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'.  Assembly: '{1}'.</value>
   </data>
+  <data name="ClassLoad_InlineArrayExplicitSize" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit size. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
   </data>
@@ -4369,5 +4387,34 @@
   </data>
   <data name="PlatformNotSupported_DynamicEntrypoint" xml:space="preserve">
     <value>Dynamic entrypoint allocation is not supported in the current environment.</value>
+  </data>  <data name="Arg_InvalidOperationException_CannotReleaseUnownedMutex" xml:space="preserve">
+    <value>Cannot release a lock that is not owned by the current thread.</value>
+  </data>
+  <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
+    <value>Failed to initialize pthread mutex</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
+  <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
+    <value>The file '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_FilePermissionsIncorrect" xml:space="preserve">
+    <value>The file '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
+    <value>The path '{0}' exists but is not a directory.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
+    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
 </root>

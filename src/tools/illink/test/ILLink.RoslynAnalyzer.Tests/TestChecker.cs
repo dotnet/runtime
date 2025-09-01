@@ -110,6 +110,12 @@ namespace ILLink.RoslynAnalyzer.Tests
             CheckMember(node);
         }
 
+        public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+        {
+            base.VisitOperatorDeclaration(node);
+            CheckMember(node);
+        }
+
         public override void VisitEventDeclaration(EventDeclarationSyntax node)
         {
             base.VisitEventDeclaration(node);
@@ -386,7 +392,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             findText = LinkerTestBase.GetStringFromExpression(args["#0"], _semanticModel);
 
             // If the text starts with `warning IL...` then it probably follows the pattern
-            //	'warning <diagId>: <location>:'
+            //  'warning <diagId>: <location>:'
             // We don't want to repeat the location in the error message for the analyzer, so
             // it's better to just trim here. We've already filtered by diagnostic location so
             // the text location shouldn't matter

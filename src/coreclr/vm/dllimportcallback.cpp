@@ -259,7 +259,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 
     if (pData == NULL)
     {
-        static_assert_no_msg(sizeof(UMEntryThunk) == sizeof(StubPrecode));
+        static_assert(sizeof(UMEntryThunk) == sizeof(StubPrecode));
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
@@ -288,6 +288,8 @@ void UMEntryThunkData::Terminate()
 
     // TheUMEntryPrestub includes diagnostic for collected delegates
     m_pUMEntryThunk->SetTargetUnconditional(TheUMThunkPreStub());
+
+    FlushCacheForDynamicMappedStub(m_pUMEntryThunk, sizeof(UMEntryThunk));
 
     OBJECTHANDLE pObjectHandle = m_pObjectHandle;
 
@@ -336,18 +338,18 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
     STANDARD_VM_CONTRACT;
 
     MethodDesc* pStubMD = NULL;
-    dwStubFlags |= NDIRECTSTUB_FL_REVERSE_INTEROP;  // could be either delegate interop or not--that info is passed in from the caller
+    dwStubFlags |= PINVOKESTUB_FL_REVERSE_INTEROP;  // could be either delegate interop or not--that info is passed in from the caller
 
 #if defined(DEBUGGING_SUPPORTED)
     // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
     CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(pSigInfo->GetModule(), CORJIT_FLAGS());
     if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
     {
-        dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
+        dwStubFlags |= PINVOKESTUB_FL_GENERATEDEBUGGABLEIL;
     }
 #endif // DEBUGGING_SUPPORTED
 
-    pStubMD = NDirect::CreateCLRToNativeILStub(
+    pStubMD = PInvoke::CreateCLRToNativeILStub(
         pSigInfo,
         dwStubFlags,
         pInvokeMD // may be NULL
@@ -411,7 +413,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
     DWORD dwStubFlags = 0;
 
     if (sigInfo.IsDelegateInterop())
-        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+        dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
     PCODE pFinalILStub = JitILStub(pStubMD);

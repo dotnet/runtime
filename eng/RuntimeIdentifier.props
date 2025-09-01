@@ -23,6 +23,8 @@
     <!-- On Windows, we can build for Windows and Mobile.
          For other TargetOSes, create a "win" build, built from TargetOS sources and "win" pre-built packages. -->
     <PortableOS Condition="'$(HostOS)' == 'win' and '$(TargetsMobile)' != 'true'">win</PortableOS>
+
+    <PortableTargetRid Condition="'$(PortableTargetRid)' == ''">$(PortableOS)-$(TargetArchitecture)</PortableTargetRid>
   </PropertyGroup>
 
   <!-- TargetRid is used to name the target platform.

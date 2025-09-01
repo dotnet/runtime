@@ -488,7 +488,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (CorruptRevocationSignature)
             {
-                signature[5] ^= 0xFF;
+                signature[^2] ^= 0xFF;
             }
 
             // CertificateList
@@ -643,7 +643,7 @@ SingleResponse ::= SEQUENCE {
 
                     if (CorruptRevocationSignature)
                     {
-                        signature[5] ^= 0xFF;
+                        signature[^2] ^= 0xFF;
                     }
 
                     writer.WriteBitString(signature);

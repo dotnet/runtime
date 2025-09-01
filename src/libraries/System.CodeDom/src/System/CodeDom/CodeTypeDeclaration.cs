@@ -14,7 +14,6 @@ namespace System.CodeDom
         private int _populated;
         private const int BaseTypesCollection = 0x1;
         private const int MembersCollection = 0x2;
-        private CodeTypeParameterCollection _typeParameters;
 
         public event EventHandler PopulateBaseTypes;
         public event EventHandler PopulateMembers;
@@ -122,6 +121,6 @@ namespace System.CodeDom
             }
         }
 
-        public CodeTypeParameterCollection TypeParameters => _typeParameters ??= new CodeTypeParameterCollection();
+        public CodeTypeParameterCollection TypeParameters => field ??= new CodeTypeParameterCollection();
     }
 }

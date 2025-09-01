@@ -73,6 +73,11 @@
 #endif
 
 #if defined(__GNUC__)
+#if defined(HOST_X86) || defined(HOST_AMD64)
+#define SFENCE_MEMORY_BARRIER() asm volatile ("sfence" : : : "memory")
+#else
+#define SFENCE_MEMORY_BARRIER()
+#endif
 #if defined(HOST_ARMV6)
 // DMB ISH not valid on ARMv6
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("mcr p15, 0, r0, c7, c10, 5" : : : "memory")
@@ -97,13 +102,22 @@
 //
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("" : : : "memory")
 #endif // HOST_ARM || HOST_ARM64
+
 #elif (defined(HOST_ARM) || defined(HOST_ARM64)) && _ISO_VOLATILE
 // ARM & ARM64 have a very weak memory model and very few tools to control that model. We're forced to perform a full
 // memory barrier to preserve the volatile semantics. Technically this is only necessary on MP systems but we
 // currently don't have a cheap way to determine the number of CPUs from this header file. Revisit this if it
 // turns out to be a performance issue for the uni-proc case.
+
 #define VOLATILE_MEMORY_BARRIER() MemoryBarrier()
+#define SFENCE_MEMORY_BARRIER()
 #else
+
+#if defined(HOST_X86) || defined(HOST_AMD64)
+#define SFENCE_MEMORY_BARRIER() _mm_sfence()
+#else
+#define SFENCE_MEMORY_BARRIER()
+#endif
 //
 // On VC++, reorderings at the compiler and machine level are prevented by the use of the
 // "volatile" keyword in VolatileLoad and VolatileStore.  This should work on any CPU architecture
@@ -408,7 +422,7 @@ public:
     // accessed without using Load and Store, but it is necessary for passing Volatile<T> to APIs like
     // InterlockedIncrement.
     //
-    inline volatile T* GetPointer() { return (volatile T*)&m_val; }
+    inline constexpr volatile T* GetPointer() { return (volatile T*)&m_val; }
 
 
     //
@@ -439,8 +453,8 @@ public:
     // a pointer to a volatile T here, so we cannot accidentally pass this pointer to an API that
     // expects a normal pointer.
     //
-    inline T volatile * operator&() {return this->GetPointer();}
-    inline T volatile const * operator&() const {return this->GetPointer();}
+    inline constexpr T volatile * operator&() {return this->GetPointer();}
+    inline constexpr T volatile const * operator&() const {return this->GetPointer();}
 
     //
     // Comparison operators

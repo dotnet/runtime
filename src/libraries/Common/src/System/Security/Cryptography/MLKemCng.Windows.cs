@@ -86,14 +86,17 @@ namespace System.Security.Cryptography
             }
         }
 
-        public partial CngKey Key
+        public partial CngKey GetKey()
         {
-            get
-            {
-                ThrowIfDisposed();
+            ThrowIfDisposed();
 
-                return _key;
-            }
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            return _key.Duplicate();
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
         }
 
         /// <inheritdoc/>
@@ -218,9 +221,11 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                _key.Dispose();
+                _key?.Dispose();
                 _key = null!;
             }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(KeyBlobMagicNumber kind, Span<byte> destination)

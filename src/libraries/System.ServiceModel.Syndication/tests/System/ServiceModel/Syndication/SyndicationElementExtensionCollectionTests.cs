@@ -164,7 +164,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData("SyndicationElementExtensionCollectionTests.extensionobject", "http://schemas.datacontract.org/2004/07/System.ServiceModel.Syndication.Tests")]
         [InlineData("SyndicationElementExtensionCollectionTests.ExtensionObject", "http://schemas.datacontract.org/2004/07/system.servicemodel.syndication.tests")]
         [InlineData("SyndicationElementExtensionCollectionTests.ExtensionObject", "System.ServiceModel.Syndication.Tests")]
-        public void ReadElementExtensions_NoSuchObject_ReturnsEmpty(string name, string ns)
+        public void ReadElementExtensions_NoSuchObject_ReturnsEmpty(string name, string? ns)
         {
             SyndicationElementExtensionCollection elementExtensions = new SyndicationCategory().ElementExtensions;
             elementExtensions.Add(new ExtensionObject { Value = 10 });

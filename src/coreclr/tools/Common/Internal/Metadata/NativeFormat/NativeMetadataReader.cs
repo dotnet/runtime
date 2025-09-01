@@ -234,9 +234,6 @@ namespace Internal.Metadata.NativeFormat
 
     internal sealed partial class MetadataHeader
     {
-        /// <todo>
-        /// Signature should be updated every time the metadata schema changes.
-        /// </todo>
         public const uint Signature = 0xDEADDFFD;
 
         /// <summary>

@@ -35,7 +35,7 @@ namespace System.ComponentModel.Tests
         [InlineData("", null)]
         [InlineData("designerTypeName", "")]
         [InlineData("designerTypeName.dll", "designerBaseTypeName")]
-        public void Ctor_String_String(string designerTypeName, string designerBaseTypeName)
+        public void Ctor_String_String(string designerTypeName, string? designerBaseTypeName)
         {
             var attribute = new DesignerAttribute(designerTypeName, designerBaseTypeName);
             Assert.Equal(designerTypeName, attribute.DesignerTypeName);

@@ -18,7 +18,7 @@ namespace System
         [Intrinsic]
         public static readonly string Empty = "";
 
-        internal static unsafe string FastAllocateString(int length)
+        internal static unsafe string FastAllocateString(nint length)
         {
             // We allocate one extra char as an interop convenience so that our strings are null-
             // terminated, however, we don't pass the extra +1 to the string allocation because the base

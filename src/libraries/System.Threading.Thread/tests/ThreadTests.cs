@@ -749,7 +749,7 @@ namespace System.Threading.Threads.Tests
             verify();
 
             e.Set();
-            waitForThread(); 
+            waitForThread();
         }
 
         private static void VerifyLocalDataSlot(LocalDataStoreSlot slot)
@@ -916,7 +916,6 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
@@ -966,7 +965,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {

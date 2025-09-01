@@ -52,6 +52,10 @@ add_dependencies(cee_wks_mergeable precompiled_asm)
 target_compile_definitions(cee_wks_mergeable PUBLIC FEATURE_STATICALLY_LINKED)
 target_compile_definitions(cee_wks_mergeable PUBLIC CORECLR_EMBEDDED)
 
+if (NOT CLR_CMAKE_HOST_ARCH_WASM)
+  target_compile_definitions(cee_wks_core PRIVATE -DGC_DESCRIPTOR)
+endif (NOT CLR_CMAKE_HOST_ARCH_WASM)
+
 if (CLR_CMAKE_HOST_WIN32)
     link_natvis_sources_for_target(cee_wks INTERFACE ../vm.natvis)
     link_natvis_sources_for_target(cee_wks_mergeable INTERFACE ../vm.natvis)

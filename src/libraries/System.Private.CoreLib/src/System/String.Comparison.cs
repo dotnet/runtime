@@ -47,26 +47,6 @@ namespace System
                 ref Unsafe.Add(ref strB.GetRawStringData(), (nint)(uint)indexB /* force zero-extension */), countB);
         }
 
-        internal static bool EqualsOrdinalIgnoreCase(string? strA, string? strB)
-        {
-            if (ReferenceEquals(strA, strB))
-            {
-                return true;
-            }
-
-            if (strA is null || strB is null)
-            {
-                return false;
-            }
-
-            if (strA.Length != strB.Length)
-            {
-                return false;
-            }
-
-            return EqualsOrdinalIgnoreCaseNoLengthCheck(strA, strB);
-        }
-
         private static bool EqualsOrdinalIgnoreCaseNoLengthCheck(string strA, string strB)
         {
             Debug.Assert(strA.Length == strB.Length);

@@ -159,6 +159,14 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
         }
         SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
         *formatType = -1;
+#elif HAVE_STATVFS_BASETYPE
+        if (bufferLength < _FSTYPSZ)        // SunOS
+        {
+            errno = ERANGE;
+            result = -1;
+        }
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_basetype);
+        *formatType = -1;
 #else
         SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
         *formatType = (int64_t)(stats.f_type);

@@ -477,7 +477,7 @@ A profiler DLL is an unmanaged DLL that is effectively running as part of the CL
 Combining Managed and Unmanaged Code in a Code Profiler
 =======================================================
 
-A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or ndirect calls.
+A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or PInvoke calls.
 
 Although this is possible from a design perspective, the CLR Profiling API does not support it. A CLR profiler is supposed to be purely unmanaged. Attempts to combine managed and unmanaged code from a CLR profiler can cause crashes, hangs and deadlocks. The danger is clear since the managed parts of the profiler will "fire" events back to its unmanaged component, which subsequently would call into the managed part of the profiler etc. The danger at this point is clear.
 

@@ -8,6 +8,7 @@ trigger:
   branches:
     include:
     - main
+    - release/10.0
     - release/9.0
     - release/8.0
   paths:

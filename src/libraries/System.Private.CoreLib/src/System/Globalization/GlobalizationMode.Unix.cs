@@ -39,7 +39,7 @@ namespace System.Globalization
             {
                 // These strings can't go into resources, because a resource lookup requires globalization, which requires ICU
                 if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || OperatingSystem.IsAndroid() ||
-                    OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
+                    OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
                 {
                     return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
                 }

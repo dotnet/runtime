@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime;
@@ -351,38 +352,46 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
+        // Provides a strong exception guarantee - either it succeeds, or
+        // it throws an exception with no side effects.  The arrays must be
+        // compatible array types based on the array element type - this
+        // method does not support casting, boxing, or primitive widening.
+        // It will up-cast, assuming the array types are correct.
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+        }
+
 #if !MONO // implementation details of MethodTable
 
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
         public static unsafe void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
-            if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
-                !pMT->IsMultiDimensionalArray &&
-                (uint)length <= sourceArray.NativeLength &&
-                (uint)length <= destinationArray.NativeLength)
+            if (sourceArray != null && destinationArray != null)
             {
-                nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
+                if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
+                    pMT->IsSzArray &&
+                    (uint)length <= sourceArray.NativeLength &&
+                    (uint)length <= destinationArray.NativeLength)
+                {
+                    nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
+                    ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
+                    ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
-                if (pMT->ContainsGCPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                else
-                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
+                    if (pMT->ContainsGCPointers)
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    else
+                        SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
-                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                return;
+                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
+                    return;
+                }
             }
 
             // Less common
-            CopyImpl(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, reliable: false);
+            CopyImpl(sourceArray, sourceArray?.GetLowerBound(0) ?? 0, destinationArray, destinationArray?.GetLowerBound(0) ?? 0, length, reliable: false);
         }
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
@@ -393,7 +402,7 @@ namespace System
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
                 if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
-                    !pMT->IsMultiDimensionalArray &&
+                    pMT->IsSzArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
                     (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
                     (uint)(destinationIndex + length) <= destinationArray.NativeLength)
@@ -414,11 +423,389 @@ namespace System
             }
 
             // Less common
-            CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
+        }
+
+        // Reliability-wise, this method will either possibly corrupt your
+        // instance, or if the reliable flag is true, it will either always
+        // succeed or always throw an exception with no side effects.
+        private static unsafe void CopyImpl(Array? sourceArray, int sourceIndex, Array? destinationArray, int destinationIndex, int length, bool reliable)
+        {
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
+
+            if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
+                throw new RankException(SR.Rank_MustMatch);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            int srcLB = sourceArray.GetLowerBound(0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(sourceIndex, srcLB);
+            sourceIndex -= srcLB;
+            if ((sourceIndex < 0) || ((uint)(sourceIndex + length) > sourceArray.NativeLength))
+                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
+
+            int dstLB = destinationArray.GetLowerBound(0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(destinationIndex, dstLB);
+            destinationIndex -= dstLB;
+            if ((destinationIndex < 0) || ((uint)(destinationIndex + length) > destinationArray.NativeLength))
+                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
+
+            ArrayAssignType assignType;
+
+            if (sourceArray.GetType() == destinationArray.GetType()
+                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
+            {
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
+
+                nuint elementSize = (nuint)pMT->ComponentSize;
+                nuint byteCount = (uint)length * elementSize;
+                ref byte src = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (uint)sourceIndex * elementSize);
+                ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (uint)destinationIndex * elementSize);
+
+                if (pMT->ContainsGCPointers)
+                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                else
+                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
+
+                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
+                return;
+            }
+
+            // If we were called from Array.ConstrainedCopy, ensure that the array copy
+            // is guaranteed to succeed.
+            if (reliable)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
+
+            // Rare
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
+        }
+
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
+        {
+            Debug.Assert(sourceArray.Rank == destinationArray.Rank);
+
+            if (assignType == ArrayAssignType.WrongType)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+
+            if (length > 0)
+            {
+                switch (assignType)
+                {
+                    case ArrayAssignType.UnboxValueClass:
+                        CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.BoxValueClassOrPrimitive:
+                        CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.MustCast:
+                        CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    case ArrayAssignType.PrimitiveWiden:
+                        CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
+
+                    default:
+                        Debug.Fail("Fell through switch in Array.Copy!");
+                        break;
+                }
+            }
+        }
+
+        private enum ArrayAssignType
+        {
+            SimpleCopy,
+            WrongType,
+            MustCast,
+            BoxValueClassOrPrimitive,
+            UnboxValueClass,
+            PrimitiveWiden,
+        }
+
+        // Array.CopyImpl case: Object[] or interface array to value-type array copy.
+        private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
+            MethodTable* pDestMT = destinationArray.ElementMethodTable;
+
+            Debug.Assert(!sourceArray.ElementMethodTable->IsValueType);
+            Debug.Assert(pDestMT->IsValueType);
+
+            nuint destSize = pDestArrayMT->ComponentSize;
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
+            ref byte destData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have retrieved the element, we are no longer subject to race
+                // conditions from another array mutator.
+
+                if (pDestMT->IsNullable)
+                {
+#if NATIVEAOT
+                    RuntimeExports.RhUnboxNullable(ref destData, pDestMT, obj);
+#else
+                    CastHelpers.Unbox_Nullable(ref destData, pDestMT, obj);
+#endif
+                }
+                else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
+                {
+                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                }
+                else if (pDestMT->ContainsGCPointers)
+                {
+                    Buffer.BulkMoveWithWriteBarrier(ref destData, ref obj.GetRawData(), destSize);
+                }
+                else
+                {
+                    SpanHelpers.Memmove(ref destData, ref obj.GetRawData(), destSize);
+                }
+
+                destData = ref Unsafe.AddByteOffset(ref destData, destSize);
+            }
+        }
+
+        // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
+        private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
+            MethodTable* pSrcMT = sourceArray.ElementMethodTable;
+
+            Debug.Assert(pSrcMT->IsValueType);
+            Debug.Assert(!destinationArray.ElementMethodTable->IsValueType);
+
+            nuint srcSize = pSrcArrayMT->ComponentSize;
+            ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+#if NATIVEAOT
+                object? obj = RuntimeExports.RhBox(pSrcMT, ref srcData);
+#else
+                object? obj = RuntimeHelpers.Box(pSrcMT, ref srcData);
+#endif
+                Unsafe.Add(ref destData, i) = obj;
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcSize);
+            }
+        }
+
+        // Array.CopyImpl case: Casting copy from gc-ref array to gc-ref array.
+        private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pDestMT = destinationArray.ElementMethodTable;
+
+            Debug.Assert(!sourceArray.ElementMethodTable->IsValueType);
+            Debug.Assert(!pDestMT->IsValueType);
+
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have grabbed obj, we are no longer subject to races from another
+                // mutator thread.
+
+#if NATIVEAOT
+                Unsafe.Add(ref destData, i) = TypeCast.CheckCastAny(pDestMT, obj);
+#else
+                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(pDestMT, obj);
+#endif
+            }
+        }
+
+        // Array.CopyImpl case: Primitive types that have a widening conversion
+        private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            Debug.Assert(sourceArray.ElementMethodTable->IsPrimitive);
+            Debug.Assert(destinationArray.ElementMethodTable->IsPrimitive);
+
+            // Get appropriate sizes, which requires method tables.
+
+#if NATIVEAOT
+            EETypeElementType srcElType = sourceArray.ElementMethodTable->ElementType;
+            EETypeElementType destElType = destinationArray.ElementMethodTable->ElementType;
+#else
+            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
+            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+#endif
+
+            nuint srcElSize = RuntimeHelpers.GetMethodTable(sourceArray)->ComponentSize;
+            nuint destElSize = RuntimeHelpers.GetMethodTable(destinationArray)->ComponentSize;
+
+            ref byte srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElSize);
+            ref byte destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElSize);
+
+            for (int i = 0; i < length; i++)
+            {
+                InvokeUtils.PrimitiveWiden(ref srcData, ref destData, srcElType, destElType);
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
+                destData = ref Unsafe.AddByteOffset(ref destData, destElSize);
+            }
+        }
+
+        /// <summary>
+        /// Clears the contents of an array.
+        /// </summary>
+        /// <param name="array">The array to clear.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="array"/> is null.</exception>
+        public static unsafe void Clear(Array array)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
+            nuint totalByteLength = pMT->ComponentSize * array.NativeLength;
+            ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
+
+            if (!pMT->ContainsGCPointers)
+            {
+                SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
+            }
+            else
+            {
+                Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
+            }
+
+            // GC.KeepAlive(array) not required. pMT kept alive via `pStart`
+        }
+
+        // Sets length elements in array to 0 (or null for Object arrays), starting
+        // at index.
+        //
+        public static unsafe void Clear(Array array, int index, int length)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
+            int lowerBound = 0;
+
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
+            if (!pMT->IsSzArray)
+            {
+                int rank = pMT->MultiDimensionalArrayRank;
+                lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
+                p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
+            }
+
+            int offset = index - lowerBound;
+
+            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            nuint elementSize = pMT->ComponentSize;
+
+            ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
+            nuint byteLength = (uint)length * elementSize;
+
+            if (pMT->ContainsGCPointers)
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
+            else
+                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
+
+            // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
+        }
+
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (!RuntimeHelpers.GetMethodTable(this)->IsSzArray)
+            {
+                ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
+        }
+
+        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        {
+            // Checked by the caller
+            Debug.Assert(indices.Length == Rank);
+
+            if (!RuntimeHelpers.GetMethodTable(this)->IsSzArray)
+            {
+                ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+                nint flattenedIndex = 0;
+                for (int i = 0; i < indices.Length; i++)
+                {
+                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
+                    int length = Unsafe.Add(ref bounds, i);
+                    if ((uint)index >= (uint)length)
+                        ThrowHelper.ThrowIndexOutOfRangeException();
+                    flattenedIndex = (length * flattenedIndex) + index;
+                }
+                Debug.Assert((nuint)flattenedIndex < NativeLength);
+                return flattenedIndex;
+            }
+            else
+            {
+                int index = indices[0];
+                if ((uint)index >= NativeLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return index;
+            }
+        }
+
+        [Intrinsic]
+        public int GetLength(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return Length;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            return Unsafe.Add(ref this.GetMultiDimensionalArrayBounds(), dimension);
+        }
+
+        [Intrinsic]
+        public int GetUpperBound(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return Length - 1;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            ref int bounds = ref this.GetMultiDimensionalArrayBounds();
+            return Unsafe.Add(ref bounds, dimension)
+                + (SupportsNonZeroLowerBound ? Unsafe.Add(ref bounds, rank + dimension) : 0)
+                - 1;
+        }
+
+        [Intrinsic]
+        public int GetLowerBound(int dimension)
+        {
+            int rank = this.GetMultiDimensionalArrayRank();
+            if (rank == 0 && dimension == 0)
+                return 0;
+
+            if ((uint)dimension >= (uint)rank)
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayRankIndex);
+
+            if (SupportsNonZeroLowerBound)
+                return Unsafe.Add(ref this.GetMultiDimensionalArrayBounds(), rank + dimension);
+            else
+                return 0;
         }
 #endif
 
-        // The various Get values...
         public object? GetValue(params int[] indices)
         {
             if (indices == null)

@@ -28,6 +28,7 @@ namespace Wasm.Build.Tests
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
+                // ("RunAOTCompilation", false) -- tested separately as it changes build behavior significantly
             };
 
             TheoryData<Configuration, string, bool, bool, bool> data = new();

@@ -50,18 +50,18 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
             var messages = sink.Writes.ToArray();
 
-            var requestFailedMessage = Assert.Single(messages.Where(m =>
+            var requestFailedMessage = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.RequestFailed &&
                     m.LoggerName == InnerLoggerName;
-            }));
-            var pipelineFailedMessage = Assert.Single(messages.Where(m =>
+            });
+            var pipelineFailedMessage = Assert.Single(messages, m =>
             {
                 return
                     m.EventId == EventIds.PipelineFailed &&
                     m.LoggerName == OuterLoggerName;
-            }));
+            });
         }
 
         private const string ExceptionMessage = "Dummy error message";

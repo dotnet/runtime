@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AutoGenerateBindingRedirects Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</AutoGenerateBindingRedirects>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>

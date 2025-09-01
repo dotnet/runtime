@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
-        private string? _strFullName;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private readonly TypeBuilderImpl? _declaringType;
@@ -600,7 +599,7 @@ namespace System.Reflection.Emit
         // You will never have to deal with a TypeBuilder if you are just referring to arrays.
         public override Type GetElementType() => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
-        public override string? FullName => _strFullName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? FullName => field ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;

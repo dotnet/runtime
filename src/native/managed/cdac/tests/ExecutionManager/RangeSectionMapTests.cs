@@ -15,7 +15,7 @@ public class RangeSectionMapTests
     public void TestLookupFail(MockTarget.Architecture arch)
     {
         var builder = MockDescriptors.ExecutionManager.CreateRangeSection(arch);
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
 
@@ -33,7 +33,7 @@ public class RangeSectionMapTests
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;
         builder.InsertAddressRange(inputPC, length, value);
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
 
@@ -48,7 +48,7 @@ public class RangeSectionMapTests
     public void TestGetIndexForLevel(MockTarget.Architecture arch)
     {
         // Exhaustively test GetIndexForLevel for all possible values of the byte for each level
-        var target = new TestPlaceholderTarget(arch, new MockMemorySpace.ReadContext().ReadFromTarget);
+        var target = new TestPlaceholderTarget(arch, new MockMemorySpace.MemoryContext().ReadFromTarget);
         var rsla = RangeSectionMap.Create(target);
         int numLevels = arch.Is64Bit ? 5 : 2;
         // the bits 0..effectiveRange - 1 are not handled the map and are irrelevant

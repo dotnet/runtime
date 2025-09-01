@@ -388,7 +388,7 @@ public class GenerateWasmBootJson : Task
                     endLineNumber: 0,
                     endColumnNumber: 0,
                     message: message,
-                    string.Join(";", LazyLoadedAssemblies.Select(a => a.ItemSpec)));
+                    string.Join(";", remainingLazyLoadAssemblies.Select(a => a.ItemSpec)));
 
                 return;
             }
