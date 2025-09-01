@@ -33,7 +33,6 @@ extern "C" {
 
 #ifndef _ASSERTE
 #if defined(_DEBUG)
-
 #define _ASSERTE(e) do {                                        \
         if (!(e)) {                                             \
             fprintf (stderr,                                    \
