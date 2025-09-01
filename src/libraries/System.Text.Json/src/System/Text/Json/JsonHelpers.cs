@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace System.Text.Json
@@ -22,7 +23,7 @@ namespace System.Text.Json
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
             ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescapedSpan(span) : span;
+            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescaped(span) : span;
         }
 
         /// <summary>
@@ -298,7 +299,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NET8_0_OR_GREATER
+#if !NET
         public static bool HasAllSet(this BitArray bitArray)
         {
             for (int i = 0; i < bitArray.Count; i++)

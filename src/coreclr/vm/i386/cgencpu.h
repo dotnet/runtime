@@ -30,9 +30,6 @@ class FramedMethodFrame;
 class Module;
 class ComCallMethodDesc;
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 #define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
@@ -47,7 +44,7 @@ Stub * GenerateInitPInvokeFrameHelper();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
 // Needed for PInvoke inlining in ngened images
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -234,6 +231,30 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)context->Ebp;
 }
 
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->Ecx = (DWORD)value;
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->Ecx);
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->Edx = (DWORD)value;
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->Edx);
+}
+
 // Get Rel32 destination, emit jumpStub if necessary
 inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod = NULL, LoaderAllocator *pLoaderAllocator = NULL)
 {
@@ -408,7 +429,11 @@ struct HijackArgs
     DWORD Esi;
     DWORD Ebx;
     DWORD Edx;
-    DWORD Ecx;
+    union
+    {
+        DWORD Ecx;
+        size_t AsyncRet;
+    };
     union
     {
         DWORD Eax;

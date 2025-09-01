@@ -1702,7 +1702,7 @@ mono_throw_type_load (MonoClass* klass)
 		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
 		g_free (klass_name);
 	}
-	
+
 	mono_error_set_pending_exception (error);
 }
 
@@ -1742,6 +1742,11 @@ mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMeth
 		gpointer data = mini_instantiate_gshared_info (&info->entries [i],
 													   mono_method_get_context (m), m->klass);
 		g_assert (data);
+
+		// we need a barrier before publishing data via mrgctx->infos [i] because the contents of data may not
+		//  have been published to all cores and another thread may read zeroes or partially initialized data
+		//  out of it, even though we have a barrier before publication of entries in mrgctx->entries below
+		mono_memory_barrier();
 
 		/* The first few entries are stored inline, the rest are stored in mrgctx->entries */
 		if (i < ninline)

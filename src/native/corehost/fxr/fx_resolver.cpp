@@ -203,7 +203,7 @@ namespace
             fx_ref.get_fx_name().c_str(), fx_ref.get_fx_version().c_str());
 
         std::vector<pal::string_t> hive_dir;
-        get_framework_and_sdk_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
+        get_framework_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
 
         pal::string_t selected_fx_dir;
         pal::string_t selected_fx_version;

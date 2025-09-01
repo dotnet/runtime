@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void* AsPointer<T>(ref T value)
+        public static void* AsPointer<T>(ref readonly T value)
         {
             throw new PlatformNotSupportedException();
 

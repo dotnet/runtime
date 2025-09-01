@@ -7,100 +7,104 @@ using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Depe
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
-	public static class StaticVirtualInterfaceMethodsInPreservedScopeLibrary
-	{
-		[Kept]
-		public static void Main ()
-		{
-		}
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    [SetupLinkerArgument("-a", "test.exe", "library")]
+    public static class StaticVirtualInterfaceMethodsInPreservedScopeLibrary
+    {
+        [Kept]
+        public static void Main()
+        {
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-		public class ImplementVirtualIface : IStaticInterfaceWithDefaultImpls
-		{
-			[Kept]
-			static int IStaticInterfaceWithDefaultImpls.Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				get => 1; [Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				set => _ = value;
-			}
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			static int IStaticInterfaceWithDefaultImpls.Method () => 1;
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			int IStaticInterfaceWithDefaultImpls.InstanceMethod () => 0;
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+        public class ImplementVirtualIface : IStaticInterfaceWithDefaultImpls
+        {
+            [Kept]
+            static int IStaticInterfaceWithDefaultImpls.Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                get => 1; [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                set => _ = value;
+            }
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            static int IStaticInterfaceWithDefaultImpls.Method() => 1;
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            int IStaticInterfaceWithDefaultImpls.InstanceMethod() => 0;
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-		public class ImplementVirtualIfaceProtectedCtor : IStaticInterfaceWithDefaultImpls
-		{
-			[Kept]
-			protected ImplementVirtualIfaceProtectedCtor () { }
-			[Kept]
-			static int IStaticInterfaceWithDefaultImpls.Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				get => 1; [Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				set => _ = value;
-			}
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			static int IStaticInterfaceWithDefaultImpls.Method () => 1;
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			int IStaticInterfaceWithDefaultImpls.InstanceMethod () => 0;
-		}
+        [Kept]
+        [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+        public class ImplementVirtualIfaceProtectedCtor : IStaticInterfaceWithDefaultImpls
+        {
+            [Kept]
+            protected ImplementVirtualIfaceProtectedCtor() { }
+            [Kept]
+            static int IStaticInterfaceWithDefaultImpls.Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                get => 1; [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                set => _ = value;
+            }
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            static int IStaticInterfaceWithDefaultImpls.Method() => 1;
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            int IStaticInterfaceWithDefaultImpls.InstanceMethod() => 0;
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-		public class ImplementVirtualIfaceUninstantiated : IStaticInterfaceWithDefaultImpls
-		{
-			private ImplementVirtualIfaceUninstantiated () { }
+        [Kept]
+        [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+        public class ImplementVirtualIfaceUninstantiated : IStaticInterfaceWithDefaultImpls
+        {
+            private ImplementVirtualIfaceUninstantiated() { }
 
-			[Kept]
-			static int IStaticInterfaceWithDefaultImpls.Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				get => 1; [Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				set => _ = value;
-			}
+            [Kept]
+            static int IStaticInterfaceWithDefaultImpls.Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                get => 1; [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                set => _ = value;
+            }
 
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			static int IStaticInterfaceWithDefaultImpls.Method () => 1;
-			// Type has private ctor, so instance methods can be removed. Since there's a default impl, we can remove this interface method
-			int IStaticInterfaceWithDefaultImpls.InstanceMethod () => 0;
-		}
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            static int IStaticInterfaceWithDefaultImpls.Method() => 1;
+            // Type has private ctor, so instance methods can be removed. Since there's a default impl, we can remove this interface method
+            int IStaticInterfaceWithDefaultImpls.InstanceMethod() => 0;
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-		public class ImplicitImplementVirtualIfaceUninstantiated : IStaticInterfaceWithDefaultImpls
-		{
-			private ImplicitImplementVirtualIfaceUninstantiated () { }
-			[Kept]
-			public static int Property {
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				get => 1; [Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				set => _ = value;
-			}
-			[Kept]
-			[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-			public static int Method () => 1;
-			[Kept]
-			public int InstanceMethod () => 0;
-		}
-	}
+        [Kept]
+        [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+        public class ImplicitImplementVirtualIfaceUninstantiated : IStaticInterfaceWithDefaultImpls
+        {
+            private ImplicitImplementVirtualIfaceUninstantiated() { }
+            [Kept]
+            public static int Property
+            {
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                get => 1; [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                set => _ = value;
+            }
+            [Kept]
+            [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+            public static int Method() => 1;
+            [Kept]
+            public int InstanceMethod() => 0;
+        }
+    }
 }
 

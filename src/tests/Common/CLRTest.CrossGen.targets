@@ -110,6 +110,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         done
 
         echo -o:"$__OutputFile" >> "$__ResponseFile"
+        echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
@@ -276,6 +277,7 @@ if defined RunCrossGen2 (
     set __Command=!__Command! !ExtraCrossGen2Args!
 
     echo !__InputFile!>>!__ResponseFile!
+    echo -O>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --targetos:$(TargetOS)>>!__ResponseFile!

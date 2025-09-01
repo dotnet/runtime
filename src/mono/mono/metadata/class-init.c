@@ -317,6 +317,13 @@ mono_class_setup_fields (MonoClass *klass)
 	if (explicit_size)
 		instance_size += real_size;
 
+	if (explicit_size && real_size != 0 && m_class_is_inlinearray (klass)) {
+		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array must not have explicit size.");
+		else
+			mono_class_set_type_load_failure (klass, "Inline array must not have explicit size.");
+	}
+
 	/*
 	 * This function can recursively call itself.
 	 * Prevent infinite recursion by using a list in TLS.
@@ -1198,16 +1205,19 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	mono_class_setup_supertypes (klass);
 
-	// NOTE: this is probably too aggressive if eclass is not a valuetype.  It looks like we
-	// only need the size info in order to set MonoClass:has_references for this array type -
-	// and for that we only need to setup the fields of the element type if it's not a reference
-	// type.
-	if (!eclass->size_inited)
+	// It looks like we only need the size info in order to set MonoClass:has_references
+	// for this array type and for that we only need to setup the fields of the element
+	// type if it's not a reference type.
+	gboolean is_eclass_valuetype = m_class_is_valuetype (eclass);
+	if (is_eclass_valuetype && !eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
 	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
-	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
+	if (is_eclass_valuetype)
+		klass->has_references = m_class_has_references (eclass) ? TRUE : FALSE;
+	else
+		klass->has_references = TRUE;
 
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;
@@ -2603,10 +2613,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
-			field_class = mono_class_from_mono_type_internal (field->type);
-			if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
-				mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
-				return;
+			if (!klass->skip_generic_constraints) {
+				field_class = mono_class_from_mono_type_internal (field->type);
+				if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
+					mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
+					return;
+				}
 			}
 			break;
 		default:
@@ -3192,7 +3204,7 @@ mono_class_init_internal (MonoClass *klass)
 
 	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 
-	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
+	if (!klass->skip_generic_constraints && mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
 
 	goto leave;
@@ -3964,21 +3976,15 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 			if (iface)
 				array_ifaces [interface_count ++] = iface;
 		}
-		int mult = klass->element_class->enumtype ? 2 : 1;
 
-		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count * mult);
+		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count );
 
 		int itf_idx = 0;
 		args [0] = m_class_get_byval_arg (m_class_get_element_class (klass));
 		for (int i = 0; i < interface_count; ++i)
 			interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
-		if (klass->element_class->enumtype) {
-			args [0] = mono_class_enum_basetype_internal (klass->element_class);
-			for (int i = 0; i < interface_count; ++i)
-				interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
-		}
-		interface_count *= mult;
 		g_assert (itf_idx == interface_count);
+
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 

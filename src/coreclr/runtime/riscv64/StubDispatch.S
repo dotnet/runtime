@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
+#include "AsmMacros_Shared.h"
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 

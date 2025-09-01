@@ -17,9 +17,8 @@ namespace Internal.Runtime.TypeLoader
         private RuntimeTypeHandle _genericDefinition;
         private RuntimeTypeHandle[] _genericArgs;
         private DefType _defType;
-        private CanonicalFormKind _canonKind;
 
-        public CanonicallyEquivalentEntryLocator(RuntimeTypeHandle typeToFind, CanonicalFormKind kind)
+        public CanonicallyEquivalentEntryLocator(RuntimeTypeHandle typeToFind)
         {
             if (RuntimeAugments.IsGenericType(typeToFind))
             {
@@ -32,16 +31,14 @@ namespace Internal.Runtime.TypeLoader
             }
 
             _typeToFind = typeToFind;
-            _canonKind = kind;
             _defType = null;
         }
 
-        internal CanonicallyEquivalentEntryLocator(DefType typeToFind, CanonicalFormKind kind)
+        internal CanonicallyEquivalentEntryLocator(DefType typeToFind)
         {
             _genericArgs = null;
             _genericDefinition = default(RuntimeTypeHandle);
             _typeToFind = default(RuntimeTypeHandle);
-            _canonKind = kind;
             _defType = typeToFind;
         }
 
@@ -50,10 +47,10 @@ namespace Internal.Runtime.TypeLoader
             get
             {
                 if (_defType != null)
-                    return _defType.ConvertToCanonForm(_canonKind).GetHashCode();
+                    return _defType.ConvertToCanonForm(CanonicalFormKind.Specific).GetHashCode();
 
                 if (!_genericDefinition.IsNull())
-                    return TypeLoaderEnvironment.Instance.GetCanonicalHashCode(_typeToFind, _canonKind);
+                    return TypeLoaderEnvironment.Instance.GetCanonicalHashCode(_typeToFind, CanonicalFormKind.Specific);
                 else
                     return _typeToFind.GetHashCode();
             }
@@ -63,9 +60,9 @@ namespace Internal.Runtime.TypeLoader
         {
             if (_defType != null)
             {
-                TypeDesc typeToFindAsCanon = _defType.ConvertToCanonForm(_canonKind);
+                TypeDesc typeToFindAsCanon = _defType.ConvertToCanonForm(CanonicalFormKind.Specific);
                 TypeDesc otherTypeAsTypeDesc = _defType.Context.ResolveRuntimeTypeHandle(other);
-                TypeDesc otherTypeAsCanon = otherTypeAsTypeDesc.ConvertToCanonForm(_canonKind);
+                TypeDesc otherTypeAsCanon = otherTypeAsTypeDesc.ConvertToCanonForm(CanonicalFormKind.Specific);
                 return typeToFindAsCanon == otherTypeAsCanon;
             }
 
@@ -77,7 +74,7 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle[] otherGenericArgs;
                     otherGenericDefinition = RuntimeAugments.GetGenericInstantiation(other, out otherGenericArgs);
 
-                    return _genericDefinition.Equals(otherGenericDefinition) && TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_genericArgs, otherGenericArgs, _canonKind);
+                    return _genericDefinition.Equals(otherGenericDefinition) && TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_genericArgs, otherGenericArgs, CanonicalFormKind.Specific);
                 }
                 else
                     return false;

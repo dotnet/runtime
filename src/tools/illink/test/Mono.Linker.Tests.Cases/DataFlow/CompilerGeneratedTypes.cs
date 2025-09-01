@@ -7,365 +7,477 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 #pragma warning disable CS4014 // async call is not awaited
 
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	public class CompilerGeneratedTypes
-	{
-		public static void Main ()
-		{
-			// Iterators
-			UseIterator ();
-			IteratorTypeMismatch ();
-			LocalIterator ();
-			IteratorCapture ();
-			NestedIterators ();
-			IteratorInsideClosure ();
-			IteratorInsideClosureMismatch ();
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    [Define("INCLUDE_UNEXPECTED_LOWERING_WARNINGS")] // https://github.com/dotnet/roslyn/issues/79333
+    [Define("DEBUG")]
+    [SetupLinkerArgument("--disable-generated-code-heuristics")]
+    public class CompilerGeneratedTypes
+    {
+        public static void Main()
+        {
+            // Iterators
+            UseIterator();
+            IteratorTypeMismatch();
+            LocalIterator();
+            IteratorCapture();
+            NestedIterators();
+            IteratorInsideClosure();
+            IteratorInsideClosureMismatch();
 
-			// Async
-			Async ();
-			AsyncCapture ();
-			AsyncTypeMismatch ();
-			AsyncInsideClosure ();
-			AsyncInsideClosureNonGeneric ();
-			AsyncInsideClosureMismatch ();
+            // Async
+            Async();
+            AsyncCapture();
+            AsyncTypeMismatch();
+            AsyncInsideClosure();
+            AsyncInsideClosureNonGeneric();
+            AsyncInsideClosureMismatch();
 
-			// Closures
-			GlobalClosures ();
-			LambdaInsideIterator<int> ();
-			LocalFunctionInsideIterator<int> ();
-			CapturingLambdaInsideIterator<int> ();
-			CapturingLocalFunctionInsideIterator<int> ();
-			LambdaInsideAsync<int> ();
-			LocalFunctionInsideAsync<int> ();
-			NestedStaticLambda.Test<int> ();
-		}
+            // Closures
+            GlobalClosures();
+            LambdaInsideIterator<int>();
+            LocalFunctionInsideIterator<int>();
+            CapturingLambdaInsideIterator<int>();
+            CapturingLocalFunctionInsideIterator<int>();
+            LambdaInsideAsync<int>();
+            LocalFunctionInsideAsync<int>();
+            NestedAsyncLambda.Test<int>();
+            NestedAsyncLocalFunction.Test<int>();
+            NestedStaticLambda.Test<int>();
+        }
 
-		private static void UseIterator ()
-		{
-			foreach (var m in BasicIterator<string> ()) {
-			}
-		}
+        private static void UseIterator()
+        {
+            foreach (var m in BasicIterator<string>())
+            {
+            }
+        }
 
-		private static IEnumerable<MethodInfo> BasicIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			foreach (var m in typeof (T).GetMethods ()) {
-				yield return m;
-			}
-		}
+        private static IEnumerable<MethodInfo> BasicIterator<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            foreach (var m in typeof(T).GetMethods())
+            {
+                yield return m;
+            }
+        }
 
-		private static void IteratorTypeMismatch ()
-		{
-			_ = Local<string> ();
+        private static void IteratorTypeMismatch()
+        {
+            _ = Local<string>();
 
-			[ExpectedWarning ("IL2090", nameof (DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
-			static IEnumerable<object> Local<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-			{
-				foreach (var m in typeof (T).GetMethods ()) {
-					yield return m;
-				}
-				foreach (var p in typeof (T).GetProperties ()) {
-					yield return p;
-				}
-			}
-		}
+            [ExpectedWarning("IL2090", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            static IEnumerable<object> Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                foreach (var m in typeof(T).GetMethods())
+                {
+                    yield return m;
+                }
+                foreach (var p in typeof(T).GetProperties())
+                {
+                    yield return p;
+                }
+            }
+        }
 
-		private static void LocalIterator ()
-		{
-			foreach (var m in Local<string, string> ()) { }
+        private static void LocalIterator()
+        {
+            foreach (var m in Local<string, string>()) { }
 
-			static IEnumerable<object> Local<
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-			{
-				foreach (var m in typeof (T1).GetMethods ()) {
-					yield return m;
-				}
-				foreach (var p in typeof (T2).GetProperties ()) {
-					yield return p;
-				}
-			}
-		}
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+            [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            static IEnumerable<object> Local<
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+            {
+                foreach (var m in typeof(T1).GetMethods())
+                {
+                    yield return m;
+                }
+                foreach (var p in typeof(T2).GetProperties())
+                {
+                    yield return p;
+                }
+            }
+        }
 
-		private static void IteratorCapture ()
-		{
-			Local1<string> ();
-			void Local1<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				_ = Local2<string> ();
-				IEnumerable<object> Local2<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-				{
-					foreach (var m in typeof (T1).GetMethods ()) {
-						yield return m;
-					}
-					foreach (var p in typeof (T2).GetProperties ()) {
-						yield return p;
-					}
-				}
-			}
-		}
+        private static void IteratorCapture()
+        {
+            Local1<string>();
+            void Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                _ = Local2<string>();
 
-		private static void NestedIterators ()
-		{
-			Local1<string> ();
-			IEnumerable<object> Local1<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				foreach (var o in Local2<string> ()) { yield return o; }
-				IEnumerable<object> Local2<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-				{
-					foreach (var m in typeof (T1).GetMethods ()) {
-						yield return m;
-					}
-					foreach (var p in typeof (T2).GetProperties ()) {
-						yield return p;
-					}
-				}
-			}
-		}
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+                {
+                    foreach (var m in typeof(T1).GetMethods())
+                    {
+                        yield return m;
+                    }
+                    foreach (var p in typeof(T2).GetProperties())
+                    {
+                        yield return p;
+                    }
+                }
+            }
+        }
 
-		private static void IteratorInsideClosure ()
-		{
-			Outer<string> ();
-			IEnumerable<object> Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				int x = 0;
-				foreach (var o in Inner<string> ()) yield return o;
-				IEnumerable<object> Inner<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-				{
-					x++;
-					foreach (var m in typeof (T1).GetMethods ()) yield return m;
-					foreach (var p in typeof (T2).GetProperties ()) yield return p;
-				}
-			}
-		}
+        private static void NestedIterators()
+        {
+            Local1<string>();
 
-		private static void IteratorInsideClosureMismatch ()
-		{
-			Outer<string> ();
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            IEnumerable<object> Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                foreach (var o in Local2<string>()) { yield return o; }
 
-			IEnumerable<object> Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T1> ()
-			{
-				int x = 0;
-				foreach (var o in Inner<string> ()) yield return o;
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+                {
+                    foreach (var m in typeof(T1).GetMethods())
+                    {
+                        yield return m;
+                    }
+                    foreach (var p in typeof(T2).GetProperties())
+                    {
+                        yield return p;
+                    }
+                }
+            }
+        }
 
-				[ExpectedWarning ("IL2090", "T1", "PublicMethods", CompilerGeneratedCode = true)]
-				[ExpectedWarning ("IL2090", "T2", "PublicProperties", CompilerGeneratedCode = true)]
-				IEnumerable<object> Inner<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T2> ()
-				{
-					x++;
-					foreach (var m in typeof (T1).GetMethods ()) yield return m;
-					foreach (var p in typeof (T2).GetProperties ()) yield return p;
-				}
-			}
+        private static void IteratorInsideClosure()
+        {
+            Outer<string>();
 
-		}
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+            [UnexpectedWarning("IL2091", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                int x = 0;
+                foreach (var o in Inner<string>()) yield return o;
 
-		private static void Async ()
-		{
-			Local<string> ().Wait ();
-			async Task Local<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-			{
-				await Task.Delay (0);
-				_ = typeof (T).GetMethods ();
-			}
-		}
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                IEnumerable<object> Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+                {
+                    x++;
+                    foreach (var m in typeof(T1).GetMethods()) yield return m;
+                    foreach (var p in typeof(T2).GetProperties()) yield return p;
+                }
+            }
+        }
 
-		private static void AsyncCapture ()
-		{
-			Local1<string> ();
-			void Local1<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				Local2<string> ().Wait ();
-				async Task Local2<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-				{
-					await Task.Delay (0);
-					_ = typeof (T1).GetMethods ();
-					await Task.Delay (0);
-					_ = typeof (T2).GetProperties ();
-				}
-			}
-		}
+        private static void IteratorInsideClosureMismatch()
+        {
+            Outer<string>();
 
-		[ExpectedWarning ("IL2090", nameof (DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
-		private static void AsyncTypeMismatch ()
-		{
-			_ = Local<string> ();
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+            [UnexpectedWarning("IL2091", "T1", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T1>()
+            {
+                int x = 0;
+                foreach (var o in Inner<string>()) yield return o;
 
-			static async Task Local<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-			{
-				await Task.Delay (0);
-				_ = typeof (T).GetMethods ();
-				await Task.Delay (0);
-				_ = typeof (T).GetProperties ();
-			}
-		}
+                [ExpectedWarning("IL2090", "T1", "PublicMethods", CompilerGeneratedCode = true)]
+                [ExpectedWarning("IL2090", "T2", "PublicProperties", CompilerGeneratedCode = true)]
+                IEnumerable<object> Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T2>()
+                {
+                    x++;
+                    foreach (var m in typeof(T1).GetMethods()) yield return m;
+                    foreach (var p in typeof(T2).GetProperties()) yield return p;
+                }
+            }
 
-		private static void AsyncInsideClosure ()
-		{
-			Outer<string> ();
-			void Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				int x = 0;
-				Inner<string> ().Wait ();
-				async Task Inner<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T2> ()
-				{
-					await Task.Delay (0);
-					x++;
-					_ = typeof (T1).GetMethods ();
-					_ = typeof (T2).GetProperties ();
-				}
-			}
-		}
+        }
 
-		private static void AsyncInsideClosureNonGeneric ()
-		{
-			Outer<string> ();
-			void Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
-			{
-				int x = 0;
-				Inner ().Wait ();
-				async Task Inner ()
-				{
-					await Task.Delay (0);
-					x++;
-					_ = typeof (T1).GetMethods ();
-				}
-			}
-		}
+        private static void Async()
+        {
+            Local<string>().Wait();
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            async Task Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                await Task.Delay(0);
+                _ = typeof(T).GetMethods();
+            }
+        }
 
-		private static void AsyncInsideClosureMismatch ()
-		{
-			Outer<string> ();
+        private static void AsyncCapture()
+        {
+            Local1<string>();
+            void Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                Local2<string>().Wait();
 
-			void Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T1> ()
-			{
-				int x = 0;
-				Inner<string> ().Wait ();
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2090", "T1", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                async Task Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+                {
+                    await Task.Delay(0);
+                    _ = typeof(T1).GetMethods();
+                    await Task.Delay(0);
+                    _ = typeof(T2).GetProperties();
+                }
+            }
+        }
 
-				[ExpectedWarning ("IL2090", "T1", "PublicMethods", CompilerGeneratedCode = true)]
-				[ExpectedWarning ("IL2090", "T2", "PublicProperties", CompilerGeneratedCode = true)]
-				async Task Inner<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T2> ()
-				{
-					await Task.Delay (0);
-					x++;
-					_ = typeof (T1).GetMethods ();
-					_ = typeof (T2).GetProperties ();
-				}
-			}
-		}
+        private static void AsyncTypeMismatch()
+        {
+            _ = Local<string>();
 
-		private static void GlobalClosures ()
-		{
-			GlobalClosureClass<int>.M1<int> ();
-			GlobalClosureClass<int>.M2<int> ();
-			GlobalClosureClass<int>.SameClosureForLambda1 ();
-			GlobalClosureClass<int>.SameClosureForLambda2 ();
-		}
+            [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+            [UnexpectedWarning("IL2090", "T", "PublicMethods", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+            static async Task Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                await Task.Delay(0);
+                _ = typeof(T).GetMethods();
+                await Task.Delay(0);
+                _ = typeof(T).GetProperties();
+            }
+        }
 
-		private sealed class GlobalClosureClass<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
-		{
-			public static void M1<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] U> ()
-			{
-				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
-				Func<string, Action> b = (string s) =>
-				() => Console.WriteLine (s + typeof (U).GetProperties ());
-				a ("");
-				b ("");
-			}
-			public static void M2<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] U> ()
-			{
-				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
-				Func<string, Action> b = (string s) =>
-				() => Console.WriteLine (s + typeof (U).GetProperties ());
-				a ("");
-				b ("");
-			}
+        private static void AsyncInsideClosure()
+        {
+            Outer<string>();
+            void Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                int x = 0;
+                Inner<string>().Wait();
 
-			public static void SameClosureForLambda1 ()
-			{
-				var l =
-				[ExpectedWarning ("IL2090", nameof (GlobalClosureClass<T>), nameof (System.Type.GetProperties))]
-				() => typeof (T).GetProperties ();
-				l ();
-			}
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2090", "T2", "PublicProperties", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                async Task Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
+                {
+                    await Task.Delay(0);
+                    x++;
+                    _ = typeof(T1).GetMethods();
+                    _ = typeof(T2).GetProperties();
+                }
+            }
+        }
 
-			public static void SameClosureForLambda2 ()
-			{
-				var l =
-				[ExpectedWarning ("IL2090", nameof (GlobalClosureClass<T>), nameof (System.Type.GetProperties))]
-				() => typeof (T).GetProperties ();
-				l ();
-			}
-		}
+        private static void AsyncInsideClosureNonGeneric()
+        {
+            Outer<string>();
+            void Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
+            {
+                int x = 0;
+                Inner().Wait();
+                async Task Inner()
+                {
+                    await Task.Delay(0);
+                    x++;
+                    _ = typeof(T1).GetMethods();
+                }
+            }
+        }
 
-		static IEnumerable<int> LambdaInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			var l = () => typeof (T).GetMethods ();
-			yield return 1;
-			l ();
-		}
+        private static void AsyncInsideClosureMismatch()
+        {
+            Outer<string>();
 
-		static IEnumerable<int> LocalFunctionInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			void LocalFunction () => typeof (T).GetMethods ();
-			yield return 1;
-			LocalFunction ();
-		}
+            void Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T1>()
+            {
+                int x = 0;
+                Inner<string>().Wait();
 
-		static IEnumerable<int> CapturingLambdaInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			int i = 0;
-			var l = () => {
-				typeof (T).GetMethods ();
-				i++;
-			};
-			yield return i;
-			l ();
-		}
+                [ExpectedWarning("IL2090", "T1", "PublicMethods", CompilerGeneratedCode = true)]
+                [ExpectedWarning("IL2090", "T2", "PublicProperties", CompilerGeneratedCode = true)]
+                async Task Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T2>()
+                {
+                    await Task.Delay(0);
+                    x++;
+                    _ = typeof(T1).GetMethods();
+                    _ = typeof(T2).GetProperties();
+                }
+            }
+        }
 
-		static IEnumerable<int> CapturingLocalFunctionInsideIterator<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			int i = 0;
-			void LocalFunction ()
-			{
-				typeof (T).GetMethods ();
-				i++;
-			}
-			yield return i;
-			LocalFunction ();
-		}
+        private static void GlobalClosures()
+        {
+            GlobalClosureClass<int>.M1<int>();
+            GlobalClosureClass<int>.M2<int>();
+            GlobalClosureClass<int>.SameClosureForLambda1();
+            GlobalClosureClass<int>.SameClosureForLambda2();
+        }
 
-		static async Task LambdaInsideAsync<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			var l = () => typeof (T).GetMethods ();
-			await Task.Delay (0);
-			l ();
-		}
+        private sealed class GlobalClosureClass<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+        {
+            public static void M1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] U>()
+            {
+                Func<string, Action> a = (string s) => () => Console.WriteLine(s + typeof(T).GetMethods());
+                Func<string, Action> b = (string s) =>
+                () => Console.WriteLine(s + typeof(U).GetProperties());
+                a("");
+                b("");
+            }
+            public static void M2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] U>()
+            {
+                Func<string, Action> a = (string s) => () => Console.WriteLine(s + typeof(T).GetMethods());
+                Func<string, Action> b = (string s) =>
+                () => Console.WriteLine(s + typeof(U).GetProperties());
+                a("");
+                b("");
+            }
 
-		static async Task LocalFunctionInsideAsync<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-		{
-			void LocalFunction () => typeof (T).GetMethods ();
-			await Task.Delay (0);
-			LocalFunction ();
-		}
+            public static void SameClosureForLambda1()
+            {
+                var l =
+                [ExpectedWarning("IL2090", nameof(GlobalClosureClass<T>), nameof(System.Type.GetProperties))]
+                () => typeof(T).GetProperties();
+                l();
+            }
 
-		class NestedStaticLambda
-		{
-			public static class Container<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> {
-				public static Func<Func<T, T>, Func<T, T>> NestedLambda =
-					(Func<T, T> x) => v => x(v);
-			}
+            public static void SameClosureForLambda2()
+            {
+                var l =
+                [ExpectedWarning("IL2090", nameof(GlobalClosureClass<T>), nameof(System.Type.GetProperties))]
+                () => typeof(T).GetProperties();
+                l();
+            }
+        }
 
-			[ExpectedWarning ("IL2091", "T", nameof (Container<T>), nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
-			public static void Test<T> ()
-			{
-				Container<T>.NestedLambda ((T t) => t) (default (T));
-			}
-		}
-	}
+        static IEnumerable<int> LambdaInsideIterator<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            var l = () => typeof(T).GetMethods();
+            yield return 1;
+            l();
+        }
+
+        static IEnumerable<int> LocalFunctionInsideIterator<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            void LocalFunction() => typeof(T).GetMethods();
+            yield return 1;
+            LocalFunction();
+        }
+
+        static IEnumerable<int> CapturingLambdaInsideIterator<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            int i = 0;
+            var l = () =>
+            {
+                typeof(T).GetMethods();
+                i++;
+            };
+            yield return i;
+            l();
+        }
+
+        static IEnumerable<int> CapturingLocalFunctionInsideIterator<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            int i = 0;
+            void LocalFunction()
+            {
+                typeof(T).GetMethods();
+                i++;
+            }
+            yield return i;
+            LocalFunction();
+        }
+
+        static async Task LambdaInsideAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            var l = () => typeof(T).GetMethods();
+            await Task.Delay(0);
+            l();
+        }
+
+        static async Task LocalFunctionInsideAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+        {
+            void LocalFunction() => typeof(T).GetMethods();
+            await Task.Delay(0);
+            LocalFunction();
+        }
+
+        class NestedAsyncLambda
+        {
+            public static async void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                var outer = async () =>
+                {
+                    var inner =
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    () =>
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+
+                    inner();
+                };
+
+                outer().Wait();
+            }
+        }
+
+        class NestedAsyncLocalFunction
+        {
+            public static void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                Local1();
+
+#if INCLUDE_UNEXPECTED_LOWERING_WARNINGS
+                [UnexpectedWarning("IL2091", "T", nameof(DynamicallyAccessedMemberTypes.PublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/79333", CompilerGeneratedCode = true)]
+#endif
+                static async Task Local1()
+                {
+                    Local2();
+
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    static void Local2()
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+                };
+            }
+        }
+
+        class NestedStaticLambda
+        {
+            public static class Container<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+            {
+                public static Func<Func<T, T>, Func<T, T>> NestedLambda =
+                    (Func<T, T> x) => v => x(v);
+            }
+
+            [ExpectedWarning("IL2091", "T", nameof(Container<T>), nameof(DynamicallyAccessedMemberTypes.PublicMethods))]
+            public static void Test<T>()
+            {
+                Container<T>.NestedLambda((T t) => t)(default(T));
+            }
+        }
+    }
 }

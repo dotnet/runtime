@@ -97,7 +97,7 @@ namespace ILCompiler
 
         public override bool ShouldPromoteToFullType(TypeDesc type)
         {
-            return ShouldProduceFullVTable(type) || type.IsGenericDefinition;
+            return ShouldProduceFullVTable(type);
         }
 
         public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)

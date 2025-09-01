@@ -18,7 +18,7 @@ jobs:
       - ios_arm64
       jobParameters:
         dependsOn:
-        - Build_android_arm64_release_Mono_Packs
+        - build_android_arm64_release_Mono_Packs
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: PerfBDNApp
         isOfficialBuild: false

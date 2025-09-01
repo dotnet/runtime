@@ -14,28 +14,31 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class DataDescriptorModel
 {
-    public int Version => 0;
+    public int Version => 1;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
+    public IReadOnlyDictionary<string, GlobalModel> SubDescriptors { get; }
     public IReadOnlyDictionary<string, int> Contracts { get; }
     [JsonIgnore]
     public uint PlatformFlags { get; }
     // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
-    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Indirect);
+    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Kind == GlobalValue.KindEnum.Indirect) + SubDescriptors.Values.Count(s => s.Value.Kind == GlobalValue.KindEnum.Indirect);
 
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, GlobalModel> subDescriptors, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
         Globals = globals;
+        SubDescriptors = subDescriptors;
         Contracts = contracts;
         PlatformFlags = platformFlags;
     }
 
     public const string PointerTypeName = "pointer";
+    public const string StringTypeName = "string";
 
     internal void DumpModel()
     {
@@ -61,6 +64,12 @@ public class DataDescriptorModel
             Console.WriteLine($"Global: {globalName}");
             Console.WriteLine($"  Type: {global.Type}");
             Console.WriteLine($"  Value: {global.Value}");
+        }
+        foreach (var (subDescriptorName, subDescriptor) in SubDescriptors)
+        {
+            Console.WriteLine($"Sub-Descriptor: {subDescriptorName}");
+            Console.WriteLine($"  Type: {subDescriptor.Type}");
+            Console.WriteLine($"  Value: {subDescriptor.Value}");
         }
         foreach (var (contractName, contract) in Contracts)
         {
@@ -88,6 +97,7 @@ public class DataDescriptorModel
         private bool _baselineParsed;
         private readonly Dictionary<string, TypeModelBuilder> _types = new();
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
+        private readonly Dictionary<string, GlobalBuilder> _subDescriptors = new();
         private readonly Dictionary<string, ContractBuilder> _contracts = new();
         public Builder(string baselinesDir)
         {
@@ -127,6 +137,22 @@ public class DataDescriptorModel
             global.Type = type;
             global.Value = value;
             return global;
+        }
+
+        public GlobalBuilder AddOrUpdateSubDescriptor(string name, string type, GlobalValue? value)
+        {
+            if (!_baselineParsed)
+            {
+                throw new InvalidOperationException("Baseline must be set before adding globals");
+            }
+            if (!_subDescriptors.TryGetValue(name, out var subDescriptor))
+            {
+                subDescriptor = new GlobalBuilder();
+                _subDescriptors[name] = subDescriptor;
+            }
+            subDescriptor.Type = type;
+            subDescriptor.Value = value;
+            return subDescriptor;
         }
 
         public void AddOrUpdateContract(string name, int version)
@@ -195,12 +221,22 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
+            var subDescriptors = new Dictionary<string, GlobalModel>();
+            foreach (var (subDescriptorName, subDescriptorBuilder) in _subDescriptors)
+            {
+                GlobalValue? v = subDescriptorBuilder.Value;
+                if (v == null)
+                {
+                    throw new InvalidOperationException($"Value must be set for sub-descriptor {subDescriptorName}");
+                }
+                subDescriptors[subDescriptorName] = new GlobalModel { Type = subDescriptorBuilder.Type, Value = v.Value };
+            }
             var contracts = new Dictionary<string, int>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, types, globals, contracts, PlatformFlags);
+            return new DataDescriptorModel(_baseline, types, globals, subDescriptors, contracts, PlatformFlags);
         }
     }
 
@@ -274,6 +310,7 @@ public class DataDescriptorModel
             }
         }
     }
+
     internal sealed class FieldBuilder
     {
         private string _type = string.Empty;
@@ -331,19 +368,38 @@ public class DataDescriptorModel
     [JsonConverter(typeof(GlobalValueJsonConverter))]
     public readonly struct GlobalValue : IEquatable<GlobalValue>
     {
-        public bool Indirect { get; private init; }
-        public ulong Value { get; }
-        public static GlobalValue MakeDirect(ulong value) => new GlobalValue(value);
-        public static GlobalValue MakeIndirect(uint auxDataIdx) => new GlobalValue((ulong)auxDataIdx) { Indirect = true };
-        private GlobalValue(ulong value) { Value = value; }
+        public enum KindEnum
+        {
+            Direct,
+            Indirect,
+            String
+        }
 
-        public static bool operator ==(GlobalValue left, GlobalValue right) => left.Value == right.Value && left.Indirect == right.Indirect;
+        public KindEnum Kind { get; private init; }
+        public ulong NumericValue { get; }
+        public string StringValue { get; }
+        public static GlobalValue MakeDirect(ulong value) => new GlobalValue(value) { Kind = KindEnum.Direct };
+        public static GlobalValue MakeIndirect(uint auxDataIdx) => new GlobalValue((ulong)auxDataIdx) { Kind = KindEnum.Indirect };
+        public static GlobalValue MakeString(string value) => new GlobalValue(value) { Kind = KindEnum.String };
+        private GlobalValue(ulong value) { NumericValue = value; StringValue = string.Empty;}
+        private GlobalValue(string value) { StringValue = value; }
+
+        public static bool operator ==(GlobalValue left, GlobalValue right) => left.Equals(right);
         public static bool operator !=(GlobalValue left, GlobalValue right) => !(left == right);
 
-        public bool Equals(GlobalValue other) => this == other;
-        public override bool Equals(object? obj) => obj is GlobalValue value && this == value;
-        public override int GetHashCode() => HashCode.Combine(Value, Indirect);
-        public override string ToString() => Indirect ? $"Indirect({Value})" : $"0x{Value:x}";
+        public bool Equals(GlobalValue other) => other.Kind == Kind && other.NumericValue == NumericValue && other.StringValue == StringValue;
+        public override bool Equals(object? obj) => obj is GlobalValue value && Equals(value);
+        public override int GetHashCode() => HashCode.Combine(Kind, NumericValue, StringValue);
+        public override string ToString()
+        {
+            return Kind switch
+            {
+                KindEnum.Direct => $"0x{NumericValue:x}",
+                KindEnum.Indirect => $"Indirect({NumericValue})",
+                KindEnum.String => $"'{StringValue}'",
+                _ => throw new InvalidOperationException("Unknown GlobalValue type")
+            };
+        }
     }
 
     [JsonConverter(typeof(GlobalModelJsonConverter))]

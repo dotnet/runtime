@@ -12,7 +12,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("", "", "", "", "", "")]
         [InlineData(null, null, null, null, null, null)]
         [InlineData("", null, "Justification", null, "Scope", "")]
-        public void TestConstructor(string category, string id, string justification, string messageId, string scope, string target)
+        public void TestConstructor(string? category, string? id, string? justification, string? messageId, string? scope, string? target)
         {
             var usma = new UnconditionalSuppressMessageAttribute(category, id)
             {

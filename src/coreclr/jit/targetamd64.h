@@ -102,7 +102,7 @@
   #define LAST_FP_ARGREG        REG_XMM3
 #endif // !UNIX_AMD64_ABI
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
@@ -168,7 +168,7 @@
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
   #define RBM_LOWINT              RBM_ALLINT_INIT
-  #define RBM_HIGHINT             (RBM_R16|RBM_R17|RBM_R18|RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23)
+  #define RBM_HIGHINT             (RBM_R16|RBM_R17|RBM_R18|RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28|RBM_R29|RBM_R30|RBM_R31)
 
   #define RBM_ALLINT_INIT         (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH_INIT)
   #define RBM_ALLINT              get_RBM_ALLINT()
@@ -265,7 +265,7 @@
   // when the hardware supports it. There are no additional hidden costs for these.
 
 #ifdef UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_R8,REG_R9,REG_R10,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_R8,REG_R9,REG_R10,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,REG_R29,REG_R30,REG_R31
   #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R15,REG_R14,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,   \
@@ -279,7 +279,7 @@
                                                 REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31
   #define REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED   REG_VAR_ORDER_FLT_CALLEE_SAVED
 #else // !UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R10,REG_R9,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R10,REG_R9,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,REG_R29,REG_R30,REG_R31
   #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R14,REG_R15,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5
@@ -302,11 +302,13 @@
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_TRASH_INT_INIT   (9)
-  #define CNT_CALLEE_TRASH_HIGHINT    (8)
+  #define CNT_CALLEE_TRASH_HIGHINT    (16)
 
-  #define CNT_CALLEE_SAVED_FLOAT   (0)
+  #define CNT_CALLEE_SAVED_FLOAT      (0)
+  #define CNT_CALLEE_ENREG_FLOAT      (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
-  #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
+  #define CNT_CALLEE_TRASH_HIGHFLOAT  (16)
 
   // For SysV we have more volatile registers so we do not save any callee saves for EnC.
   #define RBM_ENC_CALLEE_SAVED     0
@@ -315,10 +317,11 @@
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_TRASH_INT_INIT   (7)
-  #define CNT_CALLEE_TRASH_HIGHINT    (8)
-
+  #define CNT_CALLEE_TRASH_HIGHINT    (16)
 
   #define CNT_CALLEE_SAVED_FLOAT        (10)
+  #define CNT_CALLEE_ENREG_FLOAT        (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT   (6)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
 
@@ -330,6 +333,7 @@
   #define CNT_CALLEE_TRASH         get_CNT_CALLEE_TRASH_INT()
 
   #define CNT_CALLEE_SAVED_MASK      (0)
+  #define CNT_CALLEE_ENREG_MASK      (CNT_CALLEE_SAVED_MASK)
 
   #define CNT_CALLEE_TRASH_MASK_INIT (0)
   #define CNT_CALLEE_TRASH_MASK_EVEX (7)
@@ -347,11 +351,11 @@
 
 // Where is the exception object on entry to the handler block?
 #ifdef UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_ESI
-  #define RBM_EXCEPTION_OBJECT     RBM_ESI
+  #define REG_EXCEPTION_OBJECT     REG_EDI
+  #define RBM_EXCEPTION_OBJECT     RBM_EDI
 #else // !UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_EDX
-  #define RBM_EXCEPTION_OBJECT     RBM_EDX
+  #define REG_EXCEPTION_OBJECT     REG_ECX
+  #define RBM_EXCEPTION_OBJECT     RBM_ECX
 #endif // !UNIX_AMD64_ABI
 
   #define REG_JUMP_THUNK_PARAM     REG_EAX
@@ -390,7 +394,7 @@
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
-  #define REG_INT_LAST             REG_R23
+  #define REG_INT_LAST             REG_R31
   #define REG_INT_COUNT            (get_REG_INT_LAST() - REG_INT_FIRST + 1)
   #define REG_NEXT(reg)           ((regNumber)((unsigned)(reg) + 1))
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
@@ -539,6 +543,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL (RBM_INT_CALLEE_TRASH_ALL & ~(RBM_R10 | RBM_RCX))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_RAX
+
+  #define REG_ASYNC_CONTINUATION_RET REG_RCX
+  #define RBM_ASYNC_CONTINUATION_RET RBM_RCX
 
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32

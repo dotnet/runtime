@@ -7,22 +7,15 @@
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <UseLocalTargetingRuntimePack Condition="'$(StageTwoBuild)' == 'true'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="../AotCompilerCommon.props" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(StageTwoBuild)' == 'true'" />
-
-  <PropertyGroup>
-    <SelfContained>true</SelfContained>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <UseAppHost>true</UseAppHost>
-  </PropertyGroup>
 
   <PropertyGroup>
     <!-- CoreDisTools are used in debugging visualizers. -->

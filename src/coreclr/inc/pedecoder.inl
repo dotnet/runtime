@@ -690,7 +690,7 @@ inline RVA PEDecoder::OffsetToRva(COUNT_T fileOffset) const
     if(fileOffset > 0)
     {
         IMAGE_SECTION_HEADER *section = OffsetToSection(fileOffset);
-        PREFIX_ASSUME (section!=NULL); //TODO: actually it is possible that it si null we need to rethink how we handle this cases and do better there
+        _ASSERTE (section!=NULL); //TODO: actually it is possible that it si null we need to rethink how we handle this cases and do better there
 
         return fileOffset - VAL32(section->PointerToRawData) + VAL32(section->VirtualAddress);
     }
@@ -825,7 +825,7 @@ inline PTR_VOID PEDecoder::GetTlsRange(COUNT_T * pSize) const
 
     if (pSize != 0)
         *pSize = (COUNT_T) (VALPTR(pTlsHeader->EndAddressOfRawData) - VALPTR(pTlsHeader->StartAddressOfRawData));
-    PREFIX_ASSUME (pTlsHeader!=NULL);
+    _ASSERTE (pTlsHeader!=NULL);
     RETURN PTR_VOID(GetInternalAddressData(pTlsHeader->StartAddressOfRawData));
 }
 

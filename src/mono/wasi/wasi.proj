@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <PackageRID>wasi-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
   </PropertyGroup>
 
@@ -164,9 +163,10 @@
       { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
       { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
-      { "identity": "FeaturePerfTracing",     "defaultValueInRuntimePack": "$(FeaturePerfTracing)" },
+      { "identity": "EnableDiagnostics",      "defaultValueInRuntimePack": "$(EnableDiagnostics)" },
       { "identity": "WasmProfilers",          "defaultValueInRuntimePack": "$(WasmProfilers)" },
-      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
+      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
+      { "identity": "RunAOTCompilation",      "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }
@@ -216,7 +216,7 @@
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationWasiFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
-      <!-- 
+      <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0
       it will get trimmed when HTTP is not used and using publish + native rebuild
       but the default dotnet.wasm and requires -S http argument to wasmtime

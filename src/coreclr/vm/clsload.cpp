@@ -260,7 +260,7 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
         {
             TypeVarTypeDesc* tyvar = thArg.AsGenericVariable();
 
-            PREFIX_ASSUME(tyvar!=NULL);
+            _ASSERTE(tyvar!=NULL);
             if ((tyvar->GetTypeOrMethodDef() != token) ||
                 (tyvar->GetModule() != dac_cast<PTR_Module>(pModule)) ||
                 (tyvar->GetIndex() != i))
@@ -866,7 +866,7 @@ TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
     } CONTRACTL_END;
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
-    PREFIX_ASSUME(pLoaderModule!=NULL);
+    _ASSERTE(pLoaderModule!=NULL);
 
     return LookupTypeKey(pKey, pLoaderModule->GetAvailableParamTypes());
 }
@@ -1124,9 +1124,9 @@ bool CompareNameHandleWithTypeHandleNoThrow(
         // Technically, the above operations should never result in a non-OOM
         // exception, but we'll put the rethrow line in there just in case.
         CONSISTENCY_CHECK(!GET_EXCEPTION()->IsTerminal());
-        RethrowTerminalExceptions;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fRet;
 }
@@ -1735,7 +1735,7 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
                               CrstAvailableParamTypes,
-                              CRST_DEBUGGER_THREAD);
+                              CrstFlags(CRST_DEBUGGER_THREAD | CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_UNSAFE_ANYMODE));
 
 #ifdef _DEBUG
     CorTypeInfo::CheckConsistency();
@@ -2614,7 +2614,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 
     if (typeHnd.GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS)
     {
-        Notify(typeHnd);
+        NotifyLoad(typeHnd);
     }
 
     return typeHnd;
@@ -2667,7 +2667,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule != NULL);
+        _ASSERTE(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
         DWORD numArgs = pKey->GetNumArgs();
@@ -2678,7 +2678,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
     else
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule!=NULL);
+        _ASSERTE(pLoaderModule!=NULL);
 
         CorElementType kind = pKey->GetKind();
         TypeHandle paramType = pKey->GetElementType();
@@ -2801,7 +2801,10 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
         {
             MethodDesc * pMD = it.GetMethodDesc();
             CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
-            if (!pMD->IsUnboxingStub())
+            // For {Task-returning, Async} variants of the same definition
+            // we associate the methoddef with the Task-returning variant since it
+            // matches the methadata signature.
+            if (!pMD->IsUnboxingStub() && !pMD->IsAsyncVariantMethod())
             {
                 pModule->EnsuredStoreMethodDef(pMD->GetMemberDef(), pMD);
             }
@@ -2828,7 +2831,7 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 // Notify profiler and debugger that a type load has completed
 // Also adjust perf counters
 /*static*/
-void ClassLoader::Notify(TypeHandle typeHnd)
+void ClassLoader::NotifyLoad(TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -2896,6 +2899,63 @@ void ClassLoader::Notify(TypeHandle typeHnd)
     }
 }
 
+// Notify profiler that a MethodTable is being unloaded
+/*static*/
+void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        FORBID_FAULT;
+        PRECONDITION(pMT != NULL);
+    }
+    CONTRACTL_END
+
+#ifdef PROFILING_SUPPORTED
+    // If profiling, then notify the class is getting unloaded.
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
+        {
+            if (pMT->ContainsGenericVariables() || pMT->IsArray())
+            {
+                // Don't notify the profiler about types with unbound variables or arrays.
+                // See ClassLoadStarted callback for more details.
+                return;
+            }
+
+            // Calls to the profiler callback may throw, or otherwise fail, if
+            // the profiler AVs/throws an unhandled exception/etc. We don't want
+            // those failures to affect the runtime, so we'll ignore them.
+            //
+            // Note that the profiler callback may turn around and make calls into
+            // the profiling runtime that may throw. This try/catch block doesn't
+            // protect the profiler against such failures. To protect the profiler
+            // against that, we will need try/catch blocks around all calls into the
+            // profiling API.
+            //
+
+            FAULT_NOT_FATAL();
+
+            EX_TRY
+            {
+                GCX_PREEMP();
+
+                if (unloadStarted)
+                    (&g_profControlBlock)->ClassUnloadStarted((ClassID) pMT);
+                else
+                    (&g_profControlBlock)->ClassUnloadFinished((ClassID) pMT, S_OK);
+            }
+            EX_SWALLOW_NONTERMINAL
+            // The exception here came from the profiler itself. We'll just
+            // swallow the exception, since we don't want the profiler to bring
+            // down the runtime.
+        }
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+}
 
 //-----------------------------------------------------------------------------
 // Common helper for LoadTypeHandleForTypeKey and LoadTypeHandleForTypeKeyNoLock.

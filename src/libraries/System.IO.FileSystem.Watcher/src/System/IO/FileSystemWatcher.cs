@@ -223,20 +223,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
-        /// <returns>The allocated buffer.</returns>
-        private byte[] AllocateBuffer()
-        {
-            try
-            {
-                return new byte[_internalBufferSize];
-            }
-            catch (OutOfMemoryException)
-            {
-                throw new OutOfMemoryException(SR.Format(SR.BufferSizeTooLarge, _internalBufferSize));
-            }
-        }
-
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
         /// </devdoc>

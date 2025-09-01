@@ -245,7 +245,7 @@ namespace System.Collections.Generic
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
             Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<KeyValuePair<TKey, TValue>>() :
-            GetEnumerator();
+            _set.GetEnumerator();
 
         public bool Remove(TKey key)
         {
@@ -465,10 +465,8 @@ namespace System.Collections.Generic
                     {
                         return new DictionaryEntry(Current.Key, Current.Value);
                     }
-                    else
-                    {
-                        return new KeyValuePair<TKey, TValue>(Current.Key, Current.Value);
-                    }
+
+                    return Current;
                 }
             }
 

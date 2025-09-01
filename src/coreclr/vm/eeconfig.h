@@ -87,7 +87,7 @@ public:
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -299,14 +299,6 @@ public:
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // Because the large object heap is 8 byte aligned, we want to put
-    // arrays of doubles there more agressively than normal objects.
-    // This is the threshold for this.  It is the number of doubles,
-    // not the number of bytes in the array.
-    unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
-#endif
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.
@@ -321,9 +313,6 @@ public:
     unsigned SuspendDeadlockTimeout() const
     {LIMITED_METHOD_CONTRACT; return m_SuspendDeadlockTimeout; }
 
-    // Verifier
-    bool    IsVerifierOff()                 const {LIMITED_METHOD_CONTRACT;  return fVerifierOff; }
-
     inline bool fAssertOnBadImageFormat() const
     {LIMITED_METHOD_CONTRACT;  return m_fAssertOnBadImageFormat; }
 
@@ -332,9 +321,6 @@ public:
 
     inline bool SuppressChecks() const
     {LIMITED_METHOD_CONTRACT;  return fSuppressChecks; }
-
-    inline bool EnableFullDebug() const
-    {LIMITED_METHOD_CONTRACT;  return fEnableFullDebug; }
 
 #endif
 #ifdef ENABLE_STARTUP_DELAY
@@ -395,6 +381,12 @@ public:
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
 
+    bool IsWriteBarrierCopyEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fIsWriteBarrierCopyEnabled;
+    }
+
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
     {LIMITED_METHOD_CONTRACT;  return iFastGCStress;}
@@ -447,6 +439,8 @@ public:
 
 #endif
 
+    bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -459,6 +453,7 @@ private: //----------------------------------------------------------------
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
     bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
+    bool fIsWriteBarrierCopyEnabled; // Is the GC write barrier copy enabled?
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -506,8 +501,6 @@ private: //----------------------------------------------------------------
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
     unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime.
-
-    bool fEnableFullDebug;
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -518,18 +511,10 @@ private: //----------------------------------------------------------------
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
-#endif
-
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
-
-
-    // Verifier
-    bool fVerifierOff;
 
 #ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
@@ -650,6 +635,8 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     bool fUseCachedInterfaceDispatch;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
+    bool runtimeAsync; // True if the runtime supports async methods
 
 public:
 

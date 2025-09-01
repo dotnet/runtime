@@ -56,9 +56,22 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'armel' and '$(BuildArchitecture)' != 'armel' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true'">
-    <AppHostSourcePath>$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</AppHostSourcePath>
-    <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
+  <PropertyGroup>
+    <BootstrapRefPackDir>$(ArtifactsDir)bootstrap/$(TargetRid)/microsoft.netcore.app/ref</BootstrapRefPackDir>
+    <BootstrapRuntimePackDir>$(ArtifactsDir)bootstrap/$(TargetRid)/microsoft.netcore.app/lib</BootstrapRuntimePackDir>
+    <BootstrapAotSdkDir>$(ArtifactsDir)bootstrap/$(TargetRid)/aotsdk</BootstrapAotSdkDir>
+    <BootstrapHostDir>$(ArtifactsDir)bootstrap/$(TargetRid)/host</BootstrapHostDir>
+    <BootstrapRidGraphDir>$(ArtifactsDir)bootstrap/$(TargetRid)/ridgraph</BootstrapRidGraphDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LocalAppHostPath>$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</LocalAppHostPath>
+    <LocalSingleFileHostPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</LocalSingleFileHostPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <LocalAppHostPath>$(BootstrapHostDir)/apphost$(ExeSuffix)</LocalAppHostPath>
+    <LocalSingleFileHostPath>$(BootstrapHostDir)/singlefilehost$(ExeSuffix)</LocalSingleFileHostPath>
   </PropertyGroup>
 
   <Target Name="ResolveRuntimeFilesFromLocalBuild">
@@ -124,7 +137,7 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdacreader*" />
+      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdac*" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>

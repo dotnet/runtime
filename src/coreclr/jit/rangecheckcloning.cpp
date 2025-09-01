@@ -280,7 +280,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
 
     // Wire up the edges
     //
-    comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
+    comp->fgRedirectEdge(prevBb->TargetEdgeRef(), lowerBndBb);
     FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
@@ -305,7 +305,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     upperBndToFallbackEdge->setLikelihood(0.0f);
 
     lowerBndBb->SetFlags(BBF_INTERNAL);
-    upperBndBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
+    upperBndBb->SetFlags(BBF_INTERNAL);
 
     // Now drop the bounds check from the fast path
     while (!bndChkStack->Empty())
@@ -345,7 +345,12 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
         // it happens when we emit BBJ_COND(0 >= 0) fake block (for simplicity)
         comp->gtUpdateStmtSideEffects(lowerBndBb->lastStmt());
     }
-    comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+    if (upperBndBb->lastStmt() != nullptr)
+    {
+        // In rare cases, upperBndBb can also be folded into an empty block
+        // by fgMorphBlockStmt
+        comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+    }
 
     // All blocks must be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
@@ -395,7 +400,8 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        if ((*use)->OperIs(GT_BOUNDS_CHECK))
+        // For now, we only handle SCK_RNGCHK_FAIL
+        if ((*use)->OperIs(GT_BOUNDS_CHECK) && ((*use)->AsBoundsChk()->gtThrowKind == SCK_RNGCHK_FAIL))
         {
             m_boundsChks->Push(BoundCheckLocation(m_stmt, use, m_stmtIdx));
         }
@@ -437,8 +443,13 @@ static bool DoesComplexityExceed(Compiler* comp, ArrayStack<BoundsCheckInfo>* bn
         GenTree* rootNode = currentStmt->GetRootNode();
         if (rootNode != nullptr)
         {
-            unsigned actual = 0;
-            if (comp->gtComplexityExceeds(rootNode, budget, &actual))
+            unsigned actual    = 0;
+            auto     countNode = [&actual](GenTree* tree) -> unsigned {
+                actual++;
+                return 1;
+            };
+
+            if (comp->gtComplexityExceeds(rootNode, budget, countNode))
             {
                 JITDUMP("\tExceeded budget!");
                 return true;

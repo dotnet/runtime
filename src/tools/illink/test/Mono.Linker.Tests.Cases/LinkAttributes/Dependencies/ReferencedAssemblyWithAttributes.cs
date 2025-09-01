@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.LinkAttributes.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes.Dependencies
 {
-	public class ReferencedAssemblyWithAttributes
-	{
-	}
+    public class ReferencedAssemblyWithAttributes
+    {
+    }
 }

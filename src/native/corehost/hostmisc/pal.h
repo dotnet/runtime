@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include <cassert>
+#include <functional>
 
 #if defined(_WIN32)
 
@@ -159,6 +160,12 @@ namespace pal
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
+    template <typename... Args>
+    int str_printf(char_t* buffer, size_t count, const char_t* format, Args&&... args) { return ::_snwprintf_s(buffer, count, _TRUNCATE, format, std::forward<Args>(args)...); }
+
+    template <typename... Args>
+    inline int strlen_printf(const char_t* format, Args&&... args) { return ::_scwprintf(format, std::forward<Args>(args)...); }
+
     inline const string_t strerror(int errnum)
     {
         // Windows does not provide strerrorlen to get the actual error length.
@@ -174,7 +181,16 @@ namespace pal
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
-    inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        BOOL result = ::CreateDirectoryW(dir, NULL);
+        if (result != FALSE)
+            return true;
+
+        error_code = ::GetLastError();
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
@@ -221,6 +237,12 @@ namespace pal
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
+    template <typename... Args>
+    int str_printf(char_t* buffer, size_t size, const char_t* format, Args&&... args) { return ::snprintf(buffer, size, format, std::forward<Args>(args)...); }
+
+    template <typename... Args>
+    inline int strlen_printf(const char_t* format, Args&&... args) { return ::snprintf(nullptr, 0, format, std::forward<Args>(args)...); }
+
     inline const string_t strerror(int errnum) { return ::strerror(errnum); }
 
     inline size_t pal_utf8string(const string_t& str, char* out_buffer, size_t buffer_len)
@@ -237,7 +259,16 @@ namespace pal
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
 
-    inline bool mkdir(const char_t* dir, int mode) { return ::mkdir(dir, mode) == 0; }
+    inline bool mkdir(const char_t* dir, int mode, int& error_code)
+    {
+        int ret = ::mkdir(dir, mode);
+        if (ret == 0)
+            return true;
+
+        error_code = errno;
+        return false;
+    }
+
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::remove(path); }
@@ -274,6 +305,7 @@ namespace pal
     // Fullpath resolves a fully-qualified path to the target. It may resolve through symlinks, depending on platform.
     bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
+    bool is_directory(const pal::string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
     void readdir(const string_t& path, std::vector<string_t>* list);
@@ -286,6 +318,7 @@ namespace pal
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t* mod);
     bool getenv(const char_t* name, string_t* recv);
+    void enumerate_environment_variables(const std::function<void(const char_t*, const char_t*)> callback);
     bool get_default_servicing_directory(string_t* recv);
 
     enum class architecture
@@ -323,6 +356,7 @@ namespace pal
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
+    bool is_path_fully_qualified(const string_t& path);
 
     // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.

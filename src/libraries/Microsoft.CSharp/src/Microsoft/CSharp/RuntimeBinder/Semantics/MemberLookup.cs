@@ -34,6 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // Lookup must be called before any other methods.
 
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class MemberLookup
     {
         // The inputs to Lookup.

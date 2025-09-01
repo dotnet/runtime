@@ -2,10 +2,9 @@
 
   <PropertyGroup>
     <InstallerName>$(InstallerName)</InstallerName>
-    <ArchiveName Condition="'$(PgoInstrument)' != ''">$(ArchiveName)-pgo</ArchiveName>
   </PropertyGroup>
 
-  <!-- Libraries might be built with a different Configuration,, 
+  <!-- Libraries might be built with a different Configuration,,
        make sure we honor that when building ProjectReferences. -->
   <Target Name="UpdateLibrariesProjectReferenceConfiguration" AfterTargets="IncludeTransitiveProjectReferences">
     <FindUnderPath Files="@(ProjectReference)" Path="$(LibrariesProjectRoot)">

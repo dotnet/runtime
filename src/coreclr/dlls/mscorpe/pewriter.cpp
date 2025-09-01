@@ -248,7 +248,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
     // Ensure that if someone adds a value to CeeSectionRelocType in cor.h,
     // that they also add an entry to RelocName.
-    static_assert_no_msg(ARRAY_SIZE(RelocName) == srRelocSentinel);
+    static_assert(ARRAY_SIZE(RelocName) == srRelocSentinel);
 #ifdef _DEBUG
     for (unsigned int i = 0; i < srRelocSentinel; i++)
     {
@@ -290,7 +290,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         IfFailRet(AddOvf_RVA(curRVA, curOffset));
         DWORD UNALIGNED * pos = (DWORD *) m_blobFetcher.ComputePointer(curOffset);
 
-        PREFIX_ASSUME(pos != NULL);
+        _ASSERTE(pos != NULL);
 
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,

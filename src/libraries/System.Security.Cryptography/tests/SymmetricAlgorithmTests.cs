@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -810,6 +811,38 @@ namespace System.Security.Cryptography.Tests
                 alg.TryDecryptCfb(Array.Empty<byte>(), iv, destination, out _, feedbackSizeInBits: feedbackSize));
         }
 
+        [Fact]
+        public static void SetKeyCore_NotCalled_InvalidSize()
+        {
+            SetKeyAlgorithm alg = new SetKeyAlgorithm();
+            Assert.Throws<CryptographicException>(() => alg.SetKey(new byte[4]));
+            Assert.Equal(0, alg.SetKeyCoreCallCount);
+        }
+
+        [Fact]
+        public static void SetKeyCore_Called_AnyValidSize()
+        {
+            SetKeyAlgorithm alg = new SetKeyAlgorithm();
+            int callCount = 0;
+            int maxKeyBits = alg.LegalKeySizes.Select(ks => ks.MaxSize).Max();
+            byte[] maxSizeKey = new byte[maxKeyBits / 8];
+
+            foreach (KeySizes size in alg.LegalKeySizes)
+            {
+                for (int i = size.MinSize; i <= size.MaxSize; i += size.SkipSize)
+                {
+                    alg.SetKey(maxSizeKey.AsSpan(0, i / 8));
+                    callCount++;
+                    Assert.Equal(callCount, alg.SetKeyCoreCallCount);
+
+                    if (size.SkipSize == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
         public static IEnumerable<object[]> CiphertextLengthTheories
         {
             get
@@ -890,6 +923,30 @@ namespace System.Security.Cryptography.Tests
                 yield return new object[] { PaddingMode.PKCS7 };
                 yield return new object[] { PaddingMode.Zeros };
                 yield return new object[] { PaddingMode.None };
+            }
+        }
+
+        private class SetKeyAlgorithm : SymmetricAlgorithm
+        {
+            public int SetKeyCoreCallCount { get; private set; }
+
+            public SetKeyAlgorithm()
+            {
+                LegalKeySizesValue = [new KeySizes(24, 88, 16), new KeySizes(112, 112, 0)];
+            }
+
+            public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) =>
+                throw new NotImplementedException();
+            public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) =>
+                throw new NotImplementedException();
+
+            public override void GenerateIV() => throw new NotImplementedException();
+            public override void GenerateKey() => throw new NotImplementedException();
+
+            protected override void SetKeyCore(ReadOnlySpan<byte> key)
+            {
+                SetKeyCoreCallCount++;
+                base.SetKeyCore(key);
             }
         }
 

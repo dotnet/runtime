@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddLogging(this IServiceCollection services, Action<ILoggingBuilder> configure)
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             services.AddOptions();
 

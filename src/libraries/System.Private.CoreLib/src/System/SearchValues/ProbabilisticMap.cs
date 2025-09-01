@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -72,7 +73,11 @@ namespace System.Buffers
             }
         }
 
+        // SetCharBit and IsCharBitSet must bypass R2R because the set of supported intrinsics impacts how the type is constructed in memory,
+        // so which branch is taken must never change during program execution as we're tiering up. Other methods in this type only check for
+        // intrinsics as a fast path where the fallback path behaves identically, so they are fine to compile R2R.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static void SetCharBit(ref uint charMap, byte value)
         {
             if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
@@ -86,6 +91,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
@@ -257,7 +263,7 @@ namespace System.Buffers
         {
             Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
+            Vector128<byte> bitPositions = Vector128.ShuffleNative(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;
@@ -268,8 +274,8 @@ namespace System.Buffers
             }
             else
             {
-                Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
-                Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
+                Vector128<byte> bitMaskLower = Vector128.ShuffleNative(charMapLower, index);
+                Vector128<byte> bitMaskUpper = Vector128.ShuffleNative(charMapUpper, index - Vector128.Create((byte)16));
                 Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
                 bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
             }
@@ -620,7 +626,7 @@ namespace System.Buffers
                             }
                         }
 
-                        if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                        if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                         {
                             if (Unsafe.AreSame(ref cur, ref searchSpace))
                             {
@@ -709,7 +715,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
+                    if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVectorAvx2))
                     {
                         if (Unsafe.AreSame(ref cur, ref searchSpace))
                         {
@@ -751,7 +757,7 @@ namespace System.Buffers
                     }
                 }
 
-                if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                 {
                     if (Unsafe.AreSame(ref cur, ref searchSpace))
                     {

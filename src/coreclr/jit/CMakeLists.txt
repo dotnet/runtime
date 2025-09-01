@@ -60,7 +60,7 @@ function(create_standalone_jit)
   add_jit(${TARGETDETAILS_TARGET})
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
-  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
+  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_STATICALLY_LINKED TRUE)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
@@ -89,6 +89,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -286,6 +287,7 @@ set( JIT_HEADERS
   abi.h
   alloc.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h
@@ -302,6 +304,7 @@ set( JIT_HEADERS
   compilerbitsettraits.hpp
   compmemkind.h
   compphases.h
+  handlekinds.h
   dataflow.h
   debuginfo.h
   decomposelongs.h
@@ -530,6 +533,7 @@ add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
 set(JIT_LINK_LIBRARIES
    utilcodestaticnohost
+   minipal
 )
 
 set(JIT_ARCH_LINK_LIBRARIES

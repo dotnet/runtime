@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -104,7 +105,7 @@ namespace System.Formats.Tar
                 return;
             }
 
-            InitializeExtendedAttributesWithExisting(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
@@ -384,16 +385,16 @@ namespace System.Formats.Tar
 
             // Continue with the rest of the fields that require no special checks
             TarHeader header = new(initialFormat,
-                name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
+                name: TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
                 mode: TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
-                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                mTime: ParseAsTimestamp(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime)),
                 typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
                 _checksum = checksum,
                 _size = size,
                 _uid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
                 _gid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
-                _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
+                _linkName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
             };
 
             if (header._format == TarEntryFormat.Unknown)
@@ -517,8 +518,8 @@ namespace System.Formats.Tar
         private void ReadPosixAndGnuSharedAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert the byte arrays
-            _uName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
-            _gName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+            _uName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+            _gName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
 
             // DevMajor and DevMinor only have values with character devices and block devices.
             // For all other typeflags, the values in these fields are irrelevant.
@@ -536,21 +537,31 @@ namespace System.Formats.Tar
         // Throws if any conversion fails.
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
-            // Convert byte arrays
-            long aTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
+            _aTime = ParseAsTimestamp(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
 
-            long cTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-            _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
+        }
+
+        private static DateTimeOffset ParseAsTimestamp(ReadOnlySpan<byte> buffer)
+        {
+            // When all bytes are zero, the timestamp is not initialized, and we map it to default.
+            bool allZeros = !buffer.ContainsAnyExcept((byte)0);
+            if (allZeros)
+            {
+                return default(DateTimeOffset);
+            }
+
+            long time = TarHelpers.ParseNumeric<long>(buffer);
+            return TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(time);
         }
 
         // Reads the ustar prefix attribute.
         // Throws if a conversion to an expected data type fails.
         private void ReadUstarAttributes(ReadOnlySpan<byte> buffer)
         {
-            _prefix = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+            _prefix = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
 
             // In ustar, Prefix is used to store the *leading* path segments of
             // Name, if the full path did not fit in the Name byte array.
@@ -621,14 +632,17 @@ namespace System.Formats.Tar
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
         private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            buffer = TarHelpers.TrimEndingNullsAndSpaces(buffer);
-
             while (TryGetNextExtendedAttribute(ref buffer, out string? key, out string? value))
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
                     throw new InvalidDataException(SR.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
+            }
+
+            if (buffer.Length > 0)
+            {
+                throw new InvalidDataException(SR.Format(SR.ExtHeaderInvalidRecords));
             }
         }
 
@@ -681,7 +695,7 @@ namespace System.Formats.Tar
         // Collects the GNU long path info from the buffer and sets it in the right field depending on the type flag.
         private void ReadGnuLongPathDataFromBuffer(ReadOnlySpan<byte> buffer)
         {
-            string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
+            string longPath = TarHelpers.ParseUtf8String(buffer);
 
             if (_typeFlag == TarEntryType.LongLink)
             {
@@ -715,15 +729,21 @@ namespace System.Formats.Tar
             }
             ReadOnlySpan<byte> line = buffer.Slice(0, newlinePos);
 
-            // Update buffer to point to the next line for the next call
-            buffer = buffer.Slice(newlinePos + 1);
-
-            // Find the end of the length and remove everything up through it.
+            // Find the end of the length
             int spacePos = line.IndexOf((byte)' ');
             if (spacePos < 0)
             {
                 return false;
             }
+
+            // Check the length matches the line length
+            ReadOnlySpan<byte> length = buffer.Slice(0, spacePos);
+            if (!int.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out int lengthValue) || lengthValue != (line.Length + 1))
+            {
+                return false;
+            }
+
+            // Remove the length
             line = line.Slice(spacePos + 1);
 
             // Find the equal separator.
@@ -739,6 +759,9 @@ namespace System.Formats.Tar
             // Return the parsed key and value.
             key = Encoding.UTF8.GetString(keySlice);
             value = Encoding.UTF8.GetString(valueSlice);
+
+            // Update buffer to point to the next line for the next call
+            buffer = buffer.Slice(newlinePos + 1);
             return true;
         }
     }

@@ -80,6 +80,10 @@ int64_t
 ep_rt_atomic_dec_int64_t (volatile int64_t *value);
 
 static
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value);
+
+static
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
 
@@ -207,6 +211,10 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 static
 void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event);
+
+static
+void
+ep_rt_sample_profiler_session_enabled (void);
 
 static
 void

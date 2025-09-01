@@ -26,7 +26,7 @@ namespace System.Drawing
         {
             if (value is string strValue)
             {
-                string text = strValue.Trim();
+                ReadOnlySpan<char> text = strValue.AsSpan().Trim();
                 if (text.Length == 0)
                 {
                     return null;
@@ -35,22 +35,21 @@ namespace System.Drawing
                 // Parse 4 integer values.
                 culture ??= CultureInfo.CurrentCulture;
 
-                char sep = culture.TextInfo.ListSeparator[0];
-                string[] tokens = text.Split(sep);
-                int[] values = new int[tokens.Length];
-                TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                for (int i = 0; i < values.Length; i++)
+                string sep = culture.TextInfo.ListSeparator;
+                Span<Range> ranges = stackalloc Range[5];
+                int rangesCount = text.Split(ranges, sep);
+                if (rangesCount != 4)
                 {
-                    // Note: ConvertFromString will raise exception if value cannot be converted.
-                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
+                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text.ToString(), $"x{sep} y{sep} width{sep} height"));
                 }
 
-                if (values.Length != 4)
-                {
-                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text, "x, y, width, height"));
-                }
+                TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
+                int x = (int)converter.ConvertFromString(context, culture, strValue[ranges[0]])!;
+                int y = (int)converter.ConvertFromString(context, culture, strValue[ranges[1]])!;
+                int width = (int)converter.ConvertFromString(context, culture, strValue[ranges[2]])!;
+                int height = (int)converter.ConvertFromString(context, culture, strValue[ranges[3]])!;
 
-                return new Rectangle(values[0], values[1], values[2], values[3]);
+                return new Rectangle(x, y, width, height);
             }
 
             return base.ConvertFrom(context, culture, value);
@@ -66,23 +65,21 @@ namespace System.Drawing
                 {
                     culture ??= CultureInfo.CurrentCulture;
 
-                    string sep = culture.TextInfo.ListSeparator + " ";
+                    string sep = culture.TextInfo.ListSeparator;
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
-                    var args = new string?[]
-                    {
-                        intConverter.ConvertToString(context, culture, rect.X),
-                        intConverter.ConvertToString(context, culture, rect.Y),
-                        intConverter.ConvertToString(context, culture, rect.Width),
-                        intConverter.ConvertToString(context, culture, rect.Height)
-                    };
-                    return string.Join(sep, args);
+                    string? x = intConverter.ConvertToString(context, culture, rect.X);
+                    string? y = intConverter.ConvertToString(context, culture, rect.Y);
+                    string? width = intConverter.ConvertToString(context, culture, rect.Width);
+                    string? height = intConverter.ConvertToString(context, culture, rect.Height);
+
+                    return $"{x}{sep} {y}{sep} {width}{sep} {height}";
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo? ctor = typeof(Rectangle).GetConstructor(new Type[] {
-                        typeof(int), typeof(int), typeof(int), typeof(int)});
+                    ConstructorInfo? ctor = typeof(Rectangle).GetConstructor(
+                        [typeof(int), typeof(int), typeof(int), typeof(int)]);
 
                     if (ctor != null)
                     {
@@ -115,7 +112,7 @@ namespace System.Drawing
 
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
-        private static readonly string[] s_propertySort = { "X", "Y", "Width", "Height" };
+        private static readonly string[] s_propertySort = ["X", "Y", "Width", "Height"];
 
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)

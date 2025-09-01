@@ -859,13 +859,13 @@ void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId targ
 void
 mono_win32_enter_alertable_wait (THREAD_INFO_TYPE *info);
 
-void
+gboolean
 mono_win32_leave_alertable_wait (THREAD_INFO_TYPE *info);
 
 void
 mono_win32_enter_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
 
-void
+gboolean
 mono_win32_leave_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
 
 void

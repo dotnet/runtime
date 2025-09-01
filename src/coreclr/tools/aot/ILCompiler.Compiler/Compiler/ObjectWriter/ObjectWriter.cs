@@ -134,15 +134,6 @@ namespace ILCompiler.ObjectWriter
             return true;
         }
 
-        private protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
-        {
-            string standardSectionPrefix = "";
-            if (section.IsStandardSection)
-                standardSectionPrefix = ".";
-
-            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
-        }
-
         private unsafe void EmitOrResolveRelocation(
             int sectionIndex,
             long offset,
@@ -394,8 +385,12 @@ namespace ILCompiler.ObjectWriter
                     continue;
 
                 ISymbolNode symbolNode = node as ISymbolNode;
-                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode) != symbolNode)
+                ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                if (deduplicatedSymbolNode != symbolNode)
+                {
+                    dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
                     continue;
+                }
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
@@ -446,6 +441,26 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.Position,
                         nodeContents.Data,
                         nodeContents.Relocs));
+
+#if DEBUG
+                    // Pointer relocs should be aligned at pointer boundaries within the image.
+                    // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
+                    // expensive on Windows. But: we can't guarantee this on x86.
+                    if (_nodeFactory.Target.Architecture != TargetArchitecture.X86)
+                    {
+                        bool hasPointerRelocs = false;
+                        foreach (Relocation reloc in nodeContents.Relocs)
+                        {
+                            if ((reloc.RelocType is RelocType.IMAGE_REL_BASED_DIR64 && _nodeFactory.Target.PointerSize == 8) ||
+                                (reloc.RelocType is RelocType.IMAGE_REL_BASED_HIGHLOW && _nodeFactory.Target.PointerSize == 4))
+                            {
+                                hasPointerRelocs = true;
+                                Debug.Assert(reloc.Offset % _nodeFactory.Target.PointerSize == 0);
+                            }
+                        }
+                        Debug.Assert(!hasPointerRelocs || (nodeContents.Alignment % _nodeFactory.Target.PointerSize) == 0);
+                    }
+#endif
                 }
 
                 // Emit unwinding frames and LSDA
@@ -476,7 +491,7 @@ namespace ILCompiler.ObjectWriter
                         relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternSymbolNode)
+                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternFunctionSymbolNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from
@@ -498,6 +513,13 @@ namespace ILCompiler.ObjectWriter
                 {
                     ObjectNode node = depNode as ObjectNode;
                     if (node is null || node.ShouldSkipEmittingObjectNode(_nodeFactory))
+                    {
+                        continue;
+                    }
+
+                    ISymbolNode symbolNode = node as ISymbolNode;
+                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                    if (deduplicatedSymbolNode != symbolNode)
                     {
                         continue;
                     }

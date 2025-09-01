@@ -45,24 +45,12 @@ if [ -z "$DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDH_KEY_HANDLE" ]; then
   echo
 fi
 
-if [ -z "$DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_SIGN_KEY_HANDLE" ]; then
-  echo 'WARNING: [ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]'
-  echo 'WARNING: [ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]'
-  echo "WARNING: TPM RSA sign tests will not be run"
+if [ -z "$DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_KEY_HANDLE" ]; then
+  echo "WARNING: TPM RSA sign and decrypt tests will not be run"
   echo "WARNING: Use following environmental variable to enable them:"
-  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_SIGN_KEY_HANDLE=YourHandleHere"
+  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_KEY_HANDLE=YourHandleHere"
   echo "WARNING: For example:"
-  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_SIGN_KEY_HANDLE=0x8100000a"
-  echo "WARNING: Refer to README.md for more information on how to get handle."
-  echo
-fi
-
-if [ -z "$DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_DECRYPT_KEY_HANDLE" ]; then
-  echo "WARNING: TPM RSA decrypt tests will not be run"
-  echo "WARNING: Use following environmental variable to enable them:"
-  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_DECRYPT_KEY_HANDLE=YourHandleHere"
-  echo "WARNING: For example:"
-  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_DECRYPT_KEY_HANDLE=0x8100000c"
+  echo "WARNING:   export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_KEY_HANDLE=0x81000003"
   echo "WARNING: Refer to README.md for more information on how to get handle."
   echo
 fi
@@ -76,5 +64,11 @@ cd "$ssc_src_path"
 $dotnet build
 
 cd "$ssc_tests_path"
-
 $dotnet test --filter "FullyQualifiedName~System.Security.Cryptography.Tests.OpenSslNamedKeysTests."
+
+# TLS tests are in System.Net.Security
+cd "$libsrc_path/System.Net.Security/src"
+$dotnet build
+
+cd "$libsrc_path/System.Net.Security/tests/FunctionalTests"
+$dotnet test --filter "FullyQualifiedName~System.Net.Security.Tests.SslStreamOpenSslNamedKeys."

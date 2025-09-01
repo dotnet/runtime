@@ -25,11 +25,6 @@ namespace System.Net.Http
         /// <summary>The time, in milliseconds, that an authority should remain in <see cref="_altSvcBlocklist"/>.</summary>
         private const int AltSvcBlocklistTimeoutInMilliseconds = 10 * 60 * 1000;
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("windows")]
-        internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
-
         /// <summary>List of available HTTP/3 connections stored in the pool.</summary>
         private List<Http3Connection>? _availableHttp3Connections;
         /// <summary>The number of HTTP/3 connections associated with the pool, including in use, available, and pending.</summary>
@@ -67,7 +62,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             Debug.Assert(_kind == HttpConnectionKind.Https);
             Debug.Assert(_http3Enabled);
@@ -87,19 +82,17 @@ namespace System.Net.Http
                         ThrowGetVersionException(request, 3, reasonException);
                     }
 
-                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
-                    Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
-
-                    if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
+                    WaitForHttp3ConnectionActivity waitForConnectionActivity = new WaitForHttp3ConnectionActivity(Settings, authority);
+                    if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter, out bool streamAvailable))
                     {
+                        waitForConnectionActivity.Start();
                         try
                         {
                             connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
-                            waitForConnectionActivity?.Stop();
+                            waitForConnectionActivity.Stop(request, this, ex);
                             throw;
                         }
                     }
@@ -111,7 +104,7 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = await connection.SendAsync(request, waitForConnectionActivity, streamAvailable, cancellationToken).ConfigureAwait(false);
 
                     // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                     // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -135,9 +128,9 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter)
+        private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter, out bool streamAvailable)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             // Look for a usable connection.
             while (true)
@@ -161,6 +154,7 @@ namespace System.Net.Http
                         // There were no available connections. This request has been added to the request queue.
                         if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/3 connections; request queued.");
                         connection = null;
+                        streamAvailable = false;
                         return false;
                     }
                 }
@@ -173,9 +167,11 @@ namespace System.Net.Http
                     continue;
                 }
 
+                streamAvailable = connection.TryReserveStream();
+
                 // Disable and remove the connection from the pool only if we can open another.
                 // If we have only single connection, use the underlying QuicConnection mechanism to wait for available streams.
-                if (!connection.TryReserveStream() && EnableMultipleHttp3Connections)
+                if (!streamAvailable && EnableMultipleHttp3Connections)
                 {
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Found HTTP/3 connection in pool without available streams.");
 
@@ -209,7 +205,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void CheckForHttp3ConnectionInjection()
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             Debug.Assert(HasSyncObjLock);
 
@@ -248,7 +244,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private async Task InjectNewHttp3ConnectionAsync(RequestQueue<Http3Connection?>.QueueItem queueItem)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/3 connection for pool.");
 
@@ -267,7 +263,7 @@ namespace System.Net.Http
             {
                 if (TryGetHttp3Authority(queueItem.Request, out authority, out Exception? reasonException))
                 {
-                    connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, authority);
+                    connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, _telemetryServerAddress, authority.Port);
                     // If the authority was sent as an option through alt-svc then include alt-used header.
                     connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
                     QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
@@ -331,7 +327,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void HandleHttp3ConnectionFailure(HttpConnectionWaiter<Http3Connection?> requestWaiter, Exception? e)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 connection failed: {e}");
 
@@ -362,7 +358,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void ReturnHttp3Connection(Http3Connection connection, bool isNewConnection, HttpConnectionWaiter<Http3Connection?>? initialRequestWaiter = null)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -383,8 +379,7 @@ namespace System.Net.Http
                 return;
             }
 
-            bool reserved;
-            while ((reserved = connection.TryReserveStream()) || !EnableMultipleHttp3Connections)
+            while (connection.TryReserveStream() || !EnableMultipleHttp3Connections)
             {
                 // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
@@ -447,10 +442,9 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (reserved)
-                        {
-                            connection.ReleaseStream();
-                        }
+                        // TryReserveStream() always decrements the available stream counter when EnableMultipleHttp3Connections is false.
+                        connection.ReleaseStream();
+
                         if (added)
                         {
                             if (NetEventSource.Log.IsEnabled()) connection.Trace("Put HTTP3 connection in pool.");
@@ -486,7 +480,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private void DisableHttp3Connection(Http3Connection connection)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace("");
 
@@ -529,7 +523,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         public void InvalidateHttp3Connection(Http3Connection connection, bool dispose = true)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             if (NetEventSource.Log.IsEnabled()) connection.Trace("");
 
@@ -565,7 +559,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("macos")]
         private static int ScavengeHttp3ConnectionList(List<Http3Connection> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
-            Debug.Assert(IsHttp3Supported());
+            Debug.Assert(GlobalHttpSettings.SocketsHttpHandler.AllowHttp3);
 
             int freeIndex = 0;
             while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
@@ -663,43 +657,54 @@ namespace System.Net.Http
 
                 if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
-                    var value = (AltSvcHeaderValue?)parsedValue;
+                    Debug.Assert(parsedValue is not null);
+
+                    var value = (AltSvcHeaderValue)parsedValue;
 
                     // 'clear' should be the only value present.
-                    if (value == AltSvcHeaderValue.Clear)
+                    if (ReferenceEquals(AltSvcHeaderValue.Clear, value))
                     {
                         lock (SyncObj)
                         {
+                            // Clear invalidates all Alt-Svc including the current response ones.
+                            // https://httpwg.org/specs/rfc7838.html#alt-svc
                             ExpireAltSvcAuthority();
                             Debug.Assert(_authorityExpireTimer != null || _disposed);
                             _authorityExpireTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                            break;
+                            return;
                         }
                     }
 
-                    if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
+                    // Do not process the Alt-Svc header if we've already found a valid h3 authority before, but continue looking for potential "clear".
+                    if (nextAuthority is not null || value.AlpnProtocolName != "h3")
                     {
-                        var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
-                        if (IsAltSvcBlocked(authority, out _))
-                        {
-                            // Skip authorities in our blocklist.
-                            continue;
-                        }
-
-                        TimeSpan authorityMaxAge = value.MaxAge;
-
-                        if (responseAge != null)
-                        {
-                            authorityMaxAge -= responseAge.GetValueOrDefault();
-                        }
-
-                        if (authorityMaxAge > TimeSpan.Zero)
-                        {
-                            nextAuthority = authority;
-                            nextAuthorityMaxAge = authorityMaxAge;
-                            nextAuthorityPersist = value.Persist;
-                        }
+                        continue;
                     }
+
+                    var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
+                    if (IsAltSvcBlocked(authority, out _))
+                    {
+                        // Skip authorities in our blocklist.
+                        continue;
+                    }
+
+                    TimeSpan authorityMaxAge = value.MaxAge;
+
+                    if (responseAge != null)
+                    {
+                        authorityMaxAge -= responseAge.GetValueOrDefault();
+                    }
+
+                    // It's already out of date, skip it.
+                    if (authorityMaxAge <= TimeSpan.Zero)
+                    {
+                        continue;
+                    }
+
+                    // We found an h3 authority that is not blocked and has not aged out.
+                    nextAuthority = authority;
+                    nextAuthorityMaxAge = authorityMaxAge;
+                    nextAuthorityPersist = value.Persist;
                 }
             }
 

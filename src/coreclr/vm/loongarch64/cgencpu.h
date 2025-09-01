@@ -57,7 +57,7 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      40  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
@@ -229,6 +229,30 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A0 = DWORD64(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A1 = DWORD64(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A1);
+}
+
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
     TADDR mem;
@@ -254,7 +278,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     {
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -362,7 +386,6 @@ class StubLinkerCPU : public StubLinker
 {
 
 private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Rn, int offset, BOOL isVec);
     void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
@@ -389,9 +412,6 @@ public:
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-    void EmitNop() { Emit32(0x03400000); }
-    void EmitBreakPoint() { Emit32(0x002a0000); }
-
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
@@ -401,9 +421,6 @@ public:
     void EmitMovReg(IntReg dest, IntReg source);
 
     void EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value);
-
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset=0, int log2Size = 3);
 };
@@ -440,47 +457,5 @@ struct HijackArgs
 };
 
 EXTERN_C VOID STDCALL PrecodeFixupThunk();
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 2;//2, for Type encoding.
-
-    UINT32  m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 #endif // __cgencpu_h__

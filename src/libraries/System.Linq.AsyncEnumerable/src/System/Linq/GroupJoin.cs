@@ -41,11 +41,11 @@ namespace System.Linq
             Func<TOuter, IEnumerable<TInner>, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(outer);
-            ThrowHelper.ThrowIfNull(inner);
-            ThrowHelper.ThrowIfNull(outerKeySelector);
-            ThrowHelper.ThrowIfNull(innerKeySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 outer.IsKnownEmpty() ? Empty<TResult>() :
@@ -60,23 +60,17 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
+                    AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                    do
                     {
-                        AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken).ConfigureAwait(false);
-                        do
-                        {
-                            TOuter item = e.Current;
-                            yield return resultSelector(item, lookup[outerKeySelector(item)]);
-                        }
-                        while (await e.MoveNextAsync().ConfigureAwait(false));
+                        TOuter item = e.Current;
+                        yield return resultSelector(item, lookup[outerKeySelector(item)]);
                     }
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
             }
         }
@@ -112,11 +106,11 @@ namespace System.Linq
             Func<TOuter, IEnumerable<TInner>, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(outer);
-            ThrowHelper.ThrowIfNull(inner);
-            ThrowHelper.ThrowIfNull(outerKeySelector);
-            ThrowHelper.ThrowIfNull(innerKeySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 outer.IsKnownEmpty() ? Empty<TResult>() :
@@ -131,26 +125,20 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
+                    AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                    do
                     {
-                        AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken).ConfigureAwait(false);
-                        do
-                        {
-                            TOuter item = e.Current;
-                            yield return await resultSelector(
-                                item,
-                                lookup[await outerKeySelector(item, cancellationToken).ConfigureAwait(false)],
-                                cancellationToken).ConfigureAwait(false);
-                        }
-                        while (await e.MoveNextAsync().ConfigureAwait(false));
+                        TOuter item = e.Current;
+                        yield return await resultSelector(
+                            item,
+                            lookup[await outerKeySelector(item, cancellationToken)],
+                            cancellationToken);
                     }
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
             }
         }

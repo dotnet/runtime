@@ -28,6 +28,7 @@
 #include "corhost.h"
 #include "comdelegate.h"
 #include "finalizerthread.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -52,11 +53,6 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
 
-#ifndef TARGET_UNIX
-// static
-SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
 InteropSyncBlockInfo::~InteropSyncBlockInfo()
 {
     CONTRACTL
@@ -69,35 +65,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
-
-#if defined(FEATURE_COMWRAPPERS)
-    delete m_managedObjectComWrapperMap;
-#endif // FEATURE_COMWRAPPERS
 }
-
-#ifndef TARGET_UNIX
-// Deletes all items in code:s_InteropInfoStandbyList.
-void InteropSyncBlockInfo::FlushStandbyList()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-
-        // make sure to use the global delete since the destructor has already run
-        ::delete (void *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
-#endif // !TARGET_UNIX
 
 void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
@@ -110,15 +78,12 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
     }
     CONTRACTL_END
 
-    if (!g_fEEShutDown)
+    UMEntryThunkData *pUMEntryThunk = m_pUMEntryThunk;
+    if (pUMEntryThunk != NULL)
     {
-        void *pUMEntryThunk = GetUMEntryThunk();
-        if (pUMEntryThunk != NULL)
-        {
-            UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
-        }
+        UMEntryThunkData::FreeUMEntryThunk(pUMEntryThunk);
+        m_pUMEntryThunk = NULL;
     }
-    m_pUMEntryThunk = NULL;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -545,7 +510,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.
@@ -626,13 +591,6 @@ void SyncBlockCache::CleanupSyncBlocks()
 
 // create the sync block cache
 /* static */
-void SyncBlockCache::Attach()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-// create the sync block cache
-/* static */
 void SyncBlockCache::Start()
 {
     CONTRACTL
@@ -660,10 +618,6 @@ void SyncBlockCache::Start()
     g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
-
-#ifndef TARGET_UNIX
-    InitializeSListHead(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-#endif // !TARGET_UNIX
 }
 
 
@@ -714,7 +668,7 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     if (psb->m_pInteropInfo)
     {
         // called during GC
@@ -976,23 +930,11 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
-#ifndef TARGET_UNIX
-        if (g_fEEShutDown)
-        {
-            delete psb->m_pInteropInfo;
-        }
-        else
-        {
-            psb->m_pInteropInfo->~InteropSyncBlockInfo();
-            InterlockedPushEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList, (PSLIST_ENTRY)psb->m_pInteropInfo);
-        }
-#else // !TARGET_UNIX
         delete psb->m_pInteropInfo;
-#endif // !TARGET_UNIX
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -1564,7 +1506,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
     if (g_SystemInfo.dwNumberOfProcessors == 1)
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     YieldProcessorNormalizationInfo normalizationInfo;
@@ -1582,7 +1524,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             // If we have a hash code already, we need to create a sync block
             if (oldValue & BIT_SBLK_IS_HASHCODE)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
@@ -1590,7 +1532,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             AwareLock *awareLock = &syncBlock->m_Monitor;
 
             AwareLock::EnterHelperResult result = awareLock->TryEnterBeforeSpinLoopHelper(pCurThread);
-            if (result != AwareLock::EnterHelperResult_Contention)
+            if (result != AwareLock::EnterHelperResult::Contention)
             {
                 return result;
             }
@@ -1610,11 +1552,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
                     }
 
                     result = awareLock->TryEnterInsideSpinLoopHelper(pCurThread);
-                    if (result == AwareLock::EnterHelperResult_Entered)
+                    if (result == AwareLock::EnterHelperResult::Entered)
                     {
-                        return AwareLock::EnterHelperResult_Entered;
+                        return AwareLock::EnterHelperResult::Entered;
                     }
-                    if (result == AwareLock::EnterHelperResult_UseSlowPath)
+                    if (result == AwareLock::EnterHelperResult::UseSlowPath)
                     {
                         break;
                     }
@@ -1623,7 +1565,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
             if (awareLock->TryEnterAfterSpinLoopHelper(pCurThread))
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
             break;
         }
@@ -1635,7 +1577,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
         {
             if (tid > SBLK_MASK_LOCK_THREADID)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             LONG newValue = oldValue | tid;
@@ -1645,7 +1587,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #endif
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
 
             continue;
@@ -1663,7 +1605,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID));
     }
 
-    return AwareLock::EnterHelperResult_Contention;
+    return AwareLock::EnterHelperResult::Contention;
 }
 
 BOOL ObjHeader::LeaveObjMonitor()
@@ -1687,10 +1629,10 @@ BOOL ObjHeader::LeaveObjMonitor()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = thisObj->GetHeader ()->PassiveGetSyncBlock();
@@ -1698,10 +1640,10 @@ BOOL ObjHeader::LeaveObjMonitor()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             {
                 //protect the object before switching mode
@@ -1713,7 +1655,7 @@ BOOL ObjHeader::LeaveObjMonitor()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -1739,10 +1681,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = PassiveGetSyncBlock();
@@ -1750,10 +1692,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             //
             // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC
@@ -1766,7 +1708,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -1870,7 +1812,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
     // destructor will reset the CLR debug state to what it was before entering the
     // function, which will undo the BeginNoTriggerGC() call below.
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1924,7 +1865,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 #else
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1961,7 +1901,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
@@ -2526,15 +2465,15 @@ inline void LogContention()
 #define LogContention()
 #endif
 
-double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+double ComputeElapsedTimeInNanosecond(int64_t startTicks, int64_t endTicks)
 {
-    static LARGE_INTEGER freq;
-    if (freq.QuadPart == 0)
-        QueryPerformanceFrequency(&freq);
+    static int64_t freq;
+    if (freq == 0)
+        freq = minipal_hires_tick_frequency();
 
     const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
-    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+    LONGLONG elapsedTicks = endTicks - startTicks;
+    return (elapsedTicks * NsPerSecond) / freq;
 }
 
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
@@ -2559,12 +2498,12 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     OBJECTREF obj = GetOwningObject();
 
-    LARGE_INTEGER startTicks = { {0} };
+    int64_t startTicks = 0;
     bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
 
     if (isContentionKeywordEnabled)
     {
-        QueryPerformanceCounter(&startTicks);
+        startTicks = minipal_hires_ticks();
 
         if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
         {
@@ -2599,7 +2538,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // Measure the time we wait so that, in the case where we wake up
             // and fail to acquire the mutex, we can adjust remaining timeout
             // accordingly.
-            ULONGLONG start = CLRGetTickCount64();
+            int64_t start = minipal_lowres_ticks();
 
             // It is likely the case that An APC threw an exception, for instance Thread.Interrupt(). The wait subsystem
             // guarantees that if a signal to the event being waited upon is observed by the woken thread, that thread's
@@ -2687,8 +2626,8 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // case is taken care of by 32-bit modulo arithmetic automatically.
             if (timeOut != (INT32)INFINITE)
             {
-                ULONGLONG end = CLRGetTickCount64();
-                ULONGLONG duration;
+                int64_t end = minipal_lowres_ticks();
+                int64_t duration;
                 if (end == start)
                 {
                     duration = 1;
@@ -2697,7 +2636,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (ULONGLONG)timeOut);
+                duration = min(duration, (int64_t)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2709,8 +2648,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     if (isContentionKeywordEnabled)
     {
-        LARGE_INTEGER endTicks;
-        QueryPerformanceCounter(&endTicks);
+        int64_t endTicks = minipal_hires_ticks();
 
         double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
 
@@ -2755,16 +2693,16 @@ BOOL AwareLock::Leave()
 
     switch(action)
     {
-    case AwareLock::LeaveHelperAction_None:
+    case AwareLock::LeaveHelperAction::None:
         // We are done
         return TRUE;
-    case AwareLock::LeaveHelperAction_Signal:
+    case AwareLock::LeaveHelperAction::Signal:
         // Signal the event
         Signal();
         return TRUE;
     default:
         // Must be an error otherwise
-        _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+        _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
         return FALSE;
     }
 }

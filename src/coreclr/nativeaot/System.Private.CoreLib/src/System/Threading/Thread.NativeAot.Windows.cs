@@ -24,9 +24,60 @@ namespace System.Threading
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
-        private static volatile bool s_comInitializedOnFinalizerThread;
-
         partial void PlatformSpecificInitialize();
+
+        internal static void SleepInternal(int millisecondsTimeout)
+        {
+            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
+
+            CheckForPendingInterrupt();
+
+            Thread currentThread = CurrentThread;
+            if (millisecondsTimeout == Timeout.Infinite)
+            {
+                // Infinite wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                uint result;
+                while (true)
+                {
+                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    CheckForPendingInterrupt();
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
+            else
+            {
+                // Timed wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                long startTime = Environment.TickCount64;
+                while (true)
+                {
+                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    // Check if this was our interrupt APC
+                    CheckForPendingInterrupt();
+                    // Handle APC completion by adjusting timeout and retrying
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
+        }
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
@@ -156,18 +207,57 @@ namespace System.Threading
 
             try
             {
-                int result;
-
                 if (millisecondsTimeout == 0)
                 {
-                    result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    int result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                 }
                 else
                 {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
+                    Thread currentThread = CurrentThread;
+                    currentThread.SetWaitSleepJoinState();
+                    uint result;
+                    if (millisecondsTimeout == Timeout.Infinite)
+                    {
+                        // Infinite wait
+                        while (true)
+                        {
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), Timeout.UnsignedInfinite, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                            {
+                                break;
+                            }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
+                        }
+                    }
+                    else
+                    {
+                        long startTime = Environment.TickCount64;
+                        while (true)
+                        {
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                            {
+                                break;
+                            }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
+                            // Handle APC completion by adjusting timeout and retrying
+                            long currentTime = Environment.TickCount64;
+                            long elapsed = currentTime - startTime;
+                            if (elapsed >= millisecondsTimeout)
+                            {
+                                result = Interop.Kernel32.WAIT_TIMEOUT;
+                                break;
+                            }
+                            millisecondsTimeout -= (int)elapsed;
+                            startTime = currentTime;
+                        }
+                    }
+                    currentThread.ClearWaitSleepJoinState();
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                 }
-
-                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
             }
             finally
             {
@@ -178,8 +268,13 @@ namespace System.Threading
         private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
-
             int stackSize = _startHelper._maxStackSize;
+
+            if (stackSize <= 0)
+            {
+                stackSize = (int)RuntimeImports.RhGetDefaultStackSize();
+            }
+
             if ((0 < stackSize) && (stackSize < AllocationGranularity))
             {
                 // If StackSizeParamIsAReservation flag is set and the reserve size specified by CreateThread's
@@ -197,7 +292,7 @@ namespace System.Threading
             }
 
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle),
+                RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle),
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out _);
 
@@ -209,6 +304,13 @@ namespace System.Threading
             // CoreCLR ignores OS errors while setting the priority, so do we
             SetPriorityLive(_priority);
 
+            // If the thread was interrupted before it was started, queue the interruption now
+            if (GetThreadStateBit(Interrupted))
+            {
+                ClearThreadStateBit(Interrupted);
+                Interrupt();
+            }
+
             Interop.Kernel32.ResumeThread(_osHandle);
             return true;
         }
@@ -216,7 +318,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static uint ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);
@@ -286,7 +388,14 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    // NOTE: We do the enum stringification manually to avoid introducing a dependency
+                    // on enum stringification in small apps. We set apartment state in the startup path.
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
+                    {
+                        ApartmentState.MTA => "MTA",
+                        ApartmentState.STA => "STA",
+                        _ => "Unknown"
+                    });
                     throw new InvalidOperationException(msg);
                 }
 
@@ -301,27 +410,11 @@ namespace System.Threading
             InitializeCom(_initialApartmentState);
         }
 
-        internal static void InitializeComForFinalizerThread()
-        {
-            InitializeCom();
-
-            // Prevent re-initialization of COM model on finalizer thread
-            t_comState |= ComState.Locked;
-
-            s_comInitializedOnFinalizerThread = true;
-        }
-
         private static void InitializeComForThreadPoolThread()
         {
-            // Initialized COM - take advantage of implicit MTA initialized by the finalizer thread
-            SpinWait sw = default(SpinWait);
-            while (!s_comInitializedOnFinalizerThread)
-            {
-                RuntimeImports.RhInitializeFinalizerThread();
-                sw.SpinOnce(0);
-            }
-
-            // Prevent re-initialization of COM model on threadpool threads
+            // Process-wide COM is initialized very early before any managed code can run.
+            // Assume it is done.
+            // Prevent re-initialization of COM model on threadpool threads from the default one.
             t_comState |= ComState.Locked;
         }
 
@@ -399,7 +492,39 @@ namespace System.Threading
             return InitializeExistingThreadPoolThread();
         }
 
-        public void Interrupt() { throw new PlatformNotSupportedException(); }
+        public void Interrupt()
+        {
+            using (_lock.EnterScope())
+            {
+                // Thread.Interrupt for dead thread should do nothing
+                if (IsDead())
+                {
+                    return;
+                }
+
+                // Thread.Interrupt for thread that has not been started yet should queue a pending interrupt
+                // for when we actually create the thread.
+                if (_osHandle?.IsInvalid ?? true)
+                {
+                    SetThreadStateBit(Interrupted);
+                    return;
+                }
+
+                unsafe
+                {
+                    Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);
+                }
+            }
+        }
+
+        internal static void CheckForPendingInterrupt()
+        {
+            if (RuntimeImports.RhCheckAndClearPendingInterrupt())
+            {
+                CurrentThread.ClearWaitSleepJoinState();
+                throw new ThreadInterruptedException();
+            }
+        }
 
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentType() == ApartmentType.STA;

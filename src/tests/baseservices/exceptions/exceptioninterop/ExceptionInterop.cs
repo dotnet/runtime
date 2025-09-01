@@ -156,4 +156,62 @@ public unsafe static class ExceptionInterop
             }
         }
     }
+
+    [DllImport(nameof(ExceptionInteropNative))]
+    public static extern void InvokeCallbackCatchCallbackAndRethrow(delegate* unmanaged<void> callBack1, delegate* unmanaged<void> callBack2);
+
+    [UnmanagedCallersOnly]
+    static void CallPInvoke()
+    {
+        ThrowException();
+    }
+
+    [UnmanagedCallersOnly]
+    static void ThrowAndCatchException()
+    {
+        try
+        {
+            throw new Exception("This one is handled");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Caught {ex}");
+        }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Exception interop not supported on Mono.")]
+    public static void PropagateAndRethrowCppException()
+    {
+        try
+        {
+            InvokeCallbackCatchCallbackAndRethrow(&CallPInvoke, &ThrowAndCatchException);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Caught {ex}");
+        }
+    }
+    
+    [DllImport(nameof(ExceptionInteropNative))]
+    public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Exception interop not supported on Mono.")]
+    public static void PropagateAndCatchCppException()
+    {
+        bool reportedUnhandledException = false;
+        UnhandledExceptionEventHandler handler = (sender, e) =>
+        {
+            Console.WriteLine($"Exception reported as unhandled: {e.ExceptionObject}");
+            reportedUnhandledException = true;
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += handler;
+        InvokeCallbackOnNewThread(&CallPInvoke);
+        AppDomain.CurrentDomain.UnhandledException -= handler;
+        Assert.False(reportedUnhandledException, "Exception should not be reported as unhandled");
+    }
 }
