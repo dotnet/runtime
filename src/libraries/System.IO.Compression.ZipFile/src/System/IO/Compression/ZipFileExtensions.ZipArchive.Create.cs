@@ -106,6 +106,8 @@ namespace System.IO.Compression
 
             FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
 
+            entryName = entryName.TrimStart('/', '\\').Replace('\\', '/');
+
             ZipArchiveEntry entry = compressionLevel.HasValue ?
                                     destination.CreateEntry(entryName, compressionLevel.Value) :
                                     destination.CreateEntry(entryName);

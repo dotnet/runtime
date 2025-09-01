@@ -388,6 +388,7 @@ namespace System.IO.Compression
 
             ThrowIfDisposed();
 
+            entryName = entryName.TrimStart('/', '\\').Replace('\\', '/');
 
             ZipArchiveEntry entry = compressionLevel.HasValue ?
                 new ZipArchiveEntry(this, entryName, compressionLevel.Value) :

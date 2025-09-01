@@ -61,7 +61,7 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ObjectDisposedException>(() => z.CreateEntry("dirka")); //"Can't create after dispose"
         }
 
-        private static readonly string[] _folderNames = [ "small", "normal", "empty", "emptydir" ];
+        private static readonly string[] _folderNames = ["small", "normal", "empty", "emptydir"];
 
         public static IEnumerable<object[]> GetCreateNormal_Seekable_Data()
         {
@@ -418,6 +418,87 @@ namespace System.IO.Compression.Tests
             byte[] fileBytes = memoryStream.ToArray();
             Assert.Equal(0, fileBytes[6]);
             Assert.Equal(isUnicodeFlagExpected ? 8 : 0, fileBytes[7]);
+        }
+
+        [Fact]
+        public void CreateEntry_NormalizesPaths()
+        {
+            var sourceContent = "file content";
+            var sourceBytes = System.Text.Encoding.UTF8.GetBytes(sourceContent);
+
+            using (var zipStream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    var entry1 = archive.CreateEntry(@"dir1\dir2\file.txt");
+                    using (var entryStream = entry1.Open())
+                    {
+                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                    }
+
+                    var entry2 = archive.CreateEntry("dirA/dirB/file.txt");
+                    using (var entryStream = entry2.Open())
+                    {
+                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                    }
+
+                    var entry3 = archive.CreateEntry(@"dirX/dirY\file.txt");
+                    using (var entryStream = entry3.Open())
+                    {
+                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                    }
+                }
+
+                zipStream.Seek(0, SeekOrigin.Begin);
+                using var archiveRead = new ZipArchive(zipStream, ZipArchiveMode.Read);
+                var entries = archiveRead.Entries.Select(e => e.FullName).ToList();
+
+                Assert.Contains("dir1/dir2/file.txt", entries);
+                Assert.Contains("dirA/dirB/file.txt", entries);
+                Assert.Contains("dirX/dirY/file.txt", entries);
+
+                Assert.DoesNotContain(@"dir1\dir2\file.txt", entries);
+                Assert.DoesNotContain(@"dirX/dirY\file.txt", entries);
+            }
+        }
+
+        [Fact]
+        public void CreateEntryFromFile_NormalizesPaths()
+        {
+            var sourceFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(sourceFile, "This is a test file content.");
+
+                using var zipStream = new MemoryStream();
+
+                using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    archive.CreateEntryFromFile(sourceFile, @"dir1\dir2\file.txt");
+
+                    archive.CreateEntryFromFile(sourceFile, "dirA/dirB/file.txt");
+
+                    archive.CreateEntryFromFile(sourceFile, @"dirX/dirY\file.txt");
+                }
+
+                zipStream.Seek(0, SeekOrigin.Begin);
+                using var archiveRead = new ZipArchive(zipStream, ZipArchiveMode.Read);
+                var entries = archiveRead.Entries.Select(e => e.FullName).ToList();
+
+                Assert.Contains("dir1/dir2/file.txt", entries);
+                Assert.Contains("dirA/dirB/file.txt", entries);
+                Assert.Contains("dirX/dirY/file.txt", entries);
+
+                Assert.DoesNotContain(@"dir1\dir2\file.txt", entries);
+                Assert.DoesNotContain(@"dirX/dirY\file.txt", entries);
+            }
+            finally
+            {
+                if (File.Exists(sourceFile))
+                {
+                    File.Delete(sourceFile);
+                }
+            }
         }
     }
 }
