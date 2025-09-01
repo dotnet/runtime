@@ -40,10 +40,13 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
+#include <link.h>
+#include <elf.h>
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
@@ -95,13 +98,96 @@ void RhFailFast()
     abort();
 }
 
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath)
+#if TARGET_LINUX
+
+struct PalGetPDBInfoPhdrCallbackData
+{
+    void* Base;
+    void* BuildID;
+    uint32_t BuildIDLength;
+};
+
+static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, void* pData)
+{
+    struct PalGetPDBInfoPhdrCallbackData* pCallbackData = (struct PalGetPDBInfoPhdrCallbackData*)pData;
+
+    // Find the module of interest
+    void* loadAddress = NULL;
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        if (info->dlpi_phdr[i].p_type == PT_LOAD)
+        {
+            loadAddress = (void*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+            if (loadAddress == pCallbackData->Base)
+                break;
+        }
+    }
+
+    if (loadAddress != pCallbackData->Base)
+    {
+        return 0;
+    }
+
+    // Got the module of interest. Now iterate program headers and try to find the GNU build ID note
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        // Must be a note section. We don't check the name because while there's a convention for the name,
+        // the convention is not mandatory.
+        if (info->dlpi_phdr[i].p_type != PT_NOTE)
+            continue;
+
+        // Got a note section, iterate over the contents and find the GNU build id one
+        ElfW(Nhdr) *note = (ElfW(Nhdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        ElfW(Addr) align = info->dlpi_phdr[i].p_align;
+        ElfW(Addr) size = info->dlpi_phdr[i].p_memsz;
+        ElfW(Addr) start = (ElfW(Addr))note;
+
+        while ((ElfW(Addr)) (note + 1) - start < size)
+        {
+            if (note->n_namesz == 4
+                && note->n_type == NT_GNU_BUILD_ID
+                && memcmp(note + 1, "GNU", 4) == 0)
+            {
+                // Got the note, fill out the callback data and return.
+                pCallbackData->BuildID = (uint8_t*)note + sizeof(ElfW(Nhdr)) + ALIGN_UP(note->n_namesz, align);
+                pCallbackData->BuildIDLength = note->n_descsz;
+                return 1;
+            }
+
+            // Skip over the note. Size of the note is determined by the header and payload (aligned)
+            size_t offset = sizeof(ElfW(Nhdr))
+                + ALIGN_UP(note->n_namesz, align)
+                + ALIGN_UP(note->n_descsz, align);
+            note = (ElfW(Nhdr)*)((uint8_t*)note + offset);
+        }
+    }
+
+    return 0;
+}
+#endif
+
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
 {
     memset(pGuidSignature, 0, sizeof(*pGuidSignature));
     *pdwAge = 0;
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
     if (cchPath <= 0)
         return;
     wszPath[0] = L'\0';
+
+#if TARGET_LINUX
+    struct PalGetPDBInfoPhdrCallbackData data;
+    data.Base = hOsHandle;
+
+    if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
+    {
+        return;
+    }
+
+    *pcbBuildId = data.BuildIDLength;
+    *ppBuildId = data.BuildID;
+#endif
 }
 
 static void UnmaskActivationSignal()
@@ -680,6 +766,13 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
+    
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
+    {
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
+    }
 
     static const int NormalPriority = 0;
     static const int HighestPriority = -20;
@@ -1139,11 +1232,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-void PalFlushProcessWriteBuffers()
-{
-    GCToOSInterface::FlushProcessWriteBuffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;

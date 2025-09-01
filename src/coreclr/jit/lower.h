@@ -84,6 +84,7 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    bool      CanConvertOpToCCMP(GenTree* operand, GenTree* tree);
     bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
@@ -451,16 +452,18 @@ private:
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
-    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
-    void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
-    void LowerModPow2(GenTree* node);
-    bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
-    void StoreFFRValue(GenTreeHWIntrinsic* node);
+    bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    void     LowerModPow2(GenTree* node);
+    GenTree* LowerCnsMask(GenTreeMskCon* mask);
+    bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
+    void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,
                                                  unsigned    simdSize);
+    GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions

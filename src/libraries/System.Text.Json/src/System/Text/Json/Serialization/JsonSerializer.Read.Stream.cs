@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -486,16 +485,16 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                // Note: The ReadBufferState ctor rents pooled buffers.
-                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
+                // Note: The StreamReadBufferState ctor rents pooled buffers.
+                StreamReadBufferState bufferState = new StreamReadBufferState(listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {
                     bool success;
                     do
                     {
-                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
-                        success = listTypeInfo.ContinueDeserialize(
+                        bufferState = await bufferState.ReadAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        success = listTypeInfo.ContinueDeserialize<StreamReadBufferState, Stream>(
                             ref bufferState,
                             ref jsonReaderState,
                             ref readStack,
@@ -518,43 +517,6 @@ namespace System.Text.Json
                 {
                     bufferState.Dispose();
                 }
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
-                }
-
-                var converter = new ListOfTConverter<List<T>, T>();
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    CreateObject = static () => new List<T?>(),
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
-                return listTypeInfo;
-            }
-
-            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
-            {
-                if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
-                {
-                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
-                }
-
-                var converter = new RootLevelListConverter<T>(elementTypeInfo);
-                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-                {
-                    ElementTypeInfo = elementTypeInfo,
-                };
-
-                listTypeInfo.EnsureConfigured();
-                elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
-                return listTypeInfo;
             }
         }
     }

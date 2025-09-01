@@ -173,7 +173,7 @@ const loaderConfig = {
             banner,
             intro: "/*! bundlerFriendlyImports */",
             plugins,
-            sourcemap: true,
+            sourcemap: isDebug ? true : "hidden",
             sourcemapPathTransform,
         }
     ],

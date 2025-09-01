@@ -838,7 +838,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Activity? activity = null;
-
                 using ActivityListener listener = new ActivityListener()
                 {
                     ShouldListenTo = s => s.Name is "System.Net.Http",
@@ -846,15 +845,6 @@ namespace System.Net.Http.Functional.Tests
                     ActivityStopped = a =>
                     {
                         activity = a;
-                        Assert.Equal(ActivityStatusCode.Error, a.Status);
-                        ActivityAssert.HasTag(a, "error.type", typeof(TaskCanceledException).FullName);
-                        ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
-                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
-                        Assert.Contains("exception.type", tags.Keys);
-                        Assert.Contains("exception.message", tags.Keys);
-                        Assert.Contains("exception.stacktrace", tags.Keys);
-                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
-
                         activityStopTcs.SetResult();
                     }
                 };
@@ -871,14 +861,23 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
 
-                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
+
+                        Assert.NotNull(activity);
+                        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                        ActivityAssert.HasTag(activity, "error.type", (string errorType) => errorType == typeof(TaskCanceledException).FullName || errorType == typeof(OperationCanceledException).FullName);
+                        ActivityEvent evt = activity.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.True((string)tags["exception.type"] == typeof(TaskCanceledException).FullName || (string)tags["exception.type"] == typeof(OperationCanceledException).FullName);
                     },
                     async server =>
                     {
                         await server.AcceptConnectionAsync(async connection =>
                         {
                             cts.Cancel();
-
                             await activityStopTcs.Task;
                         });
                     });
@@ -1407,6 +1406,27 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("A B", "Foo", typeof(FormatException))] // Invalid header name
+        [InlineData("Content-Length", "42", typeof(InvalidOperationException))] // Invalid header name for the request headers collection
+        [InlineData("Foo", "Bar\nBaz", typeof(FormatException))] // Invalid header value
+        public async Task SendAsync_PropagatorInjectsInvalidHeaders_Throws(string headerName, string headerValue, Type exceptionType)
+        {
+            using Activity parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.W3C);
+            parent.Start();
+
+            using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+            handler.ActivityHeadersPropagator = new DelegatingPropagator([headerName], (activity, carrier, setter) => setter(carrier, headerName, headerValue));
+
+            using var client = new HttpClient(handler);
+
+            // Url doesn't matter since the request should fail before hitting the network.
+            var request = CreateRequest(HttpMethod.Get, new Uri("https://microsoft.com"), UseVersion, exactVersion: true);
+
+            await Assert.ThrowsAsync(exceptionType, () => client.SendAsync(TestAsync, request));
+        }
+
         public static IEnumerable<object[]> SocketsHttpHandler_ActivityCreation_MemberData()
         {
             foreach (var currentActivitySet in new bool[] {
@@ -1666,6 +1686,112 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
+        {
+            if (UseVersion == HttpVersion30 && !useTls) return;
+
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync, string useTlsString)
+            {
+                bool useTls = bool.Parse(useTlsString);
+
+                Activity parentActivity = new Activity("parent").Start();
+
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        string hostName = uri.Host;
+                        uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
+                        Version version = Version.Parse(useVersion);
+                        
+                        using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
+
+                        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
+                        request.Headers.Host = hostName;
+
+                        await client.SendAsync(bool.Parse(testAsync), request);
+
+                        Activity req = requestRecorder.VerifyActivityRecordedOnce();
+                        ActivityAssert.HasTag(req, "server.address", hostName);
+
+                        Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+                        ActivityAssert.HasTag(conn, "server.address", hostName);
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }, options: new GenericLoopbackOptions()
+                    {
+                        UseSsl = useTls,
+                    });
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task UseIPAddressInTargetUri_ProxyTunnel()
+        {
+            if (UseVersion != HttpVersion.Version11)
+            {
+                throw new SkipTestException("Test only for HTTP/1.1");
+            }
+
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync)
+            {
+                Activity parentActivity = new Activity("parent").Start();
+
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+
+                using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
+                        Version version = Version.Parse(useVersion);
+
+                        HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                        handler.Proxy = new WebProxy(proxyServer.Uri);
+                        using HttpClient client = new HttpClient(handler);
+
+                        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
+                        request.Headers.Host = "localhost";
+
+                        await client.SendAsync(bool.Parse(testAsync), request);
+
+                        // There should be only one Activity for the request. Server address should match the Uri host.
+                        // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
+                        ActivityAssert.HasTag(requestRecorder.FinishedActivities.Single(), "server.address", IPAddress.Loopback.ToString());
+
+                        // Check the SslProxyTunnel connection only, it should use the host header.
+                        Assert.Contains(connectionSetupRecorder.FinishedActivities, a => a.TagObjects.Any(t => t.Key == "server.port" && t.Value.Equals(uri.Port)));
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }, options: new GenericLoopbackOptions()
+                    {
+                        UseSsl = true,
+                    });
+            }
+        }
+
         private static T GetProperty<T>(object obj, string propertyName)
         {
             Type t = obj.GetType();
@@ -1749,6 +1875,21 @@ namespace System.Net.Http.Functional.Tests
             using var client = new HttpClient(handler);
             var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
             return (request, await client.SendAsync(bool.Parse(testAsync), request, cancellationToken));
+        }
+
+        private sealed class DelegatingPropagator(string[] fields, Action<Activity?, object?, DistributedContextPropagator.PropagatorSetterCallback?> inject) : DistributedContextPropagator
+        {
+            public override IReadOnlyCollection<string> Fields => fields;
+
+            public override IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter) => [];
+
+            public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState)
+            {
+                traceId = null;
+                traceState = null;
+            }
+
+            public override void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter) => inject(activity, carrier, setter);
         }
     }
 }

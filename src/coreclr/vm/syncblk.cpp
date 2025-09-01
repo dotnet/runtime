@@ -78,15 +78,12 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
     }
     CONTRACTL_END
 
-    if (!g_fEEShutDown)
+    UMEntryThunkData *pUMEntryThunk = m_pUMEntryThunk;
+    if (pUMEntryThunk != NULL)
     {
-        void *pUMEntryThunk = GetUMEntryThunk();
-        if (pUMEntryThunk != NULL)
-        {
-            UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
-        }
+        UMEntryThunkData::FreeUMEntryThunk(pUMEntryThunk);
+        m_pUMEntryThunk = NULL;
     }
-    m_pUMEntryThunk = NULL;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -513,7 +510,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.

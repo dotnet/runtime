@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+
 namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
@@ -23,7 +26,15 @@ internal static class BlobParser
             BlobMagic.Requirements => new RequirementsBlob(SuperBlob.Read(reader, offset)),
             BlobMagic.CmsWrapper => new CmsWrapperBlob(SimpleBlob.Read(reader, offset)),
             BlobMagic.EmbeddedSignature => new EmbeddedSignatureBlob(SuperBlob.Read(reader, offset)),
-            _ => SimpleBlob.Read(reader, offset)
+            BlobMagic.Entitlements => new EntitlementsBlob(SimpleBlob.Read(reader, offset)),
+            BlobMagic.DerEntitlements => new DerEntitlementsBlob(SimpleBlob.Read(reader, offset)),
+            _ => CreateUnknownBlob(magic, reader, offset),
         };
+
+        static SimpleBlob CreateUnknownBlob(BlobMagic magic, IMachOFileReader reader, long offset)
+        {
+            Debug.Assert(!Enum.IsDefined(typeof(BlobMagic), magic), "Blob magic is known but not handled.");
+            return SimpleBlob.Read(reader, offset);
+        }
     }
 }

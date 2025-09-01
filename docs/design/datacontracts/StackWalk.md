@@ -19,6 +19,9 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
+
+// Gets the method desc pointer associated with the given Frame.
+TargetPointer GetMethodDescPtr(TargetPointer framePtr);
 ```
 
 ## Version 1
@@ -42,11 +45,18 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CallSiteSP` | SP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
+| `InlinedCallFrame` (arm) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
+| `InlinedCallFrame` | `Datum` | MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k) |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
+| `FramedMethodFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
+| `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
+| `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
+| `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
+| `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
@@ -56,7 +66,8 @@ This contract depends on the following descriptors:
 | `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
 | `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
-| `HijackArgs` (arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `HijackArgs` (arm/arm64/x86) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `ArgumentRegisters` (arm) | For each register `r` saved in ArgumentRegisters, `r` | Register names associated with stored register values |
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
@@ -244,6 +255,8 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
+* On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
+
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
@@ -253,6 +266,8 @@ SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all 
 TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock holds a return address along with a `CalleeSavedRegisters` struct which has values for all ABI specified callee-saved registers. The SP can be found using the address of the TransitionBlock. Since the TransitionBlock will be the lowest element on the stack, the SP is the address of the TransitionBlock + sizeof(TransitionBlock).
 
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
+
+* On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -289,7 +304,9 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 * x64 - On x64, HijackArgs contains a CalleeSavedRegister struct. The saved registers values contained in the struct are copied over to the working context.
     * Windows - On Windows, HijackArgs also contains the SP value directly which is copied over to the working context.
     * Non-Windows - On OS's other than Windows, HijackArgs does not contain an SP value. Instead since the HijackArgs struct lives on the stack, the SP is `&hijackArgs + sizeof(HijackArgs)`. This value is also copied over.
-* arm64 - Unlike on x64, on arm64 HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP is fetched using the same technique as on x64 non-Windows where `SP = &hijackArgs + sizeof(HijackArgs)` and is copied over to the working context.
+* x86 - On x86, HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP copied over to the working context and found using `SP = &hijackArgs + sizeof(HijackArgs)`.
+* arm64 - Unlike on x64, on arm64 HijackArgs contains a list of register values instead of the CalleeSavedRegister struct. These values are copied over to the working context. The SP is fetched using the same technique as on x64 non-Windows where `SP = &hijackArgs + sizeof(HijackArgs) + (hijackArgsSize % 16)` and is copied over to the working context. Note: `HijackArgs` may be padded to maintain 16 byte stack alignment.
+* arm - Similar to arm64, HijackArgs contains a list of register values. These values are copied over to the working context. The SP is fetched using the same technique as arm64 where `SP = &hijackArgs + sizeof(HijackArgs) + (hijackArgsSize % 8)` and is copied over to the working context. Note: `HijackArgs` may be padded to maintain 8 byte stack alignment.
 
 #### TailCallFrame
 
@@ -328,6 +345,15 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 `GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
 ```csharp
 string GetFrameName(TargetPointer frameIdentifier);
+```
+
+`GetMethodDescPtr` returns the method desc pointer associated with a Frame. If not applicable, it returns TargetPointer.Null.
+* For FramedMethodFrame and most of its subclasses the methoddesc is accessible as a pointer field on the object (MethodDescPtr). The two exceptions are PInvokeCalliFrame (no valid method desc) and StubDispatchFrame.
+  * StubDispatchFrame's MD may be either found on MethodDescPtr, or if this field is null, we look it up using a method table (RepresentativeMTPtr) and MT slot (RepresentativeSlot).
+* InlinedCallFrame also has a field from which we draw the method desc; however, we must first do some validation that the data in this field is valid.
+* MD is not applicable for other types of frames.
+```csharp
+TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```
 
 ### x86 Specifics

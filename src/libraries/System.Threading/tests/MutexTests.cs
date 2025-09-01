@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -225,18 +226,24 @@ namespace System.Threading.Tests
             m.ReleaseMutex();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15159", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70127", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
+            Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            if (PlatformDetection.IsCoreCLR)
+            {
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+                Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            }
         }
 
         [Theory]
         [MemberData(nameof(GetValidNames))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void Ctor_ValidName(string name)
         {
             bool createdNew;
@@ -318,7 +325,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting(string name)
         {
             Mutex resultHandle;
@@ -344,7 +351,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15158", TestRuntimes.Mono)]
         public void OpenExisting_InvalidNames()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null, options: default));
@@ -352,7 +358,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -389,7 +395,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixes_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NameOptionsApiCompatibilityTest(string namePrefix)
         {
             string name = Guid.NewGuid().ToString("N");
@@ -451,7 +457,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixAndOptionsCompatibilityTest_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
         {
             string name = namePrefix + Guid.NewGuid().ToString("N");
@@ -483,7 +489,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
         [MemberData(nameof(NameNamespaceTests_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NameNamespaceTest(
             bool create_currentUserOnly,
             bool create_currentSessionOnly,
@@ -598,7 +604,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void AbandonExisting(
             string name,
             WaitHandleWaitType waitType,
@@ -769,8 +775,10 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
+        private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsNotMobile;
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
         {
@@ -852,7 +860,7 @@ namespace System.Threading.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -909,12 +917,12 @@ namespace System.Threading.Tests
                         }
                         return createdNew;
                     }
-                });
+                }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -952,11 +960,123 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_OtherEvent_NotCompatible()
+        {
+            using Mutex m = new Mutex(Guid.NewGuid().ToString("N"), options: default);
+            using ManualResetEvent mre = new(false);
+
+            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(new WaitHandle[] { m, mre }, 0));
+        }
+
+        private const string GlobalSharedMemoryDirectory = $"/tmp/.dotnet/shm/global";
+        private const UnixFileMode AllUsersRwx =
+            UnixFileMode.UserRead
+            | UnixFileMode.UserWrite
+            | UnixFileMode.UserExecute
+            | UnixFileMode.GroupRead
+            | UnixFileMode.GroupWrite
+            | UnixFileMode.GroupExecute
+            | UnixFileMode.OtherRead
+            | UnixFileMode.OtherWrite
+            | UnixFileMode.OtherExecute;
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_InvalidSharedMemoryHeaderVersion()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)2); // Write an invalid version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Environment.SystemPageSize);
+
+                // Try opening a mutex when we still have the file locked.
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_SharedMemoryFileAlreadyOpen()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
+            // Take an exclusive file lock of the global shared memory file.
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)1); // Write  valid version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Environment.SystemPageSize);
+
+                // Try opening a mutex when we still have the file locked.
+                Assert.Throws<IOException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_InvalidSharedMemoryHeaderKind()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)2); // Write the shared memory type (invalid)
+                bw.Write((byte)1); // Write a version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Environment.SystemPageSize);
+                // Try opening a mutex when we still have the file locked.
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_TooSmallSharedMemoryFile()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)1); // Write a valid version number
+                // Make the file large enough for a valid named mutex file but not divisible by page size.
+                fs.SetLength(Environment.SystemPageSize - 1);
+                // Try opening a mutex when we still have the file locked.
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
+        }
+
         public static TheoryData<string> GetValidNames()
         {
-            var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
+            var names = new TheoryData<string>() { Guid.NewGuid().ToString("N") };
 
-            if (PlatformDetection.IsWindows)
+            // Windows native named mutexes and in-proc named mutexes support very long (1000+ char) names.
+            // Non-Windows cross-process named mutexes are emulated using file system. It imposes limit
+            // on maximum name length.
+            if (PlatformDetection.IsWindows || PlatformDetection.IsMobile)
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;

@@ -34,7 +34,7 @@ namespace System.Reflection
 
         #endregion
 
-        internal IntPtr GetUnderlyingNativeHandle() { return m_assembly; }
+        internal IntPtr GetUnderlyingNativeHandle() =>  m_assembly;
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
@@ -52,17 +52,8 @@ namespace System.Reflection
             // NOTE: no reason to override Write(Span<byte>), since a ManifestResourceStream is read-only.
         }
 
-        internal object SyncRoot
-        {
-            get
-            {
-                if (m_syncRoot == null)
-                {
-                    Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
-                }
-                return m_syncRoot;
-            }
-        }
+        internal object SyncRoot =>
+            m_syncRoot ?? Interlocked.CompareExchange(ref m_syncRoot, new object(), null) ?? m_syncRoot;
 
         public override event ModuleResolveEventHandler? ModuleResolve
         {

@@ -30,6 +30,7 @@
 #include "invokeutil.h"
 #include "castcache.h"
 #include "encee.h"
+#include "finalizerthread.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -438,6 +439,15 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT,
         {
             COMPlusThrow(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
         }
+    }
+
+    if (pRetMethod != NULL && pRetMethod->IsAsyncVariantMethod())
+    {
+        // do not return methoddescs for async variants.
+        // NOTE: The only scenario where this is relevant is when caller iterates through all slots.
+        //       If GetMethodAt is used to find a method associated with another one,
+        //       then we would be starting with "real" method and will get a "real" method here.
+        pRetMethod = NULL;
     }
 
     END_QCALL;
@@ -1758,30 +1768,32 @@ FCIMPLEND
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
 {
     QCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
+    _ASSERTE(pMethod->IsDynamicMethod());
 
     BEGIN_QCALL;
 
-    if (pMethod == NULL)
-        COMPlusThrowArgumentNull(NULL, W("Arg_InvalidHandle"));
-
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
-    GCX_COOP();
+    {
+        GCX_COOP();
 
-    // Destroy should be called only if the managed part is gone.
-    _ASSERTE(OBJECTREFToObject(pDynamicMethodDesc->GetLCGMethodResolver()->GetManagedResolver()) == NULL);
+        // Destroy should be called only if the managed part is gone.
+        _ASSERTE(OBJECTREFToObject(pDynamicMethodDesc->GetLCGMethodResolver()->GetManagedResolver()) == NULL);
 
-    // Fire Unload Dynamic Method Event here
-    ETW::MethodLog::DynamicMethodDestroyed(pMethod);
+        // Fire Unload Dynamic Method Event here
+        ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
-    BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
-    (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
-    END_PROFILER_CALLBACK();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
+        (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
+        END_PROFILER_CALLBACK();
+    }
 
-    pDynamicMethodDesc->Destroy();
+    if (!pDynamicMethodDesc->TryDestroy())
+        FinalizerThread::DelayDestroyDynamicMethodDesc(pDynamicMethodDesc);
 
     END_QCALL;
-    }
+}
 
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE)
 {

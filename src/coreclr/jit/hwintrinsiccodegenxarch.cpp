@@ -95,7 +95,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     {
         case 0x01:
         {
-            result |= INS_OPTS_EVEX_eb_er_rd;
+            result |= INS_OPTS_EVEX_er_rd;
             break;
         }
 
@@ -427,6 +427,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
+                    // Make sure we consume the registers that are getting specially handled
+                    genConsumeReg(op1);
+
                     // We're merging with a non-zero value, so the target register is RMW
                     emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
                     GetEmitter()->emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, /* canSkip */ true);
@@ -451,12 +454,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 // We don't need to genProduceReg(node) since that will be handled by processing op2
                 // likewise, processing op2 will ensure its own registers are consumed
-
-                if (!mergeWithZero)
-                {
-                    // Make sure we consume the registers that are getting specially handled
-                    genConsumeReg(op1);
-                }
                 embMaskOp = op3;
             }
         }
@@ -872,7 +869,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     switch (intrinsicId)
                     {
-                        case NI_SSE42_BlendVariable:
+                        case NI_X86Base_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
                         case NI_AVX512_BlendVariableMask:
@@ -1008,19 +1005,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case InstructionSet_SSE42:
-        case InstructionSet_SSE42_X64:
-        {
-            genSse42Intrinsic(node, instOptions);
-            break;
-        }
-
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVXVNNIINT:
+        case InstructionSet_AVXVNNIINT_V512:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -1059,6 +1051,44 @@ void CodeGen::genHWIntrinsic_R_RM(
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, rmOp))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
+    }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vbroadcastf64x2:
+            {
+                ins = INS_vbroadcastf32x4;
+                break;
+            }
+
+            case INS_vbroadcasti64x2:
+            {
+                ins = INS_vbroadcasti32x4;
+                break;
+            }
+
+            case INS_vmovdqa64:
+            {
+                ins = INS_movdqa32;
+                break;
+            }
+
+            case INS_vmovdqu64:
+            {
+                ins = INS_movdqu32;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
     }
 
     OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
@@ -1871,19 +1901,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                         if (!canCombineLoad)
                         {
-                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                            {
-                                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
-                                inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 0x01,
-                                                 !compiler->canUseVexEncoding(), instOptions);
-                            }
-                            else
-                            {
-                                regNumber tmpReg = internalRegisters.GetSingle(node);
-                                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
-                                genHWIntrinsic_R_RM(node, ins, baseAttr, tmpReg, hiPart, instOptions);
-                                emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, targetReg, tmpReg, instOptions);
-                            }
+                            genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
+                            inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 0x01,
+                                             !compiler->canUseVexEncoding(), instOptions);
                             break;
                         }
 
@@ -1924,26 +1944,17 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                         if (baseType == TYP_FLOAT)
                         {
-                            if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                            {
-                                // insertps imm8 is:
-                                //  * Bits 0-3: zmask
-                                //  * Bits 4-5: count_d
-                                //  * Bits 6-7: count_s (register form only)
-                                //
-                                // We want zmask 0b1110 (0xE) to zero elements 1/2/3
-                                // We want count_d 0b00 (0x0) to insert the value to element 0
-                                // We want count_s 0b00 (0x0) as we're just taking element 0 of the source
+                            // insertps imm8 is:
+                            //  * Bits 0-3: zmask
+                            //  * Bits 4-5: count_d
+                            //  * Bits 6-7: count_s (register form only)
+                            //
+                            // We want zmask 0b1110 (0xE) to zero elements 1/2/3
+                            // We want count_d 0b00 (0x0) to insert the value to element 0
+                            // We want count_s 0b00 (0x0) as we're just taking element 0 of the source
 
-                                emit->emitIns_SIMD_R_R_R_I(INS_insertps, attr, targetReg, targetReg, op1Reg, 0x0E,
-                                                           instOptions);
-                            }
-                            else
-                            {
-                                assert(targetReg != op1Reg);
-                                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, instOptions);
-                                emit->emitIns_Mov(INS_movss, attr, targetReg, op1Reg, /* canSkip */ false);
-                            }
+                            emit->emitIns_SIMD_R_R_R_I(INS_insertps, attr, targetReg, targetReg, op1Reg, 0x0E,
+                                                       instOptions);
                         }
                         else
                         {
@@ -1977,8 +1988,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
             noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-            bool     isEBPbased;
-            unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+            bool isEBPbased;
+            int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (!isEBPbased)
@@ -1989,6 +2000,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 #else
             assert(genStackLevel == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
+
+            assert(op2->TypeIs(TYP_I_IMPL));
 
             regNumber indexReg = op2->GetRegNum();
             regNumber valueReg = op3->GetRegNum(); // New element value to be stored
@@ -2024,6 +2037,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 simdType = TYP_SIMD16;
             }
 
+            assert(op2->TypeIs(TYP_I_IMPL));
+
             // Optimize the case of op1 is in memory and trying to access i'th element.
             if (!op1->isUsedFromReg())
             {
@@ -2056,6 +2071,14 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         offset += op1->AsLclFld()->GetLclOffs();
                     }
                     baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
+                }
+                else if (op1->IsCnsVec())
+                {
+                    CORINFO_FIELD_HANDLE hnd =
+                        GetEmitter()->emitSimdConst(&op1->AsVecCon()->gtSimdVal, emitTypeSize(op1));
+
+                    baseReg = internalRegisters.GetSingle(node);
+                    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), baseReg, hnd, 0, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -2100,15 +2123,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 {
                     if (ival == 1)
                     {
-                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                        {
-                            emit->emitIns_R_R(INS_movshdup, attr, targetReg, op1Reg);
-                        }
-                        else
-                        {
-                            emit->emitIns_SIMD_R_R_R_I(INS_shufps, attr, targetReg, op1Reg, op1Reg,
-                                                       static_cast<int8_t>(0x55), instOptions);
-                        }
+                        emit->emitIns_R_R(INS_movshdup, attr, targetReg, op1Reg);
                     }
                     else if (ival == 2)
                     {
@@ -2138,8 +2153,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                 noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                bool     isEBPbased;
-                unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+                bool isEBPbased;
+                int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
                 if (!isEBPbased)
@@ -2301,7 +2316,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             //
             //      Vector128<int> overflowMask =
             //          Vector128.Equals(op1, Vector128.Create(int.MinValue)
-            //          & Vector128.Equals(op2, Vector128.Create(-1));
+            //          & Vector128.Equals(op2, Vector128<int>.NegativeOne);
             //      if (!Vector128.EqualsAll(overflowMask, Vector128<int>.Zero))
             //      {
             //          throw new OverflowException();
@@ -2519,40 +2534,11 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        default:
-            unreached();
-            break;
-    }
-
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
-// genSse42Intrinsic: Generates the code for an SSE4.2 hardware intrinsic node
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//
-void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    regNumber      targetReg   = node->GetRegNum();
-    GenTree*       op1         = node->Op(1);
-    var_types      baseType    = node->GetSimdBaseType();
-    var_types      targetType  = node->TypeGet();
-    emitter*       emit        = GetEmitter();
-
-    assert(targetReg != REG_NA);
-    assert(!node->OperIsCommutative());
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_SSE42_ConvertToVector128Int16:
-        case NI_SSE42_ConvertToVector128Int32:
-        case NI_SSE42_ConvertToVector128Int64:
+        case NI_X86Base_ConvertToVector128Int16:
+        case NI_X86Base_ConvertToVector128Int32:
+        case NI_X86Base_ConvertToVector128Int64:
         {
+            GenTree*    op1 = node->Op(1);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
 
             if (!varTypeIsSIMD(op1->TypeGet()))
@@ -2569,16 +2555,18 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_SSE42_Crc32:
-        case NI_SSE42_X64_Crc32:
+        case NI_X86Base_Crc32:
+        case NI_X86Base_X64_Crc32:
         {
             assert(instOptions == INS_OPTS_NONE);
 
             instruction ins    = INS_crc32;
+            GenTree*    op1    = node->Op(1);
             regNumber   op1Reg = op1->GetRegNum();
             GenTree*    op2    = node->Op(2);
 
-            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
+            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg) ||
+                   genIsSameLocalVar(op1, op2));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
 #ifdef TARGET_AMD64
@@ -2626,12 +2614,11 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_SSE42_Extract:
-        case NI_SSE42_X64_Extract:
+        case NI_X86Base_Extract:
+        case NI_X86Base_X64_Extract:
         {
-            assert(!varTypeIsFloating(baseType));
-
             instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            GenTree*    op1  = node->Op(1);
             GenTree*    op2  = node->Op(2);
             emitAttr    attr = emitActualTypeSize(targetType);
 
@@ -2658,18 +2645,16 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_SSE42_PopCount:
-        case NI_SSE42_X64_PopCount:
+        case NI_X86Base_PopCount:
+        case NI_X86Base_X64_PopCount:
         {
             genXCNTIntrinsic(node, INS_popcnt);
             break;
         }
 
         default:
-        {
             unreached();
             break;
-        }
     }
 
     genProduceReg(node);
@@ -3485,6 +3470,176 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAddSaturate:
+        {
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            assert(targetReg != REG_NA);
+            assert(op1Reg != REG_NA);
+            assert(op2Reg != REG_NA);
+
+            var_types op3Type = node->GetAuxiliaryType();
+            switch (baseType)
+            {
+                case TYP_UBYTE:
+                {
+                    ins = INS_vpdpbuuds;
+                    break;
+                }
+
+                case TYP_BYTE:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_UBYTE:
+                        {
+                            ins = INS_vpdpbsuds;
+                            break;
+                        }
+
+                        case TYP_BYTE:
+                        {
+                            ins = INS_vpdpbssds;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    ins = INS_vpdpwsuds;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_USHORT:
+                        {
+                            ins = INS_vpdpwuuds;
+                            break;
+                        }
+
+                        case TYP_SHORT:
+                        {
+                            ins = INS_vpdpwusds;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
+            break;
+        }
+
+        case NI_AVXVNNIINT_MultiplyWideningAndAdd:
+        case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
+        {
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            assert(targetReg != REG_NA);
+            assert(op1Reg != REG_NA);
+            assert(op2Reg != REG_NA);
+
+            var_types op3Type = node->GetAuxiliaryType();
+            switch (baseType)
+            {
+                case TYP_UBYTE:
+                {
+                    ins = INS_vpdpbuud;
+                    break;
+                }
+
+                case TYP_BYTE:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_UBYTE:
+                        {
+                            ins = INS_vpdpbsud;
+                            break;
+                        }
+
+                        case TYP_BYTE:
+                        {
+                            ins = INS_vpdpbssd;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                {
+                    ins = INS_vpdpwsud;
+                    break;
+                }
+
+                case TYP_USHORT:
+                {
+                    switch (op3Type)
+                    {
+                        case TYP_USHORT:
+                        {
+                            ins = INS_vpdpwuud;
+                            break;
+                        }
+
+                        case TYP_SHORT:
+                        {
+                            ins = INS_vpdpwusd;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
             break;
         }
 

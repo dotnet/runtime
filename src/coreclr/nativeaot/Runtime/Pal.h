@@ -23,6 +23,7 @@
 #include <pthread.h>
 #endif
 
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/guid.h>
 
 #include "CommonTypes.h"
@@ -161,7 +162,7 @@ bool PalInit();
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
-void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath);
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId);
 
 struct NATIVE_CONTEXT;
 
@@ -290,7 +291,6 @@ int32_t _stricmp(const char *string1, const char *string2);
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
 UInt32_BOOL PalCloseHandle(HANDLE arg1);
-void PalFlushProcessWriteBuffers();
 uint32_t PalGetCurrentProcessId();
 
 #ifdef UNICODE

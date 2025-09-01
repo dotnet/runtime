@@ -412,10 +412,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 #endif // DACCESS_COMPILE
 
@@ -456,10 +456,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1101,7 +1101,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
     if (id == OptionalMember_##NAME) { \
         return offset; \
     } \
-    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
+    static_assert(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
     if (Has##NAME()) { \
         offset += sizeof(TYPE); \
     }

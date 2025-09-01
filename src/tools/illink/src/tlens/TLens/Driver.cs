@@ -25,32 +25,32 @@ namespace TLens
             var options = new OptionSet {
                 { "l|lens=", "{NAME} of the lens to use. Default subset is used if not specified.",
                     l => {
-                        var lens = LensesCollection.GetLensByName (l);
+                        var lens = LensesCollection.GetLensByName(l);
                         if (lens != null)
-                            analyzers.Add (lens);
+                            analyzers.Add(lens);
                         else
                         {
-                            Console.WriteLine ($"Error: Lens name '{l}' does not exist.");
+                            Console.WriteLine($"Error: Lens name '{l}' does not exist.");
                             error = true;
                         }
                     }},
 
                 { "d|dir=", "Additional location {PATH} to look for assembly references.",
                     l => {
-                        if (!Directory.Exists (l)) {
-                            Console.WriteLine ($"Error: Directory '{l}' does not exist.");
+                        if (!Directory.Exists(l)) {
+                            Console.WriteLine($"Error: Directory '{l}' does not exist.");
                             error = true;
                         } else {
-                            dirs.Add (Path.GetFullPath (l));
+                            dirs.Add(Path.GetFullPath(l));
                         }
                     }},
 
                 { "all-lenses", "Uses all lenses available.",
-                    l => analyzers.AddRange (LensesCollection.AllAnalyzers) },
+                    l => analyzers.AddRange(LensesCollection.AllAnalyzers) },
                 { "h|help", "Show this message and exit.",
                     v => showUsage = v != null },
                 { "limit=", "Maximum number of findings reported by lens (defaults to 30).",
-                    l => runner.MaxAnalyzerResults = int.Parse (l) },
+                    l => runner.MaxAnalyzerResults = int.Parse(l) },
             };
 
             List<string> files;

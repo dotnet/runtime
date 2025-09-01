@@ -53,6 +53,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task AttributePrimaryConstructorDataflow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task AttributePropertyDataflow()
         {
             return RunTest(nameof(AttributePropertyDataflow));
@@ -84,6 +90,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task CompilerGeneratedTypes()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesNet90()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesReleaseNet90()
         {
             return RunTest();
         }
@@ -125,12 +143,18 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task DependencyInjectionPattern()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task DynamicDependencyDataflow()
         {
             return RunTest(nameof(DynamicDependencyDataflow));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/116218")]
+        [Fact]
         public Task DynamicObjects()
         {
             return RunTest();
@@ -145,6 +169,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task EventDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task ExtensionsDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task ExtensionMembersDataFlow()
         {
             return RunTest();
         }
@@ -275,7 +311,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             return RunTest(nameof(LocalDataFlow));
         }
-
 
         [Fact]
         public Task ExceptionalDataFlow()

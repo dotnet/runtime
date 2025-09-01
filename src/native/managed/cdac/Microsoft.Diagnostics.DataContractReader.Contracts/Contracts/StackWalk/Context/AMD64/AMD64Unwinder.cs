@@ -303,15 +303,17 @@ internal class AMD64Unwinder(Target target)
                 branchTarget = nextByte - imageBase;
                 if (ReadByteAt(nextByte) == JMP_IMM8_OP)
                 {
-                    branchTarget += 2u + ReadByteAt(nextByte + 1);
+                    // sign-extend the 8-bit immediate value
+                    branchTarget += 2u + (ulong)(sbyte)ReadByteAt(nextByte + 1);
                 }
                 else
                 {
+                    // sign-extend the 32-bit immediate value
                     int delta = ReadByteAt(nextByte + 1) |
                                 (ReadByteAt(nextByte + 2) << 8) |
                                 (ReadByteAt(nextByte + 3) << 16) |
                                 (ReadByteAt(nextByte + 4) << 24);
-                    branchTarget += (uint)(5 + delta);
+                    branchTarget += (ulong)(5 + delta);
                 }
 
                 //
@@ -1179,9 +1181,8 @@ internal class AMD64Unwinder(Target target)
 
             return new UnwindInfoHeader(unwindInfoAddress, headerValue);
         }
-        catch (InvalidOperationException)
+        catch (VirtualReadException)
         {
-            // InvalidOperationException thrown if failed to read memory
             return null;
         }
     }

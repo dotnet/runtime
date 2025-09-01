@@ -183,6 +183,8 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, int
 			interfaces_full [i] = inflated;
 			if (!bitmap_only)
 				interface_offsets_full [i] = gklass->interface_offsets_packed [i];
+			else
+				interface_offsets_full [i] = 0;
 
 			int count = mono_class_setup_count_virtual_methods (inflated);
 			if (count == -1) {

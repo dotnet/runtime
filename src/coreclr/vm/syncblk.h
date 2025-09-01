@@ -211,8 +211,8 @@ private:
         UINT32 GetMonitorHeldState() const
         {
             LIMITED_METHOD_CONTRACT;
-            static_assert_no_msg(IsLockedMask == 1);
-            static_assert_no_msg(WaiterCountShift >= 1);
+            static_assert(IsLockedMask == 1);
+            static_assert(WaiterCountShift >= 1);
 
             // Return only the locked state and waiter count in the previous (m_MonitorHeld) layout for the debugger:
             //   bit 0: 1 if locked, 0 otherwise
@@ -602,6 +602,7 @@ public:
     }
 };
 
+class UMEntryThunkData;
 #ifdef FEATURE_COMINTEROP
 class ComCallWrapper;
 class ComClassFactory;
@@ -734,7 +735,7 @@ public:
 
 #if !defined(DACCESS_COMPILE)
     // set m_pUMEntryThunk if not already set - return true if not already set
-    bool SetUMEntryThunk(void* pUMEntryThunk)
+    bool SetUMEntryThunk(UMEntryThunkData* pUMEntryThunk)
     {
         WRAPPER_NO_CONTRACT;
         return (InterlockedCompareExchangeT(&m_pUMEntryThunk,
@@ -746,7 +747,7 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    void* GetUMEntryThunk()
+    UMEntryThunkData* GetUMEntryThunk()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pUMEntryThunk;
@@ -755,7 +756,7 @@ public:
 private:
     // If this is a delegate marshalled out to unmanaged code, this points
     // to the thunk generated for unmanaged code to call back on.
-    void*               m_pUMEntryThunk;
+    UMEntryThunkData*   m_pUMEntryThunk;
 
 #ifdef FEATURE_COMINTEROP
     // If this object is being exposed to COM, it will have an associated CCW object

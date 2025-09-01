@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
     [LogDoesNotContain("--UnusedVirtualMethod2--")]
     [LogDoesNotContain("--IUnusedInterface.UnusedMethod--")]
     [LogDoesNotContain("--UnusedImplementationClass.UnusedMethod--")]
-    // [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
+    // [LogDoesNotContain("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
 
     [ExpectedNoWarnings]
     class RequiresWithCopyAssembly
@@ -42,8 +42,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         }
 
         [ExpectedWarning("IL2026", "--Method--")]
-        [ExpectedWarning("IL3002", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL3050", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL3002", "--Method--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [ExpectedWarning("IL3050", "--Method--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         static void TestRequiresInMethodFromCopiedAssembly()
         {
             var tmp = new RequiresInCopyAssembly();

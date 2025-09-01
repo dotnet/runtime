@@ -78,7 +78,7 @@ public:
             free(m_array);
     }
 
-    int32_t GetSize()
+    int32_t GetSize() const
     {
         return m_size;
     }
@@ -119,7 +119,7 @@ public:
     }
 
     // Returns a pointer to the element at the specified index.
-    T* GetUnderlyingArray()
+    T* GetUnderlyingArray() const
     {
         return m_array;
     }

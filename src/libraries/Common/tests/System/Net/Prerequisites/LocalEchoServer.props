@@ -33,7 +33,5 @@
               GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
               AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness)"
               ReferenceOutputAssembly="false"/>
-    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
-             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 </Project>
