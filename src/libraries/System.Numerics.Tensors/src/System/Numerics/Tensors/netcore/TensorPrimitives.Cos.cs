@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
-using static System.Numerics.Tensors.TensorOperation;
 
 namespace System.Numerics.Tensors
 {

@@ -6,11 +6,13 @@ using System.Configuration;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode("XML deserialization requires dynamic code")]
     internal sealed class OleDbConnectionFactory : DbConnectionFactory
     {
         private OleDbConnectionFactory() : base() { }

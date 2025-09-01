@@ -218,6 +218,7 @@ namespace ILCompiler
                 bool IDependencyNode<NodeFactory>.StaticDependenciesAreComputed => true;
                 bool IDependencyNode.Marked => true;
 
+                string IDependencyNode<NodeFactory>.GetName(NodeFactory context) => _name;
                 void ISymbolNode.AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(_name);
                 IEnumerable<CombinedDependencyListEntry> IDependencyNode<NodeFactory>.GetConditionalStaticDependencies(NodeFactory context) => throw new NotImplementedException();
                 IEnumerable<DependencyListEntry> IDependencyNode<NodeFactory>.GetStaticDependencies(NodeFactory context) => null;

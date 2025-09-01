@@ -22,7 +22,7 @@ public unsafe class ObjectTests
 
         configure?.Invoke(objectBuilder);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, objectBuilder.Types, objectBuilder.Globals);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, objectBuilder.Types, objectBuilder.Globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Object == ((IContractFactory<IObject>)new ObjectFactory()).CreateContract(target, 1)
                 && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));

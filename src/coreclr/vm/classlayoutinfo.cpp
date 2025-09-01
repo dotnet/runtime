@@ -213,7 +213,7 @@ namespace
         LayoutRawFieldInfo* pfwalk = pFieldInfoArray;
         mdFieldDef fd;
         ULONG ulOffset;
-        UINT32 calcTotalSize = 0;
+        UINT32 calcTotalSize = parentSize;
         while (SUCCEEDED(hr = pInternalImport->GetClassLayoutNext(
             &classlayout,
             &fd,

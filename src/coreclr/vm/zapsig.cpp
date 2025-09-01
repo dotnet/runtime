@@ -953,6 +953,11 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
             MemberLoader::ThrowMissingMethodException(constrainedType.GetMethodTable(), NULL, NULL, NULL, 0, NULL);
         }
 
+        if (directMethod->IsStatic() && (ppTH != NULL))
+        {
+            *ppTH = directMethod->GetMethodTable();
+        }
+
         // Strip the instantiating stub if the signature did not ask for one
         if (directMethod->IsInstantiatingStub() && !isInstantiatingStub)
         {

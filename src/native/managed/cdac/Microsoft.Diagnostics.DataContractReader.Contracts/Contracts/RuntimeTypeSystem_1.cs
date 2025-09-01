@@ -87,7 +87,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Has this chunk had its methods been determined eligible for tiered compilation or not
         DeterminedIsEligibleForTieredCompilation = 0x4000,
         // Is this chunk associated with a LoaderModule directly? If this flag is set, then the LoaderModule pointer is placed at the end of the chunk.
-        LoaderModuleAttachedToChunk              = 0x8000,
+        LoaderModuleAttachedToChunk = 0x8000,
+    }
+
+    internal enum MethodTableAuxiliaryFlags : uint
+    {
+        Initialized = 0x0001,
+        IsInitError = 0x0100,
     }
 
     internal struct MethodDesc
@@ -109,11 +115,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Address = methodDescPointer;
 
             Token = ComputeToken(target, desc, chunk);
+            Size = ComputeSize(target, desc);
         }
 
         public TargetPointer MethodTable => _chunk.MethodTable;
         public ushort Slot => _desc.Slot;
         public uint Token { get; }
+        public uint Size { get; }
 
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
@@ -126,6 +134,21 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
             uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
             return EcmaMetadataUtils.CreateMethodDef(tokenRange | tokenRemainder);
+        }
+
+        private static uint ComputeSize(Target target, Data.MethodDesc desc)
+        {
+            // Size of the MethodDesc is variable, read it from the targets lookup table
+            // See MethodDesc::SizeOf in method.cpp for details
+            TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+
+            ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
+                MethodDescFlags_1.MethodDescFlags.ClassificationMask |
+                MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
+                MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
+                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
+                MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
+            return target.Read<byte>(methodDescSizeTable + arrayOffset);
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -314,37 +337,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
         return new TypeHandle(methodTablePointer);
     }
-
-    public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
-
-    public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
-
-    private TargetPointer GetClassPointer(TypeHandle typeHandle)
-    {
-        MethodTable methodTable = _methodTables[typeHandle.Address];
-        switch (MethodTableFlags_1.GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
-        {
-            case MethodTableFlags_1.EEClassOrCanonMTBits.EEClass:
-                return methodTable.EEClassOrCanonMT;
-            case MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT:
-                TargetPointer canonMTPtr =MethodTableFlags_1.UntagEEClassOrCanonMT(methodTable.EEClassOrCanonMT);
-                TypeHandle canonMTHandle = GetTypeHandle(canonMTPtr);
-                MethodTable canonMT = _methodTables[canonMTHandle.Address];
-                return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
-            default:
-                throw new InvalidOperationException();
-        }
-    }
-
-    // only called on validated method tables, so we don't need to re-validate the EEClass
-    private Data.EEClass GetClassData(TypeHandle typeHandle)
-    {
-        TargetPointer clsPtr = GetClassPointer(typeHandle);
-        return _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-    }
-
-    public TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).MethodTable;
-
     public TargetPointer GetModule(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -372,13 +364,44 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetPointer.Null;
         }
     }
-
+    public TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).MethodTable;
     public TargetPointer GetParentMethodTable(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[typeHandle.Address].ParentMethodTable;
+
+    public uint GetBaseSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.BaseSize;
+
+    public uint GetComponentSize(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[typeHandle.Address].Flags.ComponentSize;
+
+    private TargetPointer GetClassPointer(TypeHandle typeHandle)
+    {
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        switch (MethodTableFlags_1.GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
+        {
+            case MethodTableFlags_1.EEClassOrCanonMTBits.EEClass:
+                return methodTable.EEClassOrCanonMT;
+            case MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT:
+                TargetPointer canonMTPtr = MethodTableFlags_1.UntagEEClassOrCanonMT(methodTable.EEClassOrCanonMT);
+                TypeHandle canonMTHandle = GetTypeHandle(canonMTPtr);
+                MethodTable canonMT = _methodTables[canonMTHandle.Address];
+                return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
+            default:
+                throw new InvalidOperationException();
+        }
+    }
+
+    // only called on validated method tables, so we don't need to re-validate the EEClass
+    private Data.EEClass GetClassData(TypeHandle typeHandle)
+    {
+        TargetPointer clsPtr = GetClassPointer(typeHandle);
+        return _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
+    }
+
 
     public bool IsFreeObjectMethodTable(TypeHandle typeHandle) => FreeObjectMethodTablePointer == typeHandle.Address;
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
+    public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 
     public uint GetTypeDefToken(TypeHandle typeHandle)
     {
@@ -387,14 +410,69 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodTable methodTable = _methodTables[typeHandle.Address];
         return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
-
     public ushort GetNumMethods(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumMethods;
-
-    public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
-
     public uint GetTypeDefTypeAttributes(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : GetClassData(typeHandle).CorTypeAttr;
+    public ushort GetNumInstanceFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumInstanceFields;
+    public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
+    public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
+    public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+    private TargetPointer GetDynamicStaticsInfo(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return default;
 
-    public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        if (!methodTable.Flags.IsDynamicStatics)
+            return default;
+        TargetPointer dynamicStaticsInfoSize = _target.GetTypeInfo(DataType.DynamicStaticsInfo).Size!.Value;
+        TargetPointer dynamicStaticsInfoAddr = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
+        return dynamicStaticsInfoAddr;
+    }
+
+    private Data.ThreadStaticsInfo GetThreadStaticsInfo(TypeHandle typeHandle)
+    {
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        TargetPointer threadStaticsInfoSize = _target.GetTypeInfo(DataType.ThreadStaticsInfo).Size!.Value;
+        TargetPointer threadStaticsInfoAddr = methodTable.AuxiliaryData - threadStaticsInfoSize;
+        Data.ThreadStaticsInfo threadStaticsInfo = _target.ProcessedData.GetOrAdd<Data.ThreadStaticsInfo>(threadStaticsInfoAddr);
+        return threadStaticsInfo;
+    }
+
+    public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
+    }
+
+    public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
+    }
+
+    public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
+    {
+        TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        if (dynamicStaticsInfoAddr == TargetPointer.Null)
+            return TargetPointer.Null;
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
+        return dynamicStaticsInfo.GCStatics;
+    }
+
+    public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle)
+    {
+        TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        if (dynamicStaticsInfoAddr == TargetPointer.Null)
+            return TargetPointer.Null;
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
+        return dynamicStaticsInfo.NonGCStatics;
+    }
 
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle)
     {
@@ -406,6 +484,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return default;
 
         return _target.ProcessedData.GetOrAdd<TypeInstantiation>(typeHandle.Address).TypeHandles;
+    }
+
+    public bool IsClassInited(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.Initialized) != 0;
+    }
+
+    public bool IsInitError(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.IsInitError) != 0;
     }
 
     private sealed class TypeInstantiation : IData<TypeInstantiation>
@@ -613,30 +709,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer)
+        => GetMethodDescHandle(methodDescPointer, validate: true);
+
+    private MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer, bool validate)
     {
-        // if we already validated this address, return a handle
+        // if we already have a method desc at this address, return a handle
         if (_methodDescs.ContainsKey(methodDescPointer))
         {
             return new MethodDescHandle(methodDescPointer);
         }
-        // Check if we cached the underlying data already
-        if (_target.ProcessedData.TryGet(methodDescPointer, out Data.MethodDesc? methodDescData))
-        {
-            // we already cached the data, we must have validated the address, create the representation struct for our use
-            TargetPointer mdescChunkPtr = _methodValidation.GetMethodDescChunkPointerThrowing(methodDescPointer, methodDescData);
-            // FIXME[cdac]: this isn't threadsafe
-            if (!_target.ProcessedData.TryGet(mdescChunkPtr, out Data.MethodDescChunk? methodDescChunkData))
-            {
-                throw new InvalidOperationException("cached MethodDesc data but not its containing MethodDescChunk");
-            }
-            MethodDesc validatedMethodDesc = new MethodDesc(_target, methodDescPointer, methodDescData, mdescChunkPtr, methodDescChunkData);
-            _ = _methodDescs.TryAdd(methodDescPointer, validatedMethodDesc);
-            return new MethodDescHandle(methodDescPointer);
-        }
 
-        if (!_methodValidation.ValidateMethodDescPointer(methodDescPointer, out TargetPointer methodDescChunkPointer))
+        TargetPointer methodDescChunkPointer;
+        if (validate)
         {
-            throw new ArgumentException("Invalid method desc pointer", nameof(methodDescPointer));
+            if (!_methodValidation.ValidateMethodDescPointer(methodDescPointer, out methodDescChunkPointer))
+            {
+                throw new ArgumentException("Invalid method desc pointer", nameof(methodDescPointer));
+            }
+        }
+        else
+        {
+            methodDescChunkPointer = _methodValidation.GetMethodDescChunkPointerThrowing(methodDescPointer, _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer));
         }
 
         // ok, we validated it, cache the data and add the MethodDesc struct to the dictionary
@@ -917,7 +1010,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer loaderModuleAddr = GetLoaderModule(md);
-        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
+        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandleFromModulePtr(loaderModuleAddr);
         return _target.Contracts.Loader.IsCollectible(mod);
     }
 
@@ -964,6 +1057,82 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         return md.HasNativeCodeSlot;
+    }
+
+    // Based on MethodTable::IntroducedMethodIterator
+    private IEnumerable<MethodDescHandle> GetIntroducedMethods(TypeHandle typeHandle)
+    {
+        Debug.Assert(typeHandle.IsMethodTable());
+
+        EEClass eeClass = GetClassData(typeHandle);
+
+        TargetPointer chunkAddr = eeClass.MethodDescChunk;
+        while (chunkAddr != TargetPointer.Null)
+        {
+            MethodDescChunk chunk = _target.ProcessedData.GetOrAdd<MethodDescChunk>(chunkAddr);
+            TargetPointer methodDescPtr = chunk.FirstMethodDesc;
+            // chunk.Count is the number of MethodDescs in the chunk - 1
+            for (int i = 0; i < chunk.Count + 1; i++)
+            {
+                // Validation of some MethodDescs fails in heap dumps due to missing memory.
+                // Skipping validation should be okay as the pointers come from the target.
+                MethodDescHandle methodDescHandle = GetMethodDescHandle(methodDescPtr, validate: false);
+                MethodDesc md = _methodDescs[methodDescHandle.Address];
+                methodDescPtr += md.Size;
+                yield return methodDescHandle;
+            }
+
+            chunkAddr = chunk.Next;
+        }
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
+    {
+        // based on MethodTable::GetMethodDescForSlot_NoThrow
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
+        TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
+        TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
+
+        if (pCode == TargetCodePointer.Null)
+        {
+            while (canonMT.Address != TargetPointer.Null)
+            {
+                // if pCode is null, we iterate through the method descs in the MT.
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+                {
+                    MethodDesc md = _methodDescs[mdh.Address];
+                    if (md.Slot == slot)
+                    {
+                        return mdh.Address;
+                    }
+                }
+                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
+            }
+            Debug.Fail("We should never reach here, as there should always be a MethodDesc for a slot");
+        }
+
+        return GetMethodDescForEntrypoint(pCode);
+    }
+
+    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
+    {
+        // standard path, ask ExecutionManager for the MethodDesc
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
+        {
+            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
+            return methodDescPtr;
+        }
+
+        // stub path, read address as a Precode and read MethodDesc from it
+        {
+            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
+            return methodDescPtr;
+        }
     }
 
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)

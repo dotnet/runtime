@@ -44,7 +44,7 @@ EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
 endif ; FEATURE_EH_FUNCLETS
 EXTERN __alloca_probe:PROC
-EXTERN _NDirectImportWorker@4:PROC
+EXTERN _PInvokeImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
@@ -618,8 +618,8 @@ endif ; FEATURE_HIJACK
 
 ;==========================================================================
 ; This function is reached only via the embedded ImportThunkGlue code inside
-; an NDirectMethodDesc. It's purpose is to load the DLL associated with an
-; N/Direct method, then backpatch the DLL target into the methoddesc.
+; an PInvokeMethodDesc. It's purpose is to load the DLL associated with an
+; PInvoke method, then backpatch the DLL target into the methoddesc.
 ;
 ; Initial state:
 ;
@@ -637,7 +637,7 @@ endif ; FEATURE_HIJACK
 ;
 ;
 ;==========================================================================
-_NDirectImportThunk@0 proc public
+_PInvokeImportThunk@0 proc public
 
         ; Preserve argument registers
         push    ecx
@@ -645,17 +645,17 @@ _NDirectImportThunk@0 proc public
 
         ; Invoke the function that does the real work.
         push    eax
-        call    _NDirectImportWorker@4
+        call    _PInvokeImportWorker@4
 
         ; Restore argument registers
         pop     edx
         pop     ecx
 
-        ; If we got back from NDirectImportWorker, the MD has been successfully
+        ; If we got back from PInvokeImportWorker, the MD has been successfully
         ; linked and "eax" contains the DLL target. Proceed to execute the
         ; original DLL call.
         jmp     eax     ; Jump to DLL target
-_NDirectImportThunk@0 endp
+_PInvokeImportThunk@0 endp
 
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
@@ -901,7 +901,7 @@ _ProfileTailcallNaked@4 endp
 ;==========================================================================
 ; Invoked for vararg forward P/Invoke calls as a stub.
 ; Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-; EAX       - the NDirectMethodDesc
+; EAX       - the PInvokeMethodDesc
 ; ECX       - may be return buffer address
 ; [ESP + 4] - the VASigCookie
 ;

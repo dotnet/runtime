@@ -32,7 +32,7 @@ namespace DefaultNamespace
             }
         }
 
-        public RootMem(int i)
+        private RootMem(int i)
         {
             if (i > 0)
             {

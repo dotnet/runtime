@@ -1321,7 +1321,7 @@ get_wrapper_shared_vtype (MonoType *t)
 }
 
 /*
- * get_wrapper_shared_type:
+ * get_wrapper_shared_type_full:
  *
  *   Return a type which is handled identically wrt to calling conventions as T.
  */
@@ -1414,6 +1414,8 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 		g_assert (klass);
+
+		mono_class_set_skip_generic_constraints (klass);
 
 		t = m_class_get_byval_arg (klass);
 		MonoType *shared_type = get_wrapper_shared_vtype (t);

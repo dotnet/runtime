@@ -25,10 +25,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe string FastAllocateString(MethodTable *pMT, int length);
+        internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [DebuggerHidden]
-        internal static unsafe string FastAllocateString(int length)
+        internal static unsafe string FastAllocateString(nint length)
         {
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
         }
@@ -40,7 +40,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(str);
             Intern(new StringHandleOnStack(ref str!));
-            return str!;
+            return str;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]

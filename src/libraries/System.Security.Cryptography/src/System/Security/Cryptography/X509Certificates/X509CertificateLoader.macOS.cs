@@ -144,12 +144,8 @@ namespace System.Security.Cryptography.X509Certificates
                     return new AsymmetricAlgorithmPkcs12PrivateKey(
                         pkcs8,
                         static () => new ECDsaImplementation.ECDsaSecurityTransforms());
-                case Oids.Dsa:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new DSAImplementation.DSASecurityTransforms());
                 default:
-                    // No PQC support on macOS.
+                    // No DSA or PQC support on macOS.
                     return null;
             }
         }
@@ -167,16 +163,6 @@ namespace System.Security.Cryptography.X509Certificates
                 using (PinAndClear.Track(rsaPrivateKey))
                 {
                     return Interop.AppleCrypto.ImportEphemeralKey(rsaPrivateKey, true);
-                }
-            }
-
-            if (key.Key is DSAImplementation.DSASecurityTransforms dsa)
-            {
-                DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-                using (PinAndClear.Track(dsaParameters.X!))
-                {
-                    return DSAImplementation.DSASecurityTransforms.ImportKey(dsaParameters);
                 }
             }
 

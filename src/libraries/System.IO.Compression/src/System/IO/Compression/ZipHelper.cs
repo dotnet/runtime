@@ -32,19 +32,6 @@ internal static partial class ZipHelper
         return Encoding.ASCII;
     }
 
-    /// <summary>
-    /// Reads exactly bytesToRead out of stream, unless it is out of bytes
-    /// </summary>
-    internal static int ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
-    {
-        int bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: false);
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
-    }
-
     // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
     internal static DateTime DosTimeToDateTime(uint dateTime)
     {
@@ -124,11 +111,18 @@ internal static partial class ZipHelper
             bool signatureFound = false;
 
             int totalBytesRead = 0;
-            int duplicateBytesRead = 0;
 
-            while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
+            while (!signatureFound && !outOfBytes && totalBytesRead < maxBytesToRead)
             {
-                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
+                int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
+
+                if (maxBytesToRead - totalBytesRead + overlap < bufferSpan.Length)
+                {
+                    // If we have less than a full buffer left to read, we adjust the buffer size.
+                    bufferSpan = bufferSpan.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                }
+
+                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, overlap);
 
                 outOfBytes = bytesRead < bufferSpan.Length;
                 if (bytesRead < bufferSpan.Length)
@@ -139,15 +133,13 @@ internal static partial class ZipHelper
                 bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
                 Debug.Assert(bufferPointer < bufferSpan.Length);
 
-                totalBytesRead += (bufferSpan.Length - duplicateBytesRead);
+                totalBytesRead += bytesRead - overlap;
 
                 if (bufferPointer != -1)
                 {
                     signatureFound = true;
                     break;
                 }
-
-                duplicateBytesRead = signatureToFind.Length;
             }
 
             if (!signatureFound)
@@ -178,14 +170,14 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = ReadBytes(stream, buffer, buffer.Length);
+            bytesRead = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: true);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = ReadBytes(stream, buffer, bytesToRead);
+            bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
             stream.Seek(0, SeekOrigin.Begin);
         }
 

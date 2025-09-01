@@ -70,7 +70,7 @@ build_native()
     # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
     # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
     # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    # 
+    #
     # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
     #
     export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
@@ -545,6 +545,9 @@ elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == android ]]; then

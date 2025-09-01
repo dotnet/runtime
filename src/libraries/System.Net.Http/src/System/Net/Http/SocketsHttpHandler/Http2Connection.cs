@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -1197,7 +1198,7 @@ namespace System.Net.Http
                 // As such, it should not matter that we were not able to actually send the frame.
                 // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
                 Debug.Assert(_shutdown && _streamsInUse == 0);
-                return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
+                return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2Connection))));
             }
 
             return writeEntry.Task;
@@ -2173,7 +2174,7 @@ namespace System.Net.Http
             throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_http_request_aborted, innerException));
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

@@ -11,13 +11,19 @@ internal sealed class EEClass : IData<EEClass>
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
+        MethodDescChunk = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescChunk)].Offset);
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
         CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
         InternalCorElementType = target.Read<byte>(address + (ulong)type.Fields[nameof(InternalCorElementType)].Offset);
+        NumInstanceFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInstanceFields)].Offset);
+        NumStaticFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumStaticFields)].Offset);
+        NumThreadStaticFields = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumThreadStaticFields)].Offset);
+        FieldDescList = target.Read<ulong>(address + (ulong)type.Fields[nameof(FieldDescList)].Offset);
         NumNonVirtualSlots = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumNonVirtualSlots)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
+    public TargetPointer MethodDescChunk { get; init; }
     public ushort NumMethods { get; init; }
     public uint CorTypeAttr { get; init; }
 
@@ -29,7 +35,10 @@ internal sealed class EEClass : IData<EEClass>
     // Enums are the element type of their underlying type
     // ValueTypes which can exactly be represented as an element type are represented as such
     public byte InternalCorElementType { get; init; }
-
+    public ushort NumInstanceFields { get; init; }
+    public ushort NumStaticFields { get; init; }
+    public ushort NumThreadStaticFields { get; init; }
+    public TargetPointer FieldDescList { get; init; }
     public ushort NumNonVirtualSlots { get; init; }
 }
 

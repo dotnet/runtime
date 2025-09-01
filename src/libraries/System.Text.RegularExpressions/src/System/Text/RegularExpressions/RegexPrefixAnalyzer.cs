@@ -895,13 +895,22 @@ namespace System.Text.RegularExpressions
             });
 
         /// <summary>
-        /// Computes a character class for the first character in tree.  This uses a more robust algorithm
-        /// than is used by TryFindFixedLiterals and thus can find starting sets it couldn't.  For example,
+        /// Computes a character class for the first character in the node.
+        /// </summary>
+        /// <remarks>
+        /// This uses a more robust algorithm than is used by TryFindFixedLiterals and thus can find starting sets it couldn't.  For example,
         /// fixed literals won't find the starting set for a*b, as the a isn't guaranteed and the b is at a
         /// variable position, but this will find [ab] as it's instead looking for anything that under any
         /// circumstance could possibly start a match.
+        /// </remarks>
+        public static string? FindFirstCharClass(RegexNode root) => FindFirstOrLastCharClass(root, findFirst: true);
+
+        /// <summary>
+        /// Computes a character class for the last character in the node.
         /// </summary>
-        public static string? FindFirstCharClass(RegexNode root)
+        public static string? FindLastCharClass(RegexNode root) => FindFirstOrLastCharClass(root, findFirst: false);
+
+        public static string? FindFirstOrLastCharClass(RegexNode root, bool findFirst)
         {
             // Explore the graph, adding found chars into a result set, which is lazily initialized so that
             // we can initialize it to a parsed set if we discover one first (this is helpful not just for allocation
@@ -913,7 +922,7 @@ namespace System.Text.RegularExpressions
             // whole pattern was nullable such that it could match an empty string, in which case we
             // can't make any statements about what begins a match.
             RegexCharClass? cc = null;
-            return TryFindFirstCharClass(root, ref cc) == true ?
+            return TryFindFirstOrLastCharClass(root, findFirst, ref cc) == true ?
                 cc!.ToStringClass() :
                 null;
 
@@ -930,7 +939,7 @@ namespace System.Text.RegularExpressions
             //   it's zero-width (e.g. empty, a lookaround, an anchor, etc.) or it could be zero-width
             //   (e.g. a loop with a min bound of 0).  A concatenation processing a child that returns
             //   null needs to keep processing the next child.
-            static bool? TryFindFirstCharClass(RegexNode node, ref RegexCharClass? cc)
+            static bool? TryFindFirstOrLastCharClass(RegexNode node, bool findFirst, ref RegexCharClass? cc)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
@@ -992,7 +1001,8 @@ namespace System.Text.RegularExpressions
                         if (cc is null || cc.CanMerge)
                         {
                             cc ??= new RegexCharClass();
-                            cc.AddChar(node.Str![(node.Options & RegexOptions.RightToLeft) != 0 ? node.Str.Length - 1 : 0]);
+                            bool firstChar = findFirst == ((node.Options & RegexOptions.RightToLeft) == 0);
+                            cc.AddChar(node.Str![firstChar ? 0 : node.Str.Length - 1]);
                             return true;
                         }
                         return false;
@@ -1019,14 +1029,14 @@ namespace System.Text.RegularExpressions
                     // Groups.  These don't contribute anything of their own, and are just pass-throughs to their children.
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Capture:
-                        return TryFindFirstCharClass(node.Child(0), ref cc);
+                        return TryFindFirstOrLastCharClass(node.Child(0), findFirst, ref cc);
 
                     // Loops.  Like groups, these are mostly pass-through: if the child fails, then the whole operation needs
                     // to fail, and if the child is nullable, then the loop is as well.  However, if the child succeeds but
                     // the loop has a lower bound of 0, then the loop is still nullable.
                     case RegexNodeKind.Loop:
                     case RegexNodeKind.Lazyloop:
-                        return TryFindFirstCharClass(node.Child(0), ref cc) switch
+                        return TryFindFirstOrLastCharClass(node.Child(0), findFirst, ref cc) switch
                         {
                             false => false,
                             null => null,
@@ -1040,12 +1050,26 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Concatenate:
                         {
                             int childCount = node.ChildCount();
-                            for (int i = 0; i < childCount; i++)
+                            if (findFirst)
                             {
-                                bool? childResult = TryFindFirstCharClass(node.Child(i), ref cc);
-                                if (childResult != null)
+                                for (int i = 0; i < childCount; i++)
                                 {
-                                    return childResult;
+                                    bool? childResult = TryFindFirstOrLastCharClass(node.Child(i), findFirst, ref cc);
+                                    if (childResult != null)
+                                    {
+                                        return childResult;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = childCount - 1; i >= 0; i--)
+                                {
+                                    bool? childResult = TryFindFirstOrLastCharClass(node.Child(i), findFirst, ref cc);
+                                    if (childResult != null)
+                                    {
+                                        return childResult;
+                                    }
                                 }
                             }
                             return null;
@@ -1060,7 +1084,7 @@ namespace System.Text.RegularExpressions
                             bool anyChildWasNull = false;
                             for (int i = 0; i < childCount; i++)
                             {
-                                bool? childResult = TryFindFirstCharClass(node.Child(i), ref cc);
+                                bool? childResult = TryFindFirstOrLastCharClass(node.Child(i), findFirst, ref cc);
                                 if (childResult is null)
                                 {
                                     anyChildWasNull = true;
@@ -1078,7 +1102,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.BackreferenceConditional:
                     case RegexNodeKind.ExpressionConditional:
                         int branchStart = node.Kind is RegexNodeKind.BackreferenceConditional ? 0 : 1;
-                        return (TryFindFirstCharClass(node.Child(branchStart), ref cc), TryFindFirstCharClass(node.Child(branchStart + 1), ref cc)) switch
+                        return (TryFindFirstOrLastCharClass(node.Child(branchStart), findFirst, ref cc), TryFindFirstOrLastCharClass(node.Child(branchStart + 1), findFirst, ref cc)) switch
                         {
                             (false, _) or (_, false) => false,
                             (null, _) or (_, null) => null,
@@ -1330,8 +1354,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Start:
                     case RegexNodeKind.EndZ:
                     case RegexNodeKind.End:
-                    case RegexNodeKind.Boundary:
-                    case RegexNodeKind.ECMABoundary:
                         // Return any anchor found.
                         return node.Kind;
 
@@ -1365,6 +1387,7 @@ namespace System.Text.RegularExpressions
                                     {
                                         case RegexNodeKind.Empty or RegexNodeKind.NegativeLookaround:
                                         case RegexNodeKind.PositiveLookaround when ((node.Options | tmpChild.Options) & RegexOptions.RightToLeft) != 0:
+                                        case RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
                                             // Skip over zero-width assertions.
                                             continue;
 

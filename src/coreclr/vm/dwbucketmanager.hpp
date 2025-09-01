@@ -326,7 +326,6 @@ protected:
     void GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPackageMoniker(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPRAID(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
-    void GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
@@ -808,31 +807,6 @@ void BaseBucketParamsManager::GetPRAID(_Out_writes_(maxLength) WCHAR* targetPara
     CONTRACTL_END;
 
     _ASSERTE(!"PRAID support NYI for CoreCLR");
-}
-
-void BaseBucketParamsManager::GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD ilOffset = GetILOffset();
-
-    if (ilOffset == MAXDWORD)
-        ilOffset = 0;
-
-    if (m_pFaultingMD)
-        ilOffset += m_pFaultingMD->GetRVA();
-
-    _snwprintf_s(targetParam,
-                maxLength,
-                _TRUNCATE,
-                W("%x"),
-                ilOffset);
 }
 
 // helper functions

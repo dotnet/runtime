@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Value_Set_GetReturnsExpected(string value)
+        public void Value_Set_GetReturnsExpected(string? value)
         {
             var attribute = new EnumMemberAttribute() { Value = value };
             Assert.Equal(value, attribute.Value);

@@ -173,7 +173,9 @@ internal sealed class ReaderGen : CsWriter
         CloseScope("_Validate");
 
         WriteLineIfNeeded();
+        WriteLine("#if DEBUG");
         WriteLine("public override string ToString() => string.Format(\"{0:X8}\", _value);");
+        WriteLine("#endif");
 
         CloseScope(handleName);
     }

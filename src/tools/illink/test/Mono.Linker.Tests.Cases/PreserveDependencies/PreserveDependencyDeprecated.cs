@@ -32,10 +32,10 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 
             [Kept]
             [PreserveDependency("Dependency1()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
-            [PreserveDependency("Dependency2`1    (   T[]  ,   System.Int32  )  ", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
+            [PreserveDependency("Dependency2`1(T[],System.Int32)", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
             [PreserveDependency(".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")] // To avoid lazy body marking stubbing
             [PreserveDependency("field", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
-            [PreserveDependency("NextOne (Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested&)", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested")]
+            [PreserveDependency("NextOne(Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested&)", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested")]
             [PreserveDependency(".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+Nested")]
             // Dependency on a property itself should be expressed as a dependency on one or both accessor methods
             [PreserveDependency("get_Property()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
@@ -46,7 +46,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 
             [Kept]
             [PreserveDependency("field")]
-            [PreserveDependency("Method2 (System.SByte&)")]
+            [PreserveDependency("Method2(System.SByte&)")]
             [ExpectedWarning("IL2033")]
             public static void SameContext()
             {
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
             [Kept]
             [PreserveDependency("MissingType", "Mono.Linker.Tests.Cases.PreserveDependencies.MissingType")]
             [PreserveDependency("MissingMethod", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
-            [PreserveDependency("Dependency2`1 (T, System.Int32, System.Object)", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
+            [PreserveDependency("Dependency2`1(T, System.Int32, System.Object)", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]
             [PreserveDependency("")]
             [PreserveDependency(".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyDeprecated+NestedStruct")]
             [PreserveDependency(".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.D")]

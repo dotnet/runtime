@@ -8,8 +8,7 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpClientJsonExtensions
     {
-        private static HttpMethod HttpPatch => s_httpPatch ??= new HttpMethod("PATCH");
-        private static HttpMethod? s_httpPatch;
+        private static HttpMethod HttpPatch => field ??= new HttpMethod("PATCH");
 
         private static Task<HttpResponseMessage> PatchAsync(this HttpClient client, string? requestUri, HttpContent content, CancellationToken cancellationToken)
         {

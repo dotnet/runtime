@@ -42,6 +42,7 @@ namespace System.Xml.Xsl.Xslt
         public int CurrentPrecedence;  // Decreases by 1 with each import
         public XslNode? StartApplyTemplates;
         public RootLevel? Root;
+        [Obsolete(Obsoletions.XsltSettingsEnableScriptMessage, DiagnosticId = Obsoletions.XsltSettingsEnableScriptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public Scripts Scripts;
         public Output Output = new Output();
         public List<VarPar> ExternalPars = new List<VarPar>();
@@ -67,7 +68,9 @@ namespace System.Xml.Xsl.Xslt
             ScriptAssemblyPath = scriptAssemblyPath;
 
             CompilerErrorColl = new CompilerErrorCollection();
+#pragma warning disable SYSLIB0062 // Scripts field is obsolete
             Scripts = new Scripts(this);
+#pragma warning restore SYSLIB0062
         }
 
         public CompilerErrorCollection Compile(object stylesheet, XmlResolver? xmlResolver, XmlResolver? origResolver, out QilExpression qil)

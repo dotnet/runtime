@@ -240,8 +240,10 @@ namespace System.Formats.Tar
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-            buffer = TrimLeadingNullsAndSpaces(buffer);
+            buffer = TrimNullTerminated(buffer);
+
+            // We ignore spaces because some archives seem to have them (even though they shouldn't).
+            buffer = buffer.Trim((byte)' ');
 
             if (buffer.Length == 0)
             {
@@ -268,43 +270,22 @@ namespace System.Formats.Tar
         private static void ThrowInvalidNumber() =>
             throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
 
-        // Returns the string contained in the specified buffer of bytes,
-        // in the specified encoding, removing the trailing null or space chars.
-        private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
+        // Returns the null-terminated UTF8 string contained in the specified buffer.
+        internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)
         {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-            return buffer.IsEmpty ? string.Empty : encoding.GetString(buffer);
+            buffer = TrimNullTerminated(buffer);
+            return Encoding.UTF8.GetString(buffer);
         }
 
-        internal static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        internal static ReadOnlySpan<byte> TrimNullTerminated(ReadOnlySpan<byte> buffer)
         {
-            int trimmedLength = buffer.Length;
-            while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
+            int i = buffer.IndexOf((byte)0);
+            if (i != -1)
             {
-                trimmedLength--;
+                buffer = buffer[0..i];
             }
-
-            return buffer.Slice(0, trimmedLength);
+            return buffer;
         }
-
-        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
-        {
-            int newStart = 0;
-            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
-            {
-                newStart++;
-            }
-
-            return buffer.Slice(newStart);
-        }
-
-        // Returns the ASCII string contained in the specified buffer of bytes,
-        // removing the trailing null or space chars.
-        internal static string GetTrimmedAsciiString(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.ASCII);
-
-        // Returns the UTF8 string contained in the specified buffer of bytes,
-        // removing the trailing null or space chars.
-        internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and

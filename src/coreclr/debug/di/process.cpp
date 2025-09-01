@@ -5061,6 +5061,23 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_LOAD_MODULE:
         {
+            LOG((LF_CORDB, LL_INFO100,
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
+                dwVolatileThreadId,
+                VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
+                VmPtrToCookie(pEvent->vmAppDomain)));
+
+            _ASSERTE (pAppDomain != NULL);
+
+            // Determine if this Assembly is cached.
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->LoadModuleData.vmDomainAssembly);
+            _ASSERTE(pAssembly != NULL); // throws on error
+
+            // If created, or have, an Assembly, notify callback.
+            {
+                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
+            }
             _ASSERTE (pAppDomain != NULL);
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmDomainAssembly);
 
@@ -5371,29 +5388,6 @@ void CordbProcess::RawDispatchEvent(
             // to this AppDomain have been moved to the default AppDomain, no one should be
             // interested in looking this AppDomain up anymore.
             m_appDomains.RemoveBase(VmPtrToCookie(pEvent->vmAppDomain));
-        }
-
-        break;
-
-    case DB_IPCE_LOAD_ASSEMBLY:
-        {
-            LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
-                dwVolatileThreadId,
-                VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
-
-            _ASSERTE (pAppDomain != NULL);
-
-            // Determine if this Assembly is cached.
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
-            _ASSERTE(pAssembly != NULL); // throws on error
-
-            // If created, or have, an Assembly, notify callback.
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
-            }
         }
 
         break;
@@ -13281,9 +13275,9 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
             DT_CONTEXT tempContext = { 0 };
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
-            tempContext.ContextFlags = DT_CONTEXT_FULL;
+            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
 #endif
             HRESULT hr = pUnmanagedThread->GetThreadContext(&tempContext);
             _ASSERTE(SUCCEEDED(hr));
@@ -13672,7 +13666,7 @@ bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
 #ifndef DBG_FORCE_CONTINUE
 #define DBG_FORCE_CONTINUE MY_DBG_FORCE_CONTINUE
 #else
-static_assert_no_msg(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
+static_assert(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
 #endif
 
 DWORD GetDbgContinueFlag()
@@ -15246,7 +15240,10 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
 
     if (pAppDomain != NULL)
     {
-        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmDomainAssembly));
+        VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+        _ASSERTE(!vmModule.IsNull());
+        CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)
         {
             return pModule->LookupClass(classToken);

@@ -33,7 +33,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[] { 1, 2, 3, })]
-        public void Ctor_Cookie(byte[] cookie)
+        public void Ctor_Cookie(byte[]? cookie)
         {
             var synchronization = new DirectorySynchronization(cookie);
             Assert.Equal(DirectorySynchronizationOptions.None, synchronization.Option);
@@ -47,7 +47,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(DirectorySynchronizationOptions.None, null)]
         [InlineData(DirectorySynchronizationOptions.IncrementalValues, new byte[0])]
         [InlineData(DirectorySynchronizationOptions.IncrementalValues | DirectorySynchronizationOptions.ObjectSecurity, new byte[] { 1, 2, 3 })]
-        public void Ctor_Option_Cookie(DirectorySynchronizationOptions option, byte[] cookie)
+        public void Ctor_Option_Cookie(DirectorySynchronizationOptions option, byte[]? cookie)
         {
             var synchronization = new DirectorySynchronization(option, cookie);
             Assert.Equal(option, synchronization.Option);
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[] { 1, 2, 3 })]
-        public void ResetDirectorySynchronizationCookie_Cookie_SetsToEmpty(byte[] cookie)
+        public void ResetDirectorySynchronizationCookie_Cookie_SetsToEmpty(byte[]? cookie)
         {
             var synchronization = new DirectorySynchronization(new byte[] { 255, 255, 255 });
             synchronization.ResetDirectorySynchronizationCookie(cookie);

@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.PatternContexts
         [InlineData("/a/b/**/c/d", new string[] { "root", "a", "b" }, null)]
         [InlineData("/a/b/**/c/d", new string[] { "root", "a", "b", "whatever" }, null)]
         [InlineData("/a/b/**/c/d", new string[] { "root", "a", "b", "whatever", "anything" }, null)]
-        public void PredictReturnsCorrectResult(string patternString, string[] pushDirectory, string expectSegment)
+        public void PredictReturnsCorrectResult(string patternString, string[] pushDirectory, string? expectSegment)
         {
             var builder = new PatternBuilder();
             var pattern = builder.Build(patternString) as IRaggedPattern;

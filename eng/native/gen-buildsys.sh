@@ -97,9 +97,26 @@ fi
 cmake_extra_defines_wasm=()
 if [[ "$host_arch" == "wasm" ]]; then
     if [[ "$target_os" == "browser" ]]; then
+        if [[ -z "$EMSDK_PATH" ]]; then
+            if [[ -d "$reporoot"/src/mono/browser/emsdk/ ]]; then
+                export EMSDK_PATH="$reporoot"/src/mono/browser/emsdk/
+            else
+                echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
+                exit 1
+            fi
+        fi
+        export EMSDK_QUIET=1 && source "$EMSDK_PATH"/emsdk_env.sh
         cmake_command="emcmake $cmake_command"
     elif [[ "$target_os" == "wasi" ]]; then
-        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCLR_CMAKE_TARGET_ARCH=wasm" "-DWASI_SDK_PREFIX=$WASI_SDK_PATH" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_SYSROOT=${WASI_SDK_PATH}/share/wasi-sysroot" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
+        if [[ -z "$WASI_SDK_PATH" ]]; then
+            if [[ -d "$reporoot"/src/mono/wasi/wasi-sdk ]]; then
+                export WASI_SDK_PATH="$reporoot"/src/mono/wasi/wasi-sdk
+            else
+                echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
+                exit 1
+            fi
+        fi
+        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
     else
         echo "target_os was not specified"
         exit 1

@@ -177,10 +177,10 @@ namespace Internal.TypeSystem
                 switch (Architecture)
                 {
                     case TargetArchitecture.ARM:
+                    case TargetArchitecture.RiscV64:
                         return 2;
                     case TargetArchitecture.ARM64:
                     case TargetArchitecture.LoongArch64:
-                    case TargetArchitecture.RiscV64:
                         return 4;
                     default:
                         return 1;

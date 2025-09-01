@@ -57,29 +57,28 @@ namespace System
     internal enum ParsingError
     {
         // looks good
-        None = 0,
+        None,
 
         // These first errors indicate that the Uri cannot be absolute, but may be relative.
-        BadFormat = 1,
-        BadScheme = 2,
-        BadAuthority = 3,
-        EmptyUriString = 4,
-        LastRelativeUriOkErrIndex = 4,
+        BadFormat,
+        BadScheme,
+        BadAuthority,
+        EmptyUriString,
+        LastErrorOkayForRelativeUris,
 
         // All higher error values are fatal, indicating that neither an absolute or relative
         // Uri could be generated.
-        SchemeLimit = 5,
-        SizeLimit = 6,
-        MustRootedPath = 7,
+        SchemeLimit,
+        MustRootedPath,
 
         // derived class controlled
-        BadHostName = 8,
-        NonEmptyHost = 9, // unix only
-        BadPort = 10,
-        BadAuthorityTerminator = 11,
+        BadHostName,
+        NonEmptyHost, // unix only
+        BadPort,
+        BadAuthorityTerminator,
 
         // The user requested only a relative Uri, but an absolute Uri was parsed.
-        CannotCreateRelative = 12
+        CannotCreateRelative
     }
 
     [Flags]

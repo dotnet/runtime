@@ -248,9 +248,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-#define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
-                    == offsetof(VASigCookie, pNDirectILStub));
+#define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
+                    == offsetof(VASigCookie, pPInvokeILStub));
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:

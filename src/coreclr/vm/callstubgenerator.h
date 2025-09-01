@@ -83,7 +83,9 @@ class CallStubGenerator
         ReturnTypeFloat,
         ReturnType2Float,
         ReturnType3Float,
-        ReturnType4Float
+        ReturnType4Float,
+        ReturnTypeVector64,
+        ReturnTypeVector128
 #endif // TARGET_ARM64
     };
 

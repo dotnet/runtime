@@ -1002,7 +1002,7 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
     }
 
     // This makes for quick shifting in determining if an access mask bit matches
-    static_assert_no_msg((FM_ExcludePrivateScope >> 0x4) == 0x1);
+    static_assert((FM_ExcludePrivateScope >> 0x4) == 0x1);
 
     if (flags & FM_SpecialAccessMask)
     {

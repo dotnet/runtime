@@ -73,15 +73,7 @@ namespace Internal.NativeFormat
             if (endOffset < numBytes || endOffset > _size)
                 ThrowBadImageFormatException();
 
-#if NETFX_45
-            byte[] bytes = new byte[numBytes];
-            for (int i = 0; i < bytes.Length; i++)
-                bytes[i] = *(_base + offset + i);
-
-            value = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-#else
             value = Encoding.UTF8.GetString(_base + offset, (int)numBytes);
-#endif
 
             return endOffset;
         }

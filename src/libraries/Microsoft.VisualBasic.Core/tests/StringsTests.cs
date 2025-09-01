@@ -38,7 +38,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Asc_NullOrEmpty_ThrowsArgumentException(string String)
+        public void Asc_NullOrEmpty_ThrowsArgumentException(string? String)
         {
             AssertExtensions.Throws<ArgumentException>("String", null, () => Strings.Asc(String));
         }
@@ -61,7 +61,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void AscW_NullOrEmpty_ThrowsArgumentException(string String)
+        public void AscW_NullOrEmpty_ThrowsArgumentException(string? String)
         {
             AssertExtensions.Throws<ArgumentException>("String", null, () => Strings.AscW(String));
         }
@@ -151,7 +151,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(new string[] { }, null, null)]
         [InlineData(new string[] { }, "", null)]
-        public void Filter_WhenNoMatchArgument_ReturnsNull(string[] source, string match, string[] expected)
+        public void Filter_WhenNoMatchArgument_ReturnsNull(string[] source, string? match, string[]? expected)
         {
             Assert.Equal(expected, Strings.Filter(source, match));
         }
@@ -400,7 +400,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("", 1)]
         [InlineData("ABC", 0)]
         [InlineData("ABC", 4)]
-        public void GetChar_ArgumentException(string str, int index)
+        public void GetChar_ArgumentException(string? str, int index)
         {
             Assert.Throws< ArgumentException>(() => Strings.GetChar(str, index));
         }
@@ -564,7 +564,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", "abc")]
         [InlineData("ABC", "abc")]
         [InlineData("123", "123")]
-        public void LCase_String(string value, string expected)
+        public void LCase_String(string? value, string? expected)
         {
             Assert.Equal(expected, Strings.LCase(value));
         }
@@ -588,7 +588,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", "ABC")]
         [InlineData("ABC", "ABC")]
         [InlineData("123", "123")]
-        public void UCase_String(string value, string expected)
+        public void UCase_String(string? value, string expected)
         {
             Assert.Equal(expected, Strings.UCase(value));
         }
@@ -674,7 +674,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", 1, "abc")]   // 1-based strings in VB
         [InlineData("abcd", 2, "bcd")]
         [InlineData("abcd", 3, "cd")]
-        public void Mid2_Valid(string str, int start, string expected)
+        public void Mid2_Valid(string? str, int start, string? expected)
         {
             Assert.Equal(expected, Strings.Mid(str, start));
         }
@@ -695,7 +695,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", 1, 2, "ab")]   // 1-based strings in VB
         [InlineData("abcd", 2, 2, "bc")]
         [InlineData("abcd", 2, 3, "bcd")]
-        public void Mid3_Valid(string str, int start, int length, string expected)
+        public void Mid3_Valid(string? str, int start, int length, string expected)
         {
             Assert.Equal(expected, Strings.Mid(str, start, length));
         }
@@ -712,7 +712,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("AB", 1, "A")]
         [InlineData("AB", 2, "AB")]
         [InlineData("AB", 4, "AB  ")]
-        public void LSet(string source, int length, string expected)
+        public void LSet(string? source, int length, string expected)
         {
             Assert.Equal(expected, Strings.LSet(source, length));
         }
@@ -729,7 +729,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("AB", 1, "A")]
         [InlineData("AB", 2, "AB")]
         [InlineData("AB", 4, "  AB")]
-        public void RSet(string source, int length, string expected)
+        public void RSet(string? source, int length, string expected)
         {
             Assert.Equal(expected, Strings.RSet(source, length));
         }
@@ -743,7 +743,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("\nabc ", "\nabc ")]
         [InlineData("abc ", "abc ")]
         [InlineData("abc", "abc")]
-        public void LTrim_Valid(string str, string expected)
+        public void LTrim_Valid(string? str, string expected)
         {
             // Trims only space and \u3000 specifically
             Assert.Equal(expected, Strings.LTrim(str));
@@ -758,7 +758,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(" abc\n", " abc\n")]
         [InlineData(" abc", " abc")]
         [InlineData("abc", "abc")]
-        public void RTrim_Valid(string str, string expected)
+        public void RTrim_Valid(string? str, string expected)
         {
             // Trims only space and \u3000 specifically
             Assert.Equal(expected, Strings.RTrim(str));
@@ -773,7 +773,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("\u3000abc\n\u3000", "abc\n")]
         [InlineData("abc\n", "abc\n")]
         [InlineData("abc", "abc")]
-        public void Trim_Valid(string str, string expected)
+        public void Trim_Valid(string? str, string expected)
         {
             // Trims only space and \u3000 specifically
             Assert.Equal(expected, Strings.Trim(str));
@@ -793,7 +793,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("abc", "bc", "23", 2, -1, CompareMethod.Text, "23")]
         [InlineData("abc", "bc", "23", 3, -1, CompareMethod.Text, "c")]
         [InlineData("abc", "bc", "23", 4, -1, CompareMethod.Text, null)]
-        public void Replace(string expression, string find, string replacement, int start, int n, CompareMethod compare, string expected)
+        public void Replace(string expression, string? find, string? replacement, int start, int n, CompareMethod compare, string? expected)
         {
             Assert.Equal(expected, Strings.Replace(expression, find, replacement, start, n, compare));
         }
@@ -801,7 +801,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(null, null, null, 0, 0, CompareMethod.Text)]
         [InlineData(null, "", "", 0, 0, CompareMethod.Text)]
-        public void Replace_ArgumentException(string expression, string find, string replacement, int start, int length, CompareMethod compare)
+        public void Replace_ArgumentException(string? expression, string? find, string? replacement, int start, int length, CompareMethod compare)
         {
             Assert.Throws< ArgumentException>(() => Strings.Replace(expression, find, replacement, start, length, compare));
         }
@@ -828,7 +828,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("A, B, C", ", ", 1, CompareMethod.Text, new string[] { "A, B, C" })]
         [InlineData("A, B, C", ", ", 2, CompareMethod.Text, new string[] { "A", "B, C" })]
         [InlineData("A, B, C", ", ", int.MaxValue, CompareMethod.Text, new string[] { "A", "B", "C" })]
-        public void Split(string expression, string delimiter, int limit, CompareMethod compare, string[] expected)
+        public void Split(string? expression, string? delimiter, int limit, CompareMethod compare, string[] expected)
         {
             Assert.Equal(expected, Strings.Split(expression, delimiter, limit, compare));
         }
@@ -860,7 +860,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("", VbStrConv.Lowercase, 0, "")]
         [InlineData("Abc123", VbStrConv.Lowercase, 0, "abc123")]
         [InlineData("Abc123", VbStrConv.Uppercase, 0, "ABC123")]
-        public void StrConv(string str, Microsoft.VisualBasic.VbStrConv conversion, int localeID, string expected)
+        public void StrConv(string? str, Microsoft.VisualBasic.VbStrConv conversion, int localeID, string? expected)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -968,7 +968,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("ABC", "CBA")]
         [InlineData("\ud83c\udfc8", "\ud83c\udfc8")]
         [InlineData("A\ud83c\udfc8", "\ud83c\udfc8A")]
-        public void StrReverse(string str, string expected)
+        public void StrReverse(string? str, string expected)
         {
             Assert.Equal(expected, Strings.StrReverse(str));
         }

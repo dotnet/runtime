@@ -18,11 +18,11 @@ public unsafe class SwiftIndirectResultTests
 
     private const string SwiftLib = "libSwiftIndirectResult.dylib";
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult21ReturnNonFrozenStruct1a1b1cAA0efG0Vs5Int32V_A2ItF")]
     public static extern void ReturnNonFrozenStruct(SwiftIndirectResult result, int a, int b, int c);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult26SumReturnedNonFrozenStruct1fs5Int32VAA0fgH0VyXE_tF")]
     public static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
@@ -37,7 +37,7 @@ public unsafe class SwiftIndirectResultTests
         Assert.Equal(30, instance.C);
     }
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static void ReversePInvokeReturnNonFrozenStruct(SwiftIndirectResult result, SwiftSelf self)
     {
         // In normal circumstances this would require using dynamically sized memcpy and members to create the struct.

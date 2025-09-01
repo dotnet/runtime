@@ -195,7 +195,7 @@ class ComCallMethodDesc;
 #endif // FEATURE_COMINTEROP
 
 // Note: the value (-1) is used to generate the largest possible pointer value: this keeps frame addresses
-// increasing upward. Because we want to ensure that we don't accidentally change this, we have a C_ASSERT
+// increasing upward. Because we want to ensure that we don't accidentally change this, we have a static_assert
 // in stackwalk.cpp. Since it requires constant values as args, we need to define FRAME_TOP in two steps.
 // First we define FRAME_TOP_VALUE which we'll use when we do the compile-time check, then we'll define
 // FRAME_TOP in terms of FRAME_TOP_VALUE. Defining FRAME_TOP as a PTR_Frame means we don't have to type cast
@@ -1268,6 +1268,7 @@ template<>
 struct cdac_data<FramedMethodFrame>
 {
     static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+    static constexpr size_t MethodDescPtr = offsetof(FramedMethodFrame, m_pMD);
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -1710,6 +1711,14 @@ public:
 
 private:
     friend class VirtualCallStubManager;
+    friend struct ::cdac_data<StubDispatchFrame>;
+};
+
+template <>
+struct cdac_data<StubDispatchFrame>
+{
+    static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
+    static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -2125,7 +2134,7 @@ struct ReversePInvokeFrame
 
 //------------------------------------------------------------------------
 // This frame is pushed by any JIT'ted method that contains one or more
-// inlined N/Direct calls. Note that the JIT'ted method keeps it pushed
+// inlined PInvoke calls. Note that the JIT'ted method keeps it pushed
 // the whole time to amortize the pushing cost across the entire method.
 //------------------------------------------------------------------------
 
@@ -2203,14 +2212,14 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains MethodDesc ptr or
+    // m_Datum contains PInvokeMethodDesc ptr or
     // - on 64 bit host: CALLI target address (if lowest bit is set)
     // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
+    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
     // - bit 1 set indicates invoking new exception handling helpers
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
-    PTR_NDirectMethodDesc   m_Datum;
+    PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
@@ -2227,7 +2236,7 @@ public:
     // This is used only for EBP. Hence, a stackwalk will miss the other
     // callee-saved registers for the method with the InlinedCallFrame.
     // To prevent GC-holes, we do not keep any GC references in callee-saved
-    // registers across an NDirect call.
+    // registers across an PInvoke call.
     TADDR                m_pCalleeSavedFP;
 
     // This field is used to cache the current thread object where this frame is

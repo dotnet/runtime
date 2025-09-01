@@ -55,6 +55,7 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
         switch (excep)
         {
         case IDispatchTesting_Exception.Disp:
+        case IDispatchTesting_Exception.DispLegacy:
             throw new Exception();
         case IDispatchTesting_Exception.HResult:
         case IDispatchTesting_Exception.Int:

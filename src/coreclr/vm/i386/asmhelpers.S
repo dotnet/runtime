@@ -299,8 +299,8 @@ NESTED_END OnHijackFPTripThread, _TEXT
 
 // ==========================================================================
 //  This function is reached only via the embedded ImportThunkGlue code inside
-//  an NDirectMethodDesc. It's purpose is to load the DLL associated with an
-//  N/Direct method, then backpatch the DLL target into the methoddesc.
+//  an PInvokeMethodDesc. It's purpose is to load the DLL associated with an
+//  PInvoke method, then backpatch the DLL target into the methoddesc.
 //
 //  Initial state:
 //
@@ -318,24 +318,24 @@ NESTED_END OnHijackFPTripThread, _TEXT
 //
 //
 // ==========================================================================
-LEAF_ENTRY NDirectImportThunk, _TEXT
+LEAF_ENTRY PInvokeImportThunk, _TEXT
     // Preserve argument registers
     push    ecx
     push    edx
 
     // Invoke the function that does the real work.
     push    eax
-    call    C_FUNC(NDirectImportWorker)
+    call    C_FUNC(PInvokeImportWorker)
 
     // Restore argument registers
     pop     edx
     pop     ecx
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked and "eax" contains the DLL target. Proceed to execute the
     // original DLL call.
     jmp     eax     // Jump to DLL target
-LEAF_END NDirectImportThunk, _TEXT
+LEAF_END PInvokeImportThunk, _TEXT
 
 //
 // Used to get the current instruction pointer value
@@ -356,7 +356,7 @@ LEAF_END GetCurrentSP, _TEXT
 // ==========================================================================
 // Invoked for vararg forward P/Invoke calls as a stub.
 // Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-// EAX       - the NDirectMethodDesc
+// EAX       - the PInvokeMethodDesc
 // ECX       - may be return buffer address
 // [ESP + 4] - the VASigCookie
 //

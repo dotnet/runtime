@@ -94,8 +94,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-#define C_ASSERT(cond) static_assert( cond, #cond )
-
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
 #ifdef TARGET_UNIX

@@ -55,7 +55,7 @@ namespace System.Formats.Asn1
         /// <param name="context">
         ///   The contextual information about the source or destination.
         /// </param>
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

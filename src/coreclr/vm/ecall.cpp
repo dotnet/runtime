@@ -51,27 +51,27 @@ Utf8String, but String is similar.)
 
 // METHOD__STRING__CTORF_XXX has to be in same order as ECall::CtorCharXxx
 #define METHOD__STRING__CTORF_FIRST METHOD__STRING__CTORF_CHARARRAY
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
+static_assert(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
+static_assert(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
+static_assert(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
+static_assert(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
 
 // ECall::CtorCharXxx has to be in same order as METHOD__STRING__CTORF_XXX
 #define ECallCtor_First ECall::CtorCharArrayManaged
-static_assert_no_msg(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
-static_assert_no_msg(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
-static_assert_no_msg(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
-static_assert_no_msg(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
-static_assert_no_msg(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
-static_assert_no_msg(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
+static_assert(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
+static_assert(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
+static_assert(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
+static_assert(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
+static_assert(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
+static_assert(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
+static_assert(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
+static_assert(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
+static_assert(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
 
 #define NumberOfStringConstructors 9
 
@@ -96,21 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-static CrstStatic gFCallLock;
-
 #endif // !DACCESS_COMPILE
-
-// To provide a quick check, this is the lowest and highest
-// addresses of any FCALL starting address
-GVAL_IMPL_INIT(TADDR, gLowestFCall, (TADDR)-1);
-GVAL_IMPL(TADDR, gHighestFCall);
-
-GARY_IMPL(PTR_ECHash, gFCallMethods, FCALL_HASH_SIZE);
-
-inline unsigned FCallHash(PCODE pTarg) {
-    LIMITED_METHOD_DAC_CONTRACT;
-    return pTarg % FCALL_HASH_SIZE;
-}
 
 #ifdef DACCESS_COMPILE
 
@@ -303,7 +289,7 @@ static ECFunc* FindECFuncForMethod(MethodDesc* pMD)
 * Returns 0 if it is an ECALL,
 * Otherwise returns the native entry point (FCALL)
 */
-PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*=NULL*/)
+PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall)
 {
     CONTRACTL
     {
@@ -322,9 +308,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     //
     if (pMT->IsDelegate())
     {
-        if (pfSharedOrDynamicFCallImpl)
-            *pfSharedOrDynamicFCallImpl = TRUE;
-
         _ASSERTE(pMD->IsCtor());
 
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
@@ -337,9 +320,6 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     // COM imported classes have special constructors
     if (pMT->IsComObjectType() && pMT != g_pBaseCOMObject)
     {
-        if (pfSharedOrDynamicFCallImpl)
-            *pfSharedOrDynamicFCallImpl = TRUE;
-
         // This has to be tlbimp constructor
         _ASSERTE(pMD->IsCtor());
 
@@ -350,11 +330,19 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     // This code path is taken when a class marked with ComImport is being created.
     // If we get here and COM interop isn't suppported, throw.
     if (pMT->IsComObjectType())
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+    {
+        if (throwForInvalidFCall)
+            COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+        return (PCODE)NULL;
+    }
 #endif // FEATURE_COMINTEROP
 
     if (!pMD->GetModule()->IsSystem())
-        COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
+    {
+        if (throwForInvalidFCall)
+            COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
+        return (PCODE)NULL;
+    }
 
     ECFunc* ret = FindECFuncForMethod(pMD);
 
@@ -390,72 +378,13 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     int iDynamicID = ret->DynamicID();
     if (iDynamicID != InvalidDynamicFCallId)
     {
-        if (pfSharedOrDynamicFCallImpl)
-            *pfSharedOrDynamicFCallImpl = TRUE;
-
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
         _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
-
-    // Insert the implementation into hash table if it is not there already.
-
-    CrstHolder holder(&gFCallLock);
-
-    MethodDesc * pMDinTable = ECall::MapTargetBackToMethod(pImplementation, &pImplementation);
-
-    if (pMDinTable != NULL)
-    {
-        if (pMDinTable != pMD)
-        {
-            // The fcall entrypoints has to be at unique addresses. If you get failure here, use the following steps
-            // to fix it:
-            // 1. Consider merging the offending fcalls into one fcall. Do they really do different things?
-            // 2. If it does not make sense to merge the offending fcalls into one,
-            // add FCUnique(<a random unique number here>); to one of the offending fcalls.
-
-            _ASSERTE(!"Duplicate pImplementation entries found in reverse fcall table");
-            ThrowHR(E_FAIL);
-        }
-    }
-    else
-    {
-        ECHash * pEntry = (ECHash *)(PVOID)SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ECHash)));
-
-        pEntry->m_pImplementation = pImplementation;
-        pEntry->m_pMD = pMD;
-
-        if(gLowestFCall > pImplementation)
-            gLowestFCall = pImplementation;
-        if(gHighestFCall < pImplementation)
-            gHighestFCall = pImplementation;
-
-        // add to hash table
-        ECHash** spot = &gFCallMethods[FCallHash(pImplementation)];
-        for(;;) {
-            if (*spot == 0) {                   // found end of list
-                *spot = pEntry;
-                break;
-            }
-            spot = &(*spot)->m_pNext;
-        }
-    }
-
-    if (pfSharedOrDynamicFCallImpl)
-        *pfSharedOrDynamicFCallImpl = FALSE;
-
     _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
-}
-
-BOOL ECall::IsSharedFCallImpl(PCODE pImpl)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PCODE pNativeCode = pImpl;
-
-    return (pNativeCode == GetEEFuncEntryPoint(FCComCtor));
 }
 
 BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
@@ -508,179 +437,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 FCIMPL1(VOID, FCComCtor, LPVOID pV)
 {
     FCALL_CONTRACT;
-
-    FCUnique(0x34);
 }
 FCIMPLEND
 
-
-
-/* static */
-void ECall::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    gFCallLock.Init(CrstFCall);
-}
 #endif // !DACCESS_COMPILE
-
-MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint /*=NULL*/)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // Searching all of the entries is expensive
-    // and we are often called with pTarg == NULL so
-    // check for this value and early exit.
-
-    if (!pTarg)
-        return NULL;
-
-    // Could this possibily be an FCall?
-    if ((pTarg < gLowestFCall) || (pTarg > gHighestFCall))
-        return NULL;
-
-    ECHash * pECHash = gFCallMethods[FCallHash(pTarg)];
-    while (pECHash != NULL)
-    {
-        if (pECHash->m_pImplementation == pTarg)
-        {
-            return pECHash->m_pMD;
-        }
-        pECHash = pECHash->m_pNext;
-    }
-    return NULL;
-}
-
-#ifndef DACCESS_COMPILE
-
-#ifdef _DEBUG
-
-void FCallAssert(void*& cache, void* target)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    if (cache != 0)
-    {
-        return;
-    }
-
-    //
-    // Special case fcalls with 1:N mapping between implementation and methoddesc
-    //
-    if (ECall::IsSharedFCallImpl((PCODE)target))
-    {
-        cache = (void*)1;
-        return;
-    }
-
-    MethodDesc* pMD = ECall::MapTargetBackToMethod((PCODE)target);
-    if (pMD != 0)
-    {
-        return;
-    }
-
-    // Slow but only for debugging.  This is needed because in some places
-    // we call FCALLs directly from EE code.
-
-    unsigned num = c_nECClasses;
-    for (unsigned i=0; i < num; i++)
-    {
-        for (ECFunc* ptr = (ECFunc*)c_rgECClasses[i].m_pECFunc; !ptr->IsEndOfArray(); ptr = ptr->NextInArray())
-        {
-            if (ptr->m_pImplementation  == target)
-            {
-                cache = target;
-                return;
-            }
-        }
-    }
-
-    // Now check the dynamically assigned table too.
-    for (unsigned i=0; i<ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS; i++)
-    {
-        if (g_FCDynamicallyAssignedImplementations[i] == (PCODE)target)
-        {
-            cache = target;
-            return;
-        }
-    }
-
-    _ASSERTE(!"Could not find FCall implementation in ECall.cpp");
-}
-
-void HCallAssert(void*& cache, void* target)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    if (cache != 0)
-        cache = ECall::MapTargetBackToMethod((PCODE)target);
-    _ASSERTE(cache == 0 || "Use FCIMPL for fcalls");
-}
-
-#endif // _DEBUG
-
-#endif // !DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-
-void ECall::EnumFCallMethods()
-{
-    SUPPORTS_DAC;
-    gLowestFCall.EnumMem();
-    gHighestFCall.EnumMem();
-    gFCallMethods.EnumMem();
-
-    // save all ECFunc for stackwalks.
-    // TODO: we could be smarter and only save buckets referenced during stackwalks. But we
-    // need that entire bucket so that traversals such as MethodDesc* ECall::MapTargetBackToMethod will work.
-    for (UINT i=0;i<FCALL_HASH_SIZE;i++)
-    {
-        ECHash *ecHash = gFCallMethods[i];
-        while (ecHash)
-        {
-            // If we can't read the target memory, stop immediately so we don't work
-            // with broken data.
-            if (!DacEnumMemoryRegion(dac_cast<TADDR>(ecHash), sizeof(ECHash)))
-                break;
-            ecHash = ecHash->m_pNext;
-
-#if defined (_DEBUG)
-            // Test hook: when testing on debug builds, we want an easy way to test that the while
-            // correctly terminates in the face of ridiculous stuff from the target.
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
-            {
-                // Force us to struggle on with something bad.
-                if (!ecHash)
-                {
-                    ecHash = (ECHash *)(((unsigned char *)&gFCallMethods[i])+1);
-                }
-            }
-#endif // defined (_DEBUG)
-
-        }
-    }
-}
-
-#endif // DACCESS_COMPILE

@@ -545,7 +545,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [ExpectedWarning("IL2072", nameof(RequireAll2) + "(Type)", nameof(GetWithPublicMethods) + "()")]
         [ExpectedWarning("IL2072", nameof(RequireAll2) + "(Type)", nameof(GetWithPublicFields) + "()")]
         // The bug was producing this warning:
-        // [ExpectedSharedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
+        // [ExpectedSharedWarning("IL2072", nameof(RequireAll2) + "(Type)", nameof(GetWithPublicConstructors) + "()")]
 
         // Trimmer merges branches going forward.
         [ExpectedWarning("IL2072", nameof(RequireAll1) + "(Type)", nameof(GetWithPublicMethods) + "()", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/117157")]

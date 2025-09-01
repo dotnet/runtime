@@ -15,7 +15,7 @@ namespace System.Composition.Runtime.Tests
         [InlineData(false, null)]
         [InlineData(true, "contractName")]
         [InlineData(false, "contractName")]
-        public void GetExport_Invoke_ReturnsExpected(bool success, string contractName)
+        public void GetExport_Invoke_ReturnsExpected(bool success, string? contractName)
         {
             var context = new SubContext(contract =>
             {
@@ -82,7 +82,7 @@ namespace System.Composition.Runtime.Tests
         [InlineData(false, null)]
         [InlineData(true, "contractName")]
         [InlineData(false, "contractName")]
-        public void GetExports_Invoke_ReturnsExpected(bool success, string contractName)
+        public void GetExports_Invoke_ReturnsExpected(bool success, string? contractName)
         {
             var context = new SubContext(contract =>
             {

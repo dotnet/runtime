@@ -1365,7 +1365,12 @@ namespace System
             return lower;
         }
 
-        internal static UInt128 BigMul(UInt128 left, UInt128 right, out UInt128 lower)
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static UInt128 BigMul(UInt128 left, UInt128 right, out UInt128 lower)
         {
             // Adaptation of algorithm for multiplication
             // of 32-bit unsigned integers described

@@ -117,6 +117,29 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
+        public void FilesWithNonAsciiCharsCanBundle()
+        {
+            string appPath = sharedTestState.NonAsciiApp.AppDll;
+            string systemLibPath = sharedTestState.SystemDll;
+
+            // File specification with non-ASCII characters in the relative paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "中文/app.dll"),
+                new FileSpec(appPath, "rel/中文.dll"),
+                new FileSpec(systemLibPath, "中文")
+            };
+
+            Bundler bundler = CreateBundlerInstance();
+            var bundlePath = bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
+        }
+
+        [Fact]
         public void CaseSensitiveBundleRelativePath()
         {
             // File specification with entries with bundle paths differing only in casing
@@ -366,11 +389,13 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         {
             public const string AppName = "HelloWorld";
             public TestApp App { get; }
+            public TestApp NonAsciiApp { get; }
             public string SystemDll { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
+                NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
                 SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
@@ -378,6 +403,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             public void Dispose()
             {
                 App.Dispose();
+                NonAsciiApp.Dispose();
             }
         }
     }

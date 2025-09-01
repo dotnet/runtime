@@ -124,7 +124,7 @@ namespace System.Tests
         [InlineData(false, false, 0)]
         [InlineData(false, true, -1)]
         [InlineData(false, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(bool b, object obj, int expected)
+        public void CompareTo_Other_ReturnsExpected(bool b, object? obj, int expected)
         {
             if (obj is bool boolValue)
             {
@@ -155,7 +155,7 @@ namespace System.Tests
         [InlineData(false, "0", false)]
         [InlineData(false, "False", false)]
         [InlineData(false, null, false)]
-        public void Equals_Other_ReturnsExpected(bool b1, object obj, bool expected)
+        public void Equals_Other_ReturnsExpected(bool b1, object? obj, bool expected)
         {
             if (obj is bool boolValue)
             {

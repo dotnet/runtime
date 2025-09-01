@@ -20,14 +20,14 @@ public static class Runtime_92357
 
         int y1 = 5;
 
-        Vector256<short> actual1 = Test1(Vector256.Create((short)1), ref y1);
+        Vector256<short> actual1 = Test1(Vector256<short>.One, ref y1);
         Vector256<short> expected1 = Vector256.Create(10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0);
 
         Assert.Equal(expected1, actual1);
 
         long y2 = 5;
 
-        Vector256<int> actual2 = Test2(Vector256.Create((int)1), ref y2);
+        Vector256<int> actual2 = Test2(Vector256<int>.One, ref y2);
         Vector256<int> expected2 = Vector256.Create(10, 0, 10, 0, 10, 0, 10, 0);
 
         Assert.Equal(expected2, actual2);

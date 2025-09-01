@@ -51,9 +51,25 @@ namespace Microsoft.Extensions.Configuration
             for (int i = providers.Count - 1; i >= 0; i--)
             {
                 IConfigurationProvider provider = providers[i];
-                if (provider.TryGet(key, out value))
+
+                try
                 {
-                    return true;
+                    if (provider.TryGet(key, out value))
+                    {
+                        return true;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Skip disposed providers to avoid exceptions during access.
+                    // This is especially relevant for cases like ConfigurationManager,
+                    // which implements IConfigurationRoot and may dispose providers
+                    // if configuration sources are concurrently modified. A new collection
+                    // is created in this case, so it's still safe to iterate over it.
+                    //
+                    // If we want to avoid this possible exception altogether, we could update
+                    // ConfigurationSection.TryGetValue to be virtual and have ConfigurationManager
+                    // implement it with reference counting like it does for the indexer.
                 }
             }
 

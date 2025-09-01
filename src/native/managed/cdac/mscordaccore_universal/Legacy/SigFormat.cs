@@ -179,7 +179,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                         uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(th);
                         TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(th);
-                        Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandle(modulePointer);
+                        Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                         MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
 
                         TypeDefinition internalTypeDef = internalTypeMetadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
@@ -345,7 +345,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                 case CorElementType.Class:
                     uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(typeHandle);
                     TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(typeHandle);
-                    Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandle(modulePointer);
+                    Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                     MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
                     TypeDefinition typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
                     string _namespace = metadata.GetString(typeDef.Namespace);
@@ -390,7 +390,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                 case CorElementType.MVar:
                 case CorElementType.Var:
                     runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken);
-                    Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandle(genericVariableModulePointer);
+                    Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandleFromModulePtr(genericVariableModulePointer);
                     MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)!;
                     GenericParameter genericVariable = generatedVariableMetadata.GetGenericParameter((GenericParameterHandle)MetadataTokens.Handle((int)typeVarToken));
                     stringBuilder.Append(generatedVariableMetadata.GetString(genericVariable.Name));

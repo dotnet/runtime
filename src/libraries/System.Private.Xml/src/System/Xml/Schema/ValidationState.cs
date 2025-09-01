@@ -42,8 +42,7 @@ namespace System.Xml.Schema
         public bool HasMatched;       // whether the element has been verified correctly
 
         //For NFAs
-        private BitSet[]? _curPos;
-        public BitSet[] CurPos => _curPos ??= new BitSet[2];
+        public BitSet[] CurPos => field ??= new BitSet[2];
 
         //For all
         public BitSet? AllElementsSet;

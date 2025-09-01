@@ -14,7 +14,7 @@ public abstract class ContractRegistry
     /// <summary>
     /// Gets an instance of the Exception contract for the target.
     /// </summary>
-    public abstract IException Exception { get;}
+    public abstract IException Exception { get; }
     /// <summary>
     /// Gets an instance of the Loader contract for the target.
     /// </summary>
@@ -67,4 +67,11 @@ public abstract class ContractRegistry
     /// Gets an instance of the RuntimeInfo contract for the target.
     /// </summary>
     public abstract IRuntimeInfo RuntimeInfo { get; }
+    /// Gets an instance of the DebugInfo contract for the target.
+    /// </summary>
+    public abstract IDebugInfo DebugInfo { get; }
+    /// <summary>
+    /// Gets an instance of the GC contract for the target.
+    /// </summary>
+    public abstract IGC GC { get; }
 }

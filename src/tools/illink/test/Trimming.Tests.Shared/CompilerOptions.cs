@@ -16,5 +16,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public NPath[] Resources;
         public string[] AdditionalArguments;
         public string CompilerToUse;
+        public bool GenerateTargetFrameworkAttribute;
     }
 }

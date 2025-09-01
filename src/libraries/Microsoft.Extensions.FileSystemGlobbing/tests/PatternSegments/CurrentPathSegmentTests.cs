@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.PatternSegments
         [InlineData("anything")]
         [InlineData("")]
         [InlineData(null)]
-        public void Match(string testSample)
+        public void Match(string? testSample)
         {
             var pathSegment = new CurrentPathSegment();
             Assert.False(pathSegment.Match(testSample));

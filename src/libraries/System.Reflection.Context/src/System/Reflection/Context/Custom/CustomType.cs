@@ -11,8 +11,6 @@ namespace System.Reflection.Context.Custom
 {
     internal sealed class CustomType : ProjectingType
     {
-        private IEnumerable<PropertyInfo>? _newProperties;
-
         public CustomType(Type template, CustomReflectionContext context)
             : base(template, context.Projector)
         {
@@ -282,6 +280,6 @@ namespace System.Reflection.Context.Custom
             }
         }
 
-        private IEnumerable<PropertyInfo> NewProperties => _newProperties ??= ReflectionContext.GetNewPropertiesForType(this);
+        private IEnumerable<PropertyInfo> NewProperties => field ??= ReflectionContext.GetNewPropertiesForType(this);
     }
 }

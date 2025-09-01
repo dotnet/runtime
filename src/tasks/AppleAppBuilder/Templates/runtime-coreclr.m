@@ -96,6 +96,8 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
 
+%EnvVariables%
+
     char **managed_argv;
     int argi = get_managed_args (&managed_argv);
 
@@ -112,7 +114,7 @@ mono_ios_runtime_init (void)
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
 #endif
     assert (res > 0);
-    
+
     char pinvoke_override_addr [16];
     sprintf (pinvoke_override_addr, "%p", &pinvoke_override);
 
@@ -136,7 +138,7 @@ mono_ios_runtime_init (void)
 #endif
     };
 
-    const char* executable = "Program.dll";
+    const char* executable = "%EntryPointLibName%";
     const char *executablePath = [[[[NSBundle mainBundle] executableURL] path] UTF8String];
     unsigned int coreclr_domainId = 0;
     void *coreclr_handle = NULL;

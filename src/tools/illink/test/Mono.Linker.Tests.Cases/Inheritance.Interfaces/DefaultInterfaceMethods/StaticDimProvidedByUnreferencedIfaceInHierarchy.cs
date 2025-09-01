@@ -12,23 +12,23 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
     [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod<#1>()")]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.IBase))]
-	[KeptMemberInAssembly ("library.dll", typeof(Program.IBase), "Method()")]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.I4))]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.I2))]
-	[KeptMemberInAssembly ("library.dll", typeof(Program.I2), "Program.IBase.Method()")]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I2), "library.dll", typeof (Program.IBase))]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.I3))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I3), "library.dll", typeof (Program.I2))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I4), "library.dll", typeof (Program.I3))]
+    [KeptMemberInAssembly("library.dll", typeof(Program), "CallMethod<#1>()")]
+    [KeptTypeInAssembly("library.dll", typeof(Program.IBase))]
+    [KeptMemberInAssembly("library.dll", typeof(Program.IBase), "Method()")]
+    [KeptTypeInAssembly("library.dll", typeof(Program.I4))]
+    [KeptTypeInAssembly("library.dll", typeof(Program.I2))]
+    [KeptMemberInAssembly("library.dll", typeof(Program.I2), "Program.IBase.Method()")]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.I2), "library.dll", typeof(Program.IBase))]
+    [KeptTypeInAssembly("library.dll", typeof(Program.I3))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.I3), "library.dll", typeof(Program.I2))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(Program.I4), "library.dll", typeof(Program.I3))]
 #endif
     class StaticDimProvidedByUnreferencedIfaceInHierarchy
     {
         static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Program.CallMethod<Program.I4>();
+            Program.CallMethod<Program.I4>();
 #endif
         }
     }
@@ -38,32 +38,32 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 
 // public static class Program
 // {
-//	[Kept]
-//	interface IBase
-//	{
-//		[Kept]
-// 		static abstract void Method();
-// 	}
+//     [Kept]
+//     interface IBase
+//     {
+//         [Kept]
+//         static abstract void Method();
+//     }
 
-//	[Kept]
-//	[KeptInterface(typeof(IBase)]
-//	interface I2 : IBase
-//	{
-//		[Kept]
-//		static void IBase.Method() { }
-//	}
+//     [Kept]
+//     [KeptInterface(typeof(IBase)]
+//     interface I2 : IBase
+//     {
+//         [Kept]
+//         static void IBase.Method() { }
+//     }
 
-//	[Kept]
-// 	[KeptInterface(typeof(I2)]
-// 	interface I3 : I2 { }
+//     [Kept]
+//     [KeptInterface(typeof(I2)]
+//     interface I3 : I2 { }
 
-//	[Kept]
-//	[KeptInterface(typeof(I3)]
-//	interface I4 : I3 { }
+//     [Kept]
+//     [KeptInterface(typeof(I3)]
+//     interface I4 : I3 { }
 
-//	[Kept]
-//	static void CallMethod<T>() where T : IBase
-//	{
-//		T.Method();
-//	}
+//     [Kept]
+//     static void CallMethod<T>() where T : IBase
+//     {
+//         T.Method();
+//     }
 // }

@@ -170,7 +170,7 @@ namespace System
             {
                 rtAdd = rtAdd.GetParentDefinition();
                 if (rtAdd != null)
-                    return rtAdd.DeclaringType!.GetEvent(ev.Name!);
+                    return rtAdd.DeclaringType!.GetEvent(ev.Name);
             }
             return null;
         }

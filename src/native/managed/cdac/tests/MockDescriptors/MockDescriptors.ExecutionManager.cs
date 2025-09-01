@@ -17,7 +17,7 @@ internal partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const int RealCodeHeaderSize = 0x20; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+        const int RealCodeHeaderSize = 0x28; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
         {
@@ -166,9 +166,9 @@ internal partial class MockDescriptors
                 } while (cur.Value < end);
             }
 
-            public MockMemorySpace.ReadContext GetReadContext()
+            public MockMemorySpace.MemoryContext GetMemoryContext()
             {
-                return _builder.GetReadContext();
+                return _builder.GetMemoryContext();
             }
         }
 
@@ -232,6 +232,7 @@ internal partial class MockDescriptors
             Fields =
             [
                 new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
+                new(nameof(Data.RealCodeHeader.DebugInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.GCInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.NumUnwindInfos), DataType.uint32),
                 new(nameof(Data.RealCodeHeader.UnwindInfos), DataType.pointer),
@@ -250,6 +251,7 @@ internal partial class MockDescriptors
                 new(nameof(Data.ReadyToRunInfo.NumHotColdMap), DataType.uint32),
                 new(nameof(Data.ReadyToRunInfo.HotColdMap), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
+                new(nameof(Data.ReadyToRunInfo.DebugInfoSection), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, helpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields).Stride),
             ]
         };
@@ -430,6 +432,7 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
 
             // fields are not used in the test, but we still need to write them
+            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.DebugInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.GCInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
             Builder.TargetTestHelpers.Write(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.NumUnwindInfos)].Offset, sizeof(uint)), 0u);
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.UnwindInfos)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);

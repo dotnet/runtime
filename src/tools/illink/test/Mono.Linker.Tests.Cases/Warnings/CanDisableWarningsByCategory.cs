@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Warnings
     [SkipKeptItemsValidation]
     [SetupLinkerArgument("--notrimwarn")]
 #if NATIVEAOT
-	[SetupLinkerArgument ("--noaotwarn")]
+    [SetupLinkerArgument("--noaotwarn")]
 #endif
     public class CanDisableWarningsByCategory
     {

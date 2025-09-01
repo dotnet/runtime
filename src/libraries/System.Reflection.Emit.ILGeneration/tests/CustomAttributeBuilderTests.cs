@@ -886,7 +886,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(new string[] { nameof(TestAttribute.TestInt) }, new object[] { "TestString", 10 }, "namedFields, fieldValues")]
         [InlineData(new string[] { nameof(TestAttribute.TestInt), nameof(TestAttribute.TestStringField) }, new object[] { "TestString", 10 }, null)]
         [InlineData(new string[] { nameof(TestAttribute.TestStringField) }, new object[] { 10 }, null)]
-        public void NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(string[] fieldNames, object[] fieldValues, string paramName)
+        public void NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(string[] fieldNames, object[] fieldValues, string? paramName)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), fieldNames);
@@ -1054,7 +1054,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(new string[] { nameof(TestAttribute.GetOnlyInt32) }, new object[] { "TestString" }, null)]
         [InlineData(new string[] { nameof(TestAttribute.GetOnlyString) }, new object[] { "TestString" }, null)]
         [InlineData(new string[] { nameof(TestAttribute.TestInt32) }, new object[] { "TestString" }, null)]
-        public void NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(string[] propertyNames, object[] propertyValues, string paramName)
+        public void NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(string[] propertyNames, object[] propertyValues, string? paramName)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             PropertyInfo[] namedProperties = Helpers.GetProperties(typeof(TestAttribute), propertyNames);

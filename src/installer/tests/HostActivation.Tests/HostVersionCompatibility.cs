@@ -80,7 +80,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //  2) App rolls forward to newer runtime
             File.Copy(previousVersionApp.AppExe, appExe, true);
             Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
+                .CaptureStdOut().CaptureStdErr()
+                .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -95,7 +96,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 File.Copy(previousVersionApp.HostFxrDll, app.HostFxrDll, true);
                 Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
+                    .CaptureStdOut().CaptureStdErr()
+                    .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")

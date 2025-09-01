@@ -173,11 +173,7 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    void *v;
-
-    *((OBJECTREF *)&v) = *(OBJECTREF *)handle;
-
-    return v;
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
 OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
@@ -719,19 +715,6 @@ COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
     }
 
     RETURN NULL;
-}
-
-ULONG EEDbgInterfaceImpl::MethodDescGetRVA(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    return pFD->GetRVA();
 }
 
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,

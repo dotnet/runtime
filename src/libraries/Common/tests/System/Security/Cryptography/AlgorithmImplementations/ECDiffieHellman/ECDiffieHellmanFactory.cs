@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
-        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsAzureLinux;
+        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl;
         bool CanDeriveNewPublicKey { get; }
         bool SupportsRawDerivation { get; }
         bool SupportsSha3 { get; }

@@ -46,24 +46,31 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (!tree->OperIsSsaDef())
             {
-                if (lclDefNode->HasCompositeSsaName())
+                continue;
+            }
+
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                if (lcl->HasCompositeSsaName())
                 {
-                    LclVarDsc* varDsc = lvaGetDesc(lclDefNode);
+                    LclVarDsc* varDsc = lvaGetDesc(lcl);
                     assert(varDsc->lvPromoted);
 
                     for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                     {
-                        popDef(varDsc->lvFieldLclStart + index, lclDefNode->GetSsaNum(this, index));
+                        popDef(varDsc->lvFieldLclStart + index, lcl->GetSsaNum(this, index));
                     }
                 }
                 else
                 {
-                    popDef(lclDefNode->GetLclNum(), lclDefNode->GetSsaNum());
+                    popDef(lcl->GetLclNum(), lcl->GetSsaNum());
                 }
-            }
+
+                return GenTree::VisitResult::Continue;
+            };
+
+            tree->VisitLocalDefNodes(this, visitDef);
         }
     }
 }
@@ -304,11 +311,10 @@ bool Compiler::optCopyProp(
 // optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    defNode    - The definition node for this def (store/GT_CALL) (will be "nullptr" for "use" defs)
 //    lclNode    - The local tree representing "the def"
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
+void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
 {
     unsigned lclNum = lclNode->GetLclNum();
 
@@ -400,10 +406,14 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         {
             treeLifeUpdater.UpdateLife(tree);
 
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIsSsaDef())
             {
-                optCopyPropPushDef(tree, lclDefNode, curSsaName);
+                auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                    optCopyPropPushDef(lcl, curSsaName);
+                    return GenTree::VisitResult::Continue;
+                };
+
+                tree->VisitLocalDefNodes(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
@@ -413,7 +423,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 // live definition. Since they are always live, we'll do it only once.
                 if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    optCopyPropPushDef(nullptr, tree->AsLclVarCommon(), curSsaName);
+                    optCopyPropPushDef(tree->AsLclVarCommon(), curSsaName);
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.

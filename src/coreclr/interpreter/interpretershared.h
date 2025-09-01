@@ -17,7 +17,10 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_INDIRECT_HELPER_TAG 1 // When a helper ftn's address is indirect we tag it with this tag bit
+struct InterpHelperData {
+    uint32_t addressDataItemIndex : 29;
+    uint32_t accessType : 3;
+};
 
 struct CallStubHeader;
 
@@ -27,21 +30,25 @@ struct InterpMethod
     InterpMethod *self;
 #endif
     CORINFO_METHOD_HANDLE methodHnd;
+    int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
     // This stub is used for calling the interpreted method from JITted/AOTed code
     CallStubHeader *pCallStub;
     bool initLocals;
+    bool unmanagedCallersOnly;
 
-    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
+    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize, void** pDataItems, bool initLocals, bool unmanagedCallersOnly)
     {
 #if DEBUG
         this->self = this;
 #endif
         this->methodHnd = methodHnd;
+        this->argsSize = argsSize;
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
+        this->unmanagedCallersOnly = unmanagedCallersOnly;
         pCallStub = NULL;
     }
 
@@ -137,7 +144,7 @@ struct InterpGenericLookup
     void*                   signature;
 
     // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
-    
+
     InterpGenericLookupType lookupType;
 
     // Number of indirections to get there
@@ -152,6 +159,13 @@ struct InterpGenericLookup
     // here is to allow for the generic dictionary to change in size without requiring any locks.
     uint16_t                sizeOffset;
     uint16_t                offsets[InterpGenericLookup_MaxIndirections];
+};
+
+enum class PInvokeCallFlags : int32_t
+{
+    None = 0,
+    Indirect = 1 << 0, // The call target address is indirect
+    SuppressGCTransition = 1 << 1, // The pinvoke is marked by the SuppressGCTransition attribute
 };
 
 #endif

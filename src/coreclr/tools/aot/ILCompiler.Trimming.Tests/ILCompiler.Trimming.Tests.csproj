@@ -50,6 +50,12 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
       <Value>$(TargetFramework)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMoniker">
+      <Value>$(TargetFrameworkMoniker)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMonikerDisplayName">
+      <Value>$(TargetFrameworkMonikerDisplayName)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(ToolsProjectRoot)illink/test/</Value>
     </RuntimeHostConfigurationOption>

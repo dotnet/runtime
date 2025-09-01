@@ -847,9 +847,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
                     EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
-                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
-                    // it should be 0x0005u EF_RISCV_RVC (0x0001) | EF_RISCV_FLOAT_ABI_DOUBLE (0x0006)
-                    EM_RISCV => 0x0004u, // EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
+                    EM_RISCV => 0x0005u, // EF_RISCV_RVC (RVC ABI) | EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
                     _ => 0u
                 },
             };

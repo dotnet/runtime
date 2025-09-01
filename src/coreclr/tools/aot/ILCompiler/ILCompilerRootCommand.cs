@@ -31,6 +31,8 @@ namespace ILCompiler
             new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging methods in a file.", HelpName = "arg" };
         public Option<FileLayoutAlgorithm> FileLayout { get; } =
             new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
+        public Option<string> OrderFile { get; } =
+            new("--order") { Description = "File that specifies order of symbols within the generated object file" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -99,8 +101,8 @@ namespace ILCompiler
             new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
         public Option<bool> EmitStackTraceData { get; } =
             new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
-        public Option<bool> MethodBodyFolding { get; } =
-            new("--methodbodyfolding") { Description = "Fold identical method bodies" };
+        public Option<string> MethodBodyFolding { get; } =
+            new("--methodbodyfolding") { Description = "Fold identical method bodies (one of: none, generic, all" };
         public Option<string[]> InitAssemblies { get; } =
             new("--initassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Assembly(ies) with a library initializer" };
         public Option<string[]> FeatureSwitches { get; } =
@@ -177,6 +179,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
             new("--generateunmanagedentrypoints") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate unmanaged entrypoints for a given assembly" };
+        public Option<bool> DisableGeneratedCodeHeuristics { get; } =
+            new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -193,6 +197,7 @@ namespace ILCompiler
             Options.Add(MibcFilePaths);
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
+            Options.Add(OrderFile);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);
@@ -266,6 +271,7 @@ namespace ILCompiler
             Options.Add(SingleMethodGenericArgs);
             Options.Add(MakeReproPath);
             Options.Add(UnmanagedEntryPointsAssemblies);
+            Options.Add(DisableGeneratedCodeHeuristics);
 
             this.SetAction(result =>
             {
@@ -300,7 +306,7 @@ namespace ILCompiler
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
-                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
+                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite", "--order" },
                             outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
@@ -424,6 +430,7 @@ namespace ILCompiler
                 "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
                 "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
                 "random" => MethodLayoutAlgorithm.Random,
+                "explicit" => MethodLayoutAlgorithm.Explicit,
                 _ => throw new CommandLineException(result.Tokens[0].Value)
             };
         }

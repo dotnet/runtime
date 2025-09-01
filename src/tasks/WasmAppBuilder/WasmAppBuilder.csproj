@@ -21,6 +21,7 @@
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Common\JoinedString.cs" />
+    <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\ArtifactWriter.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
   </ItemGroup>

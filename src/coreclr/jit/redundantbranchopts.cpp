@@ -688,6 +688,15 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 
     if ((ifTrueStatus == RelopResult::Unknown) && (ifFalseStatus == RelopResult::Unknown))
     {
+        JITDUMP("Can't infer from both true and false branches - bail out.\n")
+        return false;
+    }
+
+    if ((ifTrueStatus == RelopResult::AlwaysTrue) && (ifFalseStatus == RelopResult::AlwaysTrue))
+    {
+        // If it doesn't depend on the dominating relop - bail out, someone else will fold
+        // this always-true condition.
+        JITDUMP("Always true from both branches - bail out.\n")
         return false;
     }
 

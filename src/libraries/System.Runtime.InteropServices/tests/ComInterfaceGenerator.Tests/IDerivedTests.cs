@@ -13,6 +13,56 @@ namespace ComInterfaceGenerator.Tests
 {
     public partial class IDerivedTests
     {
+        [GeneratedComInterface]
+        [Guid("7F0DB364-3C04-4487-9193-4BB05DC7B654")]
+        internal partial interface IDerivedFromSharedType2 : SharedTypes.ComInterfaces.IGetAndSetInt
+        {
+            int GetTwoTimesInt();
+        }
+
+        [GeneratedComInterface]
+        [Guid("7F0DB364-3C04-4487-9194-4BB05DC7B654")]
+#pragma warning disable SYSLIB1230 // Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported
+        internal partial interface IDerivedFromSharedType : SharedTypes.ComInterfaces.IGetAndSetInt
+#pragma warning restore SYSLIB1230
+        {
+            int GetIntPlusOne();
+        }
+
+        [GeneratedComClass]
+        [Guid("7F0DB364-3C04-4487-9195-4BB05DC7B654")]
+        internal partial class DerivedFromSharedTypeImpl : IDerivedFromSharedType, IDerivedFromSharedType2
+        {
+            int _value = 42;
+
+            public int GetInt() => _value;
+            public int GetIntPlusOne() => _value + 1;
+            public int GetTwoTimesInt() => _value * 2;
+            public void SetInt(int value) { _value = value; }
+        }
+
+        [Fact]
+        public unsafe void TypesDerivedFromSharedTypeHaveCorrectVTableSize()
+        {
+            var managedSourceObject = new DerivedFromSharedTypeImpl();
+            var cw = new StrategyBasedComWrappers();
+            var nativeObj = cw.GetOrCreateComInterfaceForObject(managedSourceObject, CreateComInterfaceFlags.None);
+            object managedObj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+            IGetAndSetInt getAndSetInt = (IGetAndSetInt)managedObj;
+            IDerivedFromSharedType derivedFromSharedType = (IDerivedFromSharedType)managedObj;
+            IDerivedFromSharedType2 derivedFromSharedType2 = (IDerivedFromSharedType2)managedObj;
+
+            Assert.Equal(42, getAndSetInt.GetInt());
+            Assert.Equal(42, derivedFromSharedType.GetInt());
+            Assert.Equal(42, derivedFromSharedType2.GetInt());
+
+            getAndSetInt.SetInt(100);
+            Assert.Equal(100, getAndSetInt.GetInt());
+            Assert.Equal(101, derivedFromSharedType.GetIntPlusOne());
+            Assert.Equal(200, derivedFromSharedType2.GetTwoTimesInt());
+        }
+
+
         [Fact]
         public unsafe void DerivedInterfaceTypeProvidesBaseInterfaceUnmanagedToManagedMembers()
         {
@@ -36,16 +86,16 @@ namespace ComInterfaceGenerator.Tests
         public unsafe void CallBaseInterfaceMethod_EnsureQiCalledOnce()
         {
             var cw = new SingleQIComWrapper();
-            var derivedImpl = new DerivedImpl();
+            var derivedImpl = new Derived();
             var nativeObj = cw.GetOrCreateComInterfaceForObject(derivedImpl, CreateComInterfaceFlags.None);
             var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
             IDerived iface = (IDerived)obj;
 
-            Assert.Equal(3, iface.GetInt());
+            Assert.Equal(0, iface.GetInt());
             iface.SetInt(5);
             Assert.Equal(5, iface.GetInt());
 
-            Assert.Equal("myName", iface.GetName());
+            Assert.Equal("hello", iface.GetName());
             iface.SetName("updated");
             Assert.Equal("updated", iface.GetName());
 
@@ -56,22 +106,6 @@ namespace ComInterfaceGenerator.Tests
             var qiCallCountObj = iUnknownStrategyProperty!.GetValue(obj);
             var countQi = (SingleQIComWrapper.CountQI)qiCallCountObj;
             Assert.Equal(1, countQi.QiCallCount);
-        }
-
-        [GeneratedComClass]
-        partial class DerivedImpl : IDerived
-        {
-            int data = 3;
-            string myName = "myName";
-            public void DoThingWithString(string name) => throw new NotImplementedException();
-
-            public int GetInt() => data;
-
-            public string GetName() => myName;
-
-            public void SetInt(int n) => data = n;
-
-            public void SetName(string name) => myName = name;
         }
 
         /// <summary>

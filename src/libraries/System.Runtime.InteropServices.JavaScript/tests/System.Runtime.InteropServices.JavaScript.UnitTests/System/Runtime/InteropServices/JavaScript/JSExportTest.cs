@@ -438,7 +438,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async void JSExportCompletedTaskReturnsResolvedPromise()
+        public async Task JSExportCompletedTaskReturnsResolvedPromise()
         {
             string result = await JavaScriptTestHelper.InvokeReturnCompletedTask();
             Assert.Equal("resolved", result);

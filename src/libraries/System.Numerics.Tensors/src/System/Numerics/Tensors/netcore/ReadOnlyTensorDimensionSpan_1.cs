@@ -51,7 +51,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 }
 
-                nint linearOffset = _tensor._shape.GetLinearOffset(index, _dimension);
+                nint linearOffset = _tensor._shape.GetLinearOffsetForDimension(index, _dimension);
                 return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _tensor._reference, linearOffset), _sliceShape);
             }
         }

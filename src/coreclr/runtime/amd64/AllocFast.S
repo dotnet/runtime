@@ -173,7 +173,7 @@ NESTED_END RhpNewObject, _TEXT
 
 // Allocate a string.
 //  RDI == MethodTable
-//  ESI == character/element count
+//  RSI == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
@@ -233,8 +233,11 @@ LEAF_END RhpNewArrayFast, _TEXT
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
+        // The constant 0x8000000 is (0x40000000 / sizeof(void*))
+        // Some assemblers don't like an expression here, so the
+        // constant expression is reduced to it's simple form.
 
-        cmp         rsi, (0x40000000 / 8) // sizeof(void*)
+        cmp         rsi, 0x8000000        // (0x40000000 / 8)
         jae         C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64

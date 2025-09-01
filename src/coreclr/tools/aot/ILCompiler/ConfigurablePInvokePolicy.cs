@@ -92,9 +92,16 @@ namespace ILCompiler
             else
             {
                 string suffix = _target.IsApplePlatform ? ".dylib" : ".so";
+                bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
+                const string LibPrefix = "lib";
+                bool hasLibPrefix = name.StartsWith(LibPrefix, StringComparison.Ordinal);
 
-                if (name.EndsWith(suffix, StringComparison.Ordinal))
+                if (hasSharedLibraryExtension)
                     yield return name.Substring(0, name.Length - suffix.Length);
+                if (hasLibPrefix)
+                    yield return name.Substring(LibPrefix.Length);
+                if (hasLibPrefix && hasSharedLibraryExtension)
+                    yield return name.Substring(LibPrefix.Length, name.Length - suffix.Length - LibPrefix.Length);
             }
         }
 

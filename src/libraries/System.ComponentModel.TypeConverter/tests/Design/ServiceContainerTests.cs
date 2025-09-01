@@ -519,7 +519,7 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetService_NoSuchService_ReturnsNull(Type serviceType)
+        public void GetService_NoSuchService_ReturnsNull(Type? serviceType)
         {
             var container = new ServiceContainer();
             Assert.Null(container.GetService(serviceType));

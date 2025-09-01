@@ -9,7 +9,7 @@
 
 using ManagedToNativeExceptionCallback = Interop::ManagedToNativeExceptionCallback;
 
-bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
+bool Interop::ShouldCheckForPendingException(_In_ PInvokeMethodDesc* md)
 {
     CONTRACTL
     {

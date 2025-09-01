@@ -3169,7 +3169,7 @@ double FloatingPointUtils::normalize(double value)
     }
 
     uint64_t bits;
-    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    static_assert(sizeof(bits) == sizeof(value));
     memcpy(&bits, &value, sizeof(value));
     bits |= 1ull << 51;
     memcpy(&value, &bits, sizeof(bits));

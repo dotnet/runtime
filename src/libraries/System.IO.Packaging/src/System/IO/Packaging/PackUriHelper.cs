@@ -601,9 +601,7 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
- #pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
-#pragma warning restore CA1067
         {
             //------------------------------------------------------
             //
@@ -652,6 +650,22 @@ namespace System.IO.Packaging
             }
 
             #endregion IEquatable Methods
+
+            #region Overrides
+
+            public override bool Equals(object? obj)
+            {
+                if (obj is ValidatedPartUri other)
+                    return Compare(other) == 0;
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(NormalizedPartUriString);
+            }
+
+            #endregion Overrides
 
             #region Internal Properties
 
@@ -841,7 +855,11 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.Compare(
+                    NormalizedPartUriString,
+                    otherPartUri.NormalizedPartUriString,
+                    StringComparison.OrdinalIgnoreCase
+                );
             }
 
             //------------------------------------------------------

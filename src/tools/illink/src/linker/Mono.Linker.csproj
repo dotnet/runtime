@@ -21,6 +21,8 @@
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <!-- Allow overriding RequiresUnreferencedCodeAttribute -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

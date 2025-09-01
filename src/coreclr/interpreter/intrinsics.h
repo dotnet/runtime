@@ -8,4 +8,10 @@
 
 NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE compMethod, CORINFO_METHOD_HANDLE method);
 
+template <typename T, int size>
+inline constexpr unsigned ArrLen(T (&)[size])
+{
+    return size;
+}
+
 #endif // __INTERPRETER_INTRINSICS_H__

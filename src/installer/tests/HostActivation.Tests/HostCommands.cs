@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace HostActivation.Tests
@@ -81,6 +82,150 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
+        }
+
+        [Fact]
+        public void Info_ListEnvironment()
+        {
+            var command = TestContext.BuiltDotNet.Exec("--info")
+                .CaptureStdOut();
+
+            // Add DOTNET_ROOT environment variables
+            (string Architecture, string Path)[] dotnetRootEnvVars = [
+                ("arm64", "/arm64/dotnet/root"),
+                ("x64", "/x64/dotnet/root"),
+                ("x86", "/x86/dotnet/root"),
+                ("unknown", "/unknown/dotnet/root")
+            ];
+            foreach (var envVar in dotnetRootEnvVars)
+            {
+                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
+            }
+
+            string dotnetRootNoArch = "/dotnet/root";
+            command = command.DotNetRoot(dotnetRootNoArch);
+
+            // Add additional DOTNET_* environment variables
+            (string Name, string Value)[] envVars = [
+                ("DOTNET_ROLL_FORWARD", "Major"),
+                ("DOTNET_SOME_SETTING", "/some/setting"),
+                ("DOTNET_HOST_TRACE", "1")
+            ];
+
+            (string Name, string Value)[] differentCaseEnvVars = [
+                ("dotnet_env_var", "dotnet env var value"),
+                ("dOtNeT_setting", "doOtNeT setting value"),
+            ];
+            foreach ((string name, string value) in envVars.Concat(differentCaseEnvVars))
+            {
+                command = command.EnvironmentVariable(name, value);
+            }
+
+            string otherEnvVar = "OTHER";
+            command = command.EnvironmentVariable(otherEnvVar, "value");
+
+            var result = command.Execute();
+            result.Should().Pass()
+                .And.HaveStdOutContaining("Environment variables:")
+                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
+                .And.NotHaveStdOutContaining(otherEnvVar);
+
+            foreach ((string architecture, string path) in dotnetRootEnvVars)
+            {
+                result.Should()
+                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
+            }
+
+            foreach ((string name, string value) in envVars)
+            {
+                result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+            }
+
+            foreach ((string name, string value) in differentCaseEnvVars)
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    // Environment variables are case-insensitive on Windows
+                    result.Should().HaveStdOutMatching($@"{name}\s*\[{value}\]");
+                }
+                else
+                {
+                    result.Should().NotHaveStdOutContaining(name);
+                }
+            }
+        }
+
+        [Fact]
+        public void Info_ListEnvironment_LegacyPrefixDetection()
+        {
+            string comPlusEnvVar = "COMPlus_ReadyToRun";
+            TestContext.BuiltDotNet.Exec("--info")
+                .EnvironmentVariable(comPlusEnvVar, "0")
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Environment variables:")
+                .And.NotHaveStdOutContaining(comPlusEnvVar)
+                .And.HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
+        }
+
+        [Fact]
+        public void Info_GlobalJson_InvalidJson()
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidJson)))
+            {
+                string globalJsonPath = GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining("JSON parsing exception:")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9")]
+        [InlineData("9.0")]
+        [InlineData("9.0.x")]
+        [InlineData("invalid")]
+        public void Info_GlobalJson_InvalidData(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidData)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                    .And.HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9.0.0")]
+        [InlineData("9.1.99")]
+        public void Info_GlobalJson_NonExistentFeatureBand(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                var result = TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
+                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
         }
 
         [Fact]

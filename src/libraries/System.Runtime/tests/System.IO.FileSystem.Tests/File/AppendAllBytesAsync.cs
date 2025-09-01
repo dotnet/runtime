@@ -24,10 +24,10 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void NonExistentPathAsync()
+        public async Task NonExistentPathAsync()
         {
-            Assert.ThrowsAsync<DirectoryNotFoundException>(() => File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
-            Assert.ThrowsAsync<DirectoryNotFoundException>(() => File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), ReadOnlyMemory<byte>.Empty));
+            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
+            await Assert.ThrowsAsync<DirectoryNotFoundException>(async () => await File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), ReadOnlyMemory<byte>.Empty));
         }
 
         [Fact]

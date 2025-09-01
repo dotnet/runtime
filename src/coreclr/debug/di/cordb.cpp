@@ -32,10 +32,9 @@
 //-----------------------------------------------------------------------------
 // In v1.0, we declared that mscordbi was a "shared" component, which means
 // that we promised to provide it from now until the end of time. So every CLR implementation
-// needs an Mscordbi that implements the everett guids for CorDebug + CorPublish.
+// needs an Mscordbi that implements the everett guids for CorDebug
 //
-// This works fine for CorPublish, which is truly shared.
-// CorDebug however is "versioned" not "shared" - each version of the CLR has its own disjoint copy.
+// CorDebug is "versioned" not "shared" - each version of the CLR has its own disjoint copy.
 //
 // Thus creating a CorDebug object requires a version parameter.
 // CoCreateInstance doesn't have a the version param, so we use the new (v2.0+)
@@ -307,14 +306,6 @@ STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     CClassFactory   *pClassFactory;         // To create class factory object.
     PFN_CREATE_OBJ  pfnCreateObject = NULL;
 
-
-#if defined(FEATURE_DBG_PUBLISH)
-    if (rclsid == CLSID_CorpubPublish)
-    {
-        pfnCreateObject = CorpubPublish::CreateObject;
-    }
-    else
-#endif
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     if (rclsid == CLSID_CorDebug_Telesto)
     {

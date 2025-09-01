@@ -15,7 +15,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        internal new Stream InnerStream => base.InnerStream;
         private NestedState _nestedAuth;
         private bool _isRenego;
 
@@ -295,6 +296,30 @@ namespace System.Net.Security
             }
             try
             {
+#if TARGET_APPLE
+                if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
+                {
+                    Debug.Assert(_sslAuthenticationOptions.IsClient);
+                    byte[]? dummy = null;
+                    AcquireClientCredentials(ref dummy, true);
+
+                    Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
+                    await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
+                    if (await handshakeTask.ConfigureAwait(false) is Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, ex, "Async handshake failed");
+                        if (ex is ArgumentException or IOException)
+                        {
+                            throw ex;
+                        }
+                        throw new AuthenticationException(SR.net_auth_SSPI, ex);
+                    }
+
+                    CompleteHandshake(_sslAuthenticationOptions);
+                    return;
+                }
+#endif // TARGET_APPLE
+
                 if (!receiveFirst)
                 {
                     token = NextMessage(reAuthenticationData, out int consumed);
@@ -820,7 +845,6 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -833,6 +857,15 @@ namespace System.Net.Security
 
             try
             {
+
+#if TARGET_APPLE
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    ValueTask<int> task = SslStreamPal.AsyncReadAsync(_securityContext!, buffer, cancellationToken);
+                    return await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                }
+#endif // TARGET_APPLE
+
                 int processedLength = 0;
                 int nextTlsFrameLength = UnknownTlsFrameLength;
 
@@ -974,6 +1007,15 @@ namespace System.Net.Security
 
             try
             {
+#if TARGET_APPLE
+                if (SslStreamPal.IsAsyncSecurityContext(_securityContext!))
+                {
+                    Task task = SslStreamPal.AsyncWriteAsync(_securityContext!, buffer, cancellationToken);
+                    await TIOAdapter.WaitAsync(task).ConfigureAwait(false);
+                    return;
+                }
+#endif // TARGET_APPLE
+
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :
                     WriteAsyncChunked<TIOAdapter>(buffer, cancellationToken);

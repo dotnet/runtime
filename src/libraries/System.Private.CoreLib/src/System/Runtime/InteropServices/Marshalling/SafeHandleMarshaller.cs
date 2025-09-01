@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // but it has never required them to be public.
                 // We construct the handle now to ensure we don't cause an exception
                 // before we are able to capture the unmanaged handle after the call.
-                _newHandle = Activator.CreateInstance<T>()!;
+                _newHandle = Activator.CreateInstance<T>();
             }
 
             /// <summary>
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // but it has never required them to be public.
                 // We construct the handle now to ensure we don't cause an exception
                 // before we are able to capture the unmanaged handle after the call.
-                _newHandle = Activator.CreateInstance<T>()!;
+                _newHandle = Activator.CreateInstance<T>();
             }
 
             /// <summary>
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // unnecessarily.
                 if (!_initialized)
                 {
-                    _newHandle!.Dispose();
+                    _newHandle.Dispose();
                 }
             }
         }

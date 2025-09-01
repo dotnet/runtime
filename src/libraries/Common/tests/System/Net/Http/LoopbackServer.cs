@@ -1145,6 +1145,11 @@ namespace System.Net.Test.Common
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
         {
+            if (options is LoopbackServer.Options { } loopbackOptions)
+            {
+                return loopbackOptions;
+            }
+
             LoopbackServer.Options newOptions = new LoopbackServer.Options();
             if (options != null)
             {

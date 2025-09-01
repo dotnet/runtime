@@ -28,6 +28,13 @@ struct CallDescrData
 #endif
     UINT32                      fpReturnSize;
     PCODE                       pTarget;
+#ifdef TARGET_WASM
+    // method description is used to compile the method with the interpreter
+    MethodDesc*                 pMD;
+    // size of the arguments and the transition block are used to execute the method with the interpreter
+    size_t                      nArgsSize;
+    TransitionBlock*            pTransitionBlock;
+#endif
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location
@@ -67,11 +74,11 @@ void CallDescrWorkerWithHandler(
                 BOOL              fCriticalCall = FALSE);
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags);
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags);
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 // Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields

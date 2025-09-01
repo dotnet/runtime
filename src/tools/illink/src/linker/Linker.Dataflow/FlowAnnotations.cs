@@ -42,7 +42,23 @@ namespace ILLink.Shared.TrimAnalysis
         public bool RequiresDataFlowAnalysis(FieldDefinition field) =>
             GetAnnotations(field.DeclaringType).TryGetAnnotation(field, out _);
 
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameter genericParameter) =>
+        public bool HasGenericParameterAnnotation(TypeReference type)
+        {
+            if (type.ResolveToTypeDefinition(_context) is not TypeDefinition typeDefinition)
+                return false;
+
+            return GetAnnotations(typeDefinition).HasGenericParameterAnnotation();
+        }
+
+        public bool HasGenericParameterAnnotation(MethodReference method)
+        {
+            if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
+                return false;
+
+            return GetAnnotations(methodDefinition.DeclaringType).TryGetAnnotation(methodDefinition, out var annotation) && annotation.GenericParameterAnnotations != null;
+        }
+
+        public bool RequiresGenericArgumentDataFlow(GenericParameter genericParameter) =>
             GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
 
         internal DynamicallyAccessedMemberTypes GetParameterAnnotation(ParameterProxy param)
@@ -446,10 +462,10 @@ namespace ILLink.Shared.TrimAnalysis
             DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
             if (type.HasGenericParameters)
             {
-                var attrs = GetGeneratedTypeAttributes(type);
+                var attrs = GetGeneratedTypeAttributes(type) ?? type.GenericParameters;
                 for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++)
                 {
-                    var provider = attrs?[genericParameterIndex] ?? type.GenericParameters[genericParameterIndex];
+                    var provider = attrs[genericParameterIndex];
                     var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(type, providerIfNotMember: provider);
                     if (annotation != DynamicallyAccessedMemberTypes.None)
                     {
@@ -462,7 +478,7 @@ namespace ILLink.Shared.TrimAnalysis
             return new TypeAnnotations(type, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
         }
 
-        private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
+        private IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
         {
             if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
             {
@@ -597,8 +613,8 @@ namespace ILLink.Shared.TrimAnalysis
                 var annotation = parameterAnnotations[parameterIndex];
                 if (annotation != DynamicallyAccessedMemberTypes.None)
                     LogValidationWarning(
-                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
-                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
+                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
+                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
                         ov);
             }
         }
@@ -731,6 +747,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
+
+            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         readonly struct MethodAnnotations

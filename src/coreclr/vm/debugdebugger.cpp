@@ -1314,7 +1314,6 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
             }
             pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
             pWalkData->prevILOffsetFound = pWalkData->dwILOffsetFound;
-            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
             pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
         }
         else if (((int32_t)pOffsetMapping->ilOffset < (int32_t)pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))

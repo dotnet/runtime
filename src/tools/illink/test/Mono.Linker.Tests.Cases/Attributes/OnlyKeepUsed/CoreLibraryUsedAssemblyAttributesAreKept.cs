@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
     [SetupLinkerArgument("--used-attrs-only", "true")]
     [KeptAttributeInAssembly(PlatformAssemblies.CoreLib, typeof(AssemblyDescriptionAttribute))]
 #if !NET
-	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
+    [KeptAttributeInAssembly("System.dll", typeof(AssemblyDescriptionAttribute))]
 #endif
     public class CoreLibraryUsedAssemblyAttributesAreKept
     {

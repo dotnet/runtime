@@ -16,6 +16,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 {
     public class PEExportTable
     {
+        public readonly bool HasExportTable;
+        public readonly int ExportTableHeaderLength;
+
         private readonly Dictionary<string, int> _namedExportRva;
         private readonly Dictionary<int, int> _ordinalRva;
 
@@ -28,12 +31,16 @@ namespace ILCompiler.Reflection.ReadyToRun
             if ((exportTable.Size == 0) || (exportTable.RelativeVirtualAddress == 0))
                 return;
 
+            HasExportTable = true;
+
             PEMemoryBlock peImage = peReader.GetEntireImage();
             BlobReader exportTableHeader = peImage.GetReader(peReader.GetOffset(exportTable.RelativeVirtualAddress), exportTable.Size);
             if (exportTableHeader.Length == 0)
             {
                 return;
             }
+
+            ExportTableHeaderLength = exportTableHeader.Length;
 
             // +0x00: reserved
             exportTableHeader.ReadUInt32();
@@ -89,12 +96,33 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     _namedExportRva.Add(nameBuilder.ToString(), addressTable[ordinalTable[entryIndex]]);
                 }
+                else
+                {
+                    Console.Error.WriteLine($"Found a zero RVA when reading name pointers for entry #{entryIndex}/{namePointerCount}");
+                }
             }
         }
 
         public static PEExportTable Parse(PEReader peReader)
         {
             return new PEExportTable(peReader);
+        }
+
+        public void DumpToConsoleError()
+        {
+            Console.Error.WriteLine($"HasExportTable: {HasExportTable}");
+            Console.Error.WriteLine($"ExportTableHeaderLength: {ExportTableHeaderLength}");
+            Console.Error.WriteLine($"_namedExportRva: {_namedExportRva.Count} item(s)");
+            int i = 0;
+            foreach (var kvp in _namedExportRva)
+            {
+                Console.Error.WriteLine($"  '{kvp.Key}': {kvp.Value}");
+                if (i++ > 64)
+                {
+                    Console.Error.WriteLine("  ... stopped dumping named exports because there are too many.");
+                    break;
+                }
+            }
         }
 
         public bool TryGetValue(string exportName, out int rva) => _namedExportRva.TryGetValue(exportName, out rva);

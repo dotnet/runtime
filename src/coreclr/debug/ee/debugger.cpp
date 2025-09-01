@@ -78,7 +78,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 {
     _ASSERTE(!"Don't call this function. It just does compile time checking\n");
 
-    // We use the C_ASSERT macro here to get a compile-time assert.
+    // We use the static_assert macro here to get a compile-time assert.
 
     // Make sure we don't have any duplicate numbers.
     // The switch statements in the main loops won't always catch this
@@ -107,8 +107,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure all values are subset of the bits specified by DB_IPCE_TYPE_MASK
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -116,27 +116,27 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure that no value is DB_IPCE_INVALID_EVENT
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
     #undef IPC_EVENT_TYPE0
 
     // Make sure first-last values are well structured.
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
-    static_assert_no_msg(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
+    static_assert(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
+    static_assert(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
 
     // Make sure that event ranges don't overlap.
     // This check is simplified because L->R events come before R<-L
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
+    static_assert(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
 
 
     // Make sure values are in the proper ranges
     // Type1 should be in the Runtime range, Type2 in the Debugger range.
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -153,7 +153,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     11) && (11 <
     12) && (12 <
     last)
-    static_assert_no_msg(f);
+    static_assert(f);
     */
 
     const bool f1 = (
@@ -167,7 +167,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_RUNTIME_LAST)
     );
-    static_assert_no_msg(f1);
+    static_assert(f1);
 
     const bool f2 = (
         (e_DB_IPCE_DEBUGGER_FIRST <=
@@ -180,7 +180,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_DEBUGGER_LAST)
     );
-    static_assert_no_msg(f2);
+    static_assert(f2);
 
 } // end checks
 
@@ -926,7 +926,6 @@ Debugger::Debugger()
     m_jitAttachInProgress(FALSE),
     m_launchingDebugger(FALSE),
     m_LoggingEnabled(TRUE),
-    m_pAppDomainCB(NULL),
     m_dClassLoadCallbackCount(0),
     m_pModules(NULL),
     m_RSRequestedSync(FALSE),
@@ -1896,22 +1895,6 @@ HRESULT Debugger::Startup(void)
 
         InitializeHijackFunctionAddress();
 
-        // Also initialize the AppDomainEnumerationIPCBlock
-    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-    #else
-        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-    #endif
-
-        if (m_pAppDomainCB == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
-            ThrowHR(E_FAIL);
-        }
-
-        hr = InitAppDomainIPC();
-        _ASSERTE(SUCCEEDED(hr)); // throws on error.
-
         // Allows the debugger (and profiler) diagnostics to be disabled so resources like
         // the named pipes and semaphores are not created.
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
@@ -1939,7 +1922,7 @@ HRESULT Debugger::Startup(void)
     #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
          // Create transport session and initialize it.
         g_pDbgTransport = new DbgTransportSession();
-        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB);
+        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB());
         if (FAILED(hr))
         {
             ShutdownTransport();
@@ -2286,10 +2269,10 @@ void DebuggerLazyInit::Init()
 DebuggerLazyInit::~DebuggerLazyInit()
 {
     {
-        USHORT cBlobs = m_pMemBlobs.Count();
+        INT32 cBlobs = m_pMemBlobs.Count();
         void **rgpBlobs = m_pMemBlobs.Table();
 
-        for (int i = 0; i < cBlobs; i++)
+        for (INT32 i = 0; i < cBlobs; i++)
         {
             g_pDebugger->ReleaseRemoteBuffer(rgpBlobs[i], false);
         }
@@ -2405,9 +2388,6 @@ void Debugger::StopDebugger(void)
     {
         m_pRCThread->AsyncStop();
     }
-
-    // Also clean up the AppDomain stuff since this is cross-process.
-    TerminateAppDomainIPC ();
 
     //
     // Tell the VM to clear out all references to the debugger before we start cleaning up,
@@ -9180,7 +9160,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 
 //---------------------------------------------------------------------------------------
 //
-// Debugger::SendCreateAppDomainEvent - notify the RS of an AppDomain
+// Debugger::AppDomainCreated - notify the RS of an AppDomain
 //
 // Arguments:
 //    pRuntimeAppdomain - pointer to the AppDomain
@@ -9190,18 +9170,13 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 //
 // Notes:
 //    This is used to notify the debugger of either a newly created
-//    AppDomain (when fAttaching is FALSE) or of existing AppDomains
-//    at attach time (fAttaching is TRUE).  In both cases, this should
+//    AppDomain. This should
 //    be called before any LoadModule/LoadAssembly events are sent for
 //    this domain.  Otherwise the RS will get an event for an AppDomain
 //    it doesn't recognize and ASSERT.
 //
-//    For the non-attach case this means there is no need to enumerate
-//    the assemblies/modules in an AppDomain after sending this event
-//    because we know there won't be any.
-//
 
-void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
+void Debugger::AppDomainCreated(AppDomain * pRuntimeAppDomain)
 {
     CONTRACTL
     {
@@ -9225,8 +9200,6 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
     Thread *pThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, pThread);
 
-
-
     // We may have detached while waiting in LockForEventSending,
     // in which case we can't send the event.
     if (CORDebuggerAttached())
@@ -9249,62 +9222,6 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
     SENDIPCEVENT_END;
 
 }
-
-
-//
-// LoadAssembly is called when a new Assembly gets loaded.
-//
-void Debugger::LoadAssembly(DomainAssembly * pDomainAssembly)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    LOG((LF_CORDB, LL_INFO100, "D::LA: Load Assembly Asy:0x%p AD:0x%p which:%s\n",
-        pDomainAssembly, AppDomain::GetCurrentDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
-
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
-
-    Thread *pThread = g_pEEInterface->GetThread();
-    SENDIPCEVENT_BEGIN(this, pThread)
-
-
-    if (CORDebuggerAttached())
-    {
-        // Send a load assembly event to the Right Side.
-        DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce,
-                     DB_IPCE_LOAD_ASSEMBLY,
-                     pThread);
-
-        ipce->AssemblyData.vmDomainAssembly.SetRawPtr(pDomainAssembly);
-
-        m_pRCThread->SendIPCEvent();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::LA: Skipping SendIPCEvent because RS detached."));
-    }
-
-    // Stop all Runtime threads
-    if (CORDebuggerAttached())
-    {
-        TrapAllRuntimeThreads();
-    }
-
-    SENDIPCEVENT_END;
-}
-
-
 
 //
 // UnloadAssembly is called when a Runtime thread unloads an assembly.
@@ -9790,42 +9707,30 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
 
     Assembly *pAssembly = classModule->GetAssembly();
 
-    if (!m_pAppDomainCB->Lock())
-        return (FALSE);
+    AppDomain *pAppDomain = GetAppDomain();
+    _ASSERTE(pAppDomain != NULL);
 
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindFirst();
-
-    while (pADInfo != NULL)
+    // Only notify for app domains where the module has been fully loaded already
+    // We used to make a different check here domain->ContainsAssembly() but that
+    // triggers too early in the loading process. FindDomainAssembly will not become
+    // non-NULL until the module is fully loaded into the domain which is what we
+    // want.
+    if (classModule->GetDomainAssembly() != NULL )
     {
-        AppDomain *pAppDomain = pADInfo->m_pAppDomain;
-        _ASSERTE(pAppDomain != NULL);
+        // Find the Left Side module that this class belongs in.
+        DebuggerModule* pModule = LookupOrCreateModule(classModule);
+        _ASSERTE(pModule != NULL);
 
-        // Only notify for app domains where the module has been fully loaded already
-        // We used to make a different check here domain->ContainsAssembly() but that
-        // triggers too early in the loading process. FindDomainAssembly will not become
-        // non-NULL until the module is fully loaded into the domain which is what we
-        // want.
-        if (classModule->GetDomainAssembly() != NULL )
+        // Only send a class load event if they're enabled for this module.
+        if (pModule && pModule->ClassLoadCallbacksEnabled())
         {
-            // Find the Left Side module that this class belongs in.
-            DebuggerModule* pModule = LookupOrCreateModule(classModule);
-            _ASSERTE(pModule != NULL);
-
-            // Only send a class load event if they're enabled for this module.
-            if (pModule && pModule->ClassLoadCallbacksEnabled())
-            {
-                SendClassLoadUnloadEvent(classMetadataToken,
-                                         pModule,
-                                         pAssembly,
-                                         fIsLoadEvent);
-                fRetVal = TRUE;
-            }
+            SendClassLoadUnloadEvent(classMetadataToken,
+                                        pModule,
+                                        pAssembly,
+                                        fIsLoadEvent);
+            fRetVal = TRUE;
         }
-
-        pADInfo = m_pAppDomainCB->FindNext(pADInfo);
     }
-
-    m_pAppDomainCB->Unlock();
 
     return fRetVal;
 }
@@ -11803,6 +11708,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
+            res->ClassTypeData.vmModule.SetRawPtr(NULL);
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
         }
@@ -12154,10 +12060,10 @@ HRESULT Debugger::ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList)
     // Remove the buffer from the blob list if necessary.
     if (removeFromBlobList)
     {
-        USHORT cBlobs = GetMemBlobs()->Count();
+        INT32 cBlobs = GetMemBlobs()->Count();
         void **rgpBlobs = GetMemBlobs()->Table();
 
-        USHORT i;
+        INT32 i;
         for (i = 0; i < cBlobs; i++)
         {
             if (rgpBlobs[i] == pBuffer)
@@ -14542,399 +14448,6 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
 
     SENDIPCEVENT_END;
 }
-
-
-//-----------------------------------------------------------------------------
-//
-// Add the AppDomain to the list stored in the IPC block.  It adds the id and
-// the name.
-//
-// Arguments:
-//     pAppDomain - The runtime app domain object to add.
-//
-// Return Value:
-//     S_OK on success, else detailed error code.
-//
-HRESULT Debugger::AddAppDomainToIPC(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    LPCWSTR szName = NULL;
-
-    LOG((LF_CORDB, LL_INFO100, "D::AADTIPC: Executing AADTIPC for AppDomain 0x%08x.\n",
-        pAppDomain));
-
-    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::AADTIPC: AddAppDomainToIPC:%#08x\n",
-            pAppDomain);
-
-
-
-    _ASSERTE(m_pAppDomainCB->m_iTotalSlots > 0);
-    _ASSERTE(m_pAppDomainCB->m_rgListOfAppDomains != NULL);
-
-    {
-        //
-        // We need to synchronize this routine with the attach logic.  The "normal"
-        // attach case uses the HelperThread and TrapAllRuntimeThreads to synchronize
-        // the runtime before sending any of the events (including AppDomainCreates)
-        // to the right-side.  Thus, we can synchronize with this case by forcing us
-        // to go co-operative.  If we were already co-op, then the helper thread will
-        // wait to start the attach until all co-op threads are paused.  If we were
-        // pre-emptive, then going co-op will suspend us until the HelperThread finishes.
-        //
-        // The second case is under the IPC event for ATTACHING, which is where there are
-        // zero app domains, so it is considered an 'early attach' case.  To synchronize
-        // with this we have to grab and hold the AppDomainDB lock.
-        //
-
-        GCX_COOP();
-
-        // Lock the list
-        if (!m_pAppDomainCB->Lock())
-        {
-            return E_FAIL;
-        }
-
-        // Get a free entry from the list
-        AppDomainInfo *pAppDomainInfo = m_pAppDomainCB->GetFreeEntry();
-
-        // Function returns NULL if the list is full and a realloc failed.
-        if (!pAppDomainInfo)
-        {
-            hr = E_OUTOFMEMORY;
-            goto LErrExit;
-        }
-
-        // Now set the AppDomainName.
-
-        /*
-         * TODO :
-         *
-         * Make sure that returning NULL here does not result in a catastrophic
-         * failure.
-         *
-         * GetFriendlyNameNoThrow may call SetFriendlyName, which may call
-         * UpdateAppDomainEntryInIPC. There is no recursive death, however, because
-         * the AppDomainInfo object does not contain a pointer to the app domain
-         * yet.
-         */
-        szName = pAppDomain->GetFriendlyNameForDebugger();
-        pAppDomainInfo->SetName(szName);
-
-        // Save on to the appdomain pointer
-        pAppDomainInfo->m_pAppDomain = pAppDomain;
-
-        // bump the used slot count
-        m_pAppDomainCB->m_iNumOfUsedSlots++;
-
-LErrExit:
-        // UnLock the list
-        m_pAppDomainCB->Unlock();
-
-        // Send event to debugger if one is attached.
-        if (CORDebuggerAttached())
-        {
-            SendCreateAppDomainEvent(pAppDomain);
-        }
-    }
-
-    return hr;
-}
-
-
-/******************************************************************************
- * Remove the AppDomain from the list stored in the IPC block and send an ExitAppDomain
- * event to the debugger if attached.
- ******************************************************************************/
-HRESULT Debugger::RemoveAppDomainFromIPC (AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = E_FAIL;
-
-    LOG((LF_CORDB, LL_INFO100, "D::RADFIPC: Executing RADFIPC for AppDomain 0x%08x.\n",
-        pAppDomain));
-
-    // if none of the slots are occupied, then simply return.
-    if (m_pAppDomainCB->m_iNumOfUsedSlots == 0)
-        return hr;
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-
-    // Look for the entry
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindEntry(pAppDomain);
-
-    // Shouldn't be trying to remove an appdomain that was never added
-    if (!pADInfo)
-    {
-        // We'd like to assert this, but there is a small window where we may have
-        // called AppDomain::Init (and so it's fair game to call Stop, and hence come here),
-        // but not yet published the app domain.
-        // _ASSERTE(!"D::RADFIPC: trying to remove an AppDomain that was never added");
-        hr = (E_FAIL);
-        goto ErrExit;
-    }
-
-    // Release the entry
-    m_pAppDomainCB->FreeEntry(pADInfo);
-
-ErrExit:
-    // UnLock the list
-    m_pAppDomainCB->Unlock();
-
-    //
-    // The Debugger expects to never get an unload event for the default AppDomain.
-    //
-
-    return hr;
-}
-
-/******************************************************************************
- * Update the AppDomain in the list stored in the IPC block.
- ******************************************************************************/
-HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    LPCWSTR szName = NULL;
-
-    LOG((LF_CORDB, LL_INFO100,
-         "D::UADEIIPC: Executing UpdateAppDomainEntryInIPC ad:0x%x.\n",
-         pAppDomain));
-
-    // if none of the slots are occupied, then simply return.
-    if (m_pAppDomainCB->m_iNumOfUsedSlots == 0)
-        return (E_FAIL);
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-    // Look up the info entry
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindEntry(pAppDomain);
-
-    if (!pADInfo)
-    {
-        hr = E_FAIL;
-        goto ErrExit;
-    }
-
-    // Update the name only if new name is non-null
-    szName = pADInfo->m_pAppDomain->GetFriendlyNameForDebugger();
-    pADInfo->SetName(szName);
-
-ErrExit:
-    // UnLock the list
-    m_pAppDomainCB->Unlock();
-
-    return hr;
-}
-
-/******************************************************************************
- *
- ******************************************************************************/
-HRESULT Debugger::InitAppDomainIPC(void)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-
-        PRECONDITION(CheckPointer(m_pAppDomainCB));
-    }
-    CONTRACTL_END;
-
-    // Ensure that if we throw here, the Terminate will get called and cleanup all resources.
-    // This will make Init an atomic operation - it either fully inits or fully fails.
-    class EnsureCleanup
-    {
-        Debugger * m_pThis;
-
-    public:
-        EnsureCleanup(Debugger * pThis)
-        {
-            m_pThis = pThis;
-        }
-
-        void SuppressCleanup()
-        {
-            m_pThis = NULL;
-        }
-
-        ~EnsureCleanup()
-        {
-            if (m_pThis != NULL)
-            {
-                m_pThis->TerminateAppDomainIPC();
-            }
-        }
-    } hEnsureCleanup(this);
-
-    DWORD dwStrLen = 0;
-    SString szExeName;
-    int i;
-
-    // all fields in the object can be zero initialized.
-    // If we throw, before fully initializing this, then cleanup won't try to free
-    // uninited values.
-    ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
-
-    // Create a mutex to allow the Left and Right Sides to properly
-    // synchronize. The Right Side will spin until m_hMutex is valid,
-    // then it will acquire it before accessing the data.
-    HandleHolder hMutex(CreateMutex(NULL, TRUE/*hold*/, NULL));
-    if (hMutex == NULL)
-    {
-        ThrowLastError();
-    }
-    if (!m_pAppDomainCB->m_hMutex.SetLocal(hMutex))
-    {
-        ThrowLastError();
-    }
-    hMutex.SuppressRelease();
-
-    m_pAppDomainCB->m_iSizeInBytes = INITIAL_APP_DOMAIN_INFO_LIST_SIZE *
-                                                sizeof (AppDomainInfo);
-
-    // Number of slots in AppDomainListElement array
-    m_pAppDomainCB->m_rgListOfAppDomains = new AppDomainInfo[INITIAL_APP_DOMAIN_INFO_LIST_SIZE];
-    _ASSERTE(m_pAppDomainCB->m_rgListOfAppDomains != NULL); // throws on oom
-
-
-    m_pAppDomainCB->m_iTotalSlots = INITIAL_APP_DOMAIN_INFO_LIST_SIZE;
-
-    // Initialize each AppDomainListElement
-    for (i = 0; i < INITIAL_APP_DOMAIN_INFO_LIST_SIZE; i++)
-    {
-        m_pAppDomainCB->m_rgListOfAppDomains[i].FreeEntry();
-    }
-
-    // also initialize the process name
-    dwStrLen = WszGetModuleFileName(NULL,
-                                    szExeName);
-
-
-    // If we couldn't get the name, then use a nice default.
-    if (dwStrLen == 0)
-    {
-        szExeName.Set(W("<NoProcessName>"));
-        dwStrLen = szExeName.GetCount();
-    }
-
-    // If we got the name, copy it into a buffer. dwStrLen is the
-    // count of characters in the name, not including the null
-    // terminator.
-    m_pAppDomainCB->m_szProcessName = new WCHAR[dwStrLen + 1];
-    _ASSERTE(m_pAppDomainCB->m_szProcessName != NULL); // throws on oom
-
-    wcscpy_s(m_pAppDomainCB->m_szProcessName, dwStrLen + 1, szExeName);
-
-    // Add 1 to the string length so the Right Side will copy out the
-    // null terminator, too.
-    m_pAppDomainCB->m_iProcessNameLengthInBytes = (dwStrLen + 1) * sizeof(WCHAR);
-
-    if (m_pAppDomainCB->m_hMutex != NULL)
-    {
-        m_pAppDomainCB->Unlock();
-    }
-
-    hEnsureCleanup.SuppressCleanup();
-    return S_OK;
-}
-
-/******************************************************************************
- * Uninitialize the AppDomain IPC block
- * Returns:
- * S_OK -if fully uninitialized
- * E_FAIL - if we can't get ownership of the block, and thus no uninitialization
- *          work is done.
- ******************************************************************************/
-HRESULT Debugger::TerminateAppDomainIPC(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // If we have no AppDomain block, then we can consider it's already terminated.
-    if (m_pAppDomainCB == NULL)
-        return S_OK;
-
-    HRESULT hr = S_OK;
-
-    // Lock the list
-    // If there's no mutex, then we're in a partially created state.
-    // This means InitAppDomainIPC failed halfway through. But we're still thread safe
-    // since other threads can't access us if we don't have the mutex.
-    if ((m_pAppDomainCB->m_hMutex != NULL) && !m_pAppDomainCB->Lock())
-    {
-        // The callers don't check our return value, we may want to know when we can't gracefully clean up
-       LOG((LF_CORDB, LL_INFO10, "Debugger::TerminateAppDomainIPC: Failed to get AppDomain IPC lock, not cleaning up.\n"));
-
-        // If the lock is valid, but we can't get it, then we can't really
-        // uninitialize since someone else is using the block.
-        return (E_FAIL);
-    }
-
-    // The shared IPC segment could still be around after the debugger
-    // object has been destroyed during process shutdown. So, reset
-    // the UsedSlots count to 0 so that any out of process clients
-    // enumeratingthe app domains in this process see 0 AppDomains.
-    m_pAppDomainCB->m_iNumOfUsedSlots = 0;
-    m_pAppDomainCB->m_iTotalSlots = 0;
-
-    // Now delete the memory allocated for AppDomainInfo  array
-    delete [] m_pAppDomainCB->m_rgListOfAppDomains;
-    m_pAppDomainCB->m_rgListOfAppDomains = NULL;
-
-    delete [] m_pAppDomainCB->m_szProcessName;
-    m_pAppDomainCB->m_szProcessName = NULL;
-    m_pAppDomainCB->m_iProcessNameLengthInBytes = 0;
-
-    // Set the mutex handle to NULL.
-    // If the Right Side acquires the mutex, it will verify
-    // that the handle is still not NULL. If it is, then it knows it
-    // really lost.
-    RemoteHANDLE m = m_pAppDomainCB->m_hMutex;
-    m_pAppDomainCB->m_hMutex.m_hLocal = NULL;
-
-    // And bring us back to a fully uninitialized state.
-    ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
-
-    // We're done. release and close the mutex.  Note that this must be done
-    // after we clear it out above to ensure there is no race condition.
-    if( m != NULL )
-    {
-        VERIFY(ReleaseMutex(m));
-        m.Close();
-    }
-
-    return hr;
-}
-
 
 #ifndef DACCESS_COMPILE
 

@@ -137,11 +137,15 @@ macro(check_avx512vnni_intrinsics)
     set(CMAKE_REQUIRED_FLAGS "${AVX512VNNIFLAG} ${NATIVEFLAG} ${ZNOLTOFLAG}")
     check_c_source_compiles(
         "#include <immintrin.h>
-        __m512i f(__m512i x, __m512i y) {
-            __m512i z = _mm512_setzero_epi32();
-            return _mm512_dpbusd_epi32(z, x, y);
-        }
-        int main(void) { return 0; }"
+        int main(void) {
+            const __m512i z512 = _mm512_setzero_si512();
+            const __m256i z256 = _mm256_setzero_si256();
+            volatile __m512i r512 = _mm512_dpbusd_epi32(z512, z512, z512);
+            volatile __m256i r256 = _mm256_dpbusd_epi32(z256, z256, z256);
+            (void)r512;
+            (void)r256;
+            return 0;
+        }"
         HAVE_AVX512VNNI_INTRIN
     )
     set(CMAKE_REQUIRED_FLAGS)

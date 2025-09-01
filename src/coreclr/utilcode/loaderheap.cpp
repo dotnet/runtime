@@ -70,7 +70,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedLoaderHeap::~UnlockedLoaderHeap()
 {
     CONTRACTL
@@ -1053,7 +1052,6 @@ size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 
     size_t dwSize = dwRequestedSize;
 
-    // Interleaved heap cannot ad any extra to the requested size
 #ifdef _DEBUG
     dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));

@@ -846,9 +846,11 @@ static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTIO
 
 bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
+    DWORD stacksize = (DWORD)GetDefaultStackSizeSetting();
+
     HANDLE hThread = CreateThread(
         NULL,
-        0,
+        (DWORD)stacksize,
         (LPTHREAD_START_ROUTINE)callback,
         pCallbackContext,
         highPriority ? CREATE_SUSPENDED : 0,
@@ -1035,11 +1037,6 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
 UInt32_BOOL PalCloseHandle(HANDLE arg1)
 {
     return ::CloseHandle(arg1);
-}
-
-void PalFlushProcessWriteBuffers()
-{
-    ::FlushProcessWriteBuffers();
 }
 
 uint32_t PalGetCurrentProcessId()

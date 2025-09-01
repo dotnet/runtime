@@ -129,6 +129,56 @@ register_imethod_data_item (gpointer data, gpointer user_data)
 }
 
 void
+mono_interp_clear_data_items_patch_sites (gpointer *data_items, int n_data_items)
+{
+	// data_items is part of the memory of a dynamic method that is being freed.
+	// slots within this memory can be registered as patch sites for other imethods
+	// We conservatively assume each slot could be an imethod slot, then look it up
+	// in imethod to patch_sites hashtable. If we find it in the hashtable, we remove
+	// the slot from the patch site list.
+	mono_os_mutex_lock (&tiering_mutex);
+
+	for (int i = 0; i < n_data_items; i++) {
+		GSList *sites;
+		gpointer *slot = data_items + i;
+		gpointer imethod_candidate = *slot;
+
+		if (dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, imethod_candidate, (void **)&sites)) {
+			GSList *prev = NULL;
+
+			// Remove slot from sites list
+			if (sites->data == slot) {
+				// If the slot is found in the first element we will also need to update the hash table since
+				// the list head changes
+				if (!sites->next) {
+					g_slist_free_1 (sites);
+					dn_simdhash_ptr_ptr_try_remove (patch_sites_table, imethod_candidate);
+				} else {
+					prev = sites;
+					sites = sites->next;
+					g_slist_free_1 (prev);
+					dn_simdhash_ptr_ptr_try_replace_value (patch_sites_table, imethod_candidate, sites);
+				}
+			} else {
+				prev = sites;
+				sites = sites->next;
+				while (sites != NULL) {
+					if (sites->data == slot) {
+						prev->next = sites->next;
+						g_slist_free_1 (sites);
+						// duplicates not allowed
+						break;
+					}
+					prev = sites;
+					sites = sites->next;
+				}
+			}
+		}
+	}
+	mono_os_mutex_unlock (&tiering_mutex);
+}
+
+void
 mono_interp_register_imethod_data_items (gpointer *data_items, GSList *indexes)
 {
 	if (!enable_tiering)

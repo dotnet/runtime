@@ -6,13 +6,13 @@ namespace Mono.Linker.Tests.Cases.Extensibility.Dependencies
     public interface InterfaceType
     {
 #if INCLUDE_ABSTRACT_METHOD
-		public abstract void AbstractMethod ();
+        public abstract void AbstractMethod();
 #endif
 
         public static void UseInstance(InterfaceType instance)
         {
 #if INCLUDE_ABSTRACT_METHOD
-			instance.AbstractMethod ();
+            instance.AbstractMethod();
 #endif
         }
     }

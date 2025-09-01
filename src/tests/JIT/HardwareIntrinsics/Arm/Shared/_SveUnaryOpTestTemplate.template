@@ -24,17 +24,13 @@ namespace JIT.HardwareIntrinsics.Arm
         public static void {TestName}()
         {
             var test = new {TemplateName}UnaryOpTest__{TestName}();
-
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates basic functionality works, using Load
-                    test.RunBasicScenario_Load();
-                }
+                // Validates basic functionality works, using Load
+                test.RunBasicScenario_Load();
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
@@ -75,62 +71,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
     public sealed unsafe class {TemplateName}UnaryOpTest__{TestName}
     {
-        private struct DataTable
-        {
-            private byte[] inArray1;
-            private byte[] outArray;
-
-            private GCHandle inHandle1;
-            private GCHandle outHandle;
-
-            private ulong alignment;
-
-            public DataTable({Op1BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
-            {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
-                {
-                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
-                }
-
-                this.inArray1 = new byte[alignment * 2];
-                this.outArray = new byte[alignment * 2];
-
-                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
-                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
-
-                this.alignment = (ulong)alignment;
-
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
-            }
-
-            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
-
-            public void Dispose()
-            {
-                inHandle1.Free();
-                outHandle.Free();
-            }
-
-            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
-            {
-                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
-            }
-        }
-
         private struct TestStruct
         {
-            public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public Vector<{Op1BaseType}> _fld1;
 
-            public static TestStruct Create()
+            public static TestStruct Create(Vector<{Op1BaseType}> vec)
             {
                 var testStruct = new TestStruct();
-
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-
+                testStruct._fld1 = vec;
                 return testStruct;
             }
 
@@ -138,91 +86,76 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 var result = {Isa}.{Method}(_fld1);
 
-                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld1, result);
             }
         }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector<{RetBaseType}>>() / sizeof({RetBaseType});
 
-        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[Op1ElementCount];
-        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
-
-        private {Op1VectorType}<{Op1BaseType}> _mask;
-        private {Op1VectorType}<{Op1BaseType}> _fld1;
-        private {Op1VectorType}<{Op1BaseType}> _falseFld;
-
-        private DataTable _dataTable;
+        private Vector<{Op1BaseType}> _mask;
+        private Vector<{Op1BaseType}> _fld1;
+        private Vector<{Op1BaseType}> _falseFld;
+        private TestLibrary.Vectors.PinnedVector<{Op1BaseType}> _pinnedOp1;
 
         public {TemplateName}UnaryOpTest__{TestName}()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());            
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            _dataTable = new DataTable(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _mask = TestLibrary.Vectors.GetRandomMask<{Op1BaseType}>();
+            _fld1 = TestLibrary.Vectors.GetRandomVector<{Op1BaseType}>();
+            _falseFld = _fld1;
+            _pinnedOp1 = new TestLibrary.Vectors.PinnedVector<{Op1BaseType}>(_fld1, LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
-
-        public bool Succeeded { get; set; }
+        public bool Succeeded;
 
         public void RunBasicScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = {Isa}.{Method}(
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr)
-            );
+            var result = {Isa}.{Method}(_pinnedOp1.Value);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_pinnedOp1.Value, result);
         }
 
         public void RunBasicScenario_Load()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+            if ({LoadIsa}.IsSupported)
+            {
+                TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+                Vector<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
-            var result = {Isa}.{Method}(
-                {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr))
-            );
+                var result = {Isa}.{Method}(
+                    {LoadIsa}.LoadVector(loadMask, ({Op1BaseType}*)(_pinnedOp1.Ptr))
+                );
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+                ValidateResult(_pinnedOp1.Value, result);
+            }
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>) })
-                                     .Invoke(null, new object[] {
-                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr)
-                                     });
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>) })
+                                     .Invoke(null, new object[] { _pinnedOp1.Value });
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_pinnedOp1.Value, (Vector<{RetBaseType}>)result);
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var op1 = _pinnedOp1.Value;
             var result = {Isa}.{Method}(op1);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, _dataTable.outArrayPtr);
+            ValidateResult(op1, result);
         }
 
         public void RunClassFldScenario()
@@ -231,26 +164,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var result = {Isa}.{Method}(_fld1);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld1, _dataTable.outArrayPtr);
+            ValidateResult(_fld1, result);
         }
 
         public void RunStructLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
-            var test = TestStruct.Create();
+            var test = TestStruct.Create(_fld1);
             var result = {Isa}.{Method}(test._fld1);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, result);
         }
 
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
-            var test = TestStruct.Create();
+            var test = TestStruct.Create(_fld1);
             test.RunStructFldScenario(this);
         }
 
@@ -258,89 +189,83 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in trueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld1);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld1);
-            
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.Zero, _fld1, _fld1);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld1);
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, _fld1);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in falseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld1);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld1);
-            
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.Zero, _fld1, _fld1);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld1);
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, _fld1);
         }
 
         public void ConditionalSelect_FalseOp()
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in trueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _falseFld);
-            
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.Zero, _fld1, _falseFld);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _falseFld);         
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in falseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _falseFld);
-            
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.Zero, _fld1, _falseFld);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _falseFld);                 
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, _falseFld);
         }
 
         public void ConditionalSelect_ZeroOp()
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in trueValue");
-            ConditionalSelectScenario_TrueValue(_mask, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, Vector<{Op1BaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.Zero, _fld1, Vector<{Op1BaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in trueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, Vector<{Op1BaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in falseValue");
-            ConditionalSelectScenario_FalseValue(_mask, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, Vector<{Op1BaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.Zero, _fld1, Vector<{Op1BaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in falseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, {Op1VectorType}<{Op1BaseType}>.Zero); 
-        }            
-
-        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> falseOp)
-        {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1), falseOp);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult_TrueValue(mask, op1, falseOp, _dataTable.outArrayPtr);
+            ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}>.AllBitsSet, _fld1, Vector<{Op1BaseType}>.Zero);
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> trueOp)
+        private void ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}> mask, Vector<{Op1BaseType}> op1, Vector<{Op1BaseType}> falseOp)
+        {
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1), falseOp);
+            ValidateConditionalSelectResult(mask, op1, falseOp, result);
+        }
+
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ConditionalSelectScenario_FalseValue(Vector<{Op1BaseType}> mask, Vector<{Op1BaseType}> op1, Vector<{Op1BaseType}> trueOp)
         {
             var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1));
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult_FalseValue(mask, op1, trueOp, _dataTable.outArrayPtr);
-        }        
+            ValidateConditionalSelectResult(mask, op1, trueOp, result, false);
+        }
 
         public void RunUnsupportedScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
-
             bool succeeded = false;
-
             try
             {
                 RunBasicScenario_UnsafeRead();
@@ -356,28 +281,44 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult_TrueValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult(
+            Vector<{Op1BaseType}> maskOp,
+            Vector<{Op1BaseType}> left,
+            Vector<{Op1BaseType}> cond,
+            Vector<{RetBaseType}> output,
+            bool trueMode = true,
+            [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] falseVal = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] leftOp = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] condVal = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref left[0]), leftOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref falseVal[0]), falseOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            TestLibrary.Vectors.VectorToArray(ref mask, maskOp);
+            TestLibrary.Vectors.VectorToArray(ref leftOp, left);
+            TestLibrary.Vectors.VectorToArray(ref condVal, cond);
+            TestLibrary.Vectors.VectorToArray(ref result, output);
 
-            bool succeeded = true;
-
-            {TemplateValidationLogicForCndSel}
-
-            if (!succeeded)
+            {RetBaseType}[] expected = new {RetBaseType}[RetElementCount];
+            for (var i = 0; i < RetElementCount; i++)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                if (trueMode)
+                {
+                    expected[i] = (mask[i] != 0) ? {GetIterResult} : condVal[i];
+                }
+                else
+                {
+                    expected[i] = (mask[i] == 0) ? {GetIterResult} : condVal[i];
+                }
+            }
+
+            if (!expected.SequenceEqual(result))
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>, Vector<{Op1BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
-                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
-                TestLibrary.TestFramework.LogInformation($" falseOp: ({string.Join(", ", falseVal)})");
+                TestLibrary.TestFramework.LogInformation($"  leftOp: ({string.Join(", ", leftOp)})");
+                TestLibrary.TestFramework.LogInformation($"    cond: ({string.Join(", ", condVal)})");
+                TestLibrary.TestFramework.LogInformation($"expected: ({string.Join(", ", expected)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
@@ -385,67 +326,23 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult_FalseValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{Op1BaseType}> trueOp, void* output, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector<{Op1BaseType}> leftOp, Vector<{RetBaseType}> result, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] trueVal = new {Op1BaseType}[Op1ElementCount];
-            {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
+            {RetBaseType}[] expected = new {RetBaseType}[RetElementCount];
+            {RetBaseType}[] resultArr = new {RetBaseType}[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref left[0]), leftOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref trueVal[0]), trueOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            TestLibrary.Vectors.VectorToArray(ref resultArr, result);
 
-            bool succeeded = true;
-
-            {TemplateValidationLogicForCndSel_FalseValue}
-
-            if (!succeeded)
+            for (int i = 0; i < resultArr.Length; i++)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
-                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
-                TestLibrary.TestFramework.LogInformation($" trueOp: ({string.Join(", ", trueVal)})");
-                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
-                TestLibrary.TestFramework.LogInformation(string.Empty);
-
-                Succeeded = false;
+                expected[i] = {GetIterResult};
             }
-        }        
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, void* result, [CallerMemberName] string method = "")
-        {
-            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-
-            ValidateResult(inArray1, outArray, method);
-        }
-
-        private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
-        {
-            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-
-            ValidateResult(inArray1, outArray, method);
-        }
-
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
-        {
-            bool succeeded = true;
-
-            {TemplateValidationLogic}
-
-            if (!succeeded)
+            if (!expected.SequenceEqual(resultArr))
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  leftOp: ({string.Join(", ", leftOp)})");
+                TestLibrary.TestFramework.LogInformation($"expected: ({string.Join(", ", expected)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

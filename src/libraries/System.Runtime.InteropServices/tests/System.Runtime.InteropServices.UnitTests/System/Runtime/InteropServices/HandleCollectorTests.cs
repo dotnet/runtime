@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
         [InlineData(null, 0)]
         [InlineData("", 10)]
         [InlineData("InitialThreshold", int.MaxValue)]
-        public void Ctor_Name_InitialThreshold(string name, int initialThreshold)
+        public void Ctor_Name_InitialThreshold(string? name, int initialThreshold)
         {
             var handleCollector = new HandleCollector(name, initialThreshold);
             Assert.Equal(0, handleCollector.Count);
@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         [InlineData(null, 0, 0)]
         [InlineData("", 10, 15)]
         [InlineData("InitialThreshold", 1, 2)]
-        public void Ctor_Name_InitialThreshold_MaximumThreshold(string name, int initialThreshold, int maximumThreshold)
+        public void Ctor_Name_InitialThreshold_MaximumThreshold(string? name, int initialThreshold, int maximumThreshold)
         {
             var handleCollector = new HandleCollector(name, initialThreshold, maximumThreshold);
             Assert.Equal(0, handleCollector.Count);

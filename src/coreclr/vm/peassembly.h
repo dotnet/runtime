@@ -312,20 +312,18 @@ public:
     // For Dynamic assemblies this is the fallback binder.
     PTR_AssemblyBinder GetAssemblyBinder();
 
-#ifndef DACCESS_COMPILE
-    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pFallbackBinder = pFallbackBinder;
-    }
-
-#endif //!DACCESS_COMPILE
-
+    // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
+    // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
+    // we need to ensure they are loaded in appropriate load context.
+    //
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
+    // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
+    // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackBinder;
+        return (m_pHostAssembly != NULL) ? NULL : m_pAssemblyBinder;
     }
 
     // ------------------------------------------------------------
@@ -341,7 +339,7 @@ public:
 
     static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
 
-    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit);
+    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit, AssemblyBinder* pFallbackBinder);
 
       // ------------------------------------------------------------
       // Utility functions
@@ -372,6 +370,7 @@ private:
         BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit* pEmit,
         BOOL isSystem,
+        AssemblyBinder* pFallbackBinder = NULL,
         PEImage* pPEImageIL = NULL,
         BINDER_SPACE::Assembly* pHostAssembly = NULL
     );
@@ -425,15 +424,7 @@ private:
     bool                     m_isSystem;
 
     PTR_BINDER_SPACE_Assembly m_pHostAssembly;
-
-    // For certain assemblies, we do not have m_pHostAssembly since they are not bound using an actual binder.
-    // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
-    // we need to ensure they are loaded in appropriate load context.
-    //
-    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
-    // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
-    // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackBinder;
+    PTR_AssemblyBinder m_pAssemblyBinder;
 
     friend struct cdac_data<PEAssembly>;
 };  // class PEAssembly
@@ -442,6 +433,7 @@ template<>
 struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
+    static constexpr size_t AssemblyBinder = offsetof(PEAssembly, m_pAssemblyBinder);
 };
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

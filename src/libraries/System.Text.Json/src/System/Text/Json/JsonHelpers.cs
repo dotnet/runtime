@@ -299,7 +299,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NET8_0_OR_GREATER
+#if !NET
         public static bool HasAllSet(this BitArray bitArray)
         {
             for (int i = 0; i < bitArray.Count; i++)

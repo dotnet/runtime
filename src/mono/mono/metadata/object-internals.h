@@ -1462,7 +1462,7 @@ typedef struct {
 typedef enum {
 	ALIVE = 0,
 	UNLOADING = 1
-} MonoManagedAssemblyLoadContextInternalState;
+} MonoAssemblyLoadContextInternalState;
 
 
 typedef struct {

@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
             foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {

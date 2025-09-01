@@ -331,7 +331,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 
                 //Bug
                 //[Kept]
-                //[KeptOverride (typeof (IStaticAndInstanceMethods))]
+                //[KeptOverride(typeof(IStaticAndInstanceMethods))]
                 static int IStaticAndInstanceMethods.StaticMethodExplicitImpl() => 0;
 
                 public int InstanceMethod() => 0;
@@ -474,7 +474,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
             [KeptInterface(typeof(IInheritsFromMultipleBases))]
             [KeptInterface(typeof(IBase1))]
             [KeptInterface(typeof(IBase2))]
-            // [RemovedInterface (typeof (IUnusedInterface))]
+            // [RemovedInterface(typeof(IUnusedInterface))]
             public class ImplementsIInheritsFromTwoBases : IInheritsFromMultipleBases
             {
                 [Kept]

@@ -21,7 +21,8 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
+    private readonly string _extraBuildArgsBuild = "-p:WasmEnableHotReload=false";
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
@@ -31,7 +32,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
-        _defaultBuildOptions = new BuildOptions();
+        _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -162,7 +163,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         BuildOptions buildOptions,
         bool? isNativeBuild = null,
         bool? wasmFingerprintDotnetJs = null) =>
-        BuildProjectCore(info, configuration, buildOptions, isNativeBuild, wasmFingerprintDotnetJs);
+        BuildProjectCore(
+            info,
+            configuration,
+            buildOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsBuild} {buildOptions.ExtraMSBuildArgs}" },
+            isNativeBuild,
+            wasmFingerprintDotnetJs
+        );
 
     private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,

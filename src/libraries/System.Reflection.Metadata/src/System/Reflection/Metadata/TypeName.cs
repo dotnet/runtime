@@ -194,7 +194,7 @@ namespace System.Reflection.Metadata
         private void AppendFullName(ref ValueStringBuilder builder)
         {
             // This is a recursive method over potentially hostile input. Protection against DoS is offered
-            // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
+            // via the [Try]Parse method and TypeNameParseOptions.MaxNodes property at construction time.
             // This FullName property getter and related methods assume that this TypeName instance has an
             // acceptable node count.
             //

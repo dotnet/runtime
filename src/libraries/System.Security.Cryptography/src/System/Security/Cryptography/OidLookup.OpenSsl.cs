@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Security.Cryptography
 {
@@ -15,18 +16,18 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        private static string? NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static unsafe string? NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            IntPtr friendlyNamePtr = IntPtr.Zero;
+            byte* friendlyNamePtr = null;
             int result = Interop.Crypto.LookupFriendlyNameByOid(oid, ref friendlyNamePtr);
 
             switch (result)
             {
                 case 1: /* Success */
-                    Debug.Assert(friendlyNamePtr != IntPtr.Zero);
+                    Debug.Assert(friendlyNamePtr != null);
 
                     // The pointer is to a shared string, so marshalling it out is all that's required.
-                    return Marshal.PtrToStringUTF8(friendlyNamePtr);
+                    return Utf8StringMarshaller.ConvertToManaged(friendlyNamePtr);
                 case -1: /* OpenSSL internal error */
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:

@@ -9,51 +9,51 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
     }
 
 #if INCLUDE_REFERENCE_IMPL
-	public interface ImplementationLibraryInterface
-	{
-		public int GetDefaultImplementation ()
-		{
-			return 42;
-		}
-	}
+    public interface ImplementationLibraryInterface
+    {
+        public int GetDefaultImplementation()
+        {
+            return 42;
+        }
+    }
 
-	public class ImplementationLibraryImp : ImplementationLibraryInterface
-	{
-	}
+    public class ImplementationLibraryImp : ImplementationLibraryInterface
+    {
+    }
 
-	public class ImplementationLibrary {
-		public class ImplementationLibraryNestedType
-		{
-			public static int PropertyOnNestedType { get; set; }
-		}
+    public class ImplementationLibrary {
+        public class ImplementationLibraryNestedType
+        {
+            public static int PropertyOnNestedType { get; set; }
+        }
 
-		public class ForwardedNestedType
-		{
-		}
+        public class ForwardedNestedType
+        {
+        }
 
-		public static int someField = 0;
+        public static int someField = 0;
 
-		public string GetSomeValue ()
-		{
-			return null;
-		}
-	}
+        public string GetSomeValue()
+        {
+            return null;
+        }
+    }
 
-	public class AnotherImplementationClass
-	{
-		public class ForwardedNestedType
-		{
-		}
-	}
+    public class AnotherImplementationClass
+    {
+        public class ForwardedNestedType
+        {
+        }
+    }
 
-	[AttributeUsage (AttributeTargets.All)]
-	public class ImplementationLibraryAttribute : Attribute
-	{
-	}
+    [AttributeUsage(AttributeTargets.All)]
+    public class ImplementationLibraryAttribute : Attribute
+    {
+    }
 
-	public struct ImplementationStruct
-	{
-		public int Field;
-	}
+    public struct ImplementationStruct
+    {
+        public int Field;
+    }
 #endif
 }

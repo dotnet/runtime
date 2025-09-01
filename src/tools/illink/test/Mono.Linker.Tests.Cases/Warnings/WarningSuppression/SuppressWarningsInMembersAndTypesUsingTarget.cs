@@ -13,7 +13,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 #if !NET
-	[Mono.Linker.Tests.Cases.Expectations.Metadata.Reference ("System.Core.dll")]
+    [Mono.Linker.Tests.Cases.Expectations.Metadata.Reference("System.Core.dll")]
 #endif
     [SkipKeptItemsValidation]
     [LogDoesNotContain("TriggerUnrecognizedPattern()")]

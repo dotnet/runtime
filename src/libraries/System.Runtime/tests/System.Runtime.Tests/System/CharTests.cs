@@ -17,7 +17,7 @@ namespace System.Tests
         [InlineData('h', 'a', 1)]
         [InlineData('h', 'z', -1)]
         [InlineData('h', null, 1)]
-        public void CompareTo_Other_ReturnsExpected(char c, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(char c, object? value, int expected)
         {
             if (value is char charValue)
             {
@@ -154,7 +154,7 @@ namespace System.Tests
         [InlineData('a', (int)'a', false)]
         [InlineData('a', "a", false)]
         [InlineData('a', null, false)]
-        public static void EqualsTest(char c, object obj, bool expected)
+        public static void EqualsTest(char c, object? obj, bool expected)
         {
             if (obj is char)
             {
@@ -1019,7 +1019,7 @@ namespace System.Tests
         [InlineData("\\u0135", typeof(FormatException))]
         [InlineData("\u01356", typeof(FormatException))]
         [InlineData("\ud801\udc01", typeof(FormatException))] // Surrogate pair
-        public static void Parse_Invalid(string s, Type exceptionType)
+        public static void Parse_Invalid(string? s, Type exceptionType)
         {
             char c;
             Assert.False(char.TryParse(s, out c));

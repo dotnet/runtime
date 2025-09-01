@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 #if INCLUDE_FORWARDER
-[assembly: TypeForwardedTo (typeof (UsedToReferenceForwarderAssembly))]
+[assembly: TypeForwardedTo(typeof(UsedToReferenceForwarderAssembly))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies

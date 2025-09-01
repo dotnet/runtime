@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			new LibraryWithSecurityAttributes().OnAMethod ();
+            new LibraryWithSecurityAttributes().OnAMethod();
 #endif
         }
     }

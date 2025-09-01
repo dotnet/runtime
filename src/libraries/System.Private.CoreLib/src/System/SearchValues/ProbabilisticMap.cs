@@ -626,7 +626,7 @@ namespace System.Buffers
                             }
                         }
 
-                        if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                        if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                         {
                             if (Unsafe.AreSame(ref cur, ref searchSpace))
                             {
@@ -715,7 +715,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
+                    if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVectorAvx2))
                     {
                         if (Unsafe.AreSame(ref cur, ref searchSpace))
                         {
@@ -757,7 +757,7 @@ namespace System.Buffers
                     }
                 }
 
-                if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                 {
                     if (Unsafe.AreSame(ref cur, ref searchSpace))
                     {

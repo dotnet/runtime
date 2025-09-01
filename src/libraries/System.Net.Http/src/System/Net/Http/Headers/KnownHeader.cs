@@ -8,12 +8,9 @@ namespace System.Net.Http.Headers
 {
     internal sealed partial class KnownHeader
     {
-        public KnownHeader(string name, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null) :
-            this(name, HttpHeaderType.Custom, parser: null, knownValues: null, http2StaticTableIndex, http3StaticTableIndex)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(name));
-            Debug.Assert(name[0] == ':' || HttpRuleParser.IsToken(name));
-        }
+        public KnownHeader(string name, string[]? knownValues = null, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null)
+            : this(name, HttpHeaderType.Custom, parser: null, knownValues, http2StaticTableIndex, http3StaticTableIndex)
+        { }
 
         public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser? parser, string[]? knownValues = null, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null)
         {

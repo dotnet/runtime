@@ -714,6 +714,28 @@ bool pal::getenv(const char_t* name, string_t* recv)
     return true;
 }
 
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    LPWCH env_strings = ::GetEnvironmentStringsW();
+    if (env_strings == nullptr)
+        return;
+
+    LPWCH current = env_strings;
+    while (*current != L'\0')
+    {
+        LPWCH eq_ptr = ::wcschr(current, L'=');
+        if (eq_ptr != nullptr && eq_ptr != current)
+        {
+            pal::string_t name(current, eq_ptr - current);
+            callback(name.c_str(), eq_ptr + 1);
+        }
+
+        current += pal::strlen(current) + 1; // Move to next string
+    }
+
+    ::FreeEnvironmentStringsW(env_strings);
+}
+
 int pal::xtoi(const char_t* input)
 {
     return ::_wtoi(input);

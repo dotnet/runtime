@@ -3,9 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 #if RootLibraryInternalsWithIVT
-[assembly: InternalsVisibleToAttribute ("somename")]
+[assembly: InternalsVisibleToAttribute("somename")]
 
-[assembly: KeptAttributeAttribute (typeof (InternalsVisibleToAttribute))]
+[assembly: KeptAttributeAttribute(typeof(InternalsVisibleToAttribute))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Libraries
@@ -49,11 +49,11 @@ namespace Mono.Linker.Tests.Cases.Libraries
     }
 
 #if RootLibraryInternalsWithIVT
-	[Kept]
-	internal interface InternalIface
-	{
-		[Kept]
-		void Foo ();
-	}
+    [Kept]
+    internal interface InternalIface
+    {
+        [Kept]
+        void Foo();
+    }
 #endif
 }

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.ProtectedDataTests
         [Theory]
         [InlineData(null)]
         [InlineData(new byte[] { 4, 5, 6 })]
-        public void RoundTrip(byte[] entropy)
+        public void RoundTrip(byte[]? entropy)
         {
             foreach (DataProtectionScope scope in new[] { DataProtectionScope.CurrentUser, DataProtectionScope.LocalMachine })
             {
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.ProtectedDataTests
         [InlineData(null, new byte[] { 4, 5, 6 })]
         [InlineData(new byte[] { 4, 5, 6 }, null)]
         [InlineData(new byte[] { 4, 5, 6 }, new byte[] { 4, 5, 7 })]
-        public void WrongEntropy(byte[] entropy1, byte[] entropy2)
+        public void WrongEntropy(byte[]? entropy1, byte[]? entropy2)
         {
             foreach (DataProtectionScope scope in new[] { DataProtectionScope.CurrentUser, DataProtectionScope.LocalMachine })
             {

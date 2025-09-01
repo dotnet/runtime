@@ -1561,9 +1561,10 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
     const bool addrIsInReg = indir->Addr()->isUsedFromReg();
 
     // With RCPC2 (arm64 v8.4+) we can work with simple addressing modes like [reg + simm9]
-    const bool shouldUseRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && !addrIsInReg &&
-                                indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() && (indir->Scale() == 1) &&
-                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset());
+    const bool shouldUseRcpc2 = !addrIsInReg && indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() &&
+                                (indir->Scale() == 1) &&
+                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset()) &&
+                                compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
 
     if (shouldUseRcpc2)
     {

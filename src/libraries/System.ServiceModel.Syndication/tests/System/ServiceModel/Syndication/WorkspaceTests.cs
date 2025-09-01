@@ -134,7 +134,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData("name", "http://www.w3.org/2000/xmlns/", "value", "version")]
         [InlineData("type", "ns", "value", "version")]
         [InlineData("name", "http://www.w3.org/2001/XMLSchema-instance", "value", "version")]
-        public void TryParseAttribute_Invoke_ReturnsFalse(string name, string ns, string value, string version)
+        public void TryParseAttribute_Invoke_ReturnsFalse(string? name, string? ns, string? value, string? version)
         {
             var workspace = new WorkspaceSubclass();
             Assert.False(workspace.TryParseAttributeEntryPoint(name, ns, value, version));
@@ -159,7 +159,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string? version)
         {
             var workspace = new WorkspaceSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => workspace.WriteAttributeExtensionsEntryPoint(writer, version));
@@ -181,7 +181,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteElementExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteElementExtensions_Invoke_ReturnsExpected(string? version)
         {
             var workspace = new WorkspaceSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => workspace.WriteElementExtensionsEntryPoint(writer, version));

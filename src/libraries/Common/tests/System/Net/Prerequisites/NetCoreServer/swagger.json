@@ -196,7 +196,6 @@
                     "WAS-DEFAULT-HOSTNAME": "corefx-net-http11.azurewebsites.net",
                     "X-Forwarded-Proto": "https",
                     "X-AppService-Proto": "https",
-                    "X-ARR-SSL": "2048|256|CN=Microsoft Azure RSA TLS Issuing CA 08, O=Microsoft Corporation, C=US|CN=*.azurewebsites.net, O=Microsoft Corporation, L=Redmond, S=WA, C=US",
                     "X-Forwarded-TlsVersion": "1.3",
                     "X-Forwarded-For": "167.220.196.35:19180",
                     "X-Original-URL": "/test.ashx",

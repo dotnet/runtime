@@ -22,15 +22,13 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
     // requires --enable-features=IntensiveWakeUpThrottling:grace_period_seconds/1 chromeDriver flags
     // doesn't work with --disable-background-timer-throttling
     [TestCaseOrderer("System.Net.WebSockets.Client.Wasm.Tests.AlphabeticalOrderer", "System.Net.WebSockets.Client.Wasm.Tests")]
-    public class BrowserTimerThrottlingTest : ClientWebSocketTestBase
+    public class BrowserTimerThrottlingTest(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         const double moreThanLightThrottlingThreshold = 1900;
         const double detectLightThrottlingThreshold = 900;
         const double webSocketMessageFrequency = 45000;
         const double fastTimeoutFrequency = 100;
-
-        public BrowserTimerThrottlingTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(PlatformDetection.IsBrowser))]
         [OuterLoop] // involves long delay
@@ -90,7 +88,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             DateTime start = DateTime.Now;
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(Test.Common.Configuration.WebSockets.RemoteEchoServer))
             {
                 await SendAndReceive(cws, "test");
                 using (var timer = new Timers.Timer(fastTimeoutFrequency))

@@ -70,7 +70,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             var inputCompiler = _factory.CreateCompiler(sandbox, metadataProvider);
             var expectationsCompiler = _factory.CreateCompiler(sandbox, metadataProvider);
-            var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
+            var testSourceFiles = sandbox.SourceFiles.Select(s => s.ToString());
+            var commonSourceFiles = metadataProvider.GetCommonSourceFiles();
+            var sourceFiles = testSourceFiles.Concat(commonSourceFiles.Select(s => s.ToString())).ToArray();
 
             var assemblyName = metadataProvider.GetAssemblyName();
 
@@ -81,6 +83,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray();
             var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray();
+            var generateTargetFrameworkAttribute = metadataProvider.GetGenerateTargetFrameworkAttribute();
 
             var additionalDefines = GetAdditionalDefines();
             var inputTask = Task.Run(() => inputCompiler.CompileTestIn(
@@ -91,6 +94,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 mainAssemblyReferences,
                 additionalDefines?.ToArray(),
                 resources,
+                generateTargetFrameworkAttribute,
                 additionalArguments));
 
             var expectationsDefines = new string[] { "INCLUDE_EXPECTATIONS" };
@@ -105,6 +109,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 expectationsMainAssemblyReferences,
                 expectationsDefines,
                 resources,
+                generateTargetFrameworkAttribute,
                 additionalArguments));
 
             NPath? inputAssemblyPath = null;

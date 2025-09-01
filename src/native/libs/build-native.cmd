@@ -19,7 +19,6 @@ set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set __Ninja=1
 set __icuDir=""
-set __usePThreads=0
 set __ExtraCmakeParams=
 set __CrossTarget=0
 
@@ -39,15 +38,11 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [browser] ( set __TargetOS=browser&&shift&goto Arg_Loop)
-if /i [%1] == [wasi] ( set __TargetOS=wasi&&shift&goto Arg_Loop)
-
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
 if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
 
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
@@ -77,16 +72,11 @@ if %__CrossTarget% EQU 0 (
     call powershell -NoProfile -ExecutionPolicy ByPass -File "%__repoRoot%\eng\native\version\copy_version_files.ps1"
 )
 
-:: cmake requires forward slashes in paths
-set __cmakeRepoRoot=%__repoRoot:\=/%
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if NOT %__icuDir% == "" (
     set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_ICU_DIR=%__icuDir%"
 )
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_PTHREADS=%__usePThreads%"
-
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 

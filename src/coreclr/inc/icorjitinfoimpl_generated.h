@@ -550,10 +550,6 @@ void getFunctionFixedEntryPoint(
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
-void* getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection) override;
-
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
 
@@ -594,9 +590,6 @@ void* GetCookieForPInvokeCalliSig(
 void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 
-bool canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig) override;
-
 CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection) override;
@@ -632,10 +625,8 @@ CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection) override;
-
-bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig) override;
 
 InfoAccessType constructStringLiteral(
           CORINFO_MODULE_HANDLE module,

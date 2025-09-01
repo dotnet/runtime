@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Value")]
-        public void Ctor_Value(string value)
+        public void Ctor_Value(string? value)
         {
             var attribute = new DebuggerDisplayAttribute(value);
             Assert.Equal(string.Empty, attribute.Name);
@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Name")]
-        public void Name_Set_GetReturnsExpected(string name)
+        public void Name_Set_GetReturnsExpected(string? name)
         {
             var attribute = new DebuggerDisplayAttribute("Value") { Name = name };
             Assert.Equal(name, attribute.Name);
@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Type")]
-        public void Type_Set_GetReturnsExpected(string type)
+        public void Type_Set_GetReturnsExpected(string? type)
         {
             var attribute = new DebuggerDisplayAttribute("Value") { Type = type };
             Assert.Equal(type, attribute.Type);
@@ -58,7 +58,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("TargetTypeName")]
-        public void TargetTypeName_Set_GetReturnsExpected(string targetTypeName)
+        public void TargetTypeName_Set_GetReturnsExpected(string? targetTypeName)
         {
             var attribute = new DebuggerDisplayAttribute("Value") { TargetTypeName = targetTypeName };
             Assert.Equal(targetTypeName, attribute.TargetTypeName);

@@ -1,27 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Channels;
 
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
-    public abstract class KeepAliveTest_Loopback : ClientWebSocketTestBase
-    {
-        public KeepAliveTest_Loopback(ITestOutputHelper output) : base(output) { }
+    //
+    // Class hierarchy:
+    //
+    // - KeepAliveTest_Loopback                         → file:KeepAliveTest.Loopback.cs
+    //   ├─ [*]KeepAliveTest_SharedHandler_Loopback
+    //   ├─ [*]KeepAliveTest_Invoker_Loopback
+    //   ├─ [*]KeepAliveTest_HttpClient_Loopback
+    //   └─ KeepAliveTest_Http2Loopback
+    //      ├─ [*]KeepAliveTest_Invoker_Http2Loopback
+    //      └─ [*]KeepAliveTest_HttpClient_Http2Loopback
+    //
+    // ---
+    // `[*]` - concrete runnable test classes
+    // `→ file:` - file containing the class and its concrete subclasses
 
-        protected virtual Version HttpVersion => Net.HttpVersion.Version11;
+    [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
+    public abstract class KeepAliveTest_Loopback(ITestOutputHelper output) : ClientWebSocketTestBase(output)
+    {
+        #region Loopback-only tests
 
         [OuterLoop("Uses Task.Delay")]
         [Theory]
-        [MemberData(nameof(UseSsl_MemberData))]
+        [MemberData(nameof(UseSsl))]
         public Task KeepAlive_LongDelayBetweenSendReceives_Succeeds(bool useSsl)
         {
             var clientMsg = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -33,21 +43,17 @@ namespace System.Net.WebSockets.Client.Tests
 
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-            var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl, GetInvoker())
-            {
-                DisposeServerWebSocket = true,
-                DisposeClientWebSocket = true,
-                ConfigureClientOptions = clientOptions =>
-                {
-                    clientOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
-                    clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
-                }
-            };
-
             return LoopbackWebSocketServer.RunAsync(
-                async (cws, token) =>
+                async uri =>
                 {
-                    ReadAheadWebSocket clientWebSocket = new(cws);
+                    var token = timeoutCts.Token;
+                    ClientWebSocket rawCws = await GetConnectedWebSocket(uri,
+                        o =>
+                        {
+                            o.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
+                            o.KeepAliveTimeout = TimeSpan.FromSeconds(1);
+                        });
+                    ReadAheadWebSocket clientWebSocket = new(rawCws);
 
                     await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token).ConfigureAwait(false);
 
@@ -85,7 +91,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Closed, serverWebSocket.State);
                 },
-                options,
+                new LoopbackWebSocketServer.Options(HttpVersion, useSsl),
                 timeoutCts.Token);
         }
 
@@ -107,38 +113,42 @@ namespace System.Net.WebSockets.Client.Tests
             await sendTask.ConfigureAwait(false);
             await remoteAck.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        #endregion
     }
 
-    // --- HTTP/1.1 WebSocket loopback tests ---
-
-    public class KeepAliveTest_Invoker_Loopback : KeepAliveTest_Loopback
+    public abstract class KeepAliveTest_Http2Loopback(ITestOutputHelper output) : KeepAliveTest_Loopback(output)
     {
-        public KeepAliveTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
+    }
+
+    #region Runnable test classes: HTTP/1.1 Loopback
+
+    public sealed class KeepAliveTest_SharedHandler_Loopback(ITestOutputHelper output) : KeepAliveTest_Loopback(output) { }
+
+    public sealed class KeepAliveTest_Invoker_Loopback(ITestOutputHelper output) : KeepAliveTest_Loopback(output)
+    {
         protected override bool UseCustomInvoker => true;
     }
 
-    public class KeepAliveTest_HttpClient_Loopback : KeepAliveTest_Loopback
+    public sealed class KeepAliveTest_HttpClient_Loopback(ITestOutputHelper output) : KeepAliveTest_Loopback(output)
     {
-        public KeepAliveTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
     }
 
-    public class KeepAliveTest_SharedHandler_Loopback : KeepAliveTest_Loopback
+    #endregion
+
+    #region Runnable test classes: HTTP/2 Loopback
+
+    public sealed class KeepAliveTest_Invoker_Http2Loopback(ITestOutputHelper output) : KeepAliveTest_Http2Loopback(output)
     {
-        public KeepAliveTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
+        protected override bool UseCustomInvoker => true;
     }
 
-    // --- HTTP/2 WebSocket loopback tests ---
-
-    public class KeepAliveTest_Invoker_Http2 : KeepAliveTest_Invoker_Loopback
+    public sealed class KeepAliveTest_HttpClient_Http2Loopback(ITestOutputHelper output) : KeepAliveTest_Http2Loopback(output)
     {
-        public KeepAliveTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
+        protected override bool UseHttpClient => true;
     }
 
-    public class KeepAliveTest_HttpClient_Http2 : KeepAliveTest_HttpClient_Loopback
-    {
-        public KeepAliveTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
-    }
+    #endregion
 }

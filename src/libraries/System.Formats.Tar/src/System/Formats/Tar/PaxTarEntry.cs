@@ -12,8 +12,6 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class PaxTarEntry : PosixTarEntry
     {
-        private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
-
         // Constructor called when reading a TarEntry from a TarReader.
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin, TarEntryFormat.Pax)
@@ -122,7 +120,7 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes => _readOnlyExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;

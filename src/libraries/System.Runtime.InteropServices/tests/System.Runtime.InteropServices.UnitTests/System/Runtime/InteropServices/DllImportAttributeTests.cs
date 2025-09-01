@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("DllName")]
-        public void Ctor_SourceInterfaces(string dllName)
+        public void Ctor_SourceInterfaces(string? dllName)
         {
             var attribute = new DllImportAttribute(dllName);
             Assert.Equal(dllName, attribute.Value);

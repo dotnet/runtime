@@ -60,10 +60,12 @@ public:
 
     virtual void DetachThread(Thread *pRuntimeThread) = 0;
 
+    virtual void AppDomainCreated(AppDomain * pAppDomain) = 0;
+
     // Called when a module is being loaded into an AppDomain.
     // This includes when a domain neutral module is loaded into a new AppDomain.
     // This is called only when a debugger is attached, and will occur after the
-    // related LoadAssembly and AddAppDomainToIPCBlock calls and before any
+    // related LoadAssembly calls and before any
     // LoadClass calls for this module.
     virtual void LoadModule(Module *     pRuntimeModule,  // the module being loaded
                             LPCWSTR      psModuleName,    // module file name
@@ -288,24 +290,6 @@ public:
 #endif // DEBUG
 
     virtual DWORD GetHelperThreadID(void ) = 0;
-
-    // Called whenever a new AppDomain is created, regardless of whether a debugger is attached.
-    // This will be called before any LoadAssembly calls for assemblies in this domain.
-    virtual HRESULT AddAppDomainToIPC (AppDomain *pAppDomain) = 0;
-
-    // Called whenever an AppDomain is unloaded, regardless of whether a Debugger is attached
-    // This will occur after any UnloadAssembly and UnloadModule callbacks for this domain (if any).
-    virtual HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain) = 0;
-
-    virtual HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain) = 0;
-
-    // Called when an assembly is being loaded into an AppDomain.
-    // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the
-    // related AddAppDomainToIPCBlock call and before any LoadModule or
-    // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
-
 
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral assemblies that are also loaded into other domains.

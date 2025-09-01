@@ -394,7 +394,7 @@
       </trans-unit>
       <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">Typ {0} zadaný jako GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller není přístupný přes generovaný kód. Typ musí mít přístupnost alespoň „internal“. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
@@ -439,7 +439,7 @@
       </trans-unit>
       <trans-unit id="GenericDelegatesNotSupported">
         <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
-        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <target state="translated">Zařazování obecného delegáta není podporováno. Zvažte místo toho použití ukazatele na funkci.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -624,7 +624,7 @@
       </trans-unit>
       <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
         <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
-        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <target state="translated">Typ zadaný jako GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshacak není platným zařazovacím typem.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

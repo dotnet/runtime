@@ -14,7 +14,7 @@ public class ExecutionManagerTests
     private static Target CreateTarget(MockDescriptors.ExecutionManager emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
-        TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
+        TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetMemoryContext().ReadFromTarget;
         var target = new TestPlaceholderTarget(arch, reader, emBuilder.Types, emBuilder.Globals);
         IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
         ContractRegistry reg = Mock.Of<ContractRegistry>(

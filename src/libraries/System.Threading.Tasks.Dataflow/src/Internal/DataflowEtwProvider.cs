@@ -102,7 +102,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif

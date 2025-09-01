@@ -710,7 +710,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CloseStreamValidation()
+        public async Task CloseStreamValidation()
         {
             byte[] buffer = "some data"u8.ToArray();
             Stream stream = new BinaryData(buffer).ToStream();
@@ -719,7 +719,7 @@ namespace System.Tests
             Assert.Throws<ObjectDisposedException>(() => stream.Position);
             Assert.Throws<ObjectDisposedException>(() => stream.Seek(0, SeekOrigin.Begin));
             Assert.Throws<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));
-            Assert.ThrowsAsync<ObjectDisposedException>(() => stream.ReadAsync(buffer, 0, buffer.Length));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.ReadAsync(buffer, 0, buffer.Length));
             Assert.Throws<ObjectDisposedException>(() => stream.ReadByte());
             Assert.Throws<ObjectDisposedException>(() => stream.Length);
             Assert.False(stream.CanRead);

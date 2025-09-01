@@ -142,7 +142,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressLessThan(ref current, ref end))
+                    if (Unsafe.IsAddressGreaterThanOrEqualTo(ref current, ref end))
                     {
                         break;
                     }

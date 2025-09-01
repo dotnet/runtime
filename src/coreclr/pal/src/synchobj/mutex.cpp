@@ -973,7 +973,7 @@ NamedMutexSharedData::NamedMutexSharedData(SharedMemorySystemCallErrors *errors)
     m_isAbandoned(false)
 {
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    static_assert_no_msg(sizeof(m_timedWaiterCount) == sizeof(LONG)); // for interlocked operations
+    static_assert(sizeof(m_timedWaiterCount) == sizeof(LONG)); // for interlocked operations
 #endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());

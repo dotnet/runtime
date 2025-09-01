@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var (key, value) in _mapEntries)
             {
                 yield return new CombinedDependencyListEntry(
-                    context.MaximallyConstructableType(value),
+                    context.MetadataTypeSymbol(value),
                     context.MaximallyConstructableType(key),
                     "Proxy type map entry");
             }
@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
                 IEETypeNode keyNode = factory.MaximallyConstructableType(key);
                 if (keyNode.Marked)
                 {
-                    IEETypeNode valueNode = factory.MaximallyConstructableType(value);
+                    IEETypeNode valueNode = factory.MetadataTypeSymbol(value);
                     Debug.Assert(valueNode.Marked);
                     yield return (keyNode, valueNode);
                 }

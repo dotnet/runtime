@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
         [InlineData(null)]
         [InlineData("")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50867", TestPlatforms.Android)]
-        public void AddIniFile_ThrowsIfFilePathIsNullOrEmpty(string path)
+        public void AddIniFile_ThrowsIfFilePathIsNullOrEmpty(string? path)
         {
             // Arrange
             var configurationBuilder = new ConfigurationBuilder();

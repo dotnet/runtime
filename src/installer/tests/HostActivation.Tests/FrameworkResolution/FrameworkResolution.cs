@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public void Default(string requestedVersion, string resolvedVersion)
         {
             CommandResult result = RunTest(
-                new TestSettings().WithRuntimeConfigCustomizer(rc => 
+                new TestSettings().WithRuntimeConfigCustomizer(rc =>
                     rc.WithFramework(MicrosoftNETCoreApp, requestedVersion)));
 
             result.ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, resolvedVersion);
@@ -136,6 +136,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 // Version is the best match for some test cases, but they should be ignored
                 foreach (string version in EmptyVersions)
                     Directory.CreateDirectory(Path.Combine(InstalledDotNet.SharedFxPath, version));
+
+                // Enable test-only behaviour. We always do this - even for tests that don't need the behaviour.
+                // On macOS with system integrity protection enabled, if the binary is loaded, modified (test-only
+                // behaviour rewrites part of the binary), and loaded again, the process will crash.
+                // We don't bother disabling it later, as we just delete the containing folder after tests run.
+                _ = TestOnlyProductBehavior.Enable(InstalledDotNet.GreatestVersionHostFxrFilePath);
 
                 App = CreateFrameworkReferenceApp();
             }

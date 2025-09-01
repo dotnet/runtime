@@ -36,7 +36,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("EventName")]
-        public void EventName_Set_Get_ReturnsExpected(string value)
+        public void EventName_Set_Get_ReturnsExpected(string? value)
         {
             var eventReference = new CodeEventReferenceExpression();
             eventReference.EventName = value;

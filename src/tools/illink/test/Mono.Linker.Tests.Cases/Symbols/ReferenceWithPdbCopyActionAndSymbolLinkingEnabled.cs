@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
     // typeforwarders). However, saving the native PDB is only
     // supported on windows.
     // Commented because the testcase is already ignored above.
-    // [IgnoreTestCase ("Only supported on Windows")]
+    // [IgnoreTestCase("Only supported on Windows")]
 #endif
     [TestCaseRequirements(TestRunCharacteristics.TargetingNetFramework, "Only supported on Windows on .NET Framework.")]
     [Reference("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]

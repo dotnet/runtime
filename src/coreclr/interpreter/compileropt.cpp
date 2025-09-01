@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "interpreter.h"
+#include "stackmap.h"
 
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
@@ -269,7 +270,7 @@ void InterpCompiler::AllocOffsets()
 
                             int32_t opcode = InterpGetMovForType(m_pVars[newVar].interpType, false);
                             InterpInst *newInst = InsertInsBB(pBB, pIns->pPrev, opcode);
-                            // The InsertInsBB assigns m_currentILOffset to ins->ilOffset, which is incorrect for 
+                            // The InsertInsBB assigns m_currentILOffset to ins->ilOffset, which is incorrect for
                             // instructions injected here. Copy the ilOffset from the call instruction instead.
                             newInst->ilOffset = pIns->ilOffset;
 
@@ -421,7 +422,7 @@ void InterpCompiler::AllocOffsets()
                 (pVar->interpType == InterpTypeByRef) ||
                 (
                     (pVar->interpType == InterpTypeVT) &&
-                    (m_compHnd->getClassAttribs(pVar->clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
+                    (GetInterpreterStackMap(pVar->clsHnd)->m_slotCount > 0)
                 )
             )
         )

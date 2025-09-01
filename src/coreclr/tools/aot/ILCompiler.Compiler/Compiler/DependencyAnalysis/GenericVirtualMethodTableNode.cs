@@ -54,7 +54,9 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
 
             factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openCallingMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openCallingMethod.OwningType), "Owning type of GVM declaration");
             factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, openImplementationMethod);
+            dependencies.Add(factory.NecessaryTypeSymbol(openImplementationMethod.OwningType), "Owning type of GVM implementation");
         }
 
         private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, MethodDesc implementationMethod)

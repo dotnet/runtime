@@ -198,7 +198,6 @@ namespace System.Tests
                 { "IsMacCatalyst", OperatingSystem.IsMacCatalyst() },
                 { "IsMacOS", OperatingSystem.IsMacOS() },
                 { "IsTvOS", OperatingSystem.IsTvOS() },
-                { "IsWatchOS", OperatingSystem.IsWatchOS() },
                 { "IsWindows", OperatingSystem.IsWindows() },
                 { "IsWasi", OperatingSystem.IsWasi() },
             };

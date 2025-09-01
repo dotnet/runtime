@@ -1,6 +1,6 @@
 ﻿using System;
 
-//[assembly: AssemblyVersion ("2.0")]
+//[assembly: AssemblyVersion("2.0")]
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
 {

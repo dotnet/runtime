@@ -93,6 +93,7 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
 
 MethodTable* g_pCastHelpers;
 #ifdef FEATURE_EH_FUNCLETS

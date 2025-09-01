@@ -33,7 +33,7 @@ namespace System
             {
 #if !MONO
                 if (this is RuntimeType rt)
-                    return rt.IsInterface;
+                    return rt.IsActualInterface;
 #endif
                 return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
             }
@@ -724,11 +724,9 @@ namespace System
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
         public static Binder DefaultBinder =>
-            s_defaultBinder ??
-            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
-            s_defaultBinder;
-
-        private static Binder? s_defaultBinder;
+            field ??
+            Interlocked.CompareExchange(ref field, new DefaultBinder(), null) ??
+            field;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

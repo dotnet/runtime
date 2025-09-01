@@ -21,7 +21,7 @@ public class MethodTableTests
 
         configure?.Invoke(rtsBuilder);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
 

@@ -23,7 +23,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunProviderRsaTests))]
         [MemberData(nameof(OpenSslNamedKeysHelpers.RSASignaturePaddingValues), MemberType = typeof(OpenSslNamedKeysHelpers))]
-        public static async void Provider_TPM2SslStream_ServerCertIsTpmRsa(RSASignaturePadding padding)
+        public static async Task Provider_TPM2SslStream_ServerCertIsTpmRsa(RSASignaturePadding padding)
         {
             using X509Certificate2 serverCert = CreateSelfSignedRsaCertificate(padding);
             CreateTlsOptionsForRsa(serverCert, out SslServerAuthenticationOptions serverOptions, out SslClientAuthenticationOptions clientOptions);

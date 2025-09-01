@@ -358,8 +358,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static XmlQualifiedName? s_actualTypeAnnotationName;
-        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(ImportGlobals.ActualTypeLocalName, ImportGlobals.SerializationNamespace);
+        internal static XmlQualifiedName ActualTypeAnnotationName => field ??= new XmlQualifiedName(ImportGlobals.ActualTypeLocalName, ImportGlobals.SerializationNamespace);
 
         internal static XmlQualifiedName ImportActualType(XmlSchemaAnnotation? annotation, XmlQualifiedName defaultTypeName, XmlQualifiedName typeName)
         {

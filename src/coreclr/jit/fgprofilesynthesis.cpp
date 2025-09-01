@@ -70,7 +70,7 @@
             bool anyPathThrows = false;
             bool allPathsThrow = true;
 
-            for (BasicBlock* const succBlock : block->Succs(compiler))
+            for (BasicBlock* const succBlock : block->Succs())
             {
                 if (BitVecOps::IsMember(&traits, willThrow, succBlock->bbPostorderNum))
                 {
@@ -525,7 +525,7 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
     // Assume each switch case is equally probable
     //
-    const unsigned n = block->NumSucc();
+    const unsigned n = block->GetSwitchTargets()->GetCaseCount();
     assert(n != 0);
 
     // Check for divide by zero to avoid compiler warnings for Release builds (above assert is removed)
@@ -533,7 +533,7 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 
     // Each unique edge gets some multiple of that basic probability
     //
-    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         succEdge->setLikelihood(p * succEdge->getDupCount());
     }
@@ -558,7 +558,7 @@ weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVecto
         likelihoods->clear();
     }
 
-    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         weight_t likelihood = succEdge->getLikelihood();
         if (likelihoods != nullptr)
@@ -739,7 +739,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 JITDUMP("Blending likelihoods in " FMT_BB " with blend factor " FMT_WT " \n", block->bbNum,
                         m_blendFactor);
                 iter = likelihoods.begin();
-                for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+                for (FlowEdge* const succEdge : block->SuccEdges())
                 {
                     weight_t newLikelihood = succEdge->getLikelihood();
                     weight_t oldLikelihood = *iter;
@@ -767,7 +767,7 @@ void ProfileSynthesis::ClearLikelihoods()
 {
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             succEdge->clearLikelihood();
         }
@@ -785,7 +785,7 @@ void ProfileSynthesis::ReverseLikelihoods()
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        for (BasicBlock* const succ : block->Succs())
         {
             weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
 
@@ -825,7 +825,7 @@ void ProfileSynthesis::RandomizeLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        unsigned const N = block->NumSucc(m_comp);
+        unsigned const N = block->NumSucc();
         likelihoods.clear();
         likelihoods.reserve(N);
 
@@ -842,7 +842,7 @@ void ProfileSynthesis::RandomizeLikelihoods()
         }
 
         i = 0;
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             succEdge->setLikelihood(likelihoods[i++] / sum);
         }

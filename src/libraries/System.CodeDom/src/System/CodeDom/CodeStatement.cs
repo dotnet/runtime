@@ -5,13 +5,10 @@ namespace System.CodeDom
 {
     public class CodeStatement : CodeObject
     {
-        private CodeDirectiveCollection _startDirectives;
-        private CodeDirectiveCollection _endDirectives;
-
         public CodeLinePragma LinePragma { get; set; }
 
-        public CodeDirectiveCollection StartDirectives => _startDirectives ??= new CodeDirectiveCollection();
+        public CodeDirectiveCollection StartDirectives => field ??= new CodeDirectiveCollection();
 
-        public CodeDirectiveCollection EndDirectives => _endDirectives ??= new CodeDirectiveCollection();
+        public CodeDirectiveCollection EndDirectives => field ??= new CodeDirectiveCollection();
     }
 }

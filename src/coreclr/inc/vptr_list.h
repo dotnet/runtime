@@ -42,6 +42,7 @@ VPTR_CLASS(CallCountingStubManager)
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
 VPTR_CLASS(LoadedImageLayout)
+VPTR_CLASS(NativeImageLayout)
 VPTR_CLASS(FlatImageLayout)
 
 #ifdef DEBUGGING_SUPPORTED

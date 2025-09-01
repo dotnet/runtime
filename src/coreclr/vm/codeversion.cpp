@@ -12,9 +12,11 @@
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
 #include "methoditer.h"
+#ifdef DDEBUGGING_SUPPORTED
 #include "../debug/ee/debugger.h"
 #include "../debug/ee/walker.h"
 #include "../debug/ee/controller.h"
+#endif // DDEBUGGING_SUPPORTED
 #endif // FEATURE_CODE_VERSIONING
 
 #ifndef FEATURE_CODE_VERSIONING
@@ -320,11 +322,23 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
 }
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
+bool NativeCodeVersion::IsFinalTier() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_TIERED_COMPILATION
+    OptimizationTier tier = GetOptimizationTier();
+    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
+#else // !FEATURE_TIERED_COMPILATION
+    return true;
+#endif // FEATURE_TIERED_COMPILATION
+}
+
+#ifdef FEATURE_TIERED_COMPILATION
 NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         return AsNode()->GetOptimizationTier();
@@ -333,13 +347,6 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     {
         return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
     }
-}
-
-bool NativeCodeVersion::IsFinalTier() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    OptimizationTier tier = GetOptimizationTier();
-    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
 }
 
 #ifndef DACCESS_COMPILE
@@ -911,7 +918,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         PTR_Module pModule = GetModule();
         PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL)
+        if (pMethodDesc != NULL && pMethodDesc->MayHaveILHeader())
         {
             pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
         }

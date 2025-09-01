@@ -22,7 +22,7 @@ namespace System.ComponentModel.Tests
         [InlineData("category", false)]
         [InlineData("Misc", true)]
         [InlineData("misc", false)]
-        public void Ctor_String(string category, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);
             Assert.Equal(category, attribute.Category);
@@ -114,7 +114,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void GetLocalizedString_InvokeNoSuchValue_ReturnsNull(string value)
+        public void GetLocalizedString_InvokeNoSuchValue_ReturnsNull(string? value)
         {
             var attribute = new SubCategoryAttribute();
             Assert.Null(attribute.GetLocalizedString(value));

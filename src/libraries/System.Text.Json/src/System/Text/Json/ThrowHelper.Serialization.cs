@@ -980,6 +980,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeReadCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeReaderCanceled);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
             throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));

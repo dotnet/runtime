@@ -25,8 +25,6 @@ namespace System.PrivateUri.Tests
             "ja-jp"
         };
 
-        private const int MaxUriLength = 0xFFF0 - 1; // 65519
-
         [Fact]
         public void Iri_Validate_LongUriWithQuery()
         {
@@ -225,50 +223,50 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Iri_UnicodePlane0()
         {
-            EscapeUnescapeTestUnicodePlane(0x0, 0xFFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0x0, 0xFFFF);
         }
 
         [Fact]
         public void Iri_UnicodePlane1()
         {
-            EscapeUnescapeTestUnicodePlane(0x10000, 0x1FFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0x10000, 0x1FFFF);
         }
 
         [Fact]
         public void Iri_UnicodePlane2()
         {
-            EscapeUnescapeTestUnicodePlane(0x20000, 0x2FFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0x20000, 0x2FFFF);
         }
 
         [Fact]
         public void Iri_UnicodePlane3_13()
         {
-            EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF);
         }
 
         [Fact]
         public void Iri_UnicodePlane14()
         {
-            EscapeUnescapeTestUnicodePlane(0xE0000, 0xEFFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0xE0000, 0xEFFFF);
         }
 
         [Fact]
         public void Iri_UnicodePlane15_16()
         {
-            EscapeUnescapeTestUnicodePlane(0xF0000, 0x10FFFF, 1);
+            EscapeUnescapeTestUnicodePlane(0xF0000, 0x10FFFF);
         }
 
-        private void EscapeUnescapeTestUnicodePlane(int start, int end, int step)
+        private void EscapeUnescapeTestUnicodePlane(int start, int end)
         {
-            string input = GetUnicodeString(start, end, step);
+            string input = GetUnicodeString(start, end);
 
             VerifyUriNormalizationForEscapedCharacters(input);
         }
 
-        private static string GetUnicodeString(int start, int end, int step, int minLength = 1)
+        private static string GetUnicodeString(int start, int end, int minLength = 1)
         {
             StringBuilder sb = new StringBuilder();
-            for (int i = start; i < end; i += step)
+            for (int i = start; i < end; i++)
             {
                 if (i < 0xFFFF)
                 {
@@ -468,26 +466,15 @@ namespace System.PrivateUri.Tests
         {
             string validUriStart = "http://host/q=";
 
-            string bigString1 = GetUnicodeString(0x1000, 0x1001, 1, MaxUriLength - validUriStart.Length);
-            string test = validUriStart + bigString1;
-            Assert.True(test.Length == MaxUriLength);
+            string bigString1 = new string('\u1000', 100_000);
 
             Uri u1 = new Uri(validUriStart + bigString1);
             Assert.True(u1.ToString().Length > bigString1.Length);
-
-            try
-            {
-                string bigString2 = GetUnicodeString(0, MaxUriLength + 1, 1);
-                Uri u = new Uri(bigString2);
-                Assert.Fail("Expected UriFormatException: Uri too large");
-            }
-            catch (FormatException)
-            { }
         }
 
         [Theory]
-        [InlineData(MaxUriLength)]
-        [InlineData(MaxUriLength + 1)]
+        [InlineData(65519)]
+        [InlineData(100_000)]
         [InlineData(10 + ushort.MaxValue)]
         public void Iri_ValidateVeryLongInputString_EscapeDataString(int length)
         {
@@ -496,8 +483,8 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [InlineData(MaxUriLength)]
-        [InlineData(MaxUriLength + 1)]
+        [InlineData(65519)]
+        [InlineData(100_000)]
         [InlineData(10 + ushort.MaxValue)]
         public void Iri_ValidateVeryLongInputString_EscapeUriString(int length)
         {
@@ -569,89 +556,55 @@ namespace System.PrivateUri.Tests
             Assert.Equal(scheme + "://" + host + "/", uri.AbsoluteUri);
         }
 
-        // The behavior here is slightly complicated in order to preserve compat in as many
-        // cases as possible. There are two limits imposed on the length of URI strings.
-        // The first, 65519, is specified in the documentation and is one of the first checks
-        // enforced on a URI. This limit is not enforced after expansion.
-        private const int InitialLengthLimit = MaxUriLength;
-
-        // The second, 65535 (ushort.MaxValue) is only reachable via expansion as a result of
-        // percent encoding. Exceeding this value used to result in a hang, but now results in
-        // an exception.
-        private const int ExpandedLengthLimit = ushort.MaxValue;
-
-        // In order to maximize compat, we have to allow a gap between the two maximum
-        // values. A URI that starts below 65519 but expands to be in the range [65519,65535)
-        // would have worked before this change, and so should continue to work despite
-        // exceeding limit (1).
-        public static IEnumerable<object[]> Iri_ExpandingContents_TooLong
+        public static IEnumerable<object[]> Iri_ExpandingContents_TestData
         {
             get
             {
-                // Validate a URI with an initial length less than InitialLengthLimit, and an expanded
-                // length that is greater than ExpandedLengthLimit.
-                // The total of len + const parts (15) + expanded unicode (2 * 9) after expansion should be
-                // just larger than ExpandedLengthLimit.
-                int len = ExpandedLengthLimit - 15 - (2 * 9) + 1;
-                yield return new object[] { @"test://" + new string('a', len) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
-                yield return new object[] { @"test://8.8.8.8?" + new string('a', len) + new string('\uD800', 2) }; // Query
-                yield return new object[] { @"test://8.8.8.8#" + new string('a', len) + new string('\uD800', 2) }; // Fragment
-                yield return new object[] { @"test://8.8.8.8/" + new string('a', len) + new string('\uD800', 2) }; // Path
+                foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
+                {
+                    yield return new object[] { @"test://" + new string('a', length) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
+                    yield return new object[] { @"test://8.8.8.8?" + new string('a', length) + new string('\uD800', 2) }; // Query
+                    yield return new object[] { @"test://8.8.8.8#" + new string('a', length) + new string('\uD800', 2) }; // Fragment
+                    yield return new object[] { @"test://8.8.8.8/" + new string('a', length) + new string('\uD800', 2) }; // Path
 
-                // Generate a string whose total length is just less than InitialLengthLimit
-                // but whose content expands to be dramatically larger than ExpandedLengthLimit.
-                len = InitialLengthLimit - 15;
-                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
-                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
-                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
-                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
-
-                // Test the minimum length URI that will cause an expansion beyond ExpandedLengthLimit.
-                len = (ExpandedLengthLimit - 15) / 9 + 1;
-                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
-                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
-                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
-                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
+                    yield return new object[] { @"test://" + new string('\uD800', length) + "@8.8.8.8" }; // Userinfo
+                    yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', length) }; // Fragment
+                    yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', length) }; // Query
+                    yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', length) }; // Path
+                }
             }
         }
 
         [Theory]
-        [MemberData(nameof(Iri_ExpandingContents_TooLong))]
-        public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
+        [MemberData(nameof(Iri_ExpandingContents_TestData))]
+        public static void Iri_ExpandingContents_Accepted(string input)
         {
-            Assert.Throws<UriFormatException>(() => new Uri(input));
-            Assert.False(Uri.TryCreate(input, UriKind.Absolute, out Uri _));
-        }
+            var uri = new Uri(input);
+            PropertiesDoNotThrow(uri);
 
-        public static IEnumerable<object[]> Iri_ExpandingContents_AllowedSize
-        {
-            get
+            Assert.True(Uri.TryCreate(input, UriKind.Absolute, out uri));
+            PropertiesDoNotThrow(uri);
+
+            Assert.True(Uri.TryCreate(input, new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true }, out uri));
+            PropertiesDoNotThrow(uri);
+
+            static void PropertiesDoNotThrow(Uri uri)
             {
-                // Validate a URI with an initial length less than InitialLengthLimit, and an expanded
-                // length that is greater than InitialLengthLimit but less than ExpandedLengthLimit.
-                // The total of len + const parts (15) + expanded unicode (2 * 9) after expansion should be
-                // exactly the ExpandedLengthLimit.
-                int len = ExpandedLengthLimit - 15 - (2 * 9);
-                yield return new object[] { @"test://" + new string('a', len) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
-                yield return new object[] { @"test://8.8.8.8?" + new string('a', len) + new string('\uD800', 2) }; // Query
-                yield return new object[] { @"test://8.8.8.8#" + new string('a', len) + new string('\uD800', 2) }; // Fragment
-                yield return new object[] { @"test://8.8.8.8/" + new string('a', len) + new string('\uD800', 2) }; // Path
-
-                // Validate the same behavior, but maximize the amount of expansion.
-                len = (ExpandedLengthLimit - 15) / 9;
-                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
-                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
-                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
-                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
+                Assert.NotNull(uri.Scheme);
+                Assert.NotNull(uri.UserInfo);
+                Assert.NotNull(uri.Host);
+                Assert.NotNull(uri.IdnHost);
+                Assert.NotNull(uri.Authority);
+                Assert.Equal(-1, uri.Port);
+                Assert.NotNull(uri.LocalPath);
+                Assert.NotNull(uri.AbsolutePath);
+                Assert.NotNull(uri.PathAndQuery);
+                Assert.NotNull(uri.Query);
+                Assert.NotNull(uri.Fragment);
+                Assert.NotNull(uri.AbsoluteUri);
+                Assert.NotNull(uri.Segments);
+                Assert.NotNull(uri.ToString());
             }
-        }
-
-        [Theory]
-        [MemberData(nameof(Iri_ExpandingContents_AllowedSize))]
-        public static void Iri_ExpandingContents_DoesNotThrowIfSizeAllowed(string input)
-        {
-            new Uri(input);
-            Assert.True(Uri.TryCreate(input, UriKind.Absolute, out Uri _));
         }
     }
 }

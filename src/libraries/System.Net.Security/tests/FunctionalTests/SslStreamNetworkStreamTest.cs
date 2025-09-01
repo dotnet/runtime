@@ -807,6 +807,18 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
             }
+
+            // the ownership of the ExtraStore cert is not transferred to the
+            // SslStream, so we need to verify that the certs are still valid.
+            foreach (X509Certificate2 cert in clientOptions.CertificateChainPolicy.ExtraStore)
+            {
+                Assert.NotEqual(cert.Handle, IntPtr.Zero);
+            }
+
+            foreach (X509Certificate2 cert in clientOptions.CertificateChainPolicy.CustomTrustStore)
+            {
+                Assert.NotEqual(cert.Handle, IntPtr.Zero);
+            }
         }
 
         private async Task SslStream_ClientSendsChain_Core(SslClientAuthenticationOptions clientOptions, X509Certificate2Collection clientChain)

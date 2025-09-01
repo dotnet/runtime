@@ -469,19 +469,51 @@ namespace Internal.Cryptography
         internal static bool IsSlhDsaOid(string? oid) =>
             SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
 
-        public delegate TResult SlhDsaPreHashFuncCallback<TKey, TSignature, TResult>(
+        internal delegate TResult PreHashFuncCallback<TKey, TSignature, TResult>(
             TKey key,
             ReadOnlySpan<byte> encodedMessage,
             TSignature signatureBuffer)
             where TSignature : allows ref struct;
 
+        /// <summary>
+        /// Encodes the message for ML-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 205: Algorithm 23.
+        /// </summary>
+        internal static TResult MLDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4.
+        /// </summary>
         internal static TResult SlhDsaPreHash<TKey, TSignature, TResult>(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> context,
             ReadOnlySpan<char> hashAlgorithmOid,
             TKey key,
             TSignature signatureBuffer,
-            SlhDsaPreHashFuncCallback<TKey, TSignature, TResult> callback)
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for ML-DSA and SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4 and equivalent algorithm in FIPS 205: Algorithm 23.
+        /// </summary>
+        private static TResult MLDsaSlhDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
             where TSignature : allows ref struct
         {
             // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.

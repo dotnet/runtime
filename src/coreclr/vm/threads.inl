@@ -45,7 +45,7 @@ inline Thread* GetThread()
     return pThread;
 }
 
-EXTERN_C inline AppDomain* STDCALL GetAppDomain()
+inline AppDomain* GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();
 }
