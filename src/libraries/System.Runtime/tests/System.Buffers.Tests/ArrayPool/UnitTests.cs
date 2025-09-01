@@ -446,7 +446,7 @@ namespace System.Buffers.ArrayPool.Tests
             RemoteInvokeWithTrimming(() =>
             {
                 var buffers = new List<byte[]>();
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < Environment.ProcessorCount * 32 + 2 ; i++)
                 {
                     buffers.Add(ArrayPool<byte>.Shared.Rent(1));
                 }

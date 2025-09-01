@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,13 +25,15 @@ namespace ILCompiler
         private readonly SubstitutionProvider _substitutionProvider;
         private readonly DevirtualizationManager _devirtualizationManager;
         private readonly MetadataManager _metadataManager;
+        private readonly HashSet<string> _characteristics;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null, IEnumerable<string> characteristics = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
             _metadataManager = metadataManager;
+            _characteristics = characteristics != null ? new HashSet<string>(characteristics) : null;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -39,6 +42,13 @@ namespace ILCompiler
             if (substitution != null)
             {
                 return substitution.EmitIL(method);
+            }
+
+            if (TryGetCharacteristicValue(method, out bool characteristicEnabled))
+            {
+                return new ILStubMethodIL(method,
+                    [characteristicEnabled ? (byte)ILOpCode.Ldc_i4_1 : (byte)ILOpCode.Ldc_i4_0, (byte)ILOpCode.Ret],
+                    [], []);
             }
 
             // BEGIN TEMPORARY WORKAROUND
@@ -672,58 +682,112 @@ namespace ILCompiler
             if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
                 || method.IsIntrinsic
                 || method.IsNoInlining
-                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
+                || method.IsNoOptimization
+                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL
+                || methodIL.GetExceptionRegions().Length > 0)
             {
-                constant = 0;
-                return false;
+                return Fail(out constant);
             }
 
-            var reader = new ILReader(methodIL.GetILBytes());
-            var opcode = reader.ReadILOpcode();
-            switch (opcode)
-            {
-                case ILOpcode.ldc_i4: constant = (int)reader.ReadILUInt32(); break;
-                case ILOpcode.ldc_i4_s: constant = (sbyte)reader.ReadILByte(); break;
-                case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: constant = opcode - ILOpcode.ldc_i4_0; break;
-                case ILOpcode.ldc_i4_m1: constant = -1; break;
+            Stack<int?> stack = new Stack<int?>(methodIL.MaxStack);
 
-                case ILOpcode.call:
+            int instructionCounter = 0;
+
+            var reader = new ILReader(methodIL.GetILBytes());
+            while (reader.HasNext && instructionCounter++ < 1000)
+            {
+                var opcode = reader.ReadILOpcode();
+                switch (opcode)
                 {
-                    MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                    if (reader.ReadILOpcode() != ILOpcode.ret)
+                    case ILOpcode.ldc_i4: stack.Push((int)reader.ReadILUInt32()); break;
+                    case ILOpcode.ldc_i4_s: stack.Push((sbyte)reader.ReadILByte()); break;
+                    case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: stack.Push(opcode - ILOpcode.ldc_i4_0); break;
+                    case ILOpcode.ldc_i4_m1: stack.Push(-1); break;
+
+                    case ILOpcode.ldsfld:
                     {
-                        constant = 0;
-                        return false;
+                        reader.ReadILToken();
+                        stack.Push(null);
+                        break;
                     }
 
-                    BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
-                    if (substitution != null && substitution.Value is int c)
+                    case ILOpcode.brtrue:
+                    case ILOpcode.brtrue_s:
+                    case ILOpcode.brfalse:
+                    case ILOpcode.brfalse_s:
                     {
-                        constant = c;
+                        if (!stack.TryPop(out int? val) || !val.HasValue)
+                            return Fail(out constant);
+
+                        bool taken = ((opcode is ILOpcode.brtrue or ILOpcode.brtrue_s) && val.Value != 0)
+                            || ((opcode is ILOpcode.brfalse or ILOpcode.brfalse_s) && val.Value == 0);
+
+                        int destOffset = reader.ReadBranchDestination(opcode);
+                        if (taken)
+                            reader.Seek(destOffset);
+                        break;
+                    }
+
+                    case ILOpcode.br:
+                    case ILOpcode.br_s:
+                        reader.Seek(reader.ReadBranchDestination(opcode));
+                        break;
+
+                    // Callvirt could trigger a NullRef. We ignore that here. It is fine because we only need to know
+                    // what the method would return if it didn't throw. If it throws, it doesn't matter because
+                    // we do not eliminate the call to it, only the basic block conditioned on the call return value.
+                    case ILOpcode.callvirt:
+                    case ILOpcode.call:
+                    {
+                        MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (opcode == ILOpcode.callvirt && callee.IsVirtual)
+                            return Fail(out constant);
+
+                        for (int i = 0; i < callee.Signature.Length + (callee.Signature.IsStatic ? 0 : 1); i++)
+                            if (!stack.TryPop(out _))
+                                return Fail(out constant);
+
+                        BodySubstitution substitution = _substitutionProvider.GetSubstitution(callee);
+                        if (substitution != null && substitution.Value is int c)
+                        {
+                            constant = c;
+                        }
+                        else if (level > 4
+                            || !TryGetMethodConstantValue(callee, out constant, level + 1))
+                        {
+                            return Fail(out constant);
+                        }
+
+                        stack.Push(constant);
+                        break;
+                    }
+
+                    case ILOpcode.ret:
+                    {
+                        Debug.Assert(stack.Count == 1);
+                        if (stack.Count == 0)
+                            return Fail(out constant);
+
+                        int? ret = stack.Pop();
+                        if (!ret.HasValue)
+                            return Fail(out constant);
+
+                        constant = ret.Value;
                         return true;
                     }
 
-                    if (level > 4)
-                    {
-                        constant = 0;
-                        return false;
-                    }
-
-                    return TryGetMethodConstantValue(callee, out constant, level + 1);
+                    default:
+                        return Fail(out constant);
                 }
-
-                default:
-                    constant = 0;
-                    return false;
             }
 
-            if (reader.ReadILOpcode() != ILOpcode.ret)
+            return Fail(out constant);
+
+            static bool Fail(out int constant)
             {
                 constant = 0;
                 return false;
             }
-
-            return true;
         }
 
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
@@ -763,6 +827,11 @@ namespace ILCompiler
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
                             && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
                         {
+                            return true;
+                        }
+                        else if (TryGetCharacteristicValue(method, out bool characteristic))
+                        {
+                            constant = characteristic ? 1 : 0;
                             return true;
                         }
                         else
@@ -1033,6 +1102,10 @@ namespace ILCompiler
             if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
                 return false;
 
+            // Above check took care of most variant scenarios but we still need to worry about array variance
+            if (((CompilerTypeSystemContext)type.Context).IsArrayVariantCastable(type))
+                return false;
+
             constant = 0;
 
             return true;
@@ -1067,6 +1140,19 @@ namespace ILCompiler
                 return false;
 
             return true;
+        }
+
+        private bool TryGetCharacteristicValue(MethodDesc maybeCharacteristicMethod, out bool value)
+        {
+            if (maybeCharacteristicMethod.IsIntrinsic
+                && maybeCharacteristicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
+            {
+                value = _characteristics == null || _characteristics.Contains(maybeCharacteristicMethod.Name);
+                return true;
+            }
+
+            value = false;
+            return false;
         }
 
         private sealed class SubstitutedMethodIL : MethodIL

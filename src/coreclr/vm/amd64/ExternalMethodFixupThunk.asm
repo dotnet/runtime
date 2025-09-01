@@ -5,7 +5,6 @@ include <AsmMacros.inc>
 include AsmConstants.inc
 
     extern  ExternalMethodFixupWorker:proc
-    extern  ProcessCLRException:proc
 
 ifdef FEATURE_READYTORUN
     extern DynamicHelperWorker:proc

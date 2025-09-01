@@ -146,18 +146,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
-    elseif (CLR_CMAKE_TARGET_MACCATALYST)
-        add_subdirectory(System.Net.Security.Native)
-        # System.Security.Cryptography.Native is intentionally disabled on iOS
-        # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_IOS)
-        add_subdirectory(System.Net.Security.Native)
-        # System.Security.Cryptography.Native is intentionally disabled on iOS
-        # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_TVOS)
-        #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
-        # System.Security.Cryptography.Native is intentionally disabled on tvOS
-        # it is only used for interacting with OpenSSL which isn't useful there
+    elseif (CLR_CMAKE_TARGET_APPLE)
+        if (NOT CLR_CMAKE_TARGET_TVOS) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+            add_subdirectory(System.Net.Security.Native)
+        endif ()
+
+        add_subdirectory(System.Security.Cryptography.Native.Apple)
     elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
     elseif (FORCE_ANDROID_OPENSSL)
@@ -165,9 +159,5 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     else ()
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
-    endif ()
-
-    if (CLR_CMAKE_TARGET_APPLE)
-        add_subdirectory(System.Security.Cryptography.Native.Apple)
     endif ()
 endif ()

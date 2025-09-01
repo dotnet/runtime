@@ -67,6 +67,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
         public const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
         public const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
+        public const string Shake128 = "2.16.840.1.101.3.4.2.11";
+        public const string Shake256 = "2.16.840.1.101.3.4.2.12";
 
         // RFC3161 Timestamping
         public const string TstInfo = "1.2.840.113549.1.9.16.1.4";

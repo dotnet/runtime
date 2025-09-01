@@ -44,7 +44,7 @@ Abstract:
 
 #endif // HOST_UNIX
 
-#if defined(TARGET_OSX) && defined(HOST_ARM64) && !defined(HAVE_UNW_AARCH64_X19)
+#if defined(__APPLE__) && defined(HOST_ARM64) && !defined(HAVE_UNW_AARCH64_X19)
 // MacOS uses ARM64 instead of AARCH64 to describe these registers
 // Create aliases to reuse more code
 enum
@@ -86,7 +86,7 @@ enum
     UNW_AARCH64_V30 = UNW_ARM64_D30,
     UNW_AARCH64_V31 = UNW_ARM64_D31
 };
-#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
+#endif // defined(__APPLE__) && defined(HOST_ARM64)
 
 
 //----------------------------------------------------------------------
@@ -129,7 +129,6 @@ enum
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Pc)         \
-    ASSIGN_REG(Tp)         \
     ASSIGN_REG(Sp)         \
     ASSIGN_REG(Fp)         \
     ASSIGN_REG(Ra)         \
@@ -260,7 +259,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     {
         unwContext->fpregs[i] = winContext->D[i];
     }
-#elif defined(HOST_ARM64) && !defined(TARGET_OSX)
+#elif defined(HOST_ARM64) && !defined(__APPLE__)
     unwContext->uc_mcontext.pc       = winContext->Pc;
     unwContext->uc_mcontext.sp       = winContext->Sp;
     unwContext->uc_mcontext.regs[29] = winContext->Fp;
@@ -302,7 +301,7 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
     unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
     unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
-#elif defined(HOST_ARM64) && defined(TARGET_OSX)
+#elif defined(HOST_ARM64) && defined(__APPLE__)
     // unw_cursor_t is an opaque data structure on macOS
     // As noted in WinContextToUnwindContext this didn't work for Linux
     // TBD whether this will work for macOS.
@@ -426,12 +425,12 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_fpreg(cursor, UNW_AARCH64_V30, (unw_fpreg_t*)&winContext->V[30].Low);
     unw_get_fpreg(cursor, UNW_AARCH64_V31, (unw_fpreg_t*)&winContext->V[31].Low);
 
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+#if defined(__APPLE__) && defined(TARGET_ARM64)
     // Strip pointer authentication bits which seem to be leaking out of libunwind
     // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
     // errors with "this target does not support pointer authentication"
     winContext->Pc = winContext->Pc & 0x7fffffffffffull;
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
+#endif // defined(__APPLE__) && defined(TARGET_ARM64)
 #elif (defined(HOST_UNIX) && defined(HOST_S390X))
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
@@ -448,7 +447,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
     unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
@@ -499,6 +497,8 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
+#elif defined(HOST_WASM)
+    ASSERT("UnwindContextToWinContext not implemented for WASM");
 #else
 #error unsupported architecture
 #endif
@@ -586,7 +586,6 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, (SIZE_T **)&contextPointers->R15);
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, (SIZE_T **)&contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, (SIZE_T **)&contextPointers->Tp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, (SIZE_T **)&contextPointers->Fp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, (SIZE_T **)&contextPointers->S0);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, (SIZE_T **)&contextPointers->S1);
@@ -634,6 +633,8 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_PPC64_R29, (SIZE_T **)&contextPointers->R29);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
+#elif defined(HOST_WASM)
+    ASSERT("GetContextPointers not implemented for WASM");
 #else
 #error unsupported architecture
 #endif

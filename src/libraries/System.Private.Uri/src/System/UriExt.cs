@@ -80,7 +80,7 @@ namespace System
                     }
                 }
             }
-            else if (err > ParsingError.LastRelativeUriOkErrIndex)
+            else if (err > ParsingError.LastErrorOkayForRelativeUris)
             {
                 //This is a fatal error based solely on scheme name parsing
                 _string = null!; // make it be invalid Uri
@@ -104,7 +104,7 @@ namespace System
                 {
                     if ((err = PrivateParseMinimal()) != ParsingError.None)
                     {
-                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
                             _syntax = null!; // convert to relative uri
@@ -153,7 +153,7 @@ namespace System
                     {
                         // Can we still take it as a relative Uri?
                         if (uriKind != UriKind.Absolute && err != ParsingError.None
-                            && err <= ParsingError.LastRelativeUriOkErrIndex)
+                            && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             _syntax = null!; // convert it to relative
                             e = null;
@@ -195,7 +195,7 @@ namespace System
             // If we encountered any parsing errors that indicate this may be a relative Uri,
             // and we'll allow relative Uri's, then create one.
             else if (err != ParsingError.None && uriKind != UriKind.Absolute
-                && err <= ParsingError.LastRelativeUriOkErrIndex)
+                && err <= ParsingError.LastErrorOkayForRelativeUris)
             {
                 e = null;
                 _flags &= (Flags.UserEscaped | Flags.HasUnicode); // the only flags that makes sense for a relative uri
@@ -204,10 +204,6 @@ namespace System
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
                                                 (UriComponents)0);
-                    if (_string.Length > ushort.MaxValue)
-                    {
-                        return;
-                    }
                 }
             }
             else
@@ -772,7 +768,7 @@ namespace System
             if (err != ParsingError.None)
             {
                 // If it looks as a relative Uri, custom factory is ignored
-                if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                     return new Uri((flags & Flags.UserEscaped), null, uriString);
 
                 return null;
@@ -891,7 +887,7 @@ namespace System
             return null;
         }
 
-        private unsafe string GetRelativeSerializationString(UriFormat format)
+        private string GetRelativeSerializationString(UriFormat format)
         {
             if (format == UriFormat.UriEscaped)
             {
@@ -1053,30 +1049,42 @@ namespace System
         {
             DebugAssertInCtor();
 
-            // Clone the other URI but develop own UriInfo member
-            _info = null!;
-
             _flags = otherUri._flags;
-            if (InFact(Flags.MinimalUriInfoSet))
+
+            if (InFact(Flags.AllUriInfoSet))
             {
-                _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
-                // Port / Path offset
-                int portIndex = otherUri._info.Offset.Path;
-                if (InFact(Flags.NotDefaultPort))
+                // We can share it now without mutation concern, for since AllUriInfoSet it is immutable.
+                _info = otherUri._info;
+            }
+            else
+            {
+                Debug.Assert(!InFact(Flags.HasUnicode) || otherUri.IsNotAbsoluteUri);
+                // Clone the other URI but develop own UriInfo member
+                // We cannot just reference otherUri._info as this UriInfo will be mutated later
+                // which could be happening concurrently and in a not thread safe manner.
+                _info = null!;
+
+                if (InFact(Flags.MinimalUriInfoSet))
                 {
-                    // Find the start of the port.  Account for non-canonical ports like :00123
-                    while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                    _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
+                    // Port / Path offset
+                    int portIndex = otherUri._info.Offset.Path;
+                    if (InFact(Flags.NotDefaultPort))
                     {
-                        portIndex--;
+                        // Find the start of the port.  Account for non-canonical ports like :00123
+                        while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                        {
+                            portIndex--;
+                        }
+                        if (otherUri._string[portIndex] != ':')
+                        {
+                            // Something wrong with the NotDefaultPort flag.  Reset to path index
+                            Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
+                            portIndex = otherUri._info.Offset.Path;
+                        }
                     }
-                    if (otherUri._string[portIndex] != ':')
-                    {
-                        // Something wrong with the NotDefaultPort flag.  Reset to path index
-                        Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
-                        portIndex = otherUri._info.Offset.Path;
-                    }
+                    _flags |= (Flags)portIndex; // Port or path
                 }
-                _flags |= (Flags)portIndex; // Port or path
             }
 
             _syntax = otherUri._syntax;

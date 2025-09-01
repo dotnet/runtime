@@ -40,7 +40,6 @@ class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
 class JIT_TrialAlloc;
-struct LayoutRawFieldInfo;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -64,6 +63,7 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+enum class AsyncVariantLookup;
 struct MethodTableAuxiliaryData;
 
 typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
@@ -1090,9 +1090,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // currently all ComObjects except
-        // for __ComObject have dynamic Interface maps
-        return GetNumInterfaces() > 0 && IsComObjectType() && !ParentEquals(g_pObjectClass);
+        // All ComObjects except for __ComObject
+        // have dynamic Interface maps
+        return GetNumInterfaces() > 0
+            && IsComObjectType()
+            && !ParentEquals(g_pObjectClass)
+            && this != g_pBaseCOMObject;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1622,9 +1625,11 @@ public:
     typedef DPTR(VTableIndir2_t) VTableIndir_t;
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
+
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static DWORD GetEndSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static UINT32 GetIndexAfterVtableIndirection(UINT32 slotNum);
+    static UINT32 IndexAfterVtableIndirectionToSlot(UINT32 slotNum);
     static DWORD GetNumVtableIndirections(DWORD wNumVirtuals);
     DPTR(VTableIndir_t) GetVtableIndirections();
     DWORD GetNumVtableIndirections();
@@ -1740,15 +1745,13 @@ public:
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
-    static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
-
     PCODE GetRestoredSlot(DWORD slot);
 
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
     // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
+    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
@@ -3117,6 +3120,10 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3352,6 +3359,12 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
@@ -3915,12 +3928,12 @@ private:
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
     // element type handle for array MethodTables.
 
+    public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
     };
-    public:
     union
     {
         PTR_InterfaceInfo   m_pInterfaceMap;
@@ -4066,7 +4079,7 @@ template<> struct cdac_data<MethodTable>
 };
 
 #ifndef CROSSBITNESS_COMPILE
-static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+static_assert(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);

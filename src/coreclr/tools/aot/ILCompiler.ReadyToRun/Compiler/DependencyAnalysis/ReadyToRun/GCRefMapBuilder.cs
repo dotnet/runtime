@@ -182,13 +182,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            // Also if the method has a return buffer, then it is the first argument, and could be an interior ref,
-            // so always promote it.
-            if (argit.HasRetBuffArg())
-            {
-                frame[_transitionBlock.GetRetBuffArgOffset(argit.HasThis)] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR;
-            }
-
             //
             // Now iterate the arguments
             //

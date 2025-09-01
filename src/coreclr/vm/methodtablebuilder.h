@@ -62,6 +62,23 @@ public:
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
 
+
+    struct bmtLayoutInfo
+    {
+        bmtLayoutInfo()
+            : nlFlags(nltNone),
+              packingSize(0),
+              layoutType(EEClassLayoutInfo::LayoutType::Auto)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        CorNativeLinkType nlFlags;
+        BYTE packingSize;
+        ULONG classSize;
+        EEClassLayoutInfo::LayoutType layoutType;
+    };
+
     MethodTableBuilder(
         MethodTable *       pHalfBakedMT,
         EEClass *           pHalfBakedClass,
@@ -101,7 +118,7 @@ public:
         Module *                   pModule,
         mdToken                    cl,
         BuildingInterfaceInfo_t *  pBuildingInterfaceList,
-        const LayoutRawFieldInfo * pLayoutRawFieldInfos,
+        const bmtLayoutInfo *      initialLayoutInfo,
         MethodTable *              pParentMethodTable,
         const bmtGenericsInfo *    bmtGenericsInfo,
         SigPointer                 parentInst,
@@ -172,7 +189,6 @@ private:
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
     BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
-    BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
     BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
@@ -205,7 +221,7 @@ private:
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetHasRVAStaticFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRVAStaticFields(); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -463,7 +479,7 @@ private:
         bmtTypeHandle(
             bmtRTType * pRTType)
             : m_handle(HandleFromRTType(pRTType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
 
         //-----------------------------------------------------------------------------------------
         // Creates a type handle for a bmtMDType pointer. For ease of use, this conversion
@@ -471,7 +487,7 @@ private:
         bmtTypeHandle(
             bmtMDType * pMDType)
             : m_handle(HandleFromMDType(pMDType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -673,6 +689,31 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // This constructor can be used with hard-coded signatures that are used for
+        // representing async variant methods
+        MethodSignature(
+            Module *             pModule,
+            mdToken              tok,
+            Signature            sig,
+            const Substitution * pSubst)
+            : m_pModule(pModule),
+              m_tok(tok),
+              m_szName(NULL),
+              m_pSig(sig.GetRawSig()),
+              m_cSig(sig.GetRawSigLen()),
+              m_pSubst(pSubst),
+              m_nameHash(INVALID_NAME_HASH)
+            {
+                CONTRACTL {
+                    PRECONDITION(CheckPointer(pModule));
+                    PRECONDITION(TypeFromToken(tok) == mdtMethodDef ||
+                                 TypeFromToken(tok) == mdtMemberRef);
+                    PRECONDITION(CheckPointer(m_pSig));
+                    PRECONDITION(m_cSig != 0);
+                } CONTRACTL_END;
+            }
+
+        //-----------------------------------------------------------------------------------------
+        // This constructor can be used with hard-coded signatures that are used for
         // locating .ctor and .cctor methods.
         MethodSignature(
             Module *             pModule,
@@ -741,6 +782,11 @@ private:
         inline PCCOR_SIGNATURE
         GetSignature() const
             { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return m_pSig; }
+
+        //-----------------------------------------------------------------------------------------
+        // Returns the metadata signature for the method.
+        inline Signature GetSignatureClass() const
+            { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return Signature(m_pSig, (ULONG)m_cSig); }
 
         //-----------------------------------------------------------------------------------------
         // Returns the signature length.
@@ -915,6 +961,22 @@ private:
             METHOD_IMPL_TYPE implType);
 
         //-----------------------------------------------------------------------------------------
+        // Constructor. This takes all the information already extracted from metadata interface
+        // because the place that creates these types already has this data. Alternatively,
+        // a constructor could be written to take a token and metadata scope instead. Also,
+        // it might be interesting to move MethodClassification and METHOD_IMPL_TYPE to setter functions.
+        bmtMDMethod(
+            bmtMDType * pOwningType,
+            mdMethodDef tok,
+            DWORD dwDeclAttrs,
+            DWORD dwImplAttrs,
+            DWORD dwRVA,
+            Signature sig,
+            AsyncMethodKind thunkKind,
+            MethodClassification type,
+            METHOD_IMPL_TYPE implType);
+
+        //-----------------------------------------------------------------------------------------
         // Returns the type that owns the *declaration* of this method. This makes sure that a
         // method can be properly interpreted in the context of substitutions at any time.
         bmtMDType *
@@ -1014,6 +1076,26 @@ private:
         GetRVA() const
             { LIMITED_METHOD_CONTRACT; return m_dwRVA; }
 
+        bool IsAsyncVariant() const
+        {
+            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
+                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+        }
+
+        void SetAsyncMethodKind(AsyncMethodKind kind)
+        {
+            m_asyncMethodKind = kind;
+        }
+
+        AsyncMethodKind GetAsyncMethodKind() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_asyncMethodKind;
+        }
+
+        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
+        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
+
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1022,8 +1104,10 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
+        AsyncMethodKind   m_asyncMethodKind;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
+        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -1042,14 +1126,14 @@ private:
         bmtMethodHandle(
             bmtRTMethod * pRTMethod)
             : m_handle(HandleFromRTMethod(pRTMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Constructor taking a bmtMDMethod*.
         bmtMethodHandle(
             bmtMDMethod * pMDMethod)
             : m_handle(HandleFromMDMethod(pMDMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -1916,14 +2000,22 @@ private:
         // Searches the declared methods for a method with a token value equal to tok.
         bmtMDMethod *
         FindDeclaredMethodByToken(
-            mdMethodDef tok)
+            mdMethodDef tok, AsyncVariantLookup variantLookup)
         {
             LIMITED_METHOD_CONTRACT;
             for (SLOT_INDEX i = 0; i < m_cDeclaredMethods; ++i)
             {
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
-                    return (*this)[i];
+                    auto result = (*this)[i];
+                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                    {
+                        return result->GetAsyncOtherVariant();
+                    }
+                    else
+                    {
+                        return result;
+                    }
                 }
             }
             return NULL;
@@ -1998,7 +2090,6 @@ private:
         bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
-        bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
         // These data members are specific to regular statics
         DWORD RegularStaticFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];            // Byte offset where to start placing fields of this size
@@ -2193,6 +2284,7 @@ private:
     bmtMethodImplInfo *bmtMethodImpl;
     const bmtGenericsInfo *bmtGenerics;
     bmtEnumFieldInfo *bmtEnumFields;
+    bmtLayoutInfo* bmtLayout;
 
     void SetBMTData(
         LoaderAllocator *bmtAllocator = NULL,
@@ -2209,7 +2301,8 @@ private:
         bmtGCSeriesInfo *bmtGCSeries = NULL,
         bmtMethodImplInfo *bmtMethodImpl = NULL,
         const bmtGenericsInfo *bmtGenerics = NULL,
-        bmtEnumFieldInfo *bmtEnumFields = NULL);
+        bmtEnumFieldInfo *bmtEnumFields = NULL,
+        bmtLayoutInfo *bmtLayout = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2565,7 +2658,6 @@ private:
     VOID
     InitializeFieldDescs(
         FieldDesc *,
-        const LayoutRawFieldInfo*,
         bmtInternalInfo*,
         const bmtGenericsInfo*,
         bmtMetaDataInfo*,
@@ -2577,10 +2669,9 @@ private:
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
-    // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void
-    VerifySelfReferencingStaticValueTypeFields_WithRVA(
-        MethodTable ** pByValueClassCache);
+    // Returns the CorElementType for the type referenced by typeDefOrRef, which must not be
+    // byreflike, and must be a valuetype of some form (enum or valuetype)
+    CorElementType GetCorElementTypeOfTypeDefOrRefForStaticField(Module* module, mdToken typeDefOrRef);
 
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
@@ -2607,9 +2698,11 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
-        LPCSTR              pMethodName // Only needed for mcEEImpl (Delegate) case
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
+        LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
+        Signature           sig, // Only needed for the Async thunk case
+        AsyncMethodKind     asyncKind
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
@@ -2686,13 +2779,13 @@ private:
     // Find the decl method on a given interface entry that matches the method name+signature specified
     // If none is found, return a null method handle
     bmtMethodHandle
-    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods = false);
+    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup,  bool searchForStaticMethods = false);
 
     // --------------------------------------------------------------------------------------------
     // Find the decl method within the class hierarchy method name+signature specified
     // If none is found, return a null method handle
     bmtMethodHandle
-    FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig);
+    FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig, AsyncVariantLookup variantLookup);
 
     // --------------------------------------------------------------------------------------------
     // Throws if an entry already exists that has been MethodImpl'd. Adds the interface slot and
@@ -2822,9 +2915,7 @@ private:
     VOID
     PlaceThreadStaticFields();
 
-    VOID
-    PlaceInstanceFields(
-        MethodTable **);
+    VOID PlaceInstanceFields(MethodTable** pByValueClassCache);
 
     BOOL
     CheckForVtsEventMethod(
@@ -2873,16 +2964,28 @@ private:
 
     VOID SetFinalizationSemantics();
 
+    VOID
+    HandleAutoLayout(
+        MethodTable **);
+
+    VOID HandleSequentialLayout(
+        MethodTable **);
+
     VOID HandleExplicitLayout(
+        MethodTable **);
+
+    VOID ValidateExplicitLayout(
         MethodTable **pByValueClassCache);
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel CheckByRefLikeValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel MarkTagType(
         bmtFieldLayoutTag* field,
@@ -2930,11 +3033,6 @@ private:
     VOID TestMethodImpl(
         bmtMethodHandle hDeclMethod,
         bmtMethodHandle hImplMethod);
-
-    // Heuristic to detemine if we would like instances of this class 8 byte aligned
-    BOOL ShouldAlign8(
-        DWORD dwR8Fields,
-        DWORD dwTotalFields);
 
     MethodTable * AllocateNewMT(Module *pLoaderModule,
                                 DWORD dwVtableSlots,

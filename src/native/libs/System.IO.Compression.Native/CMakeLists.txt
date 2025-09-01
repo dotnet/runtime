@@ -18,6 +18,16 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 
+if (STATIC_LIBS_ONLY)
+    # For every vendored library that we're actually vendoring (and not referencing the system one)
+    # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
+    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS zlib)
+        if (TARGET ${VENDORED_LIB})
+            set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+        endif()
+    endforeach()
+endif()
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
@@ -25,6 +35,10 @@ configure_file(
 set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
+
+if (CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_I386)
+    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_win.c")
+endif()
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set (NATIVECOMPRESSION_SOURCES
@@ -200,3 +214,13 @@ else ()
 endif ()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
+    install (TARGETS System.IO.Compression.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        if (TARGET "${BROTLI_LIB}")
+            install (TARGETS ${BROTLI_LIB} DESTINATION sharedFramework COMPONENT runtime)
+        endif()
+    endforeach()
+endif()

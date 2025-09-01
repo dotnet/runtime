@@ -100,7 +100,7 @@ private:
               (sizeof(LookupStub))
              ) % sizeof(void*)];    //complete DWORD
 
-    static_assert_no_msg((sizeof(void*) -
+    static_assert((sizeof(void*) -
              ((sizeof(void*)-(offsetof(LookupStub,_token)%sizeof(void*))) +
               (sizeof(LookupStub))
              ) % sizeof(void*)) != 0);
@@ -443,208 +443,6 @@ private:
 
 #ifndef DACCESS_COMPILE
 
-#ifdef _MSC_VER
-
-#ifdef CHAIN_LOOKUP
-/* This will perform a chained lookup of the entry if the initial cache lookup fails
-
-   Entry stack:
-            dispatch token
-            siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
-            return address of caller to stub
-        Also, EAX contains the pointer to the first ResolveCacheElem pointer for the calculated
-        bucket in the cache table.
-*/
-__declspec (naked) void ResolveWorkerChainLookupAsmStub()
-{
-    enum
-    {
-        e_token_size                = 4,
-        e_indirect_addr_size        = 4,
-        e_caller_ret_addr_size      = 4,
-    };
-    enum
-    {
-        // this is the part of the stack that is present as we enter this function:
-        e_token                     = 0,
-        e_indirect_addr             = e_token + e_token_size,
-        e_caller_ret_addr           = e_indirect_addr + e_indirect_addr_size,
-        e_ret_esp                   = e_caller_ret_addr + e_caller_ret_addr_size,
-    };
-    enum
-    {
-        e_spilled_reg_size          = 8,
-    };
-
-    // main loop setup
-    __asm {
-#ifdef STUB_LOGGING
-        inc     g_chained_lookup_call_counter
-#endif
-        // spill regs
-        push    edx
-        push    ecx
-        // move the token into edx
-        mov     edx,[esp+e_spilled_reg_size+e_token]
-        // move the MT into ecx
-        mov     ecx,[ecx]
-    }
-    main_loop:
-    __asm {
-        // get the next entry in the chain (don't bother checking the first entry again)
-        mov     eax,[eax+e_resolveCacheElem_offset_next]
-        // test if we hit a terminating NULL
-        test    eax,eax
-        jz      fail
-        // compare the MT of the ResolveCacheElem
-        cmp     ecx,[eax+e_resolveCacheElem_offset_mt]
-        jne     main_loop
-        // compare the token of the ResolveCacheElem
-        cmp     edx,[eax+e_resolveCacheElem_offset_token]
-        jne     main_loop
-        // success
-        // decrement success counter and move entry to start if necessary
-        sub     g_dispatch_cache_chain_success_counter,1
-        //@TODO: Perhaps this should be a jl for better branch prediction?
-        jge     nopromote
-        // be quick to reset the counter so we don't get a bunch of contending threads
-        add     g_dispatch_cache_chain_success_counter,CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT
-        // promote the entry to the beginning of the chain
-        mov     ecx,eax
-        call    VirtualCallStubManager::PromoteChainEntry
-    }
-    nopromote:
-    __asm {
-        // clean up the stack and jump to the target
-        pop     ecx
-        pop     edx
-        add     esp,(e_caller_ret_addr - e_token)
-        mov     eax,[eax+e_resolveCacheElem_offset_target]
-        jmp     eax
-    }
-    fail:
-    __asm {
-#ifdef STUB_LOGGING
-        inc     g_chained_lookup_miss_counter
-#endif
-        // restore registers
-        pop     ecx
-        pop     edx
-        jmp     ResolveWorkerAsmStub
-    }
-}
-#endif
-
-/* Call the resolver, it will return where we are supposed to go.
-   There is a little stack magic here, in that we are entered with one
-   of the arguments for the resolver (the token) on the stack already.
-   We just push the other arguments, <this> in the call frame and the call site pointer,
-   and call the resolver.
-
-   On return we have the stack frame restored to the way it was when the ResolveStub
-   was called, i.e. as it was at the actual call site.  The return value from
-   the resolver is the address we need to transfer control to, simulating a direct
-   call from the original call site.  If we get passed back NULL, it means that the
-   resolution failed, an unimpelemented method is being called.
-
-   Entry stack:
-            dispatch token
-            siteAddrForRegisterIndirect (used only if this is a RegisterIndirect dispatch call)
-            return address of caller to stub
-
-   Call stack:
-            pointer to TransitionBlock
-            call site
-            dispatch token
-            TransitionBlock
-                ArgumentRegisters (ecx, edx)
-                CalleeSavedRegisters (ebp, ebx, esi, edi)
-            return address of caller to stub
-   */
-__declspec (naked) void ResolveWorkerAsmStub()
-{
-    CANNOT_HAVE_CONTRACT;
-
-    __asm {
-        //
-        // The stub arguments are where we want to setup the TransitionBlock. We will
-        // setup the TransitionBlock later once we can trash them
-        //
-        // push ebp-frame
-        // push      ebp
-        // mov       ebp,esp
-
-        // save CalleeSavedRegisters
-        // push      ebx
-
-        push        esi
-        push        edi
-
-        // push ArgumentRegisters
-        push        ecx
-        push        edx
-
-        mov         esi, esp
-
-        push        [esi + 4*4]     // dispatch token
-        push        [esi + 5*4]     // siteAddrForRegisterIndirect
-        push        esi             // pTransitionBlock
-
-        // Setup up proper EBP frame now that the stub arguments can be trashed
-        mov         [esi + 4*4],ebx
-        mov         [esi + 5*4],ebp
-        lea         ebp, [esi + 5*4]
-
-        // Make the call
-        call        VSD_ResolveWorker
-
-        // From here on, mustn't trash eax
-
-        // pop ArgumentRegisters
-        pop     edx
-        pop     ecx
-
-        // pop CalleeSavedRegisters
-        pop edi
-        pop esi
-        pop ebx
-        pop ebp
-
-        // Now jump to the target
-        jmp     eax             // continue on into the method
-    }
-}
-
-
-/* Call the callsite back patcher.  The fail stub piece of the resolver is being
-call too often, i.e. dispatch stubs are failing the expect MT test too often.
-In this stub wraps the call to the BackPatchWorker to take care of any stack magic
-needed.
-*/
-__declspec (naked) void BackPatchWorkerAsmStub()
-{
-    CANNOT_HAVE_CONTRACT;
-
-    __asm {
-        push EBP
-        mov ebp,esp
-        push EAX        // it may contain siteAddrForRegisterIndirect
-        push ECX
-        push EDX
-        push EAX        //  push any indirect call address as the second arg to BackPatchWorker
-        push [EBP+8]    //  and push return address as the first arg to BackPatchWorker
-        call VirtualCallStubManager::BackPatchWorkerStatic
-        pop EDX
-        pop ECX
-        pop EAX
-        mov esp,ebp
-        pop ebp
-        ret
-    }
-}
-
-#endif // _MSC_VER
-
 #ifdef _DEBUG
 //
 // This function verifies that a pointer to an indirection cell lives inside a delegate object.
@@ -726,21 +524,21 @@ LookupStub lookupInit;
 
 void LookupHolder::InitializeStatic()
 {
-    static_assert_no_msg(((offsetof(LookupStub, _token)+offsetof(LookupHolder, _stub)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(LookupHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(LookupStub, _token)+offsetof(LookupHolder, _stub)) % sizeof(void*)) == 0);
+    static_assert((sizeof(LookupHolder) % sizeof(void*)) == 0);
 
     lookupInit._entryPoint [0]     = 0x50;
     lookupInit._entryPoint [1]     = 0x68;
-    static_assert_no_msg(sizeof(lookupInit._entryPoint) == 2);
+    static_assert(sizeof(lookupInit._entryPoint) == 2);
     lookupInit._token              = 0xcccccccc;
 #ifdef STUB_LOGGING
     lookupInit.cntr2 [0]           = 0xff;
     lookupInit.cntr2 [1]           = 0x05;
-    static_assert_no_msg(sizeof(lookupInit.cntr2) == 2);
+    static_assert(sizeof(lookupInit.cntr2) == 2);
     lookupInit.c_lookup            = &g_call_lookup_counter;
 #endif //STUB_LOGGING
     lookupInit.part2 [0]           = 0xe9;
-    static_assert_no_msg(sizeof(lookupInit.part2) == 1);
+    static_assert(sizeof(lookupInit.part2) == 1);
     lookupInit._resolveWorkerDispl = 0xcccccccc;
 }
 
@@ -772,18 +570,18 @@ DispatchStub dispatchInit;
 void DispatchHolder::InitializeStatic()
 {
     // Check that _implDispl is aligned in the DispatchHolder for backpatching
-    static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(DispatchHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)) == 0);
+    static_assert((sizeof(DispatchHolder) % sizeof(void*)) == 0);
 
 #ifndef STUB_LOGGING
     dispatchInit._entryPoint [0] = 0x81;
     dispatchInit._entryPoint [1] = 0x39;
-    static_assert_no_msg(sizeof(dispatchInit._entryPoint) == 2);
+    static_assert(sizeof(dispatchInit._entryPoint) == 2);
 
     dispatchInit._expectedMT     = 0xcccccccc;
     dispatchInit.jmpOp1 [0]      = 0x0f;
     dispatchInit.jmpOp1 [1]      = 0x85;
-    static_assert_no_msg(sizeof(dispatchInit.jmpOp1) == 2);
+    static_assert(sizeof(dispatchInit.jmpOp1) == 2);
 
     dispatchInit._failDispl      = 0xcccccccc;
     dispatchInit.jmpOp2          = 0xe9;
@@ -791,22 +589,22 @@ void DispatchHolder::InitializeStatic()
 #else //STUB_LOGGING
     dispatchInit._entryPoint [0] = 0xff;
     dispatchInit._entryPoint [1] = 0x05;
-    static_assert_no_msg(sizeof(dispatchInit._entryPoint) == 2);
+    static_assert(sizeof(dispatchInit._entryPoint) == 2);
 
     dispatchInit.d_call          = &g_mono_call_counter;
     dispatchInit.cmpOp [0]       = 0x81;
     dispatchInit.cmpOp [1]       = 0x39;
-    static_assert_no_msg(sizeof(dispatchInit.cmpOp) == 2);
+    static_assert(sizeof(dispatchInit.cmpOp) == 2);
 
     dispatchInit._expectedMT     = 0xcccccccc;
     dispatchInit.jmpOp1 [0]      = 0x0f;
     dispatchInit.jmpOp1 [1]      = 0x84;
-    static_assert_no_msg(sizeof(dispatchInit.jmpOp1) == 2);
+    static_assert(sizeof(dispatchInit.jmpOp1) == 2);
 
     dispatchInit._implDispl      = 0xcccccccc;
     dispatchInit.fail [0]        = 0xff;
     dispatchInit.fail [1]        = 0x05;
-    static_assert_no_msg(sizeof(dispatchInit.fail) == 2);
+    static_assert(sizeof(dispatchInit.fail) == 2);
 
     dispatchInit.d_miss          = &g_mono_miss_counter;
     dispatchInit.jmpFail         = 0xe9;
@@ -843,17 +641,17 @@ ResolveStub resolveInit;
 void ResolveHolder::InitializeStatic()
 {
     //Check that _token is aligned in ResolveHolder
-    static_assert_no_msg(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _token)) % sizeof(void*)) == 0);
-    static_assert_no_msg((sizeof(ResolveHolder) % sizeof(void*)) == 0);
+    static_assert(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _token)) % sizeof(void*)) == 0);
+    static_assert((sizeof(ResolveHolder) % sizeof(void*)) == 0);
 
     resolveInit._failEntryPoint [0]    = 0x83;
     resolveInit._failEntryPoint [1]    = 0x2d;
-    static_assert_no_msg(sizeof(resolveInit._failEntryPoint) == 2);
+    static_assert(sizeof(resolveInit._failEntryPoint) == 2);
 
     resolveInit._pCounter              = (INT32 *) (size_t) 0xcccccccc;
     resolveInit.part0 [0]              = 0x01;
     resolveInit.part0 [1]              = 0x7c;
-    static_assert_no_msg(sizeof(resolveInit.part0) == 2);
+    static_assert(sizeof(resolveInit.part0) == 2);
 
     resolveInit.toPatcher              = (offsetof(ResolveStub, patch) - (offsetof(ResolveStub, toPatcher) + 1)) & 0xFF;
 
@@ -869,51 +667,51 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part1 [8]              = 0x03;
     resolveInit.part1 [9]              = 0xc2;
     resolveInit.part1 [10]             = 0x35;
-    static_assert_no_msg(sizeof(resolveInit.part1) == 11);
+    static_assert(sizeof(resolveInit.part1) == 11);
 
     resolveInit._hashedToken           = 0xcccccccc;
     resolveInit.part2 [0]              = 0x25;
-    static_assert_no_msg(sizeof(resolveInit.part2) == 1);
+    static_assert(sizeof(resolveInit.part2) == 1);
 
     resolveInit.mask                   = (CALL_STUB_CACHE_MASK << LOG2_PTRSIZE);
     resolveInit.part3 [0]              = 0x8b;
     resolveInit.part3 [1]              = 0x80;;
-    static_assert_no_msg(sizeof(resolveInit.part3) == 2);
+    static_assert(sizeof(resolveInit.part3) == 2);
 
     resolveInit._cacheAddress          = 0xcccccccc;
 #ifdef STUB_LOGGING
     resolveInit.cntr1 [0]              = 0xff;
     resolveInit.cntr1 [1]              = 0x05;
-    static_assert_no_msg(sizeof(resolveInit.cntr1) == 2);
+    static_assert(sizeof(resolveInit.cntr1) == 2);
 
     resolveInit.c_call                 = &g_poly_call_counter;
 #endif //STUB_LOGGING
     resolveInit.part4 [0]              = 0x3b;
     resolveInit.part4 [1]              = 0x10;
-    static_assert_no_msg(sizeof(resolveInit.part4) == 2);
+    static_assert(sizeof(resolveInit.part4) == 2);
 
     // resolveInit.mtOffset               = offsetof(ResolveCacheElem,pMT) & 0xFF;
-    static_assert_no_msg(offsetof(ResolveCacheElem,pMT) == 0);
+    static_assert(offsetof(ResolveCacheElem,pMT) == 0);
 
     resolveInit.part5 [0]              = 0x75;
-    static_assert_no_msg(sizeof(resolveInit.part5) == 1);
+    static_assert(sizeof(resolveInit.part5) == 1);
 
     resolveInit.toMiss1                = offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss1)+1);
 
     resolveInit.part6 [0]              = 0x81;
     resolveInit.part6 [1]              = 0x78;
-    static_assert_no_msg(sizeof(resolveInit.part6) == 2);
+    static_assert(sizeof(resolveInit.part6) == 2);
 
     resolveInit.tokenOffset            = offsetof(ResolveCacheElem,token) & 0xFF;
 
     resolveInit._token                 = 0xcccccccc;
 
     resolveInit.part7 [0]              = 0x75;
-    static_assert_no_msg(sizeof(resolveInit.part7) == 1);
+    static_assert(sizeof(resolveInit.part7) == 1);
 
     resolveInit.part8 [0]              = 0x8b;
     resolveInit.part8 [1]              = 0x40;
-    static_assert_no_msg(sizeof(resolveInit.part8) == 2);
+    static_assert(sizeof(resolveInit.part8) == 2);
 
     resolveInit.targetOffset           = offsetof(ResolveCacheElem,target) & 0xFF;
 
@@ -925,7 +723,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part9 [3]              = 0x04;
     resolveInit.part9 [4]              = 0xff;
     resolveInit.part9 [5]              = 0xe0;
-    static_assert_no_msg(sizeof(resolveInit.part9) == 6);
+    static_assert(sizeof(resolveInit.part9) == 6);
 
     resolveInit.miss [0]               = 0x5a;
 //    resolveInit.miss [1]               = 0xb8;

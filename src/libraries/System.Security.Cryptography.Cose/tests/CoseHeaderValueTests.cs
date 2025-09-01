@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(0)]
         [InlineData(int.MaxValue)]
         [InlineData(int.MinValue)]
-        [InlineData((int)ECDsaAlgorithm.ES256)]
+        [InlineData((int)CoseAlgorithm.ES256)]
         public void GetValueAsInt32Succeeds(int value)
         {
             var writer = new CborWriter();
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(0)]
         [InlineData(int.MaxValue)]
         [InlineData(int.MinValue)]
-        [InlineData((int)ECDsaAlgorithm.ES256)]
+        [InlineData((int)CoseAlgorithm.ES256)]
         public void FromInt32Succeeds(int value)
         {
             var writer = new CborWriter();

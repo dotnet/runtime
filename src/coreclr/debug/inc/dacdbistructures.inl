@@ -427,8 +427,12 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
     }
 
     // sort the map
-    MapSortILMap mapSorter(&m_map[0], m_map.Count());
-    mapSorter.Sort();
+    // Interpreter-TODO: This check can be removed once the interpreter generates proper maps
+    if (m_map.Count() != 0)
+    {
+        MapSortILMap mapSorter(&m_map[0], m_map.Count());
+        mapSorter.Sort();
+    }
 
 
     m_mapCount = m_map.Count();

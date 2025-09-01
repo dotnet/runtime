@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 

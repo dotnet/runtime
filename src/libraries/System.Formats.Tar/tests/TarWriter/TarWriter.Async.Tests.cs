@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -66,7 +65,6 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public Task Verify_Checksum_RegularFile_Async(TarEntryFormat format) =>
             Verify_Checksum_Internal_Async(
                 format,
@@ -75,44 +73,70 @@ namespace System.Formats.Tar.Tests
                 longPath: false,
                 longLink: false);
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task Verify_Checksum_RegularFile_Gnu_Async(bool testEpoch) =>
+            Verify_Checksum_Internal_Async(TarEntryFormat.Gnu, TarEntryType.RegularFile, longPath: false, longLink: false, testEpoch);
+
         [Theory] // V7 does not support BlockDevice
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public Task Verify_Checksum_BlockDevice_Async(TarEntryFormat format) =>
             Verify_Checksum_Internal_Async(format, TarEntryType.BlockDevice, longPath: false, longLink: false);
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task Verify_Checksum_BlockDevice_Gnu_Async(bool testEpoch) =>
+            Verify_Checksum_Internal_Async(TarEntryFormat.Gnu, TarEntryType.BlockDevice, longPath: false, longLink: false, testEpoch);
+
+        [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public Task Verify_Checksum_Directory_LongPath_Async(TarEntryFormat format) =>
             Verify_Checksum_Internal_Async(format, TarEntryType.Directory, longPath: true, longLink: false);
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public Task Verify_Checksum_SymbolicLink_LongLink_Async(TarEntryFormat format) =>
-            Verify_Checksum_Internal_Async(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task Verify_Checksum_Directory_LongPath_Gnu_Async(bool testEpoch) =>
+            Verify_Checksum_Internal_Async(TarEntryFormat.Gnu, TarEntryType.Directory, longPath: true, longLink: false, testEpoch);
 
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
+        public Task Verify_Checksum_SymbolicLink_LongLink_Async(TarEntryFormat format) =>
+            Verify_Checksum_Internal_Async(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task Verify_Checksum_SymbolicLink_LongLink_Gnu_Async(bool testEpoch) =>
+            Verify_Checksum_Internal_Async(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: false, longLink: true, testEpoch);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
         public Task Verify_Checksum_SymbolicLink_LongLink_LongPath_Async(TarEntryFormat format) =>
             Verify_Checksum_Internal_Async(format, TarEntryType.SymbolicLink, longPath: true, longLink: true);
 
-        private async Task Verify_Checksum_Internal_Async(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task Verify_Checksum_SymbolicLink_LongLink_LongPath_Gnu_Async(bool testEpoch) =>
+            Verify_Checksum_Internal_Async(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: true, longLink: true, testEpoch);
+
+        private async Task Verify_Checksum_Internal_Async(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch = false)
         {
             using MemoryStream archive = new MemoryStream();
             int expectedChecksum;
             await using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, out expectedChecksum);
+                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, testEpoch, out expectedChecksum);
                 await writer.WriteEntryAsync(entry);
                 Assert.Equal(expectedChecksum, entry.Checksum);
             }

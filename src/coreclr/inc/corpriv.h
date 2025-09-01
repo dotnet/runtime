@@ -7,34 +7,22 @@
 
 #ifndef _CORPRIV_H_
 #define _CORPRIV_H_
-#if _MSC_VER >= 1000
-#pragma once
-#endif // _MSC_VER >= 1000
 
-// %%Includes: ---------------------------------------------------------------
-// avoid taking DLL import hit on intra-DLL calls
-#define NODLLIMPORT
 #include <daccess.h>
 #include "cor.h"
 #include "corimage.h"
 #include "metadata.h"
-#include <sstring.h>
-//
 
-interface IAssemblyName;
 
 class UTSemReadWrite;
 
-// Helper function to get a pointer to the Dispenser interface.
-STDAPI MetaDataGetDispenser(            // Return HRESULT
-    REFCLSID    rclsid,                 // The class to desired.
-    REFIID      riid,                   // Interface wanted on class factory.
-    LPVOID FAR  *ppv);                  // Return interface pointer here.
-
-BOOL RuntimeFileNotFound(HRESULT hr);
+// Creation function to get IMetaDataDispenser(Ex) interface.
+STDAPI CreateMetaDataDispenser(
+    REFIID riid,
+    void ** pMetaDataDispenserOut);
 
 // Helper function to get an Internal interface with an in-memory metadata section
-STDAPI  GetMetaDataInternalInterface(
+STDAPI  GetMDInternalInterface(
     LPVOID      pData,                  // [IN] in memory metadata section
     ULONG       cbData,                 // [IN] size of the metadata section
     DWORD       flags,                  // [IN] CorOpenFlags
@@ -42,13 +30,13 @@ STDAPI  GetMetaDataInternalInterface(
     void        **ppv);                 // [OUT] returned interface
 
 // Helper function to get an internal scopeless interface given a scope.
-STDAPI  GetMetaDataInternalInterfaceFromPublic(
+STDAPI  GetMDInternalInterfaceFromPublic(
     IUnknown    *pv,                    // [IN] Given interface
     REFIID      riid,                   // [IN] desired interface
     void        **ppv);                 // [OUT] returned interface
 
 // Helper function to get an internal scopeless interface given a scope.
-STDAPI  GetMetaDataPublicInterfaceFromInternal(
+STDAPI  GetMDPublicInterfaceFromInternal(
     void        *pv,                    // [IN] Given interface
     REFIID      riid,                   // [IN] desired interface
     void        **ppv);                 // [OUT] returned interface
@@ -60,16 +48,12 @@ STDAPI ConvertMDInternalImport(         // S_OK or error.
     IMDInternalImport *pIMD,            // [IN] The metadata to be updated.
     IMDInternalImport **ppIMD);         // [OUT] Put RW interface here.
 
-STDAPI GetAssemblyMDInternalImport(     // Return code.
-    LPCWSTR     szFileName,             // [IN] The scope to open.
-    REFIID      riid,                   // [IN] The interface desired.
-    IUnknown    **ppIUnk);              // [OUT] Return interface on success.
-
-STDAPI GetAssemblyMDInternalImportByStream( // Return code.
-    IStream     *pIStream,              // [IN] The IStream for the file
-    UINT64      AssemblyId,             // [IN] Unique Id for the assembly
-    REFIID      riid,                   // [IN] The interface desired.
-    IUnknown    **ppIUnk);              // [OUT] Return interface on success.
+// Update an existing metadata importer with a buffer
+STDAPI MDReOpenMetaDataWithMemory(
+    void        *pImport,               // [IN] Given scope. public interfaces
+    LPCVOID     pData,                  // [in] Location of scope data.
+    ULONG       cbData,                 // [in] Size of the data pointed to by pData.
+    DWORD       dwReOpenFlags);         // [in] ReOpen flags
 
 
 enum MDInternalImportFlags
@@ -80,36 +64,6 @@ enum MDInternalImportFlags
     // unused                           = 4,
     MDInternalImport_OnlyLookInCache    =0x20, // Only look in the cache. (If the cache does not have the image already loaded, return NULL)
 };  // enum MDInternalImportFlags
-
-
-
-STDAPI GetAssemblyMDInternalImportEx(     // Return code.
-    LPCWSTR     szFileName,             // [IN] The scope to open.
-    REFIID      riid,                   // [IN] The interface desired.
-    MDInternalImportFlags flags,        // [in] Flags to control opening the assembly
-    IUnknown    **ppIUnk,               // [OUT] Return interface on success.
-    HANDLE      hFile = INVALID_HANDLE_VALUE);
-
-STDAPI GetAssemblyMDInternalImportByStreamEx( // Return code.
-    IStream     *pIStream,              // [IN] The IStream for the file
-    UINT64      AssemblyId,             // [IN] Unique Id for the assembly
-    REFIID      riid,                   // [IN] The interface desired.
-    MDInternalImportFlags flags,        // [in] Flags to control opening the assembly
-    IUnknown    **ppIUnk);              // [OUT] Return interface on success.
-
-
-// Returns part of the "Zap string" which describes the properties of a native image
-
-__success(SUCCEEDED(return))
-STDAPI GetNativeImageDescription(
-    _In_z_ LPCWSTR wzCustomString,                     // [IN] Custom string of the native image
-    DWORD dwConfigMask,                         // [IN] Config mask of the native image
-    _Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR pwzZapInfo,// [OUT] The description string. Can be NULL to find the size of buffer to allocate
-    LPDWORD pdwLength);                         // [IN/OUT] Length of the pwzZapInfo buffer on IN.
-                                                //          Number of WCHARs (including termintating NULL) on OUT
-
-
-class CQuickBytes;
 
 
 // predefined constant for parent token for global functions
@@ -314,50 +268,19 @@ typedef enum {
 
     // generate a .reloc for a pointer sized location,
     // This is transformed into BASED_HIGHLOW or BASED_DIR64 based on the platform
-    srRelocHighLow = IMAGE_REL_BASED_HIGHLOW,
-
-    // generate a .reloc for the top 16-bits of a 32 bit number, where the
-    // bottom 16 bits are included in the next word in the .reloc table
-    srRelocHighAdj,     // Never Used
+    srRelocHighLow,
 
     // generate a token map relocation, nothing into .reloc section
     srRelocMapToken,
-
-    // relative address fixup
-    srRelocRelative,
 
     // Generate only a section-relative reloc, nothing into .reloc
     // section.  This reloc is relative to the file position of the
     // section, not the section's virtual address.
     srRelocFilePos,
 
-    // code relative address fixup
-    srRelocCodeRelative,
-
-    // generate a .reloc for a 64 bit address
-    srRelocDir64 = IMAGE_REL_BASED_DIR64,
-
-    // generate a 30-bit section-relative reloc, used for tagged pointer values
-    srRelocAbsoluteTagged,
-
-
     // A sentinel value to help ensure any additions to this enum are reflected
     // in PEWriter.cpp's RelocName array.
     srRelocSentinel,
-
-    // Flags that can be used with the above reloc types
-
-    // do not emit base reloc
-    srNoBaseReloc = 0x4000,
-
-    // pre-fixup contents of memory are ptr rather than a section offset
-    srRelocPtr = 0x8000,
-
-    // legal enums which include the Ptr flag
-    srRelocAbsolutePtr = srRelocPtr + srRelocAbsolute,
-    srRelocHighLowPtr = srRelocPtr + srRelocHighLow,
-    srRelocRelativePtr = srRelocPtr + srRelocRelative,
-    srRelocDir64Ptr = srRelocPtr + srRelocDir64,
 
 } CeeSectionRelocType;
 
@@ -433,7 +356,7 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
 // Private interface exposed by
 //    AssemblyMDInternalImport - gives us access to the internally stored IMDInternalImport*.
 //
-//    RegMeta - supports the internal GetMetaDataInternalInterfaceFromPublic() "api".
+//    RegMeta - supports the internal GetMDInternalInterfaceFromPublic() "api".
 //
 // {92B2FEF9-F7F5-420d-AD42-AECEEE10A1EF}
 EXTERN_GUID(IID_IGetIMDInternalImport, 0x92b2fef9, 0xf7f5, 0x420d, 0xad, 0x42, 0xae, 0xce, 0xee, 0x10, 0xa1, 0xef);

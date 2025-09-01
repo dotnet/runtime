@@ -62,6 +62,8 @@ namespace System.Security.Cryptography
             set { _impl.Padding = value; }
         }
 
+        protected override void SetKeyCore(ReadOnlySpan<byte> key) => _impl.SetKey(key);
+
         public override KeySizes[] LegalBlockSizes => _impl.LegalBlockSizes;
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();

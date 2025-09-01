@@ -4,12 +4,11 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define PROBE_FRAME_SIZE 0xC8  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
-                               // 9 * 8 for callee saved registers +
+#define PROBE_FRAME_SIZE 0x90  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
+                               // 9 * 8  for callee saved registers +
                                // 1 * 8  for caller SP +
                                // 2 * 8  for int returns +
-                               // 1 * 8  for alignment padding +
-                               // 4 * 16 for FP returns
+                               // 2 * 8  for FP returns
 
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
 // and accepts the register bitmask
@@ -42,13 +41,9 @@
     st.d  $a0, $sp, 0x70
     st.d  $a1, $sp, 0x78
 
-    // Slot at $sp+0x80 is alignment padding
-
     // Save the FP return registers
-    fst.d  $f0, $sp, 0x88
-    fst.d  $f1, $sp, 0x90
-    fst.d  $f2, $sp, 0x98
-    fst.d  $f3, $sp, 0xA0
+    fst.d  $f0, $sp, 0x80
+    fst.d  $f1, $sp, 0x88
 
     // Perform the rest of the PInvokeTransitionFrame initialization.
     st.d  \threadReg, $sp, OFFSETOF__PInvokeTransitionFrame__m_pThread   // Thread * (unused by stackwalker)
@@ -58,8 +53,7 @@
     st.d  \trashReg, $sp, 0x68                                           // save caller's SP
 
     // link the frame into the Thread
-    ori  \trashReg, $sp, 0
-    st.d  \trashReg, \threadReg, OFFSETOF__Thread__m_pDeferredTransitionFrame
+    st.d  $sp, \threadReg, OFFSETOF__Thread__m_pDeferredTransitionFrame
 .endm
 
 //
@@ -74,10 +68,8 @@
     ld.d  $a1, $sp, 0x78
 
     // Restore the FP return registers
-    fld.d  $f0, $sp, 0x88
-    fld.d  $f1, $sp, 0x90
-    fld.d  $f2, $sp, 0x98
-    fld.d  $f3, $sp, 0xA0
+    fld.d  $f0, $sp, 0x80
+    fld.d  $f1, $sp, 0x88
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR 23, 24, 0x20
@@ -102,11 +94,7 @@
 .macro FixupHijackedCallstack
 
     // a2 <- GetThread()
-#ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_2
-#else
     INLINE_GETTHREAD  $a2
-#endif
 
     //
     // Fix the stack by restoring the original return address
@@ -130,12 +118,11 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
     bstrpick.d  $t8, $a3, TrapThreadsFlags_TrapThreads_Bit, TrapThreadsFlags_TrapThreads_Bit
-    bne  $t8, $zero, LOCAL_LABEL(WaitForGC)
+    bnez  $t8, LOCAL_LABEL(WaitForGC)
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
-    lu12i.w  $t3, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) >> 12) & 0xfffff
-    ori  $t3, $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) & 0xfff
+    li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + (PTFF_THREAD_HIJACK_HI << 32))
     b  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 
@@ -149,7 +136,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 
     ld.d  $a2,$sp, OFFSETOF__PInvokeTransitionFrame__m_Flags
     bstrpick.d  $t8, $a2, PTFF_THREAD_ABORT_BIT, PTFF_THREAD_ABORT_BIT
-    bne  $t8, $zero, LOCAL_LABEL(ThrowThreadAbort)
+    bnez  $t8, LOCAL_LABEL(ThrowThreadAbort)
 
     .cfi_remember_state
     POP_PROBE_FRAME
@@ -158,7 +145,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     .cfi_restore_state
 LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
-    addi.w  $a0, $zero, STATUS_REDHAWK_THREAD_ABORT
+    addi.w  $a0, $zero, STATUS_NATIVEAOT_THREAD_ABORT
     ori  $a1, $ra, 0 // return address as exception PC
     b  RhpThrowHwEx
 NESTED_END RhpWaitForGC
@@ -167,7 +154,7 @@ NESTED_END RhpWaitForGC
 
 LEAF_ENTRY RhpGcPoll
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a0
-    bne  $a0, $zero, C_FUNC(RhpGcPollRare)
+    bnez  $a0, C_FUNC(RhpGcPollRare)
     jirl  $r0, $ra, 0
 LEAF_END RhpGcPoll
 

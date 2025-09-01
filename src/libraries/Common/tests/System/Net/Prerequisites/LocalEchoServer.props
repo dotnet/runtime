@@ -1,16 +1,16 @@
 <Project>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
-    <_TargetFrameworkForXHarness>$(AspNetCoreAppCurrent)</_TargetFrameworkForXHarness>
+    <_TargetFrameworkForXHarness>$(NetCoreAppPrevious)</_TargetFrameworkForXHarness>
     <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
 
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(Configuration)/$(AspNetCoreAppCurrent)</_TestEchoMiddleware>
+    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(Configuration)/$(NetCoreAppPrevious)</_TestEchoMiddleware>
 
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
-    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(Configuration)/$(AspNetCoreAppCurrent)</_RemoteLoopMiddleware>
+    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(Configuration)/$(NetCoreAppPrevious)</_RemoteLoopMiddleware>
 
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-use-cors --web-server-use-https</WasmXHarnessArgs>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST</WasmXHarnessArgs>
@@ -33,7 +33,5 @@
               GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
               AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness)"
               ReferenceOutputAssembly="false"/>
-    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
-             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 </Project>

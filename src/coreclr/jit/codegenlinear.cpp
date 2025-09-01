@@ -174,7 +174,7 @@ void CodeGen::genCodeForBBlist()
         if (compiler->verbose)
         {
             printf("\n=============== Generating ");
-            block->dspBlockHeader(compiler, true, true);
+            block->dspBlockHeader(true, true);
             compiler->fgDispBBLiveness(block);
         }
 #endif // DEBUG
@@ -279,7 +279,7 @@ void CodeGen::genCodeForBBlist()
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                if (node->OperGet() == GT_CATCH_ARG)
+                if (node->OperIs(GT_CATCH_ARG))
                 {
                     gcInfo.gcMarkRegSetGCref(RBM_EXCEPTION_OBJECT);
                     break;
@@ -288,8 +288,6 @@ void CodeGen::genCodeForBBlist()
         }
 
         /* Start a new code output block */
-
-        genUpdateCurrentFunclet(block);
 
         genLogLabel(block);
 
@@ -372,9 +370,9 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
-            assert(compiler->UsesFunclets());
+            genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);
         }
 
@@ -433,7 +431,7 @@ void CodeGen::genCodeForBBlist()
         for (GenTree* node : LIR::AsRange(block))
         {
             // Do we have a new IL offset?
-            if (node->OperGet() == GT_IL_OFFSET)
+            if (node->OperIs(GT_IL_OFFSET))
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
                 DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
@@ -483,23 +481,38 @@ void CodeGen::genCodeForBBlist()
 
         regSet.rsSpillChk();
 
-        /* Make sure we didn't bungle pointer register tracking */
+        // Make sure we didn't bungle pointer register tracking
 
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
         regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
-        // If return is a GC-type, clear it.  Note that if a common
-        // epilog is generated (genReturnBB) it has a void return
-        // even though we might return a ref.  We can't use the compRetType
-        // as the determiner because something we are tracking as a byref
-        // might be used as a return value of a int function (which is legal)
-        GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) && (blockLastNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET)) &&
-            (varTypeIsGC(compiler->info.compRetType) ||
-             (blockLastNode->AsOp()->GetReturnValue() != nullptr &&
-              varTypeIsGC(blockLastNode->AsOp()->GetReturnValue()->TypeGet()))))
+        // If this is a return block then we expect some live GC regs. Clear those.
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             nonVarPtrRegs &= ~RBM_INTRET;
+        }
+        else
+        {
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                regNumber reg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+                nonVarPtrRegs &= ~genRegMask(reg);
+            }
+        }
+
+        if (compiler->compIsAsync())
+        {
+            nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
+        }
+
+        // For a tailcall arbitrary argument registers may be live into the
+        // epilog. Skip validating those.
+        if (block->HasFlag(BBF_HAS_JMP))
+        {
+            nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
         }
 
         if (nonVarPtrRegs)
@@ -701,10 +714,9 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
@@ -715,7 +727,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     GenTree* call = block->lastNode();
 
-                    if ((call != nullptr) && (call->gtOper == GT_CALL))
+                    if ((call != nullptr) && call->OperIs(GT_CALL))
                     {
                         if (call->AsCall()->IsNoReturn())
                         {
@@ -757,7 +769,7 @@ void CodeGen::genCodeForBBlist()
             {
 #ifdef DEBUG
                 GenTree* call = block->lastNode();
-                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                if ((call != nullptr) && call->OperIs(GT_CALL))
                 {
                     // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
                     assert(!call->AsCall()->IsNoReturn());
@@ -1011,7 +1023,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 {
     // This should only be called for multireg lclVars.
     assert(compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || (tree->gtOper == GT_COPY));
+    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
     varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
@@ -1026,7 +1038,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     // This should not be called for multireg lclVars.
-    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->gtOper == GT_COPY));
+    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || tree->OperIs(GT_COPY));
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
@@ -1128,7 +1140,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
     GenTree* unspillTree = tree;
     assert(unspillTree->IsMultiRegNode());
 
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }
@@ -1195,7 +1207,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
 void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 {
     GenTree* unspillTree = tree;
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }
@@ -1374,7 +1386,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
         }
     }
 
-    assert((node->OperGet() == GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
+    assert(node->OperIs(GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
     assert((lastConsumedNode == nullptr) || (node->gtUseNum == -1) || (node->gtUseNum > lastConsumedNode->gtUseNum));
 
     node->gtDebugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
@@ -1465,7 +1477,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
 //
 regNumber CodeGen::genConsumeReg(GenTree* tree)
 {
-    if (tree->OperGet() == GT_COPY)
+    if (tree->OperIs(GT_COPY))
     {
         genRegCopy(tree);
     }
@@ -1566,7 +1578,7 @@ void CodeGen::genConsumeAddress(GenTree* addr)
     {
         genConsumeReg(addr);
     }
-    else if (addr->OperGet() == GT_LEA)
+    else if (addr->OperIs(GT_LEA))
     {
         genConsumeAddrMode(addr->AsAddrMode());
     }
@@ -1581,7 +1593,7 @@ void CodeGen::genConsumeAddrMode(GenTreeAddrMode* addr)
 void CodeGen::genConsumeRegs(GenTree* tree)
 {
 #if !defined(TARGET_64BIT)
-    if (tree->OperGet() == GT_LONG)
+    if (tree->OperIs(GT_LONG))
     {
         genConsumeRegs(tree->gtGetOp1());
         genConsumeRegs(tree->gtGetOp2());
@@ -1731,7 +1743,6 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -1814,30 +1825,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
-
-#if FEATURE_ARG_SPLIT
-//------------------------------------------------------------------------
-// genConsumeArgRegSplit: Consume register(s) in Call node to set split struct argument.
-//
-// Arguments:
-//    putArgNode - the PUTARG_STK tree.
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
-{
-    assert(putArgNode->OperGet() == GT_PUTARG_SPLIT);
-    assert(putArgNode->gtHasReg(compiler));
-
-    genUnspillRegIfNeeded(putArgNode);
-
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
-
-    genCheckConsumeNode(putArgNode);
-}
-#endif // FEATURE_ARG_SPLIT
 
 //------------------------------------------------------------------------
 // genPutArgStkFieldList: Generate code for a putArgStk whose source is a GT_FIELD_LIST
@@ -1885,11 +1872,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
-            areaSize = compiler->info.compArgStackSize;
+            areaSize = compiler->lvaParameterStackSize;
         }
 #endif
 
@@ -1930,7 +1917,7 @@ void CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
     {
         // For a CopyBlk we need the address of the source.
         assert(src->isContained());
-        if (src->OperGet() == GT_IND)
+        if (src->OperIs(GT_IND))
         {
             src = src->AsOp()->gtOp1;
         }
@@ -1966,7 +1953,7 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
     if (blkNode->OperIsCopyBlkOp())
     {
         // For a CopyBlk we need the address of the source.
-        if (src->OperGet() == GT_IND)
+        if (src->OperIs(GT_IND))
         {
             src = src->AsOp()->gtOp1;
         }
@@ -2182,7 +2169,7 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 // we should never see reload of multi-reg call here
                 // because GT_RELOAD gets generated in reg consuming path.
-                noway_assert(tree->OperGet() == GT_COPY);
+                noway_assert(tree->OperIs(GT_COPY));
 
                 // A multi-reg GT_COPY node produces those regs to which
                 // copy has taken place.
@@ -2248,93 +2235,6 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
         gcInfo.gcMarkRegSetNpt(dstMask);
     }
 }
-
-// generates an ip-relative call or indirect call via reg ('call reg')
-//     pass in 'addr' for a relative call or 'base' for a indirect register call
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//     noSafePoint - force not making this call a safe point in partially interruptible code
-//
-// clang-format off
-void CodeGen::genEmitCall(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          void*                 addr
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          const DebugInfo& di,
-                          regNumber             base,
-                          bool                  isJump,
-                          bool                  noSafePoint)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    // This should have been put in volatile registers to ensure it does not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (base == REG_NA) || ((RBM_INT_CALLEE_TRASH & genRegMask(base)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               addr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
-}
-// clang-format on
-
-// generates an indirect call via addressing mode (call []) given an indir node
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//
-// clang-format off
-void CodeGen::genEmitCallIndir(int                   callType,
-                               CORINFO_METHOD_HANDLE methHnd,
-                               INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                               GenTreeIndir*         indir
-                               X86_ARG(int argSize),
-                               emitAttr              retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               const DebugInfo&      di,
-                               bool                  isJump)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
-
-    // These should have been put in volatile registers to ensure they do not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
-    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               nullptr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di,
-                               iReg,
-                               xReg,
-                               indir->Scale(),
-                               indir->Offset(),
-                               isJump);
-}
-// clang-format on
 
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
@@ -2476,8 +2376,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
@@ -2567,7 +2470,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->GetLclNum();
     LclVarDsc*           varDsc  = compiler->lvaGetDesc(lclNum);
-    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(varDsc->TypeIs(TYP_LONG));
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 
@@ -2701,6 +2604,14 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
     {
         genAmd64EmitterUnitTestsApx();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "avx10v2") != nullptr))
+    {
+        genAmd64EmitterUnitTestsAvx10v2();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ccmp") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCCMP();
     }
 
 #elif defined(TARGET_ARM64)

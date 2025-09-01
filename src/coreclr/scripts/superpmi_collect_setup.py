@@ -37,17 +37,18 @@ import shutil
 import stat
 
 from coreclr_arguments import *
-from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
+from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir, determine_jit_name
 
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo)")
+parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
 parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
+parser.add_argument("-release_core_root_directory", required=True, help="Path to release Core_Root directory")
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
@@ -57,7 +58,7 @@ parser.add_argument("-public_queues", action="store_true", help="Whether to set 
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
+legal_collection_types = [ "nativeaot", "crossgen2", "pmi", "run", "run_tiered", "run_pgo", "run_pgo_optrepeat" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
@@ -225,6 +226,12 @@ def setup_args(args):
                         lambda core_root_directory: os.path.isdir(core_root_directory),
                         "core_root_directory doesn't exist",
                         modify_arg=lambda core_root_directory: os.path.abspath(core_root_directory))
+
+    coreclr_args.verify(args,
+                        "release_core_root_directory",
+                        lambda release_core_root_directory: os.path.isdir(release_core_root_directory),
+                        "release_core_root_directory doesn't exist",
+                        modify_arg=lambda release_core_root_directory: os.path.abspath(release_core_root_directory))
 
     coreclr_args.verify(args,
                         "arch",
@@ -457,28 +464,40 @@ def main(main_args):
     # Determine the Helix queue name to use when running jobs.
     if coreclr_args.public_queues:
         if platform_name == "windows":
-            helix_queue = "Windows.11.Arm64.Open" if arch == "arm64" else "Windows.10.Amd64.Open"
+            if arch == "arm64": # public windows_arm64
+                helix_queue = "Windows.11.Arm64.Open"
+            else: # public windows_x64
+                helix_queue = "Windows.10.Amd64.Open"
         elif platform_name == "linux":
-            if arch == "arm":
-                helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
-            elif arch == "arm64":
-                helix_queue = "(Ubuntu.2004.Arm64.Open)Ubuntu.2004.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8"
-            else:
-                helix_queue = "Ubuntu.2204.Amd64.Open"
+            if arch == "arm": # public linux_arm
+                helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
+            elif arch == "arm64": # public linux_arm64
+                helix_queue = "(Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+            else: # public linux_x64
+                helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
-            helix_queue = "OSX.1200.ARM64.Open" if arch == "arm64" else "OSX.1200.Amd64.Open"
+            if arch == "arm64": # public osx_arm64
+                helix_queue = "osx.13.arm64.open"
+            else: # public osx_x64
+                helix_queue = "OSX.1200.Amd64.Open"
     else:
         if platform_name == "windows":
-            helix_queue = "Windows.11.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
+            if arch == "arm64": # internal windows_arm64
+                helix_queue = "Windows.11.Arm64"
+            else: # internal superpmi windows_x64
+                helix_queue = "Windows.10.Amd64.X86.Rt"
         elif platform_name == "linux":
-            if arch == "arm":
-                helix_queue = "(Debian.12.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
-            elif arch == "arm64":
-                helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
-            else:
-                helix_queue = "Ubuntu.2204.Amd64"
+            if arch == "arm": # internal linux_arm
+                helix_queue = "(Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
+            elif arch == "arm64": # internal linux_arm64
+                helix_queue = "(Ubuntu.2404.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8"
+            else: # internal linux_x64
+                helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
-            helix_queue = "OSX.1200.ARM64" if arch == "arm64" else "OSX.1200.Amd64"
+            if arch == "arm64": # internal osx_arm64
+                helix_queue = "OSX.1200.ARM64"
+            else: # internal osx_x64
+                helix_queue = "OSX.1200.Amd64"
 
     # Copy the superpmi scripts
 
@@ -497,8 +516,16 @@ def main(main_args):
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
-    print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
-    copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
+      # create a directory with release runtime bits and a checked jit
+      print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
+      jitname = determine_jit_name(coreclr_args.platform, coreclr_args.platform, coreclr_args.arch, coreclr_args.arch)
+      print('Copying checked {} -> {}'.format(jitname, core_root_dst_directory))
+      copy_files(coreclr_args.core_root_directory, core_root_dst_directory, [os.path.join(coreclr_args.core_root_directory, jitname)])
+    else:
+      print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
+      copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks

@@ -56,7 +56,7 @@
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               4       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
   #define FIRST_INT_CALLEE_SAVED  REG_S1
@@ -99,6 +99,11 @@
 
   #define CNT_CALLEE_SAVED_FLOAT  (12)
   #define CNT_CALLEE_TRASH_FLOAT  (20)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_TRASH_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -139,7 +144,7 @@
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_T5
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_T5
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T5|RBM_T6|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_T0|RBM_T1|RBM_T2|RBM_T4|RBM_T6|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_WRITE_BARRIER_DST|RBM_CALLEE_TRASH_NOGC)
@@ -151,7 +156,7 @@
   #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
+  // Note that t3 and t5 are still valid byref pointers after this helper call, despite their value being changed.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
@@ -221,6 +226,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_A0 | RBM_A1 | RBM_A2 | RBM_A3 | RBM_A4 | RBM_A5 | RBM_A6 | RBM_A7 | RBM_T3))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_T3
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_T0
+
+  #define REG_ASYNC_CONTINUATION_RET REG_A2
+  #define RBM_ASYNC_CONTINUATION_RET RBM_A2
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP

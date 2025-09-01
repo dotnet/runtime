@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         [InlineData("")]
         [InlineData("version")]
         [InlineData("3.4.5.6.7")]
-        public void Ctor_String(string informationalVersion)
+        public void Ctor_String(string? informationalVersion)
         {
             var attribute = new AssemblyInformationalVersionAttribute(informationalVersion);
             Assert.Equal(informationalVersion, attribute.InformationalVersion);

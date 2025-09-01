@@ -76,4 +76,4 @@ runtimes/win/lib/netstandard1.0/foo.dll
 When resolving for netstandard1.5/win7-x64 will select `lib/netstandard1.5/foo.dll` for the compile asset and `runtimes/win/lib/netstandard1.0/foo.dll` for the runtime asset.
 
 ## Adding new RIDs
-The RID graphs should be only updated with new base OSes, architectures, or C standard libraries. The RID graphs shouldn't be updated with new OS flavor- and version-specific RIDs anymore. Build from source automatically adds the non-portable distro RID encoded via the `OutputRID` property into the RID graph which allows build tools to target that RID.
+The RID graphs should be only updated with new base OSes, architectures, or C standard libraries. The RID graphs shouldn't be updated with new OS flavor- and version-specific RIDs anymore. Build from source automatically adds the non-portable distro RID encoded via the `TargetRid` property into the RID graph which allows build tools to target that RID.

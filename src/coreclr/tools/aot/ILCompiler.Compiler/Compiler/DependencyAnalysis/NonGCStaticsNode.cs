@@ -34,11 +34,35 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            if (HasCCtorContext
-                || _preinitializationManager.IsPreinitialized(_type))
+            if (HasCCtorContext)
             {
-                // We have data to be emitted so this needs to be in an initialized data section
+                // Needs to be writable initialized section because we need info on how to run cctor and whether it ran.
                 return ObjectNodeSection.DataSection;
+            }
+            else if (_preinitializationManager.IsPreinitialized(_type))
+            {
+                // Unix linkers don't like relocs to readonly data section
+                if (!factory.Target.IsWindows)
+                    return ObjectNodeSection.DataSection;
+
+                ReadOnlyFieldPolicy readOnlyPolicy = _preinitializationManager.ReadOnlyFieldPolicy;
+
+                bool allFieldsReadOnly = true;
+                foreach (FieldDesc field in _type.GetFields())
+                {
+                    if (!IsNonGcStaticField(field))
+                        continue;
+
+                    allFieldsReadOnly = readOnlyPolicy.IsReadOnly(field);
+                    if (!allFieldsReadOnly)
+                        break;
+                }
+
+                // If all fields are read only, we can place this into a read only section
+                if (allFieldsReadOnly)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
             }
             else
             {
@@ -149,6 +173,9 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
+        private static bool IsNonGcStaticField(FieldDesc field)
+            => field.IsStatic && !field.HasRva && !field.IsLiteral && !field.IsThreadStatic && !field.HasGCStaticBase;
+
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
@@ -193,7 +220,7 @@ namespace ILCompiler.DependencyAnalysis
                 int initialOffset = builder.CountBytes;
                 foreach (FieldDesc field in _type.GetFields())
                 {
-                    if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || field.HasGCStaticBase)
+                    if (!IsNonGcStaticField(field))
                         continue;
 
                     int padding = field.Offset.AsInt - builder.CountBytes + initialOffset;

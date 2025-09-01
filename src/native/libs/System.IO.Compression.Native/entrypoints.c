@@ -31,6 +31,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_Inflate)
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)
+    DllImportEntry(CompressionNative_InflateReset2_)
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);

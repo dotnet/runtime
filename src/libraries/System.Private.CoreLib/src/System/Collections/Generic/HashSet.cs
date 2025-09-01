@@ -499,7 +499,7 @@ namespace System.Collections.Generic
                 {
                     index = set._freeList;
                     set._freeCount--;
-                    Debug.Assert((StartOfFreeList - entries![set._freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                    Debug.Assert((StartOfFreeList - entries[set._freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
                     set._freeList = StartOfFreeList - entries[set._freeList].Next;
                 }
                 else
@@ -551,7 +551,7 @@ namespace System.Collections.Generic
                     uint collisionCount = 0;
                     int last = -1;
 
-                    int hashCode = item is not null ? comparer!.GetHashCode(item) : 0;
+                    int hashCode = item is not null ? comparer.GetHashCode(item) : 0;
 
                     ref int bucket = ref set.GetBucketRef(hashCode);
                     int i = bucket - 1; // Value in buckets is 1-based
@@ -1481,7 +1481,7 @@ namespace System.Collections.Generic
             {
                 index = _freeList;
                 _freeCount--;
-                Debug.Assert((StartOfFreeList - entries![_freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                Debug.Assert((StartOfFreeList - entries[_freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
                 _freeList = StartOfFreeList - entries[_freeList].Next;
             }
             else
@@ -1580,7 +1580,7 @@ namespace System.Collections.Generic
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+            BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
                 new BitHelper(span.Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 

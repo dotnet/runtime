@@ -476,6 +476,10 @@ namespace System.Formats.Asn1.Tests.Writer
                 Assert.Fail("Callback should not have been called.");
                 return null;
             }));
+
+            Assert.Throws<InvalidOperationException>(() => writer.Encode<object>(null, (_, _) => {
+                Assert.Fail("Callback should not have been called.");
+            }));
 #endif
         }
 

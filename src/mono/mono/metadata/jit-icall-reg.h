@@ -250,6 +250,7 @@ MONO_JIT_ICALL (mono_ppc_throw_exception)	\
 MONO_JIT_ICALL (mono_profiler_raise_exception_clause) \
 MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
+MONO_JIT_ICALL (mono_profiler_raise_method_samplepoint) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \

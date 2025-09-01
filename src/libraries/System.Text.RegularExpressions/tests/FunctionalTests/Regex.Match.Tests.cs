@@ -93,6 +93,55 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
+                yield return (@"a+(?!c)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a+(?!c)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+                yield return (@"a*(?!c)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a{2,5}(?!c)", "aaaaac", RegexOptions.None, 0, 6, true, "aaaa");
+                yield return (@"a+?(?!c)", "aaab", RegexOptions.None, 0, 4, true, "a");
+                yield return (@"a*?(?!c)", "aaab", RegexOptions.None, 0, 4, true, "");
+                yield return (@"a{2,5}?(?!c)", "aaaaab", RegexOptions.None, 0, 6, true, "aa");
+                yield return (@"[ab]*(?!x)", "ababc", RegexOptions.None, 0, 5, true, "abab");
+                yield return (@"a+(?=b)(?!c)", "aabx", RegexOptions.None, 0, 4, true, "aa");
+                yield return (@"a+?(?=b)(?!c)", "aabx", RegexOptions.None, 0, 4, true, "aa");
+
+                // Zero-width positive lookahead assertion
+                yield return (@"(?=(abc))?\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))+\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))*\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"^.*?(?=.)b", "ab", RegexOptions.None, 0, 2, true, "ab");
+                yield return (@".*?(?=.)b", "ab", RegexOptions.None, 0, 2, true, "ab");
+                yield return (@"^(?>.*?)(?=.)b", "ab", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?>.*?)(?=.)b", "ab", RegexOptions.None, 0, 2, true, "b");
+                yield return (@"a+(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a+(?=b)", "aaabc", RegexOptions.None, 0, 5, true, "aaa");
+                yield return (@"a*(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a{2,5}(?=b)", "aaaaab", RegexOptions.None, 0, 6, true, "aaaaa");
+                yield return (@"a+?(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a*?(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"a{2,5}?(?=b)", "aaaaab", RegexOptions.None, 0, 6, true, "aaaaa");
+                yield return (@"a+b+(?=c)", "aabbbc", RegexOptions.None, 0, 6, true, "aabbb");
+                yield return (@"a+?b+(?=c)", "aabbbc", RegexOptions.None, 0, 6, true, "aabbb");
+                yield return (@"a+b+?(?=c)", "aabbbc", RegexOptions.None, 0, 6, true, "aabbb");
+                yield return (@"[ab]+(?=c)", "ababc", RegexOptions.None, 0, 5, true, "abab");
+                yield return (@"[ab]+?(?=c)", "ababc", RegexOptions.None, 0, 5, true, "abab");
+                yield return (@"\w+(?=\b)", "hello world", RegexOptions.None, 0, 11, true, "hello");
+                yield return (@"\w+?(?=\b)", "hello world", RegexOptions.None, 0, 11, true, "hello");
+                yield return (@"(?>a+)(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(?>a*)(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(?>a{2,5})(?=b)", "aaaaab", RegexOptions.None, 0, 6, true, "aaaaa");
+                yield return (@"a*(?=a)", "aaa", RegexOptions.None, 0, 3, true, "aa");
+                yield return (@"a*?(?=a)", "aaa", RegexOptions.None, 0, 3, true, "");
+                yield return (@"a+(?=a*b)ab", "aaaab", RegexOptions.None, 0, 5, true, "aaaab");
+                yield return (@"a+?(?=a*b)ab", "aaaab", RegexOptions.None, 0, 5, true, "aaaab");
+                yield return (@"(a+)+(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(a+?)+(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(a+)+?(?=b)", "aaab", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(a+|b+)(?=c)", "aaac", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(a+?|b+?)(?=c)", "aaac", RegexOptions.None, 0, 4, true, "aaa");
+                yield return (@"(a+)(?=\1b)", "aaaaaab", RegexOptions.None, 0, 7, true, "aaa");
+                yield return (@"(a+?)(?=\1b)", "aaaaaab", RegexOptions.None, 0, 7, true, "aaa");
+                yield return (@"[A-Z]+(?=b)", "AAAb", RegexOptions.IgnoreCase, 0, 4, true, "AAA");
+                yield return (@"[A-Z]+?(?=b)", "AAAb", RegexOptions.IgnoreCase, 0, 4, true, "AAA");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -121,6 +170,21 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(\w)*?3(?<=33)$", "1233", RegexOptions.None, 0, 4, true, "1233");
                 yield return (@"(?=(\d))4\1", "44", RegexOptions.None, 0, 2, true, "44");
                 yield return (@"(?=(\d))4\1", "43", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?<=()??)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=()*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(){0,100}?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<!()*?)a", "a", RegexOptions.None, 0, 1, false, "");
+                yield return (@"(?<=(?:)*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(xyz)*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=^*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=\A*?)a", "a", RegexOptions.None, 0, 1, true, "a");
+                yield return (@"(?<=(xyz)*?)d", "a", RegexOptions.None, 0, 1, false, "");
+                yield return (@"(?<=(abc)+?)", "123abc", RegexOptions.None, 0, 6, true, "");
+                yield return (@"(?<=(abc)+?)", "123ab", RegexOptions.None, 0, 5, false, "");
+                yield return (@"(?<=(abc)+?123)", "abcabc123", RegexOptions.None, 0, 9, true, "");
+                yield return (@"a+(?!c)(?<=y)", "yaab", RegexOptions.None, 0, 4, false, "");
+                yield return (@"(?<=a{2,4})b+", "aaabbb", RegexOptions.None, 0, 6, true, "bbb");
+                yield return (@"(?<=a+)b+?", "aaabbb", RegexOptions.None, 0, 6, true, "b");
 
                 // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                 yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
@@ -128,6 +192,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(abc)\w(?<!(?(1)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
                 yield return (@"(abc)\w(?<!(?(cd)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
                 yield return (@"(?<!(b)a)\1", "bb", RegexOptions.None, 0, 2, false, string.Empty); // negative assertion should not capture
+                yield return (@"(?<=a)b+c", "abbbbc", RegexOptions.None, 0, 6, true, "bbbbc");
+                yield return (@"(?<=a+)bc", "aaabc", RegexOptions.None, 0, 5, true, "bc");
+                yield return (@"(?<!x)a+b", "yaab", RegexOptions.None, 0, 4, true, "aab");
+                yield return (@"(?<!x)a+b", "xaab", RegexOptions.None, 0, 4, true, "ab");
+                yield return (@"a+(?=b)(?<!x)", "yaab", RegexOptions.None, 0, 4, true, "aa");
 
                 // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
                 // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
@@ -259,6 +328,20 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
+
+            // Nested loops
+            yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
 
             // Testing selected FindOptimizations finds the right prefix
             yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
@@ -564,6 +647,8 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Throws NotSupported with NonBacktracking engine because of the balancing group dog-0
                 yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
+                yield return (@"(.)(?'2-1'(?'-1'))", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"(?'2-1'(.))", "cat", RegexOptions.None, 0, 3, true, "c");
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B
@@ -1236,7 +1321,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             string input = new string(chars);
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(1));
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 

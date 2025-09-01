@@ -336,6 +336,10 @@ if defined RunCrossGen2 (
   call :TakeLock
 )
 
+if defined RunInterpreter (
+  SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+)
+
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!

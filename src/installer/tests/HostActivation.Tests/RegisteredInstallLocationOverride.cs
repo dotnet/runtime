@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -98,10 +99,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
             else
             {
-                if (File.Exists(PathValueOverride))
+                RetryUtil.RetryOnIOError(() =>
                 {
-                    File.Delete(PathValueOverride);
-                }
+                    if (File.Exists(PathValueOverride))
+                    {
+                        File.Delete(PathValueOverride);
+                    }
+                });
             }
 
             if (_testOnlyProductBehavior != null)

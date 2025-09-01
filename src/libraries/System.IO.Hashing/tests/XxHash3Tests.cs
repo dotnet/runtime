@@ -122,6 +122,31 @@ namespace System.IO.Hashing.Tests
             }
         }
 
+        [Fact]
+        public void Clone_ProducesSameSequence()
+        {
+            XxHash3 hash = new(42);
+
+            for (int outer = 0; outer < 4; outer++)
+            {
+                XxHash3 clone = hash.Clone();
+                Assert.Equal(hash.HashLengthInBytes, clone.HashLengthInBytes);
+                Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+
+                Random r = new Random(42);
+                byte[] bytes = new byte[r.Next(1, 10)];
+
+                for (int inner = 0; inner < 4; inner++)
+                {
+                    r.NextBytes(bytes);
+                    hash.Append(bytes);
+                    clone.Append(bytes);
+
+                    Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+                }
+            }
+        }
+
         private static IEnumerable<(ulong Hash, long Seed, string Ascii)> TestCases()
         {
             yield return (Hash: 0x2d06800538d394c2UL, Seed: 0x0000000000000000L, Ascii: "");

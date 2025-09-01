@@ -562,3 +562,13 @@ interface ISOSDacInterface15 : IUnknown
 {
     HRESULT GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 }
+
+[
+    object,
+    local,
+    uuid(4ba12ff8-daac-4e43-ac56-98cf8d5c595d)
+]
+interface ISOSDacInterface16 : IUnknown
+{
+    HRESULT GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
+}

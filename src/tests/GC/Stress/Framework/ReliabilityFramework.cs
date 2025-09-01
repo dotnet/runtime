@@ -51,8 +51,9 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
     protected override Assembly Load(AssemblyName assemblyName)
     {
         string strPath;
-        if (assemblyName.Name.StartsWith("System."))
+        if (assemblyName.Name.StartsWith("System.", StringComparison.Ordinal) || assemblyName.Name.StartsWith("Microsoft.", StringComparison.Ordinal))
         {
+            // If the assembly is a framework assembly, we load it from the framework path.
             strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
         }
         else
@@ -119,6 +120,8 @@ public class ReliabilityFramework
     private int _reportedFailCnt = 0;
     private RFLogging _logger = new RFLogging();
     private DateTime _lastLogTime = DateTime.Now;
+    private Dictionary<string, uint> _testRunCounter = new();
+    private object _testRunCounterLock = new();
 
     // static members
     private static int s_seed = (int)System.DateTime.Now.Ticks;
@@ -161,6 +164,11 @@ public class ReliabilityFramework
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
+
+        Console.CancelKeyPress += (object _, ConsoleCancelEventArgs _) => {
+            rf.RecordTestRunCount();
+        };
+
         var configVars = GC.GetConfigurationVariables();
         foreach (var kvp in configVars)
         {
@@ -305,13 +313,38 @@ public class ReliabilityFramework
         }
 
         NoExitPoll();
-
+        rf.RecordTestRunCount();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Shutdown w/ ret val of  {0}", retVal));
 
 
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
         return (retVal);
+    }
+
+    public void RecordTestRunCount()
+    {
+        StringBuilder sb = new();
+        lock (_testRunCounterLock)
+        {
+            foreach(var item in _testRunCounter)
+            {
+                sb.AppendLine($"{item.Key}: {item.Value}");
+            }  
+        }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
+    }
+
+    public void RecordTestRunCountForPerTest(string refOrID)
+    {
+        lock (_testRunCounterLock)
+        {
+            if (_testRunCounter.TryGetValue(refOrID, out var value))
+            {
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Run tests \"{refOrID}\" {value} times.");
+            } 
+        }
+        
     }
 
     public void HandleOom(Exception e, string message)
@@ -621,6 +654,11 @@ public class ReliabilityFramework
         DateTime lastStart = DateTime.Now;	// keeps track of when we last started a test
         TimeSpan minTimeToStartTest = new TimeSpan(0, 5, 0);	// after 5 minutes if we haven't started a test we're having problems...
         int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages
+        
+        foreach (var test in _curTestSet.Tests)
+        {
+            _testRunCounter[test.RefOrID] = 0;
+        }
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
@@ -956,7 +994,15 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
                 _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
+            lock(_testRunCounterLock)
+            {
+                string testRefOrID = test.RefOrID;
+                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
+            }
+
             newThread.Start(test);
+            RecordTestRunCountForPerTest(test.RefOrID);
+
         }
         catch (OutOfMemoryException e)
         {

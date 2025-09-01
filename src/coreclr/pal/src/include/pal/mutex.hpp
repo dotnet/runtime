@@ -37,6 +37,7 @@ namespace CorUnix
         LPSECURITY_ATTRIBUTES lpMutexAttributes,
         BOOL bInitialOwner,
         LPCSTR lpName,
+        BOOL bCurrentUserOnly,
         HANDLE *phMutex
         );
 
@@ -51,6 +52,7 @@ namespace CorUnix
         SharedMemorySystemCallErrors *errors,
         CPalThread *pThread,
         LPCSTR lpName,
+        BOOL bCurrentUserOnly,
         HANDLE *phMutex
         );
 
@@ -216,10 +218,10 @@ private:
     bool m_hasRefFromLockOwnerThread;
 
 public:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool acquireLockIfCreated, bool *createdRef);
-    static SharedMemoryProcessDataHeader *Open(SharedMemorySystemCallErrors *errors, LPCSTR name);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, bool acquireLockIfCreated, bool *createdRef);
+    static SharedMemoryProcessDataHeader *Open(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope);
 private:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool createIfNotExist, bool acquireLockIfCreated, bool *createdRef);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, bool *createdRef);
 
 public:
     NamedMutexProcessData(

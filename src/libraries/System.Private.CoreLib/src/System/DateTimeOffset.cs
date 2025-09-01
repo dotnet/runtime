@@ -59,8 +59,8 @@ namespace System
 
         // Static Fields
         public static readonly DateTimeOffset MinValue;
-        public static readonly DateTimeOffset MaxValue = new DateTimeOffset(0, DateTime.UnsafeCreate(DateTime.MaxTicks));
-        public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(0, DateTime.UnsafeCreate(DateTime.UnixEpochTicks));
+        public static readonly DateTimeOffset MaxValue = new DateTimeOffset(0, DateTime.CreateUnchecked(DateTime.MaxTicks));
+        public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(0, DateTime.CreateUnchecked(DateTime.UnixEpochTicks));
 
         // Instance Fields
         private readonly DateTime _dateTime;
@@ -167,7 +167,7 @@ namespace System
             : this(year, month, day, hour, minute, second, offset)
         {
             if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond) DateTime.ThrowMillisecondOutOfRange();
-            _dateTime = DateTime.UnsafeCreate(UtcTicks + (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond);
+            _dateTime = DateTime.CreateUnchecked(UtcTicks + (uint)millisecond * (uint)TimeSpan.TicksPerMillisecond);
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -252,7 +252,7 @@ namespace System
             : this(year, month, day, hour, minute, second, millisecond, offset)
         {
             if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond) DateTime.ThrowMicrosecondOutOfRange();
-            _dateTime = DateTime.UnsafeCreate(UtcTicks + (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond);
+            _dateTime = DateTime.CreateUnchecked(UtcTicks + (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond);
         }
 
         /// <summary>
@@ -326,14 +326,14 @@ namespace System
             : this(year, month, day, hour, minute, second, millisecond, calendar, offset)
         {
             if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond) DateTime.ThrowMicrosecondOutOfRange();
-            _dateTime = DateTime.UnsafeCreate(UtcTicks + (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond);
+            _dateTime = DateTime.CreateUnchecked(UtcTicks + (uint)microsecond * (uint)TimeSpan.TicksPerMicrosecond);
         }
 
         public static DateTimeOffset UtcNow => new DateTimeOffset(0, DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified));
 
         public DateTime DateTime => ClockDateTime;
 
-        public DateTime UtcDateTime => DateTime.UnsafeCreate((long)(_dateTime._dateData | DateTime.KindUtc));
+        public DateTime UtcDateTime => DateTime.CreateUnchecked((long)(_dateTime._dateData | DateTime.KindUtc));
 
         public DateTime LocalDateTime => UtcDateTime.ToLocalTime();
 
@@ -346,7 +346,7 @@ namespace System
         // The clock or visible time represented. This is just a wrapper around the internal date because this is
         // the chosen storage mechanism. Going through this helper is good for readability and maintainability.
         // This should be used for display but not identity.
-        private DateTime ClockDateTime => DateTime.UnsafeCreate(UtcTicks + _offsetMinutes * TimeSpan.TicksPerMinute);
+        private DateTime ClockDateTime => DateTime.CreateUnchecked(UtcTicks + _offsetMinutes * TimeSpan.TicksPerMinute);
 
         // Returns the date part of this DateTimeOffset. The resulting value
         // corresponds to this DateTimeOffset with the time-of-day part set to
@@ -587,12 +587,11 @@ namespace System
         {
             if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds)
             {
-                throw new ArgumentOutOfRangeException(nameof(seconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, UnixMinSeconds, UnixMaxSeconds));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(seconds), seconds, UnixMinSeconds, UnixMaxSeconds);
             }
 
             long ticks = seconds * TimeSpan.TicksPerSecond + DateTime.UnixEpochTicks;
-            return new DateTimeOffset(0, DateTime.UnsafeCreate(ticks));
+            return new DateTimeOffset(0, DateTime.CreateUnchecked(ticks));
         }
 
         public static DateTimeOffset FromUnixTimeMilliseconds(long milliseconds)
@@ -602,12 +601,11 @@ namespace System
 
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds)
             {
-                throw new ArgumentOutOfRangeException(nameof(milliseconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(milliseconds), milliseconds, MinMilliseconds, MaxMilliseconds);
             }
 
             long ticks = milliseconds * TimeSpan.TicksPerMillisecond + DateTime.UnixEpochTicks;
-            return new DateTimeOffset(0, DateTime.UnsafeCreate(ticks));
+            return new DateTimeOffset(0, DateTime.CreateUnchecked(ticks));
         }
 
         // ----- SECTION: private serialization instance methods  ----------------*
@@ -788,7 +786,7 @@ namespace System
                 localTicks = localTicks < DateTime.MinTicks ? DateTime.MinTicks : DateTime.MaxTicks;
             }
 
-            return CreateValidateOffset(DateTime.UnsafeCreate(localTicks), offset);
+            return CreateValidateOffset(DateTime.CreateUnchecked(localTicks), offset);
         }
 
         public override string ToString() =>
@@ -947,7 +945,7 @@ namespace System
                 static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_UTCOutOfRange);
             }
             // make sure the Kind is set to Unspecified
-            return DateTime.UnsafeCreate(utcTicks);
+            return DateTime.CreateUnchecked(utcTicks);
         }
 
         private static DateTimeStyles ValidateStyles(DateTimeStyles styles)

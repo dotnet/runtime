@@ -47,9 +47,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class BranchFalseInstruction : OffsetInstruction
     {
-        private static Instruction[]? s_cache;
-
-        public override Instruction[] Cache => s_cache ??= new Instruction[CacheSize];
+        public override Instruction[] Cache => field ??= new Instruction[CacheSize];
 
         public override string InstructionName => "BranchFalse";
         public override int ConsumedStack => 1;
@@ -69,9 +67,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class BranchTrueInstruction : OffsetInstruction
     {
-        private static Instruction[]? s_cache;
-
-        public override Instruction[] Cache => s_cache ??= new Instruction[CacheSize];
+        public override Instruction[] Cache => field ??= new Instruction[CacheSize];
 
         public override string InstructionName => "BranchTrue";
         public override int ConsumedStack => 1;
@@ -91,9 +87,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class CoalescingBranchInstruction : OffsetInstruction
     {
-        private static Instruction[]? s_cache;
-
-        public override Instruction[] Cache => s_cache ??= new Instruction[CacheSize];
+        public override Instruction[] Cache => field ??= new Instruction[CacheSize];
 
         public override string InstructionName => "CoalescingBranch";
         public override int ConsumedStack => 1;

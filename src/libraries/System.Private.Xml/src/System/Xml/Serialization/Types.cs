@@ -1033,13 +1033,16 @@ namespace System.Xml.Serialization
 
         internal static void GetAllMembers(StructMapping mapping, List<MemberMapping> list)
         {
+            // Order matters. Legacy behavior gives deference to base mappings. So we start there.
+            // But we want to replace base mappings with overrides from the derived class.
             if (mapping.BaseMapping != null)
             {
                 GetAllMembers(mapping.BaseMapping, list);
             }
             for (int i = 0; i < mapping.Members!.Length; i++)
             {
-                list.Add(mapping.Members[i]);
+                if (!TryReplaceHiddenMapping(list, mapping.Members[i]))
+                    list.Add(mapping.Members[i]);
             }
         }
 
@@ -1060,6 +1063,9 @@ namespace System.Xml.Serialization
 
         private static void GetSettableMembers(StructMapping mapping, List<MemberMapping> list)
         {
+            // Similar to GetAllMembers, we want to replace base mappings with overrides from the derived class.
+            // Although I don't believe order matters here. We just want to make sure we don't have duplicates.
+            // Start with the base mapping.
             if (mapping.BaseMapping != null)
             {
                 GetSettableMembers(mapping.BaseMapping, list);
@@ -1075,9 +1081,25 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
                     }
-                    list.Add(memberMapping);
+
+                    // Replace hidden base members with derived members, or else add the new member.
+                    if (!TryReplaceHiddenMapping(list, memberMapping))
+                        list.Add(memberMapping);
                 }
             }
+        }
+
+        private static bool TryReplaceHiddenMapping(List<MemberMapping> list, MemberMapping memberMapping)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (memberMapping.Hides(list[i]))
+                {
+                    list[i] = memberMapping;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool CanWriteProperty(PropertyInfo propertyInfo, TypeDesc typeDesc)

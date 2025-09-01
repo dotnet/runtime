@@ -22,8 +22,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
 
     <IntermediatesDir>$(ArtifactsObjDir)\coreclr\$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
     <IntermediatesDir Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform('Windows'))">$(IntermediatesDir)\ide</IntermediatesDir>
@@ -61,9 +59,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
-      <Link>Runtime.Base\src\RhBaseName.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
@@ -214,11 +209,15 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
       <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
-    <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs">
+      <Link>Common\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
@@ -227,9 +226,9 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Buffer.cs" />

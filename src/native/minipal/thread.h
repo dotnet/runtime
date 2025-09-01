@@ -43,7 +43,7 @@ extern "C" {
  */
 static inline size_t minipal_get_current_thread_id(void)
 {
-#ifdef __wasm
+#if defined(__wasm) && !defined(_REENTRANT)
     return 0;
 #else
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
@@ -69,6 +69,8 @@ static inline size_t minipal_get_current_thread_id(void)
         tid = (size_t)_lwp_self();
 #elif defined(__HAIKU__)
         tid = (size_t)find_thread(NULL);
+#elif defined(__sun)
+        tid = (size_t)pthread_self();
 #else
         tid = (size_t)(void*)pthread_self();
 #endif

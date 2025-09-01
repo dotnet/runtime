@@ -57,6 +57,8 @@ namespace System.Reflection
         public override string? AssemblyQualifiedName => typeImpl.AssemblyQualifiedName;
         public override Type? BaseType => typeImpl.BaseType;
 
+        public override int GetArrayRank() => typeImpl.GetArrayRank();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)

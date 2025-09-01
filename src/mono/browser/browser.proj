@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <!-- only use for files that are not configuration dependent -->
     <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
@@ -19,6 +18,7 @@
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
@@ -27,7 +27,7 @@
     <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == ''">false</FeaturePerfTracing>
+    <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -49,7 +49,7 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
       <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
@@ -81,7 +81,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
@@ -320,6 +320,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <!-- keep in sync with _WasmNativeWorkloadNeeded -->
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -339,7 +340,11 @@
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
-      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
+      { "identity": "EnableDiagnostics",            "defaultValueInRuntimePack": "$(EnableDiagnostics)" },
+      { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
+      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" },
+      { "identity": "EmccInitialHeapSize",          "defaultValueInRuntimePack": "$(EmccInitialHeapSize)" },
+      { "identity": "RunAOTCompilation",            "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }
@@ -381,7 +386,7 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
@@ -424,6 +429,8 @@
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
@@ -494,6 +501,8 @@
                        $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
                        $(NativeBinDir)dotnet.runtime.js.map;
+                       $(NativeBinDir)dotnet.diagnostics.js;
+                       $(NativeBinDir)dotnet.diagnostics.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;

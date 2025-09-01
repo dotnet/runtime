@@ -388,7 +388,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 // Cache a new assembly
 //
 // Arguments:
-//      vmDomainAssembly - new assembly to add to cache
+//      vmAssembly - new assembly to add to cache
 //
 // Return Value:
 //    Pointer to Assembly in cache.
@@ -398,25 +398,11 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 //    Caller guarantees assembly is not already added.
 //    Called under the stop-go lock.
 //
-// Notes:
-//
-CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_DomainAssembly vmDomainAssembly)
+CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly vmDomainAssembly)
 {
     INTERNAL_API_ENTRY(GetProcess());
-
-    VMPTR_Assembly vmAssembly;
-    GetProcess()->GetDAC()->GetAssemblyFromDomainAssembly(vmDomainAssembly, &vmAssembly);
 
     RSInitHolder<CordbAssembly> pAssembly(new CordbAssembly(this, vmAssembly, vmDomainAssembly));
-
-    return pAssembly.TransferOwnershipToHash(&m_assemblies);
-}
-
-CordbAssembly * CordbAppDomain::CacheAssembly(VMPTR_Assembly vmAssembly)
-{
-    INTERNAL_API_ENTRY(GetProcess());
-
-    RSInitHolder<CordbAssembly> pAssembly(new CordbAssembly(this, vmAssembly, VMPTR_DomainAssembly()));
 
     return pAssembly.TransferOwnershipToHash(&m_assemblies);
 }
@@ -785,7 +771,9 @@ void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssemb
 {
     // This will handle if the assembly is not in the hash.
     // This could happen if we attach right before an assembly-unload event.
-    m_assemblies.RemoveBase(VmPtrToCookie(vmDomainAssembly));
+    VMPTR_Assembly vmAssembly;
+    GetProcess()->GetDAC()->GetAssemblyFromDomainAssembly(vmDomainAssembly, &vmAssembly);
+    m_assemblies.RemoveBase(VmPtrToCookie(vmAssembly));
 }
 
 //---------------------------------------------------------------------------------------
@@ -801,14 +789,15 @@ void CordbAppDomain::RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssemb
 //
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_DomainAssembly vmDomainAssembly)
 {
-    CordbAssembly * pAssembly = m_assemblies.GetBase(VmPtrToCookie(vmDomainAssembly));
+    VMPTR_Assembly vmAssembly;
+    GetProcess()->GetDAC()->GetAssemblyFromDomainAssembly(vmDomainAssembly, &vmAssembly);
+    CordbAssembly * pAssembly = m_assemblies.GetBase(VmPtrToCookie(vmAssembly));
     if (pAssembly != NULL)
     {
         return pAssembly;
     }
-    return CacheAssembly(vmDomainAssembly);
+    return CacheAssembly(vmAssembly, vmDomainAssembly);
 }
-
 
 //
 CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly)
@@ -818,7 +807,7 @@ CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly
     {
         return pAssembly;
     }
-    return CacheAssembly(vmAssembly);
+    return CacheAssembly(vmAssembly, VMPTR_DomainAssembly());
 }
 
 
@@ -845,15 +834,25 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
 
     _ASSERTE(!vmDomainAssembly.IsNull() || !vmModule.IsNull());
 
+    if (vmModule.IsNull())
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+
+    _ASSERTE(!vmModule.IsNull());
+
     // check to see if the module is present in this app domain
-    pModule = m_modules.GetBase(vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly));
+    pModule = m_modules.GetBase(VmPtrToCookie(vmModule));
     if (pModule != NULL)
     {
         return pModule;
     }
 
-    if (vmModule.IsNull())
-        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+    if (vmDomainAssembly.IsNull())
+    {
+        // If we don't have a domain assembly, we can look it up from the module.
+        GetProcess()->GetDAC()->GetDomainAssemblyFromModule(vmModule, &vmDomainAssembly);
+    }
+
+    _ASSERTE(!vmDomainAssembly.IsNull());
 
     RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainAssembly));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);

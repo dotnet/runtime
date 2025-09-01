@@ -21,7 +21,7 @@ add_library(
 
 %Defines%
 
-include_directories("%MonoInclude%")
+include_directories(%RuntimeInclude%)
 
 target_link_libraries(
     monodroid

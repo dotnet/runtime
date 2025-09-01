@@ -609,6 +609,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_BadHexChar()
+        {
+            throw new FormatException(SR.Format_BadHexChar);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatException_BadHexLength()
+        {
+            throw new FormatException(SR.Format_BadHexLength);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatException_NeedSingleChar()
         {
             throw new FormatException(SR.Format_NeedSingleChar);
@@ -990,12 +1002,8 @@ namespace System
                     return "type";
                 case ExceptionArgument.sourceIndex:
                     return "sourceIndex";
-                case ExceptionArgument.sourceArray:
-                    return "sourceArray";
                 case ExceptionArgument.destinationIndex:
                     return "destinationIndex";
-                case ExceptionArgument.destinationArray:
-                    return "destinationArray";
                 case ExceptionArgument.pHandle:
                     return "pHandle";
                 case ExceptionArgument.handle:
@@ -1317,9 +1325,7 @@ namespace System
         timeout,
         type,
         sourceIndex,
-        sourceArray,
         destinationIndex,
-        destinationArray,
         pHandle,
         handle,
         other,

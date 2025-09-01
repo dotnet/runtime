@@ -20,7 +20,10 @@
 
   <ItemGroup>
     <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
+    <FilesToPackage Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
+                    Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')" />
   </ItemGroup>
+
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 
@@ -28,8 +31,11 @@
           AfterTargets="GetFilesToPackage">
     <ItemGroup>
       <!-- ILC needs the symbols next to the binaries -->
-      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
+      <FilesToPackage Condition="'%(FilesToPackage.IsSymbolFile)' == 'true'">
         <IncludeAlways>true</IncludeAlways>
+      </FilesToPackage>
+      <FilesToPackage Condition="'%(Filename)%(Extension)' == 'nonportable.txt'">
+        <ExcludeFromDataFiles>true</ExcludeFromDataFiles>
       </FilesToPackage>
     </ItemGroup>
   </Target>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -6,8 +6,9 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
-    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
-    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
+    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).netcore.cs'))</GenAPITargetPath>
+    <!-- SA1001: Commas should not be preceded by a whitespace; needed due to ifdef -->
+    <NoWarn>$(NoWarn);SA1001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,26 +16,14 @@
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.T.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
-    <Compile Include="System\NIndex.cs" />
-    <Compile Include="System\NRange.cs" />
+    <Compile Include="System\Buffers\NIndex.cs" />
+    <Compile Include="System\Buffers\NRange.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBooleanUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IStatefulUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.ITernaryOperator.cs" />
@@ -43,6 +32,31 @@
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToFourOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionSpan_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Addition.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_BitwiseAnd.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_BitwiseOr.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Decrement.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Division.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_ExclusiveOr.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Increment.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_LeftShift.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Multiply.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_OnesComplement.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_RightShift.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_Subtraction.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_UnaryNegation.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_UnaryPlus.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.op_UnsignedRightShift.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionSpan_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acosh.cs" />
@@ -57,10 +71,14 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Atan2Pi.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Atanh.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AtanPi.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Average.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitDecrement.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitIncrement.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitwiseAnd.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitwiseOr.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Cbrt.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Ceiling.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Clamp.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertChecked.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertSaturating.cs" />
@@ -70,9 +88,11 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Cosh.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.CosineSimilarity.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.CosPi.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Decrement.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.DegreesToRadians.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Distance.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Divide.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.DivRem.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Dot.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Exp.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Exp10.cs" />
@@ -88,10 +108,29 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Hypot.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Ieee754Remainder.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ILogB.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Increment.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMax.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMaxMagnitude.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMin.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IndexOfMinMagnitude.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsCanonical.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsComplexNumber.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsEvenInteger.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsFinite.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsImaginaryNumber.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsInfinity.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsInteger.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsNaN.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsNegative.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsNegativeInfinity.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsNormal.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsOddInteger.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsPositive.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsPositiveInfinity.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsPow2.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsRealNumber.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsSubnormal.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.IsZero.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.LeadingZeroCount.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Lerp.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Log.cs" />
@@ -119,12 +158,16 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Product.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.RadiansToDegrees.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Reciprocal.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Remainder.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.RootN.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Rotate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Round.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ScaleB.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ShiftLeft.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ShiftRightArithmetic.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ShiftRightLogical.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Sigmoid.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Sign.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Sin.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.SinCos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.SinCosPi.cs" />
@@ -133,6 +176,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.SinPi.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.SoftMax.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Sqrt.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.StdDev.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Subtract.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Sum.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Tan.cs" />
@@ -141,6 +185,15 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.TrailingZeroCount.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
+    <Compile Include="System\Runtime\InteropServices\TensorMarshal.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToInteger.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToIntegerNative.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

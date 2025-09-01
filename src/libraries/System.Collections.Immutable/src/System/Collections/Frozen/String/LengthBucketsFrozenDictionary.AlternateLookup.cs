@@ -9,12 +9,23 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class LengthBucketsFrozenDictionary<TValue>
     {
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey alternate)
+        /// <summary>
+        /// Invokes <see cref="GetValueRefOrNullRefCoreAlternate(ReadOnlySpan{char})"/>
+        /// on instances known to be of type <see cref="LengthBucketsFrozenDictionary{TValue}"/>.
+        /// </summary>
+        private static readonly AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
+            => ref ((LengthBucketsFrozenDictionary<TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
+
+        /// <inheritdoc/>
+        private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
         {
             Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
-            ReadOnlySpan<char> key = Unsafe.As<TAlternateKey, ReadOnlySpan<char>>(ref alternate);
+            return (AlternateLookupDelegate<TAlternateKey>)(object)s_alternateLookup;
+        }
 
+        /// <inheritdoc cref="GetValueRefOrNullRefCore(string)" />
+        private ref readonly TValue GetValueRefOrNullRefCoreAlternate(ReadOnlySpan<char> key)
+        {
             IAlternateEqualityComparer<ReadOnlySpan<char>, string> comparer = GetAlternateEqualityComparer<ReadOnlySpan<char>>();
 
             // If the length doesn't have an associated bucket, the key isn't in the dictionary.

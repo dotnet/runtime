@@ -50,23 +50,37 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-#if DEBUG
-        const int MinWarnings = 2000;
-        const int MaxWarnings = 4000;
-#else
-        const int MinWarnings = 3000;
-        const int MaxWarnings = 5000;
-#endif
+        const int MinWarnings = 15;
+        const int MaxWarnings = 150;
         int count = 0;
+        bool foundIlCpp = false;
+        bool insideIlCpp = false;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
         {
-            if (line.Contains("warning:") || line.Contains("error:"))
+            if (line.StartsWith("Verifying unit:"))
+            {
+                if (line.EndsWith("\"il.cpp\""))
+                {
+                    foundIlCpp = true;
+                    insideIlCpp = true;
+                }
+                else
+                {
+                    insideIlCpp = false;
+                }
+            }
+            if ((line.Contains("warning:") || line.Contains("error:")) && insideIlCpp)
             {
                 count++;
             }
         }
 
+        if (!foundIlCpp)
+        {
+            Console.Error.WriteLine($"llvm-dwarfdump failed. Cound not find unit named \"il.cpp\".");
+            return 10;
+        }
 
         if (count == 0)
         {

@@ -8,34 +8,30 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class EncryptedKey : EncryptedType
     {
-        private string? _recipient;
-        private string? _carriedKeyName;
-        private ReferenceList? _referenceList;
-
         public EncryptedKey() { }
 
         [AllowNull]
         public string Recipient
         {
-            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            get => field ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
             set
             {
-                _recipient = value;
+                field = value;
                 _cachedXml = null;
             }
         }
 
         public string? CarriedKeyName
         {
-            get { return _carriedKeyName; }
+            get => field;
             set
             {
-                _carriedKeyName = value;
+                field = value;
                 _cachedXml = null;
             }
         }
 
-        public ReferenceList ReferenceList => _referenceList ??= new ReferenceList();
+        public ReferenceList ReferenceList => field ??= new ReferenceList();
 
         public void AddReference(DataReference dataReference)
         {
@@ -51,10 +47,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public override void LoadXml(XmlElement value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);

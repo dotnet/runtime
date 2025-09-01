@@ -11,34 +11,16 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class FuncJSGenerator : BaseJSGenerator
+    internal sealed class FuncJSGenerator(TypePositionInfo info, StubCodeContext context, bool isAction, MarshalerType[] argumentMarshalerTypes) : BaseJSGenerator(info, context)
     {
-        private readonly bool _isAction;
-        private readonly MarshalerType[] _argumentMarshalerTypes;
-
-        public FuncJSGenerator(TypePositionInfo info, StubCodeContext context, bool isAction, MarshalerType[] argumentMarshalerTypes)
-            : base(isAction ? MarshalerType.Action : MarshalerType.Function, new Forwarder().Bind(info, context))
-        {
-            _isAction = isAction;
-            _argumentMarshalerTypes = argumentMarshalerTypes;
-        }
-
-        public override IEnumerable<ExpressionSyntax> GenerateBind()
-        {
-            var args = _argumentMarshalerTypes.Select(x => Argument(MarshalerTypeName(x))).ToList();
-            yield return InvocationExpression(MarshalerTypeName(Type), ArgumentList(SeparatedList(args)));
-        }
-
         public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
-            var target = TypeInfo.IsManagedReturnPosition
-                ? Constants.ArgumentReturn
-                : argName;
+            foreach (var statement in base.Generate(context))
+            {
+                yield return statement;
+            }
 
-            var source = TypeInfo.IsManagedReturnPosition
-                ? Argument(IdentifierName(context.GetIdentifiers(TypeInfo).native))
-                : _inner.AsArgument(context);
+            var (managed, js) = context.GetIdentifiers(TypeInfo);
 
             var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
             var sourceTypes = jsty.ArgsTypeInfo
@@ -47,27 +29,22 @@ namespace Microsoft.Interop.JavaScript
 
             if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
             {
-                yield return ToManagedMethod(target, source, jsty);
+                yield return ToManagedMethod(js, Argument(IdentifierName(managed)), jsty);
             }
 
             if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
             {
-                yield return ToJSMethod(target, source, jsty);
-            }
-
-            foreach (var x in base.Generate(context))
-            {
-                yield return x;
+                yield return ToJSMethod(js, Argument(IdentifierName(managed)), jsty);
             }
 
             if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
             {
-                yield return ToJSMethod(target, source, jsty);
+                yield return ToJSMethod(js, Argument(IdentifierName(managed)), jsty);
             }
 
             if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
             {
-                yield return ToManagedMethod(target, source, jsty);
+                yield return ToManagedMethod(js, Argument(IdentifierName(managed)), jsty);
             }
         }
 
@@ -77,18 +54,18 @@ namespace Microsoft.Interop.JavaScript
             for (int i = 0; i < info.ArgsTypeInfo.Length; i++)
             {
                 var sourceType = info.ArgsTypeInfo[i];
-                if (!_isAction && i + 1 == info.ArgsTypeInfo.Length)
+                if (!isAction && i + 1 == info.ArgsTypeInfo.Length)
                 {
-                    arguments.Add(ArgToManaged(i, sourceType.Syntax, _argumentMarshalerTypes[i]));
+                    arguments.Add(ArgToManaged(i, sourceType.Syntax, argumentMarshalerTypes[i]));
                 }
                 else
                 {
-                    arguments.Add(ArgToJS(i, sourceType.Syntax, _argumentMarshalerTypes[i]));
+                    arguments.Add(ArgToJS(i, sourceType.Syntax, argumentMarshalerTypes[i]));
                 }
             }
 
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToManagedMethod(Type)))
+                    IdentifierName(target), GetToManagedMethod(isAction ? MarshalerType.Action : MarshalerType.Function)))
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
@@ -98,18 +75,18 @@ namespace Microsoft.Interop.JavaScript
             for (int i = 0; i < info.ArgsTypeInfo.Length; i++)
             {
                 var sourceType = info.ArgsTypeInfo[i];
-                if (!_isAction && i + 1 == info.ArgsTypeInfo.Length)
+                if (!isAction && i + 1 == info.ArgsTypeInfo.Length)
                 {
-                    arguments.Add(ArgToJS(i, sourceType.Syntax, _argumentMarshalerTypes[i]));
+                    arguments.Add(ArgToJS(i, sourceType.Syntax, argumentMarshalerTypes[i]));
                 }
                 else
                 {
-                    arguments.Add(ArgToManaged(i, sourceType.Syntax, _argumentMarshalerTypes[i]));
+                    arguments.Add(ArgToManaged(i, sourceType.Syntax, argumentMarshalerTypes[i]));
                 }
             }
 
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToJSMethod(Type)))
+                    IdentifierName(target), GetToJSMethod(isAction ? MarshalerType.Action : MarshalerType.Function)))
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 

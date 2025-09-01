@@ -1,7 +1,6 @@
 # Users referenced in this file will automatically be requested as reviewers for PRs that modify the given paths.
 # See https://help.github.com/articles/about-code-owners/
 
-/src/libraries/Common/src/Interop/                                  @dotnet/platform-deps-team
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
 
@@ -10,6 +9,8 @@
 /src/coreclr/inc/corinfo.h @dotnet/jit-contrib
 /src/coreclr/inc/corjit.h @dotnet/jit-contrib
 /src/coreclr/jit/ @dotnet/jit-contrib
+/src/coreclr/interpreter/ @brzvlad @janvorli @kg
+/src/coreclr/vm/interpexec* @brzvlad @janvorli @kg
 /src/coreclr/nativeaot @MichalStrehovsky
 /src/coreclr/tools/Common @dotnet/crossgen-contrib @MichalStrehovsky
 /src/coreclr/tools/aot @dotnet/crossgen-contrib
@@ -112,3 +113,4 @@
 /docs/area-owners.*                                 @jeffhandley
 /docs/issue*.md                                     @jeffhandley
 /.github/policies/                                  @jeffhandley @mkArtakMSFT
+/.github/workflows/                                 @jeffhandley @dotnet/runtime-infrastructure

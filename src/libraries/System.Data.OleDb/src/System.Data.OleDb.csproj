@@ -8,9 +8,11 @@
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <!-- Suppress CS3016: Arrays as attribute arguments is not CLS-compliant to work around https://github.com/dotnet/roslyn/issues/68526 in generated code -->
+    <NoWarn>$(NoWarn);CS3016</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
 Commonly Used Types:
@@ -33,36 +35,21 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.Semaphore.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
-             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
-    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
-             Link="Common\System\Data\Common\MultipartIdentifier.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs" Link="Common\Interop\Windows\Kernel32\Interop.GetUserDefaultLCID.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs" Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs" Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs" Link="Common\Interop\Windows\Kernel32\Interop.Semaphore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs" Link="Common\Interop\Windows\Kernel32\Interop.WaitForMultipleObjects.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" Link="Common\Interop\Windows\OleAut32\Interop.SetErrorInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs" Link="Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs" Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" Link="Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs" Link="Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs" />
+    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs" Link="Common\System\Data\Common\MultipartIdentifier.cs" />
     <Compile Include="AdapterSwitches.cs" />
     <Compile Include="ColumnBinding.cs" />
     <Compile Include="DbBindings.cs" />
@@ -137,18 +124,15 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
-    <Compile Include="OleDbComWrappers.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\System.Data.OleDb.OleDbMetaData.xml"
-                      LogicalName="System.Data.OleDb.OleDbMetaData.xml" />
+    <EmbeddedResource Include="Resources\System.Data.OleDb.OleDbMetaData.xml" LogicalName="System.Data.OleDb.OleDbMetaData.xml" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

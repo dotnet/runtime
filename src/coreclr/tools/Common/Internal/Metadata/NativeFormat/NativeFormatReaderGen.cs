@@ -70,9 +70,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ArraySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ArraySignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ArraySignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ArraySignature) << 25);
             _Validate();
         }
 
@@ -95,21 +95,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ArraySignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ArraySignature GetArraySignature(MetadataReader reader)
             => new ArraySignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ArraySignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ArraySignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ArraySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -149,9 +151,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ByReferenceSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ByReferenceSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ByReferenceSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ByReferenceSignature) << 25);
             _Validate();
         }
 
@@ -174,21 +176,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ByReferenceSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ByReferenceSignature GetByReferenceSignature(MetadataReader reader)
             => new ByReferenceSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ByReferenceSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ByReferenceSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ByReferenceSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -227,9 +231,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantBooleanArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantBooleanArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantBooleanArray) << 25);
             _Validate();
         }
 
@@ -252,21 +256,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantBooleanArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantBooleanArray GetConstantBooleanArray(MetadataReader reader)
             => new ConstantBooleanArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantBooleanArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantBooleanArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantBooleanArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -305,9 +311,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantBooleanValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBooleanValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantBooleanValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantBooleanValue) << 25);
             _Validate();
         }
 
@@ -330,21 +336,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantBooleanValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantBooleanValue GetConstantBooleanValue(MetadataReader reader)
             => new ConstantBooleanValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantBooleanValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantBooleanValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantBooleanValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -383,9 +391,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantByteArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantByteArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantByteArray) << 25);
             _Validate();
         }
 
@@ -408,21 +416,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantByteArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantByteArray GetConstantByteArray(MetadataReader reader)
             => new ConstantByteArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantByteArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantByteArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantByteArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -461,9 +471,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantByteValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantByteValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantByteValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantByteValue) << 25);
             _Validate();
         }
 
@@ -486,21 +496,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantByteValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantByteValue GetConstantByteValue(MetadataReader reader)
             => new ConstantByteValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantByteValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantByteValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantByteValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -539,9 +551,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantCharArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantCharArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantCharArray) << 25);
             _Validate();
         }
 
@@ -564,21 +576,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantCharArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantCharArray GetConstantCharArray(MetadataReader reader)
             => new ConstantCharArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantCharArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantCharArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantCharArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -617,9 +631,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantCharValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantCharValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantCharValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantCharValue) << 25);
             _Validate();
         }
 
@@ -642,21 +656,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantCharValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantCharValue GetConstantCharValue(MetadataReader reader)
             => new ConstantCharValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantCharValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantCharValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantCharValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -695,9 +711,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantDoubleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantDoubleArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantDoubleArray) << 25);
             _Validate();
         }
 
@@ -720,21 +736,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantDoubleArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantDoubleArray GetConstantDoubleArray(MetadataReader reader)
             => new ConstantDoubleArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantDoubleArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantDoubleArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantDoubleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -773,9 +791,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantDoubleValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantDoubleValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantDoubleValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantDoubleValue) << 25);
             _Validate();
         }
 
@@ -798,21 +816,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantDoubleValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantDoubleValue GetConstantDoubleValue(MetadataReader reader)
             => new ConstantDoubleValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantDoubleValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantDoubleValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantDoubleValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -855,9 +875,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantEnumArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantEnumArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantEnumArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantEnumArray) << 25);
             _Validate();
         }
 
@@ -880,21 +900,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantEnumArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantEnumArray GetConstantEnumArray(MetadataReader reader)
             => new ConstantEnumArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantEnumArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantEnumArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantEnumArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -937,9 +959,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantEnumValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantEnumValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantEnumValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantEnumValue) << 25);
             _Validate();
         }
 
@@ -962,21 +984,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantEnumValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantEnumValue GetConstantEnumValue(MetadataReader reader)
             => new ConstantEnumValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantEnumValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantEnumValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantEnumValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1015,9 +1039,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantHandleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantHandleArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantHandleArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantHandleArray) << 25);
             _Validate();
         }
 
@@ -1040,21 +1064,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantHandleArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantHandleArray GetConstantHandleArray(MetadataReader reader)
             => new ConstantHandleArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantHandleArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantHandleArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantHandleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1093,9 +1119,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt16ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt16Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt16Array) << 25);
             _Validate();
         }
 
@@ -1118,21 +1144,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt16ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt16Array GetConstantInt16Array(MetadataReader reader)
             => new ConstantInt16Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt16Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt16Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt16ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1171,9 +1199,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt16ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt16Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt16Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt16Value) << 25);
             _Validate();
         }
 
@@ -1196,21 +1224,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt16ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt16Value GetConstantInt16Value(MetadataReader reader)
             => new ConstantInt16Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt16Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt16Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt16ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1249,9 +1279,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt32ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt32Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt32Array) << 25);
             _Validate();
         }
 
@@ -1274,21 +1304,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt32ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt32Array GetConstantInt32Array(MetadataReader reader)
             => new ConstantInt32Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt32Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt32Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt32ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1327,9 +1359,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt32ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt32Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt32Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt32Value) << 25);
             _Validate();
         }
 
@@ -1352,21 +1384,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt32ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt32Value GetConstantInt32Value(MetadataReader reader)
             => new ConstantInt32Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt32Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt32Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt32ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1405,9 +1439,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt64ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt64Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt64Array) << 25);
             _Validate();
         }
 
@@ -1430,21 +1464,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt64ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt64Array GetConstantInt64Array(MetadataReader reader)
             => new ConstantInt64Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt64Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt64Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt64ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1483,9 +1519,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt64ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantInt64Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantInt64Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt64Value) << 25);
             _Validate();
         }
 
@@ -1508,21 +1544,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantInt64ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantInt64Value GetConstantInt64Value(MetadataReader reader)
             => new ConstantInt64Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantInt64Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantInt64Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt64ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1557,9 +1595,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantReferenceValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantReferenceValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantReferenceValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantReferenceValue) << 25);
             _Validate();
         }
 
@@ -1582,21 +1620,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantReferenceValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantReferenceValue GetConstantReferenceValue(MetadataReader reader)
             => new ConstantReferenceValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantReferenceValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantReferenceValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantReferenceValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1635,9 +1675,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSByteArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantSByteArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSByteArray) << 25);
             _Validate();
         }
 
@@ -1660,21 +1700,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantSByteArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantSByteArray GetConstantSByteArray(MetadataReader reader)
             => new ConstantSByteArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantSByteArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantSByteArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSByteArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1713,9 +1755,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSByteValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSByteValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantSByteValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSByteValue) << 25);
             _Validate();
         }
 
@@ -1738,21 +1780,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantSByteValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantSByteValue GetConstantSByteValue(MetadataReader reader)
             => new ConstantSByteValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantSByteValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantSByteValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSByteValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1791,9 +1835,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSingleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantSingleArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSingleArray) << 25);
             _Validate();
         }
 
@@ -1816,21 +1860,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantSingleArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantSingleArray GetConstantSingleArray(MetadataReader reader)
             => new ConstantSingleArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantSingleArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantSingleArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSingleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1869,9 +1915,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSingleValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantSingleValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantSingleValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSingleValue) << 25);
             _Validate();
         }
 
@@ -1894,21 +1940,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantSingleValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantSingleValue GetConstantSingleValue(MetadataReader reader)
             => new ConstantSingleValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantSingleValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantSingleValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSingleValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1948,9 +1996,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringArray) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantStringArray || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantStringArray) << 25);
             _Validate();
         }
 
@@ -1973,21 +2021,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantStringArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantStringArray GetConstantStringArray(MetadataReader reader)
             => new ConstantStringArray(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantStringArray)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantStringArray)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantStringArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2028,9 +2078,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantStringValue) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantStringValue || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantStringValue) << 25);
             _Validate();
         }
 
@@ -2053,21 +2103,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantStringValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantStringValue GetConstantStringValue(MetadataReader reader)
             => new ConstantStringValue(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantStringValue)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantStringValue)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantStringValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2106,9 +2158,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt16ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt16Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt16Array) << 25);
             _Validate();
         }
 
@@ -2131,21 +2183,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt16ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt16Array GetConstantUInt16Array(MetadataReader reader)
             => new ConstantUInt16Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt16Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt16Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt16ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2184,9 +2238,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt16ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt16Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt16Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt16Value) << 25);
             _Validate();
         }
 
@@ -2209,21 +2263,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt16ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt16Value GetConstantUInt16Value(MetadataReader reader)
             => new ConstantUInt16Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt16Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt16Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt16ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2262,9 +2318,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt32ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt32Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt32Array) << 25);
             _Validate();
         }
 
@@ -2287,21 +2343,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt32ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt32Array GetConstantUInt32Array(MetadataReader reader)
             => new ConstantUInt32Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt32Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt32Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt32ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2340,9 +2398,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt32ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt32Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt32Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt32Value) << 25);
             _Validate();
         }
 
@@ -2365,21 +2423,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt32ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt32Value GetConstantUInt32Value(MetadataReader reader)
             => new ConstantUInt32Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt32Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt32Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt32ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2418,9 +2478,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt64ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Array) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt64Array || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt64Array) << 25);
             _Validate();
         }
 
@@ -2443,21 +2503,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt64ArrayHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt64Array GetConstantUInt64Array(MetadataReader reader)
             => new ConstantUInt64Array(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt64Array)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt64Array)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt64ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2496,9 +2558,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt64ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantUInt64Value) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ConstantUInt64Value || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt64Value) << 25);
             _Validate();
         }
 
@@ -2521,21 +2583,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ConstantUInt64ValueHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ConstantUInt64Value GetConstantUInt64Value(MetadataReader reader)
             => new ConstantUInt64Value(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantUInt64Value)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ConstantUInt64Value)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt64ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2584,9 +2648,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal CustomAttributeHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.CustomAttribute) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.CustomAttribute || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.CustomAttribute) << 25);
             _Validate();
         }
 
@@ -2609,21 +2673,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(CustomAttributeHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public CustomAttribute GetCustomAttribute(MetadataReader reader)
             => new CustomAttribute(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.CustomAttribute)
+            if ((HandleType)((uint)_value >> 25) != HandleType.CustomAttribute)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // CustomAttributeHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2679,9 +2745,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal EventHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.Event || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.Event) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.Event || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.Event) << 25);
             _Validate();
         }
 
@@ -2704,21 +2770,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(EventHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public Event GetEvent(MetadataReader reader)
             => new Event(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.Event)
+            if ((HandleType)((uint)_value >> 25) != HandleType.Event)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // EventHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2778,9 +2846,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal FieldHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.Field || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.Field) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.Field || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.Field) << 25);
             _Validate();
         }
 
@@ -2803,21 +2871,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(FieldHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public Field GetField(MetadataReader reader)
             => new Field(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.Field)
+            if ((HandleType)((uint)_value >> 25) != HandleType.Field)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FieldHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2857,9 +2927,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal FieldSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.FieldSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.FieldSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.FieldSignature) << 25);
             _Validate();
         }
 
@@ -2882,21 +2952,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(FieldSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public FieldSignature GetFieldSignature(MetadataReader reader)
             => new FieldSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.FieldSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.FieldSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FieldSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2935,9 +3007,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal FunctionPointerSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.FunctionPointerSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 25);
             _Validate();
         }
 
@@ -2960,21 +3032,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(FunctionPointerSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public FunctionPointerSignature GetFunctionPointerSignature(MetadataReader reader)
             => new FunctionPointerSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.FunctionPointerSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.FunctionPointerSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FunctionPointerSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3034,9 +3108,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal GenericParameterHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.GenericParameter) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.GenericParameter || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.GenericParameter) << 25);
             _Validate();
         }
 
@@ -3059,21 +3133,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(GenericParameterHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public GenericParameter GetGenericParameter(MetadataReader reader)
             => new GenericParameter(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.GenericParameter)
+            if ((HandleType)((uint)_value >> 25) != HandleType.GenericParameter)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // GenericParameterHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3122,9 +3198,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MemberReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.MemberReference) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.MemberReference || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.MemberReference) << 25);
             _Validate();
         }
 
@@ -3147,21 +3223,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MemberReferenceHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public MemberReference GetMemberReference(MetadataReader reader)
             => new MemberReference(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.MemberReference)
+            if ((HandleType)((uint)_value >> 25) != HandleType.MemberReference)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MemberReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3224,9 +3302,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.Method || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.Method) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.Method || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.Method) << 25);
             _Validate();
         }
 
@@ -3249,21 +3327,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MethodHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public Method GetMethod(MetadataReader reader)
             => new Method(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.Method)
+            if ((HandleType)((uint)_value >> 25) != HandleType.Method)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3308,9 +3388,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodInstantiationHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodInstantiation) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.MethodInstantiation || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodInstantiation) << 25);
             _Validate();
         }
 
@@ -3333,21 +3413,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MethodInstantiationHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public MethodInstantiation GetMethodInstantiation(MetadataReader reader)
             => new MethodInstantiation(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.MethodInstantiation)
+            if ((HandleType)((uint)_value >> 25) != HandleType.MethodInstantiation)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodInstantiationHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3390,9 +3472,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodSemanticsHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSemantics) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.MethodSemantics || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodSemantics) << 25);
             _Validate();
         }
 
@@ -3415,21 +3497,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MethodSemanticsHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public MethodSemantics GetMethodSemantics(MetadataReader reader)
             => new MethodSemantics(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.MethodSemantics)
+            if ((HandleType)((uint)_value >> 25) != HandleType.MethodSemantics)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodSemanticsHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3487,9 +3571,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.MethodSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodSignature) << 25);
             _Validate();
         }
 
@@ -3512,21 +3596,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MethodSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public MethodSignature GetMethodSignature(MetadataReader reader)
             => new MethodSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.MethodSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.MethodSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3565,9 +3651,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodTypeVariableSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.MethodTypeVariableSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodTypeVariableSignature) << 25);
             _Validate();
         }
 
@@ -3590,21 +3676,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(MethodTypeVariableSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public MethodTypeVariableSignature GetMethodTypeVariableSignature(MetadataReader reader)
             => new MethodTypeVariableSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.MethodTypeVariableSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.MethodTypeVariableSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodTypeVariableSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3653,9 +3741,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ModifiedTypeHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ModifiedType) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ModifiedType || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ModifiedType) << 25);
             _Validate();
         }
 
@@ -3678,21 +3766,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ModifiedTypeHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ModifiedType GetModifiedType(MetadataReader reader)
             => new ModifiedType(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ModifiedType)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ModifiedType)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ModifiedTypeHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3745,9 +3835,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamedArgumentHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.NamedArgument) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.NamedArgument || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.NamedArgument) << 25);
             _Validate();
         }
 
@@ -3770,21 +3860,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(NamedArgumentHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public NamedArgument GetNamedArgument(MetadataReader reader)
             => new NamedArgument(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.NamedArgument)
+            if ((HandleType)((uint)_value >> 25) != HandleType.NamedArgument)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamedArgumentHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3840,9 +3932,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceDefinition) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.NamespaceDefinition || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.NamespaceDefinition) << 25);
             _Validate();
         }
 
@@ -3865,21 +3957,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(NamespaceDefinitionHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public NamespaceDefinition GetNamespaceDefinition(MetadataReader reader)
             => new NamespaceDefinition(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.NamespaceDefinition)
+            if ((HandleType)((uint)_value >> 25) != HandleType.NamespaceDefinition)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamespaceDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3923,9 +4017,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.NamespaceReference) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.NamespaceReference || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.NamespaceReference) << 25);
             _Validate();
         }
 
@@ -3948,21 +4042,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(NamespaceReferenceHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public NamespaceReference GetNamespaceReference(MetadataReader reader)
             => new NamespaceReference(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.NamespaceReference)
+            if ((HandleType)((uint)_value >> 25) != HandleType.NamespaceReference)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamespaceReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4018,9 +4114,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ParameterHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.Parameter) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.Parameter || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.Parameter) << 25);
             _Validate();
         }
 
@@ -4043,21 +4139,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ParameterHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public Parameter GetParameter(MetadataReader reader)
             => new Parameter(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.Parameter)
+            if ((HandleType)((uint)_value >> 25) != HandleType.Parameter)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ParameterHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4097,9 +4195,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal PointerSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.PointerSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.PointerSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.PointerSignature) << 25);
             _Validate();
         }
 
@@ -4122,21 +4220,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(PointerSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public PointerSignature GetPointerSignature(MetadataReader reader)
             => new PointerSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.PointerSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.PointerSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PointerSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4196,9 +4296,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal PropertyHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.Property || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.Property) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.Property || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.Property) << 25);
             _Validate();
         }
 
@@ -4221,21 +4321,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(PropertyHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public Property GetProperty(MetadataReader reader)
             => new Property(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.Property)
+            if ((HandleType)((uint)_value >> 25) != HandleType.Property)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PropertyHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4284,9 +4386,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal PropertySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.PropertySignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.PropertySignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.PropertySignature) << 25);
             _Validate();
         }
 
@@ -4309,21 +4411,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(PropertySignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public PropertySignature GetPropertySignature(MetadataReader reader)
             => new PropertySignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.PropertySignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.PropertySignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PropertySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4366,9 +4470,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal QualifiedFieldHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedField) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.QualifiedField || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.QualifiedField) << 25);
             _Validate();
         }
 
@@ -4391,21 +4495,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(QualifiedFieldHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public QualifiedField GetQualifiedField(MetadataReader reader)
             => new QualifiedField(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.QualifiedField)
+            if ((HandleType)((uint)_value >> 25) != HandleType.QualifiedField)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // QualifiedFieldHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4448,9 +4554,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal QualifiedMethodHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedMethod) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.QualifiedMethod || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.QualifiedMethod) << 25);
             _Validate();
         }
 
@@ -4473,21 +4579,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(QualifiedMethodHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public QualifiedMethod GetQualifiedMethod(MetadataReader reader)
             => new QualifiedMethod(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.QualifiedMethod)
+            if ((HandleType)((uint)_value >> 25) != HandleType.QualifiedMethod)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // QualifiedMethodHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4527,9 +4635,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal SZArraySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.SZArraySignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.SZArraySignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.SZArraySignature) << 25);
             _Validate();
         }
 
@@ -4552,21 +4660,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(SZArraySignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public SZArraySignature GetSZArraySignature(MetadataReader reader)
             => new SZArraySignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.SZArraySignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.SZArraySignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // SZArraySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4665,9 +4775,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ScopeDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeDefinition) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ScopeDefinition || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ScopeDefinition) << 25);
             _Validate();
         }
 
@@ -4690,21 +4800,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ScopeDefinitionHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ScopeDefinition GetScopeDefinition(MetadataReader reader)
             => new ScopeDefinition(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ScopeDefinition)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ScopeDefinition)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ScopeDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4771,9 +4883,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal ScopeReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ScopeReference) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.ScopeReference || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.ScopeReference) << 25);
             _Validate();
         }
 
@@ -4796,21 +4908,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(ScopeReferenceHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public ScopeReference GetScopeReference(MetadataReader reader)
             => new ScopeReference(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ScopeReference)
+            if ((HandleType)((uint)_value >> 25) != HandleType.ScopeReference)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ScopeReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4907,9 +5021,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeDefinition) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeDefinition || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeDefinition) << 25);
             _Validate();
         }
 
@@ -4932,21 +5046,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeDefinitionHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeDefinition GetTypeDefinition(MetadataReader reader)
             => new TypeDefinition(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeDefinition)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeDefinition)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4993,9 +5109,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeForwarderHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeForwarder) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeForwarder || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeForwarder) << 25);
             _Validate();
         }
 
@@ -5018,21 +5134,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeForwarderHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeForwarder GetTypeForwarder(MetadataReader reader)
             => new TypeForwarder(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeForwarder)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeForwarder)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeForwarderHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5077,9 +5195,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeInstantiationSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeInstantiationSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeInstantiationSignature) << 25);
             _Validate();
         }
 
@@ -5102,21 +5220,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeInstantiationSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeInstantiationSignature GetTypeInstantiationSignature(MetadataReader reader)
             => new TypeInstantiationSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeInstantiationSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeInstantiationSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeInstantiationSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5160,9 +5280,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeReference) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeReference || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeReference) << 25);
             _Validate();
         }
 
@@ -5185,21 +5305,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeReferenceHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeReference GetTypeReference(MetadataReader reader)
             => new TypeReference(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeReference)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeReference)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5239,9 +5361,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeSpecificationHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeSpecification) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeSpecification || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeSpecification) << 25);
             _Validate();
         }
 
@@ -5264,21 +5386,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeSpecificationHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeSpecification GetTypeSpecification(MetadataReader reader)
             => new TypeSpecification(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeSpecification)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeSpecification)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeSpecificationHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5317,9 +5441,9 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeVariableSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 24);
-            Debug.Assert(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null);
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.TypeVariableSignature) << 24);
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeVariableSignature || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeVariableSignature) << 25);
             _Validate();
         }
 
@@ -5342,21 +5466,23 @@ namespace Internal.Metadata.NativeFormat
         public static implicit operator Handle(TypeVariableSignatureHandle handle)
             => new Handle(handle._value);
 
-        internal int Offset => (_value & 0x00FFFFFF);
+        internal int Offset => (_value & 0x01FFFFFF);
 
         public TypeVariableSignature GetTypeVariableSignature(MetadataReader reader)
             => new TypeVariableSignature(reader, this);
 
-        public bool IsNil => (_value & 0x00FFFFFF) == 0;
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
 
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.TypeVariableSignature)
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeVariableSignature)
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeVariableSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB

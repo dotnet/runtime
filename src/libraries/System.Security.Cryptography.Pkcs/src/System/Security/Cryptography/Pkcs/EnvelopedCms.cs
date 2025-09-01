@@ -27,14 +27,8 @@ namespace System.Security.Cryptography.Pkcs
 
         public EnvelopedCms(ContentInfo contentInfo, AlgorithmIdentifier encryptionAlgorithm)
         {
-            if (contentInfo is null)
-            {
-                throw new ArgumentNullException(nameof(contentInfo));
-            }
-            if (encryptionAlgorithm is null)
-            {
-                throw new ArgumentNullException(nameof(encryptionAlgorithm));
-            }
+            ArgumentNullException.ThrowIfNull(contentInfo);
+            ArgumentNullException.ThrowIfNull(encryptionAlgorithm);
 
             Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the .NET Framework returns 0 in that case, we will too.
             ContentInfo = contentInfo;
@@ -90,20 +84,14 @@ namespace System.Security.Cryptography.Pkcs
         //
         public void Encrypt(CmsRecipient recipient)
         {
-            if (recipient is null)
-            {
-                throw new ArgumentNullException(nameof(recipient));
-            }
+            ArgumentNullException.ThrowIfNull(recipient);
 
             Encrypt(new CmsRecipientCollection(recipient));
         }
 
         public void Encrypt(CmsRecipientCollection recipients)
         {
-            if (recipients is null)
-            {
-                throw new ArgumentNullException(nameof(recipients));
-            }
+            ArgumentNullException.ThrowIfNull(recipients);
 
             // .NET Framework compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
             if (recipients.Count == 0)
@@ -134,10 +122,7 @@ namespace System.Security.Cryptography.Pkcs
         //
         public void Decode(byte[] encodedMessage)
         {
-            if (encodedMessage is null)
-            {
-                throw new ArgumentNullException(nameof(encodedMessage));
-            }
+            ArgumentNullException.ThrowIfNull(encodedMessage);
 
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
@@ -151,7 +136,12 @@ namespace System.Security.Cryptography.Pkcs
         /// <exception cref="CryptographicException">
         ///   The <paramref name="encodedMessage"/> parameter was not successfully decoded.
         /// </exception>
-        public void Decode(ReadOnlySpan<byte> encodedMessage)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decode(ReadOnlySpan<byte> encodedMessage)
         {
             if (_decryptorPal != null)
             {
@@ -187,44 +177,34 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decrypt(RecipientInfo recipientInfo)
         {
-            if (recipientInfo is null)
-            {
-                throw new ArgumentNullException(nameof(recipientInfo));
-            }
+            ArgumentNullException.ThrowIfNull(recipientInfo);
 
             DecryptContent(new RecipientInfoCollection(recipientInfo), null);
         }
 
         public void Decrypt(RecipientInfo recipientInfo, X509Certificate2Collection extraStore)
         {
-            if (recipientInfo is null)
-            {
-                throw new ArgumentNullException(nameof(recipientInfo));
-            }
-            if (extraStore is null)
-            {
-                throw new ArgumentNullException(nameof(extraStore));
-            }
+            ArgumentNullException.ThrowIfNull(recipientInfo);
+            ArgumentNullException.ThrowIfNull(extraStore);
 
             DecryptContent(new RecipientInfoCollection(recipientInfo), extraStore);
         }
 
         public void Decrypt(X509Certificate2Collection extraStore)
         {
-            if (extraStore is null)
-            {
-                throw new ArgumentNullException(nameof(extraStore));
-            }
+            ArgumentNullException.ThrowIfNull(extraStore);
 
             DecryptContent(RecipientInfos, extraStore);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
-            if (recipientInfo is null)
-            {
-                throw new ArgumentNullException(nameof(recipientInfo));
-            }
+            ArgumentNullException.ThrowIfNull(recipientInfo);
 
             CheckStateForDecryption();
 

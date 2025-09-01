@@ -1,16 +1,16 @@
-<!--
-  The following properties need to be set for this logic to work correctly:
-  - ProductVersion
-  - NetCoreAppCurrent
-  - NetCoreAppCurrentVersion
-  - MicrosoftNetCoreAppFrameworkName
-  - MicrosoftNetCoreAppRefPackDir
-  - optional: MicrosoftNetCoreAppRuntimePackDir
-  - optional: AppHostSourcePath & SingleFileHostSourcePath
-  - optional: Crossgen2Dir
--->
-
 <Project>
+  <!--
+    The following properties need to be set for this logic to work correctly:
+    - ProductVersion
+    - NetCoreAppCurrent
+    - NetCoreAppCurrentVersion
+    - MicrosoftNetCoreAppFrameworkName
+    - MicrosoftNetCoreAppRefPackDir
+    - optional: MicrosoftNetCoreAppRuntimePackDir
+    - optional: AppHostSourcePath & SingleFileHostSourcePath
+    - optional: Crossgen2Dir
+  -->
+
   <PropertyGroup>
     <LocalFrameworkOverrideName>$(MicrosoftNetCoreAppFrameworkName)</LocalFrameworkOverrideName>
     <TargetingpacksTargetsImported>true</TargetingpacksTargetsImported>
@@ -34,6 +34,7 @@
 
     <UseLocalILCompilerPack Condition="'$(UseLocalILCompilerPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalILCompilerPack>
     <UseLocalCrossgen2Pack Condition="'$(UseLocalCrossgen2Pack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalCrossgen2Pack>
+    <UseLocalNativeAotPack Condition="'$(UseLocalNativeAotPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalNativeAotPack>
   </PropertyGroup>
 
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
@@ -72,7 +73,7 @@
                          ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
                          TargetFramework="$(NetCoreAppCurrent)"
                          ILCompilerPackVersion="$(ProductVersion)"
-                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
+                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
                          Condition="'$(UseLocalILCompilerPack)' == 'true' and '@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
                         TargetFramework="$(NetCoreAppCurrent)"
@@ -89,45 +90,34 @@
                       Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
   </ItemGroup>
 
-  <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
-  <ItemGroup>
-    <Reference Update="@(Reference)">
-      <Private Condition="'%(Reference.Extension)' != '.dll'">false</Private>
-    </Reference>
-  </ItemGroup>
-
-  <!-- Add the resolved targeting pack to the assembly search path. -->
-  <Target Name="UseTargetingPackForAssemblySearchPaths"
-          BeforeTargets="ResolveAssemblyReferences;
-                         DesignTimeResolveAssemblyReferences"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
-                     '$(DisableImplicitFrameworkReferences)' == 'true'">
-    <PropertyGroup>
-      <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
-      <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
-    </PropertyGroup>
-  </Target>
-
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true'">
+      <LocalRefPackDir>$(MicrosoftNetCoreAppRefPackDir)</LocalRefPackDir>
+      <LocalRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</LocalRuntimePackDir>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+      <LocalRefPackDir>$(BootstrapRefPackDir)</LocalRefPackDir>
+      <LocalRuntimePackDir>$(BootstrapRuntimePackDir)</LocalRuntimePackDir>
+    </PropertyGroup>
+
     <Error Text="The shared framework must be built before the local targeting pack can be consumed."
-           Condition="!Exists('$(MicrosoftNetCoreAppRefPackDir)data\FrameworkList.xml')" />
+           Condition="!Exists('$(LocalRefPackDir)\data\FrameworkList.xml') and '$(DesignTimeBuild)' != 'true'" />
 
     <ItemGroup>
-      <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+      <ResolvedTargetingPack Path="$(LocalRefPackDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(ProductVersion)"
-                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                             PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
-                           Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' != '' and
+      <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
+                           Condition="'$(LocalRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+      <ResolvedFrameworkReference TargetingPackPath="$(LocalRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
                                   Condition="'%(Identity)' == '$(LocalFrameworkOverrideName)'">
-        <RuntimePackPath Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' != ''">$(MicrosoftNetCoreAppRuntimePackDir)</RuntimePackPath>
+        <RuntimePackPath Condition="'$(LocalRuntimePackDir)' != ''">$(LocalRuntimePackDir)</RuntimePackPath>
       </ResolvedFrameworkReference>
     </ItemGroup>
   </Target>
@@ -146,6 +136,10 @@
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <AppHostSourcePath>$(LocalAppHostPath)</AppHostSourcePath>
+      <SingleFileHostSourcePath>$(LocalSingleFileHostPath)</SingleFileHostSourcePath>
+    </PropertyGroup>
     <ItemGroup>
       <ResolvedAppHostPack Path="$(AppHostSourcePath)"
                            PackageDirectory="$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))"
@@ -163,8 +157,25 @@
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
-      <RuntimeFramework Version="$(ProductVersion)"
-                        Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+      <RuntimeFramework Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'">
+        <Version>$(ProductVersion)</Version>
+      </RuntimeFramework>
     </ItemGroup>
   </Target>
+
+  <PropertyGroup Condition="'$(UseLocalNativeAotPack)' == 'true'">
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseLocalNativeAotPack)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
+    <IlcFrameworkPath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/lib/$(NetCoreAppCurrent)/</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(BootstrapRuntimePackDir)/runtimes/$(TargetRid)/native/</IlcFrameworkNativePath>
+    <IlcSdkPath>$(BootstrapAotSdkDir)/</IlcSdkPath>
+  </PropertyGroup>
+
 </Project>

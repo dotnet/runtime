@@ -56,6 +56,7 @@ namespace System.Security.Cryptography.Tests
                 foreach (byte[] key in BadKeys())
                 {
                     Assert.Throws<CryptographicException>(() => d.Key = key);
+                    Assert.Throws<CryptographicException>(() => d.SetKey(key));
                 }
             }
         }

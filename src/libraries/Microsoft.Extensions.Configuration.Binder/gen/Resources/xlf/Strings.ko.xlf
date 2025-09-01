@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="new">The project's language version has to be at least 'C# 12'.</target>
+        <target state="translated">프로젝트의 언어 버전은 'C# 12' 이상이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">

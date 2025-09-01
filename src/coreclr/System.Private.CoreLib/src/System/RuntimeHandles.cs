@@ -299,17 +299,26 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
-        internal static object InternalAllocNoChecks(RuntimeType type)
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static object InternalAllocNoChecks(MethodTable* pMT)
         {
-            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
-            object? result = null;
-            InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref result));
-            GC.KeepAlive(type);
-            return result!;
+            return InternalAllocNoChecks_FastPath(pMT) ?? InternalAllocNoChecksWorker(pMT);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object InternalAllocNoChecksWorker(MethodTable* pMT)
+            {
+                object? result = null;
+                InternalAllocNoChecks(pMT, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
         private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? InternalAllocNoChecks_FastPath(MethodTable* pMT);
 
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli
@@ -1039,7 +1048,7 @@ namespace System
 
         public IntPtr GetFunctionPointer()
         {
-            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
+            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value).Value);
             GC.KeepAlive(m_value);
             return ptr;
         }

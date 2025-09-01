@@ -15,7 +15,7 @@ parameters:
 # 'ci' -- continuous integration ("merge")
 # 'libraries' -- libraries tests
 # 'cet' -- machines supporting CET technology
-# 'superpmi' -- for TeamProject 'internal', a smaller set of queues (one per architecture, not several) for SuperPMI collection
+# 'superpmi-diffs' -- as high capacity queues as possible since no OS testing is necessary for this
 # Many of these values are unused below, as we use the same queues for many of the scenarios.
 # However, having these options allows us to easily tune the queues we use for each scenario as needed based on new hardware support.
 
@@ -34,11 +34,11 @@ jobs:
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
-      - OSX.1200.Arm64.Open
+      - OSX.14.Arm64.Open
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
-      - OSX.1200.Amd64.Open
+      - OSX.15.Amd64.Open
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
@@ -50,7 +50,7 @@ jobs:
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2204.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
@@ -63,51 +63,56 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+        - (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+        - (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.2004.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (AzureLinux.3.0.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Ubuntu.2004.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (AzureLinux.3.0.ArmArch)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+        - (Alpine.322.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.321.Amd64)Ubuntu.2204.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+        - (Alpine.322.Amd64)Ubuntu.2204.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.321.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm32v7
+        - (Alpine.322.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.321.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm32v7
+        - (Alpine.322.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.321.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
+        - (Alpine.322.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.321.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
+        - (Alpine.322.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Ubuntu.2204.Amd64.Open
+        - AzureLinux.3.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Ubuntu.2204.Amd64
+        - AzureLinux.3.Amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.1200.ARM64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.isExtraPlatformsBuild, true)) }}:
+        - OSX.26.Arm64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        - OSX.13.Arm64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        # superpmi is not about testing platform differences, so go with highest capacity queue
+        - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.1200.ARM64
+        - OSX.1200.Arm64
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
@@ -122,9 +127,7 @@ jobs:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
         - Windows.11.Amd64.Cet.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - Windows.10.Amd64.X86.Rt
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64
 
     # windows x86

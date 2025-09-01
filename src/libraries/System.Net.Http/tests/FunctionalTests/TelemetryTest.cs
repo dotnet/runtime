@@ -52,7 +52,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Redaction_MemberData()
         {
-            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
             foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
             {
                 foreach (string fragment in new[] { "", "#frag" })
@@ -855,7 +854,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     1 => (2, 2),
                     2 => (2, 3), // race condition: if a connection hits its stream limit, it will be removed from the list and re-added on a separate thread
-                    3 => (3, 3),
+                    3 => (2, 3),
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 Assert.InRange(requestLeftQueueEvents.Count(), minCount, maxCount);
@@ -934,15 +933,16 @@ namespace System.Net.Http.Functional.Tests
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
-            var fragIndex = uriTail.IndexOf('#');
-            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+
+            string expectedUriTail = uriTail;
             if (!disableRedaction)
             {
                 var queryIndex = expectedUriTail.IndexOf('?');
                 expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
                 expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
+
+                expectedUriTail = expectedUriTail.Split('#')[0];
             }
-            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
 
             await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
             {
@@ -996,14 +996,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
-        public void EventSource_Proxy_LogsIPAddress(bool useSsl)
+        public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)
         {
             if (UseVersion.Major == 3)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
@@ -1038,7 +1038,7 @@ namespace System.Net.Http.Functional.Tests
                         ip.Equals(IPAddress.Loopback) ||
                         ip.Equals(IPAddress.IPv6Loopback));
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString()).DisposeAsync();
         }
 
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
@@ -1175,7 +1175,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

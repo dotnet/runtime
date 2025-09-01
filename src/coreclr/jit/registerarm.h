@@ -74,6 +74,114 @@ REGALIAS(R13, SP)
 REGALIAS(R14, LR)
 REGALIAS(R15, PC)
 
+// Ignore REG_* symbols defined in Android NDK
+#undef REG_R0
+#define REG_R0 JITREG_R0
+#undef REG_R1
+#define REG_R1 JITREG_R1
+#undef REG_R2
+#define REG_R2 JITREG_R2
+#undef REG_R3
+#define REG_R3 JITREG_R3
+#undef REG_R4
+#define REG_R4 JITREG_R4
+#undef REG_R5
+#define REG_R5 JITREG_R5
+#undef REG_R6
+#define REG_R6 JITREG_R6
+#undef REG_R7
+#define REG_R7 JITREG_R7
+#undef REG_R8
+#define REG_R8 JITREG_R8
+#undef REG_R9
+#define REG_R9 JITREG_R9
+#undef REG_R10
+#define REG_R10 JITREG_R10
+#undef REG_R11
+#define REG_R11 JITREG_R11
+#undef REG_R12
+#define REG_R12 JITREG_R12
+#undef REG_SP
+#define REG_SP JITREG_SP
+#undef REG_LR
+#define REG_LR JITREG_LR
+#undef REG_PC
+#define REG_PC JITREG_PC
+#undef REG_F0
+#define REG_F0 JITREG_F0
+#undef REG_F1
+#define REG_F1 JITREG_F1
+#undef REG_F2
+#define REG_F2 JITREG_F2
+#undef REG_F3
+#define REG_F3 JITREG_F3
+#undef REG_F4
+#define REG_F4 JITREG_F4
+#undef REG_F5
+#define REG_F5 JITREG_F5
+#undef REG_F6
+#define REG_F6 JITREG_F6
+#undef REG_F7
+#define REG_F7 JITREG_F7
+#undef REG_F8
+#define REG_F8 JITREG_F8
+#undef REG_F9
+#define REG_F9 JITREG_F9
+#undef REG_F10
+#define REG_F10 JITREG_F10
+#undef REG_F11
+#define REG_F11 JITREG_F11
+#undef REG_F12
+#define REG_F12 JITREG_F12
+#undef REG_F13
+#define REG_F13 JITREG_F13
+#undef REG_F14
+#define REG_F14 JITREG_F14
+#undef REG_F15
+#define REG_F15 JITREG_F15
+#undef REG_F16
+#define REG_F16 JITREG_F16
+#undef REG_F17
+#define REG_F17 JITREG_F17
+#undef REG_F18
+#define REG_F18 JITREG_F18
+#undef REG_F19
+#define REG_F19 JITREG_F19
+#undef REG_F20
+#define REG_F20 JITREG_F20
+#undef REG_F21
+#define REG_F21 JITREG_F21
+#undef REG_F22
+#define REG_F22 JITREG_F22
+#undef REG_F23
+#define REG_F23 JITREG_F23
+#undef REG_F24
+#define REG_F24 JITREG_F24
+#undef REG_F25
+#define REG_F25 JITREG_F25
+#undef REG_F26
+#define REG_F26 JITREG_F26
+#undef REG_F27
+#define REG_F27 JITREG_F27
+#undef REG_F28
+#define REG_F28 JITREG_F28
+#undef REG_F29
+#define REG_F29 JITREG_F29
+#undef REG_F30
+#define REG_F30 JITREG_F30
+#undef REG_F31
+#define REG_F31 JITREG_F31
+#undef REG_FP
+#define REG_FP JITREG_FP
+#undef REG_R13
+#define REG_R13 JITREG_R13
+#undef REG_R14
+#define REG_R14 JITREG_R14
+#undef REG_R15
+#define REG_R15 JITREG_R15
+#undef REG_STK
+#define REG_STK JITREG_STK
+
 // This must be last!
 REGDEF(STK,  32+FPBASE, 0x0000,      "STK")
 

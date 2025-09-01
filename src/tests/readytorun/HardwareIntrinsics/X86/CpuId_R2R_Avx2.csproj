@@ -17,6 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CpuId.cs" />
+    <Compile Include="../../../JIT/HardwareIntrinsics/X86/X86Base/CpuId.cs" />
   </ItemGroup>
 </Project>
