@@ -187,7 +187,7 @@ if (FEATURE_STATICALLY_LINKED)
         set(CLRJIT_STATIC clrjit_static gcinfo)
     endif(FEATURE_JIT)
     if (FEATURE_INTERPRETER)
-        set(CLRINTERPRETER_STATIC clrinterpreter_objects gcinfo)
+        set(CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
     endif(FEATURE_INTERPRETER)
 endif(FEATURE_STATICALLY_LINKED)
 
