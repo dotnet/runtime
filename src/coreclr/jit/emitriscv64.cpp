@@ -1252,11 +1252,6 @@ void emitter::emitIns_R_AI(instruction  ins,
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = addr;
-    id->idDebugOnlyInfo()->idFlags     = gtFlags;
-#endif
-
     appendToCurIG(id);
 }
 
