@@ -52,14 +52,28 @@ def native_exe(name: str) -> str:
     return f"{name}{ext}"
 
 
-# Run a command
+# Run a command with retries
 def run(cmd):
+    retries = 3
     print(f"Running command: {' '.join(map(str, cmd))}")
-    proc = subprocess.Popen(cmd)
-    output,error = proc.communicate()
-    if proc.returncode != 0:
-        print("command failed")
-        
+    attempt = 0
+    while True:
+        try:
+            proc = subprocess.Popen(cmd)
+            output, error = proc.communicate()
+            returncode = proc.returncode
+        except Exception as e:
+            print(f"Failed to start command: {e}")
+            returncode = -1
+        if returncode == 0:
+            return
+        attempt += 1
+        if attempt > retries:
+            print(f"command failed after {retries} attempts")
+            break
+        print(f"Command failed with return code {returncode}, retrying ({attempt}/{retries}) after {delay_seconds}s...")
+        time.sleep(3)
+
 
 # Temp workaround, will be removed once https://github.com/dotnet/crank/pull/841 lands
 # Our Windows Helix machines don't have git installed (and no winget) while crank relies on
@@ -232,7 +246,9 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--scenario", scenario_name,
         "--application.framework", framework,
         "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
+        "--application.noGlobalJson", "false",
         "--application.collectDependencies", "false",
+        "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
         "--load.variables.duration", "45",
         "--load.variables.warmup", "15",
@@ -314,10 +330,9 @@ def main():
 
         scenarios = [
             # OrchardCMS scenario
-            # ("about-sqlite",
-            #     # Extra args:
-            #     "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
-            # TODO: re-enable it, currently it randomly fails with build errors.
+            ("about-sqlite",
+                # Extra args:
+                "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/orchard.benchmarks.yml"),
 
             # JsonMVC scenario
             ("mvc",
