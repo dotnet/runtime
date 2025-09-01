@@ -30813,7 +30813,7 @@ void gc_heap::reset_mark_stack ()
 #else
 #define brick_bits (11)
 #endif //TARGET_AMD64
-C_ASSERT(brick_size == (1 << brick_bits));
+static_assert(brick_size == (1 << brick_bits));
 
 // The number of bits needed to represent the offset to a child node.
 // "brick_bits + 1" allows us to represent a signed offset within a brick.
@@ -49418,8 +49418,15 @@ HRESULT GCHeap::Initialize()
         }
         else
         {
-            // If no hard_limit is configured the reservation size is min of 1/2 GetVirtualMemoryLimit() or max of 256Gb or 2x physical limit.
-            gc_heap::regions_range = max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
+            gc_heap::regions_range = 
+#ifdef MULTIPLE_HEAPS
+            // For SVR use max of 2x total_physical_memory or 256gb
+            max(
+#else // MULTIPLE_HEAPS
+            // for WKS use min
+            min(
+#endif // MULTIPLE_HEAPS
+                (size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
         }
         size_t virtual_mem_limit = GCToOSInterface::GetVirtualMemoryLimit();
         gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/2);
@@ -53680,9 +53687,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
     }
 #endif //USE_REGIONS
-#ifndef BACKGROUND_GC
+#ifdef BACKGROUND_GC
     g_build_variant |= build_variant_background_gc;
-#endif //!BACKGROUND_GC
+#endif //BACKGROUND_GC
 #ifdef DYNAMIC_HEAP_COUNT
     g_build_variant |= build_variant_dynamic_heap_count;
 #endif //DYNAMIC_HEAP_COUNT

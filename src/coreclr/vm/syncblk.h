@@ -211,8 +211,8 @@ private:
         UINT32 GetMonitorHeldState() const
         {
             LIMITED_METHOD_CONTRACT;
-            static_assert_no_msg(IsLockedMask == 1);
-            static_assert_no_msg(WaiterCountShift >= 1);
+            static_assert(IsLockedMask == 1);
+            static_assert(WaiterCountShift >= 1);
 
             // Return only the locked state and waiter count in the previous (m_MonitorHeld) layout for the debugger:
             //   bit 0: 1 if locked, 0 otherwise

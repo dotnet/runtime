@@ -4311,7 +4311,7 @@ IS_VALUETYPE:
                     fIsByValue = FALSE; // we're going to treat it as the underlying type now
                     goto GOT_ELEMENT_TYPE;
                 }
-                
+
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type
                 if (!fIsStatic && pByValueClass->IsEnum())
                 {
@@ -4786,13 +4786,13 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
         e_SM,       // YES, but only when same module
     };
 
-    static_assert_no_msg(mdPrivateScope == 0x00);
-    static_assert_no_msg(mdPrivate      == 0x01);
-    static_assert_no_msg(mdFamANDAssem  == 0x02);
-    static_assert_no_msg(mdAssem        == 0x03);
-    static_assert_no_msg(mdFamily       == 0x04);
-    static_assert_no_msg(mdFamORAssem   == 0x05);
-    static_assert_no_msg(mdPublic       == 0x06);
+    static_assert(mdPrivateScope == 0x00);
+    static_assert(mdPrivate      == 0x01);
+    static_assert(mdFamANDAssem  == 0x02);
+    static_assert(mdAssem        == 0x03);
+    static_assert(mdFamily       == 0x04);
+    static_assert(mdFamORAssem   == 0x05);
+    static_assert(mdPublic       == 0x06);
 
     static const DWORD dwCount = mdPublic - mdPrivateScope + 1;
     static const WIDENING_STATUS rgWideningTable[dwCount][dwCount] =
@@ -6169,7 +6169,7 @@ MethodTableBuilder::InitMethodDesc(
                 pNewNMD->SetIsEarlyBound();
             }
 
-            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntrypoint();
+            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntryPoint();
         }
         break;
 

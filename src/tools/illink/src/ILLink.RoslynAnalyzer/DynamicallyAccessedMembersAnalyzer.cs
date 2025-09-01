@@ -322,6 +322,11 @@ namespace ILLink.RoslynAnalyzer
                 || propertySymbol.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None)
                 return;
 
+            // For C# 14 extension properties, property-level DAM does not propagate to accessors
+            // and we do not consider property vs accessor conflicts meaningful. Skip conflict checks.
+            if (methodSymbol.HasExtensionParameterOnType())
+                return;
+
             // None on the return type of 'get' matches unannotated
             if (methodSymbol.MethodKind == MethodKind.PropertyGet
                 && methodSymbol.GetDynamicallyAccessedMemberTypesOnReturnType() != DynamicallyAccessedMemberTypes.None

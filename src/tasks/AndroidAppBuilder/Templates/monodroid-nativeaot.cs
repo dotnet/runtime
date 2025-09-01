@@ -16,7 +16,7 @@ namespace MonoDroid.NativeAOT;
 internal static unsafe partial class MonoDroidExports
 {
     // void Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_setEnv")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_setEnv", CallConvs = [typeof(CallConvCdecl)])]
     public static void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
         string? key = env->GetStringUTFChars(j_key);
@@ -26,7 +26,7 @@ internal static unsafe partial class MonoDroidExports
     }
 
     // int Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_initRuntime")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_initRuntime", CallConvs = [typeof(CallConvCdecl)])]
     public static int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
@@ -39,14 +39,14 @@ internal static unsafe partial class MonoDroidExports
     internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
     public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
         return Program.Main();
     }
 
     // void Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_freeNativeResources")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_freeNativeResources", CallConvs = [typeof(CallConvCdecl)])]
     public static void FreeNativeResources(JNIEnv* env, JObject thiz)
     {
         // Placeholder for actual implementation
