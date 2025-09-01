@@ -28,6 +28,8 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
+        private readonly SemaphoreSlim? _readLock;
+        private readonly SemaphoreSlim? _writeLock;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -35,12 +37,59 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, Http2Options httpOptions)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
-            _transparentPingResponse = transparentPingResponse;
+            _transparentPingResponse = httpOptions.EnableTransparentPingResponse;
+
+            if (httpOptions.EnsureThreadSafeIO)
+            {
+                _readLock = new SemaphoreSlim(1, 1);
+                _writeLock = new SemaphoreSlim(1, 1);
+                _connectionStream = CreateConcurrentConnectionStream(stream, _readLock, _writeLock);
+            }
+
+            static Stream CreateConcurrentConnectionStream(Stream stream, SemaphoreSlim readLock, SemaphoreSlim writeLock)
+            {
+                return new DelegateStream(
+                    canReadFunc: () => true,
+                    canWriteFunc: () => true,
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                    {
+                        await readLock.WaitAsync(cancellationToken);
+                        try
+                        {
+                            return await stream.ReadAsync(buffer, offset, count, cancellationToken);
+                        }
+                        finally
+                        {
+                            readLock.Release();
+                        }
+                    },
+                    writeAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                    {
+                        await writeLock.WaitAsync(cancellationToken);
+                        try
+                        {
+                            await stream.WriteAsync(buffer, offset, count, cancellationToken);
+                            await stream.FlushAsync(cancellationToken);
+                        }
+                        finally
+                        {
+                            writeLock.Release();
+                        }
+                    },
+                    disposeFunc: (disposing) =>
+                    {
+                        if (disposing)
+                        {
+                            stream.Dispose();
+                        }
+                    }
+                );
+            }
         }
 
         public override string ToString()
@@ -83,7 +132,7 @@ namespace System.Net.Test.Common
                 stream = sslStream;
             }
 
-            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse);
+            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions);
             await con.ReadPrefixAsync().ConfigureAwait(false);
 
             return con;
@@ -959,10 +1008,10 @@ namespace System.Net.Test.Common
             return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
         {
             int streamId = _lastStreamId;
-            return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
+            return SendResponseHeadersAsync(streamId, endStream: isTrailingHeader, statusCode, isTrailingHeader: isTrailingHeader, endHeaders: true, headers);
         }
 
         public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)

@@ -1053,9 +1053,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
-#ifdef FEATURE_INTERPRETER
-    m_walkingInterpreterFrames = false;
-#endif
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -1116,7 +1113,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #endif // FEATURE_HIJACK
 
     // FRAME_TOP must not be 0/NULL.
-    static_assert_no_msg(FRAME_TOP_VALUE != 0);
+    static_assert(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -1285,7 +1282,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         // 0012e884 ntdll32!DbgBreakPoint
         // 0012e89c CLRStub[StubLinkStub]@1f0ac1e
         // 0012e8a4     invalid ESP of Foo() according to the REGDISPLAY specified by the debuggers
-        // 0012e8b4     address of transition frame (NDirectMethodFrameStandalone)
+        // 0012e8b4     address of transition frame (PInvokeMethodFrameStandalone)
         // 0012e8c8     real ESP of Foo() according to the transition frame
         // 0012e8d8 managed!Dummy.Foo()+0x20
         //
@@ -2844,32 +2841,34 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 #ifdef FEATURE_INTERPRETER
         if (!m_crawl.isFrameless)
         {
+            PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+
             if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
-                PREGDISPLAY pRD = m_crawl.GetRegisterSet();
-
-                if (!m_walkingInterpreterFrames)
+                if (GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP)
                 {
                     // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                     // Switch to walking the underlying interpreted frames.
                     // Save the registers the interpreter frames walking reuses so that we can restore them
                     // after we are done with the interpreter frames.
-                    m_interpExecMethodIP = (TADDR)GetIP(pRD->pCurrentContext);
-                    m_interpExecMethodSP = (TADDR)GetSP(pRD->pCurrentContext);
-                    m_interpExecMethodFP = (TADDR)GetFP(pRD->pCurrentContext);
-                    m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
+                    m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                    m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                    m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                    m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
 
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+                    if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
+                    {
+                        m_crawl.isInterrupted = true;
+                        m_crawl.hasFaulted = true;
+                    }
 
-                    pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
-                    m_walkingInterpreterFrames = m_crawl.isFrameless;
                 }
                 else
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
-                    m_walkingInterpreterFrames = false;
                     // Restore the registers to the values they had before we started walking the interpreter frames.
                     SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
@@ -2877,6 +2876,16 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
                     SyncRegDisplayToCurrentContext(pRD);
                 }
+            }
+            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) &&
+                     (m_crawl.pFrame->PtrNextFrame() != FRAME_TOP) &&
+                     (m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                // There is an active inlined call frame and the next frame is the interpreter frame. This is a special case where we need to save the current context registers that the interpreter frames walking reuses.
+                m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
+                m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
+                m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
+                m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
             }
         }
 #endif // FEATURE_INTERPRETER
@@ -2979,17 +2988,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )
     {
-        BOOL fReportInteropMD =
-        // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-        // was passed to the stub as its secret argument. This is the true interop MD.
-        // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-        // the call is made using the CALLI instruction.
-            m_crawl.pFrame != FRAME_TOP &&
-            m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
-            m_crawl.pFunc != NULL &&
-            m_crawl.pFunc->IsILStub() &&
-            m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
-
         if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
@@ -3010,6 +3008,16 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
+            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
+            // was passed to the stub as its secret argument. This is the true interop MD.
+            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
+            // the call is made using the CALLI instruction.
+            bool fReportInteropMD =
+                m_crawl.pFrame != FRAME_TOP
+                && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
+                && m_crawl.pFunc != NULL
+                && m_crawl.pFunc->IsILStub()
+                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();

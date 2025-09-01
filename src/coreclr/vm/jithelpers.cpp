@@ -1176,7 +1176,7 @@ void JIT_PInvokeEndRarePath()
 }
 
 /*************************************************************/
-// For an inlined N/Direct call (and possibly for other places that need this service)
+// For an inlined PInvoke call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
@@ -1878,8 +1878,8 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
-    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert(N >= S);
+    static_assert((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     // If table is not yet full, just add entries in
     // and increment the table index.
@@ -2303,7 +2303,7 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif
 
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
 {
     _ASSERTE(frame != NULL);
 
@@ -2332,11 +2332,11 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
     // Increment/DecrementTraceCallCount() will bump
     // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
+        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
 #endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
@@ -2346,7 +2346,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
     // Increment/DecrementTraceCallCount() will bump
     // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
+        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2355,16 +2355,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
 // On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
 // This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* secretArg)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, UMEntryThunkData* pUMEntryThunkData)
 {
     _ASSERTE(frame != NULL && pMD != NULL);
-    _ASSERTE(!pMD->IsILStub() || secretArg != NULL);
+    _ASSERTE(!pMD->IsILStub() || pUMEntryThunkData != NULL);
 
-    UMEntryThunk* pEntryThunk = NULL;
-    if (secretArg != NULL)
+    if (pUMEntryThunkData != NULL)
     {
-        pEntryThunk = ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk;
-        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
+        pMD = pUMEntryThunkData->GetMethod();
     }
     frame->pMD = pMD;
 
@@ -2390,14 +2388,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pEntryThunk);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pUMEntryThunkData);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pEntryThunk);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pUMEntryThunkData);
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
@@ -2513,7 +2511,7 @@ enum __CorInfoHelpFunc {
 #define JITHELPER(code, pfnHelper, sig) __##code,
 #include "jithelpers.h"
 };
-#define JITHELPER(code, pfnHelper, sig) C_ASSERT((int)__##code == (int)code);
+#define JITHELPER(code, pfnHelper, sig) static_assert((int)__##code == (int)code);
 #include "jithelpers.h"
 
 #ifdef _DEBUG

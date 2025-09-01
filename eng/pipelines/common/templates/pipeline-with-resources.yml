@@ -67,7 +67,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
 
       linux_musl_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-amd64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-amd64
 
       linux_x64_sanitizer:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64-sanitizer

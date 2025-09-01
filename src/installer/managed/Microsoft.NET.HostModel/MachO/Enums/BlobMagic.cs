@@ -11,5 +11,7 @@ internal enum BlobMagic : uint
     EmbeddedSignature = 0xfade0cc0,
     CodeDirectory = 0xfade0c02,
     Requirements = 0xfade0c01,
+    Entitlements = 0xfade7171,
+    DerEntitlements = 0xfade7172,
     CmsWrapper = 0xfade0b01,
 }

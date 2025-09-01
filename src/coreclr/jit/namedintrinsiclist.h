@@ -221,7 +221,9 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_InitBlock,
     NI_SRCS_UNSAFE_InitBlockUnaligned,
     NI_SRCS_UNSAFE_IsAddressGreaterThan,
+    NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo,
     NI_SRCS_UNSAFE_IsAddressLessThan,
+    NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo,
     NI_SRCS_UNSAFE_IsNullRef,
     NI_SRCS_UNSAFE_NullRef,
     NI_SRCS_UNSAFE_Read,
@@ -255,10 +257,11 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_END,
 
     //
-    // Array Intrinsics
+    // Enumeration Intrinsics
     //
     NI_System_SZArrayHelper_GetEnumerator,
     NI_System_Array_T_GetEnumerator,
+    NI_System_Collections_Generic_IEnumerable_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

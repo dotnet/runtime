@@ -1048,7 +1048,7 @@ namespace System
 
         public IntPtr GetFunctionPointer()
         {
-            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
+            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value).Value);
             GC.KeepAlive(m_value);
             return ptr;
         }

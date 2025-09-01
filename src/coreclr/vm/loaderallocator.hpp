@@ -625,7 +625,7 @@ public:
     }
 
 #if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
-    PTR_LoaderHeap GetDynamicHelpersStubHeap()
+    PTR_InterleavedLoaderHeap GetDynamicHelpersStubHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDynamicHelpersStubHeap;
@@ -751,7 +751,7 @@ public:
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
-    virtual void ReleaseManagedAssemblyLoadContext() {}
+    virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
 
@@ -885,6 +885,9 @@ template<>
 struct cdac_data<LoaderAllocator>
 {
     static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
+    static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
+    static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
+    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -958,7 +961,7 @@ public:
     }
     virtual ~AssemblyLoaderAllocator();
     void RegisterBinder(CustomAssemblyBinder* binderToRelease);
-    virtual void ReleaseManagedAssemblyLoadContext();
+    virtual void ReleaseAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE)
 
 private:

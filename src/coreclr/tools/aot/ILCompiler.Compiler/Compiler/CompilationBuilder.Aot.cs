@@ -21,7 +21,7 @@ namespace ILCompiler
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
         protected ReadOnlyFieldPolicy _readOnlyFieldPolicy = new ReadOnlyFieldPolicy();
         protected IInliningPolicy _inliningPolicy;
-        protected bool _methodBodyFolding;
+        protected MethodBodyFoldingMode _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
         protected bool _dehydrate;
@@ -94,9 +94,9 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseMethodBodyFolding(bool enable)
+        public CompilationBuilder UseMethodBodyFolding(MethodBodyFoldingMode mode)
         {
-            _methodBodyFolding = enable;
+            _methodBodyFolding = mode;
             return this;
         }
 
@@ -153,5 +153,12 @@ namespace ILCompiler
     public enum SecurityMitigationOptions
     {
         ControlFlowGuardAnnotations = 0x0001,
+    }
+
+    public enum MethodBodyFoldingMode
+    {
+        None,
+        Generic,
+        All,
     }
 }

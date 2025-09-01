@@ -195,6 +195,27 @@ namespace ILLink.Shared.TrimAnalysis
                 }
                 break;
 
+                case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
+                case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
+                {
+                    GenericInstanceMethod method = ((GenericInstanceMethod)calledMethod.Method);
+                    if (method.GenericArguments[0].ContainsGenericParameter)
+                    {
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined, method.GenericArguments[0].FullName);
+                        return true;
+                    }
+
+                    if (intrinsicId == IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping)
+                    {
+                        _markStep.TypeMapHandler.ProcessExternalTypeMapGroupSeen(_callingMethodDefinition, method.GenericArguments[0]);
+                    }
+                    else
+                    {
+                        _markStep.TypeMapHandler.ProcessProxyTypeMapGroupSeen(_callingMethodDefinition, method.GenericArguments[0]);
+                    }
+                }
+                break;
+
                 // Note about Activator.CreateInstance<T>
                 // There are 2 interesting cases:
                 //  - The generic argument for T is either specific type or annotated - in that case generic instantiation will handle this

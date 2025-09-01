@@ -95,6 +95,10 @@ If you're planning to use your environment to do Linux cross-building to other a
 - `qemu`
 - `qemu-user-static`
 
+```bash
+apt install binfmt-support debootstrap qemu qemu-user-static
+```
+
 ### Fedora
 
 These instructions are written assuming *Fedora 40*.

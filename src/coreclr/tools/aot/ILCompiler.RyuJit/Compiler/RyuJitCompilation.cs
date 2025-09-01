@@ -47,7 +47,8 @@ namespace ILCompiler
             RyuJitCompilationOptions options,
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
-            int parallelism)
+            int parallelism,
+            string orderFile)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -61,7 +62,7 @@ namespace ILCompiler
 
             _parallelism = parallelism;
 
-            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory);
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory, orderFile);
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -77,16 +78,23 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
-                ? _nodeFactory.ConstructedTypeSymbol(type)
-                : _nodeFactory.NecessaryTypeSymbol(type);
+            return GetLdTokenHelperForType(type) switch
+            {
+                ReadyToRunHelperId.MetadataTypeHandle => _nodeFactory.MetadataTypeSymbol(type),
+                ReadyToRunHelperId.TypeHandle => _nodeFactory.MaximallyConstructableType(type),
+                ReadyToRunHelperId.NecessaryTypeHandle => _nodeFactory.NecessaryTypeSymbol(type),
+                _ => throw new UnreachableException()
+            };
         }
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
-                ? _nodeFactory.SerializedConstructedRuntimeTypeObject(type)
-                : _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
+            return GetLdTokenHelperForType(type) switch
+            {
+                ReadyToRunHelperId.TypeHandle or ReadyToRunHelperId.MetadataTypeHandle => _nodeFactory.SerializedMetadataRuntimeTypeObject(type),
+                ReadyToRunHelperId.NecessaryTypeHandle => _nodeFactory.SerializedNecessaryRuntimeTypeObject(type),
+                _ => throw new UnreachableException()
+            };
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)

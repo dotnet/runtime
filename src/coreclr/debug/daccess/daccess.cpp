@@ -1579,8 +1579,8 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
     DAC_INSTANCE* inst;
     ULONG32 fullSize;
 
-    static_assert_no_msg(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
-    static_assert_no_msg((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
+    static_assert(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
+    static_assert((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
 
     //
     // All allocated instances must be kept alive as long
@@ -4175,7 +4175,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
@@ -4183,6 +4183,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
         methodDesc = ExecutionManager::GetCodeMethodDesc(taddr);
         if (!methodDesc)
         {
+            status = S_FALSE;
             goto Exit;
         }
 
@@ -5619,7 +5620,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5990,6 +5991,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented, 
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
@@ -6052,6 +6054,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented,
         &countMapCopy, &mapCopy,
         NULL, NULL);
 
@@ -7031,7 +7034,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
@@ -7044,6 +7047,14 @@ CLRDataCreateInstance(REFIID iid,
 
                 // Release the AddRef from the QI.
                 pClrDataAccess->Release();
+            }
+
+            if (cdacInterface == nullptr)
+            {
+                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                // Release the ClrDataAccess instance we created
+                pClrDataAccess->Release();
+                return E_FAIL;
             }
         }
     }
@@ -7700,11 +7711,18 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
+    {
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
-    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+    }
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER
+        || param->Type == HNDTYPE_CROSSREFERENCE)
+    {
         data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
+    }
     else
+    {
         data.Secondary = 0;
+    }
     data.AppDomain = param->AppDomain;
     GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &data.RefCount, &data.JupiterRefCount, &data.IsPegged, &data.StrongReference);
     data.StrongReference |= (BOOL)IsAlwaysStrongReference(param->Type);

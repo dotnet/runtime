@@ -36,8 +36,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Program.MyTest();
-			_ = typeof(Program.IBaseUnused);
+            Program.MyTest();
+            _ = typeof(Program.IBaseUnused);
 #endif
         }
     }

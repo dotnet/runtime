@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework
         static void Main()
         {
 #if VERIFY_DEFINE_WORKS
-			UsedByDefine ();
+            UsedByDefine();
 #endif
             // Use something from System.dll so that we can verify the reference attribute works
             var timer = new System.Timers.Timer();

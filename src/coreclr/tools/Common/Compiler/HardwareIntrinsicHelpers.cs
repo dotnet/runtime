@@ -60,22 +60,20 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class XArchIntrinsicConstants
         {
-            // SSE and SSE2 are baseline ISAs - they're always available
-            public const int Sse42 = (1 << 0);
-            public const int Avx = (1 << 1);
-            public const int Avx2 = (1 << 2);
-            public const int Avx512 = (1 << 3);
-
-            public const int Avx512v2 = (1 << 4);
-            public const int Avx512v3 = (1 << 5);
-            public const int Avx10v1 = (1 << 6);
-            public const int Avx10v2 = (1 << 7);
-            public const int Apx = (1 << 8);
-
-            public const int Aes = (1 << 9);
-            public const int Avx512Vp2intersect = (1 << 10);
-            public const int AvxIfma = (1 << 11);
-            public const int AvxVnni = (1 << 12);
+            // SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, and POPCNT are baseline ISAs - they're always available
+            public const int Avx = (1 << 0);
+            public const int Avx2 = (1 << 1);
+            public const int Avx512 = (1 << 2);
+            public const int Avx512v2 = (1 << 3);
+            public const int Avx512v3 = (1 << 4);
+            public const int Avx10v1 = (1 << 5);
+            public const int Avx10v2 = (1 << 6);
+            public const int Apx = (1 << 7);
+            public const int Aes = (1 << 8);
+            public const int Avx512Vp2intersect = (1 << 9);
+            public const int AvxIfma = (1 << 10);
+            public const int AvxVnni = (1 << 11);
+            public const int AvxVnniInt = (1 << 12);
             public const int Gfni = (1 << 13);
             public const int Sha = (1 << 14);
             public const int Vaes = (1 << 15);
@@ -84,8 +82,6 @@ namespace ILCompiler
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
-                if ((flags & Sse42) != 0)
-                    builder.AddSupportedInstructionSet("sse42");
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
@@ -99,7 +95,12 @@ namespace ILCompiler
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
                 if ((flags & Avx10v2) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx10v2");
+                    builder.AddSupportedInstructionSet("avxvnniint_v512");
+                }
+                if ((flags & AvxVnniInt) != 0)
+                    builder.AddSupportedInstructionSet("avxvnniint");
                 if ((flags & Apx) != 0)
                     builder.AddSupportedInstructionSet("apx");
 
@@ -138,15 +139,11 @@ namespace ILCompiler
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
-                Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
                 Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
 
                 return instructionSet switch
                 {
                     // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_SSE42 => Sse42,
-                    InstructionSet.X64_SSE42_X64 => Sse42,
-
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,
 
@@ -188,6 +185,8 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
+                    InstructionSet.X64_AVXVNNIINT => AvxVnniInt,
+                    InstructionSet.X64_AVXVNNIINT_V512 => Avx10v2,
 
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,
