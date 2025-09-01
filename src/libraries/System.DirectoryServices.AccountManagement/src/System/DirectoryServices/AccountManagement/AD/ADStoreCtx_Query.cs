@@ -176,7 +176,7 @@ namespace System.DirectoryServices.AccountManagement
                 // for the result.  Per RFC 2251, OID 1.1 == no attributes.
                 //ds.PropertiesToLoad.Add("1.1");
                 BuildPropertySet(qbeFilter.GetType(), ds.PropertiesToLoad);
-            }            
+            }
 
             ds.Filter = ldapFilter.ToString();
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "PushFilterToNativeSearcher: using LDAP filter {0}", ds.Filter);
