@@ -44216,41 +44216,47 @@ void gc_heap::init_static_data()
 {
     size_t gen0_min_size = get_gen0_min_size();
 
-    size_t gen0_max_size =
-#ifdef MULTIPLE_HEAPS
-        max ((size_t)6*1024*1024, min ( Align(soh_segment_size/2), (size_t)200*1024*1024));
-#else //MULTIPLE_HEAPS
-        (
-#ifdef BACKGROUND_GC
-            gc_can_use_concurrent ?
-            6*1024*1024 :
-#endif //BACKGROUND_GC
-            max ((size_t)6*1024*1024,  min ( Align(soh_segment_size/2), (size_t)200*1024*1024))
-        );
-#endif //MULTIPLE_HEAPS
-
-    gen0_max_size = max (gen0_min_size, gen0_max_size);
-
-    if (heap_hard_limit)
-    {
-        size_t gen0_max_size_seg = soh_segment_size / 4;
-        dprintf (GTC_LOG, ("limit gen0 max %zd->%zd", gen0_max_size, gen0_max_size_seg));
-        gen0_max_size = min (gen0_max_size, gen0_max_size_seg);
-    }
+    size_t gen0_max_size = 0;
 
     size_t gen0_max_size_config = (size_t)GCConfig::GetGCGen0MaxBudget();
 
     if (gen0_max_size_config)
     {
-        gen0_max_size = min (gen0_max_size, gen0_max_size_config);
+        gen0_max_size = gen0_max_size_config;
 
 #ifdef FEATURE_EVENT_TRACE
         gen0_max_budget_from_config = gen0_max_size;
 #endif //FEATURE_EVENT_TRACE
     }
+    else
+    {
+        gen0_max_size =
+#ifdef MULTIPLE_HEAPS
+            max ((size_t)6 * 1024 * 1024, min (Align(soh_segment_size / 2), (size_t)200 * 1024 * 1024));
+#else //MULTIPLE_HEAPS
+            (
+#ifdef BACKGROUND_GC
+                gc_can_use_concurrent ?
+                6 * 1024 * 1024 :
+#endif //BACKGROUND_GC
+                max ((size_t)6 * 1024 * 1024, min (Align(soh_segment_size / 2), (size_t)200 * 1024 * 1024))
+                );
+#endif //MULTIPLE_HEAPS
+
+        gen0_max_size = max (gen0_min_size, gen0_max_size);
+
+        if (heap_hard_limit)
+        {
+            size_t gen0_max_size_seg = soh_segment_size / 4;
+            dprintf (GTC_LOG, ("limit gen0 max %zd->%zd", gen0_max_size, gen0_max_size_seg));
+            gen0_max_size = min (gen0_max_size, gen0_max_size_seg);
+        }
+    }
 
     gen0_max_size = Align (gen0_max_size);
     gen0_min_size = min (gen0_min_size, gen0_max_size);
+
+    GCConfig::SetGCGen0MaxBudget (gen0_max_size);
 
     // TODO: gen0_max_size has a 200mb cap; gen1_max_size should also have a cap.
     size_t gen1_max_size = (size_t)
@@ -44284,6 +44290,17 @@ void gc_heap::init_static_data()
         static_data_table[i][0].max_size = gen0_max_size;
         static_data_table[i][1].max_size = gen1_max_size;
     }
+
+#ifdef DYNAMIC_HEAP_COUNT
+    if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    {
+        gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = gen0_min_size;
+        if (gen0_max_size_config)
+        {
+            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = gen0_max_size;
+        }
+    }
+#endif //DYNAMIC_HEAP_COUNT
 }
 
 bool gc_heap::init_dynamic_data()
@@ -49735,13 +49752,43 @@ HRESULT GCHeap::Initialize()
             }
             // This should be adjusted based on the target tcp. See comments in gcpriv.h
             gc_heap::dynamic_heap_count_data.around_target_threshold = 10.0;
-            // This should really be set as part of computing static data and should take conserve_mem_setting into consideration.
-            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = Align (min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (size_t)(64 * 1024 * 1024)), get_alignment_constant (TRUE));
-            gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = Align (dd_min_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), get_alignment_constant (TRUE));
 
-            dprintf (6666, ("datas max gen0 budget %Id, min %Id",
-                gc_heap::dynamic_heap_count_data.max_gen0_new_allocation, gc_heap::dynamic_heap_count_data.min_gen0_new_allocation));
+            int gen0_growth_soh_ratio_percent = (int)GCConfig::GetGCDGen0GrowthPercent();
+            if (gen0_growth_soh_ratio_percent)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent = (int)GCConfig::GetGCDGen0GrowthPercent() * 0.01f;
+            }
+            // You can specify what sizes you want to allow DATAS to stay within wrt the SOH stable size.
+            // By default DATAS allows 10x this size for gen0 budget when the size is small, and 0.1x when the size is large.
+            int gen0_growth_min_permil = (int)GCConfig::GetGCDGen0GrowthMinFactor();
+            int gen0_growth_max_permil = (int)GCConfig::GetGCDGen0GrowthMaxFactor();
+            if (gen0_growth_min_permil)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min = gen0_growth_min_permil * 0.001f;
+            }
+            if (gen0_growth_max_permil)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max = gen0_growth_max_permil * 0.001f;
+            }
+
+            if (gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min > gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max)
+            {
+                log_init_error_to_host ("DATAS min permil for gen0 growth %d is greater than max %d, it needs to be lower",
+                    gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max);
+                return E_FAIL;
+            }
+
+            GCConfig::SetGCDTargetTCP ((int)gc_heap::dynamic_heap_count_data.target_tcp);
+            GCConfig::SetGCDGen0GrowthPercent ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent * 100.0f));
+            GCConfig::SetGCDGen0GrowthMinFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min * 1000.0f));
+            GCConfig::SetGCDGen0GrowthMaxFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max * 1000.0f));
+            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %Id, max %Id",
+                (int)GCConfig::GetGCDGen0GrowthPercent(),
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max,
+                gc_heap::dynamic_heap_count_data.min_gen0_new_allocation, gc_heap::dynamic_heap_count_data.max_gen0_new_allocation));
         }
+
+        GCConfig::SetGCDynamicAdaptationMode (gc_heap::dynamic_adaptation_mode);
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
 
@@ -52280,13 +52327,11 @@ size_t gc_heap::get_gen0_min_size()
         gen0size = gen0size / 8 * 5;
     }
 
-#ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
     // This is just so we can test allocation using more than one region on machines with very
     // small caches.
     gen0size = ((size_t)1 << min_segment_size_shr) * 3;
 #endif //STRESS_REGIONS
-#endif //USE_REGIONS
 
     gen0size = Align (gen0size);
 
@@ -53882,6 +53927,8 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 
     m_high_memory_load_th = min ((high_memory_load_th + 5), v_high_memory_load_th);
     almost_high_memory_load_th = (high_memory_load_th > 5) ? (high_memory_load_th - 5) : 1; // avoid underflow of high_memory_load_th - 5
+
+    GCConfig::SetGCHighMemPercent (high_memory_load_th);
 
     return true;
 }
