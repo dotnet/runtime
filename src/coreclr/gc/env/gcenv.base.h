@@ -103,12 +103,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
 #endif
 
-#ifdef UNICODE
-#define _tfopen _wfopen
-#else
-#define _tfopen fopen
-#endif
-
 #define WINAPI __stdcall
 
 typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
