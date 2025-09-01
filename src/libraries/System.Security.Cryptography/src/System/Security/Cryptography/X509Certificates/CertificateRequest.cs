@@ -292,6 +292,54 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
         ///   Create a CertificateRequest for the specified subject name, encoded public key, and hash algorithm.
         /// </summary>
         /// <param name="subjectName">

@@ -15,6 +15,9 @@ void
 mono_interp_register_imethod_data_items (gpointer *data_items, GSList *indexes);
 
 void
+mono_interp_clear_data_items_patch_sites (gpointer *data_items, int n_data_items);
+
+void
 mono_interp_register_imethod_patch_site (gpointer *imethod_ptr);
 
 const guint16*

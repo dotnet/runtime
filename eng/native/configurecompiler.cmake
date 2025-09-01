@@ -5,7 +5,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # We need to set this to Release as there's no way to intercept configuration-specific linker flags

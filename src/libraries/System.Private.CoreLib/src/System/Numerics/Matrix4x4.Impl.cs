@@ -1286,7 +1286,7 @@ namespace System.Numerics
                     // Check determinate is not zero
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1424,7 +1424,7 @@ namespace System.Numerics
 
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;

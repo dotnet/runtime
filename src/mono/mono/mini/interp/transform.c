@@ -3310,6 +3310,8 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		goto fail;
 	td->ip += 5;
 
+	td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
+
 	push_var (td, dreg);
 	return TRUE;
 fail:
@@ -3911,6 +3913,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return_val_if_nok (error, FALSE);
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
+			td->headers_to_free = g_slist_prepend_mempool (td->mempool, td->headers_to_free, mheader);
 			td->ip += 5;
 			goto done;
 		}
@@ -4655,7 +4658,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
 	int target_vars_capacity = num_locals + 64;
 
-	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
+	imethod->local_offsets = (guint32*)imethod_alloc0 (td, num_il_locals * sizeof(guint32));
 	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
 	td->vars_capacity = target_vars_capacity;
@@ -4753,7 +4756,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 #endif
 
-	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->clause_data_offsets = (guint32*)imethod_alloc0 (td, header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
@@ -9856,10 +9859,9 @@ retry:
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
 	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
 	rtm->locals_size = td->param_area_offset;
-	// FIXME: Can't allocate this using imethod_alloc0 as its registered with mono_interp_register_imethod_data_items ()
-	//rtm->data_items = (gpointer*)imethod_alloc0 (td, td->n_data_items * sizeof (td->data_items [0]));
-	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->data_items = (gpointer*)imethod_alloc0 (td, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->n_data_items = td->n_data_items;
 
 	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
@@ -9936,6 +9938,8 @@ exit:
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
 	g_slist_free (td->imethod_items);
+	for (GSList *l = td->headers_to_free; l; l = l->next)
+		mono_metadata_free_mh ((MonoMethodHeader *)l->data);
 	mono_mempool_destroy (td->mempool);
 	mono_interp_pgo_generate_end ();
 	if (td->retry_compilation) {

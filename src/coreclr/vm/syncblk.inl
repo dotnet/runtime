@@ -45,7 +45,7 @@ FORCEINLINE bool AwareLock::LockState::InterlockedTryLock(LockState state)
 FORCEINLINE bool AwareLock::LockState::InterlockedUnlock()
 {
     WRAPPER_NO_CONTRACT;
-    static_assert_no_msg(IsLockedMask == 1);
+    static_assert(IsLockedMask == 1);
     _ASSERTE(IsLocked());
 
     LockState state = InterlockedDecrementRelease((LONG *)&m_state);

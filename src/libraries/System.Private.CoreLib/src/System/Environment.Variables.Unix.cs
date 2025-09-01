@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 using System.Threading;
 
 namespace System
@@ -14,13 +16,13 @@ namespace System
     {
         private static Dictionary<string, string>? s_environment;
 
-        private static string? GetEnvironmentVariableCore(string variable)
+        private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
             if (s_environment == null)
             {
-                return Marshal.PtrToStringUTF8(Interop.Sys.GetEnv(variable));
+                return Utf8StringMarshaller.ConvertToManaged(Interop.Sys.GetEnv(variable));
             }
 
             variable = TrimStringOnFirstZero(variable);
@@ -90,16 +92,16 @@ namespace System
             }
         }
 
-        private static Dictionary<string, string> GetSystemEnvironmentVariables()
+        private static unsafe Dictionary<string, string> GetSystemEnvironmentVariables()
         {
             var results = new Dictionary<string, string>();
 
-            IntPtr block = Interop.Sys.GetEnviron();
-            if (block != IntPtr.Zero)
+            byte** block = Interop.Sys.GetEnviron();
+            if (block != null)
             {
                 try
                 {
-                    IntPtr blockIterator = block;
+                    byte** blockIterator = block;
 
                     // Per man page, environment variables come back as an array of pointers to strings
                     // Parse each pointer of strings individually
@@ -118,7 +120,7 @@ namespace System
                         }
 
                         // Increment to next environment variable entry
-                        blockIterator += IntPtr.Size;
+                        blockIterator++;
                     }
                 }
                 finally
@@ -130,14 +132,14 @@ namespace System
             return results;
 
             // Use a local, unsafe function since we cannot use `yield return` inside of an `unsafe` block
-            static unsafe bool ParseEntry(IntPtr current, out string? key, out string? value)
+            static unsafe bool ParseEntry(byte** current, out string? key, out string? value)
             {
                 // Setup
                 key = null;
                 value = null;
 
                 // Point to current entry
-                byte* entry = *(byte**)current;
+                byte* entry = *current;
 
                 // Per man page, "The last pointer in this array has the value NULL"
                 // Therefore, if entry is null then we're at the end and can bail
@@ -157,9 +159,9 @@ namespace System
                     return true;
 
                 // The key is the bytes from start (0) until our splitpoint
-                key = new string((sbyte*)entry, 0, checked((int)(splitpoint - entry)));
+                key = Encoding.UTF8.GetString(entry, checked((int)(splitpoint - entry)));
                 // The value is the rest of the bytes starting after the splitpoint
-                value = new string((sbyte*)(splitpoint + 1));
+                value = Utf8StringMarshaller.ConvertToManaged(splitpoint + 1)!;
 
                 return true;
             }

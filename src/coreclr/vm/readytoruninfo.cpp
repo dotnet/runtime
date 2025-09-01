@@ -333,14 +333,13 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY * pDebugInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
-    if (pDebugInfoDir == NULL)
+    if (m_pSectionDebugInfo == NULL)
         return NULL;
 
     SIZE_T methodIndex = pRuntimeFunction - m_pRuntimeFunctions;
     _ASSERTE(methodIndex < m_nRuntimeFunctions);
 
-    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), pDebugInfoDir->VirtualAddress);
+    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), m_pSectionDebugInfo->VirtualAddress);
 
     uint offset;
     if (!debugInfoIndex.TryGetAt((DWORD)methodIndex, &offset))
@@ -884,6 +883,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+    m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)

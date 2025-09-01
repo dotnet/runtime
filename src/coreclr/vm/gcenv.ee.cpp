@@ -25,6 +25,7 @@
 #include "configuration.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);
@@ -39,8 +40,8 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
 
-    static_assert_no_msg(SUSPEND_FOR_GC == (int)ThreadSuspend::SUSPEND_FOR_GC);
-    static_assert_no_msg(SUSPEND_FOR_GC_PREP == (int)ThreadSuspend::SUSPEND_FOR_GC_PREP);
+    static_assert(SUSPEND_FOR_GC == (int)ThreadSuspend::SUSPEND_FOR_GC);
+    static_assert(SUSPEND_FOR_GC_PREP == (int)ThreadSuspend::SUSPEND_FOR_GC_PREP);
 
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
@@ -1006,7 +1007,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 
@@ -1058,7 +1059,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 

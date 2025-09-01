@@ -149,3 +149,36 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+
+#
+# Android arm64 devices and x64 emulators
+# Build the whole product using NativeAOT and run functional tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
+    platforms:
+    - android_x64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: NativeAOT
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
+      timeoutInMinutes: 120
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

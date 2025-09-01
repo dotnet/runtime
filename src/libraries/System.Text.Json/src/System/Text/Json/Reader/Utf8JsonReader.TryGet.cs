@@ -1351,12 +1351,6 @@ namespace System.Text.Json
             }
             else
             {
-                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 

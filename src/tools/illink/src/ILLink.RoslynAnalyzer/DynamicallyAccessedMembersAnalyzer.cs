@@ -57,9 +57,11 @@ namespace ILLink.RoslynAnalyzer
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnrecognizedTypeNameInTypeGetType));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.TypeNameIsNotAssemblyQualified));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReturnValueDoesNotMatchFeatureGuards));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.InvalidFeatureGuard));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DataflowAnalysisDidNotConverge));
 
             foreach (var requiresAnalyzer in RequiresAnalyzers.Value)
             {
@@ -109,8 +111,17 @@ namespace ILLink.RoslynAnalyzer
                     foreach (var operationBlock in context.OperationBlocks)
                     {
                         TrimDataFlowAnalysis trimDataFlowAnalysis = new(context, dataFlowAnalyzerContext, operationBlock);
-                        trimDataFlowAnalysis.InterproceduralAnalyze();
+                        bool success = trimDataFlowAnalysis.InterproceduralAnalyze();
                         trimDataFlowAnalysis.ReportDiagnostics(context.ReportDiagnostic);
+                        if (!success)
+                        {
+                            context.ReportDiagnostic(
+                                Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(
+                                    DiagnosticId.DataflowAnalysisDidNotConverge,
+                                    diagnosticSeverity: DiagnosticSeverity.Warning),
+                                operationBlock.Syntax.GetLocation(),
+                                operationBlock.FindContainingSymbol(context.OwningSymbol).GetDisplayName()));
+                        }
                     }
                 });
 
@@ -130,13 +141,14 @@ namespace ILLink.RoslynAnalyzer
 
                     var location = GetPrimaryLocation(type.Locations);
 
+                    var typeNameResolver = new TypeNameResolver(context.Compilation);
                     if (type.BaseType is INamedTypeSymbol baseType)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(location, baseType, context.ReportDiagnostic);
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, baseType, context.ReportDiagnostic);
 
                     foreach (var interfaceType in type.Interfaces)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(location, interfaceType, context.ReportDiagnostic);
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, interfaceType, context.ReportDiagnostic);
 
-                    DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(location, type, context.ReportDiagnostic);
+                    DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);
                 context.RegisterSymbolAction(context =>
                 {
@@ -308,6 +320,11 @@ namespace ILLink.RoslynAnalyzer
                 || methodSymbol.AssociatedSymbol is not IPropertySymbol propertySymbol
                 || !propertySymbol.Type.IsTypeInterestingForDataflow(isByRef: propertySymbol.RefKind is not RefKind.None)
                 || propertySymbol.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None)
+                return;
+
+            // For C# 14 extension properties, property-level DAM does not propagate to accessors
+            // and we do not consider property vs accessor conflicts meaningful. Skip conflict checks.
+            if (methodSymbol.HasExtensionParameterOnType())
                 return;
 
             // None on the return type of 'get' matches unannotated

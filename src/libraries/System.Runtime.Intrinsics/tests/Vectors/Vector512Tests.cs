@@ -5973,14 +5973,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector512DoubleEqualsNaNTest()
         {
-            Vector512<double> nan = Vector512.Create(double.NaN);
+            Vector512<double> nan = Vector512<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector512SingleEqualsNaNTest()
         {
-            Vector512<float> nan = Vector512.Create(float.NaN);
+            Vector512<float> nan = Vector512<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
@@ -7894,5 +7894,113 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Fact]
         public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
+
+        [Fact]
+        public void EDoubleTest() => TestConstant(Vector512<double>.E, double.E);
+
+        [Fact]
+        public void ESingleTest() => TestConstant(Vector512<float>.E, float.E);
+
+        [Fact]
+        public void EpsilonDoubleTest() => TestConstant(Vector512<double>.Epsilon, double.Epsilon);
+
+        [Fact]
+        public void EpsilonSingleTest() => TestConstant(Vector512<float>.Epsilon, float.Epsilon);
+
+        [Fact]
+        public void NaNDoubleTest() => TestConstant(Vector512<double>.NaN, double.NaN);
+
+        [Fact]
+        public void NaNSingleTest() => TestConstant(Vector512<float>.NaN, float.NaN);
+
+        [Fact]
+        public void NegativeInfinityDoubleTest() => TestConstant(Vector512<double>.NegativeInfinity, double.NegativeInfinity);
+
+        [Fact]
+        public void NegativeInfinitySingleTest() => TestConstant(Vector512<float>.NegativeInfinity, float.NegativeInfinity);
+
+        [Fact]
+        public void NegativeOneDoubleTest() => TestConstant(Vector512<double>.NegativeOne, -1.0);
+
+        [Fact]
+        public void NegativeOneInt16Test() => TestConstant<short>(Vector512<short>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt32Test() => TestConstant<int>(Vector512<int>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt64Test() => TestConstant<long>(Vector512<long>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSByteTest() => TestConstant<sbyte>(Vector512<sbyte>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSingleTest() => TestConstant(Vector512<float>.NegativeOne, -1.0f);
+
+        [Fact]
+        public void NegativeZeroDoubleTest() => TestConstant(Vector512<double>.NegativeZero, double.NegativeZero);
+
+        [Fact]
+        public void NegativeZeroSingleTest() => TestConstant(Vector512<float>.NegativeZero, float.NegativeZero);
+
+        [Fact]
+        public void PiDoubleTest() => TestConstant(Vector512<double>.Pi, double.Pi);
+
+        [Fact]
+        public void PiSingleTest() => TestConstant(Vector512<float>.Pi, float.Pi);
+
+        [Fact]
+        public void PositiveInfinityDoubleTest() => TestConstant(Vector512<double>.PositiveInfinity, double.PositiveInfinity);
+
+        [Fact]
+        public void PositiveInfinitySingleTest() => TestConstant(Vector512<float>.PositiveInfinity, float.PositiveInfinity);
+
+        [Fact]
+        public void TauDoubleTest() => TestConstant(Vector512<double>.Tau, double.Tau);
+
+        [Fact]
+        public void TauSingleTest() => TestConstant(Vector512<float>.Tau, float.Tau);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector512<double> actual, double expected)
+        {
+            for (int i = 0; i < Vector512<double>.Count; i++)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector512<float> actual, float expected)
+        {
+            for (int i = 0; i < Vector512<float>.Count; i++)
+            {
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant<T>(Vector512<T> actual, T expected)
+            where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < Vector512<T>.Count; i++)
+            {
+                Assert.Equal(expected, actual[i]);
+            }
+        }
     }
 }

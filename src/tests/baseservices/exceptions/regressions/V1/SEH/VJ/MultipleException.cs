@@ -16,7 +16,7 @@ class UserException : Exception {
 public class MultipleException {
 	private int ThreadId;
 
-	public MultipleException(int id){
+	private MultipleException(int id){
 		ThreadId = id;
 	}
 		

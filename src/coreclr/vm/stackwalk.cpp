@@ -1113,7 +1113,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #endif // FEATURE_HIJACK
 
     // FRAME_TOP must not be 0/NULL.
-    static_assert_no_msg(FRAME_TOP_VALUE != 0);
+    static_assert(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -2988,17 +2988,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )
     {
-        BOOL fReportInteropMD =
-        // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-        // was passed to the stub as its secret argument. This is the true interop MD.
-        // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-        // the call is made using the CALLI instruction.
-            m_crawl.pFrame != FRAME_TOP &&
-            m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
-            m_crawl.pFunc != NULL &&
-            m_crawl.pFunc->IsILStub() &&
-            m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
-
         if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
@@ -3019,6 +3008,16 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
+            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
+            // was passed to the stub as its secret argument. This is the true interop MD.
+            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
+            // the call is made using the CALLI instruction.
+            bool fReportInteropMD =
+                m_crawl.pFrame != FRAME_TOP
+                && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
+                && m_crawl.pFunc != NULL
+                && m_crawl.pFunc->IsILStub()
+                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();

@@ -82,7 +82,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                                if (typeInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
                                             }
                                             else
                                             {
@@ -90,15 +91,24 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                         }
                                     }
-                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
-                                    {
-                                        // This will always succeed thanks to the runtime type loader
-                                    }
                                     else
                                     {
-                                        triggersWarning = true;
-                                    }
+                                        if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                        {
+                                            // This will always succeed thanks to the runtime type loader
+                                        }
+                                        else
+                                        {
+                                            triggersWarning = true;
+                                        }
 
+                                        // This should technically be in the IsConstrainedToBeReferenceTypes branch above
+                                        // but we have trim warning suppressions in dotnet/runtime and elsewhere that rely on the implementation
+                                        // detail that reference type instantiations will work, even if the generic is not
+                                        // constrained to be a reference type.
+                                        // MarkType will try to come up with a reference type type loader template.
+                                        _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                    }
                                 }
                                 else if (value == NullValue.Instance)
                                 {
@@ -145,7 +155,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
+                                                if (methodInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
                                             }
                                             else
                                             {

@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-// NOTE on Frame Size C_ASSERT usage in this file
-// if the frame size changes then the stubs have to be revisited for correctness
-// kindly revist the logic and then update the constants so that the C_ASSERT will again fire
-// if someone changes the frame size.  You are expected to keep this hard coded constant
-// up to date so that changes in the frame size trigger errors at compile time if the code is not altered
-
 // Precompiled Header
 
 #include "common.h"

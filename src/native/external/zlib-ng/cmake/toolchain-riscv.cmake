@@ -1,28 +1,25 @@
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR riscv64)
+set(CMAKE_SYSTEM_VERSION 1)
+
+set(CMAKE_C_COMPILER_TARGET riscv64-linux-gnu)
+set(CMAKE_CXX_COMPILER_TARGET riscv64-linux-gnu)
+
 set(CMAKE_CROSSCOMPILING TRUE)
-set(CMAKE_SYSTEM_NAME "Linux")
-set(CMAKE_SYSTEM_PROCESSOR "riscv64")
+set(CMAKE_CROSSCOMPILING_EMULATOR qemu-riscv64 -cpu rv64,zba=true,zbb=true,zbc=true,zbs=true,v=true,vlen=512,elen=64,vext_spec=v1.0 -L /usr/${CMAKE_C_COMPILER_TARGET}/)
 
-# Avoid to use system path for cross-compile
-set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
-set(TOOLCHAIN_PATH "" CACHE STRING "The toolchain path.")
-if(NOT TOOLCHAIN_PATH)
-  set(TOOLCHAIN_PATH ${CMAKE_SOURCE_DIR}/prebuilt-riscv-toolchain-qemu/riscv-clang)
+find_program(C_COMPILER_FULL_PATH NAMES ${CMAKE_C_COMPILER_TARGET}-gcc)
+if(NOT C_COMPILER_FULL_PATH)
+    message(FATAL_ERROR "Cross-compiler for ${CMAKE_C_COMPILER_TARGET} not found")
 endif()
+set(CMAKE_C_COMPILER ${C_COMPILER_FULL_PATH})
 
-set(TOOLCHAIN_PREFIX "riscv64-unknown-linux-gnu-" CACHE STRING "The toolchain prefix.")
-set(QEMU_PATH "" CACHE STRING "The qemu path.")
-if(NOT QEMU_PATH)
-  set(QEMU_PATH ${CMAKE_SOURCE_DIR}/prebuilt-riscv-toolchain-qemu/riscv-qemu/bin/qemu-riscv64)
+find_program(CXX_COMPILER_FULL_PATH NAMES g++-${CMAKE_CXX_COMPILER_TARGET} ${CMAKE_CXX_COMPILER_TARGET}-g++)
+if(CXX_COMPILER_FULL_PATH)
+    set(CMAKE_CXX_COMPILER ${CXX_COMPILER_FULL_PATH})
 endif()
-
-# toolchain setting
-set(CMAKE_C_COMPILER "${TOOLCHAIN_PATH}/bin/${TOOLCHAIN_PREFIX}clang")
-set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PATH}/bin/${TOOLCHAIN_PREFIX}clang++")
-
-# disable auto-vectorizer
-add_compile_options(-fno-vectorize -fno-slp-vectorize)
-
-# emulator setting
-set(QEMU_CPU_OPTION "rv64,zba=true,zbb=true,zbc=true,zbs=true,v=true,vlen=512,elen=64,vext_spec=v1.0")
-set(CMAKE_CROSSCOMPILING_EMULATOR ${QEMU_PATH} -cpu ${QEMU_CPU_OPTION} -L ${TOOLCHAIN_PATH}/sysroot/)

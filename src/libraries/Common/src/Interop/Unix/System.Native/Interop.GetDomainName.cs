@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 internal static partial class Interop
@@ -31,7 +32,7 @@ internal static partial class Interop
                 throw new InvalidOperationException($"{nameof(GetDomainName)}: {err}");
             }
 
-            string domainName = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            string domainName = Utf8StringMarshaller.ConvertToManaged(name)!;
             if (domainName == "(none)")
             {
                 return string.Empty;

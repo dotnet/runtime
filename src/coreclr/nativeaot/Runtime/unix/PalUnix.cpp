@@ -40,6 +40,7 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX
@@ -1231,11 +1232,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-void PalFlushProcessWriteBuffers()
-{
-    GCToOSInterface::FlushProcessWriteBuffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;

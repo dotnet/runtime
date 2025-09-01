@@ -14,11 +14,8 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
-        internal static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
-
-        // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
-        internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        // TODO (https://github.com/dotnet/runtime/issues/118609): Windows currently does not support PKCS#8 export when imported as private key.
+        internal static bool SupportsExportingPrivateKeyPkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
@@ -305,26 +302,9 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    DecodeExpandedKey(
-                        mldsa,
+                    MLDsaPrivateKeyAsn.Decode(
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
-        }
-
-        // TODO remove this when windows supports draft 10 PKCS#8 format
-        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            try
-            {
-                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-            }
-            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
-            {
-                return new MLDsaPrivateKeyAsn
-                {
-                    ExpandedKey = (mldsa.Algorithm.PrivateKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
-                };
-            }
         }
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
@@ -341,26 +321,9 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    DecodePrivateSeed(
-                        mldsa,
+                    MLDsaPrivateKeyAsn.Decode(
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
-        }
-
-        // TODO remove this when windows supports draft 10 PKCS#8 format
-        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            try
-            {
-                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-            }
-            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
-            {
-                return new MLDsaPrivateKeyAsn
-                {
-                    Seed = (mldsa.Algorithm.PrivateSeedSizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
-                };
-            }
         }
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>

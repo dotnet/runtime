@@ -41,12 +41,6 @@
 #include "perfmap.h"
 #endif
 
-// NOTE on Frame Size C_ASSERT usage in this file
-// if the frame size changes then the stubs have to be revisited for correctness
-// kindly revist the logic and then update the constants so that the C_ASSERT will again fire
-// if someone changes the frame size.  You are expected to keep this hard coded constant
-// up to date so that changes in the frame size trigger errors at compile time if the code is not altered
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -786,11 +780,11 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     BEGIN_DYNAMIC_HELPER_EMIT(10);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -808,11 +802,11 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     // Move an argument into the second argument register and jump to a target function.
 
     *p++ = 0xBA; // mov edx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 }
 
@@ -830,15 +824,15 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = 0xBA; // mov edx, XXXXXX
-    *(INT32 *)p = (INT32)arg2;
+    SET_UNALIGNED_32(p, (INT32)arg2);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -848,15 +842,15 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 {
     BEGIN_DYNAMIC_HELPER_EMIT(12);
 
-    *(UINT16 *)p = 0xD18B; // mov edx, ecx
+    SET_UNALIGNED_16(p, 0xD18B); // mov edx, ecx
     p += 2;
 
     *p++ = 0xB9; // mov ecx, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
     p += 4;
 
     END_DYNAMIC_HELPER_EMIT();
@@ -876,7 +870,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
     BEGIN_DYNAMIC_HELPER_EMIT(6);
 
     *p++ = 0xB8; // mov eax, XXXXXX
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     *p++ = 0xC3; // ret
@@ -889,7 +883,7 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 9 : 6);
 
     *p++ = 0xA1; // mov eax, [XXXXXX]
-    *(INT32 *)p = (INT32)arg;
+    SET_UNALIGNED_32(p, (INT32)arg);
     p += 4;
 
     if (offset != 0)
@@ -927,13 +921,13 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     // push arg
     *p++ = 0x68;
-    *(INT32 *)p = arg;
+    SET_UNALIGNED_32(p, arg);
     p += 4;
 
 #ifdef UNIX_X86_ABI
     // mov eax, target
     *p++ = 0xB8;
-    *(INT32 *)p = target;
+    SET_UNALIGNED_32(p, target);
     p += 4;
 #else
     // push eax
@@ -942,9 +936,9 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
 #ifdef UNIX_X86_ABI
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
 #else
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
 #endif
     p += 4;
 
@@ -971,18 +965,18 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     // push arg
     *p++ = 0x68;
-    *(INT32 *)p = arg;
+    SET_UNALIGNED_32(p, arg);
     p += 4;
 
     // push arg2
     *p++ = 0x68;
-    *(INT32 *)p = arg2;
+    SET_UNALIGNED_32(p, arg2);
     p += 4;
 
 #ifdef UNIX_X86_ABI
     // mov eax, target
     *p++ = 0xB8;
-    *(INT32 *)p = target;
+    SET_UNALIGNED_32(p, target);
     p += 4;
 #else
     // push eax
@@ -991,9 +985,9 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     *p++ = X86_INSTR_JMP_REL32; // jmp rel32
 #ifdef UNIX_X86_ABI
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), (PCODE)DynamicHelperArgsStub));
 #else
-    *(INT32 *)p = rel32UsingJumpStub((INT32 *)(p + rxOffset), target);
+    SET_UNALIGNED_32(p, rel32UsingJumpStub((INT32 *)(p + rxOffset), target));
 #endif
     p += 4;
 
@@ -1045,9 +1039,9 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 _ASSERTE(pLookup->testForNull && i > 0);
 
                 // cmp dword ptr[eax + sizeOffset],slotOffset
-                *(UINT16*)p = 0xb881; p += 2;
-                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
-                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+                SET_UNALIGNED_16(p, 0xb881); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->sizeOffset); p += 4;
+                SET_UNALIGNED_32(p, (UINT32)slotOffset); p += 4;
 
                 // jle 'HELPER CALL'
                 *p++ = 0x7e;
@@ -1058,12 +1052,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             // mov eax,dword ptr [ecx|eax + offset]
             if (pLookup->offsets[i] >= 0x80)
             {
-                *(UINT16*)p = (i == 0 ? 0x818b : 0x808b); p += 2;
-                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x818b : 0x808b)); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
             }
             else
             {
-                *(UINT16*)p = (i == 0 ? 0x418b : 0x408b); p += 2;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x418b : 0x408b)); p += 2;
                 *p++ = (BYTE)pLookup->offsets[i];
             }
         }
@@ -1083,10 +1077,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->indirections != 0);
 
             // test eax,eax
-            *(UINT16*)p = 0xc085; p += 2;
+            SET_UNALIGNED_16(p, 0xc085); p += 2;
 
             // je 'HELPER_CALL' (a jump of 1 byte)
-            *(UINT16*)p = 0x0174; p += 2;
+            SET_UNALIGNED_16(p, 0x0174); p += 2;
 
             *p++ = 0xC3;    // ret
 

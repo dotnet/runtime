@@ -1298,7 +1298,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
     _ASSERTE(blobRef != nullptr);
     _ASSERTE(lengthRef != nullptr);
 
-    static_assert_no_msg(sizeof(*lengthRef) == sizeof(COUNT_T));
+    static_assert(sizeof(*lengthRef) == sizeof(COUNT_T));
     metadata = assembly->GetPEAssembly()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
     *blobRef = reinterpret_cast<UINT8 *>(const_cast<PTR_VOID>(metadata));
     _ASSERTE(*lengthRef >= 0);

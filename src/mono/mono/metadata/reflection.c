@@ -2728,9 +2728,8 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 	tmp_context.method_inst = ginst;
 
 	inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
-	mono_error_assert_ok (error);
 
-	if (!mono_verifier_is_method_valid_generic_instantiation (inflated)) {
+	if (!is_ok(error) || !inflated || !mono_verifier_is_method_valid_generic_instantiation (inflated)) {
 		mono_error_set_argument (error, NULL, "Invalid generic arguments");
 		return NULL;
 	}

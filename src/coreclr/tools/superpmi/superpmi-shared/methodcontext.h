@@ -242,10 +242,6 @@ public:
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeForBox(CORINFO_CLASS_HANDLE cls);
 
-    void recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
-    void dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value);
-    CORINFO_CLASS_HANDLE repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls);
-
     void recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -713,13 +709,9 @@ public:
                             CORINFO_CONTEXT_HANDLE context,
                             CORINFO_SIG_INFO*      sig);
 
-    void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result);
+    void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection, CORINFO_VARARGS_HANDLE result);
     void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
-    CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection);
-
-    void recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result);
-    void dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value);
-    bool repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig);
+    CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
 
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
@@ -761,10 +753,6 @@ public:
     LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
     void dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value);
-
-    void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
-    void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
-    bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
     void recErrorList(const char* error);
     void dmpErrorList(DWORD key, DWORD value);
@@ -1207,7 +1195,7 @@ enum mcPackets
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
-    Packet_GetTypeForBoxOnStack = 221,
+    //Packet_GetTypeForBoxOnStack = 221,
     Packet_GetTypeDefinition = 222,
     Packet_GetFpStructLowering = 223,
     Packet_GetSpecialCopyHelper = 224,

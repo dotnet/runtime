@@ -20,7 +20,6 @@
 #include "crtwrap.h"
 #include "winwrap.h"
 #include "staticcontract.h"
-#include "static_assert.h"
 
 #if HOST_64BIT
     #define POINTER_BITS (64)
@@ -270,7 +269,7 @@ typedef SIZE_T      CLR_U;
 
     typedef bool            CLR_BOOL;
 
-static_assert_no_msg(sizeof(CLR_BOOL) == 1);
+static_assert(sizeof(CLR_BOOL) == 1);
 
 #define CLR_BOOL_MAX    BOOL_MAX
 #define CLR_BOOL_MIN    BOOL_MIN

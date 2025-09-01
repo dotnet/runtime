@@ -1374,11 +1374,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
             static AnnotatedBase GetInstance() => new Derived();
 
             [Kept]
+            static AnnotatedBase GetDerivedWithInterfaceInstance() => new DerivedWithInterface();
+
+            [Kept]
             public static void Test()
             {
                 Type t = GetInstance().GetType();
                 t.RequiresAll();
-                var t2 = typeof(DerivedWithInterface);
+                var t2 = GetDerivedWithInterfaceInstance().GetType();
             }
         }
 

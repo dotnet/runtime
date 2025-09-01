@@ -89,8 +89,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, data, context);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
@@ -99,8 +98,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, []);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
         {
@@ -110,9 +108,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, context);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuNoContext(MLDsaAlgorithm algorithm)
         {
@@ -120,9 +116,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, [], []);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuWithContext(MLDsaAlgorithm algorithm)
         {
@@ -228,7 +222,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         public void ImportPrivateKey_CannotReconstructSeed()
         {
             byte[] privateKey;
@@ -295,7 +289,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyMu(testCase.Mu, testCase.Signature));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         [MemberData(nameof(MLDsaTestsData.AllPureMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
         public void NistImportPrivateKeyVerifyExportsAndSignature(MLDsaNistTestCase testCase)
         {
@@ -332,7 +326,7 @@ namespace System.Security.Cryptography.Tests
                 export => AssertExportPkcs8FromPublicKey(() => export(mldsa)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPrivateKey_Export(MLDsaKeyInfo info)
         {
@@ -394,7 +388,7 @@ namespace System.Security.Cryptography.Tests
 
         protected static byte[]? CalculateMu(MLDsa mldsa, byte[] data, byte[]? context = null)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (MLDsaTestHelpers.ExternalMuIsSupported)
             {
                 byte[] mu = new byte[mldsa.Algorithm.MuSizeInBytes];

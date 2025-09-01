@@ -382,6 +382,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
@@ -1448,16 +1450,12 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
-             Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
-             Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\DSA.Create.SecurityTransforms.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
@@ -1865,6 +1863,8 @@
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
@@ -1881,6 +1881,8 @@
              Link="Common\System\Security\Cryptography\DSACng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\DSACng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.HashAlgorithm.cs"
              Link="Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.cs"

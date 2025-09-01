@@ -305,8 +305,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         return value;
                     }
 
-                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+
+                    // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+                    if (setMethod.HasExtensionParameterOnType())
+                    {
+                        arguments.Add(instanceValue);
+                        instanceValue = TopValue;
+                    }
+
+                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     foreach (var val in propertyRef.Arguments)
                         arguments.Add(Visit(val, state));
                     arguments.Add(value);
@@ -705,14 +713,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // Accessing property for reading is really a call to the getter
             // The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
             TValue instanceValue = Visit(operation.Instance, state);
-            IMethodSymbol? getMethod = operation.Property.GetGetMethod();
+            IMethodSymbol getMethod = operation.Property.GetGetMethod()!;
+            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+            // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+            if (getMethod.HasExtensionParameterOnType())
+            {
+                arguments.Add(instanceValue);
+                instanceValue = TopValue;
+            }
 
             // Property may be an indexer, in which case there will be one or more index arguments
-            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
             foreach (var val in operation.Arguments)
                 arguments.Add(Visit(val, state));
 
-            return HandleMethodCallHelper(getMethod!, instanceValue, arguments.ToImmutableArray(), operation, state);
+            return HandleMethodCallHelper(getMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
         }
 
         public override TValue VisitEventReference(IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -890,7 +904,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
                 var current = state.Current;
                 ApplyCondition(
-                    doesNotReturnIfConditionValue == false
+                    !doesNotReturnIfConditionValue
                         ? conditionValue
                         : conditionValue.Negate(),
                     ref current);
@@ -910,6 +924,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TValue instanceValue = Visit(instance, state);
 
             var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>();
+
+            // For calls to C# 14 extensions, treat the instance argument as a regular argument.
+            // The extension method doesn't have an implicit this, yet (unlike for existing extension methods)
+            // the IOperation represents it as having an Instance.
+            if (method.HasExtensionParameterOnType())
+            {
+                argumentsBuilder.Add(instanceValue);
+                instanceValue = TopValue;
+            }
+
             foreach (var argument in arguments)
             {
                 // For __arglist argument there might not be any parameter

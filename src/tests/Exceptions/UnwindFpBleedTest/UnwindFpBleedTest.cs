@@ -4,6 +4,9 @@ using Xunit;
 
 public class Program
 {
+    // Make sure that the JIT doesn't optimize away the loops.
+    static volatile int iterations = 10;
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -18,7 +21,7 @@ public class Program
         double a8 = 9.0;
         double a9 = 10.0;
 
-        for (int i = 1; i < 10; i++)
+        for (int i = 1; i < iterations; i++)
         {
             a0 *= 1.0;
             a1 *= 2.0;
@@ -32,19 +35,31 @@ public class Program
             a9 *= 10.0;
         }
 
+        a0 += 0.1;
+        a1 += 0.2;
+        a2 += 0.3;
+        a3 += 0.4;
+        a4 += 0.5;
+        a5 += 0.6;
+        a6 += 0.7;
+        a7 += 0.8;
+        a8 += 0.9;
+        a9 += 1.1;
+
+
         EHMethod();
 
         bool isExpectedValue =
-            a0 == 1.0
-            && a1 == Math.Pow(2, 10)
-            && a2 == Math.Pow(3, 10)
-            && a3 == Math.Pow(4, 10)
-            && a4 == Math.Pow(5, 10)
-            && a5 == Math.Pow(6, 10)
-            && a6 == Math.Pow(7, 10)
-            && a7 == Math.Pow(8, 10)
-            && a8 == Math.Pow(9, 10)
-            && a9 == Math.Pow(10, 10);
+            a0 == 1.1
+            && a1 == Math.Pow(2, 10) + 0.2
+            && a2 == Math.Pow(3, 10) + 0.3
+            && a3 == Math.Pow(4, 10) + 0.4
+            && a4 == Math.Pow(5, 10) + 0.5
+            && a5 == Math.Pow(6, 10) + 0.6
+            && a6 == Math.Pow(7, 10) + 0.7
+            && a7 == Math.Pow(8, 10) + 0.8
+            && a8 == Math.Pow(9, 10) + 0.9
+            && a9 == Math.Pow(10, 10) + 1.1;
 
         return isExpectedValue ? 100 : 1;
     }
@@ -71,14 +86,21 @@ public class Program
         double a24 = 1, a25 = 2, a26 = 3, a27 = 4, a28 = 5, a29 = 6, a30 = 7, a31 = 8;
 
         // Some busy math to prevent easy optimizations and folding.
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < iterations; i++)
         {
             a0 -= 1; a1 -= 2; a2 -= 3; a3 -= 4; a4 -= 5; a5 -= 6; a6 -= 7; a7 -= 8;
             a8 -= 9; a9 -= 10; a10 -= 11; a11 -= 12; a12 -= 13; a13 -= 14; a14 -= 15; a15 -= 16;
             a16 -= 17; a17 -= 18; a18 -= 19; a19 -= 20; a20 -= 21; a21 -= 22; a22 -= 23; a23 -= 24;
             a24 -= 25; a25 -= 26; a26 -= 27; a27 -= 28; a28 -= 29; a29 -= 30; a30 -= 31; a31 -= 32;
-        }
 
-        throw new Exception();
+            if (i == 7)
+            {
+                throw new Exception(
+                    (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 +
+                    a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15 +
+                    a16 + a17 + a19 + a20 + a21 + a22 + a23 +
+                    a24 + a25 + a26 + a27 + a28 + a29 + a30 + a31).ToString());
+            }
+        }
     }
 }

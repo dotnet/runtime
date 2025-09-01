@@ -130,6 +130,16 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 #endif
 }
 
+bool TieredCompilationManager::IsTieringDelayActive()
+{
+    LIMITED_METHOD_CONTRACT;
+#if defined(FEATURE_TIERED_COMPILATION)
+    return m_methodsPendingCountingForTier1 != nullptr;
+#else
+    return false;
+#endif // FEATURE_TIERED_COMPILATION
+}
+
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
 
 void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMethodDesc)
@@ -572,12 +582,6 @@ void TieredCompilationManager::BackgroundWorkerStart()
         INDEBUG(s_backgroundWorkerThread = nullptr);
         return;
     }
-}
-
-bool TieredCompilationManager::IsTieringDelayActive()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_methodsPendingCountingForTier1 != nullptr;
 }
 
 bool TieredCompilationManager::TryDeactivateTieringDelay()

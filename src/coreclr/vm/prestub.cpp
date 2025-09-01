@@ -375,31 +375,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pConfig->MayUsePrecompiledCode())
     {
-#ifdef FEATURE_READYTORUN
-        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
-        {
-            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
-            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
-            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
-            {
-                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
-                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
-                {
-                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
-                    {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != (PCODE)NULL)
-                        {
-                            LOG_USING_R2R_CODE(this);
-                            pConfig->SetNativeCode(pCode, &pCode);
-                        }
-                    }
-                }
-            }
-        }
-#endif // FEATURE_READYTORUN
-
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -972,7 +947,25 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             return pOtherCode;
         }
 
-        SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+        NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+
+        if (IsILStub())
+        {
+            CodeHeader* pHdr = ((CodeHeader*)PCODEToPINSTR(pCode)) - 1;
+            MethodDesc* pActualMethodDesc = pHdr->GetMethodDesc();
+
+            if (pActualMethodDesc != this)
+            {
+                // Compensate for PInvoke MethodDesc adjustment done in EECodeGenManager::AllocCode.
+                // The GC stress instrumentation must save the non-instrumented version of the code
+                // on MethodDesc that matches CodeHeader so that it can be retrieved later during
+                // GC stress interrupts.
+                _ASSERTE(pActualMethodDesc->IsPInvoke());
+                nativeCodeVersion = NativeCodeVersion(pActualMethodDesc);
+            }
+        }
+
+        SetupGcCoverage(nativeCodeVersion, (BYTE*)pCode);
     }
 #endif // HAVE_GCCOVER
 
@@ -1001,8 +994,15 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
+        InterpByteCodeStart* interpreterCode;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(PCODEToPINSTR(pCode));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
-        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
@@ -1394,9 +1394,9 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 // CreateDerivedTargetSigWithExtraParams:
 // This method is used to create the signature of the target of the ILStub for
-// instantiating, unboxing, and async variant stubs, when/where we need to
-// introduce a generic context/async continuation.
-// And since the generic context/async continuations are hidden parameters,
+// instantiating and unboxing stubs, when/where we need to
+// introduce a generic context.
+// And since the generic contexts are hidden parameters,
 // we're creating a signature that looks like non-generic but with additional
 // parameters right after the thisptr
 void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
@@ -1404,6 +1404,8 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     STANDARD_VM_CONTRACT;
 
     BYTE callingConvention = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    if (msig.HasAsyncContinuation())
+        callingConvention = IMAGE_CEE_CS_CALLCONV_ASYNC;
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     // CallingConvention
@@ -1475,9 +1477,6 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     _ASSERTE(msig.HasThis());
 
-    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
-    _ASSERTE(!msig.HasAsyncContinuation());
-
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
                     &typeContext,
@@ -1499,11 +1498,16 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
+    }
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
     }
 #endif
 
@@ -1515,7 +1519,12 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitSUB();
     pCode->EmitLDIND_I();
 
-#if !defined(TARGET_X86)
+#ifndef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
+
     // Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
@@ -1540,7 +1549,8 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -1593,9 +1603,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
-    _ASSERTE(!msig.HasAsyncContinuation());
-
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
@@ -1607,25 +1614,37 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
         pCode->EmitLoadThis();
     }
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // TARGET_X86
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
 
     // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
+#else
+    // Push the hidden context param
+    // InstantiatingStub
+    pCode->EmitLDC((TADDR)pHiddenArg);
 
-#if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
+
+    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // !TARGET_X86
+#endif
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
@@ -1644,7 +1663,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -2001,12 +2021,29 @@ static InterpThreadContext* GetInterpThreadContext()
     return threadContext;
 }
 
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
     InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        Thread* thread = GetThreadNULLOk();
+        if (thread == NULL)
+            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+        // Verify the current thread isn't in COOP mode.
+        if (thread->PreemptiveGCDisabled())
+            ReversePInvokeBadTransition();
+    }
+
+    GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2242,8 +2279,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsPInvoke())
     {
-        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
         {
+            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
             // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
@@ -2340,13 +2378,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+// Interpreter-FIXME: Call stubs are not yet supported on WASM
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }
@@ -2907,7 +2946,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
-    BinderMethodID managedHelperId = fUnbox ? 
+    BinderMethodID managedHelperId = fUnbox ?
         METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
         METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
 

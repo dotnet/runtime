@@ -475,6 +475,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 #endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
+    // Handle async continuation argument.
+    _ASSERTE(!!sArgPlacerDst.HasAsyncContinuation() == !!sArgPlacerSrc.HasAsyncContinuation());
+    if (sArgPlacerDst.HasAsyncContinuation())
+    {
+        // The async continuation is implicit in both signatures.
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
     // destination locations.
     while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -1523,7 +1535,7 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
     if (pMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    if (pMD->MethodDesc::IsVarArg())
+    if (pMD->IsVarArg())
         COMPlusThrow(kNotSupportedException, IDS_EE_VARARG_NOT_SUPPORTED);
 }
 
@@ -1569,7 +1581,7 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
 
     GCX_COOP();
 
-    MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
+    MethodDesc *pMeth = NonVirtualEntry2MethodDesc((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
@@ -1862,20 +1874,13 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // Next, check for an open delegate
         PCODE code = thisDel->GetMethodPtrAux();
 
-        if (code != (PCODE)NULL)
+        if (code == (PCODE)NULL)
         {
-            // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
-            pMethodHandle = MethodTable::GetMethodDescForSlotAddress(code);
-        }
-        else
-        {
-            MethodTable * pMT = NULL;
-
             // Must be a normal delegate
             code = thisDel->GetMethodPtr();
-
-            pMethodHandle = NonVirtualEntry2MethodDesc(code);
         }
+
+        pMethodHandle = NonVirtualEntry2MethodDesc(code);
     }
 
     _ASSERTE(pMethodHandle);

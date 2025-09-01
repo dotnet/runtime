@@ -1579,8 +1579,8 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
     DAC_INSTANCE* inst;
     ULONG32 fullSize;
 
-    static_assert_no_msg(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
-    static_assert_no_msg((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
+    static_assert(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
+    static_assert((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
 
     //
     // All allocated instances must be kept alive as long
@@ -4175,7 +4175,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
@@ -4183,6 +4183,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
         methodDesc = ExecutionManager::GetCodeMethodDesc(taddr);
         if (!methodDesc)
         {
+            status = S_FALSE;
             goto Exit;
         }
 
@@ -5619,7 +5620,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)

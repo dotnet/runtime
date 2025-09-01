@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            return factory.ConstructedTypeSymbol(_type).Marked;
+            return factory.MetadataTypeSymbol(_type).Marked;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";

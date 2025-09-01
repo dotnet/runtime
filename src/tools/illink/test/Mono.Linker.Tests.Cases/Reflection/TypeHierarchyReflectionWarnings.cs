@@ -18,17 +18,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
     public class TypeHierarchyReflectionWarnings
     {
         [ExpectedWarning("IL2026", "--AnnotatedRUCPublicMethods--")]
+        [ExpectedWarning("IL2026", "DerivedFromAnnotatedPublicParameterlessConstructor()")]
+        [ExpectedWarning("IL2026", "AnnotatedPublicParameterlessConstructor()")]
         public static void Main()
         {
             annotatedBase.GetType().RequiresPublicMethods();
             var baseType = annotatedBaseSharedByNestedTypes.GetType();
             baseType.RequiresPublicNestedTypes();
             baseType.RequiresPublicMethods();
-            var derivedType = typeof(DerivedWithNestedTypes);
+            var derivedType = new DerivedWithNestedTypes();
             // Reference to the derived type should apply base annotations
-            var t1 = typeof(DerivedFromAnnotatedBase);
-            var t2 = typeof(AnnotatedDerivedFromAnnotatedBase);
-            var t3 = typeof(AnnotatedAllDerivedFromAnnotatedBase);
+            var t1 = new DerivedFromAnnotatedBase();
+            var t2 = new AnnotatedDerivedFromAnnotatedBase();
+            var t3 = new AnnotatedAllDerivedFromAnnotatedBase();
             annotatedDerivedFromBase.GetType().RequiresPublicMethods();
             annotatedPublicNestedTypes.GetType().RequiresPublicNestedTypes();
             derivedFromAnnotatedDerivedFromBase.GetType().RequiresPublicFields();
@@ -42,8 +44,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             annotatedAll.GetType().RequiresAll();
             var t4 = typeof(DerivedFromAnnotatedAll1);
             var t5 = typeof(DerivedFromAnnotatedAll2);
-            var t6 = typeof(DerivedFromAnnotatedAllWithInterface);
-            var t7 = typeof(DerivedFromAnnotatedPublicParameterlessConstructor);
+            var t6 = new DerivedFromAnnotatedAllWithInterface();
+            var t7 = new DerivedFromAnnotatedPublicParameterlessConstructor();
             annotatedRUCPublicMethods.GetType().RequiresPublicMethods();
 
             // Instantiate these types just so things are considered reachable
@@ -55,6 +57,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new AnnotatedInterfaces();
             _ = new AnnotatedPublicNestedTypes();
             _ = new AnnotatedRUCPublicMethods();
+            _ = new AnnotatedAll();
+            _ = new AnnotatedPublicParameterlessConstructor();
+            _ = new AnnotatedBase();
+            _ = new AnnotatedBaseSharedByNestedTypes();
 
             // Check that this field doesn't produce a warning even if it is kept
             // for some non-reflection access.
@@ -358,6 +364,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [KeptBaseType(typeof(AnnotatedBase))]
+        [KeptMember(".ctor()")]
         class DerivedFromAnnotatedBase : AnnotatedBase
         {
             [Kept]
@@ -369,6 +376,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
         [KeptBaseType(typeof(AnnotatedBase))]
+        [KeptMember(".ctor()")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
         // No warning for public methods on base type because that annotation is already
         // inherited from the base type.
@@ -595,6 +603,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [KeptBaseType(typeof(AnnotatedBaseSharedByNestedTypes))]
+        [KeptMember(".ctor()")]
         // Nested types that share the outer class base type can produce warnings about base methods of the annotated type.
         [ExpectedWarning("IL2113", "--RUC on AnnotatedBaseSharedByNestedTypes.RUCMethod--")]
         class DerivedWithNestedTypes : AnnotatedBaseSharedByNestedTypes

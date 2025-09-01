@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Tests
     [PlatformSpecific(~TestPlatforms.Windows)]
     public sealed class MLKemCngNotSupportedTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public static void MLKemCng_NotSupportedOnNonWindowsPlatforms()
         {
             // We cannot actually construct a CngKey on non-Windows platforms, so this cheats by just instantiating

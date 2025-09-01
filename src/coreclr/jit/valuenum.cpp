@@ -264,14 +264,14 @@ TFp FpRem(TFp dividend, TFp divisor)
 VNFunc GetVNFuncForNode(GenTree* node)
 {
     static const VNFunc relopUnFuncs[]{VNF_LT_UN, VNF_LE_UN, VNF_GE_UN, VNF_GT_UN};
-    static_assert_no_msg(GT_LE - GT_LT == 1);
-    static_assert_no_msg(GT_GE - GT_LT == 2);
-    static_assert_no_msg(GT_GT - GT_LT == 3);
+    static_assert(GT_LE - GT_LT == 1);
+    static_assert(GT_GE - GT_LT == 2);
+    static_assert(GT_GT - GT_LT == 3);
 
     static const VNFunc binopOvfFuncs[]{VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF};
     static const VNFunc binopUnOvfFuncs[]{VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF};
-    static_assert_no_msg(GT_SUB - GT_ADD == 1);
-    static_assert_no_msg(GT_MUL - GT_ADD == 2);
+    static_assert(GT_SUB - GT_ADD == 1);
+    static_assert(GT_MUL - GT_ADD == 2);
 
     switch (node->OperGet())
     {
@@ -351,11 +351,11 @@ VNFunc GetVNFuncForNode(GenTree* node)
 
 bool ValueNumStore::VNFuncIsOverflowArithmetic(VNFunc vnf)
 {
-    static_assert_no_msg(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
-    static_assert_no_msg(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
-    static_assert_no_msg(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
-    static_assert_no_msg(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
-    static_assert_no_msg(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
+    static_assert(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
+    static_assert(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
+    static_assert(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
+    static_assert(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
+    static_assert(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
 
     return VNF_ADD_OVF <= vnf && vnf <= VNF_MUL_UN_OVF;
 }
@@ -6702,8 +6702,8 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-                case VNF_HWI_SSE42_PopCount:
-                case VNF_HWI_SSE42_X64_PopCount:
+                case VNF_HWI_X86Base_PopCount:
+                case VNF_HWI_X86Base_X64_PopCount:
                 case VNF_HWI_AVX2_LeadingZeroCount:
                 case VNF_HWI_AVX2_TrailingZeroCount:
                 case VNF_HWI_AVX2_X64_LeadingZeroCount:
@@ -8084,7 +8084,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_SSE42_PopCount:
+            case NI_X86Base_PopCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8094,7 +8094,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_SSE42_X64_PopCount:
+            case NI_X86Base_X64_PopCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -10054,11 +10054,11 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
     Chunk*   c      = m_chunks.GetNoExpand(GetChunkNum(vn));
     unsigned offset = ChunkOffset(vn);
     assert(offset < c->m_numUsed);
-    static_assert_no_msg(AreContiguous(CEA_Func0, CEA_Func1, CEA_Func2, CEA_Func3, CEA_Func4));
+    static_assert(AreContiguous(CEA_Func0, CEA_Func1, CEA_Func2, CEA_Func3, CEA_Func4));
     unsigned arity = c->m_attribs - CEA_Func0;
     if (arity <= 4)
     {
-        static_assert_no_msg(sizeof(VNFunc) == sizeof(VNDefFuncAppFlexible));
+        static_assert(sizeof(VNFunc) == sizeof(VNDefFuncAppFlexible));
         funcApp->m_arity           = arity;
         VNDefFuncAppFlexible* farg = c->PointerToFuncApp(offset, arity);
         funcApp->m_func            = farg->m_func;
@@ -12507,7 +12507,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
             ((dataOffset % 2) == 0))
         {
-            static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
+            static_assert((OFFSETOF__CORINFO_String__chars % 2) == 0);
             index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
         }
     }

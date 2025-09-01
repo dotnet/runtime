@@ -81,7 +81,7 @@ internal unsafe partial interface IXCLRDataModule
     [PreserveSig]
     int StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
     [PreserveSig]
-    int EnumMethodInstanceByName(ulong* handle, /*IXCLRDataMethodInstance*/ void** method);
+    int EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method);
     [PreserveSig]
     int EndEnumMethodInstancesByName(ulong handle);
 
@@ -206,9 +206,9 @@ internal unsafe partial interface IXCLRDataProcess
     int GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod);
 
     [PreserveSig]
-    int StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
     [PreserveSig]
-    int EnumMethodInstanceByAddress(ulong* handle, /*IXCLRDataMethodInstance*/ void** method);
+    int EnumMethodInstanceByAddress(ulong* handle, out IXCLRDataMethodInstance? method);
     [PreserveSig]
     int EndEnumMethodInstancesByAddress(ulong handle);
 
@@ -411,4 +411,94 @@ internal unsafe partial interface IXCLRDataTask
 
     [PreserveSig]
     int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+}
+
+internal enum ClrDataSourceType : uint
+{
+    CLRDATA_SOURCE_TYPE_INVALID = 0,
+}
+
+// CLRDATA_IL_ADDRESS_MAP
+internal struct ClrDataILAddressMap
+{
+    public uint ilOffset;
+    public ClrDataAddress startAddress;
+    public ClrDataAddress endAddress;
+    public ClrDataSourceType type;
+}
+
+[GeneratedComInterface]
+[Guid("ECD73800-22CA-4b0d-AB55-E9BA7E6318A5")]
+internal unsafe partial interface IXCLRDataMethodInstance
+{
+    [PreserveSig]
+    int GetTypeInstance(/*IXCLRDataTypeInstance*/ void** typeInstance);
+
+    [PreserveSig]
+    int GetDefinition(/*IXCLRDataMethodDefinition*/ void** methodDefinition);
+
+    [PreserveSig]
+    int GetTokenAndScope(uint* token, void** /*IXCLRDataModule*/ mod);
+
+    [PreserveSig]
+    int GetName(
+        uint flags,
+        uint bufLen,
+        uint* nameLen,
+        char* nameBuf);
+
+    [PreserveSig]
+    int GetFlags(uint* flags);
+
+    [PreserveSig]
+    int IsSameObject(IXCLRDataMethodInstance* method);
+
+    [PreserveSig]
+    int GetEnCVersion(uint* version);
+
+    [PreserveSig]
+    int GetNumTypeArguments(uint* numTypeArgs);
+
+    [PreserveSig]
+    int GetTypeArgumentByIndex(uint index, /*IXCLRDataTypeInstance*/ void** typeArg);
+
+    [PreserveSig]
+    int GetILOffsetsByAddress(
+        ClrDataAddress address,
+        uint offsetsLen,
+        uint* offsetsNeeded,
+        uint* ilOffsets);
+
+    [PreserveSig]
+    int GetAddressRangesByILOffset(
+        uint ilOffset,
+        uint rangesLen,
+        uint* rangesNeeded,
+        /*CLRDATA_ADDRESS_RANGE* */ void* addressRanges);
+
+    [PreserveSig]
+    int GetILAddressMap(
+        uint mapLen,
+        uint* mapNeeded,
+        [In, Out, MarshalUsing(CountElementName = nameof(mapLen))] ClrDataILAddressMap[]? maps);
+
+    [PreserveSig]
+    int StartEnumExtents(ulong* handle);
+
+    [PreserveSig]
+    int EnumExtent(ulong* handle, /*CLRDATA_ADDRESS_RANGE*/ void* extent);
+
+    [PreserveSig]
+    int EndEnumExtents(ulong handle);
+
+    [PreserveSig]
+    int Request(
+        uint reqCode,
+        uint inBufferSize,
+        byte* inBuffer,
+        uint outBufferSize,
+        byte* outBuffer);
+
+    [PreserveSig]
+    int GetRepresentativeEntryAddress(ClrDataAddress* addr);
 }

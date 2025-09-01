@@ -130,6 +130,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -226,6 +230,10 @@ NESTED_ENTRY RhpRethrow, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15

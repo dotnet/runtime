@@ -151,7 +151,7 @@ namespace Microsoft.Android.Build
                 return "linux";
         }
 
-        private static string DetermineAbi(string runtimeIdentifier) =>
+        public static string DetermineAbi(string runtimeIdentifier) =>
             runtimeIdentifier switch
             {
                 "android-x86" => "x86",

@@ -303,7 +303,7 @@ public unsafe class ThisCallTest
         }
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.SizeF GetSize(ThisCallNative.C* c, int unused)
     {
         return new ThisCallNative.SizeF
@@ -313,7 +313,7 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.Width GetWidth(ThisCallNative.C* c)
     {
         return new ThisCallNative.Width
@@ -322,7 +322,7 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.IntWrapper GetHeightAsInt(ThisCallNative.C* c)
     {
         return new ThisCallNative.IntWrapper
@@ -331,13 +331,13 @@ public unsafe class ThisCallTest
         };
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static ThisCallNative.E GetE(ThisCallNative.C* c)
     {
         return c->dummy;
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static CLong GetWidthAsLong(ThisCallNative.C* c)
     {
         return new CLong((nint)c->width);

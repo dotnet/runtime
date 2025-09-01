@@ -16,7 +16,7 @@ namespace System.Formats.Nrbf;
 [DebuggerDisplay("{ArrayType}, rank={Rank}")]
 internal readonly struct ArrayInfo
 {
-#if NET8_0_OR_GREATER
+#if NET
     internal static int MaxArrayLength => Array.MaxLength; // dynamic lookup in case the value changes in a future runtime
 #else
     internal const int MaxArrayLength = 2147483591; // hardcode legacy Array.MaxLength for downlevel runtimes

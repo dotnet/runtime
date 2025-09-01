@@ -321,7 +321,7 @@ namespace System.Text.Json
 
         public static void ValidateUtf8(ReadOnlySpan<byte> utf8Buffer)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (!Utf8.IsValid(utf8Buffer))
             {
                 throw ThrowHelper.GetInvalidOperationException_ReadInvalidUTF8();

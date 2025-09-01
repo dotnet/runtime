@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 {
     /// <summary>
@@ -11,6 +13,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
     {
         public static readonly PatternTestResult Failed = new(isSuccessful: false, stem: null);
 
+        [MemberNotNullWhen(returnValue: true, nameof(Stem))]
         public bool IsSuccessful { get; }
         public string? Stem { get; }
 

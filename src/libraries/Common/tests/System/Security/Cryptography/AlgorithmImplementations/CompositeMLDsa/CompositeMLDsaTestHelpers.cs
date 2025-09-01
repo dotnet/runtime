@@ -154,6 +154,46 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        internal static int ExpectedPublicKeySizeLowerBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            return MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
+                ExecuteComponentFunc(
+                    algorithm,
+                    rsa => rsa.KeySizeInBits / 8,
+                    ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
+                    eddsa => eddsa.KeySizeInBits / 8);
+        }
+
+        internal static int ExpectedPublicKeySizeUpperBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            return MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
+                ExecuteComponentFunc(
+                    algorithm,
+                    rsa => (rsa.KeySizeInBits / 8) + 52, // Add max ASN.1 overhead
+                    ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
+                    eddsa => eddsa.KeySizeInBits / 8);
+        }
+
+        internal static int ExpectedPrivateKeySizeLowerBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            return MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
+                ExecuteComponentFunc(
+                    algorithm,
+                    rsa => rsa.KeySizeInBits / 8,
+                    ecdsa => (ecdsa.KeySizeInBits + 7) / 8,
+                    eddsa => eddsa.KeySizeInBits / 8);
+        }
+
+        internal static int ExpectedPrivateKeySizeUpperBound(CompositeMLDsaAlgorithm algorithm)
+        {
+            return MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
+                ExecuteComponentFunc(
+                    algorithm,
+                    rsa => (rsa.KeySizeInBits / 8) * 9 / 2 + 101, // Add max ASN.1 overhead
+                    ecdsa => 3 * ((ecdsa.KeySizeInBits + 7) / 8) + 47, // Add max ASN.1 overhead
+                    eddsa => eddsa.KeySizeInBits / 8);
+        }
+
         internal static bool IsECDsa(CompositeMLDsaAlgorithm algorithm) => ExecuteComponentFunc(algorithm, rsa => false, ecdsa => true, eddsa => false);
 
         internal static void AssertExportPublicKey(Action<Func<CompositeMLDsa, byte[]>> callback)

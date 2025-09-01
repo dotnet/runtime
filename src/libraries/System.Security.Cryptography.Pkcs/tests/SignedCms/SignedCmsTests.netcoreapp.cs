@@ -72,8 +72,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void SignCmsUsingExplicitDSAKey()
         {
             using (X509Certificate2 cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
@@ -123,8 +122,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CounterSignCmsUsingExplicitRSAKeyForFirstSignerAndDSAForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
@@ -136,8 +134,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CounterSignCmsUsingExplicitDSAKeyForFirstSignerAndECDsaForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
@@ -574,8 +571,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void AddSigner_DSA_EphemeralKey()
         {
             using (DSA dsa = DSA.Create())

@@ -327,14 +327,21 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     }
 
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
-    (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
+    abort_unless(decryptedBytesLen <= flen, "Decrypted bytes length %d exceeds expected length %d", decryptedBytesLen, flen);
+
+    // In some versions of the Android crypto libraries, the leading 0x00 bytes are missing.
+    // Left-pad with 0x00 so EM is always k bytes (k = modulus), as expected by .NET.
+    int32_t leading_zero_padding_length = flen - decryptedBytesLen;
+    memset(to, 0x00, (size_t)leading_zero_padding_length);
+
+    (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*)to + leading_zero_padding_length);
 
     (*env)->DeleteLocalRef(env, cipher);
     (*env)->DeleteLocalRef(env, fromBytes);
     (*env)->DeleteLocalRef(env, decryptedBytes);
     (*env)->DeleteLocalRef(env, algName);
 
-    return (int32_t)decryptedBytesLen;
+    return (int32_t)decryptedBytesLen + leading_zero_padding_length;
 }
 
 PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)

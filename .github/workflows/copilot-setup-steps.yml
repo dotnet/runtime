@@ -15,7 +15,7 @@ jobs:
     # You can define any steps you want, and they will run before the agent starts.
     # If you do not check out your code, Copilot will do this for you.
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v5
 
       - name: Install Dependencies
         env:

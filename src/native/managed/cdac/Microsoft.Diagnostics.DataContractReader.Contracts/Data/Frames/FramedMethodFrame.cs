@@ -12,9 +12,11 @@ internal class FramedMethodFrame : IData<FramedMethodFrame>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.FramedMethodFrame);
         TransitionBlockPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(TransitionBlockPtr)].Offset);
+        MethodDescPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescPtr)].Offset);
         Address = address;
     }
 
     public TargetPointer Address { get; }
     public TargetPointer TransitionBlockPtr { get; }
+    public TargetPointer MethodDescPtr { get; }
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -26,8 +27,16 @@ namespace ILCompiler
 
         public bool CanFold(MethodDesc method)
         {
-            return this != Null
-                && (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation);
+            if (this == Null)
+                return false;
+
+            if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
+                return true;
+
+            if (method.GetTypicalMethodDefinition() is ValueTypeGetFieldHelperMethodOverride)
+                return true;
+
+            return false;
         }
 
         private void EnsureMap(NodeFactory factory)

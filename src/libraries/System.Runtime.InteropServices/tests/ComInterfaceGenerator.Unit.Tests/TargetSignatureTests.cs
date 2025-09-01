@@ -104,7 +104,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -129,7 +129,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -161,7 +161,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransition]
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }

@@ -427,11 +427,11 @@ extern LockOwner g_lockTrustMeIAmThreadSafe;
 class EEThreadId
 {
 private:
-    void *m_FiberPtrId;
+    static SIZE_T const UNKNOWN_ID = INVALID_POINTER_CD;
+    SIZE_T m_FiberPtrId;
 public:
 #ifdef _DEBUG
-    EEThreadId()
-    : m_FiberPtrId(NULL)
+    EEThreadId() : m_FiberPtrId(UNKNOWN_ID)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -441,28 +441,27 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_FiberPtrId = ClrTeb::GetFiberPtrId();
+        m_FiberPtrId = (SIZE_T)ClrTeb::GetFiberPtrId();
     }
 
     bool IsCurrentThread() const
     {
         WRAPPER_NO_CONTRACT;
 
-        return (m_FiberPtrId == ClrTeb::GetFiberPtrId());
+        return (m_FiberPtrId == (SIZE_T)ClrTeb::GetFiberPtrId());
     }
-
 
 #ifdef _DEBUG
     bool IsUnknown() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_FiberPtrId == NULL;
+        return m_FiberPtrId == UNKNOWN_ID;
     }
 #endif
     void Clear()
     {
         LIMITED_METHOD_CONTRACT;
-        m_FiberPtrId = NULL;
+        m_FiberPtrId = UNKNOWN_ID;
     }
 };
 

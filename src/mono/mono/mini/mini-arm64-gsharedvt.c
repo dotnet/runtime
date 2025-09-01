@@ -222,6 +222,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 				arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYREF;
 			else
 				arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL;
+			g_free (dst);
 		} else {
 			nsrc = get_arg_slots (ainfo, &src);
 		}
@@ -403,6 +404,9 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	}
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+
+	g_free (caller_cinfo);
+	g_free (callee_cinfo);
 
 	return info;
 }

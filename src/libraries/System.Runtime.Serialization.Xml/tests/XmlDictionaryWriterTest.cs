@@ -495,7 +495,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85013", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
     public static void XmlBaseWriter_WriteString()
     {
         const byte Chars8Text = 152;

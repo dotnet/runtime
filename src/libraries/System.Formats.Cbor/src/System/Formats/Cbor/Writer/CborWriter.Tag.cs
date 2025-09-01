@@ -38,11 +38,11 @@ namespace System.Formats.Cbor
         public void WriteDateTimeOffset(DateTimeOffset value)
         {
             string dateString =
-#if NET8_0_OR_GREATER
+#if NET
                 value.TotalOffsetMinutes == 0 ?
 #else
                 value.Offset == TimeSpan.Zero ?
-#endif // NET8_0_OR_GREATER
+#endif // NET
                 value.UtcDateTime.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture) : // prefer 'Z' over '+00:00'
                 value.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture);
 
