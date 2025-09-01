@@ -425,7 +425,7 @@ internal sealed class Xcode
                     .ToArray();
                 foreach (string lib in staticLibs)
                 {
-                    toLink += $"    \"{lib}\"{Environment.NewLine}";
+                    toLink += $"    -Wl,-force_load,\"{lib}\"{Environment.NewLine}";
                 }
             }
             else

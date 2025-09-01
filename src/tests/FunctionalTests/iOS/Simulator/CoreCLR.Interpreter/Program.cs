@@ -11,8 +11,7 @@ public static class Program
 {
     public static int Main(string[] args)
     {
-        // TODO: Fix Sys.Log PInvoke
-        // Console.WriteLine("Done!");
+        Console.WriteLine("Done!");
         return 42;
     }
 }

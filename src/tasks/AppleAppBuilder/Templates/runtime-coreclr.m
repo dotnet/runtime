@@ -68,6 +68,10 @@ compute_trusted_platform_assemblies ()
     return strdup([joined UTF8String]);
 }
 
+// Forward declarations for System.Native
+extern void SystemNative_Log(uint8_t* buffer, int32_t length);
+extern void SystemNative_LogError(uint8_t* buffer, int32_t length);
+
 void*
 pinvoke_override (const char *libraryName, const char *entrypointName)
 {
@@ -75,6 +79,15 @@ pinvoke_override (const char *libraryName, const char *entrypointName)
     {
         return dlsym (RTLD_DEFAULT, entrypointName);
     }
+
+    if (!strcmp(libraryName, "libSystem.Native"))
+    {
+        if (!strcmp(entrypointName, "SystemNative_Log"))
+            return (void*)SystemNative_Log;
+        if (!strcmp(entrypointName, "SystemNative_LogError"))
+            return (void*)SystemNative_LogError;
+    }
+
     return NULL;
 }
 
