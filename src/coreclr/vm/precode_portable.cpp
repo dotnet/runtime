@@ -7,13 +7,15 @@
 #include "common.h"
 #include "precode_portable.hpp"
 
+// WASM uses function indices so we should avoid using
+// low order bits for masking.
 #ifdef HOST_64BIT
 #define CANARY_VALUE 0x1234567812345678
+#define NATIVE_ENTRYPOINT_HELPER_BIT 0x8000000000000000
 #else // HOST_64BIT
 #define CANARY_VALUE 0x12345678
+#define NATIVE_ENTRYPOINT_HELPER_BIT 0x80000000
 #endif // HOST_64BIT
-
-#define NATIVE_ENTRYPOINT_HELPER_BIT 0x1
 
 bool PortableEntryPoint::IsNativeEntryPoint(TADDR addr)
 {
