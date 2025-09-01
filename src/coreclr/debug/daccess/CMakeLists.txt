@@ -1,6 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/cdacreader/cmake ${CLR_ARTIFACTS_OBJ_DIR}/cdacreader)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/cdac/cmake ${CLR_ARTIFACTS_OBJ_DIR}/mscordaccore_universal)
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
@@ -43,14 +43,14 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
-target_link_libraries(daccess PRIVATE cdacreader_api)
+target_link_libraries(daccess PRIVATE cdac_api)
 
 add_dependencies(daccess eventing_headers)
 
 if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
   add_definitions(-DUSE_DAC_TABLE_RVA)
 
-  set(args $<$<NOT:$<BOOL:${CLR_CMAKE_HOST_OSX}>>:--dynamic> $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h)
+  set(args $<$<NOT:$<BOOL:${CLR_CMAKE_HOST_APPLE}>>:--dynamic> $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h)
 
   add_custom_command(
     OUTPUT  ${GENERATED_INCLUDE_DIR}/dactablerva.h

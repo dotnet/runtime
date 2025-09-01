@@ -14,6 +14,7 @@ using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.IO;
+using TestLibrary;
 using Xunit;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
@@ -207,7 +208,7 @@ public class Test
         return 100;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
     public static int TestEntryPoint()
     {
         int status = 100;

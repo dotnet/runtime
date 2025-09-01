@@ -113,7 +113,7 @@ namespace System.Formats.Tar.Tests
             using (var reader = new TarReader(stream))
             {
                 PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
-                Assert.Equal(5, entry.ExtendedAttributes.Count);
+                Assert.Equal(3, entry.ExtendedAttributes.Count);
                 Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
                 Assert.Null(reader.GetNextEntry());
             }

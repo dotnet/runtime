@@ -10,4 +10,4 @@ set(GC_PAL_SOURCES
     events.cpp
     cgroup.cpp)
 
-add_library(gc_pal STATIC ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})
+add_library(gc_pal OBJECT ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})

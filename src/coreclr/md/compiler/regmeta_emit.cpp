@@ -27,18 +27,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 #ifdef FEATURE_METADATA_EMIT
 
@@ -908,7 +900,7 @@ HRESULT RegMeta::_DefineTypeRef(
     {
         szUTF8FullQualName = (LPUTF8)szName;
     }
-    PREFIX_ASSUME(szUTF8FullQualName != NULL);
+    _ASSERTE(szUTF8FullQualName != NULL);
 
     ulStringLen = (ULONG)(strlen(szUTF8FullQualName) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));
@@ -1202,7 +1194,7 @@ HRESULT RegMeta::_SetImplements(        // S_OK or error.
 
         i++;
 
-        IfFailGo(UpdateENCLog(TokenFromRid(mdtInterfaceImpl, iInterfaceImpl)));
+        IfFailGo(UpdateENCLog(TokenFromRid(iInterfaceImpl, mdtInterfaceImpl)));
     }
 ErrExit:
 
@@ -1276,7 +1268,7 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     mdEvent     mdEv;
     LPUTF8      szUTF8Event;
     UTF8STR(szEvent, szUTF8Event);
-    PREFIX_ASSUME(szUTF8Event != NULL);
+    _ASSERTE(szUTF8Event != NULL);
 
 
 
@@ -1835,7 +1827,7 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     _ASSERTE(IsNilToken(tdEncloser) || IsTdNested(dwTypeDefFlags));
 
     UTF8STR(szTypeDef, szTypeDefUTF8);
-    PREFIX_ASSUME(szTypeDefUTF8 != NULL);
+    _ASSERTE(szTypeDefUTF8 != NULL);
 
     ulStringLen = (ULONG)(strlen(szTypeDefUTF8) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));

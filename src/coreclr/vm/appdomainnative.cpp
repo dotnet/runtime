@@ -129,6 +129,22 @@ extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
     END_QCALL;
 }
 
+extern "C" STRINGREF* QCALLTYPE String_StrCns(UINT32 rid, Module* pModule)
+{
+    QCALL_CONTRACT;
+
+    STRINGREF* hndStr = NULL;
+
+    BEGIN_QCALL;
+
+    // Retrieve the handle to the CLR string object.
+    hndStr = pModule->ResolveStringRef(RidToToken(rid, mdtString));
+
+    END_QCALL;
+
+    return hndStr;
+}
+
 extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str)
 {
     QCALL_CONTRACT;

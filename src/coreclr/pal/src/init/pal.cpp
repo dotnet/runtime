@@ -19,7 +19,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/thread.hpp"
 #include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
-#include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
 #include "../objmgr/listedobjectmanager.hpp"
@@ -37,6 +36,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/descriptorlimit.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -48,7 +49,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <string.h>
@@ -111,12 +111,11 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static PCRITICAL_SECTION init_critsec = NULL;
+static minipal_mutex* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
-static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
@@ -249,7 +248,7 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("Thread_DefaultStackSize", /*noprefix*/ false, &getenv);
     if (defStackSize.IsSet())
     {
         DWORD size;
@@ -311,31 +310,29 @@ Initialize(
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
 
-    CriticalSectionSubSysInitialize();
-
     if(nullptr == init_critsec)
     {
         pthread_mutex_lock(&init_critsec_mutex); // prevents race condition of two threads
                                                  // initializing the critical section.
         if(nullptr == init_critsec)
         {
-            static CRITICAL_SECTION temp_critsec;
+            static minipal_mutex temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-            InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+            minipal_mutex_init(&temp_critsec);
 
             if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
             {
                 // Another thread got in before us! shouldn't happen, if the PAL
                 // isn't initialized there shouldn't be any other threads
                 WARN("Another thread initialized the critical section\n");
-                InternalDeleteCriticalSection(&temp_critsec);
+                minipal_mutex_destroy(&temp_critsec);
             }
         }
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    InternalEnterCriticalSection(pThread, init_critsec); // here pThread is always nullptr
+    minipal_mutex_enter(init_critsec);
 
     if (init_count == 0)
     {
@@ -403,19 +400,14 @@ Initialize(
             goto CLEANUP1;
         }
 
-        if (!INIT_IncreaseDescriptorLimit())
+        if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
             // We can continue if this fails; we'll just have problems if
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP1;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -543,17 +535,6 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = nullptr;
 
-#ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path))
-        {
-            ERROR("Performance profiling initial failed\n");
-            palError = ERROR_PALINIT_PERF;
-            goto CLEANUP2;
-        }
-        PERFAllocThreadInfo();
-#endif
-
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
@@ -599,7 +580,7 @@ Initialize(
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
-            if (!InitializeFlushProcessWriteBuffers())
+            if (!minipal_initialize_memory_barrier_process_wide())
             {
                 ERROR("Unable to initialize flush process write buffers\n");
                 palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
@@ -607,6 +588,7 @@ Initialize(
             }
         }
 
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -619,7 +601,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -685,16 +667,7 @@ CLEANUP0a:
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-#ifdef PAL_PERF
-    if( retval == 0)
-    {
-         PERFEnableProcessProfile();
-         PERFEnableThreadProfile(FALSE);
-         PERFCalibrate("Overhead of PERF entry/exit");
-    }
-#endif
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
     {
@@ -746,6 +719,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
+#ifndef TARGET_WASM // we don't use shared libraries on wasm
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -753,6 +727,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
@@ -906,10 +881,7 @@ BOOL PALInitLock(void)
         return FALSE;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalEnterCriticalSection(pThread, init_critsec);
+    minipal_mutex_enter(init_critsec);
     return TRUE;
 }
 
@@ -928,55 +900,10 @@ void PALInitUnlock(void)
         return;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/
-
-/*++
-Function:
-    INIT_IncreaseDescriptorLimit [internal]
-
-Abstract:
-    Calls setrlimit(2) to increase the maximum number of file descriptors
-    this process can open.
-
-Return value:
-    TRUE if the call to setrlimit succeeded; FALSE otherwise.
---*/
-static BOOL INIT_IncreaseDescriptorLimit(void)
-{
-#ifndef DONT_SET_RLIMIT_NOFILE
-    struct rlimit rlp;
-    int result;
-
-    result = getrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-    // Set our soft limit for file descriptors to be the same
-    // as the max limit.
-    rlp.rlim_cur = rlp.rlim_max;
-#ifdef __APPLE__
-    // Based on compatibility note in setrlimit(2) manpage for OSX,
-    // trim the limit to OPEN_MAX.
-    if (rlp.rlim_cur > OPEN_MAX)
-    {
-        rlp.rlim_cur = OPEN_MAX;
-    }
-#endif
-    result = setrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-#endif // !DONT_SET_RLIMIT_NOFILE
-    return TRUE;
-}
 
 /*++
 Function:
@@ -1220,5 +1147,5 @@ static BOOL INIT_SharedFilesPath(void)
     return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
 
     // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert_no_msg(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
+    static_assert(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

@@ -10,8 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
-
 namespace System.Net
 {
     /// <devdoc>
@@ -28,11 +26,11 @@ namespace System.Net
 
         internal const uint LoopbackMaskHostOrder = 0xFF000000;
 
-        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0);
-        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 0);
+        public static readonly IPAddress IPv6Any = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0);
+        public static readonly IPAddress IPv6Loopback = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 0);
         public static readonly IPAddress IPv6None = IPv6Any;
 
-        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1], 0);
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1], 0);
 
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
@@ -225,6 +223,14 @@ namespace System.Net
         {
             PrivateAddress = (uint)newAddress;
         }
+
+        /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
+        /// <param name="ipSpan">The text to parse.</param>
+        public static bool IsValid(ReadOnlySpan<char> ipSpan) => IPAddressParser.IsValid(ipSpan);
+
+        /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
+        /// <param name="utf8Text">The text to parse.</param>
+        public static bool IsValidUtf8(ReadOnlySpan<byte> utf8Text) => IPAddressParser.IsValid(utf8Text);
 
         /// <devdoc>
         ///   <para>
@@ -428,6 +434,11 @@ namespace System.Net
                 if (IsIPv4)
                 {
                     ThrowSocketOperationNotSupported();
+                }
+
+                if (this is ReadOnlyIPAddress)
+                {
+                    ThrowSocketOperationNotSupportedReadOnly();
                 }
 
                 // Consider: Since scope is only valid for link-local and site-local
@@ -657,7 +668,7 @@ namespace System.Net
                 {
                     if (this is ReadOnlyIPAddress)
                     {
-                        ThrowSocketOperationNotSupported();
+                        ThrowSocketOperationNotSupportedReadOnly();
                     }
 
                     PrivateAddress = unchecked((uint)value);
@@ -758,11 +769,17 @@ namespace System.Net
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
 
         [DoesNotReturn]
-        private static void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported);
+        private void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported, SR.Format(SR.net_SocketException_OperationNotSupported, AddressFamily));
+
+        [DoesNotReturn]
+        private static void ThrowSocketOperationNotSupportedReadOnly() => throw new SocketException(SocketError.OperationNotSupported, SR.net_SocketException_OperationNotSupported_ReadOnlyIPAddress);
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {
             public ReadOnlyIPAddress(ReadOnlySpan<byte> newAddress) : base(newAddress)
+            { }
+
+            public ReadOnlyIPAddress(ReadOnlySpan<byte> address, long scopeid) : base(address, scopeid)
             { }
         }
     }

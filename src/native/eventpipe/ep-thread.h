@@ -117,7 +117,7 @@ ep_thread_create_activity_id (
 	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-	minipal_guid_v4_create ((minipal_guid_t *)(activity_id));
+	minipal_guid_v4_create ((GUID *)(activity_id));
 }
 
 static

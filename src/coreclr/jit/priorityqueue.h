@@ -58,6 +58,11 @@ public:
         return data.empty();
     }
 
+    void Clear()
+    {
+        data.clear();
+    }
+
     // Insert new element at the back of the vector.
     // Then, while the new element has a higher priority than its parent, move the element up.
     void Push(const T& value)

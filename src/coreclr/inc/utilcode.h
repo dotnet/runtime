@@ -35,7 +35,9 @@ using std::nothrow;
 
 #include "contract.h"
 
-#include <minipal/utils.h>
+#include <stddef.h>
+#include <minipal/guid.h>
+#include <minipal/log.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -47,12 +49,8 @@ using std::nothrow;
 
 #define CoreLibName_W W("System.Private.CoreLib")
 #define CoreLibName_IL_W W("System.Private.CoreLib.dll")
-#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
-#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
 #define CoreLibName_A "System.Private.CoreLib"
 #define CoreLibName_IL_A "System.Private.CoreLib.dll"
-#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
-#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
@@ -103,6 +101,17 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline bool Is32BitInstruction(WORD opcode)
+{
+    bool is32 = ((opcode & 0b11) == 0b11);
+    assert(!is32 || ((opcode & 0b11111) != 0b11111)); // 48-bit and larger instructions unsupported
+    return is32;
+}
+
+#endif
+
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
@@ -149,13 +158,9 @@ typedef LPSTR   LPUTF8;
 #endif
 #endif
 
-#include <stddef.h> // for offsetof
-#include <minipal/utils.h>
-
 #define IS_DIGIT(ch) (((ch) >= W('0')) && ((ch) <= W('9')))
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
 #define INT_TO_DIGIT(i) ((WCHAR)(W('0') + (i)))
-
 
 // Helper will 4 byte align a value, rounding up.
 #define ALIGN4BYTE(val) (((val) + 3) & ~0x3)
@@ -731,8 +736,6 @@ void    SplitPathInterior(
 
 #include "ostype.h"
 
-#define CLRGetTickCount64() GetTickCount64()
-
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
@@ -852,13 +855,14 @@ inline void SetBit(BYTE * pcBits,int iBit,int bOn)
 #endif
 
 template<typename T>
-class SimpleListNode
+class SimpleListNode final
 {
 public:
-    SimpleListNode(const T& _t)
+    SimpleListNode(T const& _t)
+        : data{ _t }
+        , next{}
     {
-        data = _t;
-        next = 0;
+        LIMITED_METHOD_CONTRACT;
     }
 
     T                  data;
@@ -866,43 +870,45 @@ public:
 };
 
 template<typename T>
-class SimpleList
+class SimpleList final
 {
 public:
-    typedef SimpleListNode<T> NodeType;
+    typedef SimpleListNode<T> Node;
 
     SimpleList()
+        : _head{}
     {
-        head = NULL;
+        LIMITED_METHOD_CONTRACT;
     }
 
-    void LinkHead(NodeType* pNode)
+    void LinkHead(Node* pNode)
     {
-        pNode->next = head;
-                      head = pNode;
+        LIMITED_METHOD_CONTRACT;
+        pNode->next = _head;
+        _head = pNode;
     }
 
-    NodeType* UnlinkHead()
+    Node* UnlinkHead()
     {
-        NodeType* ret = head;
+        LIMITED_METHOD_CONTRACT;
+        Node* ret = _head;
 
-        if (head)
+        if (_head)
         {
-            head = head->next;
+            _head = _head->next;
         }
         return ret;
     }
 
-    NodeType* Head()
+    Node* Head()
     {
-        return head;
+        LIMITED_METHOD_CONTRACT;
+        return _head;
     }
 
-protected:
-
-    NodeType* head;
+private:
+    Node* _head;
 };
-
 
 //*****************************************************************************
 // This class implements a dynamic array of structures for which the order of
@@ -943,6 +949,37 @@ public:
         // Free the chunk of memory.
         if (m_pTable != NULL)
             ALLOCATOR::Free(this, m_pTable);
+    }
+
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
+        : m_iCount{ 0 }
+        , m_iSize{ 0 }
+        , m_pTable{ NULL}
+    {
+        LIMITED_METHOD_CONTRACT;
+        other.m_iCount = 0;
+        other.m_iSize = 0;
+        other.m_pTable = NULL;
+    }
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (this != &other)
+        {
+            if (m_pTable != NULL)
+                ALLOCATOR::Free(this, m_pTable);
+
+            m_iCount = other.m_iCount;
+            m_iSize = other.m_iSize;
+            m_pTable = other.m_pTable;
+
+            other.m_iCount = 0;
+            other.m_iSize = 0;
+            other.m_pTable = NULL;
+        }
+        return *this;
     }
 
     void Clear()
@@ -1065,12 +1102,11 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
-    USHORT Count()
+    INT32 Count()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        _ASSERTE(FitsIn<USHORT>(m_iCount));
-        return static_cast<USHORT>(m_iCount);
+        return m_iCount;
     }
 
 private:
@@ -3031,23 +3067,6 @@ private:
     BYTE m_inited;
 };
 
-// 38 characters + 1 null terminating.
-#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
-
-//*****************************************************************************
-// Convert a GUID into a pointer to a string
-//*****************************************************************************
-int GuidToLPSTR(
-    REFGUID guid,   // [IN] The GUID to convert.
-    LPSTR szGuid,   // [OUT] String into which the GUID is stored
-    DWORD cchGuid); // [IN] Size in chars of szGuid
-
-template<DWORD N>
-int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
-{
-    return GuidToLPSTR(guid, s, N);
-}
-
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
 //*****************************************************************************
@@ -3104,11 +3123,11 @@ class RangeList
         return this->RemoveRangesWorker(id);
     }
 
-    BOOL IsInRange(TADDR address, TADDR *pID = NULL)
+    BOOL IsInRange(TADDR address)
     {
         SUPPORTS_DAC;
 
-        return this->IsInRangeWorker(address, pID);
+        return this->IsInRangeWorker(address);
     }
 
 #ifndef DACCESS_COMPILE
@@ -3125,7 +3144,32 @@ class RangeList
     virtual void RemoveRangesWorker(void *id) { }
 #endif // !DACCESS_COMPILE
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL);
+    virtual BOOL IsInRangeWorker(TADDR address);
+
+    template<class F>
+    void ForEachInRangeWorker(TADDR address, F func) const
+    {
+        CONTRACTL
+        {
+            INSTANCE_CHECK;
+            NOTHROW;
+            FORBID_FAULT;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END
+
+        SUPPORTS_DAC;
+
+        for (const RangeListBlock* b = &m_starterBlock; b != nullptr; b = b->next)
+        {
+            for (const Range r : b->ranges)
+            {
+                if (r.id != (TADDR)nullptr && address >= r.start && address < r.end)
+                    func(r.id);
+            }
+        }
+    }
+
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -3196,14 +3240,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 };
 
 //*****************************************************************************
-// Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the
-// MetaData dispenser.
-//*****************************************************************************
-HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
-
-//*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)
 //*****************************************************************************
 struct IMDInternalImport;
@@ -3213,13 +3249,6 @@ HRESULT validateTokenSig(
     ULONG               cbSig,                  // [IN] Size in bytes of the signature.
     DWORD               dwFlags,                // [IN] Method flags.
     IMDInternalImport*  pImport);               // [IN] Internal MD Import interface ptr
-
-//*****************************************************************************
-// Determine the version number of the runtime that was used to build the
-// specified image. The pMetadata pointer passed in is the pointer to the
-// metadata contained in the image.
-//*****************************************************************************
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 
 //*****************************************************************************
 // The registry keys and values that contain the information regarding
@@ -3329,6 +3358,16 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 //  Deposit the jump offset into pcaddu18i+jirl instructions
 //*****************************************************************************
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -3729,7 +3768,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedExchange(
                 reinterpret_cast<LONG volatile *>(target),
                 *reinterpret_cast<LONG *>(/*::operator*/&(value)));
@@ -3741,7 +3780,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedCompareExchange(
                 reinterpret_cast<LONG volatile *>(destination),
                 *reinterpret_cast<LONG*>(/*::operator*/&(exchange)),
@@ -3757,7 +3796,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedExchange64(
                 reinterpret_cast<LONGLONG volatile *>(target),
                 *reinterpret_cast<LONGLONG *>(/*::operator*/&(value)));
@@ -3769,7 +3808,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedCompareExchange64(
                 reinterpret_cast<LONGLONG volatile *>(destination),
                 *reinterpret_cast<LONGLONG*>(/*::operator*/&(exchange)),

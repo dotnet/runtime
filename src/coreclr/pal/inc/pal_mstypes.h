@@ -9,6 +9,7 @@
 #define __PAL_MSTYPES_H__
 
 #include <stdint.h>
+#include <minipal/guid.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -315,17 +316,6 @@ typedef union _LARGE_INTEGER {
     } u;
     LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
-
-#ifndef GUID_DEFINED
-typedef struct _GUID {
-    ULONG   Data1;    // NOTE: diff from Win32, for LP64
-    USHORT  Data2;
-    USHORT  Data3;
-    UCHAR   Data4[ 8 ];
-} GUID;
-typedef const GUID *LPCGUID;
-#define GUID_DEFINED
-#endif // !GUID_DEFINED
 
 typedef struct _FILETIME {
     DWORD dwLowDateTime;

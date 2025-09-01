@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextRagged(IRaggedPattern pattern)
         {
-            ThrowHelper.ThrowIfNull(pattern);
+            ArgumentNullException.ThrowIfNull(pattern);
 
             Pattern = pattern;
         }

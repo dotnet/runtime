@@ -321,7 +321,7 @@ void StackingAllocator::Validate(StackBlock *block, void* spot)
     {
             // If this assert goes off then someone overwrote their buffer!
             // A common candidate is PINVOKE buffer run.  To confirm look
-            // up on the stack for NDirect.* Look for the MethodDesc
+            // up on the stack for PInvoke.* Look for the MethodDesc
             // associated with it.  Be very suspicious if it is one that
             // has a return string buffer!.  This usually means the end
             // programmer did not allocate a big enough buffer before passing
@@ -345,7 +345,7 @@ void StackingAllocator::Clear(StackBlock *ToBlock)
 
     while (p != ToBlock)
     {
-        PREFAST_ASSUME(p != NULL);
+        _ASSERTE(p != NULL);
 
         q = p;
         p = p->m_Next;

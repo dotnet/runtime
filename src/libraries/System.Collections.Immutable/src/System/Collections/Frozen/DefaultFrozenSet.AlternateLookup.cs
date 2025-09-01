@@ -7,8 +7,32 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class DefaultFrozenSet<T>
     {
-        /// <inheritdoc />
-        private protected override int FindItemIndex<TAlternate>(TAlternate item)
+        /// <inheritdoc/>
+        private protected override AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
+            => AlternateLookupDelegateHolder<TAlternate>.Instance;
+
+        private static class AlternateLookupDelegateHolder<TAlternate>
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            /// <summary>
+            /// Invokes <see cref="FindItemIndexAlternate{TAlternate}(TAlternate)"/>
+            /// on instances known to be of type <see cref="DefaultFrozenSet{TValue}"/>.
+            /// </summary>
+            public static readonly AlternateLookupDelegate<TAlternate> Instance = (set, item)
+                => ((DefaultFrozenSet<T>)set).FindItemIndexAlternate(item);
+        }
+
+        /// <inheritdoc cref="FindItemIndex(T)" />
+        private int FindItemIndexAlternate<TAlternate>(TAlternate item)
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
         {
             IAlternateEqualityComparer<TAlternate, T> comparer = GetAlternateEqualityComparer<TAlternate>();
 

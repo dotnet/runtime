@@ -41,11 +41,13 @@ public class MainActivity extends Activity
         }
 
         final Activity ctx = this;
+        MonoRunner.initializeRuntime(entryPointLibName, ctx);
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
-                int retcode = MonoRunner.initialize(entryPointLibName, new String[0], ctx);
+                int retcode = MonoRunner.executeEntryPoint(entryPointLibName, new String[0]);
                 textView.setText("Mono Runtime returned: " + retcode);
+                ctx.reportFullyDrawn();
             }
         }, 1000);
     }

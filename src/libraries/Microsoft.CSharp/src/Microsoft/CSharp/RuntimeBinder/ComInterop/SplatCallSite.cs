@@ -27,6 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         public delegate object InvokeDelegate(object[] args);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal object Invoke(object[] args)
         {
             Debug.Assert(args != null);

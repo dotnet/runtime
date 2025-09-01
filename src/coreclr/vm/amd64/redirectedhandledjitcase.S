@@ -5,9 +5,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
-#define OFFSET_OF_FRAME (8 + SIZEOF_GSCookie)
+#define OFFSET_OF_FRAME 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -18,10 +16,10 @@
 
         //
         // IN: rdi: original IP before redirect
-        //     rsi: Rip from the Thread::GetAbortContext()
         //
 
         mov             rdx, rsp
+        mov             rsi, rdi
 
         // This push of the return address must not be recorded in the unwind
         // info.  After this push, unwinding will work.

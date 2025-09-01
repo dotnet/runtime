@@ -227,6 +227,9 @@ namespace System.Linq
                 return default;
             }
 
+            public override bool Contains(TElement value) =>
+                _source.Contains(value);
+
             private TElement Last(TElement[] items)
             {
                 CachingComparer<TElement> comparer = GetComparer();

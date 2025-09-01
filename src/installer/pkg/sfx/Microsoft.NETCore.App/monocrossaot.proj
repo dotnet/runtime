@@ -11,13 +11,14 @@
     <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
   </PropertyGroup>
 
-  <!-- Only restore the target sfxproj once to avoid any parallel restore issues. -->
-  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' == ''">
-    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" Properties="TargetCrossRid=%(Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
-    <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj')" />
+  <ItemGroup>
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))" Include="android-x64;android-arm64;android-x86;android-arm" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))" Include="browser-wasm" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))" Include="tvossimulator-x64;tvossimulator-arm64;tvos-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))" Include="iossimulator-x64;iossimulator-arm64;ios-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))" Include="maccatalyst-x64;maccatalyst-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+wasi+'))" Include="wasi-wasm" />
+    <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)/MonoCrossAOT/Microsoft.NETCore.App.MonoCrossAOT.%(Identity).sfxproj')" Properties="RealRuntimeBinDir=$(RuntimeBinDir)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
-  </ItemGroup>
 </Project>

@@ -9,11 +9,13 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
+    <EmbeddedResource Include="$(CoreClrProjectRoot)hosts\inc\coreclrhost.h" Link="Templates\coreclrhost.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="TargetOS.cs" />
+    <Compile Include="TargetRuntime.cs" />
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 

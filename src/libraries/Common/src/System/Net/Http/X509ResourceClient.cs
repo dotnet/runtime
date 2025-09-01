@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,6 +81,73 @@ namespace System.Net.Http
             return null;
         }
 
+        private const string SocketsHttpHandlerTypeName = "System.Net.Http.SocketsHttpHandler, System.Net.Http";
+        private const string HttpMessageHandlerTypeName = "System.Net.Http.HttpMessageHandler, System.Net.Http";
+        private const string HttpClientTypeName = "System.Net.Http.HttpClient, System.Net.Http";
+        private const string HttpRequestMessageTypeName = "System.Net.Http.HttpRequestMessage, System.Net.Http";
+        private const string HttpResponseMessageTypeName = "System.Net.Http.HttpResponseMessage, System.Net.Http";
+        private const string HttpResponseHeadersTypeName = "System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http";
+        private const string HttpContentTypeName = "System.Net.Http.HttpContent, System.Net.Http";
+        private const string TaskOfHttpResponseMessageTypeName = "System.Threading.Tasks.Task`1[[System.Net.Http.HttpResponseMessage, System.Net.Http]], System.Runtime";
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(SocketsHttpHandlerTypeName)]
+        private static extern object CreateHttpHandler();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_PooledConnectionIdleTimeout")]
+        private static extern TimeSpan GetPooledConnectionIdleTimeout([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_AllowAutoRedirect")]
+        private static extern bool GetAllowAutoRedirect([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler);
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_AllowAutoRedirect")]
+        private static extern void SetAllowAutoRedirect([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler, bool value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_PooledConnectionIdleTimeout")]
+        private static extern void SetPooledConnectionIdleTimeout([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler, TimeSpan value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(HttpClientTypeName)]
+        private static extern object CreateHttpClient([UnsafeAccessorType(HttpMessageHandlerTypeName)] object handler);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxResponseContentBufferSize")]
+        private static extern long GetMaxResponseContentBufferSize([UnsafeAccessorType(HttpClientTypeName)] object client);
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_MaxResponseContentBufferSize")]
+        private static extern void SetMaxResponseContentBufferSize([UnsafeAccessorType(HttpClientTypeName)] object client, long value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_RequestUri")]
+        private static extern Uri? GetRequestUri([UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage);
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_RequestUri")]
+        private static extern void SetRequestUri([UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, Uri? value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(HttpRequestMessageTypeName)]
+        private static extern object CreateRequestMessage();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Send")]
+        [return: UnsafeAccessorType(HttpResponseMessageTypeName)]
+        private static extern object Send([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SendAsync")]
+        [return: UnsafeAccessorType(TaskOfHttpResponseMessageTypeName)]
+        private static extern object SendAsync([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Content")]
+        [return: UnsafeAccessorType(HttpContentTypeName)]
+        private static extern object GetContent([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_StatusCode")]
+        private static extern HttpStatusCode GetStatusCode([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Headers")]
+        [return: UnsafeAccessorType(HttpResponseHeadersTypeName)]
+        private static extern object GetHeaders([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Location")]
+        private static extern Uri? GetLocation([UnsafeAccessorType(HttpResponseHeadersTypeName)] object headers);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReadAsStream")]
+        private static extern Stream ReadAsStream([UnsafeAccessorType(HttpContentTypeName)] object content);
+
         private static Func<string, CancellationToken, bool, Task<byte[]?>>? CreateDownloadBytesFunc()
         {
             try
@@ -89,48 +157,13 @@ namespace System.Net.Http
                 // the latter can't in turn have an explicit dependency on the former.
 
                 // Get the relevant types needed.
-                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http", throwOnError: false);
-                Type? httpMessageHandlerType = Type.GetType("System.Net.Http.HttpMessageHandler, System.Net.Http", throwOnError: false);
-                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http", throwOnError: false);
-                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http", throwOnError: false);
-                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http", throwOnError: false);
-                Type? httpResponseHeadersType = Type.GetType("System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http", throwOnError: false);
-                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http", throwOnError: false);
-                Type? taskOfHttpResponseMessageType = Type.GetType("System.Threading.Tasks.Task`1[[System.Net.Http.HttpResponseMessage, System.Net.Http]], System.Runtime", throwOnError: false);
+                Type? taskOfHttpResponseMessageType = Type.GetType(TaskOfHttpResponseMessageTypeName, throwOnError: false);
 
-                if (socketsHttpHandlerType == null || httpMessageHandlerType == null || httpClientType == null || httpRequestMessageType == null ||
-                    httpResponseMessageType == null || httpResponseHeadersType == null || httpContentType == null || taskOfHttpResponseMessageType == null)
+                PropertyInfo? taskResultProperty = taskOfHttpResponseMessageType?.GetProperty("Result");
+
+                if (taskResultProperty == null)
                 {
                     Debug.Fail("Unable to load required type.");
-                    return null;
-                }
-
-                // Get the methods on those types.
-                ConstructorInfo? socketsHttpHandlerCtor = socketsHttpHandlerType.GetConstructor(Type.EmptyTypes);
-                PropertyInfo? pooledConnectionIdleTimeoutProp = socketsHttpHandlerType.GetProperty("PooledConnectionIdleTimeout");
-                PropertyInfo? allowAutoRedirectProp = socketsHttpHandlerType.GetProperty("AllowAutoRedirect");
-                ConstructorInfo? httpClientCtor = httpClientType.GetConstructor(new Type[] { httpMessageHandlerType });
-                PropertyInfo? requestUriProp = httpRequestMessageType.GetProperty("RequestUri");
-                ConstructorInfo? httpRequestMessageCtor = httpRequestMessageType.GetConstructor(Type.EmptyTypes);
-                MethodInfo? sendMethod = httpClientType.GetMethod("Send", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
-                MethodInfo? sendAsyncMethod = httpClientType.GetMethod("SendAsync", new Type[] { httpRequestMessageType, typeof(CancellationToken) });
-                PropertyInfo? maxResponseContentBufferSizeProp = httpClientType.GetProperty("MaxResponseContentBufferSize");
-                PropertyInfo? responseContentProp = httpResponseMessageType.GetProperty("Content");
-                PropertyInfo? responseStatusCodeProp = httpResponseMessageType.GetProperty("StatusCode");
-                PropertyInfo? responseHeadersProp = httpResponseMessageType.GetProperty("Headers");
-                PropertyInfo? responseHeadersLocationProp = httpResponseHeadersType.GetProperty("Location");
-                MethodInfo? readAsStreamMethod = httpContentType.GetMethod("ReadAsStream", Type.EmptyTypes);
-                PropertyInfo? taskOfHttpResponseMessageResultProp = taskOfHttpResponseMessageType.GetProperty("Result");
-
-                if (socketsHttpHandlerCtor == null || pooledConnectionIdleTimeoutProp == null ||
-                    allowAutoRedirectProp == null || httpClientCtor == null ||
-                    requestUriProp == null || httpRequestMessageCtor == null ||
-                    sendMethod == null || sendAsyncMethod == null || maxResponseContentBufferSizeProp == null ||
-                    responseContentProp == null || responseStatusCodeProp == null ||
-                    responseHeadersProp == null || responseHeadersLocationProp == null ||
-                    readAsStreamMethod == null || taskOfHttpResponseMessageResultProp == null)
-                {
-                    Debug.Fail("Unable to load required members.");
                     return null;
                 }
 
@@ -138,18 +171,13 @@ namespace System.Net.Http
                 const int PooledConnectionIdleTimeoutSeconds = 15;
                 const int MaxRedirections = 10;
 
-                // Equivalent of:
-                // var socketsHttpHandler = new SocketsHttpHandler() {
-                //     PooledConnectionIdleTimeout = TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds),
-                //     AllowAutoRedirect = false
-                // };
-                // var httpClient = new HttpClient(socketsHttpHandler);
-                // Note: using a ConstructorInfo instead of Activator.CreateInstance, so the ILLinker can see the usage through the lambda method.
-                object? socketsHttpHandler = socketsHttpHandlerCtor.Invoke(null);
-                pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
-                allowAutoRedirectProp.SetValue(socketsHttpHandler, false);
-                object? httpClient = httpClientCtor.Invoke(new object?[] { socketsHttpHandler });
-                maxResponseContentBufferSizeProp.SetValue(httpClient, AiaDownloadLimit);
+                // Use UnsafeAccessors for construction and property access
+                object socketsHttpHandler = CreateHttpHandler();
+                SetAllowAutoRedirect(socketsHttpHandler, false);
+                SetPooledConnectionIdleTimeout(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
+
+                object httpClient = CreateHttpClient(socketsHttpHandler);
+                SetMaxResponseContentBufferSize(httpClient, AiaDownloadLimit);
 
                 return async (string uriString, CancellationToken cancellationToken, bool async) =>
                 {
@@ -160,23 +188,19 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    // Equivalent of:
-                    // HttpRequestMessage requestMessage = new HttpRequestMessage() { RequestUri = new Uri(uri) };
-                    // HttpResponseMessage responseMessage = httpClient.Send(requestMessage, cancellationToken);
-                    // Note: using a ConstructorInfo instead of Activator.CreateInstance, so the ILLinker can see the usage through the lambda method.
-                    object requestMessage = httpRequestMessageCtor.Invoke(null);
-                    requestUriProp.SetValue(requestMessage, uri);
+                    object requestMessage = CreateRequestMessage();
+                    SetRequestUri(requestMessage, uri);
                     object responseMessage;
 
                     if (async)
                     {
-                        Task sendTask = (Task)sendAsyncMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
+                        Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
                         await sendTask.ConfigureAwait(false);
-                        responseMessage = taskOfHttpResponseMessageResultProp.GetValue(sendTask)!;
+                        responseMessage = taskResultProperty.GetValue(sendTask)!;
                     }
                     else
                     {
-                        responseMessage = sendMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
+                        responseMessage = Send(httpClient, requestMessage, cancellationToken);
                     }
 
                     int redirections = 0;
@@ -184,10 +208,10 @@ namespace System.Net.Http
                     bool hasRedirect;
                     while (true)
                     {
-                        int statusCode = (int)responseStatusCodeProp.GetValue(responseMessage)!;
-                        object responseHeaders = responseHeadersProp.GetValue(responseMessage)!;
-                        Uri? location = (Uri?)responseHeadersLocationProp.GetValue(responseHeaders);
-                        redirectUri = GetUriForRedirect((Uri)requestUriProp.GetValue(requestMessage)!, statusCode, location, out hasRedirect);
+                        int statusCode = (int)GetStatusCode(responseMessage);
+                        object responseHeaders = GetHeaders(responseMessage);
+                        Uri? location = GetLocation(responseHeaders);
+                        redirectUri = GetUriForRedirect(GetRequestUri(requestMessage)!, statusCode, location, out hasRedirect);
                         if (redirectUri == null)
                         {
                             break;
@@ -199,28 +223,23 @@ namespace System.Net.Http
                         if (redirections > MaxRedirections)
                         {
                             ReportRedirectsExceeded();
-
                             return null;
                         }
 
                         ReportRedirected(redirectUri);
 
-                        // Equivalent of:
-                        // requestMessage = new HttpRequestMessage() { RequestUri = redirectUri };
-                        // requestMessage.RequestUri = redirectUri;
-                        // responseMessage = httpClient.Send(requestMessage, cancellationToken);
-                        requestMessage = httpRequestMessageCtor.Invoke(null);
-                        requestUriProp.SetValue(requestMessage, redirectUri);
+                        requestMessage = CreateRequestMessage();
+                        SetRequestUri(requestMessage, redirectUri);
 
                         if (async)
                         {
-                            Task sendTask = (Task)sendAsyncMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
+                            Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
                             await sendTask.ConfigureAwait(false);
-                            responseMessage = taskOfHttpResponseMessageResultProp.GetValue(sendTask)!;
+                            responseMessage = taskResultProperty.GetValue(sendTask)!;
                         }
                         else
                         {
-                            responseMessage = sendMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
+                            responseMessage = Send(httpClient, requestMessage, cancellationToken);
                         }
                     }
 
@@ -229,10 +248,8 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    // Equivalent of:
-                    // using Stream responseStream = resp.Content.ReadAsStream();
-                    object content = responseContentProp.GetValue(responseMessage)!;
-                    using Stream responseStream = (Stream)readAsStreamMethod.Invoke(content, null)!;
+                    object content = GetContent(responseMessage);
+                    using Stream responseStream = ReadAsStream(content);
 
                     var result = new MemoryStream();
                     if (async)

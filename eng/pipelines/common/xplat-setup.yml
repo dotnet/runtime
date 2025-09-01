@@ -71,6 +71,8 @@ jobs:
           value: zip
         - name: tarCompression
           value: ''
+        - name: exeExt
+          value: '.exe'
         - name: scriptExt
           value: '.cmd'
         - name: dir
@@ -91,6 +93,8 @@ jobs:
           value: tar
         - name: tarCompression
           value: gz
+        - name: exeExt
+          value: ''
         - name: scriptExt
           value: '.sh'
         - name: dir

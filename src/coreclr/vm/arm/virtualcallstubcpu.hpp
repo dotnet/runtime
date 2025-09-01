@@ -10,8 +10,6 @@
 #include "asmconstants.h"
 #endif
 
-//#define STUB_LOGGING
-
 #include <pshpack1.h>  // Since we are placing code, we want byte packing of the structs
 
 #define USES_LOOKUP_STUBS	1
@@ -162,7 +160,7 @@ struct DispatchHolder
         LIMITED_METHOD_CONTRACT;
 
         // Check that _implTarget is aligned in the DispatchHolder for backpatching
-        static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
+        static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
     }
 
     void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT);

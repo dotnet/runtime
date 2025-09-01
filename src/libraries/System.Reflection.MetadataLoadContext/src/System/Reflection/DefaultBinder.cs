@@ -273,10 +273,7 @@ namespace System
         // Binder and is used by RuntimeType.)
         public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
-            if (match is null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
@@ -318,10 +315,7 @@ namespace System
         //  Binder and is used by RuntimeType.)
         public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
-            if (match is null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;

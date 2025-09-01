@@ -90,14 +90,14 @@ ValueNumFuncDef(ILogB, 1, false, false, false)
 ValueNumFuncDef(Log, 1, false, false, false)
 ValueNumFuncDef(Log2, 1, false, false, false)
 ValueNumFuncDef(Log10, 1, false, false, false)
-ValueNumFuncDef(Max, 2, false, false, false)
-ValueNumFuncDef(MaxMagnitude, 2, false, false, false)
-ValueNumFuncDef(MaxMagnitudeNumber, 2, false, false, false)
-ValueNumFuncDef(MaxNumber, 2, false, false, false)
-ValueNumFuncDef(Min, 2, false, false, false)
-ValueNumFuncDef(MinMagnitude, 2, false, false, false)
-ValueNumFuncDef(MinMagnitudeNumber, 2, false, false, false)
-ValueNumFuncDef(MinNumber, 2, false, false, false)
+ValueNumFuncDef(Max, 2, true, false, false)
+ValueNumFuncDef(MaxMagnitude, 2, true, false, false)
+ValueNumFuncDef(MaxMagnitudeNumber, 2, true, false, false)
+ValueNumFuncDef(MaxNumber, 2, true, false, false)
+ValueNumFuncDef(Min, 2, true, false, false)
+ValueNumFuncDef(MinMagnitude, 2, true, false, false)
+ValueNumFuncDef(MinMagnitudeNumber, 2, true, false, false)
+ValueNumFuncDef(MinNumber, 2, true, false, false)
 ValueNumFuncDef(Pow, 2, false, false, false)
 ValueNumFuncDef(RoundDouble, 1, false, false, false)
 ValueNumFuncDef(RoundInt32, 1, false, false, false)
@@ -108,6 +108,10 @@ ValueNumFuncDef(Sqrt, 1, false, false, false)
 ValueNumFuncDef(Tan, 1, false, false, false)
 ValueNumFuncDef(Tanh, 1, false, false, false)
 ValueNumFuncDef(Truncate, 1, false, false, false)
+
+ValueNumFuncDef(LeadingZeroCount, 1, false, false, false)
+ValueNumFuncDef(TrailingZeroCount, 1, false, false, false)
+ValueNumFuncDef(PopCount, 1, false, false, false)
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 
@@ -149,9 +153,11 @@ ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
+ValueNumFuncDef(JitNewLclArr, 3, false, true, false)
 ValueNumFuncDef(JitNewMdArr, 4, false, true, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
+ValueNumFuncDef(JitReadyToRunNewLclArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, true, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
@@ -185,12 +191,14 @@ ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to
 ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
+#define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
 
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
+#define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32
@@ -199,8 +207,8 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-    //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
-
+    ValueNumFuncDef(Min_UN, 2, true, false, false)  // unsigned min/max intrinsics
+    ValueNumFuncDef(Max_UN, 2, true, false, false)
 #else
 #error Unsupported platform
 #endif

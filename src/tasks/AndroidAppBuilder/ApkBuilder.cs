@@ -4,12 +4,22 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+
+public enum RuntimeFlavorEnum
+{
+    Mono,
+    CoreCLR,
+    NativeAOT
+}
 
 public partial class ApkBuilder
 {
@@ -32,7 +42,6 @@ public partial class ApkBuilder
     public bool ForceAOT { get; set; }
     public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
-    public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
     public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
@@ -41,6 +50,12 @@ public partial class ApkBuilder
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
+    public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+
+    private RuntimeFlavorEnum parsedRuntimeFlavor;
+    private bool IsMono => parsedRuntimeFlavor == RuntimeFlavorEnum.Mono;
+    private bool IsCoreCLR => parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR;
+    private bool IsNativeAOT => parsedRuntimeFlavor == RuntimeFlavorEnum.NativeAOT;
 
     private TaskLoggingHelper logger;
 
@@ -52,8 +67,13 @@ public partial class ApkBuilder
     public (string apk, string packageId) BuildApk(
         string runtimeIdentifier,
         string mainLibraryFileName,
-        string monoRuntimeHeaders)
+        string[] runtimeHeaders)
     {
+        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
+        {
+            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
+        }
+
         if (string.IsNullOrEmpty(AppDir) || !Directory.Exists(AppDir))
         {
             throw new ArgumentException($"AppDir='{AppDir}' is empty or doesn't exist");
@@ -74,7 +94,8 @@ public partial class ApkBuilder
             throw new ArgumentException($"ProjectName='{ProjectName}' should not not contain spaces.");
         }
 
-        if (string.IsNullOrEmpty(AndroidSdk)){
+        if (string.IsNullOrEmpty(AndroidSdk))
+        {
             AndroidSdk = Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT");
         }
 
@@ -98,18 +119,12 @@ public partial class ApkBuilder
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
-        if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
+        if (IsMono && !string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
+            throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
-        // Try to get the latest build-tools version if not specified
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
-
-        // Try to get the latest API level if not specified
-        if (string.IsNullOrEmpty(BuildApiLevel))
-            BuildApiLevel = GetLatestApiLevel(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
@@ -119,32 +134,31 @@ public partial class ApkBuilder
 
         // make sure BuildApiLevel >= MinApiLevel and BuildApiLevel >= TargetApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi))
+        if (int.TryParse(androidSdkHelper.BuildApiLevel, out int intApi))
         {
             if (int.TryParse(MinApiLevel, out int intMinApi) && intApi < intMinApi)
             {
-                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
+                throw new ArgumentException($"BuildApiLevel={androidSdkHelper.BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
                     "Make sure you've downloaded some recent build-tools in Android SDK");
             }
 
             if (int.TryParse(TargetApiLevel, out int intTargetApi) && intApi < intTargetApi)
             {
-                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+                throw new ArgumentException($"BuildApiLevel={androidSdkHelper.BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
                     "Make sure you've downloaded some recent build-tools in Android SDK");
             }
         }
 
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        if (!Directory.Exists(buildToolsFolder))
+        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
         {
-            throw new ArgumentException($"{buildToolsFolder} was not found.");
+            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
         }
 
         var assemblerFiles = new StringBuilder();
         var assemblerFilesToLink = new StringBuilder();
         var aotLibraryFiles = new List<string>();
 
-        if (!IsLibraryMode)
+        if (!(IsLibraryMode || IsNativeAOT))
         {
             foreach (ITaskItem file in Assemblies)
             {
@@ -185,11 +199,8 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        if (StripDebugSymbols)
-        {
-            extensionsToIgnore.Add(".pdb");
-            extensionsToIgnore.Add(".dbg");
-        }
+        extensionsToIgnore.Add(".pdb");
+        extensionsToIgnore.Add(".dbg");
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -220,22 +231,15 @@ public partial class ApkBuilder
             File.Copy(aotlib, Path.Combine(assetsToZipDirectory, Path.GetFileName(aotlib)));
         }
 
-        // tools:
-        string dx = Path.Combine(buildToolsFolder, "dx");
-        string d8 = Path.Combine(buildToolsFolder, "d8");
-        string aapt = Path.Combine(buildToolsFolder, "aapt");
-        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
-        string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
+        string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + androidSdkHelper.BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
         string javac = "javac";
-        string zip = "zip";
 
-        Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
+        ZipFile.CreateFromDirectory(assetsToZipDirectory, Path.Combine(OutputDir, "assets", "assets.zip"), CompressionLevel.SmallestSize, includeBaseDirectory: false);
         Directory.Delete(assetsToZipDirectory, true);
 
         if (!File.Exists(androidJar))
-            throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
+            throw new ArgumentException($"API level={androidSdkHelper.BuildApiLevel} is not downloaded in Android SDK");
 
         // 1. Build libmonodroid.so via cmake
 
@@ -244,28 +248,36 @@ public partial class ApkBuilder
         {
             nativeLibraries = string.Join("\n    ", NativeDependencies.Select(dep => dep));
         }
-        else
+        else if (!IsNativeAOT)
         {
-            string monoRuntimeLib = "";
-            if (StaticLinkedRuntime)
+            string runtimeLib = "";
+            if (StaticLinkedRuntime && IsMono)
             {
-                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+            }
+            else if (IsMono)
+            {
+                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+            }
+            else if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
+            }
+            else if (IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
+            }
+
+            if (!File.Exists(runtimeLib))
+            {
+                throw new ArgumentException($"{runtimeLib} was not found");
             }
             else
             {
-                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+                nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (!File.Exists(monoRuntimeLib))
-            {
-                throw new ArgumentException($"{monoRuntimeLib} was not found");
-            }
-            else
-            {
-                nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
-            }
-
-            if (StaticLinkedRuntime)
+            if (StaticLinkedRuntime && IsMono)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
 
@@ -297,63 +309,104 @@ public partial class ApkBuilder
                 // There's a circular dependency between static mono runtime lib and static component libraries.
                 // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
                 // due to circular dependency.
-                nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
+                nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
-        }
 
-        StringBuilder extraLinkerArgs = new StringBuilder();
-        foreach (ITaskItem item in ExtraLinkerArguments)
-        {
-            extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
-        }
-
-        nativeLibraries += assemblerFilesToLink.ToString();
-
-        string aotSources = assemblerFiles.ToString();
-        string monodroidSource = (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
-
-        string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%MonoInclude%", monoRuntimeHeaders)
-            .Replace("%NativeLibrariesToLink%", nativeLibraries)
-            .Replace("%MONODROID_SOURCE%", monodroidSource)
-            .Replace("%AotSources%", aotSources)
-            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
-            .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
-
-        var defines = new StringBuilder();
-        if (ForceInterpreter)
-        {
-            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
-        }
-        else if (ForceAOT)
-        {
-            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
-            if (aotLibraryFiles.Count == 0)
+            if (StaticLinkedRuntime && IsCoreCLR)
             {
-                defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
+                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
+                string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
+
+                foreach (string lib in staticLibs)
+                {
+                    nativeLibraries += $"    {lib}{Environment.NewLine}";
+                }
+
+                nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+                nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
             }
         }
-
-        if (ForceFullAOT)
+        string abi;
+        if (IsNativeAOT)
         {
-            defines.AppendLine("add_definitions(-DFULL_AOT=1)");
+            abi = AndroidProject.DetermineAbi(runtimeIdentifier);
         }
-
-        if (!string.IsNullOrEmpty(DiagnosticPorts))
+        else
         {
-            defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
+            StringBuilder extraLinkerArgs = new StringBuilder();
+            foreach (ITaskItem item in ExtraLinkerArguments)
+            {
+                extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+            }
+
+            if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                // Ensure global symbol references in the shared library are resolved to definitions in
+                // the same shared library. For the static linked runtime specifically, we need this for
+                // global functions in assembly for the linker to treat relative offsets to them as constant
+                extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
+            }
+
+            nativeLibraries += assemblerFilesToLink.ToString();
+
+            string aotSources = assemblerFiles.ToString();
+            string monodroidSource = IsCoreCLR ?
+                "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+            string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
+
+            string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
+                .Replace("%RuntimeInclude%", runtimeInclude)
+                .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
+                .Replace("%MONODROID_SOURCE%", monodroidSource)
+                .Replace("%AotSources%", NormalizePathToUnix(aotSources))
+                .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
+                .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
+
+            var defines = new StringBuilder();
+            if (ForceInterpreter)
+            {
+                defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
+            }
+            else if (ForceAOT)
+            {
+                defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
+                if (aotLibraryFiles.Count == 0)
+                {
+                    defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
+                }
+            }
+
+            if (ForceFullAOT)
+            {
+                defines.AppendLine("add_definitions(-DFULL_AOT=1)");
+            }
+
+            if (!string.IsNullOrEmpty(DiagnosticPorts))
+            {
+                defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
+            }
+
+            cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
+
+            File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
+
+            string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
+            if (IsCoreCLR)
+            {
+                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
+            }
+            File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
+
+            AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
+            project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
+            project.BuildCMake(OutputDir, StripDebugSymbols);
+            abi = project.Abi;
+
+            // TODO: https://github.com/dotnet/runtime/issues/115717
         }
-
-        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
-
-        File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
-
-        AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
-        project.BuildCMake(OutputDir, StripDebugSymbols);
-
-        string abi = project.Abi;
 
         // 2. Compile Java files
 
@@ -387,10 +440,22 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
+        string jniLibraryName;
+        if (IsLibraryMode || IsNativeAOT)
+            jniLibraryName = ProjectName!;
+        else if (StaticLinkedRuntime && IsCoreCLR)
+            jniLibraryName = "monodroid";
+        else
+            jniLibraryName = "System.Security.Cryptography.Native.Android";
+
+        List<string> librariesToLoad = [jniLibraryName];
+        if (!IsNativeAOT)
+            librariesToLoad.Add("monodroid");
+
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
-            .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
+            .Replace("%LoadLibraryStatements%",
+                string.Join('\n', librariesToLoad.Select(l => $"System.loadLibrary(\"{l}\");")))
             .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
@@ -405,28 +470,29 @@ public partial class ApkBuilder
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
 
-        if (File.Exists(d8))
+        if (androidSdkHelper.HasD8)
         {
             string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
 
             if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
 
-            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.D8Path, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
         }
         else
         {
-            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.DxPath, "--dex --output=classes.dex obj", workingDir: OutputDir);
         }
 
         // 3. Generate APK
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
+        if (!IsNativeAOT)
+            dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
 
         if (IsLibraryMode)
         {
@@ -434,7 +500,18 @@ public partial class ApkBuilder
         }
         else
         {
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+            var excludedLibs = new HashSet<string> { "libmonodroid.so" };
+            if (IsCoreCLR)
+            {
+                if (StripDebugSymbols)
+                {
+                    // exclude debugger support libs
+                    excludedLibs.Add("libmscordbi.so");
+                    excludedLibs.Add("libmscordaccore.so");
+                }
+            }
+            if (!StaticLinkedRuntime)
+                dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/
@@ -478,11 +555,10 @@ public partial class ApkBuilder
             }
 
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
-
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
-            Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
-        Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} classes.dex", workingDir: OutputDir);
 
         // Include prebuilt .dex files
         int sequence = 2;
@@ -492,18 +568,18 @@ public partial class ApkBuilder
             var classesFileName = $"classes{sequence++}.dex";
             File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
             logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
-            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
         }
 
         // 4. Align APK
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
-        AlignApk(apkFile, alignedApk, zipalign);
+        AlignApk(apkFile, alignedApk, androidSdkHelper.ZipalignPath);
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
         // 5. Generate key (if needed) & sign the apk
-        SignApk(alignedApk, apksigner);
+        SignApk(alignedApk, androidSdkHelper.ApksignerPath);
 
         logger.LogMessage(MessageImportance.High, $"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
@@ -543,21 +619,16 @@ public partial class ApkBuilder
         if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
             throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
 
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
 
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
-
         string alignedApkPath = $"{apkPath}.aligned";
-        AlignApk(apkPath, alignedApkPath, zipalign);
+        AlignApk(apkPath, alignedApkPath, androidSdkHelper.ZipalignPath);
         logger.LogMessage(MessageImportance.High, $"\nMoving '{alignedApkPath}' to '{apkPath}'.\n");
         File.Move(alignedApkPath, apkPath, overwrite: true);
-        SignApk(apkPath, apksigner);
+        SignApk(apkPath, androidSdkHelper.ApksignerPath);
     }
 
     public void ReplaceFileInApk(string file)
@@ -568,15 +639,10 @@ public partial class ApkBuilder
         if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
             throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
 
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
-
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        string aapt = Path.Combine(buildToolsFolder, "aapt");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
 
         string apkPath;
         if (string.IsNullOrEmpty(ProjectName))
@@ -587,43 +653,93 @@ public partial class ApkBuilder
         if (!File.Exists(apkPath))
             throw new Exception($"{apkPath} was not found");
 
-        Utils.RunProcess(logger, aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
-        Utils.RunProcess(logger, aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
 
         // we need to re-sign the apk
-        SignApk(apkPath, apksigner);
+        SignApk(apkPath, androidSdkHelper.ApksignerPath);
     }
 
-    /// <summary>
-    /// Scan android SDK for build tools (ignore preview versions)
-    /// </summary>
-    private static string GetLatestBuildTools(string androidSdkDir)
+    private static string NormalizePathToUnix(string path)
     {
-        string? buildTools = Directory.GetDirectories(Path.Combine(androidSdkDir, "build-tools"))
-            .Select(Path.GetFileName)
-            .Where(file => !file!.Contains('-'))
-            .Select(file => { Version.TryParse(Path.GetFileName(file), out Version? version); return version; })
-            .OrderByDescending(v => v)
-            .FirstOrDefault()?.ToString();
-
-        if (string.IsNullOrEmpty(buildTools))
-            throw new ArgumentException($"Android SDK ({androidSdkDir}) doesn't contain build-tools.");
-
-        return buildTools;
-    }
-
-    /// <summary>
-    /// Scan android SDK for api levels (ignore preview versions)
-    /// </summary>
-    private static string GetLatestApiLevel(string androidSdkDir)
-    {
-        return Directory.GetDirectories(Path.Combine(androidSdkDir, "platforms"))
-            .Select(file => int.TryParse(Path.GetFileName(file).Replace("android-", ""), out int apiLevel) ? apiLevel : -1)
-            .OrderByDescending(v => v)
-            .FirstOrDefault()
-            .ToString();
+        return path.Replace("\\", "/");
     }
 
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
+
+    private string RenderMonodroidCoreClrTemplate(string monodroidContent)
+    {
+        // At the moment, we only set the AppContext properties, so it's all done here for simplicity.
+        // If we need to add more rendering logic, we can refactor this method later.
+        var appContextKeys = new StringBuilder();
+        appContextKeys.AppendLine("    appctx_keys[0] = \"RUNTIME_IDENTIFIER\";");
+        appContextKeys.AppendLine("    appctx_keys[1] = \"APP_CONTEXT_BASE_DIRECTORY\";");
+        appContextKeys.AppendLine("    appctx_keys[2] = \"HOST_RUNTIME_CONTRACT\";");
+
+        var appContextValues = new StringBuilder();
+        appContextValues.AppendLine("    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;");
+        appContextValues.AppendLine("    appctx_values[1] = g_bundle_path;");
+        appContextValues.AppendLine();
+        appContextValues.AppendLine("    char contract_str[19];"); // 0x + 16 hex digits + '\0'
+        appContextValues.AppendLine("    snprintf(contract_str, 19, \"0x%zx\", (size_t)(&g_host_contract));");
+        appContextValues.AppendLine("    appctx_values[2] = contract_str;");
+        appContextValues.AppendLine();
+
+        // Parse runtime config properties and add them to the AppContext keys and values.
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardwiredAppContextProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + hardwiredAppContextProperties}] = \"{value}\";");
+            i++;
+        }
+
+        // Replace the template placeholders.
+        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + hardwiredAppContextProperties).ToString())
+            .Replace("%AppContextKeys%", appContextKeys.ToString().TrimEnd())
+            .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
+        return updatedContent;
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties()
+    {
+        // This method reads the binary runtimeconfig.bin file created by RuntimeConfigParserTask.ConvertDictionaryToBlob.
+        // The binary format is: compressed integer count, followed by count pairs of length-prefixed UTF8 strings (key, value).
+        // See src/tasks/MonoTargetsTasks/RuntimeConfigParser/RuntimeConfigParser.cs for the corresponding write logic.
+
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
+
+        try
+        {
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
+            {
+                fixed (byte* ptr = fileBytes)
+                {
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    // Read the compressed integer count
+                    int count = blobReader.ReadCompressedInteger();
+
+                    // Read each key-value pair
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
+    }
 }

@@ -97,33 +97,7 @@ namespace System.Net.Sockets
 
             saea.RemoteEndPoint = remoteEP;
 
-            ValueTask connectTask = saea.ConnectAsync(this, saeaCancelable: cancellationToken.CanBeCanceled);
-            if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
-            {
-                // Avoid async invocation overhead
-                return connectTask;
-            }
-            else
-            {
-                return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
-            }
-
-            static async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
-            {
-                Debug.Assert(cancellationToken.CanBeCanceled);
-                try
-                {
-                    using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
-                    {
-                        await connectTask.ConfigureAwait(false);
-                    }
-                }
-                catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw;
-                }
-            }
+            return saea.ConnectAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -184,7 +158,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)SocketError.IsConnected);
             }
 
-            ValidateForMultiConnect(isMultiEndpoint: false);
+            ValidateForMultiConnect();
 
             return Core(addresses, port, cancellationToken);
 
@@ -209,7 +183,7 @@ namespace System.Net.Sockets
                         await ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                         return;
                     }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    catch (Exception ex) when (CanProceedWithMultiConnect && ex is not OperationCanceledException)
                     {
                         lastException = ex;
                     }
@@ -434,7 +408,7 @@ namespace System.Net.Sockets
         public ValueTask<int> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, SocketAddress receivedAddress, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(receivedAddress, nameof(receivedAddress));
+            ArgumentNullException.ThrowIfNull(receivedAddress);
 
             if (receivedAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
@@ -757,7 +731,7 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var ex = new NotSupportedException(SR.net_notconnected);
+                var ex = ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_notconnected));
                 return ValueTask.FromException(ex);
             }
 
@@ -1210,12 +1184,13 @@ namespace System.Net.Sockets
                     ValueTask.FromException<int>(CreateException(error));
             }
 
-            public ValueTask ConnectAsync(Socket socket, bool saeaCancelable)
+            public ValueTask ConnectAsync(Socket socket, CancellationToken cancellationToken)
             {
                 try
                 {
-                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: saeaCancelable))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                     {
+                        _cancellationToken = cancellationToken;
                         return new ValueTask(this, _mrvtsc.Version);
                     }
                 }

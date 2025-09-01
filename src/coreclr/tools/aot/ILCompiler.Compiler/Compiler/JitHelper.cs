@@ -182,18 +182,18 @@ namespace ILCompiler
                 case ReadyToRunHelper.ULng2Dbl:
                     mangledName = "RhpULng2Dbl";
                     break;
+                case ReadyToRunHelper.Lng2Flt:
+                    mangledName = "RhpLng2Flt";
+                    break;
+                case ReadyToRunHelper.ULng2Flt:
+                    mangledName = "RhpULng2Flt";
+                    break;
 
                 case ReadyToRunHelper.Dbl2Lng:
                     mangledName = "RhpDbl2Lng";
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
                     mangledName = "RhpDbl2ULng";
-                    break;
-                case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
-                    break;
-                case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
@@ -234,30 +234,30 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunHelper.Mod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IMod");
-                    break;
-                case ReadyToRunHelper.UMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UMod");
-                    break;
-                case ReadyToRunHelper.ULMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMod");
-                    break;
-                case ReadyToRunHelper.LMod:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMod");
-                    break;
-
                 case ReadyToRunHelper.Div:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt32", null);
                     break;
                 case ReadyToRunHelper.UDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UDiv");
-                    break;
-                case ReadyToRunHelper.ULDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt32", null);
                     break;
                 case ReadyToRunHelper.LDiv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LDiv");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt64", null);
+                    break;
+                case ReadyToRunHelper.ULDiv:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt64", null);
+                    break;
+
+                case ReadyToRunHelper.Mod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt32", null);
+                    break;
+                case ReadyToRunHelper.UMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt32", null);
+                    break;
+                case ReadyToRunHelper.LMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt64", null);
+                    break;
+                case ReadyToRunHelper.ULMod:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt64", null);
                     break;
 
                 case ReadyToRunHelper.LRsz:

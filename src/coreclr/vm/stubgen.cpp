@@ -148,7 +148,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
     {
         strTokenFormatting.Printf("%d", token);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
@@ -173,6 +173,21 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].uInstruction = static_cast<UINT16>(instr);
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
+
+    if(m_buildingEHClauses.GetCount() > 0)
+    {
+        ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
+        {
+            if (clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
+            {
+                // Catch clauses start with an exception on the stack
+                pInstrBuffer[idxCurInstr].iStackDelta++;
+            }
+        }
+    }
 }
 
 ILCodeLabel* ILStubLinker::NewCodeLabel()
@@ -342,9 +357,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARG - (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
+                static_assert(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
+                static_assert(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -358,9 +373,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARGA - (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
+                static_assert(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
+                static_assert(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -595,7 +610,7 @@ ILStubLinker::LogILStubWorker(
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -718,7 +733,7 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -916,7 +931,7 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
         {
             const ILOpcode* pOpcode = &s_rgOpcodes[instr];
 
-            PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+            _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
             int     opSize = s_rgbOpcodeSizes[instr];
             bool    twoByteOp = (pOpcode->byte1 != 0xFF);
             int     argSize = opSize - (twoByteOp ? 2 : 1);
@@ -1034,6 +1049,8 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
         "ExceptionCleanup",
         "Cleanup",
         "ExceptionHandler",
+        "TypeCheckAndCallMethod",
+        "UpdateByRefsAndReturn"
     };
 
 #ifdef _DEBUG
@@ -1817,6 +1834,12 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
     Emit(CEE_UNALIGNED, 0, alignment);
 }
 
+void ILCodeStream::EmitUNBOX(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX, 0, token);
+}
+
 void ILCodeStream::EmitUNBOX_ANY(int token)
 {
     WRAPPER_NO_CONTRACT;
@@ -1974,7 +1997,7 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
                 m_pbSigCursor   += sizeof(TypeHandle);
                 m_cbSig         += sizeof(TypeHandle);
                 break;
-            
+
             case ELEMENT_TYPE_CMOD_INTERNAL:
             {
                 // Nove later elements in the signature to make room for the CMOD_INTERNAL payload
@@ -2494,7 +2517,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
 
         if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
-            // ndirect native sig never has a 'this' pointer
+            // PInvoke native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 
@@ -2657,7 +2680,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
     STANDARD_VM_CONTRACT;
     // Turn everything into blittable primitives. The reason this method is needed are
     // byrefs which are OK only when they ref stack data or are pinned. This condition
-    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+    // cannot be verified by code:PInvoke.MarshalingRequired so we explicitly get rid
     // of them here.
     bool again;
     BYTE* elementType = pLoc->ElementType;
@@ -3211,16 +3234,16 @@ int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken metho
     return m_tokenMap.GetToken(pMD, typeSignature, methodSignature);
 }
 
-int ILStubLinker::GetToken(MethodTable* pMT)
-{
-    STANDARD_VM_CONTRACT;
-    return m_tokenMap.GetToken(TypeHandle(pMT));
-}
-
 int ILStubLinker::GetToken(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(th);
+}
+
+int ILStubLinker::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(th, typeSignature);
 }
 
 int ILStubLinker::GetToken(FieldDesc* pFD)
@@ -3330,6 +3353,11 @@ int ILCodeStream::GetToken(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(th);
+}
+int ILCodeStream::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(th, typeSignature);
 }
 int ILCodeStream::GetToken(FieldDesc* pFD)
 {

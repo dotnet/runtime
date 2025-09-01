@@ -533,6 +533,13 @@ private:
 
 
 public:
+
+    CrstBase *GetAvailableTypesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_AvailableTypesLock;
+    }
+
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
     // For everything except parameterized types and methods the choice is easy.
@@ -910,7 +917,9 @@ private:
 
     // Notify profiler and debugger that a type load has completed
     // Also update perf counters
-    static void Notify(TypeHandle typeHnd);
+    static void NotifyLoad(TypeHandle typeHnd);
+    // Notify profiler that a MethodTable is being unloaded
+    static void NotifyUnload(MethodTable* pMT, bool unloadStarted);
 
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)

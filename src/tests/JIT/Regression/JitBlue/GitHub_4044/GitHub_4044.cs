@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class C
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/114908", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint()
     {
         int error = Test1();

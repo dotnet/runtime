@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
 #if NET
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
             Span<char> span = stackalloc char[MaximumVersionLength];
@@ -107,13 +107,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
 #if NET
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
             Span<char> span = stackalloc char[MaximumVersionLength];

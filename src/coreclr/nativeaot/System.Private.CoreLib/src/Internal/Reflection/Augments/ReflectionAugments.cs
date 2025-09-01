@@ -93,11 +93,6 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
-        public static TypeLoadException CreateTypeLoadException(string message, string typeName)
-        {
-            return new TypeLoadException(message, typeName);
-        }
-
         public static Assembly Load(AssemblyName assemblyRef, bool throwOnFileNotFound)
         {
             ArgumentNullException.ThrowIfNull(assemblyRef);
@@ -106,21 +101,6 @@ namespace Internal.Reflection.Augments
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(assemblyRef.ToRuntimeAssemblyName());
             else
                 return RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(assemblyRef.ToRuntimeAssemblyName());
-        }
-
-        public static Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
-        {
-            if (rawAssembly.IsEmpty)
-                throw new ArgumentNullException(nameof(rawAssembly));
-
-            return RuntimeAssemblyInfo.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
-        }
-
-        public static Assembly Load(string assemblyPath)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyPath);
-
-            return RuntimeAssemblyInfo.GetRuntimeAssemblyFromPath(assemblyPath);
         }
 
         //
@@ -141,7 +121,7 @@ namespace Internal.Reflection.Augments
 
             MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodBase.DeclaringType.IsConstructedGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
-                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase));
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase, methodBase.DeclaringType.GetGenericTypeDefinition()));
             return methodBase;
         }
 

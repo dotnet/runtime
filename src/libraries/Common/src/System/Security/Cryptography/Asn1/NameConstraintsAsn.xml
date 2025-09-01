@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="NameConstraintsAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10
+
+    NameConstraints ::= SEQUENCE {
+          permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
+          excludedSubtrees        [1]     GeneralSubtrees OPTIONAL }
+
+      GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
+  -->
+  <asn:SequenceOf name="PermittedSubtrees" implicitTag="0" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn" />
+  </asn:SequenceOf>
+  <asn:SequenceOf name="ExcludedSubtrees" implicitTag="1" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn" />
+  </asn:SequenceOf>
+</asn:Sequence>

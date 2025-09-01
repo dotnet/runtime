@@ -75,10 +75,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        protected virtual int GetAlignmentRequirement(NodeFactory factory) { return factory.Target.PointerSize; }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-            builder.RequireInitialPointerAlignment();
+            builder.RequireInitialAlignment(GetAlignmentRequirement(factory));
 
             if (_sorter != null)
                 _nestedNodesList.MergeSort(_sorter);

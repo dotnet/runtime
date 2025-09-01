@@ -15,8 +15,8 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public void Write(DependencyContext context, Stream stream)
         {
-            ThrowHelper.ThrowIfNull(context);
-            ThrowHelper.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(stream);
 
             // Custom encoder is required to fix https://github.com/dotnet/runtime/issues/3678
             // Since the JSON is only written to a file that is read by the SDK (and not transmitted over the wire),
@@ -222,6 +222,11 @@ namespace Microsoft.Extensions.DependencyModel
                 ResourceAssembly resourceAssembly = resourceAssemblies[i];
                 jsonWriter.WriteStartObject(NormalizePath(resourceAssembly.Path));
                 jsonWriter.WriteString(DependencyContextStrings.LocalePropertyName, resourceAssembly.Locale);
+                if (resourceAssembly.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(resourceAssembly.LocalPath));
+                }
+
                 jsonWriter.WriteEndObject();
             }
             jsonWriter.WriteEndObject();
@@ -363,6 +368,11 @@ namespace Microsoft.Extensions.DependencyModel
                     jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, asset.FileVersion);
                 }
 
+                if (asset.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(asset.LocalPath));
+                }
+
                 jsonWriter.WriteEndObject();
             }
         }
@@ -394,6 +404,11 @@ namespace Microsoft.Extensions.DependencyModel
                 if (runtimeFile.FileVersion != null)
                 {
                     jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, runtimeFile.FileVersion);
+                }
+
+                if (runtimeFile.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(runtimeFile.LocalPath));
                 }
 
                 jsonWriter.WriteEndObject();

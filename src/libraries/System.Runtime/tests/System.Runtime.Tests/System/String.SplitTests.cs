@@ -571,7 +571,7 @@ namespace System.Tests
         [InlineData(" a b ", null, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a b" })]
         [InlineData(" a b ", "", 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a b" })]
         [InlineData(" a b ", " ", 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
-        public static void SplitStringSeparator(string value, string separator, int count, StringSplitOptions options, string[] expected)
+        public static void SplitStringSeparator(string value, string? separator, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separator, count, options));
             Assert.Equal(expected, value.Split(new[] { separator }, count, options));
@@ -638,7 +638,7 @@ namespace System.Tests
         [InlineData(" a b ", null, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
         [InlineData(" a b ", new char[0], 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
         [InlineData(" a b ", new char[] { ' ' }, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
-        public static void SplitCharArraySeparator(string value, char[] separators, int count, StringSplitOptions options, string[] expected)
+        public static void SplitCharArraySeparator(string value, char[]? separators, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separators, count, options));
             Assert.Equal(expected, value.Split(ToStringArray(separators), count, options));
@@ -697,7 +697,7 @@ namespace System.Tests
         [InlineData(" a b ", null, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
         [InlineData(" a b ", new string[0], 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
         [InlineData(" a b ", new string[] { " " }, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b" })]
-        public static void SplitStringArraySeparator(string value, string[] separators, int count, StringSplitOptions options, string[] expected)
+        public static void SplitStringArraySeparator(string value, string[]? separators, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separators, count, options));
 
@@ -730,9 +730,11 @@ namespace System.Tests
             {
                 Assert.True(enumerator.MoveNext());
                 Assert.Equal(item, source[enumerator.Current].ToString());
+                Assert.Equal(source.ToString(), enumerator.Source.ToString());
             }
 
             Assert.False(enumerator.MoveNext());
+            Assert.Equal(source.ToString(), enumerator.Source.ToString());
         }
     }
 }

@@ -42,7 +42,6 @@ class   EEClass;
 class   LayoutEEClass;
 class   EnCFieldDesc;
 class   FieldDesc;
-struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
 class   MethodDescChunk;
@@ -362,7 +361,7 @@ private:
             if (pVtable[slot] != NULL && pVtableMD[slot] == NULL)
                 pVtableMD[slot] = pParentMethodTable->GetMethodDescForSlot(slot);
             _ASSERTE((pVtable[slot] == NULL) ||
-                (MethodTable::GetMethodDescForSlotAddress(pVtable[slot]) == pVtableMD[slot]));
+                (NonVirtualEntry2MethodDesc(pVtable[slot]) == pVtableMD[slot]));
             return pVtableMD[slot];
         }
 #endif // DACCESS_COMPILE

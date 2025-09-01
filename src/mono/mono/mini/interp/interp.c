@@ -27,6 +27,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-memory-model.h>
 
 #ifdef HAVE_ALLOCA_H
@@ -843,15 +844,15 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		result->data.p = *(gpointer*)data;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			stackval_from_data (mono_class_enum_basetype_internal (type->data.klass), result, data, pinvoke);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			stackval_from_data (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type)), result, data, pinvoke);
 			break;
 		} else {
 			int size;
 			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 			else
-				size = mono_class_value_size (type->data.klass, NULL);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
 			memcpy (result, data, size);
 			break;
 		}
@@ -866,7 +867,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			memcpy (result, data, size);
 			break;
 		}
-		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
+		stackval_from_data (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), result, data, pinvoke);
 		break;
 	}
 	default:
@@ -949,21 +950,21 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			return stackval_to_data (mono_class_enum_basetype_internal (type->data.klass), val, data, pinvoke);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			return stackval_to_data (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type)), val, data, pinvoke);
 		} else {
 			int size;
 			if (pinvoke) {
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 				memcpy (data, val, size);
 			} else {
-				size = mono_class_value_size (type->data.klass, NULL);
-				mono_value_copy_internal (data, val, type->data.klass);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
+				mono_value_copy_internal (data, val, m_type_data_get_klass_unchecked (type));
 			}
 			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *container_class = type->data.generic_class->container_class;
+		MonoClass *container_class = m_type_data_get_generic_class_unchecked (type)->container_class;
 
 		if (m_class_is_valuetype (container_class) && !m_class_is_enumtype (container_class)) {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -977,10 +978,52 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 			}
 			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
-		return stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
+		return stackval_to_data (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), val, data, pinvoke);
 	}
 	default:
 		g_error ("got type %x", type->type);
+	}
+}
+
+static void
+stackval_to_data_sign_ext (MonoType *type, stackval *val, void *data, gboolean pinvoke)
+{
+	switch (type->type) {
+		case MONO_TYPE_I1: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)((gint8)val->data.i);
+			break;
+		}
+		case MONO_TYPE_U1: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint8)val->data.i);
+			break;
+		}
+		case MONO_TYPE_I2: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)((gint16)val->data.i);
+			break;
+		}
+		case MONO_TYPE_U2: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint16)val->data.i);
+			break;
+		}
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_I4: {
+			mono_i *p = (mono_i*)data;
+			*p = (mono_i)(val->data.i);
+			break;
+		}
+		case MONO_TYPE_U4: {
+			mono_u *p = (mono_u*)data;
+			*p = (mono_u)((guint32)val->data.i);
+			break;
+		}
+#endif
+		default:
+			stackval_to_data (type, val, data, pinvoke);
+			break;
 	}
 }
 
@@ -1426,8 +1469,8 @@ retry:
 			flen++;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (m_class_is_enumtype (type->data.klass)) {
-				type = mono_class_enum_basetype_internal (type->data.klass);
+			if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+				type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 				goto retry;
 			}
 			info->arg_types [i] = PINVOKE_ARG_VTYPE;
@@ -1446,7 +1489,7 @@ retry:
 			break;
 		case MONO_TYPE_GENERICINST: {
 			// FIXME: Should mini_wasm_is_scalar_vtype stuff go in here?
-			MonoClass *container_class = type->data.generic_class->container_class;
+			MonoClass *container_class = m_type_data_get_generic_class_unchecked (type)->container_class;
 			type = m_class_get_byval_arg (container_class);
 			goto retry;
 		}
@@ -1650,7 +1693,7 @@ interp_frame_arg_to_data (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 
 	// If index == -1, we finished executing an InterpFrame and the result is at retval.
 	if (index == -1)
-		stackval_to_data (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
+		stackval_to_data_sign_ext (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
 	else if (sig->hasthis && index == 0)
 		*(gpointer*)data = iframe->stack->data.p;
 	else
@@ -1739,6 +1782,7 @@ ves_pinvoke_method (
 	frame.retval = ret_sp;
 
 	MonoLMFExt ext;
+	gpointer gc_safe_cookie = NULL;
 	gpointer args;
 
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -1808,9 +1852,10 @@ ves_pinvoke_method (
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
 
 	if (*gc_transitions) {
-		MONO_ENTER_GC_SAFE;
+		MONO_STACKDATA (stack_data);
+		gc_safe_cookie = mono_threads_enter_gc_safe_region_internal (&stack_data);
 		entry_func ((gpointer) addr, args);
-		MONO_EXIT_GC_SAFE;
+		mono_threads_exit_gc_safe_region_internal (gc_safe_cookie, &stack_data);
 		*gc_transitions = FALSE;
 	} else {
 		entry_func ((gpointer) addr, args);
@@ -1852,7 +1897,13 @@ ves_pinvoke_method (
 		g_free (margs.fargs);
 #endif
 	goto exit_pinvoke; // prevent unused label warning in some configurations
+
+/* If an exception is thrown from native code, execution will continue here */
 exit_pinvoke:
+	if (*gc_transitions) {
+		mono_threads_abort_gc_safe_region_internal (gc_safe_cookie);
+		*gc_transitions = FALSE;
+	}
 	return NULL;
 }
 #ifdef _MSC_VER
@@ -2046,7 +2097,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 		g_string_append_printf (str, "[%p] ", s->data.p);
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass))
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type)))
 			g_string_append_printf (str, "[%d] ", s->data.i);
 		else
 			g_string_append_printf (str, "[vt:%p] ", s->data.p);
@@ -2344,8 +2395,17 @@ interp_entry (InterpEntryData *data)
 
 	// The return value is at the bottom of the stack, after the locals space
 	type = rmethod->rtype;
-	if (type->type != MONO_TYPE_VOID)
-		stackval_to_data (type, frame.stack, data->res, FALSE);
+	if (type->type != MONO_TYPE_VOID) {
+		// interp entry is called either from a interp_in wrapper or a gsharedvt_in_sig wrapper
+		// interp_in wrappers always return intptr (they are more aggresively shared) while the
+		// gsharedvt_in_sig wrapper returns the actual type. This check follows the logic in
+		// interp_create_method_pointer_llvmonly and interp_create_method_pointer so we do the
+		// return sign extension only when called from the interp_in wrapper.
+		if (!mono_llvm_only || sig->param_count > MAX_INTERP_ENTRY_ARGS)
+			stackval_to_data_sign_ext (type, frame.stack, data->res, FALSE);
+		else
+			stackval_to_data (type, frame.stack, data->res, FALSE);
+	}
 }
 
 static void
@@ -2460,12 +2520,15 @@ static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
 do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
+	gpointer gc_safe_cookie = NULL;
+
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
 	if (*gc_transitions) {
-		MONO_ENTER_GC_SAFE;
+		MONO_STACKDATA (stack_data);
+		gc_safe_cookie = mono_threads_enter_gc_safe_region_internal (&stack_data);
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
-		MONO_EXIT_GC_SAFE;
+		mono_threads_exit_gc_safe_region_internal (gc_safe_cookie, &stack_data);
 		*gc_transitions = FALSE;
 	} else {
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
@@ -2474,8 +2537,14 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op,
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
-	/* If an exception is thrown from native code, execution will continue here */
+
+/* If an exception is thrown from native code, execution will continue here */
 exit_icall:
+	if (*gc_transitions) {
+		mono_threads_abort_gc_safe_region_internal (gc_safe_cookie);
+		*gc_transitions = FALSE;
+	}
+
 	return NULL;
 }
 #ifdef _MSC_VER
@@ -3209,9 +3278,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 			size = mono_class_value_size (mono_class_from_mono_type_internal (type), NULL);
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			if (sig->pinvoke && !sig->marshalling_disabled)
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 			else
-				size = mono_class_value_size (type->data.klass, NULL);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
 		} else {
 			size = MINT_STACK_SLOT_SIZE;
 		}
@@ -3566,12 +3635,17 @@ interp_free_method (MonoMethod *method)
 
 	jit_mm_lock (jit_mm);
 
-#if HOST_BROWSER
 	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
-	mono_jiterp_free_method_data (method, imethod);
+	if (imethod) {
+#if HOST_BROWSER
+		mono_jiterp_free_method_data (method, imethod);
 #endif
 
-	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+		mono_interp_clear_data_items_patch_sites (imethod->data_items, imethod->n_data_items);
+
+		mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+	}
+
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
@@ -3863,6 +3937,100 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
+// Equivalent of mono_get_addr_compiled_method
+static gpointer
+interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
+{
+	MonoMethod *virtual_method = del->method;
+	ERROR_DECL(error);
+
+	MonoClass *klass = del->object.vtable->klass;
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
+	MonoMethodSignature *invoke_sig = mono_method_signature_internal (invoke);
+
+	MonoClass *arg_class = NULL;
+	if (m_type_is_byref (invoke_sig->params [0])) {
+		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
+	} else {
+		MonoObject *object = (MonoObject*)arg;
+		arg_class = object->vtable->klass;
+	}
+
+	MonoMethod *res = mono_class_get_virtual_method (arg_class, virtual_method, error);
+	mono_error_assert_ok (error);
+
+	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (virtual_method->klass);
+
+	InterpMethod *imethod = mono_interp_get_imethod (res);
+	return imethod_to_ftnptr (imethod, need_unbox);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_trace_with_ctx (InterpFrame *frame, void (*trace_cb)(MonoMethod*,MonoJitInfo*,MonoProfilerCallContext*))
+{
+	MonoProfilerCallContext prof_ctx;
+	MonoLMFExt ext;
+	memset (&prof_ctx, 0, sizeof (MonoProfilerCallContext));
+	prof_ctx.interp_frame = frame;
+	prof_ctx.method = frame->imethod->method;
+	prof_ctx.return_value = frame->retval;
+	interp_push_lmf (&ext, frame);
+	trace_cb (frame->imethod->method, frame->imethod->jinfo, &prof_ctx);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise_with_ctx (InterpFrame *frame, void (*prof_cb)(MonoMethod*,MonoProfilerCallContext*))
+{
+	MonoProfilerCallContext prof_ctx;
+	MonoLMFExt ext;
+	memset (&prof_ctx, 0, sizeof (MonoProfilerCallContext));
+	prof_ctx.interp_frame = frame;
+	prof_ctx.method = frame->imethod->method;
+	prof_ctx.return_value = frame->retval;
+	interp_push_lmf (&ext, frame);
+	prof_cb (frame->imethod->method, &prof_ctx);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise (InterpFrame *frame, void (*prof_cb)(MonoMethod*,MonoProfilerCallContext*))
+{
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, frame);
+	prof_cb (frame->imethod->method, NULL);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise_tail_call (InterpFrame *frame, MonoMethod *new_method)
+{
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, frame);
+	mono_profiler_raise_method_tail_call (frame->imethod->method, new_method);
+	interp_pop_lmf (&ext);
+}
+
+#define INTERP_PROFILER_RAISE(name_lower, name_upper) \
+	if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower) && \
+			(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT ))) { \
+		if (flag & TRACING_FLAG) \
+			mono_interp_trace_with_ctx (frame, mono_trace_ ## name_lower ## _method); \
+		if (flag & PROFILING_FLAG) { \
+			frame->state.ip = ip; \
+			mono_interp_profiler_raise_with_ctx (frame, mono_profiler_raise_method_ ## name_lower); \
+		} \
+	} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower)) { \
+		frame->state.ip = ip; \
+		mono_interp_profiler_raise (frame, mono_profiler_raise_method_ ## name_lower); \
+	}
+
+#define INTERP_PROFILER_RAISE_SAMPLEPOINT() \
+	if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_samplepoint)) { \
+		frame->state.ip = ip; \
+		mono_interp_profiler_raise (frame, mono_profiler_raise_method_samplepoint); \
+	}
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -4088,7 +4256,8 @@ main_loop:
 			}
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
-				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
+				if (MONO_PROFILER_ENABLED (method_tail_call))
+					mono_interp_profiler_raise_tail_call (frame, new_method->method);
 
 			if (!new_method->transformed) {
 				MonoException *transform_ex = do_transform_method (new_method, frame, context);
@@ -7582,24 +7751,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_PROF_ENTER) {
 			guint16 flag = ip [1];
 			ip += 2;
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_enter_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, NULL));
-			}
+			INTERP_PROFILER_RAISE(enter, ENTER);
 			MINT_IN_BREAK;
 		}
-
+		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
+			guint16 flag = ip [1];
+			ip += 2;
+			INTERP_PROFILER_RAISE_SAMPLEPOINT();
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_PROF_EXIT)
 		MINT_IN_CASE(MINT_PROF_EXIT_VOID) {
 			gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
@@ -7612,24 +7772,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				else
 					frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			}
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				if (!is_void)
-					prof_ctx->return_value = frame->retval;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, NULL));
-			}
-
+			INTERP_PROFILER_RAISE(leave, LEAVE);
 			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
 		}
@@ -7792,6 +7935,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			g_assert (del->interp_method);
 			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
 			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDVIRTFTN_DELEGATE) {
+			gpointer arg = LOCAL_VAR (ip [2], gpointer);
+			MonoDelegate *del = LOCAL_VAR (ip [3], MonoDelegate*);
+			NULL_CHECK (arg);
+
+			LOCAL_VAR (ip [1], gpointer) = interp_ldvirtftn_delegate (arg, del);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 
@@ -8948,6 +9100,10 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+
+	const char *env_opts = g_getenv ("MONO_INTERPRETER_OPTIONS");
+	if (env_opts)
+		interp_parse_options (env_opts);
 	/* Don't do any optimizations if running under debugger */
 	if (mini_get_debug_options ()->mdb_optimizations)
 		mono_interp_opt = 0;
@@ -9089,7 +9245,7 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, void *res)
 	int params_size = get_arg_offset_fast (header.rmethod, NULL, header.params_count);
 	// g_printf ("jiterp_interp_entry: rmethod=%d, params_count=%d, params_size=%d\n", header.rmethod, header.params_count, params_size);
 	header.context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
-;
+
 	g_assert (header.context->stack_pointer < header.context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
@@ -9123,6 +9279,28 @@ EMSCRIPTEN_KEEPALIVE volatile size_t *
 mono_jiterp_get_polling_required_address ()
 {
 	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_enter (InterpFrame *frame, guint16 *ip)
+{
+	guint16 flag = ip [1];
+	INTERP_PROFILER_RAISE(enter, ENTER);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
+{
+	guint16 flag = ip [1];
+	INTERP_PROFILER_RAISE_SAMPLEPOINT();
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_leave (InterpFrame *frame, guint16 *ip)
+{
+	gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
+	guint16 flag = is_void ? ip [1] : ip [2];
+	INTERP_PROFILER_RAISE(leave, LEAVE);
 }
 
 EMSCRIPTEN_KEEPALIVE void

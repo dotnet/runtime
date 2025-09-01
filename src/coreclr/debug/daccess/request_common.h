@@ -103,14 +103,47 @@ HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
         DacEnumMemoryRegion(p_##field_name.GetAddr(), sizeof(field_type) * array_length);    \
     }
 
+inline bool UseBuildVariant()
+{
+    int major = g_gcDacGlobals->major_version_number;
+    int minor = g_gcDacGlobals->minor_version_number;
+    return (major > 2) || (major == 2 && minor >= 4);
+}
+
 inline bool IsRegionGCEnabled()
 {
-    return (g_gcDacGlobals->minor_version_number & 1) != 0;
+    if (UseBuildVariant())
+    {
+        return (*(g_gcDacGlobals->build_variant) & build_variant_use_region) != 0;
+    }
+    else
+    {
+        return (g_gcDacGlobals->minor_version_number & 1) != 0;
+    }
 }
 
 inline bool IsBackgroundGCEnabled()
 {
-    return (g_gcDacGlobals->minor_version_number & 2) == 0;
+    if (UseBuildVariant())
+    {
+        return (*(g_gcDacGlobals->build_variant) & build_variant_background_gc) != 0;
+    }
+    else
+    {
+        return (g_gcDacGlobals->minor_version_number & 2) == 0;
+    }
+}
+
+inline bool IsDatasEnabled()
+{
+    if (UseBuildVariant())
+    {
+        return (*(g_gcDacGlobals->build_variant) & build_variant_dynamic_heap_count) != 0;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 // Load an instance of dac_gc_heap for the heap pointed by heap.

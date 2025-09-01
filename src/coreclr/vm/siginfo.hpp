@@ -127,9 +127,14 @@ public:
     //=========================================================================
 
 
-        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
-        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
 
+        // Copy the current part of the signature to the SigBuilder.
+        // All copy methods advance internal state as if a Get was called.
+        void CopyModOptsReqs(Module* pSigModule, SigBuilder* pSigBuilder);
+        void CopyExactlyOne(Module* pSigModule, SigBuilder* pSigBuilder);
+        void CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv);
 
     //=========================================================================
     // The CLOSED interface for reading signatures.  With the following
@@ -608,7 +613,7 @@ class MetaSig
         // Does not count the "this" argument (which is not reflected on the
         // sig.) 64-bit arguments are counted as one argument.
         //------------------------------------------------------------------------
-        UINT NumFixedArgs()
+        UINT NumFixedArgs() const
         {
             LIMITED_METHOD_DAC_CONTRACT;
             return m_nArgs;
@@ -683,7 +688,7 @@ class MetaSig
         // Returns the calling convention & flags (see IMAGE_CEE_CS_CALLCONV_*
         // defines in cor.h)
         //----------------------------------------------------------
-        BYTE GetCallingConventionInfo()
+        USHORT GetCallingConventionInfo()
         {
             LIMITED_METHOD_DAC_CONTRACT;
 
@@ -693,7 +698,7 @@ class MetaSig
         //----------------------------------------------------------
         // Has a 'this' pointer?
         //----------------------------------------------------------
-        BOOL HasThis()
+        BOOL HasThis() const
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -728,6 +733,26 @@ class MetaSig
             SUPPORTS_DAC;
             return GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_VARARG;
         }
+
+        //----------------------------------------------------------
+        // Does it have a generic context argument?
+        //----------------------------------------------------------
+        BOOL HasGenericContextArg()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_CallConv & CORINFO_CALLCONV_PARAMTYPE;
+        }
+
+        //----------------------------------------------------------
+        // Is it an async call?
+        //----------------------------------------------------------
+        BOOL IsAsyncCall()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;
+        }
+
+        BOOL HasAsyncContinuation();
 
         //----------------------------------------------------------
         // Is vararg?
@@ -947,6 +972,14 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        //------------------------------------------------------------------
+        // Consume the custom modifiers, if any, in the current signature
+        // and update it.
+        // This is a non destructive operation if the current signature is not
+        // pointing at a sequence of ELEMENT_TYPE_CMOD_REQD or ELEMENT_TYPE_CMOD_OPT.
+        //------------------------------------------------------------------
+        static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig);
+
         // Struct used to capture in/out state during the comparison
         // of element types.
         struct CompareState
@@ -1087,6 +1120,12 @@ public:
             m_CallConv |= CORINFO_CALLCONV_PARAMTYPE;
         }
 
+        void SetIsAsyncCall()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_CallConv |= CORINFO_CALLCONV_ASYNCCALL;
+        }
+
         void SetTreatAsVarArg()
         {
             LIMITED_METHOD_CONTRACT;
@@ -1124,7 +1163,7 @@ public:
 
         CorElementType  m_corNormalizedRetType;
         BYTE            m_flags;
-        BYTE            m_CallConv;
+        USHORT          m_CallConv;
 };  // class MetaSig
 
 BOOL IsTypeRefOrDef(LPCSTR szClassName, Module *pModule, mdToken token);

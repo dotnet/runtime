@@ -5,5 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectToBuild Include="$(RepoRoot)Build.proj" />
+    <!-- dotnet/runtime controls which projects run in which passes through our DefaultSubsets settings in eng/Subsets.props -->
+    <ProjectToBuild Include="$(RepoRoot)Build.proj" DotNetBuildPass="2" Condition="'$(DotNetBuildPass)' == '2'" />
   </ItemGroup>
 </Project>

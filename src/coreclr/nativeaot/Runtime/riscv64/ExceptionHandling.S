@@ -4,7 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 15)&(~15))
+#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 7) & ~7)
 
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0
@@ -328,7 +328,7 @@
 
         // Normal case where a valid return address location is hijacked
         sd    a1, 0(a3)
-        tail  ClearThreadState
+        tail  LOCAL_LABEL(ClearThreadState)
 
 LOCAL_LABEL(TailCallWasHijacked):
 
@@ -560,7 +560,7 @@ LOCAL_LABEL(DonePopping):
         // It was the ThreadAbortException, so rethrow it
         // Reset SP
         mv  a1, a0  // a1 <- continuation address as exception PC
-        li  a0, STATUS_REDHAWK_THREAD_ABORT
+        li  a0, STATUS_NATIVEAOT_THREAD_ABORT
         mv  sp, a2
         tail  C_FUNC(RhpThrowHwEx)
 
@@ -591,7 +591,7 @@ LOCAL_LABEL(NoAbort):
 
         // Allocate space for the call funclet frame
         ALLOC_CALL_FUNCLET_FRAME 0x80
-        
+
         // Save floating-point registers
         fsd  fs0,  0x00(sp)
         fsd  fs1,  0x08(sp)
@@ -605,7 +605,7 @@ LOCAL_LABEL(NoAbort):
         fsd  fs9,  0x48(sp)
         fsd  fs10, 0x50(sp)
         fsd  fs11, 0x58(sp)
-        
+
         // Save integer registers
         sd a0, 0x60(sp)  // Save a0 to 0x60
         sd a1, 0x68(sp)  // Save a1 to 0x68
@@ -664,7 +664,7 @@ LOCAL_LABEL(NoAbort):
 
         // Free call funclet frame
         FREE_CALL_FUNCLET_FRAME 0x80
-        
+
         // Return
         EPILOG_RETURN
 
