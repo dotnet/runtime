@@ -2012,13 +2012,12 @@ void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
-LPVOID GetCookieForCalliSig(MetaSig* pMetaSig)
+LPVOID GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(CheckPointer(pMetaSig));
 
     CallStubGenerator callStubGenerator;
-    return callStubGenerator.GenerateCallStubForSig(*pMetaSig);
+    return callStubGenerator.GenerateCallStubForSig(metaSig);
 }
 
 #endif // FEATURE_INTERPRETER && !TARGET_WASM

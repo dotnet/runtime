@@ -11209,7 +11209,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-LPVOID GetCookieForCalliSig(MetaSig* pMetaSig);
+LPVOID GetCookieForCalliSig(MetaSig metaSig);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11222,7 +11222,7 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     Module* mod = GetModule(szMetaSig->scope);
 
     MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
-    result = GetCookieForCalliSig(&sig);
+    result = GetCookieForCalliSig(sig);
 
     EE_TO_JIT_TRANSITION();
     return result;

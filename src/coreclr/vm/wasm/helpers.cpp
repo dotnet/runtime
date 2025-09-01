@@ -558,21 +558,21 @@ namespace
     }
 
 #undef ARG
-}
 
-namespace
-{
-    enum class CalliSigThunk
+    void* RetVoidThunks[] =
     {
-        Unknown,
-        Void_RetVoid,
-        I32_RetVoid,
-        I32_I32_RetVoid,
-        I32_I32_I32_RetVoid,
-        Void_RetI32,
-        I32_RetI32,
-        I32_I32_RetI32,
-        I32_I32_I32_RetI32,
+        (void*)&CallFunc_Void_RetVoid,
+        (void*)&CallFunc_I32_RetVoid,
+        (void*)&CallFunc_I32_I32_RetVoid,
+        (void*)&CallFunc_I32_I32_I32_RetVoid,
+    };
+
+    void* RetI32Thunks[] =
+    {
+        (void*)&CallFunc_Void_RetI32,
+        (void*)&CallFunc_I32_RetI32,
+        (void*)&CallFunc_I32_I32_RetI32,
+        (void*)&CallFunc_I32_I32_I32_RetI32,
     };
 
     bool ConvertibleToI32(CorElementType argType)
@@ -607,7 +607,7 @@ namespace
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
     // Note: Currently only validates void return type and i32 wasm convertible arguments.
-    CalliSigThunk ComputeCalliSigThunk(MetaSig sig)
+    void* ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
@@ -622,15 +622,13 @@ namespace
             case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
                 break;
             default:
-                return CalliSigThunk::Unknown;
+                return NULL;
         }
 
         // Check return value
         bool returnsVoid = sig.IsReturnTypeVoid();
         if (!returnsVoid && !ConvertibleToI32(sig.GetReturnType()))
-            return CalliSigThunk::Unknown;
-
-        CalliSigThunk baseType = returnsVoid ? CalliSigThunk::Void_RetVoid : CalliSigThunk::Void_RetI32;
+            return NULL;
 
         // Ensure all arguments are wasm i32 compatible types.
         for (CorElementType argType = sig.NextArg();
@@ -638,40 +636,37 @@ namespace
             argType = sig.NextArg())
         {
             if (!ConvertibleToI32(argType))
-                return CalliSigThunk::Unknown;
+                return NULL;
         }
 
-        int32_t numArgs = sig.NumFixedArgs();
-        switch (numArgs)
+        UINT numArgs = sig.NumFixedArgs();
+        void** thunks;
+        if (returnsVoid)
         {
-            case 0: return baseType;
-            case 1: return (CalliSigThunk)((int)baseType + 1);
-            case 2: return (CalliSigThunk)((int)baseType + 2);
-            case 3: return (CalliSigThunk)((int)baseType + 3);
-            default: return CalliSigThunk::Unknown;
-        };
+            thunks = RetVoidThunks;
+            if (numArgs >= ARRAY_SIZE(RetVoidThunks))
+                return NULL;
+        }
+        else
+        {
+            thunks = RetI32Thunks;
+            if (numArgs >= ARRAY_SIZE(RetI32Thunks))
+                return NULL;
+        }
+
+        return thunks[numArgs];
     }
 }
 
-LPVOID GetCookieForCalliSig(MetaSig* pMetaSig)
+LPVOID GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(CheckPointer(pMetaSig));
 
-    CalliSigThunk thunkType = ComputeCalliSigThunk(*pMetaSig);
-    switch (thunkType)
+    void* thunk = ComputeCalliSigThunk(metaSig);
+    if (thunk == NULL)
     {
-        case CalliSigThunk::Void_RetVoid: return (LPVOID)&CallFunc_Void_RetVoid;
-        case CalliSigThunk::I32_RetVoid: return (LPVOID)&CallFunc_I32_RetVoid;
-        case CalliSigThunk::I32_I32_RetVoid: return (LPVOID)&CallFunc_I32_I32_RetVoid;
-        case CalliSigThunk::I32_I32_I32_RetVoid: return (LPVOID)&CallFunc_I32_I32_I32_RetVoid;
-        case CalliSigThunk::Void_RetI32: return (LPVOID)&CallFunc_Void_RetI32;
-        case CalliSigThunk::I32_RetI32: return (LPVOID)&CallFunc_I32_RetI32;
-        case CalliSigThunk::I32_I32_RetI32: return (LPVOID)&CallFunc_I32_I32_RetI32;
-        case CalliSigThunk::I32_I32_I32_RetI32: return (LPVOID)&CallFunc_I32_I32_I32_RetI32;
-        default: break;
+        PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
     }
 
-    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
-    return NULL;
+    return thunk;
 }
