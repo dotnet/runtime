@@ -559,7 +559,7 @@ namespace
 
 #undef ARG
 
-    void* RetVoidThunks[] =
+    void* const RetVoidThunks[] =
     {
         (void*)&CallFunc_Void_RetVoid,
         (void*)&CallFunc_I32_RetVoid,
@@ -567,7 +567,7 @@ namespace
         (void*)&CallFunc_I32_I32_I32_RetVoid,
     };
 
-    void* RetI32Thunks[] =
+    void* const RetI32Thunks[] =
     {
         (void*)&CallFunc_Void_RetI32,
         (void*)&CallFunc_I32_RetI32,
@@ -640,7 +640,7 @@ namespace
         }
 
         UINT numArgs = sig.NumFixedArgs();
-        void** thunks;
+        void* const * thunks;
         if (returnsVoid)
         {
             thunks = RetVoidThunks;
