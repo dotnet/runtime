@@ -1213,19 +1213,6 @@ void emitter::emitIns_R_C(
     id->idInsOpt(INS_OPTS_RC);
     id->idCodeSize(2 * sizeof(code_t)); // auipc + load/addi
 
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
     // TODO-RISCV64: this maybe deleted.
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
@@ -1262,19 +1249,6 @@ void emitter::emitIns_R_AI(instruction  ins,
     id->idReg1(reg);       // destination register that will get the constant value.
 
     id->idInsOpt(INS_OPTS_RELOC);
-
-    id->idOpSize(EA_SIZE(attr));
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-    }
-
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
@@ -1321,19 +1295,6 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
     id->idCodeSize(2 * sizeof(code_t));
     id->idReg1(reg);
-
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
 
 #ifdef DEBUG
     // Mark the catch return
