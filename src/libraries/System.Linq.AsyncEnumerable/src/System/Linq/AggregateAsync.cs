@@ -24,8 +24,8 @@ namespace System.Linq
             Func<TSource, TSource, TSource> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, func, cancellationToken);
 
@@ -65,8 +65,8 @@ namespace System.Linq
             Func<TSource, TSource, CancellationToken, ValueTask<TSource>> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, func, cancellationToken);
 
@@ -108,8 +108,8 @@ namespace System.Linq
             Func<TAccumulate, TSource, TAccumulate> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source.WithCancellation(cancellationToken), seed, func);
 
@@ -144,8 +144,8 @@ namespace System.Linq
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
 
             return Impl(source, seed, func, cancellationToken);
 
@@ -189,9 +189,9 @@ namespace System.Linq
             Func<TAccumulate, TResult> resultSelector,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return Impl(source.WithCancellation(cancellationToken), seed, func, resultSelector);
 
@@ -236,9 +236,9 @@ namespace System.Linq
             Func<TAccumulate, CancellationToken, ValueTask<TResult>> resultSelector,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(func);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return Impl(source, seed, func, resultSelector, cancellationToken);
 

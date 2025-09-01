@@ -169,13 +169,15 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         return true;
     }
 
+#ifdef DECODE_OLD_FORMATS
     // Decode the offset to the PSPSym.
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
-    if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
+    if (Version() < 4 && (m_headerFlags & GC_INFO_HAS_PSP_SYM))
     {
         m_PSPSymStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
     }
     else
+#endif
     {
         m_PSPSymStackSlot = NO_PSP_SYM;
     }
@@ -458,6 +460,11 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasMetho
     return (m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MT;
 }
 
+template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasStackBaseRegister()
+{
+    return (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER) == GC_INFO_HAS_STACK_BASE_REGISTER;
+}
+
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 // This is used for gcinfodumper: is the given offset
@@ -665,7 +672,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasTailC
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::WantsReportOnlyLeaf()
 {
     // Only AMD64 with JIT64 can return false here.
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(DECODE_OLD_FORMATS)
     return ((m_headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
 #else
     return true;
@@ -1257,6 +1264,8 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
     {
         // We have untracked stack slots left and more room to predecode
 
+        // Interpreter-TODO: Add a configurable way to skip encoding/decoding the base for the interpreter, because
+        //  all interpreter locals are at positive offsets relative to FP.
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
         INT32 spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
@@ -2174,7 +2183,47 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     _ASSERTE( !"NYI" );
 }
 
+template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE( !"NYI" );
+    return nullptr;
+}
+
 #endif // Unknown platform
+
+#ifdef FEATURE_INTERPRETER
+template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
+                        INT32           spOffset,
+                        GcStackSlotBase spBase,
+                        PREGDISPLAY     pRD
+                        )
+{
+    OBJECTREF* pObjRef = NULL;
+
+    if( GC_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_SP_REL is invalid for interpreter frames");
+    }
+    else if( GC_CALLER_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_CALLER_SP_REL is invalid for interpreter frames");
+    }
+    else
+    {
+        // Interpreter-TODO: Enhance GcInfoEncoder/Decoder to allow omitting the stack slot base register for interpreted
+        //  methods, since only one base (fp) is ever used for interpreter locals. See Interpreter-TODO in DecodeSlotTable.
+        _ASSERTE( GC_FRAMEREG_REL == spBase );
+        uint8_t* fp = (uint8_t *)GetFP(pRD->pCurrentContext);
+        _ASSERTE(fp);
+        pObjRef = (OBJECTREF*)(fp + spOffset);
+    }
+
+    return pObjRef;
+}
+#endif
 
 
 template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetStackSlot(
@@ -2277,5 +2326,9 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
 
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoDecoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER
 
 #endif // USE_GC_INFO_DECODER

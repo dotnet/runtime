@@ -31,7 +31,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsItem(params SrgsElement[] elements)
             : this()
         {
-            Helpers.ThrowIfNull(elements, nameof(elements));
+            ArgumentNullException.ThrowIfNull(elements);
 
             for (int iElement = 0; iElement < elements.Length; iElement++)
             {
@@ -99,7 +99,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public void Add(SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, nameof(element));
+            ArgumentNullException.ThrowIfNull(element);
 
             Elements.Add(element);
         }

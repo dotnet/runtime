@@ -357,7 +357,7 @@ namespace System.Text.RegularExpressions
                     bool invalidChars = chars is not { Length: 1 } || fixedDistanceSets[i].Negated;
 
                     // If the current set ends a sequence (or we've walked off the end), see whether
-                    // what we've gathered constitues a valid string, and if it's better than the
+                    // what we've gathered constitutes a valid string, and if it's better than the
                     // best we've already seen, store it.  Regardless, reset the sequence in order
                     // to continue analyzing.
                     if (invalidChars ||

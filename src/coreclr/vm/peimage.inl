@@ -170,6 +170,9 @@ inline BOOL PEImage::HasLoadedLayout()
 
 inline PTR_PEImageLayout PEImage::GetLoadedLayout()
 {
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+    return GetFlatLayout();
+#endif
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
@@ -263,12 +266,6 @@ inline DWORD PEImage::GetCorHeaderFlags()
 inline BOOL PEImage::MDImportLoaded()
 {
     return m_pMDImport != NULL;
-}
-
-inline BOOL PEImage::HasV1Metadata()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetMDImport()->GetMetadataStreamVersion()==MD_STREAM_VER_1X;
 }
 
 inline BOOL PEImage::IsILOnly()

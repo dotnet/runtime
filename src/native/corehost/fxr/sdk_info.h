@@ -25,7 +25,7 @@ struct sdk_info
         const pal::string_t& dotnet_dir,
         std::vector<sdk_info>* sdk_infos);
 
-    static bool print_all_sdks(const pal::string_t& dotnet_dir, const pal::string_t& leading_whitespace);
+    static bool print_all_sdks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace);
 
     pal::string_t base_path;
     pal::string_t full_path;

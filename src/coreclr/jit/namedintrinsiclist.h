@@ -47,11 +47,15 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Max,
     NI_System_Math_MaxMagnitude,
     NI_System_Math_MaxMagnitudeNumber,
+    NI_System_Math_MaxNative,
     NI_System_Math_MaxNumber,
+    NI_System_Math_MaxUnsigned,
     NI_System_Math_Min,
     NI_System_Math_MinMagnitude,
     NI_System_Math_MinMagnitudeNumber,
+    NI_System_Math_MinNative,
     NI_System_Math_MinNumber,
+    NI_System_Math_MinUnsigned,
     NI_System_Math_MultiplyAddEstimate,
     NI_System_Math_Pow,
     NI_System_Math_ReciprocalEstimate,
@@ -103,6 +107,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
+    NI_System_StubHelpers_AsyncCallContinuation,
 
     NI_Array_Address,
     NI_Array_Get,
@@ -118,6 +123,9 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
+
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
@@ -149,6 +157,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_Exchange,
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
+
+    NI_System_Threading_Tasks_Task_ConfigureAwait,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -211,7 +221,9 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_InitBlock,
     NI_SRCS_UNSAFE_InitBlockUnaligned,
     NI_SRCS_UNSAFE_IsAddressGreaterThan,
+    NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo,
     NI_SRCS_UNSAFE_IsAddressLessThan,
+    NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo,
     NI_SRCS_UNSAFE_IsNullRef,
     NI_SRCS_UNSAFE_NullRef,
     NI_SRCS_UNSAFE_Read,
@@ -245,7 +257,7 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_END,
 
     //
-    // Array Intrinsics
+    // Enumeration Intrinsics
     //
     NI_System_SZArrayHelper_GetEnumerator,
     NI_System_Array_T_GetEnumerator,

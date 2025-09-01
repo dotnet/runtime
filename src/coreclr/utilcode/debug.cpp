@@ -38,8 +38,8 @@ static void GetExecutableFileNameUtf8(SString& value)
     CONTRACTL_END;
 
     SString tmp;
-    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
-    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, MAX_PATH);
     tmp.CloseBuffer(numChars);
 
     tmp.ConvertToUTF8(value);
@@ -133,7 +133,7 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (option == rTestAndRaise && fRet != 0)
     {
@@ -250,14 +250,14 @@ bool _DbgBreakCheck(
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Emit assert in debug output and console for easy access.
     if (formattedMessages)
     {
         OutputDebugStringUtf8(formatBuffer);
-        minipal_log_print_error(formatBuffer);
+        minipal_log_print_error("%s", formatBuffer);
     }
     else
     {
@@ -308,7 +308,7 @@ bool _DbgBreakCheckNoThrow(
     {
         failed = true;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (failed)
     {
@@ -417,7 +417,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 #endif  // DACCESS_COMPILE
 #endif  // TARGET_UNIX
 
@@ -465,7 +465,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
     {
         // Nothing to do here.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // TARGET_UNIX
 
     return fSuccess;
@@ -489,7 +489,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
     OutputDebugStringUtf8(buffer.GetUTF8());
 
     // Write out the error to the console
-    minipal_log_print_error(buffer.GetUTF8());
+    minipal_log_print_error("%s", buffer.GetUTF8());
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).

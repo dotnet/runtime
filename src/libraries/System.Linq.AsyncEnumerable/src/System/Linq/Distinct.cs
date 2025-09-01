@@ -19,7 +19,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             IEqualityComparer<TSource>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :

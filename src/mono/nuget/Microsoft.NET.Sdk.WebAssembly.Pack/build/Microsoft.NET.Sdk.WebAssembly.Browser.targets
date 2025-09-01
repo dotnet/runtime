@@ -12,7 +12,17 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
-    <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>
+    <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
+
+    <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
+    <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
+    <_TargetingNET100OrLater>false</_TargetingNET100OrLater>
+    <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
+    <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
+    <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
+
+    <WebAssemblyHotReloadCapabilities>Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes</WebAssemblyHotReloadCapabilities>
+    <WebAssemblyHotReloadCapabilities Condition="'$(_TargetingNET80OrLater)' == 'true'">Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes;AddInstanceFieldToExistingType;GenericAddMethodToExistingType;GenericUpdateMethod;UpdateParameters;GenericAddFieldToExistingType</WebAssemblyHotReloadCapabilities>
   </PropertyGroup>
   <PropertyGroup Condition="'$(_WebAssemblyUserRunParameters)' == '' and '$(_UseBlazorDevServer)' == 'false'">
     <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
@@ -24,7 +34,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
 
-    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -64,7 +75,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Runtime feature defaults to trim unnecessary code -->
     <InvariantTimezone Condition="'$(BlazorEnableTimeZoneSupport)' == 'false'">true</InvariantTimezone>
-    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
 
     <!-- Turn off parts of the build that do not apply to WASM projects -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -107,6 +117,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ResolveWasmOutputs;
       _GenerateBuildWasmBootJson;
       _AddWasmStaticWebAssets;
+      _AddWasmPreloadBuildProperties;
     </ResolveCompressedFilesDependsOn>
     <ResolveCompressedFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolveCompressedFilesForPublishDependsOn);
@@ -114,6 +125,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ComputeWasmExtensions;
       GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
+      _AddWasmPreloadPublishProperties;
     </ResolveCompressedFilesForPublishDependsOn>
     <CompressFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(CompressFilesForPublishDependsOn);
@@ -128,6 +140,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
   </PropertyGroup>
@@ -167,12 +180,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
     <PropertyGroup>
-      <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
-      <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
-      <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
-      <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
-      <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
-
+      <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == ''">false</_BlazorCacheBootResources>
       <_BlazorEnableTimeZoneSupport>$(BlazorEnableTimeZoneSupport)</_BlazorEnableTimeZoneSupport>
       <_BlazorEnableTimeZoneSupport Condition="'$(_BlazorEnableTimeZoneSupport)' == ''">true</_BlazorEnableTimeZoneSupport>
       <_WasmInvariantGlobalization>$(InvariantGlobalization)</_WasmInvariantGlobalization>
@@ -185,9 +195,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
-      <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
+      <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(WasmBootConfigFileName)' == ''">true</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
@@ -196,18 +208,26 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
-      <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
-      <_WasmFingerprintBootConfig>$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
+      <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
       <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
+      <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
+      <_WasmFingerprintBootConfig Condition="'$(_WasmInlineBootConfig)' == 'true'">$(_WasmFingerprintDotnetJs)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == '' and $(_WasmBootConfigFileName.EndsWith('.js'))">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
+      <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
+      <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
+      
+      <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
+      <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
+    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
@@ -250,7 +270,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -258,6 +278,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
     </ComputeWasmBuildAssets>
+
+    <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
+      <_WasmDotnetJsForBuild Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_BuildAssetsCandidates Remove="@(_WasmDotnetJsForBuild)" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
@@ -375,26 +400,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="false"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
+      MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -434,7 +461,107 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmBuildBootConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
+  </Target>
 
+  <PropertyGroup>
+    <GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn>
+      _AddWasmPreloadBuildProperties;
+      $(GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn)
+    </GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn>
+    <GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
+      _AddWasmPreloadPublishProperties;
+      $(GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn)
+    </GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_WasmConfigurePreload">
+    <ItemGroup>
+      <AppendPreloadRelPreloadProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadRel</Name>
+        <Value>preload</Value>
+      </AppendPreloadRelPreloadProperty>
+      <AppendPreloadAsScriptProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadAs</Name>
+        <Value>script</Value>
+      </AppendPreloadAsScriptProperty>
+      <AppendPreloadPriorityHighProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadPriority</Name>
+        <Value>high</Value>
+      </AppendPreloadPriorityHighProperty>
+      <AppendPreloadCrossoriginAnonymousProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadCrossorigin</Name>
+        <Value>anonymous</Value>
+      </AppendPreloadCrossoriginAnonymousProperty>
+      <AppendPreloadOrder1Property Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadOrder</Name>
+        <Value>1</Value>
+      </AppendPreloadOrder1Property>
+      <AppendGroupWebAssemblyProperty Include="Append">
+        <UpdateTarget>Property</UpdateTarget>
+        <Name>PreloadGroup</Name>
+        <Value>webassembly</Value>
+      </AppendGroupWebAssemblyProperty>
+      
+      <!-- Label=Include matches endpoints with fingerprint; Label=Exclude matches endpoints without fingerprint -->
+      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Include" Condition="'$(_WasmFingerprintAssets)' == 'true' and ('$(StaticWebAssetProjectMode)' == 'Default' or '$(_WasmFingerprintDotnetJs)' == 'true')" />
+      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Exclude" Condition="'@(_WasmPreloadEndpointFilter)' == ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+    <ItemGroup>
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
+    </ItemGroup>
+
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmPreloadBuildScriptAsset)"
+      Filters="@(_WasmPreloadEndpointFilter)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildScriptAssetEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+
+    <UpdateStaticWebAssetEndpoints
+      EndpointsToUpdate="@(_WasmPreloadBuildScriptAssetEndpoint)"
+      AllEndpoints="@(_WasmPreloadBuildScriptAssetEndpoint)"
+      Operations="@(AppendPreloadRelPreloadProperty);@(AppendPreloadAsScriptProperty);@(AppendPreloadPriorityHighProperty);@(AppendPreloadCrossoriginAnonymousProperty);@(AppendPreloadOrder1Property);@(AppendGroupWebAssemblyProperty)"
+    >
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_UpdatedWasmPreloadBuildAssetEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAssetEndpoint Remove="@(_WasmPreloadBuildScriptAssetEndpoint)" />
+      <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+    <ItemGroup>
+      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == '$(_WasmPublishBootConfigFileName)'" />
+    </ItemGroup>
+
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmPreloadPublishScriptAsset)"
+      Filters="@(_WasmPreloadEndpointFilter)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadPublishScriptAssetEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+
+    <UpdateStaticWebAssetEndpoints
+      EndpointsToUpdate="@(_WasmPreloadPublishScriptAssetEndpoint)"
+      AllEndpoints="@(_WasmPreloadPublishScriptAssetEndpoint)"
+      Operations="@(AppendPreloadRelPreloadProperty);@(AppendPreloadAsScriptProperty);@(AppendPreloadPriorityHighProperty);@(AppendPreloadCrossoriginAnonymousProperty);@(AppendPreloadOrder1Property);@(AppendGroupWebAssemblyProperty)"
+    >
+      <Output TaskParameter="UpdatedEndpoints" ItemName="_UpdatedWasmPreloadPublishAssetEndpoint" />
+    </UpdateStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAssetEndpoint Remove="@(_WasmPreloadPublishScriptAssetEndpoint)" />
+      <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadPublishAssetEndpoint)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
@@ -494,7 +621,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -503,6 +630,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="PromotedAssets" ItemName="_PromotedWasmPublishStaticWebAssets" />
       <Output TaskParameter="FilesToRemove" ItemName="_PublishResolvedFilesToRemove" />
     </ComputeWasmPublishAssets>
+    
+    <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
+      <_WasmDotnetJsForPublish Include="@(ResolvedFileToPublish)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_WasmPublishWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebCilPath>
@@ -678,18 +809,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
+      MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
@@ -697,7 +829,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />

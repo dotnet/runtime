@@ -44,6 +44,7 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
+        JIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
@@ -105,9 +106,9 @@ public:
         m_jitFlags            = flags.GetFlagsRaw();
         m_instructionSetFlags = flags.GetInstructionSetFlags();
 
-        C_ASSERT(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
+        static_assert(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
 
-#define FLAGS_EQUAL(a, b) C_ASSERT((unsigned)(a) == (unsigned)(b))
+#define FLAGS_EQUAL(a, b) static_assert((unsigned)(a) == (unsigned)(b))
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT, JIT_FLAG_SPEED_OPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT, JIT_FLAG_SIZE_OPT);
@@ -141,6 +142,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
 #endif // TARGET_ARM
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
 
 #undef FLAGS_EQUAL
     }

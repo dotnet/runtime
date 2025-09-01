@@ -427,8 +427,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void VerifySignature_DSA()
         {
             // macOS is limited to FIPS 186-2 DSA, so SHA-1 is the only valid algorithm.
@@ -783,6 +782,32 @@ BgkqhkiG9w0BAQsFAAMBAA==
             }
         }
 
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void Load_NoHashAlgorithm_OKForSlhDsa()
+        {
+            CertificateRequest req = CertificateRequest.LoadSigningRequestPem(
+                TestData.BigExponentPkcs10Pem,
+                default,
+                CertificateRequestLoadOptions.SkipSignatureValidation);
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset notBefore = now.AddMonths(-1);
+            DateTimeOffset notAfter = now.AddMonths(1);
+
+            using (SlhDsa key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                // Assert.NoThrow
+                using X509Certificate2 cert = req.Create(
+                    req.SubjectName,
+                    X509SignatureGenerator.CreateForSlhDsa(key),
+                    notBefore,
+                    notAfter,
+                    new byte[] { 3, 1, 0, 1, 3, 3, 3 });
+
+                Assert.Equal("2.16.840.1.101.3.4.3.21", cert.SignatureAlgorithm.Value);
+            }
+        }
+
         [Fact]
         public static void LoadCreate_MatchesCreate_RSAPkcs1()
         {
@@ -838,6 +863,18 @@ BgkqhkiG9w0BAQsFAAMBAA==
                 LoadCreate_MatchesCreate(
                     new CertificateRequest("CN=Roundtrip, O=ML-DSA", key),
                     X509SignatureGenerator.CreateForMLDsa(key),
+                    deterministicSignature: false);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void LoadCreate_MatchesCreate_SlhDsa()
+        {
+            using (SlhDsa key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                LoadCreate_MatchesCreate(
+                    new CertificateRequest("CN=Roundtrip, O=SLH-DSA", key),
+                    X509SignatureGenerator.CreateForSlhDsa(key),
                     deterministicSignature: false);
             }
         }

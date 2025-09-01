@@ -37,6 +37,7 @@ INST(nop,           "nop",            0,    0x00000013)
 //// R_R
 INST(mov,           "mv",             0,    0x00000013)
 INST(sext_w,        "sext.w",         0,    0x0000001b)
+INST(not,           "not",            0,    0xFFF04013)
 
 ////R_I
 INST(lui,           "lui",            0,    0x00000037)
@@ -262,12 +263,60 @@ INST(amomaxu_w,     "amomaxu.w",      0,   0xe000202f) // funct5:11100
 INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
 
 // Zbb (RV32 + RV64)
+//// R_R
 INST(clz,           "clz",            0,   0x60001013)
 INST(clzw,          "clzw",           0,   0x6000101b)
 INST(ctz,           "ctz",            0,   0x60101013)
 INST(ctzw,          "ctzw",           0,   0x6010101b)
 INST(cpop,          "cpop",           0,   0x60201013)
 INST(cpopw,         "cpopw",          0,   0x6020101b)
+INST(sext_b,        "sext.b",         0,   0x60401013)
+INST(sext_h,        "sext.h",         0,   0x60501013)
+INST(zext_h,        "zext.h",         0,   0x0800403b)
+INST(rev8,          "rev8",           0,   0x6b805013)
+
+//// R_R_R
+INST(rol,           "rol",            0,   0x60001033)
+INST(rolw,          "rolw",           0,   0x6000103b)
+INST(ror,           "ror",            0,   0x60005033)
+INST(rorw,          "rorw",           0,   0x6000503b)
+INST(xnor,          "xnor",           0,   0x40004033)
+INST(orn,           "orn",            0,   0x40006033)
+INST(andn,          "andn",           0,   0x40007033)
+INST(min,           "min",            0,   0x0a004033)
+INST(minu,          "minu",           0,   0x0a005033)
+INST(max,           "max",            0,   0x0a006033)
+INST(maxu,          "maxu",           0,   0x0a007033)
+
+//// R_R_I
+INST(rori,          "rori",           0,   0x60005013)
+INST(roriw,         "roriw",          0,   0x6000501b)
+
+// Zba (RV64 + RV32)
+
+//// R_R_R
+INST(sh1add,        "sh1add",         0,   0x20002033)
+INST(sh2add,        "sh2add",         0,   0x20004033)
+INST(sh3add,        "sh3add",         0,   0x20006033)
+
+// Zba (RV64)
+
+//// R_R_R
+INST(add_uw,        "add.uw",         0,   0x0800003b)
+INST(sh1add_uw,     "sh1add_uw",      0,   0x2000203b)
+INST(sh2add_uw,     "sh2add_uw",      0,   0x2000403b)
+INST(sh3add_uw,     "sh3add_uw",      0,   0x2000603b)
+INST(slli_uw,       "slli_uw",        0,   0x0800101b)
+
+// RVC
+INST(c_mv,          "c.mv",          0,   0x00008002)
+INST(c_add,         "c.add",         0,   0x00009002)
+INST(c_and,         "c.and",         0,   0x00008c61)
+INST(c_or,          "c.or",          0,   0x00008c41)
+INST(c_xor,         "c.xor",         0,   0x00008c21)
+INST(c_sub,         "c.sub",         0,   0x00008c01)
+INST(c_addw,        "c.addw",        0,   0x00009c21)
+INST(c_subw,        "c.subw",        0,   0x00009c01)
 
 // clang-format on
 /*****************************************************************************/

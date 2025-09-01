@@ -73,6 +73,10 @@
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>

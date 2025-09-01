@@ -15,6 +15,7 @@
         .model  flat
 
 include asmconstants.inc
+include asmmacros.inc
 
         assume fs: nothing
         option  casemap:none
@@ -26,9 +27,6 @@ EXTERN g_pThrowDivideByZeroException:DWORD
 EXTERN g_pThrowOverflowException:DWORD
 
 EXTERN __imp__RtlUnwind@16:DWORD
-ifdef _DEBUG
-EXTERN _HelperMethodFrameConfirmState@20:PROC
-endif
 ifdef FEATURE_HIJACK
 EXTERN _OnHijackWorker@4:PROC
 endif ;FEATURE_HIJACK
@@ -46,7 +44,7 @@ EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
 endif ; FEATURE_EH_FUNCLETS
 EXTERN __alloca_probe:PROC
-EXTERN _NDirectImportWorker@4:PROC
+EXTERN _PInvokeImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
@@ -90,23 +88,13 @@ EXTERN g_chained_lookup_miss_counter:DWORD
 EXTERN g_dispatch_cache_chain_success_counter:DWORD
 endif
 
-ifdef FEATURE_EH_FUNCLETS
 EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_ThrowExact_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
-endif ; FEATURE_EH_FUNCLETS
 
 UNREFERENCED macro arg
     local unref
     unref equ size arg
-endm
-
-FASTCALL_FUNC macro FuncName,cbArgs
-FuncNameReal EQU @&FuncName&@&cbArgs
-FuncNameReal proc public
-endm
-
-FASTCALL_ENDFUNC macro
-FuncNameReal endp
 endm
 
 ifndef FEATURE_EH_FUNCLETS
@@ -511,9 +499,9 @@ donestack:
 
 CallDescrWorkerInternalReturnAddress:
 ifdef _DEBUG
-        nop     ; This is a tag that we use in an assert.  Fcalls expect to
-                ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::EnsureInit)
+    nop     ; Debug-only tag used in asserts.
+            ; FCalls expect to be called from Jitted code or specific approved call sites,
+            ; like this one.
 endif
 
         ; Save FP return value if necessary
@@ -549,66 +537,6 @@ _CallDescrWorkerInternalReturnAddressOffset:
         dd      CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
 CallDescrWorkerInternal endp
-
-ifdef _DEBUG
-; int __fastcall HelperMethodFrameRestoreState(HelperMethodFrame*, struct MachState *)
-FASTCALL_FUNC HelperMethodFrameRestoreState,8
-    mov         eax, edx        ; eax = MachState*
-else
-; int __fastcall HelperMethodFrameRestoreState(struct MachState *)
-FASTCALL_FUNC HelperMethodFrameRestoreState,4
-    mov         eax, ecx        ; eax = MachState*
-endif
-    ; restore the registers from the m_MachState structure.  Note that
-    ; we only do this for register that where not saved on the stack
-    ; at the time the machine state snapshot was taken.
-
-    cmp         [eax+MachState__pRetAddr], 0
-
-ifdef _DEBUG
-    jnz         noConfirm
-    push        ebp
-    push        ebx
-    push        edi
-    push        esi
-    push        ecx     ; HelperFrame*
-    call        _HelperMethodFrameConfirmState@20
-    ; on return, eax = MachState*
-    cmp         [eax+MachState__pRetAddr], 0
-noConfirm:
-endif
-
-    jz          doRet
-
-    lea         edx, [eax+MachState__esi]       ; Did we have to spill ESI
-    cmp         [eax+MachState__pEsi], edx
-    jnz         SkipESI
-    mov         esi, [edx]                      ; Then restore it
-SkipESI:
-
-    lea         edx, [eax+MachState__edi]       ; Did we have to spill EDI
-    cmp         [eax+MachState__pEdi], edx
-    jnz         SkipEDI
-    mov         edi, [edx]                      ; Then restore it
-SkipEDI:
-
-    lea         edx, [eax+MachState__ebx]       ; Did we have to spill EBX
-    cmp         [eax+MachState__pEbx], edx
-    jnz         SkipEBX
-    mov         ebx, [edx]                      ; Then restore it
-SkipEBX:
-
-    lea         edx, [eax+MachState__ebp]       ; Did we have to spill EBP
-    cmp         [eax+MachState__pEbp], edx
-    jnz         SkipEBP
-    mov         ebp, [edx]                      ; Then restore it
-SkipEBP:
-
-doRet:
-    xor         eax, eax
-    retn
-FASTCALL_ENDFUNC HelperMethodFrameRestoreState
-
 
 ifdef FEATURE_HIJACK
 
@@ -690,8 +618,8 @@ endif ; FEATURE_HIJACK
 
 ;==========================================================================
 ; This function is reached only via the embedded ImportThunkGlue code inside
-; an NDirectMethodDesc. It's purpose is to load the DLL associated with an
-; N/Direct method, then backpatch the DLL target into the methoddesc.
+; an PInvokeMethodDesc. It's purpose is to load the DLL associated with an
+; PInvoke method, then backpatch the DLL target into the methoddesc.
 ;
 ; Initial state:
 ;
@@ -709,7 +637,7 @@ endif ; FEATURE_HIJACK
 ;
 ;
 ;==========================================================================
-_NDirectImportThunk@0 proc public
+_PInvokeImportThunk@0 proc public
 
         ; Preserve argument registers
         push    ecx
@@ -717,17 +645,17 @@ _NDirectImportThunk@0 proc public
 
         ; Invoke the function that does the real work.
         push    eax
-        call    _NDirectImportWorker@4
+        call    _PInvokeImportWorker@4
 
         ; Restore argument registers
         pop     edx
         pop     ecx
 
-        ; If we got back from NDirectImportWorker, the MD has been successfully
+        ; If we got back from PInvokeImportWorker, the MD has been successfully
         ; linked and "eax" contains the DLL target. Proceed to execute the
         ; original DLL call.
         jmp     eax     ; Jump to DLL target
-_NDirectImportThunk@0 endp
+_PInvokeImportThunk@0 endp
 
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
@@ -973,7 +901,7 @@ _ProfileTailcallNaked@4 endp
 ;==========================================================================
 ; Invoked for vararg forward P/Invoke calls as a stub.
 ; Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-; EAX       - the NDirectMethodDesc
+; EAX       - the PInvokeMethodDesc
 ; ECX       - may be return buffer address
 ; [ESP + 4] - the VASigCookie
 ;
@@ -1215,29 +1143,7 @@ _ThePreStub@0 proc public
 
     push        esi
 
-ifdef FEATURE_EH_FUNCLETS
-    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
-    jne         NoSEHReplace
-
-    ; If we were called from CallDescrWorkerInternal then swap the last
-    ; SEH registration for _CallDescrWorkerUnwindFrameChainHandler to ensure
-    ; that class loading exceptions are propagated through unmanaged code
-    ; before being forwarded to the managed one.
-    mov         edi, fs:[0]
-    ; mov         esi, [edi]
-    ; mov         fs:[0], esi
-    mov         [edi + 4], _CallDescrWorkerUnwindFrameChainHandler
     call        _PreStubWorker@8
-    mov         [edi + 4], _ProcessCLRException
-    ; mov         fs:[0], edi
-    jmp         AfterPreStubWorker
-
-NoSEHReplace:
-endif ; FEATURE_EH_FUNCLETS
-
-    call        _PreStubWorker@8
-
-AfterPreStubWorker:
 
     ; eax now contains replacement stub. PreStubWorker will never return
     ; NULL (it throws an exception if stub creation fails.)
@@ -1312,14 +1218,19 @@ _GenericCLRToCOMCallStub@0 proc public
 
     ; Get pCLRToCOMCallInfo for return thunk
     mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
+    ; Get size of arguments to pop
+    movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
+    ; Get the return address, pushed registers on stack are 24 bytes big
+    mov         ebx, [esp + 24]
+    ; Set the return address on stack at the last stack slot
+    mov         [esp + ecx + 24], ebx
 
     STUB_EPILOG_RETURN
 
-    ; Tailcall return thunk
-    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
+    ; Move esp to point to the last stack slot where we put the return
+    ; address earlier
+    lea         esp, [esp + ecx]
 
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
     ret
 
 _GenericCLRToCOMCallStub@0 endp
@@ -1811,7 +1722,7 @@ ifdef CHAIN_LOOKUP
 ;==========================================================================
 _ResolveWorkerChainLookupAsmStub@0 proc public
     ; this is the part of the stack that is present as we enter this function:
-    
+
     ChainLookup__token equ                  00h
     ChainLookup__indirect_addr equ          04h
     ChainLookup__caller_ret_addr equ        08h
@@ -1910,7 +1821,6 @@ _BackPatchWorkerAsmStub@0 proc public
     ret
 _BackPatchWorkerAsmStub@0 endp
 
-ifdef FEATURE_EH_FUNCLETS
 ;==========================================================================
 ; Capture a transition block with register values and call the IL_Throw
 ; implementation written in C.
@@ -1929,6 +1839,23 @@ FASTCALL_FUNC IL_Throw, 4
 FASTCALL_ENDFUNC IL_Throw
 
 ;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact
+; implementation written in C.
+;
+; Input state:
+;   ECX = Pointer to exception object
+;==========================================================================
+FASTCALL_FUNC IL_ThrowExact, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_ThrowExact_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_ThrowExact
+
+;==========================================================================
 ; Capture a transition block with register values and call the IL_Rethrow
 ; implementation written in C.
 ;==========================================================================
@@ -1941,6 +1868,5 @@ FASTCALL_FUNC IL_Rethrow, 0
     STUB_EPILOG
     ret     4
 FASTCALL_ENDFUNC IL_Rethrow
-endif ; FEATURE_EH_FUNCLETS
 
     end

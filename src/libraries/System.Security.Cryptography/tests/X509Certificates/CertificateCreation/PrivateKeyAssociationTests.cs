@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
-    public static class PrivateKeyAssociationTests
+    public static partial class PrivateKeyAssociationTests
     {
         private const int PROV_RSA_FULL = 1;
         private const int PROV_DSS = 3;
@@ -427,8 +427,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void ThirdPartyProvider_DSA()
         {
             using (DSA dsaOther = new DSAOther())
@@ -582,8 +581,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CheckCopyWithPrivateKey_DSA()
         {
             using (X509Certificate2 withKey = X509CertificateLoader.LoadPkcs12(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword))
@@ -706,51 +704,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
-        public static void CheckCopyWithPrivateKey_MLDSA()
-        {
-            using (MLDsa privKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
-            {
-                CertificateRequest req = new CertificateRequest($"CN={nameof(CheckCopyWithPrivateKey_MLDSA)}", privKey);
-                DateTimeOffset now = DateTimeOffset.UtcNow;
+        private static partial Func<X509Certificate2, MLKem, X509Certificate2> CopyWithPrivateKey_MLKem =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
 
-                X509Certificate2 pubOnly = req.Create(
-                    req.SubjectName,
-                    X509SignatureGenerator.CreateForMLDsa(privKey),
-                    now.AddMinutes(-10),
-                    now.AddMinutes(10),
-                    new byte[] { 2, 4, 6, 8, 9, 7, 5, 3, 1 });
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPublicKey =>
+            cert => cert.GetMLKemPublicKey();
 
-                using (pubOnly)
-                using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
-                {
-                    CheckCopyWithPrivateKey(
-                    pubOnly,
-                    wrongAlg,
-                    privKey,
-                    [
-                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44),
-                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65),
-                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87),
-                    ],
-                    (cert, key) => cert.CopyWithPrivateKey(key),
-                    cert => cert.GetMLDsaPublicKey(),
-                    cert => cert.GetMLDsaPrivateKey(),
-                    (priv, pub) =>
-                    {
-                        byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
-                        RandomNumberGenerator.Fill(data);
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPrivateKey =>
+            cert => cert.GetMLKemPrivateKey();
 
-                        byte[] signature = new byte[pub.Algorithm.SignatureSizeInBytes];
-                        int written = priv.SignData(data, signature);
-                        Assert.Equal(signature.Length, written);
-                        Assert.True(pub.VerifyData(data, signature));
-                    });
-                }
-            }
-        }
+        private static partial Func<X509Certificate2, MLDsa, X509Certificate2> CopyWithPrivateKey_MLDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
 
-        private static void CheckCopyWithPrivateKey<TKey>(
+        private static partial Func<X509Certificate2, MLDsa> GetMLDsaPublicKey =>
+            cert => cert.GetMLDsaPublicKey();
+
+        private static partial Func<X509Certificate2, MLDsa> GetMLDsaPrivateKey =>
+            cert => cert.GetMLDsaPrivateKey();
+
+        private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey =>
+            cert => cert.GetSlhDsaPublicKey();
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey =>
+            cert => cert.GetSlhDsaPrivateKey();
+
+        private static partial void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
             TKey correctPrivateKey,
@@ -759,70 +740,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Func<X509Certificate2, TKey> getPublicKey,
             Func<X509Certificate2, TKey> getPrivateKey,
             Action<TKey, TKey> keyProver)
-            where TKey : class, IDisposable
-        {
-            Exception e = AssertExtensions.Throws<ArgumentException>(
-                null,
-                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey));
-
-            Assert.Contains("algorithm", e.Message);
-
-            List<TKey> generatedKeys = new();
-
-            foreach (Func<TKey> func in incorrectKeys)
-            {
-                TKey incorrectKey = func();
-                generatedKeys.Add(incorrectKey);
-
-                e = AssertExtensions.Throws<ArgumentException>(
-                    "privateKey",
-                    () => copyWithPrivateKey(cert, incorrectKey));
-
-                Assert.Contains("key does not match the public key for this certificate", e.Message);
-            }
-
-            using (X509Certificate2 withKey = copyWithPrivateKey(cert, correctPrivateKey))
-            {
-                e = AssertExtensions.Throws<InvalidOperationException>(
-                    () => copyWithPrivateKey(withKey, correctPrivateKey));
-
-                Assert.Contains("already has an associated private key", e.Message);
-
-                foreach (TKey incorrectKey in generatedKeys)
-                {
-                    e = AssertExtensions.Throws<InvalidOperationException>(
-                        () => copyWithPrivateKey(withKey, incorrectKey));
-
-                    Assert.Contains("already has an associated private key", e.Message);
-                }
-
-                using (TKey pub = getPublicKey(withKey))
-                using (TKey pub2 = getPublicKey(withKey))
-                using (TKey pubOnly = getPublicKey(cert))
-                using (TKey priv = getPrivateKey(withKey))
-                using (TKey priv2 = getPrivateKey(withKey))
-                {
-                    Assert.NotSame(pub, pub2);
-                    Assert.NotSame(pub, pubOnly);
-                    Assert.NotSame(pub2, pubOnly);
-                    Assert.NotSame(priv, priv2);
-
-                    keyProver(priv, pub2);
-                    keyProver(priv2, pub);
-                    keyProver(priv, pubOnly);
-
-                    priv.Dispose();
-                    pub2.Dispose();
-
-                    keyProver(priv2, pub);
-                    keyProver(priv2, pubOnly);
-                }
-            }
-
-            foreach (TKey incorrectKey in generatedKeys)
-            {
-                incorrectKey.Dispose();
-            }
-        }
+            where TKey : class, IDisposable;
     }
 }

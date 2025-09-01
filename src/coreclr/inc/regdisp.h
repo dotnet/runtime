@@ -132,7 +132,11 @@ inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    return &display->pCurrentContext->Ebp;
+#else
     return (LPVOID)display->GetEbpLocation();
+#endif
 }
 
 inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)

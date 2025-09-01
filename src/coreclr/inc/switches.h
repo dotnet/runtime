@@ -46,10 +46,12 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_BROWSER)
     #define USE_LAZY_PREFERRED_RANGE       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_64BIT)
+
+#define FEATURE_ON_STACK_REPLACEMENT
 
 #if defined(HOST_UNIX)
-    // In PAL we have a smechanism that reserves memory on start up that is
+    // In PAL we have a mechanism that reserves memory on start up that is
     // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
     // from this area.
     #define USE_LAZY_PREFERRED_RANGE       0
@@ -144,15 +146,12 @@
 #define FEATURE_HFA
 #endif
 
-// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
-// Additionally the platform ABI requires these types and composite type containing them to be similarly
-// aligned when passed as arguments.
-#ifdef TARGET_ARM
+// Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
+#if defined(TARGET_ARM) || defined(TARGET_WASM)
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
-// Prefer double alignment for structs and arrays with doubles. Put arrays of doubles more agressively
-// into large object heap for performance because large object heap is 8 byte aligned
+// Prefer double alignment for structs with doubles on the stack.
 #if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(HOST_64BIT)
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
@@ -166,3 +165,7 @@
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
+
+#ifdef TARGET_WASM
+#define PEIMAGE_FLAT_LAYOUT_ONLY
+#endif // !TARGET_WASM

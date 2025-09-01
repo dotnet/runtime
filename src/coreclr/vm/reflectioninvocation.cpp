@@ -242,6 +242,13 @@ public:
         return FALSE;
     }
 
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        // async calls are also not supported for reflection invoke
+        return FALSE;
+    }
+
     BOOL IsVarArg()
     {
         LIMITED_METHOD_CONTRACT;
@@ -333,6 +340,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     if (ownerType.IsSharedByGenericInstantiations())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+
+    if (pMeth->IsAsyncMethod())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Async"));
     }
 
 #ifdef _DEBUG
@@ -605,7 +617,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
-            gc.retVal = *(OBJECTREF *)pReturnValue;
+            gc.retVal = ObjectToOBJECTREF(*(Object**)pReturnValue);
         }
 
         // If it is a Nullable<T>, box it using Nullable<T> conventions.
@@ -1154,10 +1166,8 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
 
     if (pField != NULL && pField->IsRVA())
     {
-        Module* pModule = pField->GetModule();
-        *address = pModule->GetRvaField(pField->GetOffset());
+        *address = pField->GetStaticAddressHandle(NULL);
         *size = pField->LoadSize();
-
         ret = TRUE;
     }
 
@@ -1470,11 +1480,13 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* r
  * doesn't guarantee that a ctor will succeed, only that the VM is able
  * to support an instance of this type on the heap.
  * ==========
+ * The 'allowByRefLike' parameter controls whether the type should be validated as not ByRefLike.
  * The 'fForGetUninitializedInstance' parameter controls the type of
  * exception that is thrown if a check fails.
  */
-void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
+static void ValidateTypeAbleToBeInstantiated(
     TypeHandle typeHandle,
+    bool allowByRefLike,
     bool fGetUninitializedObject)
 {
     STANDARD_VM_CONTRACT;
@@ -1492,7 +1504,7 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     // Don't allow creating instances of delegates
     if (pMT->IsDelegate())
@@ -1530,14 +1542,14 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     // Don't allow ref structs
-    if (pMT->IsByRefLike())
+    if (!allowByRefLike && pMT->IsByRefLike())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
 }
 
 /*
- * Given a RuntimeType, queries info on how to instantiate the object.
+ * Given a RuntimeType, queries info on how to instantiate the type.
  * pRuntimeType - [required] the RuntimeType object
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
@@ -1588,10 +1600,10 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
     }
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
+    ValidateTypeAbleToBeInstantiated(typeHandle, true /* allowByRefLike */, false /* fGetUninitializedObject */);
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or a
@@ -1741,7 +1753,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed (allocated as an uninitialized object).
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 
@@ -1827,8 +1840,8 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         _ASSERTE(defaultValue.m_bType != ELEMENT_TYPE_STRING); // Strings in metadata are little-endian.
 
         // The following code assumes that the address of all union members is the same.
-        static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
-        static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
+        static_assert(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
+        static_assert(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
         temp.value = defaultValue.m_ullValue;
 
         temps.Append(temp);
@@ -1914,7 +1927,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed.
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 

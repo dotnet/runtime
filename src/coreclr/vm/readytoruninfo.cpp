@@ -333,14 +333,13 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY * pDebugInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
-    if (pDebugInfoDir == NULL)
+    if (m_pSectionDebugInfo == NULL)
         return NULL;
 
     SIZE_T methodIndex = pRuntimeFunction - m_pRuntimeFunctions;
     _ASSERTE(methodIndex < m_nRuntimeFunctions);
 
-    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), pDebugInfoDir->VirtualAddress);
+    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), m_pSectionDebugInfo->VirtualAddress);
 
     uint offset;
     if (!debugInfoIndex.TryGetAt((DWORD)methodIndex, &offset))
@@ -515,12 +514,37 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
 {
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
-    LPCUTF8 ownerCompositeExecutableName = NULL;
+    DWORD virtualAddress = UINT32_MAX;
     for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
     {
         if (pSections[i].Type == ReadyToRunSectionType::OwnerCompositeExecutable)
         {
-            ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + pSections[i].Section.VirtualAddress;
+            virtualAddress = pSections[i].Section.VirtualAddress;
+            break;
+        }
+    }
+
+    if (virtualAddress == UINT32_MAX)
+        return NULL;
+
+    LPCUTF8 ownerCompositeExecutableName = NULL;
+    if (pLayout->IsMapped())
+    {
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
+    }
+    else
+    {
+        // Flat layout - find the data corresponding to the owner composite executable name
+        int numSections = pLayout->GetNumberOfSections();
+        IMAGE_SECTION_HEADER* sectionHeaders = pLayout->FindFirstSection();
+        for (int i = 0; i < numSections; i++)
+        {
+            IMAGE_SECTION_HEADER& header = sectionHeaders[i];
+            if (header.VirtualAddress > virtualAddress || header.VirtualAddress + header.SizeOfRawData < virtualAddress)
+                continue;
+
+            DWORD offset = virtualAddress - header.VirtualAddress;
+            ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + header.PointerToRawData + offset;
             break;
         }
     }
@@ -585,7 +609,8 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     // The file must have been loaded using LoadLibrary
-    if (!pLayout->IsRelocated())
+    bool isComponentAssembly = pLayout->IsComponentAssembly();
+    if (!isComponentAssembly && !pLayout->IsRelocated())
     {
         DoLog("Ready to Run disabled - module not loaded for execution");
         return NULL;
@@ -601,7 +626,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     NativeImage *nativeImage = NULL;
-    if (pHeader->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT)
+    if (isComponentAssembly)
     {
         nativeImage = AcquireCompositeImage(pModule, pLayout, pHeader);
         if (nativeImage == NULL)
@@ -768,11 +793,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         if (pNativeMetadataSection != NULL)
         {
             pNativeMDImport = NULL;
-            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
-                                                        pNativeMetadataSection->Size,
-                                                        ofRead,
-                                                        IID_IMDInternalImport,
-                                                        (void **) &pNativeMDImport));
+            IfFailThrow(GetMDInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
+                                               pNativeMetadataSection->Size,
+                                               ofRead,
+                                               IID_IMDInternalImport,
+                                               (void **) &pNativeMDImport));
 
             HENUMInternal assemblyEnum;
             HRESULT hr = pNativeMDImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
@@ -858,6 +883,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+    m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
@@ -969,6 +995,8 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!pMD->IsAsyncVariantMethod());
+
     ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
@@ -1077,6 +1105,10 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     if (ReadyToRunCodeDisabled())
         return false;
 
+    // TODO: (async) PGO support for async variants
+    if (pMD->IsAsyncVariantMethod())
+        return false;
+
     if (m_pgoInstrumentationDataHashtable.IsNull())
         return false;
 
@@ -1149,6 +1181,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
+    // TODO: (async) R2R support for async variants
+    if (pMD->IsAsyncVariantMethod())
+        goto done;
+
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
@@ -1215,10 +1251,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            BOOL mayUsePrecompiledNDirectMethods = TRUE;
-            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;
@@ -1997,8 +2033,10 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     STANDARD_VM_CONTRACT;
 
     size_t size = sizeof(StubPrecode);
-    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
+    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocStub());
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+    FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);

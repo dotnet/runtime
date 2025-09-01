@@ -455,7 +455,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (converter.ConstructorInfo != null && !converter.ConstructorIsParameterized)
             {
                 // A parameterless constructor has been resolved by the converter
-                // (e.g. it might be a non-public ctor with JsonConverterAttribute).
+                // (e.g. it might be a non-public ctor with JsonConstructorAttribute).
                 defaultCtor = converter.ConstructorInfo;
             }
 

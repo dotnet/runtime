@@ -120,7 +120,20 @@ check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
 check_function_exists(pthread_mach_thread_np HAVE_MACH_THREADS)
-check_function_exists(thread_set_exception_ports HAVE_MACH_EXCEPTIONS)
+check_cxx_source_compiles("
+#include <mach/mach.h>
+int main(int argc, char **argv) {
+  static mach_port_name_t port;
+  thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
+  return 0;
+}" HAVE_MACH_EXCEPTIONS)
+check_cxx_source_compiles("
+#include <signal.h>
+#include <stdlib.h>
+int main(int argc, char **argv) {
+  sigaltstack(NULL, NULL);
+  return 0;
+}" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
 check_function_exists(directio HAVE_DIRECTIO)
@@ -138,9 +151,6 @@ int main(int argc, char **argv) {
   return 0;
 }" HAVE_CPUSET_T)
 
-check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
-check_struct_has_member ("struct stat" st_atim "sys/types.h;sys/stat.h" HAVE_STAT_TIM)
-check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
@@ -374,33 +384,6 @@ int main()
 set(CMAKE_REQUIRED_LIBRARIES)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC_COARSE)
-set(CMAKE_REQUIRED_LIBRARIES)
-
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-
-int main()
-{
-  int ret;
-  ret = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-  exit((ret == 0) ? 1 : 0);
-}" HAVE_CLOCK_GETTIME_NSEC_NP)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
 check_cxx_source_runs("

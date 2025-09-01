@@ -20,7 +20,6 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed partial class MLKemOpenSsl : MLKem
     {
         private readonly SafeEvpPKeyHandle _key;
@@ -66,9 +65,9 @@ namespace System.Security.Cryptography
             out bool hasDecapsulationKey);
 
         /// <summary>
-        /// Creates a duplicate handle.
+        /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
         /// </summary>
-        /// <returns>A SafeHandle for the ML-KEM key in OpenSSL.</returns>
+        /// <returns>A <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public partial SafeEvpPKeyHandle DuplicateKeyHandle();
     }

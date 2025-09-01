@@ -29,6 +29,9 @@ class ICodeManager;
 class IJitManager;
 struct EE_ILEXCEPTION;
 class AppDomain;
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+#endif
 
 // This define controls handling of faults in managed code.  If it is defined,
 //  the exception is handled (retried, actually), with a FaultingExceptionFrame
@@ -440,7 +443,7 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
     friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -613,13 +616,13 @@ public:
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END
 
 #if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
-        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptionsDuringEH();
 #endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
     }
 
@@ -766,7 +769,13 @@ private:
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
 #ifdef FEATURE_INTERPRETER
-    bool          m_walkingInterpreterFrames;
+    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need to restore the original values after we are done with all the interpreted frames belonging to
+    // that InterpExecMethod.
+    TADDR         m_interpExecMethodIP;
+    TADDR         m_interpExecMethodSP;
+    TADDR         m_interpExecMethodFP;
+    TADDR         m_interpExecMethodFirstArgReg;
 #endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)

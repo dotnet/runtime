@@ -90,10 +90,7 @@ DebugBlockingItemHolder::DebugBlockingItemHolder(Thread *pThread, DebugBlockingI
         FieldDesc *pFD = CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__FIRST);
         _ASSERTE(m_ppFirstBlockingInfo == (ThreadBlockingInfo **)Thread::GetStaticFieldAddress(pFD));
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 #endif
 
     // Push info for the managed ThreadBlockingInfo

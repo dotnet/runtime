@@ -103,15 +103,12 @@ namespace Tracing.Tests
 
                 WaitHandle.WaitAll(waitEvents, TimeSpan.FromMinutes(1));
 
-                if (!TestLibrary.Utilities.IsNativeAot)
+                listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
+                if (listener.TPWorkerThreadWaitCount == 0)
                 {
-                    listener.TPWaitWorkerThreadEvent.WaitOne(TimeSpan.FromMinutes(1));
-                    if (listener.TPWorkerThreadWaitCount == 0)
-                    {
-                        Console.WriteLine("Test Failed: Did not see the expected event.");
-                        Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
-                        return -1;
-                    }
+                    Console.WriteLine("Test Failed: Did not see the expected event.");
+                    Console.WriteLine($"ThreadPoolWorkerThreadWaitCount: {listener.TPWorkerThreadWaitCount}");
+                    return -1;
                 }
 
                 if (!(listener.TPIOPack >= listener.TPIOPackGoal &&

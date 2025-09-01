@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Fakes\FakeUri.cs" />
     <Compile Include="IriEscapeUnescapeTest.cs" />
+    <Compile Include="PathCompressionTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
@@ -17,9 +18,8 @@
     <Compile Include="..\..\src\System\PercentEncodingHelper.cs" />
     <Compile Include="..\..\src\System\UriEnumTypes.cs" />
     <Compile Include="..\..\src\System\ValueStringBuilderExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
   </ItemGroup>
 </Project>

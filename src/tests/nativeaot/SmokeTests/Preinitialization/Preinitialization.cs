@@ -53,6 +53,7 @@ internal class Program
         TestSharedCode.Run();
         TestSpan.Run();
         TestReadOnlySpan.Run();
+        TestRvaDataReads.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
@@ -66,6 +67,8 @@ internal class Program
         TestVTableManipulation.Run();
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
+        TestComInterfaceEntry.Run();
+        TestPreinitializedBclTypes.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -86,9 +89,14 @@ class TestHardwareIntrinsics
         public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
     }
 
-    class Complex
+    class Simple3
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsX86SerializeSupported = X86Serialize.IsSupported;
     }
 
     public static void Run()
@@ -99,11 +107,14 @@ class TestHardwareIntrinsics
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
 
+        Assert.IsPreinitialized(typeof(Simple3));
+        Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
+
         if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
+        Assert.AreEqual(X86Serialize.IsSupported, Complex.IsX86SerializeSupported);
     }
 }
 
@@ -1235,6 +1246,51 @@ class TestReadOnlySpan
     }
 }
 
+class TestRvaDataReads
+{
+    static class GuidProvider
+    {
+        public static ref readonly Guid TheGuid1
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89, 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF0, 0x00];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+
+        public static ref readonly Guid TheGuid2
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0xDE, 0xEF, 0xF0, 0x00, 0x9A, 0xAB, 0xBC, 0xCD, 0x56, 0x67, 0x78, 0x89, 0x12, 0x23, 0x34, 0x45];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+    }
+
+    struct TwoGuids
+    {
+        public Guid Guid1, Guid2;
+    }
+
+    static class GuidReader
+    {
+        public static TwoGuids Value = new TwoGuids()
+        {
+            Guid1 = GuidProvider.TheGuid1,
+            Guid2 = GuidProvider.TheGuid2,
+        };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(GuidReader));
+        Assert.AreEqual(new Guid("45342312-6756-8978-9aab-bccddeeff000"), GuidReader.Value.Guid1);
+        Assert.AreEqual(new Guid("00f0efde-ab9a-cdbc-5667-788912233445"), GuidReader.Value.Guid2);
+    }
+}
+
 class TestStaticInterfaceMethod
 {
     interface IFoo
@@ -1987,6 +2043,89 @@ unsafe class TestByRefFieldAddressEquality
     }
 }
 
+unsafe class TestComInterfaceEntry
+{
+    struct MyVTableEntries
+    {
+        public ComWrappers.ComInterfaceEntry TinyImpl;
+        public ComWrappers.ComInterfaceEntry SmallImpl;
+    }
+
+    class VtableEntries
+    {
+        [FixedAddressValueType]
+        public static MyVTableEntries Entries;
+
+        static VtableEntries()
+        {
+            Entries.TinyImpl.IID = new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89);
+            Entries.TinyImpl.Vtable = ITinyVtableImpl.VftablePtr;
+            Entries.SmallImpl.IID = new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98);
+            Entries.SmallImpl.Vtable = ISmallVtableImpl.VftablePtr;
+        }
+    }
+
+    class ITinyVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ITinyVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ITinyVtableImpl()
+        {
+            Vtbl.Method = &Method;
+        }
+    }
+
+    class ISmallVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ISmallVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ISmallVtableImpl()
+        {
+            Vtbl.Method1 = &Method;
+            Vtbl.Method2 = &OtherMethod;
+        }
+    }
+
+    public unsafe struct ITinyVtable
+    {
+        public delegate*<void> Method;
+    }
+
+    public unsafe struct ISmallVtable
+    {
+        public delegate*<void> Method1;
+        public delegate*<void> Method2;
+    }
+
+    static void Method() { }
+    static void OtherMethod() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(VtableEntries));
+        Assert.AreEqual(ITinyVtableImpl.VftablePtr, VtableEntries.Entries.TinyImpl.Vtable);
+        Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
+        Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
+        Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+    }
+}
+
+unsafe class TestPreinitializedBclTypes
+{
+    // Verify that (given that all of the other tests have passed), that a select number of BCL types
+    // that depend on this optimization for high-performance scenarios are preinitialized.
+    public static void Run()
+    {
+        Assert.IsPreinitialized(Type.GetType("System.Runtime.InteropServices.ComWrappers+VtableImplementations, System.Private.CoreLib"));
+    }
+}
+
 static class Assert
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -2006,6 +2145,12 @@ static class Assert
     {
         if (!HasCctor(type))
             throw new Exception($"{type} is not lazy initialized. At line {line}.");
+    }
+
+    public static void AreEqual(Guid v1, Guid v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
     public static unsafe void AreEqual(void* v1, void* v2, [CallerLineNumber] int line = 0)

@@ -30,116 +30,16 @@ LEAF_END GetDataCacheZeroIDReg, _TEXT
         ret     lr
     LEAF_END GetSveLengthFromOS, _TEXT
 
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    mov w1, #0
-    str w1, [x0, #MachState__isValid]
-
-    str lr, [x0, #LazyMachState_captureIp]
-
-    // str instruction does not save sp register directly so move to temp register
-    mov x1, sp
-    str x1, [x0, #LazyMachState_captureSp]
-
-    // save non-volatile registers that can contain object references
-    add x1, x0, #LazyMachState_captureX19_X29
-    stp x19, x20, [x1, #(16*0)]
-    stp x21, x22, [x1, #(16*1)]
-    stp x23, x24, [x1, #(16*2)]
-    stp x25, x26, [x1, #(16*3)]
-    stp x27, x28, [x1, #(16*4)]
-    str x29, [x1, #(16*5)]
-
-    ret lr
-LEAF_END LazyMachStateCaptureState, _TEXT
-
-//
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrX19_X29 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
-//
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
-//
-// So, if ptrX19_X29 points into the MachState, we need to update
-// the register here.  That's what this macro does.
-//
-.macro RestoreRegMS regIndex, reg
-    // Incoming:
-    //
-    // x0 = address of MachState
-    //
-    // $regIndex: Index of the register (x19-x28). For x19, index is 19.
-    //For x20, index is 20, and so on.
-    //
-    // $reg: Register name (e.g. x19, x20, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    add x2, x0, #(MachState__captureX19_X29 + ((\regIndex-19)*8))
-
-    // Get the content of specified preserved register pointer from machine state
-    ldr x3, [x0, #(MachState__ptrX19_X29 + ((\regIndex-19)*8))]
-
-    cmp x2, x3
-    bne LOCAL_LABEL(NoRestore_\reg)
-    ldr \reg, [x2]
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
-
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-// INDEBUG_COMMA(HelperMethodFrame *pFrame)
-// MachState *pState
-// )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-
-    #ifdef _DEBUG
-    mov x0, x1
-    #endif
-
-    // If machine state is invalid, then simply exit
-    ldr w1, [x0, #MachState__isValid]
-    cmp w1, #0
-    beq LOCAL_LABEL(Done)
-
-    RestoreRegMS 19, X19
-    RestoreRegMS 20, X20
-    RestoreRegMS 21, X21
-    RestoreRegMS 22, X22
-    RestoreRegMS 23, X23
-    RestoreRegMS 24, X24
-    RestoreRegMS 25, X25
-    RestoreRegMS 26, X26
-    RestoreRegMS 27, X27
-    RestoreRegMS 28, X28
-    RestoreRegMS 29, X29
-LOCAL_LABEL(Done):
-    // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-    // as it is used in the state machine to loop until it becomes zero.
-    // Refer to HELPER_METHOD_FRAME_END macro for details.
-    mov x0,#0
-    ret lr
-
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     mov x12, x0
 
     // pop the stack and restore original register state
@@ -147,11 +47,11 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     RESTORE_ARGUMENT_REGISTERS sp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG x12
 
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 
@@ -180,83 +80,6 @@ PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
-// void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
-//
-// Update shadow copies of the various state info required for barrier
-//
-// State info is contained in a literal pool at the end of the function
-// Placed in text section so that it is close enough to use ldr literal and still
-// be relocatable. Eliminates need for PREPARE_EXTERNAL_VAR in hot code.
-//
-// Align and group state info together so it fits in a single cache line
-// and each entry can be written atomically
-//
-LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
-
-    // x0-x7, x10 will contain intended new state
-    // x8 will preserve skipEphemeralCheck
-    // x12 will be used for pointers
-
-    mov x8, x0
-    mov x9, x1
-
-    PREPARE_EXTERNAL_VAR g_card_table, x12
-    ldr  x0, [x12]
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    PREPARE_EXTERNAL_VAR g_card_bundle_table, x12
-    ldr  x1, [x12]
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
-    ldr  x2, [x12]
-#endif
-
-    PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
-    ldr  x3, [x12]
-
-    PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
-    ldr  x4, [x12]
-
-    cbz  x8, LOCAL_LABEL(EphemeralCheckEnabled)
-    movz x3, #0
-    movn x4, #0
-LOCAL_LABEL(EphemeralCheckEnabled):
-
-    PREPARE_EXTERNAL_VAR g_lowest_address, x12
-    ldr  x5, [x12]
-
-    PREPARE_EXTERNAL_VAR g_highest_address, x12
-    ldr  x6, [x12]
-
-#ifdef WRITE_BARRIER_CHECK
-    PREPARE_EXTERNAL_VAR g_GCShadow, x12
-    ldr  x7, [x12]
-
-    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x12
-    ldr  x10, [x12]
-#endif
-
-    // Update wbs state
-    PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
-    ldr  x12, [x12]
-    add  x12, x12, x9
-
-    stp  x0, x1, [x12], 16
-    stp  x2, x3, [x12], 16
-    stp  x4, x5, [x12], 16
-    str  x6, [x12], 8
-#ifdef WRITE_BARRIER_CHECK
-    stp  x7, x10, [x12], 16
-#endif
-
-
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
-    EPILOG_RETURN
-LEAF_END JIT_UpdateWriteBarrierState
-
 // ------------------------// ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
 LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
@@ -272,7 +95,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 //
-// x12 = UMEntryThunk*
+// x12 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
@@ -301,7 +124,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -192
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
     PROLOG_SAVE_REG_PAIR   x21, x22, 32
@@ -312,9 +135,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     stp x0, x1, [sp, #96]
 
+    // save async continuation return value
+    str x2, [sp, #112]
+
     // save any FP/HFA return value(s)
-    stp q0, q1, [sp, #112]
-    stp q2, q3, [sp, #144]
+    stp q0, q1, [sp, #128]
+    stp q2, q3, [sp, #160]
 
     mov x0, sp
     bl C_FUNC(OnHijackWorker)
@@ -322,16 +148,19 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
+    // restore async continuation return value
+    ldr x2, [sp, #112]
+
     // restore any FP/HFA return value(s)
-    ldp q0, q1, [sp, #112]
-    ldp q2, q3, [sp, #144]
+    ldp q0, q1, [sp, #128]
+    ldp q2, q3, [sp, #160]
 
     EPILOG_RESTORE_REG_PAIR   x19, x20, 16
     EPILOG_RESTORE_REG_PAIR   x21, x22, 32
     EPILOG_RESTORE_REG_PAIR   x23, x24, 48
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   176
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -360,7 +189,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // X0 = throwable
     // X1 = PC to invoke
-    // X2 = address of X19 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // X2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -369,7 +198,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
     // of method. However, this method needs to be able to change fp before calling funclet.
     // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_INDEXED   x29, lr, -96
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
@@ -382,12 +211,12 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     mov x4, sp
     str x4, [x3]
 
-    ldp x19, x20, [x2, #0]
-    ldp x21, x22, [x2, #16]
-    ldp x23, x24, [x2, #32]
-    ldp x25, x26, [x2, #48]
-    ldp x27, x28, [x2, #64]
-    ldr fp, [x2, #80] // offset of fp in CONTEXT relative to X19
+    ldp x19, x20, [x2, #OFFSETOF__CONTEXT__X19]
+    ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__X19 + 16)]
+    ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__X19 + 32)]
+    ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__X19 + 48)]
+    ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__X19 + 64)]
+    ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
 
     // Invoke the funclet
     blr x1
@@ -403,21 +232,23 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
+// This helper enables us to call into a filter funclet after restoring Fp register
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
 
     // On entry:
     //
     // X0 = throwable
-    // X1 = SP of the caller of the method/funclet containing the filter
+    // X1 = FP of main function
     // X2 = PC to invoke
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
+    mov fp, sp
     str fp, [x3]
+    // Restore frame pointer
+    mov fp, x1
     // Invoke the filter funclet
     blr x2
 
@@ -758,11 +589,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     mov x1, x0
     mov x0, #0
     b C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 
@@ -837,21 +668,6 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         br x9
 LEAF_END  JIT_PollGC, _TEXT
 
-#ifdef FEATURE_INTERPRETER
-NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    mov x1, METHODDESC_REGISTER // pMethodDesc
-
-    bl  C_FUNC(ExecuteInterpretedMethod)
-
-    EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-NESTED_END InterpreterStub, _TEXT
-#endif // FEATURE_INTERPRETER
-
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -861,3 +677,1223 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     mov  x1, x11     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG x12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+#ifdef TARGET_APPLE
+    PROLOG_WITH_TRANSITION_BLOCK extraLocals=8*16, SaveFPArgs=0,SaveGPArgs=0
+#else
+    PROLOG_WITH_TRANSITION_BLOCK
+#endif
+
+    // IR bytecode address
+    mov x19, METHODDESC_REGISTER
+
+#ifdef TARGET_APPLE
+    mov x21, x0
+#endif
+    INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
+
+    ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
+    cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
+
+#ifdef TARGET_APPLE
+    // There Thread::GetInterpThreadContext can destroy all argument registers, so we
+    // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
+    // Restore x0 thrashed by the INLINE_GETTHREAD
+    mov x0, x21
+    SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+#endif
+
+    mov x0, x20
+    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+    mov x11, x0
+
+#ifndef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+#endif
+
+    RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+#ifdef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
+    // So we restore just the x0
+    mov x0, x21
+#endif // TARGET_APPLE
+
+    ldr x9, [x19] // InterpMethod*
+    ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
+    add x10, x9, #OFFSETOF__CallStubHeader__Routines
+    ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
+    // x19 contains IR bytecode address
+    // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
+    ldr x11, [x10], #8
+    blr x11
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr x0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr d0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    // Load the return buffer address
+    // 16 is the size of the pushed registers above
+    ldr x2, [sp, #__PWTB_ArgumentRegisters + 16]
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetBuff, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr x1, [x0, #8]
+    ldr x0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2I8, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp d0, d1, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRet3Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp d0, d1, [x0]
+    ldr d2, [x0, #16]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet3Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRet4Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp d0, d1, [x0]
+    ldp d2, d3, [x0, #16]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet4Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr s0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetFloat, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp s0, s1, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRet3Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp s0, s1, [x0]
+    ldr s2, [x0, #8]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet3Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRet4Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldp s0, s1, [x0]
+    ldp s2, s3, [x0, #8]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet4Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr d0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector64, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr q0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector128, _TEXT
+
+// Copy arguments from the processor stack to the interpreter stack
+// The CPU stack slots are aligned to pointer size.
+
+LEAF_ENTRY Store_Stack
+    ldr w11, [x10], #4 // SP offset
+    ldr w12, [x10], #4 // number of stack slots
+    add x11, sp, x11
+    add x11, x11, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr x13, [x11], #8
+    str x13, [x9], #8
+    subs x12, x12, #8
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack
+
+LEAF_ENTRY Load_Stack_Ref, _TEXT
+        ldr w11, [x10], #4 // SP offset
+        ldr w12, [x10], #4 // size of the value type
+        add x11, sp, x11
+        str x9, [x11]
+        add x9, x9, x12
+        // Align x9 to the stack slot size
+        add x9, x9, 7
+        and x9, x9, 0xfffffffffffffff8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_Ref, _TEXT
+
+
+.macro Copy_Ref argReg
+    cmp x11, #16
+    blt LOCAL_LABEL(CopyBy8\argReg)
+LOCAL_LABEL(RefCopyLoop16\argReg):
+    ldp x13, x14, [\argReg], #16
+    stp x13, x14, [x9], #16
+    subs x11, x11, #16
+    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add x11, x11, #16
+LOCAL_LABEL(CopyBy8\argReg):
+    cmp x11, #8
+    blt LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyLoop8\argReg):
+    ldr x13, [\argReg], #8
+    str x13, [x9], #8
+    subs x11, x11, #8
+    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add x11, x11, #8
+LOCAL_LABEL(RefCopyLoop1\argReg):
+    ldrb w13, [\argReg], #1
+    strb w13, [x9], #1
+    subs x11, x11, #1
+    bne  LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyDone\argReg):
+    // Align x9 to the stack slot size
+    add x9, x9, 7
+    and x9, x9, 0xfffffffffffffff8
+.endm
+
+LEAF_ENTRY Store_Stack_Ref, _TEXT
+        ldr w12, [x10], #4 // SP offset
+        ldr w11, [x10], #4 // size of the value type
+        add x12, sp, x12
+        ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+        Copy_Ref x12
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack_Ref, _TEXT
+
+#ifdef TARGET_APPLE
+
+// Copy single byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Store_Stack_1B
+    ldr x11, [x10], #8 // SP offset
+    add x11, sp, x11
+    ldrb w13, [x11, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+    strb w13, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack_1B
+
+// Copy two byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Store_Stack_2B
+    ldr x11, [x10], #8 // SP offset
+    add x11, sp, x11
+    ldrh w13, [x11, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+    strh w13, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack_2B
+
+// Copy four byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Store_Stack_4B
+    ldr x11, [x10], #8 // SP offset
+    add x11, sp, x11
+    ldr w13, [x11, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+    str w13, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Stack_4B
+
+#endif // TARGET_APPLE
+
+// Routines for passing value type arguments by reference in general purpose registers X0..X7
+// from native code to the interpreter
+
+.macro Store_Ref argReg
+
+LEAF_ENTRY Store_Ref_\argReg
+    ldr x11, [x10], #8 // size of the value type
+    Copy_Ref \argReg
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Ref_\argReg
+
+.endm
+
+Store_Ref X0
+Store_Ref X1
+Store_Ref X2
+Store_Ref X3
+Store_Ref X4
+Store_Ref X5
+Store_Ref X6
+Store_Ref X7
+
+LEAF_ENTRY Store_X0
+    str x0, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0
+
+LEAF_ENTRY Store_X0_X1
+    stp x0, x1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1
+
+LEAF_ENTRY Store_X0_X1_X2
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2
+    str x2, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2
+
+LEAF_ENTRY Store_X0_X1_X2_X3
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2_X3
+    stp x2, x3, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2_X3
+
+LEAF_ENTRY Store_X0_X1_X2_X3_X4
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2_X3_X4
+    stp x2, x3, [x9], #16
+ALTERNATE_ENTRY Store_X4
+    str x4, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2_X3_X4
+
+LEAF_ENTRY Store_X0_X1_X2_X3_X4_X5
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2_X3_X4_X5
+    stp x2, x3, [x9], #16
+ALTERNATE_ENTRY Store_X4_X5
+    stp x4, x5, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2_X3_X4_X5
+
+LEAF_ENTRY Store_X0_X1_X2_X3_X4_X5_X6
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2_X3_X4_X5_X6
+    stp x2, x3, [x9], #16
+ALTERNATE_ENTRY Store_X4_X5_X6
+    stp x4, x5, [x9], #16
+ALTERNATE_ENTRY Store_X6
+    str x6, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2_X3_X4_X5_X6
+
+LEAF_ENTRY Store_X0_X1_X2_X3_X4_X5_X6_X7
+    stp x0, x1, [x9], #16
+ALTERNATE_ENTRY Store_X2_X3_X4_X5_X6_X7
+    stp x2, x3, [x9], #16
+ALTERNATE_ENTRY Store_X4_X5_X6_X7
+    stp x4, x5, [x9], #16
+ALTERNATE_ENTRY Store_X6_X7
+    stp x6, x7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X0_X1_X2_X3_X4_X5_X6_X7
+
+LEAF_ENTRY Store_X1
+    str x1, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1
+
+LEAF_ENTRY Store_X1_X2
+    stp x1, x2, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2
+
+LEAF_ENTRY Store_X1_X2_X3
+    stp x1, x2, [x9], #16
+ALTERNATE_ENTRY Store_X3
+    str x3, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2_X3
+
+LEAF_ENTRY Store_X1_X2_X3_X4
+    stp x1, x2, [x9], #16
+ALTERNATE_ENTRY Store_X3_X4
+    stp x3, x4, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2_X3_X4
+
+LEAF_ENTRY Store_X1_X2_X3_X4_X5
+    stp x1, x2, [x9], #16
+ALTERNATE_ENTRY Store_X3_X4_X5
+    stp x3, x4, [x9], #16
+ALTERNATE_ENTRY Store_X5
+    str x5, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2_X3_X4_X5
+
+LEAF_ENTRY Store_X1_X2_X3_X4_X5_X6
+    stp x1, x2, [x9], #16
+ALTERNATE_ENTRY Store_X3_X4_X5_X6
+    stp x3, x4, [x9], #16
+ALTERNATE_ENTRY Store_X5_X6
+    stp x5, x6, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2_X3_X4_X5_X6
+
+LEAF_ENTRY Store_X1_X2_X3_X4_X5_X6_X7
+    stp x1, x2, [x9], #16
+ALTERNATE_ENTRY Store_X3_X4_X5_X6_X7
+    stp x3, x4, [x9], #16
+ALTERNATE_ENTRY Store_X5_X6_X7
+    stp x5, x6, [x9], #16
+ALTERNATE_ENTRY Store_X7
+    str x7, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_X1_X2_X3_X4_X5_X6_X7
+
+// Floating point stores using stp wherever possible
+
+LEAF_ENTRY Store_D0
+    str d0, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0
+
+LEAF_ENTRY Store_D1
+    str d1, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1
+
+LEAF_ENTRY Store_D0_D1
+    stp d0, d1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1
+
+LEAF_ENTRY Store_D0_D1_D2
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2
+    str d2, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2
+
+LEAF_ENTRY Store_D0_D1_D2_D3
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2_D3
+    stp d2, d3, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2_D3
+
+LEAF_ENTRY Store_D0_D1_D2_D3_D4
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2_D3_D4
+    stp d2, d3, [x9], #16
+ALTERNATE_ENTRY Store_D4
+    str d4, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2_D3_D4
+
+LEAF_ENTRY Store_D0_D1_D2_D3_D4_D5
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2_D3_D4_D5
+    stp d2, d3, [x9], #16
+ALTERNATE_ENTRY Store_D4_D5
+    stp d4, d5, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2_D3_D4_D5
+
+LEAF_ENTRY Store_D0_D1_D2_D3_D4_D5_D6
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2_D3_D4_D5_D6
+    stp d2, d3, [x9], #16
+ALTERNATE_ENTRY Store_D4_D5_D6
+    stp d4, d5, [x9], #16
+ALTERNATE_ENTRY Store_D6
+    str d6, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2_D3_D4_D5_D6
+
+LEAF_ENTRY Store_D0_D1_D2_D3_D4_D5_D6_D7
+    stp d0, d1, [x9], #16
+ALTERNATE_ENTRY Store_D2_D3_D4_D5_D6_D7
+    stp d2, d3, [x9], #16
+ALTERNATE_ENTRY Store_D4_D5_D6_D7
+    stp d4, d5, [x9], #16
+ALTERNATE_ENTRY Store_D6_D7
+    stp d6, d7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D0_D1_D2_D3_D4_D5_D6_D7
+
+LEAF_ENTRY Store_D1_D2
+    stp d1, d2, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2
+
+LEAF_ENTRY Store_D1_D2_D3
+    stp d1, d2, [x9], #16
+ALTERNATE_ENTRY Store_D3
+    str d3, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2_D3
+
+LEAF_ENTRY Store_D1_D2_D3_D4
+    stp d1, d2, [x9], #16
+ALTERNATE_ENTRY Store_D3_D4
+    stp d3, d4, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2_D3_D4
+
+LEAF_ENTRY Store_D1_D2_D3_D4_D5
+    stp d1, d2, [x9], #16
+ALTERNATE_ENTRY Store_D3_D4_D5
+    stp d3, d4, [x9], #16
+ALTERNATE_ENTRY Store_D5
+    str d5, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2_D3_D4_D5
+
+LEAF_ENTRY Store_D1_D2_D3_D4_D5_D6
+    stp d1, d2, [x9], #16
+ALTERNATE_ENTRY Store_D3_D4_D5_D6
+    stp d3, d4, [x9], #16
+ALTERNATE_ENTRY Store_D5_D6
+    stp d5, d6, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2_D3_D4_D5_D6
+
+LEAF_ENTRY Store_D1_D2_D3_D4_D5_D6_D7
+    stp d1, d2, [x9], #16
+ALTERNATE_ENTRY Store_D3_D4_D5_D6_D7
+    stp d3, d4, [x9], #16
+ALTERNATE_ENTRY Store_D5_D6_D7
+    stp d5, d6, [x9], #16
+ALTERNATE_ENTRY Store_D7
+    str d7, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
+
+// Copy arguments from the interpreter stack to the processor stack
+// The CPU stack slots are aligned to pointer size.
+LEAF_ENTRY Load_Stack
+    ldr w14, [x10], #4 // SP offset
+    ldr w12, [x10], #4 // number of stack slots
+    add x14, sp, x14
+LOCAL_LABEL(CopyLoop):
+    ldr x13, [x9], #8
+    str x13, [x14], #8
+    subs x12, x12, #8
+    bne LOCAL_LABEL(CopyLoop)
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack
+
+#ifdef TARGET_APPLE
+
+// Copy single byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_1B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldrb w13, [x9], #8
+    strb w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_1B
+
+// Copy two byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_2B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldrh w13, [x9], #8
+    strh w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_2B
+
+// Copy four byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_4B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldr w13, [x9], #8
+    str w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_4B
+
+#endif // TARGET_APPLE
+
+// Routines for passing value type arguments by reference in general purpose registers X0..X7
+// from the interpreter to native code
+
+.macro Load_Ref argReg
+
+LEAF_ENTRY Load_Ref_\argReg
+    mov \argReg, x9
+    ldr x12, [x10], #8
+    add x9, x9, x12
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Ref_\argReg
+
+.endm
+
+Load_Ref X0
+Load_Ref X1
+Load_Ref X2
+Load_Ref X3
+Load_Ref X4
+Load_Ref X5
+Load_Ref X6
+Load_Ref X7
+
+// Routines for passing arguments by value in general purpose registers X0..X7
+
+LEAF_ENTRY Load_X0
+    ldr x0, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0
+
+LEAF_ENTRY Load_X0_X1
+    ldp x0, x1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1
+
+LEAF_ENTRY Load_X0_X1_X2
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2
+    ldr x2, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2
+
+LEAF_ENTRY Load_X0_X1_X2_X3
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3
+    ldp x2, x3, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2_X3
+
+LEAF_ENTRY Load_X0_X1_X2_X3_X4
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4
+    ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4
+    ldr x4, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2_X3_X4
+
+LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5
+    ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5
+    ldp x4, x5, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2_X3_X4_X5
+
+LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5_X6
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5_X6
+    ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5_X6
+    ldp x4, x5, [x9], #16
+ALTERNATE_ENTRY Load_X6
+    ldr x6, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2_X3_X4_X5_X6
+
+LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5_X6_X7
+    ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5_X6_X7
+    ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5_X6_X7
+    ldp x4, x5, [x9], #16
+ALTERNATE_ENTRY Load_X6_X7
+    ldp x6, x7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X0_X1_X2_X3_X4_X5_X6_X7
+
+LEAF_ENTRY Load_X1
+    ldr x1, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1
+
+LEAF_ENTRY Load_X1_X2
+    ldp x1, x2, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2
+
+LEAF_ENTRY Load_X1_X2_X3
+    ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3
+    ldr x3, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2_X3
+
+LEAF_ENTRY Load_X1_X2_X3_X4
+    ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4
+    ldp x3, x4, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2_X3_X4
+
+LEAF_ENTRY Load_X1_X2_X3_X4_X5
+    ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5
+    ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5
+    ldr x5, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2_X3_X4_X5
+
+LEAF_ENTRY Load_X1_X2_X3_X4_X5_X6
+    ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5_X6
+    ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5_X6
+    ldp x5, x6, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2_X3_X4_X5_X6
+
+LEAF_ENTRY Load_X1_X2_X3_X4_X5_X6_X7
+    ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5_X6_X7
+    ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5_X6_X7
+    ldp x5, x6, [x9], #16
+ALTERNATE_ENTRY Load_X7
+    ldr x7, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_X1_X2_X3_X4_X5_X6_X7
+
+// Routines for passing arguments in floating point registers D0..D7
+
+LEAF_ENTRY Load_D0
+    ldr d0, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0
+
+LEAF_ENTRY Load_D1
+    ldr d1, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D1
+
+LEAF_ENTRY Load_D0_D1
+    ldp d0, d1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1
+
+LEAF_ENTRY Load_D0_D1_D2
+    ldr d0, [x9], #8
+ALTERNATE_ENTRY Load_D1_D2
+    ldr d1, [x9], #8
+ALTERNATE_ENTRY Load_D2
+    ldr d2, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2
+
+LEAF_ENTRY Load_D0_D1_D2_D3
+    ldr d0, [x9], #8
+ALTERNATE_ENTRY Load_D1_D2_D3
+    ldr d1, [x9], #8
+ALTERNATE_ENTRY Load_D2_D3
+    ldr d2, [x9], #8
+ALTERNATE_ENTRY Load_D3
+    ldr d3, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2_D3
+
+LEAF_ENTRY Load_D0_D1_D2_D3_D4
+    ldr d0, [x9], #8
+ALTERNATE_ENTRY Load_D1_D2_D3_D4
+    ldr d1, [x9], #8
+ALTERNATE_ENTRY Load_D2_D3_D4
+    ldr d2, [x9], #8
+ALTERNATE_ENTRY Load_D3_D4
+    ldr d3, [x9], #8
+ALTERNATE_ENTRY Load_D4
+    ldr d4, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2_D3_D4
+
+LEAF_ENTRY Load_D0_D1_D2_D3_D4_D5
+    ldr d0, [x9], #8
+ALTERNATE_ENTRY Load_D1_D2_D3_D4_D5
+    ldr d1, [x9], #8
+ALTERNATE_ENTRY Load_D2_D3_D4_D5
+    ldr d2, [x9], #8
+ALTERNATE_ENTRY Load_D3_D4_D5
+    ldr d3, [x9], #8
+ALTERNATE_ENTRY Load_D4_D5
+    ldr d4, [x9], #8
+ALTERNATE_ENTRY Load_D5
+    ldr d5, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2_D3_D4_D5
+
+LEAF_ENTRY Load_D0_D1_D2_D3_D4_D5_D6
+    ldr d0, [x9], #8
+ALTERNATE_ENTRY Load_D1_D2_D3_D4_D5_D6
+    ldr d1, [x9], #8
+ALTERNATE_ENTRY Load_D2_D3_D4_D5_D6
+    ldr d2, [x9], #8
+ALTERNATE_ENTRY Load_D3_D4_D5_D6
+    ldr d3, [x9], #8
+ALTERNATE_ENTRY Load_D4_D5_D6
+    ldr d4, [x9], #8
+ALTERNATE_ENTRY Load_D5_D6
+    ldr d5, [x9], #8
+ALTERNATE_ENTRY Load_D6
+    ldr d6, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2_D3_D4_D5_D6
+
+LEAF_ENTRY Load_D0_D1_D2_D3_D4_D5_D6_D7
+    ldp d0, d1, [x9], #16
+ALTERNATE_ENTRY Load_D2_D3_D4_D5_D6_D7
+    ldp d2, d3, [x9], #16
+ALTERNATE_ENTRY Load_D4_D5_D6_D7
+    ldp d4, d5, [x9], #16
+ALTERNATE_ENTRY Load_D6_D7
+    ldp d6, d7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D0_D1_D2_D3_D4_D5_D6_D7
+
+LEAF_ENTRY Load_D1_D2_D3_D4_D5_D6_D7
+    ldp d1, d2, [x9], #16
+ALTERNATE_ENTRY Load_D3_D4_D5_D6_D7
+    ldp d3, d4, [x9], #16
+ALTERNATE_ENTRY Load_D5_D6_D7
+    ldp d5, d6, [x9], #16
+ALTERNATE_ENTRY Load_D7
+    ldr d7, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_D1_D2_D3_D4_D5_D6_D7
+
+// Functions to invoke a sequence of routines to:
+// 1. load arguments from the interpreter stack to registers / stack based on the calling convention
+// 2. call the target method
+// 3. put the return value of the target method to the interpreter stack
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVoid, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    mov x8, x2
+    ldr x11, [x10], #8
+    blr x11
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str x0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI8, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp x0, x1, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2I8, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str d0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetDouble, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp d0, d1, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Double, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp d0, d1, [x2], #16
+    str d2, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet3Double, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp d0, d1, [x2], #16
+    stp d2, d3, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet4Double, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str s0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp s0, s1, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Float, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp s0, s1, [x2], #8
+    str s2, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet3Float, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    stp s0, s1, [x2], #8
+    stp s2, s3, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet4Float, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str d0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector64, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str q0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector128, _TEXT
+
+#endif // FEATURE_INTERPRETER

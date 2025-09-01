@@ -25,8 +25,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :
@@ -76,8 +76,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :

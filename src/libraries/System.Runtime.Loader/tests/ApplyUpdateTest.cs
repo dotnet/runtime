@@ -323,6 +323,46 @@ namespace System.Reflection.Metadata
             });
         }
 
+        // FieldRVA update tests are not supported on the Mono runtime.
+        //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        void TestAddFieldRVA()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.AddFieldRVA).Assembly;
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(-1, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(-1, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(-1, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(1, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("0", strlit);
+                }
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(3, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(4, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(5, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(6, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("1234567", strlit);
+                }
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116624", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddInstanceField()
         {
@@ -1002,5 +1042,5 @@ namespace System.Reflection.Metadata
                 Assert.Equal("x800", pars[0].Name);
             });
         }
-    }       
+    }
 }

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -27,6 +26,22 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
+
+        public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        {
+            if ((array is not null) && (array.GetType().GetElementType() != typeof(T)))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
+
+        public static void ThrowIfArrayTypeMismatch<T>(T[]? array)
+        {
+            if ((array is not null) && !typeof(T).IsValueType && (array.GetType() != typeof(T[])))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
 
         [DoesNotReturn]
         public static void ThrowArgument_DestinationSpansMustNotOverlap() =>
@@ -57,13 +72,19 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgumentException_DestinationTooShort()
+        public static void ThrowArgument_LengthsMustEqualArrayLength()
         {
-            throw GetArgumentException(SR.DestinationTooShort);
+            throw new ArgumentOutOfRangeException();
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_LengthsMustEqualArrayLength()
+        public static void ThrowArgument_LengthIsNegative()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StartIndexOutOfBounds()
         {
             throw new ArgumentOutOfRangeException();
         }
@@ -102,9 +123,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_LengthsNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_LengthsNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotCompatible);
         }
 
         [DoesNotReturn]
@@ -174,9 +195,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidAxis()
+        public static void ThrowArgument_InvalidDimension()
         {
-            throw new ArgumentException(SR.ThrowArgument_InvalidAxis);
+            throw new ArgumentException(SR.ThrowArgument_InvalidDimension);
         }
 
         [DoesNotReturn]
@@ -204,13 +225,19 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidStridesAndLengths()
+        public static void ThrowArgument_InvalidTensorShape()
         {
             throw new ArgumentException(SR.ThrowArgument_InvalidStridesAndLengths);
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_StrideLessThan0()
+        public static void ThrowArgument_LengthIsNonZeroForNullReference()
+        {
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_LengthIsNonZeroForNullReference);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StrideIsNegative()
         {
             throw new ArgumentOutOfRangeException(SR.ThrowArgument_StrideLessThan0);
         }

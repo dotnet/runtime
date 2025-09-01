@@ -31,6 +31,7 @@
 #include "finalizerthread.h"
 #include "clrversion.h"
 #include "typestring.h"
+#include "exinfo.h"
 
 #define Win32EventWrite EventWrite
 
@@ -42,6 +43,7 @@
 #endif // FEATURE_NATIVEAOT
 
 #include "eventtracepriv.h"
+#include "debugdebugger.h"
 
 #ifndef HOST_UNIX
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
@@ -409,7 +411,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
             PrevSP = CurrentSP;
         }
 #endif //TARGET_X86
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE
 
@@ -544,10 +546,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
             DefineFullyQualifiedNameForClassWOnStack();
             FireEtwPrvFinalizeObject(pMT, pObj, GetClrInstanceId(), GetFullyQualifiedNameForClassNestedAwareW(pMT));
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 }
 
@@ -961,19 +960,14 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
 
     _ASSERTE(pLoggedTypesFromModule != NULL);
 
-    BOOL fSucceeded = FALSE;
     EX_TRY
     {
         pLoggedTypesFromModule->loggedTypesFromModuleHash.AddOrReplace(*pTypeLoggingInfo);
-        fSucceeded = TRUE;
+        return TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
 
-    return fSucceeded;
+    return FALSE;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1011,7 +1005,7 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object * pObject)
     }
 
     SIZE_T nTotalSizeForTypeSample = size;
-    DWORD dwTickNow = GetTickCount();
+    DWORD dwTickNow = (DWORD)minipal_lowres_ticks();
     DWORD dwObjectCountForTypeSample = 0;
 
     // Get stats for type
@@ -1207,7 +1201,7 @@ void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 load
                 (UINT64)th.AsPtr(),
                 typeName
                 );
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -1429,11 +1423,8 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
             pThreadAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
+
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1467,11 +1458,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -1572,11 +1559,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
                     s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
                     fSucceeded = TRUE;
                 }
-                EX_CATCH
-                {
-                    fSucceeded = FALSE;
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
+                EX_SWALLOW_NONTERMINAL
             }
             else
             {
@@ -1625,11 +1608,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -1928,7 +1907,7 @@ VOID ETW::EnumerationLog::ModuleRangeRundown()
         {
             ETW::EnumerationLog::EnumerationHelper(NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2047,7 +2026,7 @@ VOID ETW::EnumerationLog::StartRundown()
             // end marker event will go to the rundown provider
             FireEtwDCStartComplete_V1(GetClrInstanceId());
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------
@@ -2135,7 +2114,7 @@ VOID ETW::EnumerationLog::EnumerateForCaptureState()
                 SendThreadRundownEvent();
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**************************************************************************************/
@@ -2243,7 +2222,7 @@ VOID ETW::EnumerationLog::EndRundown()
         }
     } EX_CATCH {
         STRESS_LOG1(LF_ALWAYS, LL_ERROR, "Exception during Rundown Enumeration, EIP of last AV = %p", g_LastAccessViolationEIP);
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // #Registration
@@ -2704,29 +2683,39 @@ extern "C"
         ClrFlsThreadTypeSwitch etwRundownThreadHolder(ThreadType_ETWRundownThread);
         PMCGEN_TRACE_CONTEXT context = (PMCGEN_TRACE_CONTEXT)CallbackContext;
 
-        BOOLEAN bIsPublicTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeHandle);
+        BOOLEAN bIsPublicTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EtwProvider);
 
-        BOOLEAN bIsPrivateTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimePrivateHandle);
+        BOOLEAN bIsPrivateTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EtwProvider);
 
-        BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
+        BOOLEAN bIsRundownTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EtwProvider);
+
+        BOOLEAN bIsStressTraceHandle = (context == MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context.EtwProvider);
 
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
         DOTNET_TRACE_CONTEXT providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-        if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeHandle) {
+        if (bIsPublicTraceHandle)
+        {
             providerIndex = DotNETRuntime;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeRundownHandle) {
+        }
+        else if (bIsRundownTraceHandle)
+        {
             providerIndex = DotNETRuntimeRundown;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimeStressHandle) {
+        }
+        else if (bIsStressTraceHandle)
+        {
             providerIndex = DotNETRuntimeStress;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context;
-        } else if (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) {
+        }
+        else if (bIsPrivateTraceHandle)
+        {
             providerIndex = DotNETRuntimePrivate;
             providerContext = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
-        } else {
+        }
+        else {
             assert(!"unknown registration handle");
             return;
         }
@@ -2750,15 +2739,6 @@ extern "C"
                     ETW::EnumerationLog::ModuleRangeRundown();
                 }
             }
-
-#ifdef TARGET_AMD64
-            // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
-            // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
-            // we assume that we also want good stack traces so we need to publish unwind information so
-            // ETW can get at it
-            if(bIsPublicTraceHandle && ETW_CATEGORY_ENABLED(providerContext, TRACE_LEVEL_INFORMATION, CLR_RUNDOWNJIT_KEYWORD))
-                UnwindInfoTable::PublishUnwindInfo(g_fEEStarted != FALSE);
-#endif
 
             if(g_fEEStarted && !g_fEEShutDown && bIsRundownTraceHandle)
             {
@@ -2836,11 +2816,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();
-#ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
-#else
-        PTR_ExceptionTrackerBase pExInfo = NULL;
-#endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
@@ -2895,7 +2871,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
                                   exceptionFlags,
                                   GetClrInstanceId());
         GCPROTECT_END();
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -2939,7 +2915,7 @@ VOID ETW::ExceptionLog::ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEnt
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionCatchEnd()
@@ -2979,7 +2955,7 @@ VOID ETW::ExceptionLog::ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pE
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFinallyEnd()
@@ -3019,7 +2995,7 @@ VOID ETW::ExceptionLog::ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEn
             methodName.GetUnicode(),
             GetClrInstanceId());
 
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 }
 
 VOID ETW::ExceptionLog::ExceptionFilterEnd()
@@ -3056,38 +3032,7 @@ VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
             DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad;
             ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/****************************************************************************/
-/* This is called by the runtime when an AppDomain is unloaded */
-/****************************************************************************/
-VOID ETW::LoaderLog::DomainUnload()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    EX_TRY
-    {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        KEYWORDZERO))
-        {
-            DWORD enumerationOptions = ETW::EnumerationLog::GetEnumerationOptionsFromRuntimeKeywords();
-
-            // Domain unload also causes type unload events
-            if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                            TRACE_LEVEL_INFORMATION,
-                                            CLR_TYPE_KEYWORD))
-            {
-                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
-            }
-
-            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
-        }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3118,7 +3063,7 @@ VOID ETW::LoaderLog::CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *p
 
             ETW::EnumerationLog::IterateCollectibleLoaderAllocator(pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3204,7 +3149,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 dllPath );
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /* Fires ETW events every time a pdb is dynamically loaded.
@@ -3275,7 +3220,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
                 }
             }
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif//  !defined(HOST_UNIX)
 }
 
@@ -3472,7 +3417,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
                     pEntryPoint,
                     GetClrInstanceId());
 
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3570,7 +3515,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
                 data += chunkSizeToEmit;
                 cbData -= chunkSizeToEmit;
             }
-        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+        } EX_CATCH{ } EX_END_CATCH
     }
 }
 
@@ -3597,14 +3542,6 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JITTEDMETHODILTONATIVEMAP_KEYWORD))
         {
-            // The call to SendMethodILToNativeMapEvent assumes that the debugger's lazy
-            // data has already been initialized.
-
-            // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-            // or profiler is loaded.  So it should always be available.
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc,
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
@@ -3614,13 +3551,10 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-
             ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /*************************************************/
@@ -3643,7 +3577,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
             ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************/
@@ -3667,28 +3601,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
             Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
             ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/**********************************************************/
-/* This is called by the runtime when helpers with stubs are initialized */
-/**********************************************************/
-VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG lNoOfHelpers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                    TRACE_LEVEL_INFORMATION,
-                                    CLR_JIT_KEYWORD))
-    {
-        for(int i=0; i<lNoOfHelpers; i++)
-        {
-            if(pHelperStartAddress[i])
-            {
-                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
-            }
-        }
-    }
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3698,7 +3611,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
 {
     CONTRACTL {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     EX_TRY
@@ -3707,7 +3620,7 @@ VOID ETW::MethodLog::DynamicMethodDestroyed(MethodDesc *pMethodDesc)
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodUnload, TRUE);
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3730,178 +3643,7 @@ VOID ETW::MethodLog::MethodRestored(MethodDesc *pMethodDesc)
         {
             ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-/****************************************************************************/
-/* This is called by the runtime when a method table is restored */
-/****************************************************************************/
-VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-    EX_TRY
-    {
-        if(IsRuntimeNgenKeywordEnabledAndNotSuppressed()
-            &&
-            ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_STARTENUMERATION_KEYWORD))
-        {
-            {
-                MethodTable::MethodIterator iter(pMethodTable);
-                for (; iter.IsValid(); iter.Next())
-                {
-                    MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->GetMethodTable() == pMethodTable)
-                        ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
-                }
-            }
-        }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
-}
-
-
-/****************************************************************************/
-/* This is called by the runtime when a Strong Name Verification Starts */
-/****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-
-/****************************************************************************/
-/* This is called by the runtime when a Strong Name Verification Ends */
-/****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-/****************************************************************************/
-/* This is called by the runtime when field transparency calculations begin */
-/****************************************************************************/
-void ETW::SecurityLog::FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
-                                                             LPCWSTR wszModuleName,
-                                                             DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwFieldTransparencyComputationStart(wszFieldName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when field transparency calculations end   */
-/****************************************************************************/
-void ETW::SecurityLog::FireFieldTransparencyComputationEnd(LPCWSTR wszFieldName,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain,
-                                                           BOOL fIsCritical,
-                                                           BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwFieldTransparencyComputationEnd(wszFieldName, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when method transparency calculations begin */
-/*****************************************************************************/
-void ETW::SecurityLog::FireMethodTransparencyComputationStart(LPCWSTR wszMethodName,
-                                                              LPCWSTR wszModuleName,
-                                                              DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwMethodTransparencyComputationStart(wszMethodName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when method transparency calculations end   */
-/********************************************(********************************/
-void ETW::SecurityLog::FireMethodTransparencyComputationEnd(LPCWSTR wszMethodName,
-                                                            LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain,
-                                                            BOOL fIsCritical,
-                                                            BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwMethodTransparencyComputationEnd(wszMethodName, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when module transparency calculations begin */
-/*****************************************************************************/
-void ETW::SecurityLog::FireModuleTransparencyComputationStart(LPCWSTR wszModuleName,
-                                                              DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwModuleTransparencyComputationStart(wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when module transparency calculations end  */
-/****************************************************************************/
-void ETW::SecurityLog::FireModuleTransparencyComputationEnd(LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain,
-                                                            BOOL fIsAllCritical,
-                                                            BOOL fIsAllTransparent,
-                                                            BOOL fIsTreatAsSafe,
-                                                            BOOL fIsOpportunisticallyCritical,
-                                                            DWORD dwSecurityRuleSet)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwModuleTransparencyComputationEnd(wszModuleName, dwAppDomain, fIsAllCritical, fIsAllTransparent, fIsTreatAsSafe, fIsOpportunisticallyCritical, dwSecurityRuleSet, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when token transparency calculations begin */
-/****************************************************************************/
-void ETW::SecurityLog::FireTokenTransparencyComputationStart(DWORD dwToken,
-                                                             LPCWSTR wszModuleName,
-                                                             DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTokenTransparencyComputationStart(dwToken, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when token transparency calculations end   */
-/****************************************************************************/
-void ETW::SecurityLog::FireTokenTransparencyComputationEnd(DWORD dwToken,
-                                                           LPCWSTR wszModuleName,
-                                                           DWORD dwAppDomain,
-                                                           BOOL fIsCritical,
-                                                           BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTokenTransparencyComputationEnd(dwToken, wszModuleName, dwAppDomain, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
-}
-
-/*****************************************************************************/
-/* This is called by the runtime when type transparency calculations begin   */
-/*****************************************************************************/
-void ETW::SecurityLog::FireTypeTransparencyComputationStart(LPCWSTR wszTypeName,
-                                                            LPCWSTR wszModuleName,
-                                                            DWORD dwAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTypeTransparencyComputationStart(wszTypeName, wszModuleName, dwAppDomain, GetClrInstanceId());
-}
-
-/****************************************************************************/
-/* This is called by the runtime when type transparency calculations end    */
-/****************************************************************************/
-void ETW::SecurityLog::FireTypeTransparencyComputationEnd(LPCWSTR wszTypeName,
-                                                          LPCWSTR wszModuleName,
-                                                          DWORD dwAppDomain,
-                                                          BOOL fIsAllCritical,
-                                                          BOOL fIsAllTransparent,
-                                                          BOOL fIsCritical,
-                                                          BOOL fIsTreatAsSafe)
-{
-    WRAPPER_NO_CONTRACT;
-    FireEtwTypeTransparencyComputationEnd(wszTypeName, wszModuleName, dwAppDomain, fIsAllCritical, fIsAllTransparent, fIsCritical, fIsTreatAsSafe, GetClrInstanceId());
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /**********************************************************************************/
@@ -3967,7 +3709,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 ETW::LoaderLog::SendModuleRange(pModule, enumerationOptions);
             }
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -3989,7 +3731,7 @@ VOID ETW::EnumerationLog::ProcessShutdown()
             // Send unload events for all remaining modules
             ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /****************************************************************************/
@@ -4512,15 +4254,16 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    // There are not relevant method details for dynamic methods.
+    if (pMethodDesc->IsDynamicMethod())
+        return;
+
     EX_TRY
     {
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_METHODDIAGNOSTIC_KEYWORD))
         {
-            if (pMethodDesc->IsDynamicMethod())
-                goto done;
-
             Instantiation inst = pMethodDesc->GetMethodInstantiation();
 
             if (inst.GetNumArgs() > 1024) // ETW has a limit for maximum event size. Do not log overly large method type argument sets
@@ -4534,23 +4277,10 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             StackSArray<ULONGLONG> rgTypeParameters;
             DWORD cParams = inst.GetNumArgs();
-
-            BOOL fSucceeded = FALSE;
-            EX_TRY
+            for (COUNT_T i = 0; i < cParams; i++)
             {
-                for (COUNT_T i = 0; i < cParams; i++)
-                {
-                    rgTypeParameters.Append((ULONGLONG)inst[i].AsPtr());
-                }
-                fSucceeded = TRUE;
+                rgTypeParameters.Append((ULONGLONG)inst[i].AsPtr());
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-            if (!fSucceeded)
-                goto done;
 
             // Log any referenced parameter types
             for (COUNT_T i=0; i < cParams; i++)
@@ -4571,7 +4301,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             rgTypeParameters.CloseRawBuffer();
         }
 done:;
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
@@ -4669,6 +4399,39 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(
     }
 }
 
+TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pNativeCodeStartAddress)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMethodDesc));
+    } CONTRACTL_END;
+
+    // MethodDesc ==> Code Address ==>JitManager
+    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    if(start == 0) {
+        // this method hasn't been jitted
+        return 0;
+    }
+
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
+            {
+                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
+    return start;
+}
+
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
@@ -4743,7 +4506,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
 
     unsigned int jitOptimizationTier = (unsigned int)PrepareCodeConfig::GetJitOptimizationTier(pConfig, pMethodDesc);
-    static_assert_no_msg((unsigned int)PrepareCodeConfig::JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
+    static_assert((unsigned int)PrepareCodeConfig::JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
     _ASSERTE(jitOptimizationTier <= MethodFlagsJitOptimizationTierLowMask);
     _ASSERTE(((ulMethodFlags >> MethodFlagsJitOptimizationTierShift) & MethodFlagsJitOptimizationTierLowMask) == 0);
     ulMethodFlags |= jitOptimizationTier << MethodFlagsJitOptimizationTierShift;
@@ -4753,8 +4516,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     ulColdMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::ColdSection; // Method Extent (bits 28, 29, 30, 31)
     ulMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::HotSection;         // Method Extent (bits 28, 29, 30, 31)
 
-    // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    TADDR start = MethodAndStartAddressToEECodeInfoPointer(pMethodDesc, pNativeCodeStartAddress);
     if(start == 0) {
         // this method hasn't been jitted
         return;
@@ -4971,25 +4733,34 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     if (pMethodDesc->HasClassOrMethodInstantiation() && pMethodDesc->IsTypicalMethodDefinition())
         return;
 
-    // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-    // or profiler is loaded.  So it should always be available.
-    _ASSERTE(g_pDebugInterface != NULL);
-
     ULONGLONG ullMethodIdentifier = (ULONGLONG)pMethodDesc;
 
-    USHORT cMap;
-    NewArrayHolder<UINT> rguiILOffset;
-    NewArrayHolder<UINT> rguiNativeOffset;
-
-    HRESULT hr = g_pDebugInterface->GetILToNativeMappingIntoArrays(
-        pMethodDesc,
-        pNativeCodeStartAddress,
-        kMapEntriesMax,
-        &cMap,
-        &rguiILOffset,
-        &rguiNativeOffset);
-    if (FAILED(hr))
+    if (pMethodDesc->IsWrapperStub() || pMethodDesc->IsDynamicMethod())
+    {
         return;
+    }
+
+    TADDR start = MethodAndStartAddressToEECodeInfoPointer(pMethodDesc, pNativeCodeStartAddress);
+    if(start == 0) {
+        // this method hasn't been jitted
+        return;
+    }
+
+    // EECodeInfo is technically initialized by a "PCODE", but it can also be initialized
+    // by a TADDR (i.e., w/out thumb bit set on ARM)
+    EECodeInfo codeInfo(start);
+    TADDR startAddress = codeInfo.GetStartAddress();
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+
+    ILToNativeMapArrays context(kMapEntriesMax);
+    codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &context, ComputeILOffsetArrays);
+
+    uint32_t cMap;
+    uint32_t* rguiILOffset;
+    uint32_t* rguiNativeOffset;
+
+    context.GetArrays(&cMap, &rguiNativeOffset, &rguiILOffset);
 
     // Runtime provider.
     //
@@ -5002,7 +4773,7 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
             nativeCodeId,
             0,          // Extent:  This event is only sent for JITted (not NGENd) methods, and
             //          currently there is only one extent (hot) for JITted methods.
-            cMap,
+            (USHORT)cMap,
             rguiILOffset,
             rguiNativeOffset,
             GetClrInstanceId(),
@@ -5018,9 +4789,9 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     //
     // (for an explanation of the parameters see the FireEtwMethodILToNativeMap call above)
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCStartILToNativeMap) != 0)
-        FireEtwMethodDCStartILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
+        FireEtwMethodDCStartILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, (USHORT)cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCEndILToNativeMap) != 0)
-        FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
+        FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, (USHORT)cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
 template<typename T>
@@ -5059,14 +4830,14 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     ULONG32 numMappings = 0;
     if (DebugInfoManager::GetRichDebugInfo(request, fpNew, NULL, &inlineTree, &numInlineTree, &mappings, &numMappings))
     {
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
+        static_assert((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
+        static_assert((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
 
-        static_assert_no_msg((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
-        static_assert_no_msg((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
+        static_assert((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
 
         const uint32_t inlineTreeNodeDataSize =
             sizeof(CORINFO_METHOD_HANDLE) +
@@ -5217,7 +4988,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     MethodDescSet sentMethodDetailsSet;
     MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
 
-    EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
+    CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
         MethodDesc * pMD = heapIterator.GetMethod();
@@ -5225,6 +4996,14 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             continue;
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
+
+#ifdef FEATURE_INTERPRETER
+        // Interpreter-TODO - If the code for this was generated by the interpreter, the native
+        // code start which will match up with the NativeCodeVersion/GetNativeCode result is the
+        // IntepreterPrecode, which is not what is found in the NativeCode portion of the MethodDesc
+        // or in the NativeCodeVersion. So we should build out the ability to get the right result
+        // as otherwise we will continue through the loop and skip all the interpreter data.
+#endif // FEATURE_INTERPRETER
 
         // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
@@ -5253,7 +5032,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             }
         }
         else
-#endif
+#endif // FEATURE_CODE_VERSIONING
         if (codeStart != pMD->GetNativeCode())
         {
             continue;
@@ -5345,24 +5124,12 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
         BOOL fSendRichDebugInfoEvent =
             (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo) != 0;
 
-        if (fSendILToNativeMapEvent || fSendRichDebugInfoEvent)
-        {
-            // The call to SendMethodILToNativeMapEvent assumes that the debugger's lazy
-            // data has already been initialized, to ensure we don't try to do the lazy init
-            // while under the implicit, notrigger CodeHeapIterator lock below.
-
-            // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-            // or profiler is loaded.  So it should always be available.
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->InitializeLazyDataIfNecessary();
-        }
-
         // #TableLockHolder:
         //
         // A word about ReJitManager::TableLockHolder... As we enumerate through the functions,
         // we may need to grab their code IDs. The ReJitManager grabs its table Crst in order to
         // fetch these. However, several other kinds of locks are being taken during this
-        // enumeration, such as the SystemDomain lock and the EEJitManager::CodeHeapIterator's
+        // enumeration, such as the SystemDomain lock and the CodeHeapIterator's
         // lock. In order to avoid lock-leveling issues, we grab the appropriate ReJitManager
         // table locks after SystemDomain and before CodeHeapIterator. In particular, we need to
         // grab the SharedDomain's ReJitManager table lock as well as the specific AppDomain's
@@ -5402,7 +5169,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
-    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }
 
@@ -5480,7 +5247,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
         {
             ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 
@@ -5531,7 +5298,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5568,7 +5335,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             ETW::LoaderLog::SendAssemblyEvent(pAssembly, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 /********************************************************************************/
@@ -5624,7 +5391,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
         {
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions);
         }
-    } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
+    } EX_CATCH { } EX_END_CATCH
 }
 
 //---------------------------------------------------------------------------------------

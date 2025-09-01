@@ -242,8 +242,6 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 //
 void MorphInitBlockHelper::PropagateExpansionAssertions()
 {
-    // Consider doing this for FieldByField as well
-    //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
         m_comp->fgAssertionGen(m_store);
@@ -400,6 +398,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
         {
             JITDUMP("Field-by-field init skipping write to dead field V%02u\n", fieldLclNum);
+            m_comp->fgKillDependentAssertionsSingle(m_dstLclNum DEBUGARG(m_store));
             continue;
         }
 
@@ -1165,6 +1164,32 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         addrSpillStore->SetMorphed(m_comp);
     }
 
+    auto postOrderAssertionProp = [=](GenTree* tree) {
+        if (m_comp->fgGlobalMorph && m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
+        {
+            GenTree* optimizedTree = tree;
+            bool     again         = JitConfig.JitEnablePostorderLocalAssertionProp() > 0;
+            bool     didOptimize   = false;
+
+            while (again)
+            {
+                tree          = optimizedTree;
+                optimizedTree = m_comp->optAssertionProp(m_comp->apLocalPostorder, tree, nullptr, nullptr);
+                again         = (optimizedTree != nullptr);
+                didOptimize |= again;
+            }
+
+            assert(tree != nullptr);
+
+            if (didOptimize)
+            {
+                m_comp->gtUpdateNodeSideEffects(tree);
+            }
+        }
+
+        return tree;
+    };
+
     auto grabAddr = [=, &result](unsigned offs) {
         GenTree* addrClone = nullptr;
         // Need address of the source.
@@ -1242,6 +1267,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         {
             INDEBUG(unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i);
             JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
+            m_comp->fgKillDependentAssertionsSingle(m_dstLclNum DEBUGARG(m_store));
             continue;
         }
 
@@ -1316,6 +1342,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
         }
         assert(srcFld != nullptr);
+
+        srcFld = postOrderAssertionProp(srcFld);
         srcFld->SetMorphed(m_comp);
 
         GenTree* dstFldStore;
@@ -1372,7 +1400,16 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 }
             }
         }
-        noway_assert(dstFldStore->TypeGet() == srcFld->TypeGet());
+
+        // Allow mismatched types only when srcFld is an integer constant
+        //
+        if (dstFldStore->TypeGet() != srcFld->TypeGet())
+        {
+            noway_assert(genActualType(dstFldStore->TypeGet()) == genActualType(srcFld->TypeGet()));
+            assert(srcFld->IsIntegralConst());
+        }
+
+        dstFldStore = postOrderAssertionProp(dstFldStore);
         dstFldStore->SetMorphed(m_comp);
 
         if (m_comp->optLocalAssertionProp)

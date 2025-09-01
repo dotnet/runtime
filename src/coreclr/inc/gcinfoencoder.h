@@ -23,7 +23,7 @@
     - Flag:     isVarArg,
                 unused (was hasSecurityObject),
                 hasGSCookie,
-                hasPSPSymStackSlot,
+                unused (was hasPSPSymStackSlot),
                 hasGenericsInstContextStackSlot,
                 hasStackBaseregister,
                 wantsReportOnlyLeaf (AMD64 use only),
@@ -34,9 +34,9 @@
     - CodeLength
     - Prolog (if hasGenericsInstContextStackSlot || hasGSCookie)
     - Epilog (if hasGSCookie)
-    - SecurityObjectStackSlot (if any)
+    - SecurityObjectStackSlot (if any; no longer used)
     - GSCookieStackSlot (if any)
-    - PSPSymStackSlot (if any)
+    - PSPSymStackSlot (if any; no longer used)
     - GenericsInstContextStackSlot (if any)
     - StackBaseRegister (if any)
     - SizeOfEditAndContinuePreservedArea (if any)
@@ -128,7 +128,6 @@ struct GcInfoSize
     size_t ProEpilogSize;
     size_t SecObjSize;
     size_t GsCookieSize;
-    size_t PspSymSize;
     size_t GenericsCtxSize;
     size_t StackBaseSize;
     size_t ReversePInvokeFrameSize;
@@ -290,19 +289,7 @@ private:
         *m_pCurrentSlot |= data;
     }
 
-    inline void AllocMemoryBlock()
-    {
-        _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-        MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
-
-        m_pCurrentSlot = pMemBlock->Contents;
-        m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
-
-#ifdef _DEBUG
-           m_MemoryBlocksCount++;
-#endif
-
-    }
+    inline void AllocMemoryBlock();
 
     inline void InitCurrentSlot()
     {
@@ -408,7 +395,6 @@ public:
 
     void SetPrologSize( UINT32 prologSize );
     void SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd );
-    void SetPSPSymStackSlot( INT32 spOffsetPSPSym );
     void SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type);
     void SetReversePInvokeFrameSlot(INT32 spOffset);
     void SetIsVarArg();
@@ -492,7 +478,6 @@ private:
     INT32  m_GSCookieStackSlot;
     UINT32 m_GSCookieValidRangeStart;
     UINT32 m_GSCookieValidRangeEnd;
-    INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
     UINT32 m_CodeLength;
@@ -560,5 +545,9 @@ private:
 };
 
 typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
+
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoEncoder<InterpreterGcInfoEncoding> InterpreterGcInfoEncoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // !__GCINFOENCODER_H__

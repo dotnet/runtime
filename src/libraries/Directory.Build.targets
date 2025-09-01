@@ -7,6 +7,11 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <!-- Enable native ARM64 execution for .NET Framework test projects on ARM64 devices -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PreferNativeArm64>true</PreferNativeArm64>
+  </PropertyGroup>
+
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
@@ -59,7 +64,7 @@
     <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
+                                                   '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
                                                    ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->
@@ -135,7 +140,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
@@ -167,12 +172,20 @@
   </Target>
 
   <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
-  <ItemGroup Condition="'$(Nullable)' != '' and
-                        '$(Nullable)' != 'disable' and
-                        '$(SkipIncludeNullableAttributes)' != 'true' and
+  <ItemGroup Condition="'$(SkipIncludeNullableAttributes)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
+  <!-- Adds polyfills on non-.NETCoreApp builds -->
+  <ItemGroup Condition="'$(SkipIncludePolyfills)' != 'true' and
+                        '$(MSBuildProjectExtension)' == '.csproj' and
+                        '$(IsTestProject)' != 'true' and
+                        '$(IsTestSupportProject)' != 'true' and
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
   </ItemGroup>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
@@ -225,4 +238,14 @@
       </ItemGroup>
     </When>
   </Choose>
+
+  <!-- Add a meaningless "-project" suffix to the package id for non-packable source projects.
+       NuGet uses PackageId regardless of whether the project is packable as the key for restore
+       graph project nodes. This is important so that NuGet doesn't get confused when a transitive
+       package reference and a project reference with the same key is in the graph.
+       See https://github.com/NuGet/Home/issues/10368 for more details. -->
+  <PropertyGroup>
+    <PackageId Condition="'$(IsSourceProject)' == 'true' and '$(IsPackable)' != 'true'">$(MSBuildProjectName)-project</PackageId>
+  </PropertyGroup>
+
 </Project>

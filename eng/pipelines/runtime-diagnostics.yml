@@ -18,6 +18,16 @@ schedules:
     - main
   always: true
 
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/**
+    - src/native/managed/cdac/**
+    - src/coreclr/debug/runtimeinfo/**
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -31,7 +41,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdacreader+host+packs -c $(_BuildConfig)
+            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig)
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
@@ -48,7 +58,7 @@ extends:
                 archiveExtension: $(archiveExtension)
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-                displayName: Build Assets            
+                displayName: Build Assets
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
@@ -60,7 +70,7 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            dependsOn: 
+            dependsOn:
             - build_windows_x64_release_AllSubsets_CoreCLR
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml

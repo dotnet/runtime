@@ -34,6 +34,8 @@ static bool AllowR2RForImage(PEImage* pOwner)
 }
 
 #ifndef DACCESS_COMPILE
+extern BOOL g_useDefaultBaseAddr;
+
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
@@ -104,7 +106,9 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+    // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
+    // we need to actually load/map it into virtual addresses
+    if ((pFlat->HasReadyToRunHeader() && !pFlat->IsComponentAssembly() && AllowR2RForImage(pOwner))
         || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);
@@ -281,7 +285,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             USHORT fixup = VAL16(fixups[0]);
 
             IMAGE_SECTION_HEADER *pSection = RvaToSection(rva + (fixup & 0xfff));
-            PREFIX_ASSUME(pSection != NULL);
+            _ASSERTE(pSection != NULL);
 
             pWriteableRegion = (BYTE*)GetRvaData(VAL32(pSection->VirtualAddress));
             cbWriteableRegion = VAL32(pSection->SizeOfRawData);

@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static OptionsBuilder<TOptions> ValidateOnStart<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder)
             where TOptions : class
         {
-            ThrowHelper.ThrowIfNull(optionsBuilder);
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()

@@ -49,7 +49,7 @@ public class NativeLibraryTests : IDisposable
     [Fact]
     public void LoadLibraryRelativePaths_NameOnly()
     {
-        
+
         {
             string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
             EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
@@ -142,9 +142,9 @@ public class NativeLibraryTests : IDisposable
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
 
-        // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
-        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
-        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+        // Library should not be found in the assembly directory and should not fall back to the default OS search which includes CWD on Windows
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
 
         // Library should not be found in application directory
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
@@ -208,8 +208,12 @@ public class NativeLibraryTests : IDisposable
                 Environment.CurrentDirectory = subdirectory;
 
                 // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
-                EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
-                EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+                EXPECT(LoadLibrary_WithAssembly(libName, assembly, null));
+                EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null));
+
+                // Library should not be found in the assembly directory and should not fall back to the default OS search which includes CWD on Windows
+                EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
+                EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
             }
             finally
             {

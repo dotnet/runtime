@@ -164,7 +164,7 @@ int32_t CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd)
         assert(0);
     }
 
-    if ((ip + size) >= codeEnd)
+    if ((ip + size) > codeEnd)
         return -1;
 
     return (int32_t)((p - ip) + size);

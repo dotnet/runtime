@@ -118,8 +118,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
         {
-            ThrowHelper.ThrowIfNull(configuration);
-            ThrowHelper.ThrowIfNull(assembly);
+            ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(assembly);
 
             UserSecretsIdAttribute? attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
@@ -166,8 +166,8 @@ namespace Microsoft.Extensions.Configuration
 
         private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
         {
-            ThrowHelper.ThrowIfNull(configuration);
-            ThrowHelper.ThrowIfNull(userSecretsId);
+            ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(userSecretsId);
 
             return AddSecretsFile(configuration, PathHelper.InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: !optional), optional, reloadOnChange);
         }

@@ -88,7 +88,7 @@ const BOOL DBG_DETACH       = FALSE;
 #endif
 static const char PAL_OUTPUTDEBUGSTRING[]    = "PAL_OUTPUTDEBUGSTRING";
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #define ENABLE_RUN_ON_DEBUG_BREAK 1
 #endif // _DEBUG
 
@@ -425,7 +425,7 @@ Function:
 BOOL
 IsInDebugBreak(void *addr)
 {
-#if defined (__wasm__)
+#ifdef TARGET_WASM
     _ASSERT("IsInDebugBreak not implemented on wasm");
     return false;
 #else

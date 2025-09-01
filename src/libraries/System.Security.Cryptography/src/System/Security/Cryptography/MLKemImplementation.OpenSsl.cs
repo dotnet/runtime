@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class MLKemImplementation : MLKem
+    internal sealed partial class MLKemImplementation : MLKem
     {
         private SafeEvpPKeyHandle _key;
 
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
             _hasDecapsulationKey = hasDecapsulationKey;
         }
 
-        internal static MLKem GenerateKeyImpl(MLKemAlgorithm algorithm)
+        internal static MLKemImplementation GenerateKeyImpl(MLKemAlgorithm algorithm)
         {
             Debug.Assert(IsSupported);
             string kemName = MapAlgorithmToName(algorithm);
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key, hasSeed: true, hasDecapsulationKey: true);
         }
 
-        internal static MLKem ImportPrivateSeedImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKemImplementation ImportPrivateSeedImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.PrivateSeedSizeInBytes);
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key, hasSeed: true, hasDecapsulationKey: true);
         }
 
-        internal static MLKem ImportDecapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKemImplementation ImportDecapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.DecapsulationKeySizeInBytes);
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
             return new MLKemImplementation(algorithm, key, hasSeed: false, hasDecapsulationKey: true);
         }
 
-        internal static MLKem ImportEncapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static MLKemImplementation ImportEncapsulationKeyImpl(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(IsSupported);
             Debug.Assert(source.Length == algorithm.EncapsulationKeySizeInBytes);
@@ -64,16 +64,19 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
+
+        internal SafeEvpPKeyHandle DuplicateHandle() =>  _key.DuplicateHandle();
 
         protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemDecapsulate(_key, ciphertext, sharedSecret);
         }
 
@@ -84,11 +87,13 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateSeedCore(Span<byte> destination)
         {
+            ThrowIfNoSeed(_hasSeed);
             Interop.Crypto.EvpKemExportPrivateSeed(_key, destination);
         }
 
         protected override void ExportDecapsulationKeyCore(Span<byte> destination)
         {
+            ThrowIfNoDecapsulationKey(_hasDecapsulationKey);
             Interop.Crypto.EvpKemExportDecapsulationKey(_key, destination);
         }
 

@@ -47,10 +47,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(string propertyName, ReadOnlySpan<byte> bytes)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteBase64String(propertyName.AsSpan(), bytes);
         }
 

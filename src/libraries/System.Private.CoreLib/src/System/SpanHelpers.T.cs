@@ -29,45 +29,43 @@ namespace System
             {
                 // We have enough data for at least one vectorized write.
 
-                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
                 Vector<byte> vector;
 
                 if (sizeof(T) == 1)
                 {
-                    vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
+                    vector = new Vector<byte>(Unsafe.BitCast<T, byte>(value));
                 }
                 else if (sizeof(T) == 2)
                 {
-                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
+                    vector = (Vector<byte>)new Vector<ushort>(Unsafe.BitCast<T, ushort>(value));
                 }
                 else if (sizeof(T) == 4)
                 {
                     // special-case float since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(float))
-                        ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
-                        : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
+                        ? (Vector<byte>)new Vector<float>(Unsafe.BitCast<T, float>(value))
+                        : (Vector<byte>)new Vector<uint>(Unsafe.BitCast<T, uint>(value));
                 }
                 else if (sizeof(T) == 8)
                 {
                     // special-case double since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(double))
-                        ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
-                        : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
+                        ? (Vector<byte>)new Vector<double>(Unsafe.BitCast<T, double>(value))
+                        : (Vector<byte>)new Vector<ulong>(Unsafe.BitCast<T, ulong>(value));
+                }
+                else if (sizeof(T) == Vector<byte>.Count)
+                {
+                    vector = Unsafe.BitCast<T, Vector<byte>>(value);
                 }
                 else if (sizeof(T) == 16)
                 {
-                    Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
-                    if (Vector<byte>.Count == 16)
+                    if (Vector<byte>.Count == 32)
                     {
-                        vector = vec128.AsVector();
-                    }
-                    else if (Vector<byte>.Count == 32)
-                    {
-                        vector = Vector256.Create(vec128).AsVector();
+                        vector = Vector256.Create(Unsafe.BitCast<T, Vector128<byte>>(value)).AsVector();
                     }
                     else if (Vector<byte>.Count == 64)
                     {
-                        vector = Vector512.Create(vec128).AsVector();
+                        vector = Vector512.Create(Unsafe.BitCast<T, Vector128<byte>>(value)).AsVector();
                     }
                     else
                     {
@@ -77,26 +75,9 @@ namespace System
                 }
                 else if (sizeof(T) == 32)
                 {
-                    Vector256<byte> vec256 = Unsafe.As<T, Vector256<byte>>(ref tmp);
-                    if (Vector<byte>.Count == 32)
-                    {
-                        vector = vec256.AsVector();
-                    }
-                    else if (Vector<byte>.Count == 64)
-                    {
-                        vector = Vector512.Create(vec256).AsVector();
-                    }
-                    else
-                    {
-                        Debug.Fail("Vector<T> is unexpected size.");
-                        goto CannotVectorize;
-                    }
-                }
-                else if (sizeof(T) == 64)
-                {
                     if (Vector<byte>.Count == 64)
                     {
-                        vector = Unsafe.As<T, Vector512<byte>>(ref tmp).AsVector();
+                        vector = Vector512.Create(Unsafe.BitCast<T, Vector256<byte>>(value)).AsVector();
                     }
                     else
                     {
@@ -1296,7 +1277,7 @@ namespace System
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector512<T>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<T>.Count != 0)
@@ -1327,7 +1308,7 @@ namespace System
 
                     return true;
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
@@ -1357,7 +1338,7 @@ namespace System
 
                     return true;
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
@@ -1472,7 +1453,7 @@ namespace System
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector512<TValue>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -1503,7 +1484,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -1533,7 +1514,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -1683,7 +1664,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -1715,7 +1696,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -1747,7 +1728,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -1875,7 +1856,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -1907,7 +1888,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -1939,7 +1920,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -2025,7 +2006,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -2059,7 +2040,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -2093,7 +2074,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -2181,7 +2162,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -2216,7 +2197,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -2251,7 +2232,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -3576,7 +3557,7 @@ namespace System
             return count;
         }
 
-        public static unsafe int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>?
+        public static unsafe int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>
         {
             int count = 0;
             ref T end = ref Unsafe.Add(ref current, length);

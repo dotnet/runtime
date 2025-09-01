@@ -20,8 +20,8 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Concat<TSource>(
             this IAsyncEnumerable<TSource> first, IAsyncEnumerable<TSource> second)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
             return
                 first.IsKnownEmpty() ? second :

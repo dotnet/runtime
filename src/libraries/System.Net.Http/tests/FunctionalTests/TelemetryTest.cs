@@ -854,7 +854,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     1 => (2, 2),
                     2 => (2, 3), // race condition: if a connection hits its stream limit, it will be removed from the list and re-added on a separate thread
-                    3 => (3, 3),
+                    3 => (2, 3),
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 Assert.InRange(requestLeftQueueEvents.Count(), minCount, maxCount);
@@ -996,14 +996,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
-        public void EventSource_Proxy_LogsIPAddress(bool useSsl)
+        public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)
         {
             if (UseVersion.Major == 3)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
@@ -1038,7 +1038,7 @@ namespace System.Net.Http.Functional.Tests
                         ip.Equals(IPAddress.Loopback) ||
                         ip.Equals(IPAddress.IPv6Loopback));
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString()).DisposeAsync();
         }
 
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
@@ -1175,7 +1175,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

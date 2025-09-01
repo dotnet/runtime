@@ -132,10 +132,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonElement GetProperty(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetProperty(propertyName, out JsonElement property))
             {
@@ -255,10 +252,7 @@ namespace System.Text.Json
         /// <seealso cref="EnumerateObject"/>
         public bool TryGetProperty(string propertyName, out JsonElement value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return TryGetProperty(propertyName.AsSpan(), out value);
         }
@@ -1550,10 +1544,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             CheckValidInstance();
 
@@ -1717,6 +1708,8 @@ namespace System.Text.Json
                 throw new InvalidOperationException();
             }
         }
+
+        internal readonly int MetadataDbIndex => _idx;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"ValueKind = {ValueKind} : \"{ToString()}\"";

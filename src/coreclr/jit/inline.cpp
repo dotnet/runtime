@@ -332,6 +332,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Code(nullptr)
     , m_Callee(nullptr)
     , m_RuntimeContext(nullptr)
+    , m_PgoInfo()
     , m_ILSize(0)
     , m_ImportedILSize(0)
     , m_ActualCallOffset(BAD_IL_OFFSET)
@@ -785,22 +786,25 @@ void InlineResult::Report()
     // Was the result NEVER? If so we might want to propagate this to
     // the runtime.
 
-    if (IsNever() && m_Policy->PropagateNeverToRuntime())
+    if (IsNever() && m_Policy->PropagateNeverToRuntime() && (m_Callee != nullptr))
     {
         // If we know the callee, and if the observation that got us
         // to this Never inline state is something *other* than
         // IS_NOINLINE, then we've uncovered a reason why this method
         // can't ever be inlined. Update the callee method attributes
         // so that future inline attempts for this callee fail faster.
-
+        //
         InlineObservation obs = m_Policy->GetObservation();
-
-        if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
+        if (obs != InlineObservation::CALLEE_IS_NOINLINE)
         {
-            JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, InlGetObservationString(obs));
+            JITDUMP("\nINLINER: Marking %s as NOINLINE (observation %s)\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
+        }
+        else
+        {
+            JITDUMP("\nINLINER: Not marking %s NOINLINE because it's already marked as such\n", callee);
         }
     }
 
@@ -1285,9 +1289,8 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Sibling        = parentContext->m_Child;
     parentContext->m_Child    = context;
 
-    // In debug builds we record inline contexts in all produced calls to be
-    // able to show all failed inlines in the inline tree, even non-candidates.
-    // These should always match the parent context we are seeing here.
+    // The inline context should always match the parent context we are seeing
+    // here.
     assert(parentContext == call->gtInlineContext);
 
     if (call->IsInlineCandidate())
@@ -1320,9 +1323,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // which becomes a single statement where the IL location points to the
     // ldarg instruction.
     context->m_Location = stmt->GetDebugInfo().GetLocation();
-
-    assert(call->gtCallType == CT_USER_FUNC);
-    context->m_Callee = call->gtCallMethHnd;
+    context->m_Callee   = call->gtCallMethHnd;
 
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();
@@ -1799,4 +1800,23 @@ bool InlineStrategy::IsInliningDisabled()
     return false;
 
 #endif // defined(DEBUG)
+}
+
+PgoInfo::PgoInfo()
+{
+    PgoSchema      = nullptr;
+    PgoSchemaCount = 0;
+    PgoData        = nullptr;
+}
+
+PgoInfo::PgoInfo(Compiler* compiler)
+{
+    PgoSchema      = compiler->fgPgoSchema;
+    PgoSchemaCount = compiler->fgPgoSchemaCount;
+    PgoData        = compiler->fgPgoData;
+}
+
+PgoInfo::PgoInfo(InlineContext* context)
+{
+    *this = context->GetPgoInfo();
 }

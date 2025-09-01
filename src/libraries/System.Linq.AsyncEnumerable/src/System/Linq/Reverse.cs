@@ -17,7 +17,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Reverse<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :

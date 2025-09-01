@@ -139,7 +139,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
-using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+using EnumerateConfigurationValuesCallback = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
 struct GCHeapHardLimitInfo
 {
@@ -210,7 +210,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
 
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
@@ -264,6 +264,7 @@ public:
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
     static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
+    static FCDECL1(OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

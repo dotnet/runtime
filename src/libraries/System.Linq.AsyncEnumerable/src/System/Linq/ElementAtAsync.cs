@@ -22,7 +22,7 @@ namespace System.Linq
             int index,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ElementAtOrDefaultAsync(source, index, throwIfNotFound: true, cancellationToken)!;
         }
@@ -42,7 +42,7 @@ namespace System.Linq
             int index,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ElementAtOrDefaultAsync(source, index, throwIfNotFound: false, cancellationToken);
         }
@@ -71,7 +71,7 @@ namespace System.Linq
                 return ElementAtAsync(source, index.Value, cancellationToken);
             }
 
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ElementAtFromEndOrDefault(source, index.Value, throwIfNotFound: true, cancellationToken)!;
         }
@@ -98,7 +98,7 @@ namespace System.Linq
                 return ElementAtOrDefaultAsync(source, index.Value, cancellationToken);
             }
 
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ElementAtFromEndOrDefault(source, index.Value, throwIfNotFound: false, cancellationToken);
         }

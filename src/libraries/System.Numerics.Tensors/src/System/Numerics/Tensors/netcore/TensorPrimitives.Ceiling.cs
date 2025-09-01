@@ -19,8 +19,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Ceiling<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, CeilingOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, CeilingOperator<T>>(x, destination);
+        }
 
         private readonly struct CeilingOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {

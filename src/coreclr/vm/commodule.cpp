@@ -302,7 +302,14 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         COMPlusThrow(kNotSupportedException);
     }
 
-    if (pMeth->GetMethodTable()->GetModule() == pModule)
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMeth->IsAsyncVariantMethod())
+    {
+        _ASSERTE(!"Async variants should be hidden from reflection.");
+        COMPlusThrow(kNotSupportedException);
+    }
+
+    if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
         memberRefE = pMeth->GetMemberDef();
@@ -743,7 +750,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         _ASSERTE("LoadClass failed." && !curClass.IsNull());
 
         MethodTable* pMT = curClass.GetMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
+        _ASSERTE(pMT != NULL);
 
         // Get the CLR Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();

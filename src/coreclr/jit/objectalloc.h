@@ -64,6 +64,8 @@ struct GuardInfo
     unsigned             m_local = BAD_VAR_NUM;
     CORINFO_CLASS_HANDLE m_type  = NO_CLASS_HANDLE;
     BasicBlock*          m_block = nullptr;
+    Statement*           m_stmt  = nullptr;
+    GenTree*             m_relop = nullptr;
 };
 
 // Describes a guarded enumerator cloning candidate
@@ -75,8 +77,8 @@ struct CloneInfo : public GuardInfo
         m_blocks = BitVecOps::UninitVal();
     }
 
-    // Pseudo-local tracking conditinal escapes
-    unsigned m_pseudoLocal = BAD_VAR_NUM;
+    // Pseudo-local tracking conditional escapes
+    unsigned m_pseudoIndex = BAD_VAR_NUM;
 
     // Local allocated for the address of the enumerator
     unsigned m_enumeratorLocal = BAD_VAR_NUM;
@@ -87,13 +89,16 @@ struct CloneInfo : public GuardInfo
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
 
+    // The initial GDV guard block, if any.
+    BasicBlock* m_guardBlock = nullptr;
+
+    // The block where the enumerator var is assigned.
+    BasicBlock* m_defBlock = nullptr;
+
     // Where the enumerator allocation happens
     GenTree*    m_allocTree  = nullptr;
     Statement*  m_allocStmt  = nullptr;
     BasicBlock* m_allocBlock = nullptr;
-
-    // Block holding the GDV test that decides if the enumerator will be allocated
-    BasicBlock* m_domBlock = nullptr;
 
     // Blocks to clone (in order), and a set representation
     // of the same
@@ -109,17 +114,54 @@ struct CloneInfo : public GuardInfo
     bool m_willClone       = false;
 };
 
+struct StoreInfo
+{
+    StoreInfo(unsigned index, bool connected = false)
+        : m_index(index)
+        , m_connected(connected)
+    {
+    }
+    unsigned m_index;
+    bool     m_connected;
+};
+
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, StoreInfo>              NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {
-    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
     enum ObjectAllocationType
     {
         OAT_NONE,
         OAT_NEWOBJ,
+        OAT_NEWOBJ_HEAP,
         OAT_NEWARR
     };
+
+    struct AllocationCandidate
+    {
+        AllocationCandidate(
+            BasicBlock* block, Statement* statement, GenTree* tree, unsigned lclNum, ObjectAllocationType allocType)
+            : m_block(block)
+            , m_statement(statement)
+            , m_tree(tree)
+            , m_lclNum(lclNum)
+            , m_allocType(allocType)
+            , m_onHeapReason(nullptr)
+            , m_bashCall(false)
+        {
+        }
+
+        BasicBlock* const          m_block;
+        Statement* const           m_statement;
+        GenTree* const             m_tree;
+        unsigned const             m_lclNum;
+        ObjectAllocationType const m_allocType;
+        const char*                m_onHeapReason;
+        bool                       m_bashCall;
+    };
+
+    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
 
     //===============================================================================
     // Data members
@@ -128,26 +170,30 @@ class ObjectAllocator final : public Phase
     bool         m_isR2R;
     unsigned     m_bvCount;
     BitVecTraits m_bitVecTraits;
-    unsigned     m_unknownSourceLocalNum;
     unsigned     m_unknownSourceIndex;
     BitVec       m_EscapingPointers;
     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
-    LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackObjLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackArrLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
+    unsigned            m_stackAllocationCount;
 
     // Info for conditionally-escaping locals
-    LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
+    LocalToLocalMap m_EnumeratorLocalToPseudoIndexMap;
     CloneMap        m_CloneMap;
     unsigned        m_nextLocalIndex;
-    unsigned        m_firstPseudoLocalNum;
-    unsigned        m_firstPseudoLocalIndex;
-    unsigned        m_numPseudoLocals;
-    unsigned        m_maxPseudoLocals;
+    unsigned        m_firstPseudoIndex;
+    unsigned        m_numPseudos;
+    unsigned        m_maxPseudos;
     unsigned        m_regionsToClone;
+
+    // Struct fields
+    bool           m_trackFields;
+    NodeToIndexMap m_StoreAddressToIndexMap;
 
     //===============================================================================
     // Methods
@@ -163,32 +209,46 @@ public:
                                   const char**         reason,
                                   bool                 preliminaryCheck = false);
 
+    static GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
+
 protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
     bool         IsTrackedType(var_types type);
     bool         IsTrackedLocal(unsigned lclNum);
-    bool         HasIndex(unsigned lclNum);
     unsigned     LocalToIndex(unsigned lclNum);
     unsigned     IndexToLocal(unsigned bvIndex);
     bool         CanLclVarEscape(unsigned int lclNum);
+    bool         CanIndexEscape(unsigned int index);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
+    void         MarkIndexAsPossiblyStackPointing(unsigned int index);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
+    void         MarkIndexAsDefinitelyStackPointing(unsigned int index);
     bool         MayLclVarPointToStack(unsigned int lclNum);
     bool         DoesLclVarPointToStack(unsigned int lclNum);
+    bool         MayIndexPointToStack(unsigned int index);
+    bool         DoesIndexPointToStack(unsigned int index);
     void         PrepareAnalysis();
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
+    void         MarkIndexAsEscaping(unsigned int lclNum);
     void         MarkEscapingVarsAndBuildConnGraph();
     void         AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
+    void         AddConnGraphEdgeIndex(unsigned int sourceIndex, unsigned int targetIndex);
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
     void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
     bool         MorphAllocObjNodes();
+    void         MorphAllocObjNode(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelper(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperArr(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperObj(AllocationCandidate& candidate);
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    unsigned int MorphAllocObjNodeIntoStackAlloc(
-        GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
+    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
+                                                 ClassLayout*     layout,
+                                                 BasicBlock*      block,
+                                                 Statement*       stmt);
     unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
                                                CORINFO_CLASS_HANDLE clsHnd,
                                                unsigned int         length,
@@ -196,8 +256,9 @@ private:
                                                BasicBlock*          block,
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+    void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void UpdateAncestorTypes(
+        GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
@@ -206,12 +267,11 @@ private:
     bool     CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum);
     bool     CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum);
     bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome);
-    GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
-    unsigned NewPseudoLocal();
+    unsigned NewPseudoIndex();
 
-    bool CanHavePseudoLocals()
+    bool CanHavePseudos()
     {
-        return (m_maxPseudoLocals > 0);
+        return (m_maxPseudos > 0);
     }
 
     void RecordAppearance(unsigned lclNum, BasicBlock* block, Statement* stmt, GenTree** use);
@@ -226,6 +286,10 @@ private:
     void CloneAndSpecialize();
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
+
+    ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
+    ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
+    ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
 
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
@@ -252,6 +316,21 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 }
 
 //------------------------------------------------------------------------
+// CanIndexEscape:          Returns true iff resource described by index can
+//                           potentially escape from the method
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so
+
+inline bool ObjectAllocator::CanIndexEscape(unsigned int index)
+{
+    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, index);
+}
+
+//------------------------------------------------------------------------
 // CanLclVarEscape:          Returns true iff local variable can
 //                           potentially escape from the method
 //
@@ -263,13 +342,28 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 
 inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
 {
-    if (!HasIndex(lclNum))
+    if (!IsTrackedLocal(lclNum))
     {
         return true;
     }
 
-    const unsigned bvIndex = LocalToIndex(lclNum);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, bvIndex);
+    return CanIndexEscape(LocalToIndex(lclNum));
+}
+
+//------------------------------------------------------------------------
+// MayIndexPointToStack:          Returns true iff the resource described by index may
+//                                 point to a stack-allocated object
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so.
+//
+inline bool ObjectAllocator::MayIndexPointToStack(unsigned int index)
+{
+    assert(m_AnalysisDone);
+    return BitVecOps::IsMember(&m_bitVecTraits, m_PossiblyStackPointingPointers, index);
 }
 
 //------------------------------------------------------------------------
@@ -281,18 +375,33 @@ inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
 //
 // Return Value:
 //    Returns true iff local variable may point to a stack-allocated object
-
+//
 inline bool ObjectAllocator::MayLclVarPointToStack(unsigned int lclNum)
 {
     assert(m_AnalysisDone);
 
-    if (!HasIndex(lclNum))
+    if (!IsTrackedLocal(lclNum))
     {
         return false;
     }
 
-    const unsigned bvIndex = LocalToIndex(lclNum);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
+    return MayIndexPointToStack(LocalToIndex(lclNum));
+}
+
+//------------------------------------------------------------------------
+// DoesIndexPointToStack:         Returns true iff the resource described by index definitely
+//                                 points to a stack-allocated object (or is null)
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so.
+//
+inline bool ObjectAllocator::DoesIndexPointToStack(unsigned int index)
+{
+    assert(m_AnalysisDone);
+    return BitVecOps::IsMember(&m_bitVecTraits, m_DefinitelyStackPointingPointers, index);
 }
 
 //------------------------------------------------------------------------
@@ -305,18 +414,17 @@ inline bool ObjectAllocator::MayLclVarPointToStack(unsigned int lclNum)
 // Return Value:
 //    Returns true iff local variable definitely points to a stack-allocated object
 //    (or is null)
-
+//
 inline bool ObjectAllocator::DoesLclVarPointToStack(unsigned int lclNum)
 {
     assert(m_AnalysisDone);
 
-    if (!HasIndex(lclNum))
+    if (!IsTrackedLocal(lclNum))
     {
         return false;
     }
 
-    const unsigned bvIndex = LocalToIndex(lclNum);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_DefinitelyStackPointingPointers, bvIndex);
+    return DoesIndexPointToStack(LocalToIndex(lclNum));
 }
 
 //===============================================================================

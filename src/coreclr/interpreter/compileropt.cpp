@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "interpreter.h"
+#include "stackmap.h"
 
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
@@ -103,19 +104,19 @@ void InterpCompiler::InitializeGlobalVars()
 // the max offset of all call offsets on which the call depends. Stack ensures that all call offsets
 // on which the call depends are calculated before the call in question, by deferring calls from the
 // last to the first one.
-// 
+//
 // This method allocates offsets of resolved calls following a constraint where the base offset
 // of a call must be greater than the offset of any argument of other active call args. It first
 // removes the call from an array of active calls. If a match is found, the call is removed from
 // the array by moving the last entry into its place. Otherwise, it is a call without arguments.
-// 
+//
 // If there are active calls, the call in question is pushed onto the stack as a deferred call.
 // The call contains a list of other active calls on which it depends. Those calls need to be
 // resolved first in order to determine optimal base offset for the call in question. Otherwise,
 // if there are no active calls, we resolve the call in question and deferred calls from the stack.
-// 
+//
 // For better understanding, consider a simple example:
-//  a <- _ 
+//  a <- _
 //  b <- _
 //  call1 c <- b
 //  d <- _
@@ -145,7 +146,7 @@ void InterpCompiler::EndActiveCall(InterpInst *call)
         for (int i = 0; i < m_pActiveCalls->GetSize(); i++)
             callDeps = TSList<InterpInst*>::Push(callDeps, m_pActiveCalls->Get(i));
         call->info.pCallInfo->callDeps = callDeps;
- 
+
         m_pDeferredCalls = TSList<InterpInst*>::Push(m_pDeferredCalls, call);
     }
     else
@@ -226,7 +227,8 @@ void InterpCompiler::AllocOffsets()
 
     INTERP_DUMP("\nAllocating var offsets\n");
 
-    int finalVarsStackSize = m_totalVarsStackSize;
+    int finalVarsStackSize = m_totalVarsStackSize,
+        globalVarsWithRefsStackTop = m_totalVarsStackSize;
 
     // We now have the top of stack offset. All local regs are allocated after this offset, with each basic block
     for (pBB = m_pEntryBB; pBB != NULL; pBB = pBB->pNextBB)
@@ -268,8 +270,12 @@ void InterpCompiler::AllocOffsets()
 
                             int32_t opcode = InterpGetMovForType(m_pVars[newVar].interpType, false);
                             InterpInst *newInst = InsertInsBB(pBB, pIns->pPrev, opcode);
+                            // The InsertInsBB assigns m_currentILOffset to ins->ilOffset, which is incorrect for
+                            // instructions injected here. Copy the ilOffset from the call instruction instead.
+                            newInst->ilOffset = pIns->ilOffset;
+
                             newInst->SetDVar(newVar);
-                            newInst->SetSVar(newVar);
+                            newInst->SetSVar(var);
                             if (opcode == INTOP_MOV_VT)
                                 newInst->data[0] = m_pVars[var].size;
                             // The arg of the call is no longer global
@@ -396,14 +402,37 @@ void InterpCompiler::AllocOffsets()
     m_paramAreaOffset = finalVarsStackSize;
     for (int32_t i = 0; i < m_varsSize; i++)
     {
+        InterpVar *pVar = &m_pVars[i];
         // These are allocated separately at the end of the stack
-        if (m_pVars[i].callArgs)
+        if (pVar->callArgs)
         {
-            m_pVars[i].offset += m_paramAreaOffset;
-            int32_t topOffset = m_pVars[i].offset + m_pVars[i].size;
+            pVar->offset += m_paramAreaOffset;
+            int32_t topOffset = pVar->offset + pVar->size;
             if (finalVarsStackSize < topOffset)
                 finalVarsStackSize = topOffset;
         }
+
+        // For any global vars that might contain managed pointers we need to maintain a 'global stack top'
+        //  which specifies what stack region we need to zero at method entry in order to avoid reporting
+        //  garbage pointers to the GC when it does a stackwalk
+        // Non-global vars have accurate liveness ranges we report to the GC, so we don't care about them
+        if (
+            pVar->global && (
+                (pVar->interpType == InterpTypeO) ||
+                (pVar->interpType == InterpTypeByRef) ||
+                (
+                    (pVar->interpType == InterpTypeVT) &&
+                    (GetInterpreterStackMap(pVar->clsHnd)->m_slotCount > 0)
+                )
+            )
+        )
+        {
+            int32_t endOfVar = pVar->offset + pVar->size;
+            if (endOfVar > globalVarsWithRefsStackTop)
+                globalVarsWithRefsStackTop = endOfVar;
+        }
     }
+
+    m_globalVarsWithRefsStackTop = globalVarsWithRefsStackTop;
     m_totalVarsStackSize = ALIGN_UP_TO(finalVarsStackSize, INTERP_STACK_ALIGNMENT);
 }

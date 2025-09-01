@@ -11,7 +11,6 @@ namespace System.Security.Cryptography
     /// </summary>
     /// <seealso cref="MLKem" />
     [DebuggerDisplay("{Name,nq}")]
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed class MLKemAlgorithm : IEquatable<MLKemAlgorithm>
     {
         private MLKemAlgorithm(
@@ -63,44 +62,44 @@ namespace System.Security.Cryptography
         public string Name { get; }
 
         /// <summary>
-        ///   Gets size of the encapsulation key for the algorithm, in bytes.
+        ///   Gets the size of the encapsulation key for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        /// The size of the encapsulation key for the algorithm, in bytes.
+        ///   The size of the encapsulation key for the algorithm, in bytes.
         /// </value>
         public int EncapsulationKeySizeInBytes { get; }
 
         /// <summary>
-        ///   Gets size of the decapsulation key for the algorithm, in bytes.
+        ///   Gets the size of the decapsulation key for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        /// The size of the decapsulation key for the algorithm, in bytes.
+        ///   The size of the decapsulation key for the algorithm, in bytes.
         /// </value>
         public int DecapsulationKeySizeInBytes { get; }
 
         /// <summary>
-        ///   Gets size of the ciphertext for the algorithm, in bytes.
+        ///   Gets the size of the ciphertext for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        /// The size of the ciphertext for the algorithm, in bytes.
+        ///   The size of the ciphertext for the algorithm, in bytes.
         /// </value>
         public int CiphertextSizeInBytes { get; }
 
         /// <summary>
-        ///   Gets size of the shared secret for the algorithm, in bytes.
+        ///   Gets the size of the shared secret for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        /// The size of the shared secret for the algorithm, in bytes.
+        ///   The size of the shared secret for the algorithm, in bytes.
         /// </value>
         // Right now every shared secret for ML-KEM is 32 bytes. If or when a different shared secret
         // size is needed, then it can be provided as input to the private constructor.
         public int SharedSecretSizeInBytes { get; } = 32;
 
         /// <summary>
-        ///   Gets size of the private seed for the algorithm, in bytes.
+        ///   Gets the size of the private seed for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        /// The size of the private seed for the algorithm, in bytes.
+        ///   The size of the private seed for the algorithm, in bytes.
         /// </value>
         // Right now every seed for ML-KEM is 64 bytes. If or when a different seed
         // size is needed, then it can be provided as input to the private constructor.
@@ -118,13 +117,16 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
         /// </returns>
         // This is a closed type, so all we need to compare are the names.
-        public bool Equals(MLKemAlgorithm? other) => other is not null && other.Name == Name;
+        public bool Equals([NotNullWhen(true)] MLKemAlgorithm? other) => other is not null && other.Name == Name;
 
         /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is MLKemAlgorithm alg && alg.Name == Name;
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is MLKemAlgorithm alg && alg.Name == Name;
 
         /// <inheritdoc />
         public override int GetHashCode() => Name.GetHashCode();
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
 
         /// <summary>
         ///   Determines whether two <see cref="MLKemAlgorithm" /> objects specify the same algorithm name.

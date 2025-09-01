@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include "pal_evp_pkey.h"
+#include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
 
 #ifdef NEED_OPENSSL_3_0
@@ -107,6 +108,47 @@ int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
         default:
             return 0;
     }
+}
+
+int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key)
+{
+    int32_t base_id = EVP_PKEY_get_base_id(key);
+    switch (base_id)
+    {
+        case EVP_PKEY_RSA_PSS:
+        case EVP_PKEY_RSA:
+            return PalPKeyFamilyId_RSA;
+        case EVP_PKEY_EC:
+            return PalPKeyFamilyId_ECC;
+        case EVP_PKEY_DSA:
+            return PalPKeyFamilyId_DSA;
+        default:
+            break;
+    }
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_is_a))
+    {
+        ERR_clear_error();
+
+        if (EVP_PKEY_is_a(key, "ML-KEM-512") || EVP_PKEY_is_a(key, "ML-KEM-768") || EVP_PKEY_is_a(key, "ML-KEM-1024"))
+        {
+            return PalPKeyFamilyId_MLKem;
+        }
+
+        if (EVP_PKEY_is_a(key, "ML-DSA-44") || EVP_PKEY_is_a(key, "ML-DSA-65") || EVP_PKEY_is_a(key, "ML-DSA-87"))
+        {
+            return PalPKeyFamilyId_MLDsa;
+        }
+    }
+#endif
+
+    if (IsSlhDsaFamily(key))
+    {
+        return PalPKeyFamilyId_SlhDsa;
+    }
+
+    return PalPKeyFamilyId_Unknown;
 }
 
 static bool Lcm(const BIGNUM* num1, const BIGNUM* num2, BN_CTX* ctx, BIGNUM* result)

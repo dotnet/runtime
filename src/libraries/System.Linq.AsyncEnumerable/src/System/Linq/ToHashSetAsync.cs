@@ -22,7 +22,7 @@ namespace System.Linq
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken), comparer);
 

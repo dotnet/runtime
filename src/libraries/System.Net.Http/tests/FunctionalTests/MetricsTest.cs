@@ -651,9 +651,22 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
-        public Task ActiveRequests_Redirect_RecordedForEachHttpSpan()
+        private class CustomCredentials : ICredentials
         {
+            public NetworkCredential? GetCredential(Uri uri, string authType) => null;
+        }
+
+        [ConditionalTheory(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [InlineData(0)] // null
+        [InlineData(1)] // CredentialCache
+        [InlineData(2)] // CustomCredentials
+        public Task ActiveRequests_Redirect_RecordedForEachHttpSpan(int credentialsMode)
+        {
+            if (credentialsMode > 0)
+            {
+                Handler.Credentials = credentialsMode == 1 ? new CredentialCache() : new CustomCredentials();
+            }
+
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
             {
                 return LoopbackServerFactory.CreateServerAsync(async (redirectServer, redirectUri) =>
@@ -871,6 +884,91 @@ namespace System.Net.Http.Functional.Tests
 
             Measurement<double> m = Assert.Single(recorder.GetMeasurements());
             VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public Task TimeInQueue_RecordedForNewConnectionsOnly()
+        {
+            const int RequestCount = 3;
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                for (int i = 0; i < RequestCount; i++)
+                {
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }
+
+                // Only the first request is supposed to record time_in_queue.
+                // For follow up requests, the connection should be immediately available.
+                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async conn =>
+                {
+                    for (int i = 0; i < RequestCount; i++)
+                    {
+                        await conn.ReadRequestDataAsync();
+                        await conn.SendResponseAsync(isFinal: true);
+                        conn.CompleteRequestProcessing();
+                    }
+                });
+            });
+        }
+
+        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
+        {
+            if (UseVersion == HttpVersion30 && !useTls)
+            {
+                throw new SkipTestException("No insecure connections with HTTP/3.");
+            }
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
+                using InstrumentRecorder<long> activeRequestsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
+                using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
+                using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
+                request.Headers.Host = "localhost";
+                HttpResponseMessage response = await SendAsync(client, request);
+                response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
+
+                // Request metrics:
+                VerifyHostName(activeRequestsRecorder);
+                VerifyHostName(requestDurationRecorder);
+
+                // Connection metrics:
+                VerifyHostName(openConnectionsRecorder);
+                VerifyHostName(connectionDurationRecorder);
+                VerifyHostName(timeInQueueRecorder);
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+            }, options: new GenericLoopbackOptions()
+            {
+                UseSsl = useTls,
+            });
+
+            static void VerifyHostName<T>(InstrumentRecorder<T> recorder) where T : struct
+            {
+                foreach (Measurement<T> m in recorder.GetMeasurements())
+                {
+                    VerifyTag(m.Tags.ToArray(), "server.address", "localhost");
+                }
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -1111,6 +1209,47 @@ namespace System.Net.Http.Functional.Tests
 
             }, new LoopbackServer.Options() { UseSsl = true });
         }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task UseIPAddressInTargetUri_ProxyTunnel_RequestMetricsRecordUriHostAsServerAddress()
+        {
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    uri = new Uri($"{uri.Scheme}://{IPAddress.Loopback}:{uri.Port}");
+
+                    //HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                    Handler.Proxy = new WebProxy(proxyServer.Uri);
+                    using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                    using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request.Headers.Host = "localhost";
+
+                    using InstrumentRecorder<long> activeRequestsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
+                    using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+
+                    (await SendAsync(client, request)).Dispose();
+
+                    // Request metrics:
+                    VerifyHostName(activeRequestsRecorder, uri.Host);
+                    VerifyHostName(requestDurationRecorder, uri.Host);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                }, options: new GenericLoopbackOptions()
+                {
+                    UseSsl = true,
+                });
+
+            void VerifyHostName<T>(InstrumentRecorder<T> recorder, string hostName) where T : struct
+            {
+                foreach (Measurement<T> m in recorder.GetMeasurements())
+                {
+                    VerifyTag(m.Tags.ToArray(), "server.address", hostName);
+                }
+            }
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
@@ -1299,12 +1438,32 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
         public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
         {
+        }
+
+        [Fact]
+        public async Task H3ConnectionFailure_TimeInQueueRecorded()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options()
+            {
+                Alpn = "shall-not-work" // anything other than "h3"
+            });
+
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, server.Address)
+            {
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            await Assert.ThrowsAsync<HttpRequestException>(() => SendAsync(client, request));
+
+            Assert.Equal(1, recorder.GetMeasurements().Count);
         }
     }
 
@@ -1351,9 +1510,9 @@ namespace System.Net.Http.Functional.Tests
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
 
         [ConditionalFact(nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
-        public void AllSocketsHttpHandlerCounters_Success_Recorded()
+        public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -1399,7 +1558,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.WaitForCloseAsync(CancellationToken.None);
                     });
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

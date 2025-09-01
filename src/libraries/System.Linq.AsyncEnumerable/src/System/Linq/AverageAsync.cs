@@ -21,7 +21,7 @@ namespace System.Linq
             this IAsyncEnumerable<int> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -56,7 +56,7 @@ namespace System.Linq
             this IAsyncEnumerable<long> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -89,7 +89,7 @@ namespace System.Linq
         public static ValueTask<float> AverageAsync(
             this IAsyncEnumerable<float> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -122,7 +122,7 @@ namespace System.Linq
         public static ValueTask<double> AverageAsync(
             this IAsyncEnumerable<double> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -155,7 +155,7 @@ namespace System.Linq
         public static ValueTask<decimal> AverageAsync(
             this IAsyncEnumerable<decimal> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -189,7 +189,7 @@ namespace System.Linq
         public static ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<int?> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -221,7 +221,7 @@ namespace System.Linq
         public static ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<long?> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -252,7 +252,7 @@ namespace System.Linq
         public static ValueTask<float?> AverageAsync(
             this IAsyncEnumerable<float?> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -283,7 +283,7 @@ namespace System.Linq
         public static ValueTask<double?> AverageAsync(
             this IAsyncEnumerable<double?> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -314,7 +314,7 @@ namespace System.Linq
         public static ValueTask<decimal?> AverageAsync(
             this IAsyncEnumerable<decimal?> source, CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 

@@ -154,8 +154,16 @@ namespace Microsoft.Extensions.DependencyInjection
             object? service = GetKeyedService(serviceType, serviceKey, serviceProviderEngineScope);
             if (service == null)
             {
-                throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
+                if (serviceKey is null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoServiceRegistered(serviceType);
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoKeyedServiceRegistered(serviceType, serviceKey.GetType());
+                }
             }
+
             return service;
         }
 

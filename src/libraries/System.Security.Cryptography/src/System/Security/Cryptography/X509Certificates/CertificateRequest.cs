@@ -189,10 +189,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
         ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
         /// </param>
-        /// <exceotion cref="ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
-        /// </exceotion>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             string subjectName,
             MLDsa key)
@@ -217,10 +217,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
         ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
         /// </param>
-        /// <exceotion cref="ArgumentNullException">
+        /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
-        /// </exceotion>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             X500DistinguishedName subjectName,
             MLDsa key)
@@ -233,6 +233,110 @@ namespace System.Security.Cryptography.X509Certificates
             _key = key;
             _generator = X509SignatureGenerator.CreateForMLDsa(key);
             PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = new X500DistinguishedName(subjectName);
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = subjectName;
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -591,30 +695,21 @@ namespace System.Security.Cryptography.X509Certificates
                 notAfter,
                 serialNumber))
             {
-                RSA? rsa = _key as RSA;
-
-                if (rsa != null)
+                switch (_key)
                 {
-                    return certificate.CopyWithPrivateKey(rsa);
-                }
-
-                ECDsa? ecdsa = _key as ECDsa;
-
-                if (ecdsa != null)
-                {
-                    return certificate.CopyWithPrivateKey(ecdsa);
-                }
-
-                MLDsa? mldsa = _key as MLDsa;
-
-                if (mldsa is not null)
-                {
-                    return certificate.CopyWithPrivateKey(mldsa);
+                    case RSA rsa:
+                        return certificate.CopyWithPrivateKey(rsa);
+                    case ECDsa ecdsa:
+                        return certificate.CopyWithPrivateKey(ecdsa);
+                    case MLDsa mldsa:
+                        return certificate.CopyWithPrivateKey(mldsa);
+                    case SlhDsa slhDsa:
+                        return certificate.CopyWithPrivateKey(slhDsa);
+                    default:
+                        Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
+                        throw new CryptographicException();
                 }
             }
-
-            Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
-            throw new CryptographicException();
         }
 
         /// <summary>

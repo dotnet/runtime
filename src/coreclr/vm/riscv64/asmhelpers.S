@@ -65,7 +65,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    ld   a4, g_sw_ww_table
+    ld   a4, g_write_watch_table
 #endif
 
     ld   a5, g_ephemeral_low
@@ -304,45 +304,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-
-//
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrS0_S8 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
-//
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
-//
-// So, if ptrS0_S8 points into the MachState, we need to update
-// the register here.  That's what this macro does.
-//
-.macro RestoreRegMS idx, reg
-    // Incoming:
-    //
-    // a0 = address of MachState
-    //
-    // idx: Index of the callee register
-    // s0/fp: 0, s1: 1, s3-s11: 4-11, gp: 12 tp: 13
-    //
-    // reg: Register name (e.g. s0, s1, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    addi  a2, a0, (MachState__captureCalleeSavedRegisters + (\idx * 8))
-
-    //// Get the content of specified preserved register pointer from machine state
-    ld  a3, (MachState__ptrCalleeSavedRegisters + (\idx * 8))(a0)
-
-    bne  a2, a3, LOCAL_LABEL(NoRestore_\reg)
-
-    ld  \reg, 0(a2)
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
-
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -357,87 +318,14 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-// INDEBUG_COMMA(HelperMethodFrame *pFrame)
-// MachState *pState
-// )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-#ifdef _DEBUG
-    addi  a0, a1, 0
-#endif
-
-    // If machine state is invalid, then simply exit
-    lw  a1, MachState__isValid(a0)
-    beq  a1, zero, LOCAL_LABEL(Done)
-
-    // manually assign index
-    // s0/fp: 0, s1: 1, s3-s11: 4-11, gp: 12 tp: 13
-    RestoreRegMS  0, s0 
-    RestoreRegMS  1, s1
-    RestoreRegMS  2, s2
-    RestoreRegMS  3, s3
-    RestoreRegMS  4, s4
-    RestoreRegMS  5, s5
-    RestoreRegMS  6, s6
-    RestoreRegMS  7, s7
-    RestoreRegMS  8, s8
-    RestoreRegMS  9, s9
-    RestoreRegMS  10, s10
-    RestoreRegMS  11, s11
-    RestoreRegMS  12, gp
-    RestoreRegMS  13, tp
-LOCAL_LABEL(Done):
-    // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-    // as it is used in the state machine to loop until it becomes zero.
-    // Refer to HELPER_METHOD_FRAME_END macro for details.
-    addi  a0, zero, 0
-    ret
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    sw  zero, (MachState__isValid)(a0)
-
-    sd  ra, (LazyMachState_captureIp)(a0)
-
-    // save sp register.
-    sd  sp, (LazyMachState_captureSp)(a0)
-
-    // save non-volatile registers that can contain object references
-    addi  a1, a0, LazyMachState_captureCalleeSavedRegisters
-
-    sd  s0, 0(a1)
-    sd  s1, 8(a1)
-    sd  s2, 16(a1)
-    sd  s3, 24(a1)
-    sd  s4, 32(a1)
-    sd  s5, 40(a1)
-    sd  s6, 48(a1)
-    sd  s7, 56(a1)
-    sd  s8, 64(a1)
-    sd  s9, 72(a1)
-    sd  s10, 80(a1)
-    sd  s11, 88(a1)
-    sd  gp, 96(a1)
-    sd  tp, 104(a1)
-
-    ret
-LEAF_END LazyMachStateCaptureState, _TEXT
-
-// ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     SAVE_ARGUMENT_REGISTERS  sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0x60
 
     addi  a0, t2, 0
-    call C_FUNC(NDirectImportWorker)
+    call C_FUNC(PInvokeImportWorker)
     addi  t4, a0, 0
 
     // pop the stack and restore original register state
@@ -446,10 +334,10 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     //EPILOG_RESTORE_REG  gp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 // ThePreStubPatch()
@@ -680,7 +568,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // a0 = throwable
     // a1 = PC to invoke
-    // a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -691,27 +579,27 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR   s3, s4, 32
     PROLOG_SAVE_REG_PAIR   s5, s6, 48
     PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80 
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
     PROLOG_SAVE_REG_PAIR   s11, gp, 96
     PROLOG_SAVE_REG tp, 112
 
     // Save the SP of this function
     sd  sp, 0(a3)
 
-    ld  gp, (-40)(a2)  // offset of tp in PCONTEXT relative to S0.
-    ld  tp, (-32)(a2)  // offset of tp in PCONTEXT relative to S0.
-    ld  fp, 0(a2)  // offset of fp in PCONTEXT relative to S0.
-    ld  s1, 8(a2)
-    ld  s2, 80(a2)
-    ld  s3, 88(a2)
-    ld  s4, 96(a2)
-    ld  s5, 104(a2)
-    ld  s6, 112(a2)
-    ld  s7, 120(a2)
-    ld  s8, 128(a2)
-    ld  s9, 136(a2)
-    ld  s10, 144(a2)
-    ld  s11, 152(a2)
+    ld  gp, OFFSETOF__CONTEXT__Gp(a2)
+    ld  tp, OFFSETOF__CONTEXT__Tp(a2)
+    ld  fp, OFFSETOF__CONTEXT__Fp(a2)
+    ld  s1, OFFSETOF__CONTEXT__S1(a2)
+    ld  s2, OFFSETOF__CONTEXT__S2(a2)
+    ld  s3, OFFSETOF__CONTEXT__S2+8(a2)
+    ld  s4, OFFSETOF__CONTEXT__S2+16(a2)
+    ld  s5, OFFSETOF__CONTEXT__S2+24(a2)
+    ld  s6, OFFSETOF__CONTEXT__S2+32(a2)
+    ld  s7, OFFSETOF__CONTEXT__S2+40(a2)
+    ld  s8, OFFSETOF__CONTEXT__S2+48(a2)
+    ld  s9, OFFSETOF__CONTEXT__S2+56(a2)
+    ld  s10, OFFSETOF__CONTEXT__S2+64(a2)
+    ld  s11, OFFSETOF__CONTEXT__S2+72(a2)
 
     // Invoke the funclet
     jalr a1
@@ -731,17 +619,19 @@ NESTED_END CallEHFunclet, _TEXT
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16, 0
 
     // On entry:
     //
     // a0 = throwable
-    // a1 = SP of the caller of the method/funclet containing the filter
+    // a1 = FP of main function
     // a2 = PC to invoke
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    sd  fp, 0(a3)
+    sd  sp, 0(a3)
+    // Restore frame pointer
+    mv  fp, a1
     // Invoke the filter funclet
     jalr a2
 
@@ -942,11 +832,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     mv    a1, a0
     li    a0, 0
     j C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 
