@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
-#include "pal/cs.hpp"
 #include "pal/process.h"
 #include "pal/file.h"
 #include "pal/utils.h"
@@ -74,7 +73,7 @@ using namespace CorUnix;
 /* static variables ***********************************************************/
 
 /* critical section that regulates access to the module list */
-CRITICAL_SECTION module_critsec;
+minipal_mutex module_critsec;
 
 /* always the first, in the in-load-order list */
 MODSTRUCT exe_module;
@@ -927,6 +926,16 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
     }
     return param.result;
 }
+#elif defined(TARGET_WASM)
+// WASM-TODO: get rid of whole module loading on wasm
+PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
+{
+    _ASSERTE(!"PAL_CopyModuleData not implemented for wasm");
+    return 0;
+}
 #else
 static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
@@ -1010,18 +1019,20 @@ BOOL LOADInitializeModules()
 {
     _ASSERTE(exe_module.prev == nullptr);
 
-    InternalInitializeCriticalSection(&module_critsec);
+    minipal_mutex_init(&module_critsec);
 
     // Initialize module for main executable
     TRACE("Initializing module for main executable\n");
 
     exe_module.self = (HMODULE)&exe_module;
     exe_module.dl_handle = dlopen(nullptr, RTLD_LAZY);
+#ifndef TARGET_WASM // wasm does not support shared libraries
     if (exe_module.dl_handle == nullptr)
     {
         ERROR("Executable module will be broken : dlopen(nullptr) failed\n");
         return FALSE;
     }
+#endif
     exe_module.lib_name = nullptr;
     exe_module.refcount = -1;
     exe_module.next = &exe_module;
@@ -1862,7 +1873,7 @@ void LockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalEnterCriticalSection(pThread, &module_critsec);
+    minipal_mutex_enter(&module_critsec);
 }
 
 /*++
@@ -1884,5 +1895,5 @@ void UnlockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalLeaveCriticalSection(pThread, &module_critsec);
+    minipal_mutex_leave(&module_critsec);
 }

@@ -6,57 +6,57 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker.Tests.Cases.DataFlow.Dependencies
 {
-	public class Library
-	{
-		public interface IAnnotatedMethods
-		{
-			static abstract void GenericWithMethodsStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+    public class Library
+    {
+        public interface IAnnotatedMethods
+        {
+            static abstract void GenericWithMethodsStatic<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>();
 
-			static abstract void ParamWithMethodsStatic ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
+            static abstract void ParamWithMethodsStatic([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
 
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			static abstract Type ReturnWithMethodsStatic ();
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static abstract Type ReturnWithMethodsStatic();
 
-			void GenericWithMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+            void GenericWithMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>();
 
-			void ParamWithMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
+            void ParamWithMethods([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
 
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			Type ReturnWithMethods ();
-		}
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type ReturnWithMethods();
+        }
 
-		public interface IUnannotatedMethods
-		{
-			static abstract void GenericStatic<T> ();
+        public interface IUnannotatedMethods
+        {
+            static abstract void GenericStatic<T>();
 
-			static abstract void ParamStatic (Type t);
+            static abstract void ParamStatic(Type t);
 
-			static abstract Type ReturnStatic ();
+            static abstract Type ReturnStatic();
 
-			void Generic<T> ();
+            void Generic<T>();
 
-			void Param (Type t);
+            void Param(Type t);
 
-			Type Return ();
-		}
+            Type Return();
+        }
 
-		public abstract class AnnotatedMethods
-		{
-			public abstract void GenericWithMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+        public abstract class AnnotatedMethods
+        {
+            public abstract void GenericWithMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>();
 
-			public abstract void ParamWithMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
+            public abstract void ParamWithMethods([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
 
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			public abstract Type ReturnWithMethods ();
-		}
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public abstract Type ReturnWithMethods();
+        }
 
-		public abstract class UnannotatedMethods
-		{
-			public abstract void Generic<T> ();
+        public abstract class UnannotatedMethods
+        {
+            public abstract void Generic<T>();
 
-			public abstract void Param (Type t);
+            public abstract void Param(Type t);
 
-			public abstract Type Return ();
-		}
-	}
+            public abstract Type Return();
+        }
+    }
 }

@@ -7,6 +7,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Foo", typeof(DeadCodeElimination.TestInteropMapTrimming.ConditionalTypeMapEntry), typeof(DeadCodeElimination.TestInteropMapTrimming.TypeMapTrimTarget))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Bar", typeof(DeadCodeElimination.TestInteropMapTrimming.UnconditionalTypeMapEntry))]
+[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.SourceType), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyType))]
+
 class DeadCodeElimination
 {
     public static int Run()
@@ -20,6 +24,7 @@ class DeadCodeElimination
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
         TestInlinedDeadBranchElimination.Run();
+        TestComplexInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -33,6 +38,9 @@ class DeadCodeElimination
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
         TestInvisibleGenericsTrimming.Run();
+        TestTypeHandlesInGenericDictionaries.Run();
+        TestMetadataMethodTables.Run();
+        TestInteropMapTrimming.Run();
 
         return 100;
     }
@@ -133,8 +141,13 @@ class DeadCodeElimination
 
             {
                 MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
-                mi.Invoke(null, new object[1]);
+                var args = new object[1];
+                mi.Invoke(null, args);
                 ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+                if (args[0].GetType().Name != nameof(Allocated1))
+                    throw new Exception();
+                if (!args[0].ToString().Contains(nameof(Allocated1)))
+                    throw new Exception();
             }
         }
     }
@@ -311,6 +324,49 @@ class DeadCodeElimination
             }
 
             ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
+    class TestComplexInlinedDeadBranchElimination
+    {
+        class Log
+        {
+            public static Log Instance;
+
+            public bool IsEnabled => false;
+        }
+
+        class OperatingSystem
+        {
+            public static bool IsInterix => false;
+        }
+
+        public static bool CombinedCheck() => Log.Instance.IsEnabled || OperatingSystem.IsInterix;
+
+        class NeverReferenced1 { }
+
+        public static void Run()
+        {
+            bool didThrow = false;
+
+            // CombinedCheck is going to throw a NullRef but we still should have been able to deadcode
+            // the Log.Instance.IsEnabled call (this pattern is common in EventSources).
+            try
+            {
+                if (CombinedCheck())
+                {
+                    Activator.CreateInstance(typeof(NeverReferenced1));
+                }
+            }
+            catch (NullReferenceException)
+            {
+                didThrow = true;
+            }
+
+            if (!didThrow)
+                throw new Exception();
+
+            ThrowIfPresent(typeof(TestComplexInlinedDeadBranchElimination), nameof(NeverReferenced1));
         }
     }
 
@@ -1081,6 +1137,194 @@ class DeadCodeElimination
         }
     }
 
+    class TestTypeHandlesInGenericDictionaries
+    {
+        class InvisibleType1;
+        class InvisibleType2;
+        class VisibleType1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void GenericMethod<T, U, V>(object o, string expectedNameOfV)
+        {
+            if (o is T)
+                Console.WriteLine("Yes");
+
+            if (o.GetType() == typeof(U))
+                Console.WriteLine("Yes");
+
+            if (typeof(V).Name != expectedNameOfV)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            GenericMethod<InvisibleType1, InvisibleType2, VisibleType1>(new object(), nameof(VisibleType1));
+
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType1));
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType2));
+#endif
+        }
+    }
+
+    class TestMetadataMethodTables
+    {
+        class NotReferenced1;
+
+        class UnallocatedClass
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private NotReferenced1 GetNotReferenced() => new NotReferenced1();
+            public override string ToString() => GetNotReferenced().ToString();
+        }
+
+        struct ImplicitlyAllocatedStruct
+        {
+            public override string ToString() => nameof(ImplicitlyAllocatedStruct);
+        }
+
+        class NotReferenced2;
+
+        class UnallocatedClassInGenericDictionary
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private NotReferenced2 GetNotReferenced() => new NotReferenced2();
+            public override string ToString() => GetNotReferenced().ToString();
+        }
+
+        struct ImplicitlyAllocatedStructInGenericDictionary<T>
+        {
+            public override string ToString() => nameof(ImplicitlyAllocatedStructInGenericDictionary<>);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTheT<T>() => typeof(T);
+
+        public static void Run()
+        {
+#if !DEBUG
+            // typeof of a class shouldn't be considered allocation
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Type GetUnallocatedClass() => typeof(UnallocatedClass);
+
+                bool didThrow = false;
+                try
+                {
+                    RuntimeHelpers.GetUninitializedObject(GetUnallocatedClass());
+                }
+                catch (NotSupportedException)
+                {
+                    didThrow = true;
+                }
+
+                if (!didThrow)
+                    throw new Exception();
+
+                ThrowIfPresent(typeof(TestMetadataMethodTables), nameof(NotReferenced1));
+                if (GetUnallocatedClass().Name != nameof(UnallocatedClass))
+                    throw new Exception();
+            }
+
+            // same if it's in a generic dictionary
+            {
+                bool didThrow = false;
+                try
+                {
+                    RuntimeHelpers.GetUninitializedObject(GetTheT<UnallocatedClassInGenericDictionary>());
+                }
+                catch (NotSupportedException)
+                {
+                    didThrow = true;
+                }
+
+                if (!didThrow)
+                    throw new Exception();
+
+                ThrowIfPresent(typeof(TestMetadataMethodTables), nameof(NotReferenced2));
+                if (GetTheT<UnallocatedClassInGenericDictionary>().Name != nameof(UnallocatedClassInGenericDictionary))
+                    throw new Exception();
+            }
+
+            // typeof of a valuetype unfortunately needs to be (e.g. due to RuntimeHelpers.Box)
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Type GetImplicitlyAllocatedStruct() => typeof(ImplicitlyAllocatedStruct);
+
+                object o = RuntimeHelpers.GetUninitializedObject(GetImplicitlyAllocatedStruct());
+                if (o.ToString() != nameof(ImplicitlyAllocatedStruct))
+                    throw new Exception();
+
+                if (GetImplicitlyAllocatedStruct().Name != nameof(ImplicitlyAllocatedStruct))
+                    throw new Exception();
+            }
+
+            // same in a generic dictionary
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(GetTheT<ImplicitlyAllocatedStructInGenericDictionary<object>>());
+                if (o.ToString() != nameof(ImplicitlyAllocatedStructInGenericDictionary<>))
+                    throw new Exception();
+
+                if (GetTheT<ImplicitlyAllocatedStructInGenericDictionary<object>>().Name != nameof(ImplicitlyAllocatedStructInGenericDictionary<>) + "`1")
+                    throw new Exception();
+            }
+#endif
+        }
+    }
+
+    internal class TestInteropMapTrimming
+    {
+        internal class Universe;
+
+        internal class ConditionalTypeMapEntry;
+        internal class UnconditionalTypeMapEntry;
+        internal class TypeMapTrimTarget;
+
+        internal class SourceType;
+        internal class ProxyType;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetUnknown() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(object o) { }
+
+        public static void Run()
+        {
+            var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
+
+            {
+                if (GetUnknown() is TypeMapTrimTarget)
+                {
+                    Console.WriteLine("Unexpected!");
+                }
+
+                var mappedType = map["Foo"];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(ConditionalTypeMapEntry))
+                    throw new Exception();
+            }
+
+            {
+                var mappedType = map["Bar"];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(UnconditionalTypeMapEntry))
+                    throw new Exception();
+            }
+
+            var proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<Universe>();
+
+            {
+                Consume(new SourceType());
+
+                var mappedType = proxyMap[typeof(SourceType)];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(ProxyType))
+                    throw new Exception();
+            }
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
@@ -1093,14 +1337,19 @@ class DeadCodeElimination
         }
     }
 
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-        Justification = "That's the point")]
     private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);
         if (t == null)
             return;
 
+        ThrowIfUsableMethodTable(t);
+    }
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
+    private static void ThrowIfUsableMethodTable(Type t)
+    {
         try
         {
             RuntimeHelpers.GetUninitializedObject(t);

@@ -196,7 +196,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(Assembly? left, Assembly? right) => !(left == right);
@@ -341,7 +341,7 @@ namespace System.Reflection
             // Requestor assembly was loaded using loadFrom, so look for its dependencies
             // in the same folder as it.
             // Form the name of the assembly using the path of the assembly that requested its load.
-            AssemblyName requestedAssemblyName = new AssemblyName(args.Name!);
+            AssemblyName requestedAssemblyName = new AssemblyName(args.Name);
             string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath)!, requestedAssemblyName.Name + ".dll");
 #if CORECLR
             if (AssemblyLoadContext.IsTracingEnabled())
@@ -384,7 +384,7 @@ namespace System.Reflection
                 {
                     if (!s_loadFromHandlerSet)
                     {
-                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler!;
+                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler;
                         s_loadFromHandlerSet = true;
                     }
                 }

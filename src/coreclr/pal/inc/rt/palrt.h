@@ -751,8 +751,6 @@ typedef struct _LIST_ENTRY {
 #define RUNTIME_FUNCTION_INDIRECT 0x1
 #endif
 
-#define _ReturnAddress() __builtin_return_address(0)
-
 #define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
 #define DIRECTORY_SEPARATOR_STR_A "/"
@@ -1001,6 +999,14 @@ typedef struct _DISPATCHER_CONTEXT {
     // PPC64LE does not build the VM or JIT at this point,
     // so we only provide a dummy definition.
     DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_WASM)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // WASM does not build the JIT at this point,
+    // so we only add necessary fields.
+    UINT32 ControlPc;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
 #else

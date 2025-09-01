@@ -188,10 +188,6 @@ namespace Internal.TypeSystem
             {
                 returnedType = CanonType;
             }
-            else if (rtth.Equals(UniversalCanonType.RuntimeTypeHandle))
-            {
-                returnedType = UniversalCanonType;
-            }
             else if (RuntimeAugments.IsGenericTypeDefinition(rtth))
             {
                 unsafe
@@ -335,7 +331,7 @@ namespace Internal.TypeSystem
                 _owningType = owningType;
                 _methodNameAndSignature = nameAndSignature;
 
-                _hashCode = TypeHashingAlgorithms.ComputeMethodHashCode(owningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(nameAndSignature.Name));
+                _hashCode = TypeHashingAlgorithms.ComputeMethodHashCode(owningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(nameAndSignature.GetName()));
             }
 
             public class RuntimeMethodKeyHashtable : LockFreeReaderHashtable<RuntimeMethodKey, MethodDesc>
@@ -515,7 +511,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private LowLevelList<TypeDesc> _typesToFlushTypeSystemStateFrom;
+        private ArrayBuilder<TypeDesc> _typesToFlushTypeSystemStateFrom;
 
         /// <summary>
         /// Register the types that will get their attached TypeSystemState flushed if the
@@ -523,7 +519,6 @@ namespace Internal.TypeSystem
         /// </summary>
         internal void RegisterTypeForTypeSystemStateFlushing(TypeDesc type)
         {
-            _typesToFlushTypeSystemStateFrom ??= new LowLevelList<TypeDesc>();
             _typesToFlushTypeSystemStateFrom.Add(type);
         }
 
@@ -533,14 +528,11 @@ namespace Internal.TypeSystem
         /// </summary>
         internal void FlushTypeBuilderStates()
         {
-            if (_typesToFlushTypeSystemStateFrom != null)
+            for (int i = 0; i < _typesToFlushTypeSystemStateFrom.Count; i++)
             {
-                for (int i = 0; i < _typesToFlushTypeSystemStateFrom.Count; i++)
-                {
-                    _typesToFlushTypeSystemStateFrom[i].TypeBuilderState = null;
-                }
+                _typesToFlushTypeSystemStateFrom[i].TypeBuilderState = null;
             }
-            _typesToFlushTypeSystemStateFrom = null;
+            _typesToFlushTypeSystemStateFrom = default;
         }
     }
 

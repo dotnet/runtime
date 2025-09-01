@@ -977,7 +977,7 @@ namespace System
         // "TimeZoneInfo"           := TimeZoneInfo Data;[AdjustmentRule Data 1];...;[AdjustmentRule Data N]
         //
         // "TimeZoneInfo Data"      := <_id>;<_baseUtcOffset>;<_displayName>;
-        //                          <_standardDisplayName>;<_daylightDispayName>;
+        //                          <_standardDisplayName>;<_daylightDisplayName>;
         //
         // "AdjustmentRule Data" := <DateStart>;<DateEnd>;<DaylightDelta>;
         //                          [TransitionTime Data DST Start]
@@ -2009,17 +2009,17 @@ namespace System
                         TimeZoneInfo? zone = null;
                         if (value!._equivalentZones == null)
                         {
-                            zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
-                                                    value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime, idIsIana);
-                            value!._equivalentZones = new List<TimeZoneInfo>();
-                            lock (value!._equivalentZones)
+                            zone = new TimeZoneInfo(id, value._baseUtcOffset, value._displayName, value._standardDisplayName,
+                                                    value._daylightDisplayName, value._adjustmentRules, dstDisabled && value._supportsDaylightSavingTime, idIsIana);
+                            value._equivalentZones = new List<TimeZoneInfo>();
+                            lock (value._equivalentZones)
                             {
-                                value!._equivalentZones.Add(zone);
+                                value._equivalentZones.Add(zone);
                             }
                         }
                         else
                         {
-                            foreach (TimeZoneInfo tzi in value!._equivalentZones)
+                            foreach (TimeZoneInfo tzi in value._equivalentZones)
                             {
                                 if (tzi.Id == id)
                                 {
@@ -2029,11 +2029,11 @@ namespace System
                             }
                             if (zone == null)
                             {
-                                zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
-                                                        value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime, idIsIana);
-                                lock (value!._equivalentZones)
+                                zone = new TimeZoneInfo(id, value._baseUtcOffset, value._displayName, value._standardDisplayName,
+                                                        value._daylightDisplayName, value._adjustmentRules, dstDisabled && value._supportsDaylightSavingTime, idIsIana);
+                                lock (value._equivalentZones)
                                 {
-                                    value!._equivalentZones.Add(zone);
+                                    value._equivalentZones.Add(zone);
                                 }
                             }
                         }

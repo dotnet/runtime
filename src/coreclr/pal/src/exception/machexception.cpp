@@ -21,7 +21,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/utils.h"

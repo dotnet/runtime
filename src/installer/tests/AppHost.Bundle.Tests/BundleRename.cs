@@ -23,7 +23,7 @@ namespace AppHost.Bundle.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/38013")]
         [InlineData(true)]  // Test renaming the single-exe when contents are extracted
-        [InlineData(false)] // Test renaming the single-exe when contents are not extracted 
+        [InlineData(false)] // Test renaming the single-exe when contents are not extracted
         private void Bundle_can_be_renamed_while_running(bool testExtraction)
         {
             string singleFile = sharedTestState.App.Bundle(testExtraction ? BundleOptions.BundleAllContent : BundleOptions.None);
@@ -51,7 +51,7 @@ namespace AppHost.Bundle.Tests
             File.Move(singleFile, renameFile);
             File.Create(resumeFile).Close();
 
-            singleExe.WaitForExit(expectedToFail: false, twoMinutes)
+            singleExe.WaitForExit(twoMinutes)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World!");
         }

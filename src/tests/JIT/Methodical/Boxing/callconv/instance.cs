@@ -38,7 +38,7 @@ namespace BoxTest_instance_cs
             return N;
         }
 
-        public Test(object num)
+        private Test(object num)
         {
             _num = (float)(double)num;
         }

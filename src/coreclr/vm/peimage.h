@@ -18,7 +18,8 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
-#include <bundle.h>
+#include <assemblyprobeextension.h>
+#include "cdacdata.h"
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -119,9 +120,9 @@ public:
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default,
-        BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
+        ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData);
     void AddToHashMap();
 #endif
 
@@ -138,16 +139,18 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    BOOL IsExternalData() const;
     void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
-    INT64 GetUncompressedSize() const;
+    BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
+#ifndef DACCESS_COMPILE
     HANDLE GetFileHandle();
     HRESULT TryOpenFile(bool takeLock = false);
+#endif
 
     void GetMVID(GUID *pMvid);
-    BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
 
@@ -207,24 +210,26 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(BundleFileLocation bundleFileLocation);
+    void Init(ProbeExtensionResult probeExtensionResult);
 
     struct PEImageLocator
     {
-
         LPCWSTR m_pPath;
         BOOL m_bIsInBundle;
+        BOOL m_bIsExternalData;
 
-        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle)
-            : m_pPath(pPath),
-              m_bIsInBundle(bIsInBundle)
+        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle, BOOL bIsExternalData)
+            : m_pPath(pPath)
+            , m_bIsInBundle(bIsInBundle)
+            , m_bIsExternalData(bIsExternalData)
         {
         }
 
         PEImageLocator(PEImage * pImage)
             : m_pPath(pImage->m_path.GetUnicode())
+            , m_bIsInBundle(pImage->IsInBundle())
+            , m_bIsExternalData(pImage->IsExternalData())
         {
-            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 
@@ -238,7 +243,6 @@ public:
         Crst            m_lock;
         void*           m_base;
         DWORD           m_flags;
-        PTR_LoaderHeap  m_DllThunkHeap;
 
         // the fixup for the next iteration in FixupVTables
         // we use it to make sure that we do not try to fix up the same entry twice
@@ -252,19 +256,15 @@ public:
 
     public:
         IJWFixupData(void* pBase);
-        ~IJWFixupData();
         void* GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
         Crst* GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
         BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
         void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
-        PTR_LoaderHeap  GetThunkHeap();
         void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
         BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
     };
 
     static IJWFixupData* GetIJWData(void* pBase);
-    static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
-    static void UnloadIJWModule(void* pBase);
 
 private:
 
@@ -293,9 +293,9 @@ private:
     // means this is a unique (deduped) instance.
     BOOL      m_bInHashMap;
 
-    // If this image is located within a single-file bundle, the location within the bundle.
-    // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
-    BundleFileLocation m_bundleFileLocation;
+    // Valid if this image is from a probe extension (single-file bundle, external data).
+    // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
+    ProbeExtensionResult m_probeExtensionResult;
 
     // valid handle if we tried to open the file/path and succeeded.
     HANDLE m_hFile;
@@ -318,6 +318,16 @@ private:
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
     IMDInternalImport* m_pMDImport;
+
+    friend struct cdac_data<PEImage>;
+};
+
+template<>
+struct cdac_data<PEImage>
+{
+    // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
+    static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
+    static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

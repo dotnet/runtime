@@ -35,8 +35,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -57,8 +57,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -90,8 +90,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -112,8 +112,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -134,7 +134,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -153,7 +153,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -172,7 +172,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
@@ -191,7 +191,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
@@ -256,10 +256,10 @@ namespace System.Linq
 
             public override async IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken)
             {
-                TElement[] buffer = await _source.ToArrayAsync(cancellationToken).ConfigureAwait(false);
+                TElement[] buffer = await _source.ToArrayAsync(cancellationToken);
                 if (buffer.Length > 0)
                 {
-                    int[] map = await CreateSortedMapAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    int[] map = await CreateSortedMapAsync(buffer, cancellationToken);
                     for (int i = 0; i < map.Length; i++)
                     {
                         yield return buffer[map[i]];
@@ -283,7 +283,7 @@ namespace System.Linq
 
             internal async ValueTask<int[]> SortAsync(TElement[] elements, int count, CancellationToken cancellationToken)
             {
-                await ComputeKeysAsync(elements, count, cancellationToken).ConfigureAwait(false);
+                await ComputeKeysAsync(elements, count, cancellationToken);
 
                 int[] map = new int[count];
                 for (int i = 0; i < map.Length; i++)
@@ -342,7 +342,7 @@ namespace System.Linq
                         var asyncSelector = (Func<TElement, CancellationToken, ValueTask<TKey>>)keySelector;
                         for (int i = 0; i < keys.Length; i++)
                         {
-                            keys[i] = await asyncSelector(elements[i], cancellationToken).ConfigureAwait(false);
+                            keys[i] = await asyncSelector(elements[i], cancellationToken);
                         }
                     }
                     _keys = keys;

@@ -28,6 +28,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[\p{IsGreek}]", @"[\u0370-\u03FF]")]
         [InlineData(@"[\0-ad-\uFFFF]", @"[^bc]")]
         [InlineData(@"[\0-ad-\uFFFF-[a-d]]", @"[\0-ad-\uFFFF-[a-d]]")]
+        [InlineData(@"[- _,|]", @"[ ,\-_|]")]
         public void DescribeSet(string set, string expected)
         {
             RegexNode setNode = RegexParser.Parse($"{set}", RegexOptions.None, CultureInfo.InvariantCulture).Root.Child(0);

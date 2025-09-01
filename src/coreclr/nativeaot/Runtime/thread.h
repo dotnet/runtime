@@ -132,7 +132,7 @@ struct ee_alloc_context
 
 struct RuntimeThreadLocals
 {
-    ee_alloc_context        m_eeAllocContext;               
+    ee_alloc_context        m_eeAllocContext;
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
@@ -189,7 +189,9 @@ public:
     {
         TSF_Unknown             = 0x00000000,       // Threads are created in this state
         TSF_Attached            = 0x00000001,       // Thread was inited by first U->M transition on this thread
-        TSF_Detached            = 0x00000002,       // Thread was detached by DllMain
+                                                    // ...Prior to setting this bit the state is TSF_Unknown.
+        TSF_Detached            = 0x00000002,       // Thread was detached and no longer can run managed code.
+                                                    // ...TSF_Attached is cleared when TSF_Detached is set.
         TSF_SuppressGcStress    = 0x00000008,       // Do not allow gc stress on this thread, used in DllMain
                                                     // ...and on the Finalizer thread
         TSF_DoNotTriggerGc      = 0x00000010,       // Do not allow hijacking of this thread, also intended to
@@ -212,6 +214,7 @@ public:
                                                     //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
+        TSF_Interrupted         = 0x00000200,       // Set to indicate Thread.Interrupt() has been called on this thread
     };
 private:
 
@@ -318,6 +321,7 @@ public:
     bool                IsCurrentThreadInCooperativeMode();
 
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
+    PInvokeTransitionFrame* GetTransitionFrameForSampling();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
     //
@@ -387,6 +391,9 @@ public:
     void                SetPendingRedirect(PCODE eip);
     bool                CheckPendingRedirect(PCODE eip);
 #endif
+
+    void                SetInterrupted(bool isInterrupted);
+    bool                CheckInterrupted();
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

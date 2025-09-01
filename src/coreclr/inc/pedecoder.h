@@ -52,6 +52,8 @@ typedef DPTR(IMAGE_COR20_HEADER)    PTR_IMAGE_COR20_HEADER;
 
 class Module;
 
+template<typename T> struct cdac_data;
+
 // --------------------------------------------------------------------------------
 // RVA definition
 // --------------------------------------------------------------------------------
@@ -89,6 +91,8 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_UNKNOWN
 #elif defined(TARGET_RISCV64)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_RISCV64
+#elif defined(TARGET_WASM)
+#define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_UNKNOWN
 #else
 #error "port me"
 #endif
@@ -403,6 +407,9 @@ class PEDecoder
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
     PTR_IMAGE_COR20_HEADER m_pCorHeader;
     PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
+
+    // to allow inherited classes to access, friend to all specializations of cdac_data
+    template<typename U> friend struct ::cdac_data;
 };
 
 //
@@ -424,12 +431,19 @@ class MethodSectionIterator
     BYTE *m_current;
 
   public:
+    MethodSectionIterator() = default;
 
     //If code is a target pointer, then GetMethodCode and FindMethodCode return
     //target pointers.  codeTable may be a pointer of either type, since it is
     //converted internally into a host pointer.
-    MethodSectionIterator(const void *code, SIZE_T codeSize,
-                          const void *codeTable, SIZE_T codeTableSize);
+    MethodSectionIterator(void *code, SIZE_T codeSize,
+                          void *codeTable, SIZE_T codeTableSize);
+
+    MethodSectionIterator(MethodSectionIterator const&) = delete;
+    MethodSectionIterator& operator=(MethodSectionIterator const&) = delete;
+    MethodSectionIterator(MethodSectionIterator&&) = default;
+    MethodSectionIterator& operator=(MethodSectionIterator&&) = default;
+
     BOOL Next();
     BYTE *GetMethodCode() { return m_current; } // Get the start of method code of the current method in the iterator
 };

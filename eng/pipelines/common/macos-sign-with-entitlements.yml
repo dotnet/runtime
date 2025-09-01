@@ -30,12 +30,13 @@ steps:
   - task: EsrpCodeSigning@5
     displayName: 'ESRP CodeSigning'
     inputs:
-      ConnectedServiceName: 'DotNet-Engineering-Services_KeyVault'
-      AppRegistrationClientId: '28ec6507-2167-4eaa-a294-34408cf5dd0e'
-      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
-      AuthAKVName: 'EngKeyVault'
-      AuthCertName: 'DotNetCore-ESRP-AuthCert'
-      AuthSignCertName: 'DotNetCore-ESRP-AuthSignCert'
+      ConnectedServiceName: 'DotNetBuildESRP'
+      UseMSIAuthentication: true
+      EsrpClientId: '28ec6507-2167-4eaa-a294-34408cf5dd0e'
+      AppRegistrationClientId: '0ecbcdb7-8451-4cbe-940a-4ed97b08b955'
+      AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346'
+      AuthAKVName: 'DotNetEngKeyVault'
+      AuthSignCertName: 'DotNet-ESRP-AuthSignCert'
       FolderPath: '$(Build.ArtifactStagingDirectory)/'
       Pattern: 'mac_entitled_to_sign.zip'
       UseMinimatch: true

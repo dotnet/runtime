@@ -102,12 +102,6 @@
   <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
     <value>Mutating a value collection derived from a dictionary is not allowed.</value>
   </data>
-  <data name="Arg_ArrayLengthsDiffer" xml:space="preserve">
-    <value>Array lengths must be the same.</value>
-  </data>
-  <data name="Arg_BitArrayTypeUnsupported" xml:space="preserve">
-    <value>Only supported array types for CopyTo on BitArrays are Boolean[], Int32[] and Byte[].</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
@@ -116,9 +110,6 @@
   </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
-  <data name="Argument_ArrayTooLarge" xml:space="preserve">
-    <value>The input array length must not exceed Int32.MaxValue / {0}. Otherwise BitArray.Length would exceed Int32.MaxValue.</value>
   </data>
   <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>

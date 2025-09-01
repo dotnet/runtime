@@ -35,6 +35,7 @@ public unsafe class HwiSideEffects
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/114250", TestPlatforms.Browser)]
     public static void TestProblemWithThrowingLoads()
     {
         Assert.True(ProblemWithThrowingLoads(null));

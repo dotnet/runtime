@@ -48,15 +48,6 @@ add_executable_clr(paltests
   #composite/object_management/semaphore/nonshared/semaphore.cpp
   #composite/object_management/semaphore/shared/main.cpp
   #composite/object_management/semaphore/shared/semaphore.cpp
-  #composite/synchronization/criticalsection/criticalsection.cpp
-  #composite/synchronization/criticalsection/mainWrapper.cpp
-  #composite/synchronization/nativecriticalsection/mtx_critsect.cpp
-  #composite/synchronization/nativecriticalsection/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecriticalsection/resultbuffer.cpp
-  #composite/synchronization/nativecs_interlocked/interlocked.cpp
-  #composite/synchronization/nativecs_interlocked/mtx_critsect.cpp
-  #composite/synchronization/nativecs_interlocked/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecs_interlocked/resultbuffer.cpp
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
@@ -257,24 +248,11 @@ add_executable_clr(paltests
   filemapping_memmgt/VirtualProtect/test6/VirtualProtect.cpp
   filemapping_memmgt/VirtualProtect/test7/VirtualProtect.cpp
   filemapping_memmgt/VirtualQuery/test1/VirtualQuery.cpp
-  file_io/CopyFileA/test1/CopyFileA.cpp
-  file_io/CopyFileA/test2/test2.cpp
-  file_io/CopyFileA/test3/test3.cpp
-  file_io/CopyFileA/test4/test4.cpp
-  file_io/CopyFileW/test1/CopyFileW.cpp
-  file_io/CopyFileW/test2/test2.cpp
-  file_io/CopyFileW/test3/test3.cpp
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
-  file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
-  file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
-  file_io/GetFileAttributesExW/test1/test1.cpp
-  file_io/GetFileAttributesExW/test2/test2.cpp
-  file_io/GetFileAttributesW/test1/GetFileAttributesW.cpp
   file_io/GetFileSize/test1/GetFileSize.cpp
   file_io/GetFileSizeEx/test1/GetFileSizeEx.cpp
   file_io/GetFullPathNameA/test1/GetFullPathNameA.cpp
@@ -289,12 +267,6 @@ add_executable_clr(paltests
   file_io/GetStdHandle/test2/GetStdHandle.cpp
   file_io/GetSystemTime/test1/test.cpp
   file_io/GetSystemTimeAsFileTime/test1/GetSystemTimeAsFileTime.cpp
-  file_io/GetTempFileNameA/test1/GetTempFileNameA.cpp
-  file_io/GetTempFileNameA/test2/GetTempFileNameA.cpp
-  file_io/GetTempFileNameA/test3/gettempfilenamea.cpp
-  file_io/GetTempFileNameW/test1/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test2/GetTempFileNameW.cpp
-  file_io/GetTempFileNameW/test3/gettempfilenamew.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp
@@ -329,7 +301,6 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   #locale_info/CompareStringA/test1/test1.cpp
   #locale_info/CompareStringW/test1/test1.cpp
-  locale_info/GetACP/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test2/test2.cpp
   locale_info/MultiByteToWideChar/test1/test1.cpp
@@ -368,7 +339,6 @@ add_executable_clr(paltests
   miscellaneous/GetEnvironmentVariableW/test6/test6.cpp
   miscellaneous/GetLastError/test1/test.cpp
   miscellaneous/GetSystemInfo/test1/test.cpp
-  miscellaneous/GetTickCount/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -391,8 +361,6 @@ add_executable_clr(paltests
   #miscellaneous/IsBadWritePtr/test1/test.cpp
   #miscellaneous/IsBadWritePtr/test2/test2.cpp
   #miscellaneous/IsBadWritePtr/test3/test3.cpp
-  miscellaneous/queryperformancecounter/test1/test1.cpp
-  miscellaneous/queryperformancefrequency/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp
@@ -402,7 +370,6 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
-# pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp
@@ -424,13 +391,6 @@ add_executable_clr(paltests
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
-  threading/CriticalSectionFunctions/test1/InitializeCriticalSection.cpp
-  threading/CriticalSectionFunctions/test2/test2.cpp
-  threading/CriticalSectionFunctions/test4/test4.cpp
-  threading/CriticalSectionFunctions/test5/test5.cpp
-  threading/CriticalSectionFunctions/test6/test6.cpp
-  threading/CriticalSectionFunctions/test7/test7.cpp
-  threading/CriticalSectionFunctions/test8/test8.cpp
   threading/DuplicateHandle/test1/test1.cpp
   threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test11/childprocess.cpp
@@ -523,3 +483,7 @@ target_link_libraries(paltests
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)
 install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+
+if(CLR_CMAKE_HOST_BROWSER)
+  install(FILES wasm/index.html paltestlist.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR} COMPONENT paltests EXCLUDE_FROM_ALL)
+endif(CLR_CMAKE_HOST_BROWSER)

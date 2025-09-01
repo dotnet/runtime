@@ -33,7 +33,7 @@ namespace System
             {
 #if !MONO
                 if (this is RuntimeType rt)
-                    return rt.IsInterface;
+                    return rt.IsActualInterface;
 #endif
                 return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
             }
@@ -599,7 +599,7 @@ namespace System
 
         public virtual InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
+        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o != null && IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
@@ -689,7 +689,7 @@ namespace System
 
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
-        public override bool Equals(object? o) => o == null ? false : Equals(o as Type);
+        public override bool Equals(object? o) => o != null && Equals(o as Type);
         public override int GetHashCode()
         {
             Type systemType = UnderlyingSystemType;
@@ -697,7 +697,7 @@ namespace System
                 return systemType.GetHashCode();
             return base.GetHashCode();
         }
-        public virtual bool Equals(Type? o) => o == null ? false : ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
+        public virtual bool Equals(Type? o) => o != null && ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
         [Intrinsic]
         public static bool operator ==(Type? left, Type? right)
@@ -724,11 +724,9 @@ namespace System
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
         public static Binder DefaultBinder =>
-            s_defaultBinder ??
-            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
-            s_defaultBinder;
-
-        private static Binder? s_defaultBinder;
+            field ??
+            Interlocked.CompareExchange(ref field, new DefaultBinder(), null) ??
+            field;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

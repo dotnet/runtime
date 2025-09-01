@@ -34,6 +34,4 @@ typedef struct _STATIC_DATA
 } STATIC_DATA;
 typedef SPTR(STATIC_DATA) PTR_STATIC_DATA;
 
-typedef SimpleList<OBJECTHANDLE> ObjectHandleList;
-
 #endif

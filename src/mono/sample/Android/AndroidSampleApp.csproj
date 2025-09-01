@@ -9,7 +9,7 @@
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(ForceAOT)</RunAOTCompilation>
-    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">true</StripDebugSymbols>
     <AppName>HelloAndroid</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeHeaders Include="$(SharedNativeRoot)" Condition="'$(RuntimeFlavor)' != 'Mono'"/>
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />

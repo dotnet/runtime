@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public DependencyContext Read(Stream stream)
         {
-            ThrowHelper.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(stream);
 
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try
@@ -507,6 +507,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 string? assemblyVersion = null;
                 string? fileVersion = null;
+                string? localPath = null;
 
                 string? path = reader.GetString();
 
@@ -527,12 +528,15 @@ namespace Microsoft.Extensions.DependencyModel
                         case DependencyContextStrings.FileVersionPropertyName:
                             fileVersion = propertyValue;
                             break;
+                        case DependencyContextStrings.LocalPathPropertyName:
+                            localPath = propertyValue;
+                            break;
                     }
                 }
 
                 reader.CheckEndObject();
 
-                runtimeFiles.Add(new RuntimeFile(path, assemblyVersion, fileVersion));
+                runtimeFiles.Add(new RuntimeFile(path, assemblyVersion, fileVersion, localPath));
             }
 
             reader.CheckEndObject();
@@ -578,6 +582,9 @@ namespace Microsoft.Extensions.DependencyModel
                         case DependencyContextStrings.FileVersionPropertyName:
                             runtimeTarget.FileVersion = propertyValue;
                             break;
+                        case DependencyContextStrings.LocalPathPropertyName:
+                            runtimeTarget.LocalPath = propertyValue;
+                            break;
                     }
                 }
 
@@ -607,6 +614,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
 
                 string? locale = null;
+                string? localPath = null;
 
                 reader.ReadStartObject();
 
@@ -616,13 +624,17 @@ namespace Microsoft.Extensions.DependencyModel
                     {
                         locale = propertyValue;
                     }
+                    else if (propertyName == DependencyContextStrings.LocalPathPropertyName)
+                    {
+                        localPath = propertyValue;
+                    }
                 }
 
                 reader.CheckEndObject();
 
                 if (locale != null)
                 {
-                    resources.Add(new ResourceAssembly(path, Pool(locale)));
+                    resources.Add(new ResourceAssembly(path, Pool(locale), localPath));
                 }
             }
 
@@ -786,7 +798,7 @@ namespace Microsoft.Extensions.DependencyModel
                     {
                         RuntimeFile[] groupRuntimeAssemblies = ridGroup
                             .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
-                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
+                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion, e.LocalPath))
                             .ToArray();
 
                         if (groupRuntimeAssemblies.Length != 0)
@@ -798,7 +810,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                         RuntimeFile[] groupNativeLibraries = ridGroup
                             .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
-                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
+                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion, e.LocalPath))
                             .ToArray();
 
                         if (groupNativeLibraries.Length != 0)
@@ -909,6 +921,8 @@ namespace Microsoft.Extensions.DependencyModel
             public string? AssemblyVersion;
 
             public string? FileVersion;
+
+            public string? LocalPath;
         }
 
         private struct LibraryStub

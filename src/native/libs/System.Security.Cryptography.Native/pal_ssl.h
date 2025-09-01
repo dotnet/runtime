@@ -523,6 +523,16 @@ Shims the SSL_set_tlsext_host_name method.
 PALEXPORT int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name);
 
 /*
+Shims the SSL_set1_sigalgs_list method.
+*/
+PALEXPORT int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str);
+
+/*
+Shim for SSL_set_client_sigalgs
+*/
+PALEXPORT int32_t CryptoNative_SslSetClientSigalgs(SSL* ssl, uint8_t* str);
+
+/*
 Shims the SSL_get_current_cipher and SSL_CIPHER_get_id.
 */
 PALEXPORT int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId);
@@ -532,6 +542,11 @@ Looks up a cipher by the IANA identifier, returns a shared string for the OpenSS
 and emits a value indicating if the cipher belongs to the SSL2-TLS1.2 list, or the TLS1.3+ list.
 */
 PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower);
+
+/*
+Returns the signature algorithms enabled by default
+*/
+PALEXPORT int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* count);
 
 /*
 Checks if given protocol version is supported.

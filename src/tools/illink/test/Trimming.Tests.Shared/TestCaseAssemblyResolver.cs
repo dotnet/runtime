@@ -8,37 +8,37 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseAssemblyResolver : DefaultAssemblyResolver
-	{
-		private readonly HashSet<IDisposable> itemsToDispose;
+    public class TestCaseAssemblyResolver : DefaultAssemblyResolver
+    {
+        private readonly HashSet<IDisposable> itemsToDispose;
 
-		public TestCaseAssemblyResolver ()
-		{
-			itemsToDispose = new HashSet<IDisposable> ();
-		}
+        public TestCaseAssemblyResolver()
+        {
+            itemsToDispose = new HashSet<IDisposable>();
+        }
 
-		public override AssemblyDefinition? Resolve (AssemblyNameReference name, ReaderParameters parameters)
-		{
-			var assembly = base.Resolve (name, parameters);
+        public override AssemblyDefinition? Resolve(AssemblyNameReference name, ReaderParameters parameters)
+        {
+            var assembly = base.Resolve(name, parameters);
 
-			if (assembly == null)
-				return null;
+            if (assembly == null)
+                return null;
 
-			// Don't do any caching because the reader parameters could be different each time
-			// but we still want to track items that need to be disposed for easy clean up
-			itemsToDispose.Add (assembly);
+            // Don't do any caching because the reader parameters could be different each time
+            // but we still want to track items that need to be disposed for easy clean up
+            itemsToDispose.Add(assembly);
 
-			if (assembly.MainModule.SymbolReader != null)
-				itemsToDispose.Add (assembly.MainModule.SymbolReader);
-			return assembly;
-		}
+            if (assembly.MainModule.SymbolReader != null)
+                itemsToDispose.Add(assembly.MainModule.SymbolReader);
+            return assembly;
+        }
 
-		protected override void Dispose (bool disposing)
-		{
-			foreach (var item in itemsToDispose)
-				item.Dispose ();
+        protected override void Dispose(bool disposing)
+        {
+            foreach (var item in itemsToDispose)
+                item.Dispose();
 
-			base.Dispose (disposing);
-		}
-	}
+            base.Dispose(disposing);
+        }
+    }
 }

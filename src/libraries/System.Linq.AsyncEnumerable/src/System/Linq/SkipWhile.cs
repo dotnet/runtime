@@ -28,8 +28,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -40,27 +40,21 @@ namespace System.Linq
                 Func<TSource, bool> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        TSource element = e.Current;
-                        if (!predicate(element))
-                        {
-                            yield return element;
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                yield return e.Current;
-                            }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                            yield break;
-                        }
-                    }
-                }
-                finally
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    TSource element = e.Current;
+                    if (!predicate(element))
+                    {
+                        yield return element;
+                        while (await e.MoveNextAsync())
+                        {
+                            yield return e.Current;
+                        }
+
+                        yield break;
+                    }
                 }
             }
         }
@@ -83,8 +77,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -95,27 +89,21 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        TSource element = e.Current;
-                        if (!await predicate(element, cancellationToken).ConfigureAwait(false))
-                        {
-                            yield return element;
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                yield return e.Current;
-                            }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                            yield break;
-                        }
-                    }
-                }
-                finally
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    TSource element = e.Current;
+                    if (!await predicate(element, cancellationToken))
+                    {
+                        yield return element;
+                        while (await e.MoveNextAsync())
+                        {
+                            yield return e.Current;
+                        }
+
+                        yield break;
+                    }
                 }
             }
         }
@@ -142,8 +130,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -154,28 +142,22 @@ namespace System.Linq
                 Func<TSource, int, bool> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    int index = -1;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        TSource element = e.Current;
-                        if (!predicate(element, checked(++index)))
-                        {
-                            yield return element;
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                yield return e.Current;
-                            }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                            yield break;
-                        }
-                    }
-                }
-                finally
+                int index = -1;
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    TSource element = e.Current;
+                    if (!predicate(element, checked(++index)))
+                    {
+                        yield return element;
+                        while (await e.MoveNextAsync())
+                        {
+                            yield return e.Current;
+                        }
+
+                        yield break;
+                    }
                 }
             }
         }
@@ -202,8 +184,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :
@@ -214,28 +196,22 @@ namespace System.Linq
                 Func<TSource, int, CancellationToken, ValueTask<bool>> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    int index = -1;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        TSource element = e.Current;
-                        if (!await predicate(element, checked(++index), cancellationToken).ConfigureAwait(false))
-                        {
-                            yield return element;
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                yield return e.Current;
-                            }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                            yield break;
-                        }
-                    }
-                }
-                finally
+                int index = -1;
+                while (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    TSource element = e.Current;
+                    if (!await predicate(element, checked(++index), cancellationToken))
+                    {
+                        yield return element;
+                        while (await e.MoveNextAsync())
+                        {
+                            yield return e.Current;
+                        }
+
+                        yield break;
+                    }
                 }
             }
         }

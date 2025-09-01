@@ -25,9 +25,9 @@ namespace Microsoft.Extensions.Logging
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch, System.Diagnostics.TraceListener listener)
         {
-            ThrowHelper.ThrowIfNull(factory);
-            ThrowHelper.ThrowIfNull(sourceSwitch);
-            ThrowHelper.ThrowIfNull(listener);
+            ArgumentNullException.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(sourceSwitch);
+            ArgumentNullException.ThrowIfNull(listener);
 
             factory.AddProvider(new TraceSourceLoggerProvider(sourceSwitch, listener));
 
@@ -44,8 +44,8 @@ namespace Microsoft.Extensions.Logging
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch)
         {
-            ThrowHelper.ThrowIfNull(factory);
-            ThrowHelper.ThrowIfNull(sourceSwitch);
+            ArgumentNullException.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(sourceSwitch);
 
             factory.AddProvider(new TraceSourceLoggerProvider(sourceSwitch));
 
@@ -63,9 +63,9 @@ namespace Microsoft.Extensions.Logging
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName, System.Diagnostics.TraceListener listener)
         {
-            ThrowHelper.ThrowIfNull(factory);
-            ThrowHelper.ThrowIfNull(switchName);
-            ThrowHelper.ThrowIfNull(listener);
+            ArgumentNullException.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(switchName);
+            ArgumentNullException.ThrowIfNull(listener);
 
             factory.AddProvider(new TraceSourceLoggerProvider(new SourceSwitch(switchName), listener));
 
@@ -82,8 +82,8 @@ namespace Microsoft.Extensions.Logging
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName)
         {
-            ThrowHelper.ThrowIfNull(factory);
-            ThrowHelper.ThrowIfNull(switchName);
+            ArgumentNullException.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(switchName);
 
             factory.AddProvider(new TraceSourceLoggerProvider(new SourceSwitch(switchName)));
 
@@ -100,8 +100,8 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             string switchName)
         {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(switchName);
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(switchName);
 
             return builder.AddTraceSource(new SourceSwitch(switchName));
         }
@@ -118,9 +118,9 @@ namespace Microsoft.Extensions.Logging
             string switchName,
             TraceListener listener)
         {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(switchName);
-            ThrowHelper.ThrowIfNull(listener);
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(switchName);
+            ArgumentNullException.ThrowIfNull(listener);
 
             return builder.AddTraceSource(new SourceSwitch(switchName), listener);
         }
@@ -135,8 +135,8 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             SourceSwitch sourceSwitch)
         {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(sourceSwitch);
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(sourceSwitch);
 
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch));
 
@@ -155,9 +155,9 @@ namespace Microsoft.Extensions.Logging
             SourceSwitch sourceSwitch,
             TraceListener listener)
         {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(sourceSwitch);
-            ThrowHelper.ThrowIfNull(listener);
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(sourceSwitch);
+            ArgumentNullException.ThrowIfNull(listener);
 
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch, listener));
 

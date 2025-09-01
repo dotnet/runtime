@@ -14,10 +14,11 @@
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; -h &quot;Timing-Allow-Origin: *&quot; -h &quot;Cross-Origin-Opener-Policy: same-origin&quot; -h &quot;Cross-Origin-Embedder-Policy: require-corp&quot; </_ServeHeaders>
     <!-- enable reporting to profiler in browser dev tools -->
     <!-- for callspec see diagnostics-tracing.md -->
-    <WasmProfilers>browser:callspec=N:Sample;</WasmProfilers>
+    <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
 
     <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
     <RunAOTCompilation>true</RunAOTCompilation>

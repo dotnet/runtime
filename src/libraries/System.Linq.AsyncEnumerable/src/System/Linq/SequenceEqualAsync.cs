@@ -16,8 +16,8 @@ namespace System.Linq
         /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to use to compare elements.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the two source sequences are of equal length and their corresponding
-        /// elements compare equal according to comparer; otherwise, false.
+        /// <see langword="true"/> if the two source sequences are of equal length and their corresponding
+        /// elements compare equal according to comparer; otherwise, <see langword="false"/>.
         /// </returns>
         public static ValueTask<bool> SequenceEqualAsync<TSource>(
             this IAsyncEnumerable<TSource> first,
@@ -25,8 +25,8 @@ namespace System.Linq
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
             return Impl(first, second, comparer ?? EqualityComparer<TSource>.Default, cancellationToken);
 
@@ -36,31 +36,18 @@ namespace System.Linq
                 IEqualityComparer<TSource> comparer,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e1 = first.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    IAsyncEnumerator<TSource> e2 = second.GetAsyncEnumerator(cancellationToken);
-                    try
-                    {
-                        while (await e1.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            if (!await e2.MoveNextAsync().ConfigureAwait(false) || !comparer.Equals(e1.Current, e2.Current))
-                            {
-                                return false;
-                            }
-                        }
+                await using IAsyncEnumerator<TSource> e1 = first.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TSource> e2 = second.GetAsyncEnumerator(cancellationToken);
 
-                        return !await e2.MoveNextAsync().ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        await e2.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
+                while (await e1.MoveNextAsync())
                 {
-                    await e1.DisposeAsync().ConfigureAwait(false);
+                    if (!await e2.MoveNextAsync() || !comparer.Equals(e1.Current, e2.Current))
+                    {
+                        return false;
+                    }
                 }
+
+                return !await e2.MoveNextAsync();
             }
         }
     }

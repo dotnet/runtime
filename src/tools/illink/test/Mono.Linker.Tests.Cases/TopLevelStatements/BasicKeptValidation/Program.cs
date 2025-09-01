@@ -3,9 +3,10 @@
 
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-KeptMethod ();
+KeptMethod();
 
 [Kept]
-static void KeptMethod () { }
+static void KeptMethod()
+{ }
 
-static void UnusedMethod () { }
+static void UnusedMethod() { }

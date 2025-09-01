@@ -183,5 +183,10 @@ namespace System.Data
         /// A JSON value.
         /// </summary>
         Json = 35,
+
+        /// <summary>
+        /// A vector value.
+        /// </summary>
+        Vector = 36,
     }
 }

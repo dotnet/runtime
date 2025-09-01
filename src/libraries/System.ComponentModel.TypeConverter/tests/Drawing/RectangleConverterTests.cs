@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
-using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
@@ -21,19 +20,19 @@ namespace System.ComponentModel.TypeConverterTests
         protected override IEnumerable<Tuple<Rectangle, Dictionary<string, object>>> CreateInstancePairs {
             get
             {
-                yield return Tuple.Create(new Rectangle(10, 10, 20, 30), new Dictionary<string, object>
+                yield return Tuple.Create(new Rectangle(10, 20, 30, 40), new Dictionary<string, object>
                 {
                     ["X"] = 10,
-                    ["Y"] = 10,
-                    ["Width"] = 20,
-                    ["Height"] = 30,
+                    ["Y"] = 20,
+                    ["Width"] = 30,
+                    ["Height"] = 40,
                 });
-                yield return Tuple.Create(new Rectangle(-10, -10, 20, 30), new Dictionary<string, object>
+                yield return Tuple.Create(new Rectangle(-10, -20, -30, -40), new Dictionary<string, object>
                 {
                     ["X"] = -10,
-                    ["Y"] = -10,
-                    ["Width"] = 20,
-                    ["Height"] = 30,
+                    ["Y"] = -20,
+                    ["Width"] = -30,
+                    ["Height"] = -40,
                 });
             }
         }
@@ -83,18 +82,16 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         public static IEnumerable<object[]> RectangleData =>
-            new[]
-            {
-                new object[] {0, 0, 0, 0},
-                new object[] {1, 1, 1, 1},
-                new object[] {-1, 1, 1, 1},
-                new object[] {1, -1, 1, 1},
-                new object[] {-1, -1, 1, 1},
-                new object[] {int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue},
-                new object[] {int.MinValue, int.MaxValue, int.MaxValue, int.MaxValue},
-                new object[] {int.MaxValue, int.MinValue, int.MaxValue, int.MaxValue},
-                new object[] {int.MinValue, int.MinValue, int.MaxValue, int.MaxValue},
-            };
+            [
+                [0, 1, 2, 3],
+                [1, 0, 3, 4],
+                [-1, -2, 0, -4],
+                [-2, -3, -4, 0],
+                [int.MaxValue, int.MaxValue - 1, int.MinValue + 1, int.MinValue],
+                [int.MinValue, int.MaxValue, int.MaxValue - 1, int.MinValue + 1],
+                [int.MinValue + 1, int.MinValue, int.MaxValue, int.MaxValue - 1],
+                [int.MaxValue - 1, int.MinValue + 1, int.MinValue, int.MaxValue],
+            ];
 
         [Theory]
         [MemberData(nameof(RectangleData))]
@@ -105,7 +102,9 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [InlineData("10, 10")]
+        [InlineData("*10, 10")]
         [InlineData("1, 1, 1, 1, 1")]
+        [InlineData("*1, 1, 1, 1, 1")]
         public void ConvertFrom_ArgumentException(string value)
         {
             ConvertFromThrowsArgumentExceptionForString(value);
@@ -115,6 +114,14 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFrom_Invalid()
         {
             ConvertFromThrowsFormatInnerExceptionForString("*1, 1, 1, 1");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" \t ")]
+        public void ConvertFrom_WhiteSpace(string value)
+        {
+            Assert.Null(Converter.ConvertFromString(value));
         }
 
         public static IEnumerable<object[]> ConvertFrom_NotSupportedData =>
@@ -162,7 +169,7 @@ namespace System.ComponentModel.TypeConverterTests
                 Converter.CreateInstance(null, new Dictionary<string, object>
                 {
                     ["x"] = -10,
-                    ["Y"] = -10,
+                    ["Y"] = -20,
                     ["Width"] = 20,
                     ["Height"] = 30,
                 });
@@ -172,7 +179,7 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void TestGetProperties()
         {
-            var rect = new Rectangle(10, 10, 20, 30);
+            var rect = new Rectangle(10, 20, 30, 40);
             var propsColl = Converter.GetProperties(rect);
             Assert.Equal(4, propsColl.Count);
             Assert.Equal(rect.X, propsColl["X"].GetValue(rect));
@@ -180,7 +187,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Width, propsColl["Width"].GetValue(rect));
             Assert.Equal(rect.Height, propsColl["Height"].GetValue(rect));
 
-            rect = new Rectangle(-10, -10, 20, 30);
+            rect = new Rectangle(-10, -20, -30, -40);
             propsColl = Converter.GetProperties(null, rect);
             Assert.Equal(4, propsColl.Count);
             Assert.Equal(rect.X, propsColl["X"].GetValue(rect));
@@ -188,7 +195,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Width, propsColl["Width"].GetValue(rect));
             Assert.Equal(rect.Height, propsColl["Height"].GetValue(rect));
 
-            rect = new Rectangle(10, 10, 20, 30);
+            rect = new Rectangle(10, 20, 30, 40);
             propsColl = Converter.GetProperties(null, rect, null);
             Assert.Equal(11, propsColl.Count);
             Assert.Equal(rect.X, propsColl["X"].GetValue(rect));
@@ -203,10 +210,9 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Right, propsColl["Right"].GetValue(rect));
             Assert.Equal(rect.Location, propsColl["Location"].GetValue(rect));
             Assert.Equal(rect.Size, propsColl["Size"].GetValue(rect));
-            Assert.Equal(rect.IsEmpty, propsColl["IsEmpty"].GetValue(rect));
 
             // Pick an attribute that cannot be applied to properties to make sure everything gets filtered
-            propsColl = Converter.GetProperties(null, new Rectangle(10, 10, 20, 30), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
+            propsColl = Converter.GetProperties(null, new Rectangle(10, 20, 30, 40), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
             Assert.Equal(0, propsColl.Count);
         }
 
@@ -230,7 +236,7 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void ConvertFromInvariantString_FormatException()
         {
-            ConvertFromInvariantStringThrowsFormatInnerException("hello");
+            ConvertFromInvariantStringThrowsFormatInnerException("hello, hello, hello, hello");
         }
 
         [Theory]
@@ -256,7 +262,8 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void ConvertFromString_FormatException()
         {
-            ConvertFromStringThrowsFormatInnerException("hello");
+            var sep = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+            ConvertFromStringThrowsFormatInnerException($"hello{sep} hello{sep} hello{sep} hello");
         }
 
         [Theory]

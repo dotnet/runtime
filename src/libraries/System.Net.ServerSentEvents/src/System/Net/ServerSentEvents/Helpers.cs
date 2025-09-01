@@ -38,7 +38,7 @@ namespace System.Net.ServerSentEvents
             writer.Advance(value.Length);
         }
 
-        public static unsafe void WriteUtf8String(this IBufferWriter<byte> writer, ReadOnlySpan<char> value)
+        public static void WriteUtf8String(this IBufferWriter<byte> writer, ReadOnlySpan<char> value)
         {
             if (value.IsEmpty)
             {
@@ -52,10 +52,13 @@ namespace System.Net.ServerSentEvents
 #if NET
             bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
 #else
-            fixed (char* chars = value)
-            fixed (byte* bytes = buffer)
+            unsafe
             {
-                bytesWritten = Encoding.UTF8.GetBytes(chars, value.Length, bytes, maxByteCount);
+                fixed (char* chars = value)
+                fixed (byte* bytes = buffer)
+                {
+                    bytesWritten = Encoding.UTF8.GetBytes(chars, value.Length, bytes, maxByteCount);
+                }
             }
 #endif
             writer.Advance(bytesWritten);

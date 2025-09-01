@@ -35,59 +35,64 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps
 {
 
-	public abstract class BaseStep : IStep
-	{
+    public abstract class BaseStep : IStep
+    {
 
-		private LinkContext? _context;
+        private LinkContext? _context;
 
-		public LinkContext Context {
-			get {
-				Debug.Assert (_context != null);
-				return _context;
-			}
-		}
+        public LinkContext Context
+        {
+            get
+            {
+                Debug.Assert(_context != null);
+                return _context;
+            }
+        }
 
-		public AnnotationStore Annotations {
-			get { return Context.Annotations; }
-		}
+        public AnnotationStore Annotations
+        {
+            get { return Context.Annotations; }
+        }
 
-		public Tracer Tracer {
-			get { return Context.Tracer; }
-		}
+        public Tracer Tracer
+        {
+            get { return Context.Tracer; }
+        }
 
-		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
+        public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 
-		public void Process (LinkContext context)
-		{
-			_context = context;
+        public void Process(LinkContext context)
+        {
+            _context = context;
 
-			if (!ConditionToProcess ())
-				return;
+            if (!ConditionToProcess())
+                return;
 
-			Process ();
+            Process();
 
-			foreach (AssemblyDefinition assembly in context.GetAssemblies ()) {
-				ProcessAssembly (assembly);
-			}
+            foreach (AssemblyDefinition assembly in context.GetAssemblies())
+            {
+                ProcessAssembly(assembly);
+            }
 
-			EndProcess ();
-		}
+            EndProcess();
+        }
 
-		protected virtual bool ConditionToProcess ()
-		{
-			return true;
-		}
+        protected virtual bool ConditionToProcess()
+        {
+            return true;
+        }
 
-		protected virtual void Process ()
-		{
-		}
+        protected virtual void Process()
+        {
+        }
 
-		protected virtual void EndProcess ()
-		{
-		}
+        protected virtual void EndProcess()
+        {
+        }
 
-		protected virtual void ProcessAssembly (AssemblyDefinition assembly)
-		{
-		}
-	}
+        protected virtual void ProcessAssembly(AssemblyDefinition assembly)
+        {
+        }
+    }
 }

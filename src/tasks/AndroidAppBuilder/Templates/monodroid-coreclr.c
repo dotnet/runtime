@@ -16,6 +16,8 @@
 #include <coreclrhost.h>
 #include <dirent.h>
 
+#include <corehost/host_runtime_contract.h>
+
 /********* exported symbols *********/
 
 /* JNI exports */
@@ -34,11 +36,19 @@ Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
 
 /********* implementation *********/
 
-static const char* g_bundle_path = NULL;
+static char* g_bundle_path = NULL;
 static const char* g_executable_path = NULL;
 static unsigned int g_coreclr_domainId = 0;
 static void* g_coreclr_handle = NULL;
 
+#define MAX_MAPPED_COUNT 256 // Arbitrarily 'large enough' number
+static void* g_mapped_files[MAX_MAPPED_COUNT];
+static size_t g_mapped_file_sizes[MAX_MAPPED_COUNT];
+static unsigned int g_mapped_files_count = 0;
+
+static struct host_runtime_contract g_host_contract = {
+    .size = sizeof(struct host_runtime_contract)
+};
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -68,66 +78,6 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
 }
 
-/*
-* Get the list of trusted assemblies from a specified @dir_path.
-* The path is searched for .dll files which when found are concatenated 
-* to the output string @tpas separated by ':'.
-* The output string should be freed by the caller.
-* The return value is the length of the output string.
-*/
-static size_t
-get_tpas_from_path(const char* dir_path, const char** tpas)
-{
-    DIR *dir = opendir(dir_path);
-    if (dir == NULL)
-    {
-        LOG_ERROR("Failed to open directory at: %s", dir_path);
-        return -1;
-    }
-
-    struct dirent *dir_entry;
-    size_t dir_path_len = strlen(dir_path);
-    char *concat_dll_paths = NULL;
-    size_t concat_dll_paths_len = 0;
-
-    while ((dir_entry = readdir(dir)))
-    {
-        if (dir_entry->d_type == DT_REG)
-        {
-            size_t file_name_len = strlen(dir_entry->d_name);
-            // filter out .dll files
-            if (file_name_len > 4 && strcmp(dir_entry->d_name + file_name_len - 4, ".dll") == 0)
-            {
-                size_t curr_dll_path = dir_path_len + file_name_len + 2; // +2 for '/' and ':'
-                concat_dll_paths_len += curr_dll_path;
-                concat_dll_paths = realloc(concat_dll_paths, concat_dll_paths_len);
-                if (concat_dll_paths == NULL)
-                {
-                    LOG_ERROR("realloc failed while resolving: %s", dir_entry->d_name);
-                    closedir(dir);
-                    return -1;
-                }
-                concat_dll_paths[concat_dll_paths_len-curr_dll_path] = '\0'; // adjust previous string end
-                size_t ret = sprintf(concat_dll_paths, "%s%s/%s:", concat_dll_paths, dir_path, dir_entry->d_name); // concat the current dll path
-                if (ret != concat_dll_paths_len)
-                {
-                    LOG_ERROR("sprintf failed while resolving: %s", dir_entry->d_name);
-                    closedir(dir);
-                    return -1;
-                }
-            }
-        }
-    }
-    closedir(dir);
-
-    if (concat_dll_paths != NULL && concat_dll_paths_len > 0) {
-        concat_dll_paths[concat_dll_paths_len - 1] = '\0'; // remove the trailing ':'
-    }
-
-    *tpas = concat_dll_paths;
-    return concat_dll_paths_len;
-}
-
 static int
 bundle_executable_path (const char* executable, const char* bundle_path, const char** executable_path)
 {
@@ -147,6 +97,51 @@ bundle_executable_path (const char* executable, const char* bundle_path, const c
     return executable_path_len;
 }
 
+static bool
+external_assembly_probe(const char* relative_assembly_path, void** data, int64_t* size)
+{
+    if (g_mapped_files_count >= MAX_MAPPED_COUNT)
+    {
+        LOG_ERROR("Too many mapped files, cannot map %s", relative_assembly_path);
+        return false;
+    }
+
+    // Look in the bundle path where the files were extracted
+    char full_path[1024];
+    size_t path_len = strlen(g_bundle_path) + strlen(relative_assembly_path) + 1; // +1 for '/'
+    size_t res = snprintf(full_path, path_len + 1, "%s/%s", g_bundle_path, relative_assembly_path);
+    if (res < 0 || res != path_len)
+        return false;
+
+    int fd = open(full_path, O_RDONLY);
+    if (fd == -1)
+        return false;
+
+    struct stat buf;
+    if (fstat(fd, &buf) == -1)
+    {
+        close(fd);
+        return false;
+    }
+
+    int64_t size_local = buf.st_size;
+    void* mapped = mmap(NULL, size_local, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (mapped == MAP_FAILED)
+    {
+        close(fd);
+        return false;
+    }
+
+    LOG_INFO("Mapped %s -> %s", relative_assembly_path, full_path);
+    g_mapped_files[g_mapped_files_count] = mapped;
+    g_mapped_file_sizes[g_mapped_files_count] = size_local;
+    g_mapped_files_count++;
+    close(fd);
+    *data = mapped;
+    *size = size_local;
+    return true;
+}
+
 static void
 free_resources ()
 {
@@ -157,7 +152,7 @@ free_resources ()
     }
     if (g_executable_path)
     {
-        free (g_executable_path);
+        free ((void*)g_executable_path);
         g_executable_path = NULL;
     }
     if (g_coreclr_handle)
@@ -166,9 +161,13 @@ free_resources ()
         coreclr_shutdown (g_coreclr_handle, g_coreclr_domainId);
         g_coreclr_handle = NULL;
     }
+    for (int i = 0; i < g_mapped_files_count; ++i)
+    {
+        munmap (g_mapped_files[i], g_mapped_file_sizes[i]);
+    }
 }
 
-static int 
+static int
 mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, unsigned int coreclr_domainId, int managed_argc, const char** managed_argv)
 {
     unsigned int rv;
@@ -177,6 +176,8 @@ mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, 
     LOG_INFO ("Exit code: %u.", rv);
     return rv;
 }
+
+#define PROPERTY_COUNT %AppContextPropertyCount%
 
 static int
 mono_droid_runtime_init (const char* executable)
@@ -198,34 +199,25 @@ mono_droid_runtime_init (const char* executable)
 
     chdir (g_bundle_path);
 
-    // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
+    g_host_contract.external_assembly_probe = &external_assembly_probe;
 
-    const char* appctx_keys[3];
-    appctx_keys[0] = "RUNTIME_IDENTIFIER";
-    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
-    appctx_keys[2] = "TRUSTED_PLATFORM_ASSEMBLIES";
+    const char* appctx_keys[PROPERTY_COUNT];
+%AppContextKeys%
 
-    const char* appctx_values[3];
-    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
-    appctx_values[1] = g_bundle_path;
-    size_t tpas_len = get_tpas_from_path(g_bundle_path, &appctx_values[2]);
-    if (tpas_len < 1)
-    {
-        LOG_ERROR("Failed to get trusted assemblies from path: %s", g_bundle_path);
-        return -1;
-    }
+    const char* appctx_values[PROPERTY_COUNT];
+%AppContextValues%
 
     LOG_INFO ("Calling coreclr_initialize");
     int rv = coreclr_initialize (
 		g_executable_path,
 		executable,
-		3,
+		PROPERTY_COUNT,
 		appctx_keys,
 		appctx_values,
 		&g_coreclr_handle,
 		&g_coreclr_domainId
 		);
-    LOG_INFO ("coreclr_initialize returned %d", rv);
+    LOG_INFO ("coreclr_initialize returned 0x%x", rv);
     return rv;
 }
 
@@ -237,7 +229,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 
     const char *key = (*env)->GetStringUTFChars(env, j_key, 0);
     const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
-     
+
     LOG_INFO ("Setting env: %s=%s", key, val);
     setenv (key, val, true);
     (*env)->ReleaseStringUTFChars(env, j_key, key);
@@ -270,7 +262,7 @@ int
 Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args)
 {
     LOG_INFO("Java_net_dot_MonoRunner_execEntryPoint (CoreCLR):");
-    
+
     if ((g_bundle_path == NULL) || (g_executable_path == NULL))
     {
         LOG_ERROR("Bundle path or executable path not set");

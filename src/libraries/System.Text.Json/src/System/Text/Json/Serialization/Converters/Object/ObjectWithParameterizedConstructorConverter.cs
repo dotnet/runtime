@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
-                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    state.Current.InitializePropertiesValidationState(jsonTypeInfo);
                     return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 }
 
@@ -240,11 +240,27 @@ namespace System.Text.Json.Serialization.Converters
 
                             if (extDictionary is IDictionary<string, JsonElement> dict)
                             {
-                                dict[dataExtKey] = (JsonElement)propValue!;
+                                if (options.AllowDuplicateProperties)
+                                {
+                                    dict[dataExtKey] = (JsonElement)propValue!;
+                                }
+                                else if (!dict.TryAdd(dataExtKey, (JsonElement)propValue!))
+                                {
+                                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(dataExtKey);
+                                }
                             }
                             else
                             {
-                                ((IDictionary<string, object>)extDictionary)[dataExtKey] = propValue!;
+                                IDictionary<string, object> objDict = (IDictionary<string, object>)extDictionary;
+
+                                if (options.AllowDuplicateProperties)
+                                {
+                                    objDict[dataExtKey] = propValue!;
+                                }
+                                else if (!objDict.TryAdd(dataExtKey, propValue!))
+                                {
+                                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(dataExtKey);
+                                }
                             }
                         }
                     }
@@ -581,7 +597,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
             }
 
-            state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+            state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;
@@ -612,8 +628,11 @@ namespace System.Text.Json.Serialization.Converters
                 out bool useExtensionProperty,
                 createExtensionProperty: false);
 
-            // Mark the property as read from the payload if required.
-            state.Current.MarkRequiredPropertyAsRead(jsonPropertyInfo);
+            // Mark the property as read from the payload if it is mapped to a non-extension member.
+            if (!useExtensionProperty && jsonPropertyInfo != JsonPropertyInfo.s_missingProperty)
+            {
+                state.Current.MarkPropertyAsRead(jsonPropertyInfo);
+            }
 
             jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
             if (jsonParameterInfo != null)

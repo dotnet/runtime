@@ -108,5 +108,48 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
+
+        [Fact]
+        public static void SetKey_SetsKey()
+        {
+            using (TripleDES des = TripleDESFactory.Create())
+            {
+                byte[] key = new byte[des.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+
+                des.SetKey(key);
+                Assert.Equal(key, des.Key);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadKeyAfterDispose(bool setProperty)
+        {
+            using (TripleDES des = TripleDESFactory.Create())
+            {
+                byte[] key = new byte[des.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+
+                if (setProperty)
+                {
+                    des.Key = key;
+                }
+                else
+                {
+                    des.SetKey(key);
+                }
+
+                des.Dispose();
+
+                // Asking for the key after dispose just makes a new key be generated.
+                byte[] key2 = des.Key;
+                Assert.NotEqual(key, key2);
+
+                // The new key won't be all zero:
+                Assert.NotEqual(-1, key2.AsSpan().IndexOfAnyExcept((byte)0));
+            }
+        }
     }
 }

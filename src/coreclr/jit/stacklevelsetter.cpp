@@ -121,7 +121,7 @@ void StackLevelSetter::ProcessBlocks()
 // Notes:
 //   Block starts and ends with an empty outgoing stack.
 //   Nodes in blocks are iterated in the reverse order to memorize GT_PUTARG_STK
-//   and GT_PUTARG_SPLIT stack sizes.
+//   stack sizes.
 //
 //   Also note which (if any) throw helper blocks might end up being used by
 //   codegen.
@@ -139,7 +139,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         GenTree* node = *i;
 
 #ifdef TARGET_X86
-        if (node->OperIsPutArgStkOrSplit())
+        if (node->OperIsPutArgStk())
         {
             GenTreePutArgStk* putArg   = node->AsPutArgStk();
             unsigned          numSlots = putArgNumSlots[putArg];
@@ -216,6 +216,20 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(bndsChk->gtThrowKind, block);
         }
         break;
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_HWINTRINSIC:
+        {
+
+            NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
+            if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+            {
+                SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+                SetThrowHelperBlock(SCK_OVERFLOW, block);
+            }
+        }
+        break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
@@ -361,7 +375,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
             if (slotCount != 0)
             {
                 GenTree* node = arg.GetNode();
-                assert(node->OperIsPutArgStkOrSplit());
+                assert(node->OperIsPutArgStk());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 

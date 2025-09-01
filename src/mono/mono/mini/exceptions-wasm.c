@@ -53,7 +53,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 	/*
 	 * Can't unwind native frames on WASM, so we only process the ones
-	 * which push an LMF frame. See the needs_stack_walk code in
+	 * which push an LMF frame. See the needs_LMF code in
 	 * method-to-ir.c.
 	 */
 	if (*lmf) {

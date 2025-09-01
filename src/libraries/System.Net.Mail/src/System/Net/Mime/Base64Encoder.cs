@@ -42,9 +42,9 @@ namespace System.Net.Mime
             return LineBreakNeeded(1);
         }
 
-        protected override bool LineBreakNeeded(byte[] bytes, int count)
+        protected override bool LineBreakNeeded(ReadOnlySpan<byte> bytes)
         {
-            return LineBreakNeeded(count);
+            return LineBreakNeeded(bytes.Length);
         }
 
         private bool LineBreakNeeded(int numberOfBytesToAppend)
@@ -117,7 +117,7 @@ namespace System.Net.Mime
             }
         }
 
-        protected override void ApppendEncodedByte(byte b)
+        protected override void AppendEncodedByte(byte b)
         {
             // Base64 encoding transforms a group of 3 bytes into a group of 4 Base64 characters
             switch (_writeState.Padding)

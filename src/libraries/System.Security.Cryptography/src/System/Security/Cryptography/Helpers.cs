@@ -455,5 +455,117 @@ namespace Internal.Cryptography
                 throw new ArgumentException(SR.Argument_PasswordNullChars, nameof(password));
             }
         }
+
+        internal static ReadOnlyMemory<byte>? ToNullableMemory(this byte[]? array)
+        {
+            if (array is null)
+            {
+                return default(ReadOnlyMemory<byte>?);
+            }
+
+            return array;
+        }
+
+        internal static bool IsSlhDsaOid(string? oid) =>
+            SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
+
+        internal delegate TResult PreHashFuncCallback<TKey, TSignature, TResult>(
+            TKey key,
+            ReadOnlySpan<byte> encodedMessage,
+            TSignature signatureBuffer)
+            where TSignature : allows ref struct;
+
+        /// <summary>
+        /// Encodes the message for ML-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 205: Algorithm 23.
+        /// </summary>
+        internal static TResult MLDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4.
+        /// </summary>
+        internal static TResult SlhDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for ML-DSA and SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4 and equivalent algorithm in FIPS 205: Algorithm 23.
+        /// </summary>
+        private static TResult MLDsaSlhDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+        {
+            // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
+            const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
+            writer.WriteObjectIdentifier(hashAlgorithmOid);
+
+            int encodedOidLength = writer.GetEncodedLength();
+            int messageLength = checked(
+                1 +                 // Pre-hash encoding flag
+                1 +                 // Context length
+                context.Length +    // Context
+                encodedOidLength +  // OID
+                hash.Length);       // Hash
+
+            // Common hash algorithms are at most 64 bytes, but unknown hash algorithms or long contexts
+            // might overshoot the estimate.
+            const int StackAllocThreshold = 128;
+            byte[]? rented = null;
+            Span<byte> message =
+                messageLength > StackAllocThreshold
+                    ? (rented = CryptoPool.Rent(messageLength))
+                    : stackalloc byte[StackAllocThreshold];
+
+            try
+            {
+                // Pre-hash encoding flag
+                message[0] = 0x01;
+
+                // Context length
+                message[1] = checked((byte)context.Length);
+
+                // Context
+                context.CopyTo(message.Slice(2));
+
+                // OID
+                writer.Encode(
+                    message.Slice(2 + context.Length),
+                    (dest, encoded) => encoded.CopyTo(dest));
+
+                // Hash
+                hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
+
+                return callback(key, message.Slice(0, messageLength), signatureBuffer);
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    CryptoPool.Return(rented);
+                }
+            }
+        }
     }
 }

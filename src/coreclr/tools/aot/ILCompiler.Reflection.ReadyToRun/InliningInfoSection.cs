@@ -24,14 +24,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             StringBuilder sb = new StringBuilder();
 
             int iiOffset = _startOffset;
-            int sizeOfInlineIndex = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
+            int sizeOfInlineIndex = _r2r.ImageReader.ReadInt32(ref iiOffset);
             int inlineIndexEndOffset = iiOffset + sizeOfInlineIndex;
             while (iiOffset < inlineIndexEndOffset)
             {
-                int inlineeRid = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
-                int inlinersOffset = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
+                int inlineeRid = _r2r.ImageReader.ReadInt32(ref iiOffset);
+                int inlinersOffset = _r2r.ImageReader.ReadInt32(ref iiOffset);
                 sb.AppendLine($"Inliners for inlinee {RidToMethodDef(inlineeRid):X8}:");
-                var inlinersReader = new NibbleReader(_r2r.Image, inlineIndexEndOffset + inlinersOffset);
+                var inlinersReader = new NibbleReader(_r2r.ImageReader, inlineIndexEndOffset + inlinersOffset);
                 uint sameModuleCount = inlinersReader.ReadUInt();
 
                 int baseRid = 0;

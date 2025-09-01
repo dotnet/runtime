@@ -4,8 +4,8 @@
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "holder.h"
 #include "RhConfig.h"
 
@@ -193,6 +193,25 @@ bool RhConfig::GetEmbeddedVariable(Config* config, _In_z_ const char* configName
 
     // Config key was not found
     return false;
+}
+
+size_t GetDefaultStackSizeSetting()
+{
+    // Keep the same arbitrary minimum and maximum from the CoreCLR VM layer.
+    const size_t minStack = 0x10000;     // 64K
+    const size_t maxStack = 0x80000000;  //  2G
+
+    uint64_t uiStacksize;
+    if (g_pRhConfig->ReadConfigValue("Thread_DefaultStackSize", &uiStacksize)
+        || g_pRhConfig->ReadKnobUInt64Value("System.Threading.DefaultStackSize", &uiStacksize))
+    {
+        if (uiStacksize < maxStack && uiStacksize >= minStack)
+        {
+            return (size_t)uiStacksize;
+        }
+    }
+
+    return 0;
 }
 
 #endif

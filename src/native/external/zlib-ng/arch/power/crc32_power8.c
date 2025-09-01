@@ -32,9 +32,7 @@
 #include "crc32_constants.h"
 #include "crc32_braid_tbl.h"
 
-#if defined (__clang__)
-#include "fallback_builtins.h"
-#endif
+#include "power_intrins.h"
 
 #define MAX_SIZE    32768
 #define VMX_ALIGN	16

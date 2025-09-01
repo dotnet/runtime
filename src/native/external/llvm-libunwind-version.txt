@@ -1,5 +1,4 @@
-v18.1.5
-https://github.com/llvm/llvm-project/releases/tag/llvmorg-18.1.5
+v20.1.0
+https://github.com/llvm/llvm-project/releases/tag/llvmorg-20.1.0
 
-Apply https://github.com/dotnet/runtime/commit/a53805790a49f5bf52776dc81c1c83ec7f21ebce
-
+Apply https://github.com/dotnet/runtime/commit/d03d1ba7835fdf9e2a6bb537d49fb5ff6584697b

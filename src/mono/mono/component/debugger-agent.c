@@ -824,7 +824,6 @@ mono_debugger_agent_init_internal (void)
 	}
 	mono_de_set_log_level (log_level, log_file);
 
-	objrefs_init ();
 	suspend_init ();
 
 #ifdef HAVE_SETPGID
@@ -1638,6 +1637,8 @@ mono_init_debugger_agent_common (MonoProfilerHandle *prof)
 	tid_to_thread = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
 
 	tid_to_thread_obj = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
+
+	objrefs_init ();
 }
 
 #ifdef TARGET_WASM
@@ -4139,7 +4140,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		if (assembly) {
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
+			if (!CHECK_ICORDBG (TRUE) || !tls || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
 				mono_dbg_assembly_load (prof, assembly); //send later

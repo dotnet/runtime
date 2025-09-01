@@ -7,19 +7,20 @@
 // Note that the offsets specified in pcaddi must match the behavior of GetStubCodePageSize() on this architecture/os.
 
 LEAF_ENTRY StubPrecodeCode
-    pcaddi  $r21, 0x1004  //4, for Type encoding.
-    ld.d  $t2,$r21, (StubPrecodeData__MethodDesc - 4*4)
-    ld.d  $r21,$r21,  (StubPrecodeData__Target - 4*4)
+    pcaddi  $r21, 0x1000
+    ld.d  $t2,$r21, StubPrecodeData__SecretParam
+    ld.d  $r21,$r21, StubPrecodeData__Target
     jirl  $r0,$r21,0
 LEAF_END_MARKED StubPrecodeCode
 
 LEAF_ENTRY FixupPrecodeCode
-    pcaddi  $r21, 0x1003  //3, for Type encoding.
-    ld.d  $r21,$r21, (FixupPrecodeData__Target - 4*3)
+    pcaddi  $r21, 0x1000
+    ld.d  $r21,$r21, FixupPrecodeData__Target
     jirl  $r0,$r21,0
-    pcaddi  $r21, 0x1003
-    ld.d  $t2,$r21,  (FixupPrecodeData__MethodDesc - 4*3 -4*3)
-    ld.d  $r21,$r21, (FixupPrecodeData__PrecodeFixupThunk - 4*3 - 4*3)
+    pcaddi  $r21, 0xFFD
+    dbar 0
+    ld.d  $t2,$r21,  FixupPrecodeData__MethodDesc
+    ld.d  $r21,$r21, FixupPrecodeData__PrecodeFixupThunk
     jirl  $r0,$r21,0
 LEAF_END_MARKED FixupPrecodeCode
 

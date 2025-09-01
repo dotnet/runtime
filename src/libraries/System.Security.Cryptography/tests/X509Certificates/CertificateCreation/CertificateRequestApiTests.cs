@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.SLHDsa.Tests;
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -147,6 +149,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        public static void CtorValidation_MLDSA_string()
+        {
+            string subjectName = null;
+            MLDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = "";
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void CtorValidation_MLDSA_X500DN()
+        {
+            X500DistinguishedName subjectName = null;
+            MLDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = new X500DistinguishedName("");
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void MLDSA_DoesNotSetHashAlgorithm()
+        {
+            using (MLDsa key = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa65))
+            {
+                CertificateRequest req = new CertificateRequest("CN=Test", key);
+                Assert.Null(req.HashAlgorithm.Name);
+            }
+        }
+
+        [Fact]
         public static void CtorValidation_RSA_string()
         {
             string subjectName = null;
@@ -213,6 +259,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        public static void CtorValidation_SlhDsa_string()
+        {
+            string subjectName = null;
+            SlhDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = "";
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void CtorValidation_SlhDsa_X500DN()
+        {
+            X500DistinguishedName subjectName = null;
+            SlhDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = new X500DistinguishedName("");
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void SlhDsa_DoesNotSetHashAlgorithm()
+        {
+            using (SlhDsaMockImplementation key = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                key.ExportSlhDsaPublicKeyCoreHook = _ => { };
+                CertificateRequest req = new CertificateRequest("CN=Test", key);
+                Assert.Null(req.HashAlgorithm.Name);
+            }
+        }
+
+        [Fact]
         public static void CtorValidation_PublicKey_X500DN()
         {
             X500DistinguishedName subjectName = null;
@@ -233,14 +324,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 X509SignatureGenerator generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
                 publicKey = generator.PublicKey;
             }
+        }
 
-            AssertExtensions.Throws<ArgumentNullException>(
-                "hashAlgorithm",
-                () => new CertificateRequest(subjectName, publicKey, default(HashAlgorithmName)));
+        [Fact]
+        public static void PublicKeyCtor_HashAlgorithm_LateVerification()
+        {
+            X500DistinguishedName name = new X500DistinguishedName("CN=Test");
 
-            AssertExtensions.Throws<ArgumentException>(
-                "hashAlgorithm",
-                () => new CertificateRequest(subjectName, publicKey, new HashAlgorithmName("")));
+            using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(ecdsa);
+
+                CertificateRequest req = new CertificateRequest(name, gen.PublicKey, default);
+                Assert.Null(req.HashAlgorithm.Name);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                Assert.Throws<InvalidOperationException>(
+                    () => req.Create(name, gen, now.AddMinutes(-1), now.AddMinutes(1), new byte[] { 1, 2, 3 }));
+            }
+
+            using (RSA rsa = RSA.Create(Rsa.Tests.TestData.RSA2048Params))
+            {
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                CertificateRequest req = new CertificateRequest(name, gen.PublicKey, default);
+                Assert.Null(req.HashAlgorithm.Name);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                Assert.Throws<InvalidOperationException>(
+                    () => req.Create(name, gen, now.AddMinutes(-1), now.AddMinutes(1), new byte[] { 1, 2, 3 }));
+            }
         }
 
         [Fact]
@@ -414,70 +527,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Throws<ArgumentNullException>(
                 "pkcs10Pem",
                 () => CertificateRequest.LoadSigningRequestPem((string)null, HashAlgorithmName.SHA256));
-        }
-
-        [Fact]
-        public static void LoadWithDefaultHashAlgorithm()
-        {
-            Assert.Throws<ArgumentNullException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequest(Array.Empty<byte>(), default(HashAlgorithmName)));
-
-            {
-                int consumed = -1;
-
-                Assert.Throws<ArgumentNullException>(
-                    "signerHashAlgorithm",
-                    () => CertificateRequest.LoadSigningRequest(
-                        ReadOnlySpan<byte>.Empty,
-                        default(HashAlgorithmName),
-                        out consumed));
-
-                Assert.Equal(-1, consumed);
-            }
-
-            Assert.Throws<ArgumentNullException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequestPem(string.Empty, default(HashAlgorithmName)));
-
-            Assert.Throws<ArgumentNullException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequestPem(
-                    ReadOnlySpan<char>.Empty,
-                    default(HashAlgorithmName)));
-        }
-
-        [Fact]
-        public static void LoadWithEmptyHashAlgorithm()
-        {
-            HashAlgorithmName hashAlgorithm = new HashAlgorithmName("");
-
-            Assert.Throws<ArgumentException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequest(Array.Empty<byte>(), hashAlgorithm));
-
-            {
-                int consumed = -1;
-
-                Assert.Throws<ArgumentException>(
-                    "signerHashAlgorithm",
-                    () => CertificateRequest.LoadSigningRequest(
-                        ReadOnlySpan<byte>.Empty,
-                        hashAlgorithm,
-                        out consumed));
-
-                Assert.Equal(-1, consumed);
-            }
-
-            Assert.Throws<ArgumentException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequestPem(string.Empty, hashAlgorithm));
-
-            Assert.Throws<ArgumentException>(
-                "signerHashAlgorithm",
-                () => CertificateRequest.LoadSigningRequestPem(
-                    ReadOnlySpan<char>.Empty,
-                    hashAlgorithm));
         }
 
         [Theory]

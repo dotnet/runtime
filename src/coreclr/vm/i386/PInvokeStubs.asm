@@ -98,4 +98,37 @@ RarePath:
 
 _JIT_PInvokeEnd@4 ENDP
 
+;
+; in:
+; InlinedCallFrame (edi) = pointer to the InlinedCallFrame data
+; out:
+; Thread (esi) = pointer to Thread data
+;
+;
+_JIT_InitPInvokeFrame@4 PROC public
+
+        ;; esi = GetThread(). Trashes eax
+        INLINE_GETTHREAD esi, eax
+
+        ;; edi = pFrame
+        ;; esi = pThread
+
+        ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             dword ptr [edi], FRAMETYPE_InlinedCallFrame
+
+        ;; pFrame->m_Next = pThread->m_pFrame;
+        mov             eax, dword ptr [esi + Thread_m_pFrame]
+        mov             dword ptr [edi + Frame__m_Next], eax
+
+        mov             dword ptr [edi + InlinedCallFrame__m_pCalleeSavedFP], ebp
+        mov             dword ptr [edi + InlinedCallFrame__m_pCallerReturnAddress], 0
+
+        ;; pThread->m_pFrame = pFrame;
+        mov             dword ptr [esi + Thread_m_pFrame], edi
+
+        ;; leave current Thread in ESI
+        ret
+
+_JIT_InitPInvokeFrame@4 ENDP
+
         end
