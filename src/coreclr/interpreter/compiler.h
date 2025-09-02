@@ -514,6 +514,10 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // If the method has a hidden argument, GenerateCode allocates a var to store it and
+    //  populates the var at method entry
+    int32_t m_hiddenArgumentVar;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
     TArray<LeavesTableEntry> m_leavesTable;

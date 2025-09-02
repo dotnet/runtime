@@ -578,14 +578,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static partial void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
 
-        internal Type[] GetConstraints()
+        internal Type[]? GetConstraints()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
 
             GetConstraints(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types));
 
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle")]
@@ -744,12 +744,12 @@ namespace System
             return types!;
         }
 
-        internal Type[] GetInstantiationPublic()
+        internal Type[]? GetInstantiationPublic()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate")]
@@ -1229,12 +1229,12 @@ namespace System
             return types!;
         }
 
-        internal static Type[] GetMethodInstantiationPublic(IRuntimeMethodInfo method)
+        internal static Type[]? GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[]? types = null;
+            Type[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             GC.KeepAlive(method);
-            return types!;
+            return types;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
