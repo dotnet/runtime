@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 
@@ -45,26 +47,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
         {
-            if (context.EnableTrimAnalyzer &&
-                !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
-                !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
+            var location = Operation.Syntax.GetLocation();
+            var typeNameResolver = new TypeNameResolver(context.Compilation);
+
+            switch (GenericInstantiation)
             {
-                var location = Operation.Syntax.GetLocation();
-                var typeNameResolver = new TypeNameResolver(context.Compilation);
-                switch (GenericInstantiation)
-                {
-                    case INamedTypeSymbol type:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, type, reportDiagnostic);
-                        break;
+                case INamedTypeSymbol type:
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(context, FeatureContext, typeNameResolver, OwningSymbol, location, type, reportDiagnostic);
+                    break;
 
-                    case IMethodSymbol method:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, method, reportDiagnostic);
-                        break;
+                case IMethodSymbol method:
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(context, FeatureContext, typeNameResolver, OwningSymbol, location, method, reportDiagnostic);
+                    break;
 
-                    case IFieldSymbol field:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, field, reportDiagnostic);
-                        break;
-                }
+                case IFieldSymbol field:
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(context, FeatureContext, typeNameResolver, OwningSymbol, location, field, reportDiagnostic);
+                    break;
             }
         }
     }

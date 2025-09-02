@@ -1407,8 +1407,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
             class ClassWithWarningOnGenericArgumentConstructor : RequiresNew<ClassWithRequires>
             {
-                // Analyzer misses warning for implicit call to the base constructor, because the new constraint is not checked in dataflow.
-                [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+                [ExpectedWarning("IL2026", "--ClassWithRequires--")]
                 public ClassWithWarningOnGenericArgumentConstructor()
                 {
                 }

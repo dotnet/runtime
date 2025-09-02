@@ -4,42 +4,48 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
+using ILLink.Shared;
+using ILLink.RoslynAnalyzer.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(TypeNameResolver typeNameResolver, Location location, INamedTypeSymbol type, Action<Diagnostic>? reportDiagnostic)
+        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, INamedTypeSymbol type, Action<Diagnostic>? reportDiagnostic)
         {
             while (type is { IsGenericType: true })
             {
-                ProcessGenericArgumentDataFlow(typeNameResolver, location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
+                ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
                 type = type.ContainingType;
             }
         }
 
-        public static void ProcessGenericArgumentDataFlow(TypeNameResolver typeNameResolver, Location location, IMethodSymbol method, Action<Diagnostic>? reportDiagnostic)
+        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IMethodSymbol method, Action<Diagnostic>? reportDiagnostic)
         {
-            ProcessGenericArgumentDataFlow(typeNameResolver, location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
+            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
 
-            ProcessGenericArgumentDataFlow(typeNameResolver, location, method.ContainingType, reportDiagnostic);
+            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, method.ContainingType, reportDiagnostic);
         }
 
-        public static void ProcessGenericArgumentDataFlow(TypeNameResolver typeNameResolver, Location location, IFieldSymbol field, Action<Diagnostic>? reportDiagnostic)
+        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IFieldSymbol field, Action<Diagnostic>? reportDiagnostic)
         {
-            ProcessGenericArgumentDataFlow(typeNameResolver, location, field.ContainingType, reportDiagnostic);
+            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, field.ContainingType, reportDiagnostic);
         }
 
-        public static void ProcessGenericArgumentDataFlow(TypeNameResolver typeNameResolver, Location location, IPropertySymbol property, Action<Diagnostic> reportDiagnostic)
+        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IPropertySymbol property, Action<Diagnostic> reportDiagnostic)
         {
-            ProcessGenericArgumentDataFlow(typeNameResolver, location, property.ContainingType, reportDiagnostic);
+            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, property.ContainingType, reportDiagnostic);
         }
 
         private static void ProcessGenericArgumentDataFlow(
+            DataFlowAnalyzerContext context,
+            FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
+            ISymbol owningSymbol,
             Location location,
             ImmutableArray<ITypeSymbol> typeArguments,
             ImmutableArray<ITypeParameterSymbol> typeParameters,
@@ -49,19 +55,45 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 var typeArgument = typeArguments[i];
+                var typeParameter = typeParameters[i];
+
+                // Process new() constraint: if present, check Requires* on the public parameterless constructor
+                // And that also takes care of any DynamicallyAccessedMembers.PublicParameterlessConstructor.
+                if (typeParameter.HasConstructorConstraint && typeArgument is INamedTypeSymbol namedTypeArg && namedTypeArg.InstanceConstructors.Length > 0)
+                {
+                    var paramlessPublicCtor = namedTypeArg.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty && ctor.DeclaredAccessibility == Accessibility.Public);
+                    if (paramlessPublicCtor is not null)
+                    {
+                        foreach (var analyzer in context.EnabledRequiresAnalyzers)
+                        {
+                            var attrName = analyzer.RequiresAttributeFullyQualifiedName;
+
+                            if (featureContext.IsEnabled(attrName))
+                                continue;
+
+                            analyzer.CheckAndCreateRequiresDiagnostic(paramlessPublicCtor, owningSymbol, incompatibleMembers: ImmutableArray<ISymbol>.Empty, diagnosticContext);
+                        }
+                    }
+                }
+
+                // TODO: avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor.
+
                 // Apply annotations to the generic argument
-                var genericParameterValue = new GenericParameterValue(typeParameters[i]);
-                if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                var genericParameterValue = new GenericParameterValue(typeParameter);
+                if (context.EnableTrimAnalyzer &&
+                    !owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+                    !featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&
+                    genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
                     SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol(typeArgument)!;
                     var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(context, featureContext, typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer, owningSymbol);
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
 
                 // Recursively process generic argument data flow on the generic argument if it itself is generic
                 if (typeArgument is INamedTypeSymbol namedTypeArgument && namedTypeArgument.IsGenericType)
-                    ProcessGenericArgumentDataFlow(typeNameResolver, location, namedTypeArgument, reportDiagnostic);
+                    ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, namedTypeArgument, reportDiagnostic);
             }
         }
 
@@ -118,7 +150,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             foreach (var typeParameter in typeParameters)
             {
                 var genericParameterValue = new GenericParameterValue(typeParameter);
-                if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None || typeParameter.HasConstructorConstraint)
                     return true;
             }
 

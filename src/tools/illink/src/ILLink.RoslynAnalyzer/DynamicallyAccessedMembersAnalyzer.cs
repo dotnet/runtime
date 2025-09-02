@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -143,10 +144,10 @@ namespace ILLink.RoslynAnalyzer
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
                     if (type.BaseType is INamedTypeSymbol baseType)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, baseType, context.ReportDiagnostic);
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, baseType, context.ReportDiagnostic);
 
                     foreach (var interfaceType in type.Interfaces)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, interfaceType, context.ReportDiagnostic);
+                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, interfaceType, context.ReportDiagnostic);
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);
