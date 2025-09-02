@@ -191,11 +191,11 @@
                           '$(Configuration)' == 'Debug' and
                           '$(DotNetBuildSourceOnly)' != 'true'">
       <!-- MsQuic packages do not have macOS binaries. Our transport package is only one source. -->
-      <PackageReference Include="runtime.osx-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
-                        Version="$(SystemNetMsQuicTransportVersion)"
+      <PackageReference Include="MsQuic.Native"
+                        Version="2.5.5"
                         PrivateAssets="all"
                         GeneratePathProperty="true" />
-      <NativeBinPlaceItem Include="$(PkgRuntime_osx-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\osx-$(TargetArchitecture)\native\*" />
+      <NativeBinPlaceItem Include="$(PkgRuntime_MsQuic_Native)\runtimes\osx-$(TargetArchitecture)\native\*" />
   </ItemGroup>
 
   <ItemGroup Condition="'@(NativeBinplaceItem)' != ''">
