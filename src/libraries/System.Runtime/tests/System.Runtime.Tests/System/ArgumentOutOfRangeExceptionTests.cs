@@ -164,11 +164,16 @@ namespace System.Tests
             Assert.Equal((double)1, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<double>(1, 1)).ActualValue);
             Assert.Equal(1f, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<float>(1, 1)).ActualValue);
             Assert.Null(AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<string>(null, null)).ActualValue);
+            Assert.Equal((int?)1, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<int?>((int?)1, (int?)1)).ActualValue);
+            Assert.Equal((int?)null, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<int?>((int?)null, (int?)null)).ActualValue);
+            Assert.Equal(ConsoleKey.A, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, EqualHelper<ConsoleKey>(ConsoleKey.A, ConsoleKey.A)).ActualValue);
 
             EqualHelper(1, 2)();
             EqualHelper("test1", "test2")();
             EqualHelper("test1", null)();
             EqualHelper(null, "test2")();
+            EqualHelper((int?)null, (int?)1)();
+            EqualHelper<ConsoleKey>(ConsoleKey.A, ConsoleKey.B)();
         }
 
         [Fact]
@@ -180,9 +185,15 @@ namespace System.Tests
             Assert.Equal(1f, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<float>(1, 2)).ActualValue);
             Assert.Equal("test", AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<string>("test", null)).ActualValue);
             Assert.Null(AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<string>(null, "test")).ActualValue);
+            Assert.Equal((int?)1, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<int?>((int?)1, (int?)2)).ActualValue);
+            Assert.Equal((int?)null, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<int?>((int?)null, (int?)1)).ActualValue);
+            Assert.Equal(ConsoleKey.A, AssertExtensions.Throws<ArgumentOutOfRangeException>(HelpersParamName, NotEqualHelper<ConsoleKey>(ConsoleKey.A, ConsoleKey.B)).ActualValue);
 
             NotEqualHelper(2, 2)();
             NotEqualHelper("test", "test")();
+            NotEqualHelper((int?)1, (int?)1)();
+            NotEqualHelper((int?)null, (int?)null)();
+            NotEqualHelper<ConsoleKey>(ConsoleKey.A, ConsoleKey.A)();
         }
     }
 }
