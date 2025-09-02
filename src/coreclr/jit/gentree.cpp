@@ -17162,6 +17162,17 @@ bool Compiler::gtSplitTree(BasicBlock* block,
             }
 #endif
 
+            if ((*use)->OperIs(GT_COMMA))
+            {
+                // We might as well get rid of the comma while we're at it. This avoids unnecessarily nested trees and
+                // also handles splitting some irregular nodes when nested under commas
+                // (like COMMA(op1, FIELD_LIST(...))).
+                SplitOutUse(UseInfo{&(*use)->AsOp()->gtOp1, *use}, false);
+                *use = (*use)->gtGetOp2();
+                SplitOutUse(useInf, userIsReturned);
+                return;
+            }
+
             if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
             {
                 for (GenTree** operandUse : (*use)->UseEdges())
