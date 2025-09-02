@@ -3,7 +3,6 @@
 
 namespace System.Security.Cryptography.Cng.Tests
 {
-
     public class RSACngPkcs8TestsWithCustomPssSaltLength : RSACngPkcs8TestsPssSaltLength
     {
         protected override int SaltLength => 200;
