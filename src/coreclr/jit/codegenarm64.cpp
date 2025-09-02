@@ -824,7 +824,7 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
 {
     assert((regsMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_LR)) == regsMask); // Do not expect anything else.
 
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+    static_assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     return REGSIZE_BYTES;
 }
 
@@ -1060,7 +1060,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert(regsToRestoreCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
 
     // Point past the end, to start. We predecrement to find the offset to load from.
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+    static_assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
 
     // Save integer registers at higher addresses than floating-point registers.
@@ -3101,7 +3101,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         const int storePairRegsWritesBytes = 2 * REGSIZE_BYTES;
 
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == storePairRegsWritesBytes);
+        static_assert(STACK_ALIGN == storePairRegsWritesBytes);
         assert(amount % storePairRegsWritesBytes == 0); // stp stores two registers at a time
 
         if (compiler->info.compInitMem)
