@@ -581,7 +581,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     MethodDesc* targetMethod;
 
     // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-    pInterpreterFrame->SetInterpExecMethodSP(GetCurrentSP());
+    pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
 
 MAIN_LOOP:
     try
@@ -2113,7 +2113,7 @@ CALL_INTERP_METHOD:
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-                                pInterpreterFrame->SetInterpExecMethodSP(GetCurrentSP());
+                                pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                             }
                             pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
                             pFrame = pChildFrame;
