@@ -24,7 +24,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 // it needs to have it's card updated
 //
 // void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+LEAF_ENTRY_PATCHABLE JIT_CheckedWriteBarrier, _TEXT
 
         // When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
         // but if it isn't then it will just return.
@@ -54,7 +54,7 @@ LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 // larger of the two functions (JIT_WriteBarrier_PostGrow) to ensure we have created
 // enough space to copy that code in.
 .balign 16
-LEAF_ENTRY JIT_WriteBarrier, _TEXT
+LEAF_ENTRY_PATCHABLE JIT_WriteBarrier, _TEXT
 #ifdef _DEBUG
         // In debug builds, this just contains jump to the debug version of the write barrier by default
         jmp C_FUNC(JIT_WriteBarrier_Debug)
@@ -240,6 +240,6 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT
 
 // Mark start of the code region that we patch at runtime
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+LEAF_ENTRY_PATCHABLE JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT

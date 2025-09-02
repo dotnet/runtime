@@ -13,7 +13,7 @@
 // to declare a write barrier function.
 //
 .macro WRITE_BARRIER_ENTRY name
-    LEAF_ENTRY \name, _TEXT
+    LEAF_ENTRY_PATCHABLE \name, _TEXT
 .endm
 
 // WRITE_BARRIER_END
@@ -145,7 +145,7 @@ WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 // ------------------------------------------------------------------
 // End of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+LEAF_ENTRY_PATCHABLE JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
