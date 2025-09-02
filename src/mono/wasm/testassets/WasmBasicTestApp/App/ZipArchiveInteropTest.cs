@@ -13,13 +13,16 @@ using System.Text;
 public partial class ZipArchiveInteropTest
 {
     [JSExport]
-    public static void Run()
+    public static async Task Run()
     {
         using var zipFileStream = new MemoryStream();
         using var zipArchive = new ZipArchive(zipFileStream, ZipArchiveMode.Create);
 
         var entry = zipArchive.CreateEntry("sample.txt");
-        entry.Open().WriteAsync(Encoding.UTF8.GetBytes("Sample text content"));
+        using (var entryStream = entry.Open())
+        {
+            await entryStream.WriteAsync(Encoding.UTF8.GetBytes("Sample text content"));
+        }
 
         TestOutput.WriteLine("Zip file created successfully.");
     }
