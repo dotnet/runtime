@@ -162,14 +162,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             if (!HasFlags(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
                 return false;
 
-            TargetPointer methodDescSizeTable = _target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
-            ushort arrayOffset = (ushort)((MethodDescFlags_1.MethodDescFlags)_desc.Flags &
-                    MethodDescFlags_1.MethodDescFlags.ClassificationMask |
-                    MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
-                    MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
-                    MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot);
-            byte size = _target.Read<byte>(methodDescSizeTable + arrayOffset);
-            TargetPointer asyncMethodDataPtr = Address + size;
+            TargetPointer asyncMethodDataPtr = Address + Size;
             Data.AsyncMethodData asyncMethodData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(asyncMethodDataPtr);
             AsyncMethodKind asyncMethodKind = (AsyncMethodKind)asyncMethodData.Kind;
             return asyncMethodKind == AsyncMethodKind.AsyncVariantThunk || asyncMethodKind == AsyncMethodKind.RuntimeAsync;
