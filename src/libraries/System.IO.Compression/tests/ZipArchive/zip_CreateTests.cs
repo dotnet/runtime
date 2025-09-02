@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO.Pipelines;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -424,7 +422,7 @@ namespace System.IO.Compression.Tests
         public void CreateEntry_NormalizesPaths()
         {
             var sourceContent = "file content";
-            var sourceBytes = System.Text.Encoding.UTF8.GetBytes(sourceContent);
+            var sourceBytes = Encoding.UTF8.GetBytes(sourceContent);
 
             using (var zipStream = new MemoryStream())
             {
@@ -432,20 +430,23 @@ namespace System.IO.Compression.Tests
                 {
                     var entry1 = archive.CreateEntry(@"dir1\dir2\file.txt");
                     using (var entryStream = entry1.Open())
+                    using (var sourceStream = new MemoryStream(sourceBytes))
                     {
-                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                        sourceStream.CopyTo(entryStream);
                     }
 
                     var entry2 = archive.CreateEntry("dirA/dirB/file.txt");
                     using (var entryStream = entry2.Open())
+                    using (var sourceStream = new MemoryStream(sourceBytes))
                     {
-                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                        sourceStream.CopyTo(entryStream);
                     }
 
                     var entry3 = archive.CreateEntry(@"dirX/dirY\file.txt");
                     using (var entryStream = entry3.Open())
+                    using (var sourceStream = new MemoryStream(sourceBytes))
                     {
-                        new MemoryStream(sourceBytes).CopyTo(entryStream);
+                        sourceStream.CopyTo(entryStream);
                     }
                 }
 
