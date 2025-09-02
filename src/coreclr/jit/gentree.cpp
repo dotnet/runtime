@@ -21253,7 +21253,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                                                     simdSize);
                 }
 
-                assert(compIsaSupportedDebugOnly(InstructionSet_SSE42));
                 GenTree* op1Dup  = fgMakeMultiUse(&op1);
                 GenTree* op2Dup  = fgMakeMultiUse(&op2);
                 GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup);
