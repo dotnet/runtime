@@ -141,7 +141,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Checked
+    buildConfig: Debug
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
