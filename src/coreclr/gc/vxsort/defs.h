@@ -31,18 +31,17 @@
 #ifdef _MSC_VER
 #ifdef __clang__
 #define mess_up_cmov()
-#define INLINE __attribute__((always_inline))
 #else
 // MSVC
 #include <intrin.h>
 #define mess_up_cmov() _ReadBarrier();
-#define INLINE __forceinline
 #endif
 #else
 // GCC + Clang
 #define mess_up_cmov()
-#define INLINE __attribute__((always_inline))
 #endif
+
+#define INLINE FORCEINLINE
 
 using std::max;
 using std::min;

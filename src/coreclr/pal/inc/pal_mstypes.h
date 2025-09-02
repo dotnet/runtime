@@ -78,9 +78,7 @@ extern "C" {
 #if defined(_VAC_) && defined(__cplusplus)
 #define __inline        inline
 #endif
-
-#define __forceinline   inline
-
+    
 #define PALIMPORT
 
 #ifndef DLLEXPORT

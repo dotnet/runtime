@@ -300,7 +300,7 @@ public:
     }
 
     // NOTE: This routine is perf-critical
-    __forceinline size_t Read( int numBits )
+    FORCEINLINE size_t Read( int numBits )
     {
         SUPPORTS_DAC;
 
@@ -325,7 +325,7 @@ public:
 
     // This version reads one bit
     // NOTE: This routine is perf-critical
-    __forceinline size_t ReadOneFast()
+    FORCEINLINE size_t ReadOneFast()
     {
         SUPPORTS_DAC;
 
@@ -346,13 +346,13 @@ public:
     }
 
 
-    __forceinline size_t GetCurrentPos()
+    FORCEINLINE size_t GetCurrentPos()
     {
         SUPPORTS_DAC;
         return (size_t) ((m_pCurrent - m_pBuffer) * BITS_PER_SIZE_T + m_RelPos - m_InitialRelPos);
     }
 
-    __forceinline void SetCurrentPos( size_t pos )
+    FORCEINLINE void SetCurrentPos( size_t pos )
     {
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
@@ -364,7 +364,7 @@ public:
         _ASSERTE(GetCurrentPos() == pos);
     }
 
-    __forceinline void Skip( SSIZE_T numBitsToSkip )
+    FORCEINLINE void Skip( SSIZE_T numBitsToSkip )
     {
         SUPPORTS_DAC;
 
@@ -416,7 +416,7 @@ public:
         }
     }
 
-    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    FORCEINLINE size_t DecodeVarLengthUnsigned(int base)
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
 

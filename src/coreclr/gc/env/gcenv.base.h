@@ -21,11 +21,6 @@
 
 #ifndef _MSC_VER
 #define __stdcall
-#ifdef __GNUC__
-#define __forceinline __attribute__((always_inline)) inline
-#else // __GNUC__
-#define __forceinline inline
-#endif // __GNUC__
 #endif // _MSC_VER
 
 #ifdef _MSC_VER
