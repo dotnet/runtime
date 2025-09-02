@@ -947,7 +947,25 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             return pOtherCode;
         }
 
-        SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+        NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+
+        if (IsILStub())
+        {
+            CodeHeader* pHdr = ((CodeHeader*)PCODEToPINSTR(pCode)) - 1;
+            MethodDesc* pActualMethodDesc = pHdr->GetMethodDesc();
+
+            if (pActualMethodDesc != this)
+            {
+                // Compensate for PInvoke MethodDesc adjustment done in EECodeGenManager::AllocCode.
+                // The GC stress instrumentation must save the non-instrumented version of the code
+                // on MethodDesc that matches CodeHeader so that it can be retrieved later during
+                // GC stress interrupts.
+                _ASSERTE(pActualMethodDesc->IsPInvoke());
+                nativeCodeVersion = NativeCodeVersion(pActualMethodDesc);
+            }
+        }
+
+        SetupGcCoverage(nativeCodeVersion, (BYTE*)pCode);
     }
 #endif // HAVE_GCCOVER
 
@@ -976,8 +994,15 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
+        InterpByteCodeStart* interpreterCode;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(PCODEToPINSTR(pCode));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
-        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
@@ -2353,13 +2378,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+// Interpreter-FIXME: Call stubs are not yet supported on WASM
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }

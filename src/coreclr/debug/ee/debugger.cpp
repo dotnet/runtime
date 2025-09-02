@@ -78,7 +78,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 {
     _ASSERTE(!"Don't call this function. It just does compile time checking\n");
 
-    // We use the C_ASSERT macro here to get a compile-time assert.
+    // We use the static_assert macro here to get a compile-time assert.
 
     // Make sure we don't have any duplicate numbers.
     // The switch statements in the main loops won't always catch this
@@ -107,8 +107,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure all values are subset of the bits specified by DB_IPCE_TYPE_MASK
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -116,27 +116,27 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure that no value is DB_IPCE_INVALID_EVENT
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
     #undef IPC_EVENT_TYPE0
 
     // Make sure first-last values are well structured.
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
-    static_assert_no_msg(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
+    static_assert(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
+    static_assert(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
 
     // Make sure that event ranges don't overlap.
     // This check is simplified because L->R events come before R<-L
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
+    static_assert(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
 
 
     // Make sure values are in the proper ranges
     // Type1 should be in the Runtime range, Type2 in the Debugger range.
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -153,7 +153,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     11) && (11 <
     12) && (12 <
     last)
-    static_assert_no_msg(f);
+    static_assert(f);
     */
 
     const bool f1 = (
@@ -167,7 +167,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_RUNTIME_LAST)
     );
-    static_assert_no_msg(f1);
+    static_assert(f1);
 
     const bool f2 = (
         (e_DB_IPCE_DEBUGGER_FIRST <=
@@ -180,7 +180,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_DEBUGGER_LAST)
     );
-    static_assert_no_msg(f2);
+    static_assert(f2);
 
 } // end checks
 
@@ -11708,6 +11708,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
+            res->ClassTypeData.vmModule.SetRawPtr(NULL);
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
         }

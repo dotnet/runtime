@@ -1752,7 +1752,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         }
         trace->InitForManaged(target);
     }
-    else if (pStubMD->HasFlags(DynamicMethodDesc::FlagIsDelegate))
+    else if (pStubMD->IsPInvokeDelegateStub())
     {
         // This is forward delegate P/Invoke stub, the argument is undefined
         DelegateObject *pDel = (DelegateObject *)pThis;
@@ -1761,7 +1761,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case %p\n", target));
         trace->InitForUnmanaged(target);
     }
-    else if (pStubMD->HasFlags(DynamicMethodDesc::FlagIsCALLI))
+    else if (pStubMD->IsPInvokeCalliStub())
     {
         // This is unmanaged CALLI stub, the argument is the target
         target = (PCODE)arg;
@@ -1796,17 +1796,29 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         MethodDesc *pMD = (MethodDesc *)arg;
 
-#ifdef FEATURE_COMINTEROP
-        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
-        _ASSERTE(pMD->IsCLRToCOMCall());
-        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
-        _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
-
-        if (pThis != NULL)
+        // This is either vararg PInvoke or a CLR-to-COM call, the argument is MD
+        if (pMD->IsPInvoke())
         {
-            target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n", target));
+            PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+            _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
+            target = (PCODE)pNMD->GetPInvokeTarget();
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%p\n", target));
             trace->InitForUnmanaged(target);
+        }
+#ifdef FEATURE_COMINTEROP
+        else
+        {
+            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
+            _ASSERTE(pMD->IsCLRToCOMCall());
+            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
+            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+
+            if (pThis != NULL)
+            {
+                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
+                LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n", target));
+                trace->InitForUnmanaged(target);
+            }
         }
 #endif // FEATURE_COMINTEROP
     }
@@ -1950,13 +1962,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
         return FALSE;
 #else
-        TADDR firstArg = StubManagerHelpers::GetFirstArg(pContext);
-        _ASSERTE(firstArg != (TADDR)NULL);
-
-        VASigCookie* vaSigCookie = (VASigCookie*)firstArg;
-        PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(vaSigCookie->pMethodDesc);
-        _ASSERTE(pNMD != NULL);
-        _ASSERTE(pNMD->IsPInvoke());
+        PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)arg;
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n", target));

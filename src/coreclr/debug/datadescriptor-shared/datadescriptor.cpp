@@ -3,6 +3,14 @@
 
 #include "datadescriptor.h"
 
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#endif // DLLEXPORT
+
 // begin blob definition
 
 extern "C"
@@ -52,7 +60,8 @@ struct GlobalStringSpec
 #define MAKE_GLOBALVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalvalue__, globalname)
 
 // used to stringify the result of a macros expansion
-#define STRINGIFY(x) #x
+// __VA_ARGS__ is the argument list comma separated
+#define STRINGIFY(...) #__VA_ARGS__
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the
@@ -68,6 +77,7 @@ struct CDacStringPoolSizes
 #define CDAC_GLOBAL_STRING(name, stringval) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
 #include "wrappeddatadescriptor.inc"
@@ -129,6 +139,15 @@ enum
 #include "wrappeddatadescriptor.inc"
 };
 
+// count the global sub-descriptors
+enum
+{
+    CDacBlobGlobalSubDescriptorsCount =
+#define CDAC_GLOBALS_BEGIN() 0
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) + 1
+#include "wrappeddatadescriptor.inc"
+};
+
 
 #define MAKE_TYPEFIELDS_TYNAME(tyname) CONCAT(CDacFieldsPoolTypeStart__, tyname)
 
@@ -178,6 +197,7 @@ struct CDacGlobalPointerIndex
 #define DECL_LEN(membername) char membername;
 #define CDAC_GLOBALS_BEGIN() DECL_LEN(cdac_global_pointer_index_start_placeholder__)
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
 #include "wrappeddatadescriptor.inc"
 #undef DECL_LEN
 };
@@ -204,6 +224,8 @@ struct BinaryBlobDataDescriptor
 
         uint32_t GlobalPointersStart;
         uint32_t GlobalStringValuesStart;
+
+        uint32_t GlobalSubDescriptorsStart;
         uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
@@ -212,6 +234,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalLiteralValuesCount;
         uint32_t GlobalPointerValuesCount;
         uint32_t GlobalStringValuesCount;
+        uint32_t GlobalSubDescriptorsCount;
 
         uint32_t NamesPoolCount;
 
@@ -223,11 +246,13 @@ struct BinaryBlobDataDescriptor
     } Directory;
     uint32_t PlatformFlags;
     uint32_t BaselineName;
-    struct TypeSpec Types[CDacBlobTypesCount];
-    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount];
-    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
-    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
-    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount];
+    // cpp does not allow zero-length arrays, so we add one extra element to allow having zero of a given type of descriptor
+    struct TypeSpec Types[CDacBlobTypesCount + 1];
+    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount + 1];
+    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount + 1];
+    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount + 1];
+    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount + 1];
+    struct GlobalPointerSpec GlobalSubDescriptorValues[CDacBlobGlobalSubDescriptorsCount + 1];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
     uint8_t EndMagic[4];
 };
@@ -238,7 +263,7 @@ struct MagicAndBlob {
 };
 
 // we only support 32-bit and 64-bit right now
-static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
+static_assert(sizeof(void*) == 4 || sizeof(void*) == 8);
 
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
@@ -253,12 +278,14 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalLiteralValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
             /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
             /* .GlobalStringValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalStringValues),
+            /* .GlobalSubDescriptorsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalSubDescriptorValues),
             /* .NamesPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             /* .TypeCount = */ CDacBlobTypesCount,
             /* .FieldsPoolCount = */ CDacBlobFieldsPoolCount,
             /* .GlobalLiteralValuesCount = */ CDacBlobGlobalLiteralsCount,
             /* .GlobalPointerValuesCount = */ CDacBlobGlobalPointersCount,
             /* .GlobalStringValuesCount = */ CDacBlobGlobalStringsCount,
+            /* .GlobalSubDescriptorsCount = */ CDacBlobGlobalSubDescriptorsCount,
             /* .NamesPoolCount = */ sizeof(struct CDacStringPoolSizes),
             /* .TypeSpecSize = */ sizeof(struct TypeSpec),
             /* .FieldSpecSize = */ sizeof(struct FieldSpec),
@@ -305,12 +332,18 @@ struct MagicAndBlob BlobDataDescriptor = {
 #include "wrappeddatadescriptor.inc"
         },
 
+        /* .GlobalSubDescriptorValues = */ {
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .PointerDataIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
+#include "wrappeddatadescriptor.inc"
+        },
+
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
 #include "wrappeddatadescriptor.inc"
                   ),
