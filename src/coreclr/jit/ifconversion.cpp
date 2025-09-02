@@ -676,11 +676,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 
         // We may be inside an unnatural loop, so do the expensive check.
-        if (m_comp->compHasBackwardJump &&
-            m_comp->optReachable(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget))
+        if (m_comp->compHasBackwardJump)
         {
-            JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
-            return false;
+            Compiler::ReachabilityResult reachability =
+                m_comp->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+            if (reachability == Compiler::ReachabilityResult::Reachable)
+            {
+                JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
+                return false;
+            }
+            else if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
+            {
+                JITDUMP("Skipping if-conversion since we ran out of reachability budget\n");
+                return false;
+            }
         }
     }
 
@@ -1034,7 +1043,7 @@ PhaseStatus Compiler::optIfConversion()
     BasicBlock* block = fgLastBB;
 
     // Budget for optReachability - to avoid spending too much time detecting loops in large methods.
-    int reachabilityBudget = 10000;
+    int reachabilityBudget = 20000;
     while (block != nullptr)
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
