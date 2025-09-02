@@ -210,6 +210,19 @@ VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 
+#ifdef FEATURE_INTERPRETER
+PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
+
+UMEntryThunkData * GetMostRecentUMEntryThunkData()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UMEntryThunkData * result = t_MostRecentUMEntryThunkData;
+    t_MostRecentUMEntryThunkData = nullptr;
+    return result;
+}
+#endif
+
 PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
@@ -221,6 +234,15 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     {
         CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
+
+#ifdef FEATURE_INTERPRETER
+    PCODE pInterpreterTarget = pUMEntryThunkData->GetInterpreterTarget();
+    if (pInterpreterTarget != (PCODE)0)
+    {
+        t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+        return pInterpreterTarget;
+    }
+#endif // FEATURE_INTERPRETER
 
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
@@ -263,7 +285,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
-       
+
         pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
         UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #ifdef FEATURE_PERFMAP

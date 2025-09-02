@@ -530,6 +530,8 @@ void PrepareInitialCode(MethodDesc *pMD)
     PAL_ENDTRY
 }
 
+UMEntryThunkData * GetMostRecentUMEntryThunkData();
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -609,6 +611,10 @@ MAIN_LOOP:
                 case INTOP_MEMBAR:
                     MemoryBarrier();
                     ip++;
+                    break;
+                case INTOP_STORESTUBCONTEXT:
+                    LOCAL_VAR(ip[1], void*) = GetMostRecentUMEntryThunkData();
+                    ip += 2;
                     break;
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
