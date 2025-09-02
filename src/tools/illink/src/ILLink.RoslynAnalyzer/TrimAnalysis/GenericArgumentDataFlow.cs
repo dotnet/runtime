@@ -13,45 +13,62 @@ using ILLink.RoslynAnalyzer.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-    internal static class GenericArgumentDataFlow
+    internal readonly struct GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, INamedTypeSymbol type, Action<Diagnostic>? reportDiagnostic)
-        {
-            while (type is { IsGenericType: true })
-            {
-                ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
-                type = type.ContainingType;
-            }
-        }
+        private readonly DataFlowAnalyzerContext _context;
+        private readonly FeatureContext _featureContext;
+        private readonly TypeNameResolver _typeNameResolver;
+        private readonly ISymbol _owningSymbol;
+        private readonly Location _location;
+        private readonly Action<Diagnostic>? _reportDiagnostic;
 
-        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IMethodSymbol method, Action<Diagnostic>? reportDiagnostic)
-        {
-            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
-
-            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, method.ContainingType, reportDiagnostic);
-        }
-
-        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IFieldSymbol field, Action<Diagnostic>? reportDiagnostic)
-        {
-            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, field.ContainingType, reportDiagnostic);
-        }
-
-        public static void ProcessGenericArgumentDataFlow(DataFlowAnalyzerContext context, FeatureContext featureContext, TypeNameResolver typeNameResolver, ISymbol owningSymbol, Location location, IPropertySymbol property, Action<Diagnostic> reportDiagnostic)
-        {
-            ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, property.ContainingType, reportDiagnostic);
-        }
-
-        private static void ProcessGenericArgumentDataFlow(
+        public GenericArgumentDataFlow(
             DataFlowAnalyzerContext context,
             FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
             ISymbol owningSymbol,
             Location location,
-            ImmutableArray<ITypeSymbol> typeArguments,
-            ImmutableArray<ITypeParameterSymbol> typeParameters,
             Action<Diagnostic>? reportDiagnostic)
         {
-            var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+            _context = context;
+            _featureContext = featureContext;
+            _typeNameResolver = typeNameResolver;
+            _owningSymbol = owningSymbol;
+            _location = location;
+            _reportDiagnostic = reportDiagnostic;
+        }
+
+        public void ProcessGenericArgumentDataFlow(INamedTypeSymbol type)
+        {
+            while (type is { IsGenericType: true })
+            {
+                ProcessGenericArgumentDataFlow(type.TypeArguments, type.TypeParameters);
+                type = type.ContainingType;
+            }
+        }
+
+        public void ProcessGenericArgumentDataFlow(IMethodSymbol method)
+        {
+            ProcessGenericArgumentDataFlow(method.TypeArguments, method.TypeParameters);
+
+            ProcessGenericArgumentDataFlow(method.ContainingType);
+        }
+
+        public void ProcessGenericArgumentDataFlow(IFieldSymbol field)
+        {
+            ProcessGenericArgumentDataFlow(field.ContainingType);
+        }
+
+        public void ProcessGenericArgumentDataFlow(IPropertySymbol property)
+        {
+            ProcessGenericArgumentDataFlow(property.ContainingType);
+        }
+
+        private void ProcessGenericArgumentDataFlow(
+            ImmutableArray<ITypeSymbol> typeArguments,
+            ImmutableArray<ITypeParameterSymbol> typeParameters)
+        {
+            var diagnosticContext = new DiagnosticContext(_location, _reportDiagnostic);
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 var typeArgument = typeArguments[i];
@@ -64,14 +81,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                     var paramlessPublicCtor = namedTypeArg.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty && ctor.DeclaredAccessibility == Accessibility.Public);
                     if (paramlessPublicCtor is not null)
                     {
-                        foreach (var analyzer in context.EnabledRequiresAnalyzers)
+                        foreach (var analyzer in _context.EnabledRequiresAnalyzers)
                         {
                             var attrName = analyzer.RequiresAttributeFullyQualifiedName;
 
-                            if (featureContext.IsEnabled(attrName))
+                            if (_featureContext.IsEnabled(attrName))
                                 continue;
 
-                            analyzer.CheckAndCreateRequiresDiagnostic(paramlessPublicCtor, owningSymbol, incompatibleMembers: ImmutableArray<ISymbol>.Empty, diagnosticContext);
+                            analyzer.CheckAndCreateRequiresDiagnostic(paramlessPublicCtor, _owningSymbol, incompatibleMembers: ImmutableArray<ISymbol>.Empty, diagnosticContext);
                         }
                     }
                 }
@@ -83,20 +100,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
                 // Apply annotations to the generic argument
                 var genericParameterValue = new GenericParameterValue(typeParameter, parameterRequirements);
-                if (context.EnableTrimAnalyzer &&
-                    !owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
-                    !featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&
+                if (_context.EnableTrimAnalyzer &&
+                    !_owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+                    !_featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&
                     genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
                     SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol(typeArgument)!;
-                    var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(context, featureContext, typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer, owningSymbol);
+                    var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(_reportDiagnostic, _typeNameResolver, typeHierarchyType: null);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_context, _featureContext, _typeNameResolver, _location, _reportDiagnostic, reflectionAccessAnalyzer, _owningSymbol);
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
 
                 // Recursively process generic argument data flow on the generic argument if it itself is generic
                 if (typeArgument is INamedTypeSymbol namedTypeArgument && namedTypeArgument.IsGenericType)
-                    ProcessGenericArgumentDataFlow(context, featureContext, typeNameResolver, owningSymbol, location, namedTypeArgument, reportDiagnostic);
+                    ProcessGenericArgumentDataFlow(namedTypeArgument);
             }
         }
 
