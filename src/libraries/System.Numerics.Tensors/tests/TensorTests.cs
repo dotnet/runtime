@@ -1159,7 +1159,6 @@ namespace System.Numerics.Tensors.Tests
             // Test case where Abs doesn't change the result (real numbers, positive values)
             yield return new object[] 
             { 
-                "Increasing numbers",
                 new float[] { 0f, 1f, 2f, 3f },
                 StdDev([0f, 1f, 2f, 3f])
             };
@@ -1167,7 +1166,6 @@ namespace System.Numerics.Tensors.Tests
             // Test case with all same values (should be 0)
             yield return new object[]
             {
-                "All same values",
                 new float[] { 1f, 1f, 1f, 1f },
                 0f
             };
@@ -1175,7 +1173,6 @@ namespace System.Numerics.Tensors.Tests
             // Test case with negative values where Abs could matter (but doesn't for standard deviation)
             yield return new object[]
             {
-                "Mixed positive/negative",
                 new float[] { -2f, -1f, 1f, 2f },
                 StdDev([-2f, -1f, 1f, 2f])
             };
@@ -1186,27 +1183,24 @@ namespace System.Numerics.Tensors.Tests
             // Test case where Abs is critical (complex numbers)
             yield return new object[]
             {
-                "Increasing numbers",
                 new TestComplex[] { new(new(1, 2)), new(new(3, 4)) }
             };
             
             // Test case with purely imaginary numbers
             yield return new object[]
             {
-                "Purely imaginary",
                 new TestComplex[] { new(new(0, 1)), new(new(0, 2)), new(new(0, 3)) }
             };
             
             // Test case with purely real numbers (should behave like floats)
             yield return new object[]
             {
-                "Real complex numbers",
                 new TestComplex[] { new(new(1, 0)), new(new(2, 0)), new(new(3, 0)) }
             };
         }
 
         [Theory, MemberData(nameof(StdDevFloatTestData))]
-        public static void TensorStdDevFloatTests(string testName, float[] data, float expectedStdDev)
+        public static void TensorStdDevFloatTests(float[] data, float expectedStdDev)
         {
             var tensor = Tensor.Create(data);
             
@@ -1227,7 +1221,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory, MemberData(nameof(StdDevComplexTestData))]
-        public static void TensorStdDevComplexTests(string testName, TestComplex[] data)
+        public static void TensorStdDevComplexTests(TestComplex[] data)
         {
             var tensor = Tensor.Create(data);
             
