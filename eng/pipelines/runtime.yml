@@ -1084,41 +1084,6 @@ extends:
                     eq(variables['coreclrContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
-
-      # TODO: Move to extra platforms
-      # iOS/tvOS devices - CoreCLR Interpreter
-      # Build the whole product using CoreCLR in interpreter mode and run libraries tests
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Debug
-          runtimeFlavor: coreclr
-          platforms:
-            - ios_arm64
-            - iossimulator_arm64
-            - maccatalyst_arm64
-          variables:
-            # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-            - name: coreclrContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
-            - name: illinkContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
-            timeoutInMinutes: 120
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=false
-
       #
       # MacCatalyst interp - requires AOT Compilation and Interp flags
       # Build the whole product using Mono and run libraries tests
