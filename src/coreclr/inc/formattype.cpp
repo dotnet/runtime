@@ -265,7 +265,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 callConvUndefined,
                 callConvUndefined
                 };
-            static_assert_no_msg(ARRAY_SIZE(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
+            static_assert(ARRAY_SIZE(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
 
             char tmp[32];
             unsigned callConvIdx = callConv & IMAGE_CEE_CS_CALLCONV_MASK;

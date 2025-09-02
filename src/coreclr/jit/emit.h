@@ -663,35 +663,35 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
-        static_assert_no_msg(INS_count <= 512);
+        static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
-        static_assert_no_msg(INS_count <= 256);
+        static_assert(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
 // The format for the instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(IF_COUNT <= 128);
+        static_assert(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
-        static_assert_no_msg(IF_COUNT <= 1024);
+        static_assert(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
 #else
-        static_assert_no_msg(IF_COUNT <= 256);
+        static_assert(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
 #endif
 
@@ -2370,8 +2370,8 @@ protected:
             : idDebugInfo(nullptr)
             , idStorage()
         {
-            static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
-                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
+            static_assert((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
+                          offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()
@@ -3745,7 +3745,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+    static_assert(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************
