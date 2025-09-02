@@ -38,6 +38,12 @@
 #  define FALLTHROUGH
 #endif
 
+#ifdef _MSC_VER
+#define __UNREACHABLE() __assume(0)
+#else
+#define __UNREACHABLE() __builtin_unreachable()
+#endif
+
 #if defined(_MSC_VER)
 #define NOINLINE __declspec(noinline)
 #define FORCEINLINE __forceinline

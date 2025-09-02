@@ -112,7 +112,7 @@ AGAIN:
 #ifdef _DEBUG
             _ASSERTE(!"BadType");
 #else
-            __assume(0);        // we are really certain the default case does not happen
+            UNREACHABLE();        // we are really certain the default case does not happen
 #endif
             break;
         }
