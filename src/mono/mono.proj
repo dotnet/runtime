@@ -392,8 +392,6 @@
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=maccatalyst" />
-      <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
-      <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
