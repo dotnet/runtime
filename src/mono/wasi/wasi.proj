@@ -122,14 +122,6 @@
   <Target Name="GenerateWasiPropsAndRspFiles">
 
     <!-- Generate wasm-props.json -->
-    <ItemGroup>
-      <!-- TODOWASI
-      <_WasiLinkFlags Include="-Wl, - - allow-undefined"/>
-      -Wl,- - export=malloc, - - export=free, - - export=__heap_base, - - export=__data_end \
-      -Wl,-z
-      -->
-    </ItemGroup>
-
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
     </ItemGroup>
