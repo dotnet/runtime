@@ -153,6 +153,10 @@ namespace System.Net
             return false;
         }
 
+        /// <summary>Tries to convert the character span to its <see cref="IPEndPoint"/> equivalent.</summary>
+        /// <param name="s">A span container the characters representing the <see cref="IPEndPoint"/> to convert.</param>
+        /// <param name="result">When this method returns, contains the <see cref="IPEndPoint"/> value equivalent to what is contained in <paramref name="s" /> if the conversion succeeded, or default if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="s" /> was converted successfully; otherwise, false.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPEndPoint? result) => InternalTryParse(s, out result);
 
         public static IPEndPoint Parse(string s)
