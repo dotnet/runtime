@@ -76,10 +76,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                     }
                 }
 
-                // TODO: avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor.
+                var parameterRequirements = typeParameter.GetDynamicallyAccessedMemberTypes();
+                // Avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor
+                if (typeParameter.HasConstructorConstraint)
+                    parameterRequirements &= ~DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
                 // Apply annotations to the generic argument
-                var genericParameterValue = new GenericParameterValue(typeParameter);
+                var genericParameterValue = new GenericParameterValue(typeParameter, parameterRequirements);
                 if (context.EnableTrimAnalyzer &&
                     !owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                     !featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&

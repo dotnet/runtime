@@ -1347,6 +1347,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            class RequiresNewAndConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : new()
+            {
+            }
+
             [RequiresUnreferencedCode("--ClassWithRequires--")]
             public class ClassWithRequires
             {
@@ -1413,6 +1417,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 }
             }
 
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
+            class ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation : RequiresNewAndConstructors<ClassWithRequires>
+            {
+                [ExpectedWarning("IL2026", "--ClassWithRequires--")]
+                [ExpectedWarning("IL2026", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
+                public ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation()
+                {
+                }
+            }
+
             [UnexpectedWarning("IL2026", Tool.All, "https://github.com/dotnet/runtime/issues/108507")]
             [RequiresUnreferencedCode("--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
             class ClassWithWarningOnGenericArgumentConstructorWithRequires : RequiresNew<ClassWithRequires>
@@ -1448,8 +1463,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var g = new GenericClassWithWarningWithRequires<int>();
                 var h = new ClassWithWarningWithRequires();
                 var j = new ClassWithWarningOnGenericArgumentConstructor();
-                var k = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
-                var l = new GenericAnnotatedWithWarningWithRequires<int>();
+                var k = new ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation();
+                var l = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
+                var m = new GenericAnnotatedWithWarningWithRequires<int>();
             }
         }
 
