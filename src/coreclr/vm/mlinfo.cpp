@@ -2544,7 +2544,13 @@ void MarshalInfo::SetupArgumentSizes()
     const unsigned targetPointerSize = TARGET_POINTER_SIZE;
     const bool pointerIsValueType = false;
     const bool pointerIsFloatHfa = false;
+#ifdef TARGET_WASM
+    // Wasm uses the interpreter which uses a pointer agnostic stack slot size.
+    // Therefore, we only need assert it is sufficiently large.
+    _ASSERTE(targetPointerSize <= StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
+#else
     _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
+#endif // TARGET_WASM
 
     if (m_byref)
     {
