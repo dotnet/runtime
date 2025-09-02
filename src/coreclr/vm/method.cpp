@@ -56,14 +56,14 @@ bool FixupSignatureContainingInternalTypes(
 // Verify that the structure sizes of our MethodDescs support proper
 // aligning for atomic stub replacement.
 //
-static_assert_no_msg((sizeof(MethodDescChunk)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(MethodDesc)            & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(PInvokeMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(MethodDescChunk)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(MethodDesc)            & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(PInvokeMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
@@ -896,7 +896,7 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_wFlags) == 2);
+        static_assert(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
 
@@ -926,7 +926,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_wFlags3AndTokenRemainder) == 2);
+        static_assert(sizeof(m_wFlags3AndTokenRemainder) == 2);
         dwMask <<= 16;
     }
 
@@ -999,7 +999,7 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
+        static_assert(sizeof(m_flagsAndTokenRange) == 2);
         dwMask <<= 16;
     }
 

@@ -801,7 +801,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.OSX, "DSA is not supported on Apple platforms")]
         public static void DSA_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters()
         {
             (byte[] pkcs12, DSA dsa) = CreateSimplePkcs12<DSA>();
@@ -818,7 +818,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.OSX, "DSA is not supported on Apple platforms")]
         public static void DSA_Export_DefaultKeyStorePermitsUnencryptedExports_Pkcs8PrivateKey()
         {
             (byte[] pkcs12, DSA dsa) = CreateSimplePkcs12<DSA>();

@@ -275,8 +275,7 @@ PTR_ExInfo Thread::GetCurExInfo()
 void Thread::Construct()
 {
 #ifndef USE_PORTABLE_HELPERS
-    C_ASSERT(OFFSETOF__Thread__m_pTransitionFrame ==
-             (offsetof(Thread, m_pTransitionFrame)));
+    static_assert(OFFSETOF__Thread__m_pTransitionFrame == (offsetof(Thread, m_pTransitionFrame)));
 #endif // USE_PORTABLE_HELPERS
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The

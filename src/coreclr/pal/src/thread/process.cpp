@@ -190,7 +190,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #define CLR_SEM_MAX_NAMELEN MAX_PATH
 #endif
 
-static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
@@ -1733,7 +1733,7 @@ const int SEMAPHORE_ENCODED_NAME_LENGTH =
     sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
     SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
 
-static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
+static_assert(MAX_APPLICATION_GROUP_ID_LENGTH
     + 1 /* For / */
     + 2 /* For ST/CO name prefix */
     + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
