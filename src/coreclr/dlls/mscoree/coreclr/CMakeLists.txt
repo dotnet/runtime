@@ -73,6 +73,8 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set(LIB_CORDBEE cordbee_wks)
     set(LIB_INTEROP interop)
     set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+    set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
+    set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -104,7 +106,14 @@ set(CORECLR_LIBRARIES
     coreclrminipal
     gc_pal
     ${LIB_CDAC_CONTRACT_DESCRIPTOR}
+    ${LIB_CDAC_GC_WKS_DESCRIPTOR}
 )
+
+if (FEATURE_SVR_GC)
+    list(APPEND CORECLR_LIBRARIES
+        ${LIB_CDAC_GC_SVR_DESCRIPTOR}
+    )
+endif(FEATURE_SVR_GC)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND CORECLR_LIBRARIES
@@ -205,6 +214,9 @@ target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
+endif()
+
+if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     target_link_libraries(coreclr_static
         PUBLIC
         coreclrminipal_objects

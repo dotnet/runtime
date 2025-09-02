@@ -4530,8 +4530,8 @@ Thread::ApartmentState Thread::GetApartment()
     if (maskedTs)
     {
         _ASSERTE((maskedTs == TS_InSTA) || (maskedTs == TS_InMTA));
-        static_assert_no_msg(TS_TO_AS(TS_InSTA) == AS_InSTA);
-        static_assert_no_msg(TS_TO_AS(TS_InMTA) == AS_InMTA);
+        static_assert(TS_TO_AS(TS_InSTA) == AS_InSTA);
+        static_assert(TS_TO_AS(TS_InMTA) == AS_InMTA);
 
         as = TS_TO_AS(maskedTs);
     }
@@ -7626,7 +7626,7 @@ static void NTAPI EmptyApcCallback(ULONG_PTR Parameter)
 void Thread::InitializeSpecialUserModeApc()
 {
     WRAPPER_NO_CONTRACT;
-    static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
+    static_assert(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
     HMODULE hKernel32 = WszLoadLibrary(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 

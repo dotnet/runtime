@@ -110,6 +110,12 @@ namespace ILLink.RoslynAnalyzer.Tests
             CheckMember(node);
         }
 
+        public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+        {
+            base.VisitOperatorDeclaration(node);
+            CheckMember(node);
+        }
+
         public override void VisitEventDeclaration(EventDeclarationSyntax node)
         {
             base.VisitEventDeclaration(node);
