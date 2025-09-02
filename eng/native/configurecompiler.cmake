@@ -676,9 +676,21 @@ if (CLR_CMAKE_HOST_UNIX)
     # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
     # replaced with a default value, and always gets expanded to an OS version.
     # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
-    # We need to disable the warning that -tagret replaces -mmacosx-version-min
-    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
-    add_link_options(-Wno-overriding-t-option)
+    # We need to disable the warning that -target replaces -mmacosx-version-min
+    #
+    # With https://github.com/llvm/llvm-project/commit/1c66d08b0137cef7761b8220d3b7cb7833f57cdb clang renamed the option so we need to check for both
+    check_c_compiler_flag("-Wno-overriding-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+    if (COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-option)
+    else()
+      check_c_compiler_flag("-Wno-overriding-t-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+      if (COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+        set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
+      else()
+        message(FATAL_ERROR "Compiler does not support -Wno-overriding-option or -Wno-overriding-t-option, needed for Mac Catalyst builds.")
+      endif()
+    endif()
+    add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios15.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
