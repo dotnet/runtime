@@ -10791,7 +10791,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
             accessType = IAT_PVALUE;
-            _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
+            _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != (TADDR)NULL); // Confirm the helper is non-null and doesn't require lazy loading.
             targetAddr = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
             _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
             goto exit;
