@@ -286,6 +286,35 @@ internal struct DacpGcHeapData
     public uint g_max_generation;
 }
 
+internal struct DacpSyncBlockData
+{
+    public ClrDataAddress Object;
+    public int bFree; // if set, no other fields are useful
+
+    // fields below provide data from this, so it's just for display
+    public ClrDataAddress SyncBlockPointer;
+    public uint COMFlags;
+    public uint MonitorHeld;
+    public uint Recursion;
+    public ClrDataAddress HoldingThread;
+    public uint AdditionalThreadCount;
+    public ClrDataAddress appDomainPtr;
+
+    // SyncBlockCount will always be filled in with the number of SyncBlocks.
+    // SyncBlocks may be requested from [1,SyncBlockCount]
+    public uint SyncBlockCount;
+}
+
+internal struct DacpSyncBlockCleanupData
+{
+    public ClrDataAddress SyncBlockPointer;
+
+    public ClrDataAddress nextSyncBlock;
+    public ClrDataAddress blockRCW;
+    public ClrDataAddress blockClassFactory;
+    public ClrDataAddress blockCCW;
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
@@ -441,9 +470,9 @@ internal unsafe partial interface ISOSDacInterface
 
     // SyncBlock
     [PreserveSig]
-    int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
+    int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
-    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
+    int GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data);
 
     // Handles
     [PreserveSig]

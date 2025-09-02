@@ -2200,9 +2200,9 @@ internal sealed unsafe partial class SOSDacImpl
         return HResults.S_OK;
     }
 
-    int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
+    int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
+    int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
