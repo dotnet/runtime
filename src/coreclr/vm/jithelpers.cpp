@@ -2603,7 +2603,7 @@ TADDR LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDes
 
     MethodDesc* pMD = NULL;
     TADDR helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
-    if (helper == NULL)
+    if (helper == (TADDR)NULL)
     {
         BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
 
@@ -2615,7 +2615,7 @@ TADDR LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDes
 
         pMD = CoreLibBinder::GetMethod(binderId);
         PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
-        InterlockedCompareExchangeT<TADDR>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (TADDR)pFunc, NULL);
+        InterlockedCompareExchangeT<TADDR>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (TADDR)pFunc, (TADDR)NULL);
     }
 
     // If the caller wants the MethodDesc, we may need to try and load it.

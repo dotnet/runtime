@@ -10889,7 +10889,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         NewHolder<PortableEntryPoint> portableEntryPoint = new PortableEntryPoint();
         portableEntryPoint->Init((void*)entryPoint);
-        if (InterlockedCompareExchangeT<TADDR>(&hlpFuncEntryPoints[ftnNum], (TADDR)(PortableEntryPoint*)portableEntryPoint, NULL) == NULL)
+        if (InterlockedCompareExchangeT<TADDR>(&hlpFuncEntryPoints[ftnNum], (TADDR)(PortableEntryPoint*)portableEntryPoint, (TADDR)NULL) == (TADDR)NULL)
             portableEntryPoint.SuppressRelease();
 
         entryPoint = hlpFuncEntryPoints[ftnNum];
