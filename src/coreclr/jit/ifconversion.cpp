@@ -676,20 +676,17 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 
         // We may be inside an unnatural loop, so do the expensive check.
-        if (m_comp->compHasBackwardJump)
+        Compiler::ReachabilityResult reachability =
+            m_comp->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+        if (reachability == Compiler::ReachabilityResult::Reachable)
         {
-            Compiler::ReachabilityResult reachability =
-                m_comp->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
-            if (reachability == Compiler::ReachabilityResult::Reachable)
-            {
-                JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
-                return false;
-            }
-            else if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
-            {
-                JITDUMP("Skipping if-conversion since we ran out of reachability budget\n");
-                return false;
-            }
+            JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
+            return false;
+        }
+        else if (reachability == Compiler::ReachabilityResult::BudgetExceeded)
+        {
+            JITDUMP("Skipping if-conversion since we ran out of reachability budget\n");
+            return false;
         }
     }
 
