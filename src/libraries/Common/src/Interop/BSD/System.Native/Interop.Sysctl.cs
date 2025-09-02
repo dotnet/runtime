@@ -29,7 +29,7 @@ internal static partial class Interop
                 if (autoSize)
                 {
                     // do one try to see how much data we need
-                    ret = Sysctl(name, name_len, value, &bytesLength);
+                    ret = Sysctl(name_ptr, name_len, value, &bytesLength);
                     if (ret != 0)
                     {
                         ThrowInvalidSysctlException(name, Marshal.GetLastPInvokeError());
@@ -37,7 +37,7 @@ internal static partial class Interop
                     value = (byte*)NativeMemory.Alloc(bytesLength);
                 }
 
-                ret = Sysctl(name, name_len, value, &bytesLength);
+                ret = Sysctl(name_ptr, name_len, value, &bytesLength);
                 while (autoSize && ret != 0 && GetLastErrorInfo().Error == Error.ENOMEM)
                 {
                     // Do not realloc here: we don't care about
