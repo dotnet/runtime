@@ -16,8 +16,8 @@ public interface IStackWalk : IContract
     byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
-    TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
+    TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk
