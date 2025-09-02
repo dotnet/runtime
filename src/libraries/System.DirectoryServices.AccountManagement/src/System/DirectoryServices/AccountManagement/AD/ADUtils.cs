@@ -213,7 +213,7 @@ namespace System.DirectoryServices.AccountManagement
 
             foreach (char c in papiString)
             {
-                if (!escapeMode)
+                if (escapeMode == false)
                 {
                     switch (c)
                     {
@@ -226,18 +226,17 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         case '\\':
-                            escapeMode = true;            //   \\ enters escape mode
+                            escapeMode = true;
                             break;
 
                         default:
                             // including the '*' wildcard
-                            sb.Append(c);                 //   *  --> *   and   x  --> x
+                            sb.Append(c);    //   *  --> *   and   x  --> x
                             break;
                     }
                 }
                 else
                 {
-                    // We were in escape mode; current char is a literal to translate if special
                     escapeMode = false;
 
                     switch (c)
@@ -259,7 +258,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append(c);                 //      \x --> x
+                            sb.Append(c);    //      \x --> x
                             break;
                     }
                 }

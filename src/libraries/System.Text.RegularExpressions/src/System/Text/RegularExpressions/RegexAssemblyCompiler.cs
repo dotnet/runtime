@@ -101,9 +101,7 @@ namespace System.Text.RegularExpressions
             RegexOptions options,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type regexRunnerFactoryType,
             RegexTree tree,
-#pragma warning disable IDE0060 // Remove unused parameter
             RegexInterpreterCode code,
-#pragma warning restore IDE0060 // Remove unused parameter
             TimeSpan matchTimeout)
         {
             // Call the base ctor and store pattern, options, and factory.
@@ -176,10 +174,7 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        private void GenerateRegexTimeoutCtor(ConstructorBuilder defaultCtorBuilder,
-#pragma warning disable IDE0060 // Remove unused parameter
-            TypeBuilder regexTypeBuilder)
-#pragma warning restore IDE0060 // Remove unused parameter
+        private void GenerateRegexTimeoutCtor(ConstructorBuilder defaultCtorBuilder, TypeBuilder regexTypeBuilder)
         {
             // base.ctor();
             // ValidateMatchTimeout(timeSpan);

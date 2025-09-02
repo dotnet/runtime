@@ -603,7 +603,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     argumentType = indexJObj["type"]?.Value<string>();
                     argumentClassName = indexJObj["className"]?.Value<string>();
-                    isArray = indexJObj["subtype"]?.Value<string>()?.Equals("array") is true;
+                    isArray = indexJObj["subtype"]?.Value<string>()?.Equals("array") == true;
                 }
                 else if (indexObj is LiteralExpressionSyntax literal)
                 {

@@ -364,7 +364,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static bool TryParseId(string stackId, out int id)
         {
             id = -1;
-            if (!(stackId?.StartsWith("dotnet:", StringComparison.Ordinal) ?? false))
+            if (stackId?.StartsWith("dotnet:", StringComparison.Ordinal) != true)
                 return false;
 
             return int.TryParse(stackId.AsSpan("dotnet:".Length), out id);
@@ -533,7 +533,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             IEnumerable<ExecutionContext> validContexts = null;
             if (ignoreDestroyedContext)
-                validContexts = contextBag.Where(context => !context.Destroyed);
+                validContexts = contextBag.Where(context => context.Destroyed == false);
             else
                 validContexts = contextBag;
             if (!validContexts.Any())

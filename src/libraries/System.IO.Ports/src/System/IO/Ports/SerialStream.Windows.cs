@@ -91,7 +91,7 @@ namespace System.IO.Ports
                     int baudRateOld = (int)_dcb.BaudRate;
                     _dcb.BaudRate = (uint)value;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.BaudRate = (uint)baudRateOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -107,13 +107,13 @@ namespace System.IO.Ports
             {
                 if (value)
                 {
-                    if (!Interop.Kernel32.SetCommBreak(_handle))
+                    if (Interop.Kernel32.SetCommBreak(_handle) == false)
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = true;
                 }
                 else
                 {
-                    if (!Interop.Kernel32.ClearCommBreak(_handle))
+                    if (Interop.Kernel32.ClearCommBreak(_handle) == false)
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = false;
                 }
@@ -130,7 +130,7 @@ namespace System.IO.Ports
                     byte byteSizeOld = _dcb.ByteSize;
                     _dcb.ByteSize = (byte)value;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.ByteSize = byteSizeOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -149,7 +149,7 @@ namespace System.IO.Ports
                     int fNullOld = fNullFlag;
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, fNullOld);
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -172,7 +172,7 @@ namespace System.IO.Ports
                 int fDtrControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL);
 
                 SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, value ? Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_ENABLE : Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_DISABLE);
-                if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                 {
                     SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, fDtrControlOld);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -222,7 +222,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
                     }
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _handshake = handshakeOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, fInOutXOld);
@@ -268,7 +268,7 @@ namespace System.IO.Ports
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                         _dcb.ErrorChar = (byte)'\0';
                     }
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.Parity = parityOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, fParityOld);
@@ -307,7 +307,7 @@ namespace System.IO.Ports
                         _dcb.ErrorChar = (byte)'\0';
                     }
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _parityReplace = parityReplaceOld;
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, fErrorCharOld);
@@ -373,7 +373,7 @@ namespace System.IO.Ports
                     _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
 
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = oldReadConstant;
                     _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultiplier;
@@ -408,7 +408,7 @@ namespace System.IO.Ports
                     else
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, fRtsControlOld);
                         // set it back to the old value on a failure
@@ -448,7 +448,7 @@ namespace System.IO.Ports
                     byte stopBitsOld = _dcb.StopBits;
                     _dcb.StopBits = nativeValue;
 
-                    if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+                    if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.StopBits = stopBitsOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -475,7 +475,7 @@ namespace System.IO.Ports
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
                 _commTimeouts.WriteTotalTimeoutConstant = ((value == SerialPort.InfiniteTimeout) ? 0 : value);
 
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
                     _commTimeouts.WriteTotalTimeoutConstant = oldWriteConstant;
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -491,7 +491,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_RLSD_ON & pinStatus) != 0;
@@ -503,7 +503,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (Interop.Kernel32.CommModemState.MS_CTS_ON & pinStatus) != 0;
             }
@@ -515,7 +515,7 @@ namespace System.IO.Ports
             get
             {
                 int pinStatus = 0;
-                if (!Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
+                if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (Interop.Kernel32.CommModemState.MS_DSR_ON & pinStatus) != 0;
@@ -530,7 +530,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to have values, as opposed to "out" arguments
-                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
+                if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -545,7 +545,7 @@ namespace System.IO.Ports
             get
             {
                 int errorCode = 0; // "ref" arguments need to be set before method invocation, as opposed to "out" arguments
-                if (!Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat))
+                if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (int)_comStat.cbOutQue;
 
@@ -672,7 +672,7 @@ namespace System.IO.Ports
                 _commTimeouts.WriteTotalTimeoutConstant = ((writeTimeout == SerialPort.InfiniteTimeout) ? 0 : writeTimeout);
 
                 // set unmanaged timeout structure
-                if (!Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts))
+                if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -839,14 +839,14 @@ namespace System.IO.Ports
         internal void DiscardInBuffer()
         {
 
-            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT))
+            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT) == false)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Uses Win32 method to dump out the xmit buffer; analogous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
-            if (!Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT))
+            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT) == false)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
@@ -1148,7 +1148,7 @@ namespace System.IO.Ports
         private unsafe void InitializeDCB(int baudRate, Parity parity, int dataBits, StopBits stopBits, bool discardNull)
         {
             // first get the current dcb structure setup
-            if (!Interop.Kernel32.GetCommState(_handle, ref _dcb))
+            if (Interop.Kernel32.GetCommState(_handle, ref _dcb) == false)
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1241,7 +1241,7 @@ namespace System.IO.Ports
             _dcb.EvtChar = Interop.Kernel32.DCB.EOFCHAR;
 
             // set DCB structure
-            if (!Interop.Kernel32.SetCommState(_handle, ref _dcb))
+            if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -1600,7 +1600,7 @@ namespace System.IO.Ports
 
                     fixed (int* eventsOccurredPtr = &eventsOccurred)
                     {
-                        if (!Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped))
+                        if (Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped) == false)
                         {
                             int hr = Marshal.GetLastPInvokeError();
 
@@ -1619,10 +1619,9 @@ namespace System.IO.Ports
 
                                 // if we get IO pending, MSDN says we should wait on the WaitHandle, then call GetOverlappedResult
                                 // to get the results of WaitCommEvent.
-                                bool signaled = waitCommEventWaitHandle.WaitOne();
-                                Debug.Assert(signaled, $"waitCommEventWaitHandle.WaitOne() returned error {Marshal.GetLastPInvokeError()}");
+                                bool success = waitCommEventWaitHandle.WaitOne();
+                                Debug.Assert(success, $"waitCommEventWaitHandle.WaitOne() returned error {Marshal.GetLastPInvokeError()}");
 
-                                bool success;
                                 do
                                 {
                                     // NOTE: GetOverlappedResult will modify the original pointer passed into WaitCommEvent.
@@ -1631,10 +1630,12 @@ namespace System.IO.Ports
                                 }
                                 while (error == Interop.Errors.ERROR_IO_INCOMPLETE && !ShutdownLoop && !success);
 
-                                // one of those while shutting down
-                                if (!success && !((error == Interop.Errors.ERROR_IO_INCOMPLETE || error == Interop.Errors.ERROR_INVALID_PARAMETER) && ShutdownLoop))
+                                if (!success)
                                 {
-                                    Debug.Fail("GetOverlappedResult returned error, we might leak intOverlapped memory" + error.ToString(CultureInfo.InvariantCulture));
+                                    // Ignore ERROR_IO_INCOMPLETE and ERROR_INVALID_PARAMETER, because there's a chance we'll get
+                                    // one of those while shutting down
+                                    if (!((error == Interop.Errors.ERROR_IO_INCOMPLETE || error == Interop.Errors.ERROR_INVALID_PARAMETER) && ShutdownLoop))
+                                        Debug.Fail("GetOverlappedResult returned error, we might leak intOverlapped memory" + error.ToString(CultureInfo.InvariantCulture));
                                 }
                             }
                             else if (hr != Interop.Errors.ERROR_INVALID_PARAMETER)
@@ -1682,7 +1683,7 @@ namespace System.IO.Ports
                 if ((nativeEvents & (Interop.Kernel32.CommEvents.EV_ERR | Interop.Kernel32.CommEvents.EV_RXCHAR)) != 0)
                 {
                     int errors = 0;
-                    if (!Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero))
+                    if (Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero) == false)
                     {
 
                         //throw Win32Marshal.GetExceptionForLastWin32Error();

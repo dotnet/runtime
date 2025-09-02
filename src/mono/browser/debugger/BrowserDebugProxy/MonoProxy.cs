@@ -105,7 +105,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     {
                                         await OnJSEventRaised(sessionId, eventArgs, token);
 
-                                        if (raiseArgs?["trace"]?.Value<bool>() ?? false) {
+                                        if (raiseArgs?["trace"]?.Value<bool>() == true) {
                                             // Let the message show up on the console
                                             return false;
                                         }
@@ -128,7 +128,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (aux_data != null)
                         {
                             bool? is_default = aux_data["isDefault"]?.Value<bool>();
-                            if (is_default is true)
+                            if (is_default == true)
                             {
                                 await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper(this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
                             }
@@ -147,7 +147,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Debugger.scriptParsed":
                     {
-                        if (args["url"]?.ToString()?.Contains("/_framework/") ?? false) //is from dotnet runtime framework
+                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
                         {
                             if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                                 context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
@@ -247,7 +247,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || !context.IsRuntimeReady)
                                 return false;
                             //avoid pausing when justMyCode is enabled and it's a wasm function
-                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") is true)
+                            if (args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                             {
                                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
                                 return true;
@@ -619,7 +619,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         //receive the available options from DAP to variables, stack and evaluate commands.
                         try {
-                            if (args["options"]?["noFuncEval"]?.Value<bool>() is true)
+                            if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
                                 context.AutoEvaluateProperties = false;
                             else
                                 context.AutoEvaluateProperties = true;
@@ -670,7 +670,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task SetJustMyCode(MessageId id, bool isEnabled, ExecutionContext context, CancellationToken token)
         {
-            if (JustMyCode != isEnabled && !isEnabled)
+            if (JustMyCode != isEnabled && isEnabled == false)
             {
                 JustMyCode = isEnabled;
                 if (await IsRuntimeAlreadyReadyAlready(id, token))
@@ -818,13 +818,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
-                            if (args["accessorPropertiesOnly"]?.Value<bool>() ?? false)
+                if (args["accessorPropertiesOnly"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
 
-                if (args["ownProperties"]?.Value<bool>() ?? false)
+                if (args["ownProperties"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.OwnProperties;
 
-                if (args["forDebuggerDisplayAttribute"]?.Value<bool>() ?? false)
+                if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
             if (context.AutoEvaluateProperties)
@@ -902,7 +902,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
-                    if (retValue?["value"]?.Value<bool>() is true)
+                    if (retValue?["value"]?.Value<bool>() == true)
                         return true;
                 }
                 else if (retValue?["value"] != null && // null object, missing value
@@ -992,7 +992,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (frameNumber != 0)
                 return false;
 
-            if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) is true)
+            if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
             {
                 if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                 {
@@ -1019,7 +1019,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             else
             {
-                if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode is true && !method.Info.hasDebugInformation)
+                if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode == true && !method.Info.hasDebugInformation)
                 {
                     if (event_kind == EventKind.Step)
                         context.IsSkippingHiddenMethod = true;
@@ -1120,7 +1120,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
-                var isWasmExpressionStack = frame["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") is true;
+                var isWasmExpressionStack = frame["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true;
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
                         url.StartsWith("wasm://", StringComparison.Ordinal) ||
                         url.EndsWith(".wasm", StringComparison.Ordinal) ||
@@ -1305,7 +1305,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected async Task<bool> TryStepOnManagedCodeAndStepOutIfNotPossible(SessionId sessionId, ExecutionContext context, StepKind kind, CancellationToken token)
         {
             var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
-            if (!step) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
+            if (step == false) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
             {
                 context.ClearState();
                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);

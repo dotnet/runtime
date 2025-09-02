@@ -359,7 +359,7 @@ namespace BrowserDebugProxy
                     continue;
                 }
 
-                bool isExistingMemberABackingField = existingMember[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() is true;
+                bool isExistingMemberABackingField = existingMember[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() == true;
                 if (isOwn && !isExistingMemberABackingField)
                 {
                     // repeated propname on the same type! cannot happen
@@ -381,7 +381,7 @@ namespace BrowserDebugProxy
                     // this has `new` keyword if it is newSlot but direct child was not a newSlot:
                     var child = allMembers.FirstOrDefault(
                         kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value[InternalUseFieldName.ParentTypeId.Name]?.Value<int>() == typeId).Value;
-                    bool wasOverriddenByDerivedType = child != null && child[InternalUseFieldName.IsNewSlot.Name]?.Value<bool>() is not true;
+                    bool wasOverriddenByDerivedType = child != null && child[InternalUseFieldName.IsNewSlot.Name]?.Value<bool>() != true;
                     if (wasOverriddenByDerivedType)
                     {
                         /*
@@ -407,7 +407,7 @@ namespace BrowserDebugProxy
                  */
 
                 JObject backingFieldForHiddenProp = allMembers.GetValueOrDefault(overriddenOrHiddenPropName);
-                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() is not true)
+                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() != true)
                 {
                     // hiding with a non-auto property, so nothing to adjust
                     // add the new property
@@ -631,7 +631,7 @@ namespace BrowserDebugProxy
                     if (valuesDict.TryAdd(name, item as JObject))
                     {
                         // new member
-                        if (item[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() is true)
+                        if (item[InternalUseFieldName.IsBackingField.Name]?.Value<bool>() == true)
                             item[InternalUseFieldName.Owner.Name] = typeName;
                         continue;
                     }
@@ -720,7 +720,7 @@ namespace BrowserDebugProxy
 
         private void Split(JToken member)
         {
-            if (member[InternalUseFieldName.Hidden.Name]?.Value<bool>() is true)
+            if (member[InternalUseFieldName.Hidden.Name]?.Value<bool>() == true)
                 return;
 
             if (member[InternalUseFieldName.Section.Name]?.Value<string>() is not string section)

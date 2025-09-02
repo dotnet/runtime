@@ -27,7 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly string _loggerId;
 
         public event EventHandler<RunLoopExitState> RunLoopStopped;
-    public bool IsRunning => _runLoop?.IsRunning is true;
+        public bool IsRunning => _runLoop?.IsRunning == true;
         public RunLoopExitState Stopped => _runLoop?.StoppedState;
 
         protected readonly ProxyOptions _options;

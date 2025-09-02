@@ -2004,13 +2004,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject args = dotnetObjectId.ValueAsJson;
                 int? objectId = args["containerId"]?.Value<int>();
                 int? embeddedMethodId = args["methodId"]?.Value<int>();
-                bool isMethodStatic = args["isStatic"]?.Value<bool>() is true;
+                bool isMethodStatic = args["isStatic"]?.Value<bool>() == true;
 
                 return objectId == null || embeddedMethodId == null
                     ? throw new ArgumentException($"Invalid object id for a method, with missing container, or methodId", nameof(dotnetObjectId))
                     : InvokeMethod(objectId.Value,
                         embeddedMethodId.Value,
-                        isValueType: args["isValueType"]?.Value<bool>() is true,
+                        isValueType: args["isValueType"]?.Value<bool>() == true,
                         token,
                         isMethodStatic);
             }
@@ -2030,7 +2030,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
-                    if (isEnum is not true && methodInfo == null)
+                    if (isEnum != true && methodInfo == null)
                         continue;
                     int[] methodIds = await GetMethodIdsByName(typeId, "ToString", extraFlags, token);
                     if (methodIds == null)
