@@ -11,8 +11,10 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
-    internal partial class DefaultBinder : Binder
+    internal class DefaultBinder : Binder
     {
+        internal static readonly DefaultBinder Instance = new DefaultBinder();
+
         // This method is passed a set of methods and must choose the best
         // fit.  The methods all have the same number of arguments and the object
         // array args.  On exit, this method will choice the best fit method
@@ -204,7 +206,7 @@ namespace System
                             continue;
 
                         // a default value is available
-                        if (defaultValueBinding && args[index] == Type.Missing)
+                        if (defaultValueBinding && args[index] == Missing.Value)
                             continue;
 
                         // the argument was null, so it matches with everything
@@ -876,7 +878,7 @@ namespace System
 
             for (int i = 0; i < types.Length; i++)
             {
-                if (args != null && args[i] == Type.Missing)
+                if (args != null && args[i] == Missing.Value)
                     continue;
 
                 Type c1, c2;
