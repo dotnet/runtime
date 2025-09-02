@@ -7,6 +7,11 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <!-- Enable native ARM64 execution for .NET Framework test projects on ARM64 devices -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PreferNativeArm64>true</PreferNativeArm64>
+  </PropertyGroup>
+
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />

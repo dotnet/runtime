@@ -384,7 +384,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // take the call now....
                 call = gtNewIndCallNode(nullptr, callRetTyp, di);
 
+                if (sig->isAsyncCall())
+                {
+                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+                }
+
                 impPopCallArgs(sig, call->AsCall());
+
+                if (call->AsCall()->IsAsync())
+                {
+                    impInsertAsyncContinuationForLdvirtftnCall(call->AsCall());
+                }
 
                 GenTree* thisPtr = impPopStack().val;
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
@@ -681,68 +691,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        AsyncCallInfo asyncInfo;
-
-        if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
-        {
-            JITDUMP("Call is an async task await\n");
-
-            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
-            asyncInfo.SaveAndRestoreSynchronizationContextField = true;
-
-            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-            {
-                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
-                JITDUMP("  Continuation continues on captured context\n");
-            }
-            else
-            {
-                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
-                JITDUMP("  Continuation continues on thread pool\n");
-            }
-        }
-        else if (opcode == CEE_CALLI)
-        {
-            // Used for unboxing/instantiating stubs
-            JITDUMP("Call is an async calli\n");
-        }
-        else
-        {
-            JITDUMP("Call is an async non-task await\n");
-            // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
-            // These are awaits of custom awaitables, and they come with the behavior that the execution context
-            // is captured and restored on suspension/resumption.
-            // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
-            // that the safe INotifyCompletion will take care of flowing ExecutionContext.
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
-        }
-
-        // For tailcalls the contexts does not need saving/restoring: they will be
-        // overwritten by the caller anyway.
-        //
-        // More specifically, if we can show that
-        // Thread.CurrentThread._executionContext is not accessed between the
-        // call and returning then we can omit save/restore of the execution
-        // context. We do not do that optimization yet.
-        if (tailCallFlags != 0)
-        {
-            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
-            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
-            asyncInfo.SaveAndRestoreSynchronizationContextField = false;
-        }
-
-        call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-        if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
-        {
-            compMustSaveAsyncContexts = true;
-
-            // In this case we will need to save the context after the arguments are evaluated.
-            // Spill the arguments to accomplish that.
-            // (We could do this via splitting in SaveAsyncContexts, but since we need to
-            //  handle inline candidates we won't gain much.)
-            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
-        }
+        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
     }
 
     // Now create the argument list.
@@ -1149,9 +1098,10 @@ DONE:
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
-        // managed calling convention dictates that the callee widens the value. For explicit tailcalls we don't
-        // want to require this detail of the calling convention to bubble up to the tailcall helpers
-        bool allowWidening = isImplicitTailCall;
+        // managed calling convention dictates that the callee widens the value. For explicit tailcalls or async
+        // functions we don't want to require this detail of the calling convention to bubble up to helper
+        // infrastructure.
+        bool allowWidening = isImplicitTailCall && !call->AsCall()->IsAsync();
         if (canTailCall &&
             !impTailCallRetTypeCompatible(allowWidening, info.compRetType, info.compMethodInfo->args.retTypeClass,
                                           info.compCallConv, callRetTyp, sig->retTypeClass,
@@ -1704,7 +1654,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
     // which is the first field of Nullable<T> struct and is of type 'bool'.
     //
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
     GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
 
@@ -3165,12 +3115,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (isIntrinsic && (ni > NI_SPECIAL_IMPORT_START) && (ni < NI_PRIMITIVE_END))
     {
-        static_assert_no_msg(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
-        static_assert_no_msg(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
-        static_assert_no_msg(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
+        static_assert(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
+        static_assert(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
+        static_assert(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
 
-        static_assert_no_msg((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
-        static_assert_no_msg((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
+        static_assert((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
+        static_assert((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
 
         if (ni < NI_SPECIAL_IMPORT_END)
         {
@@ -3300,7 +3250,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef FEATURE_HW_INTRINSICS
     if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
     {
-        static_assert_no_msg(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
+        static_assert(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
 
         if (!isIntrinsic)
         {
@@ -5893,27 +5843,24 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            if (varTypeIsLong(baseType))
             {
-                GenTree* op2 = impPopStack().val;
-                GenTree* op1 = impPopStack().val;
-
-                if (varTypeIsLong(baseType))
-                {
-                    hwintrinsic = NI_SSE42_X64_Crc32;
-                    op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
-                }
-                else
-                {
-                    hwintrinsic = NI_SSE42_Crc32;
-                    baseType    = genActualType(baseType);
-                }
-
-                result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
-
-                // We use the simdBaseJitType to bring the type of the second argument to codegen
-                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+                hwintrinsic = NI_X86Base_X64_Crc32;
+                op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
             }
+            else
+            {
+                hwintrinsic = NI_X86Base_Crc32;
+                baseType    = genActualType(baseType);
+            }
+
+            result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
+
+            // We use the simdBaseJitType to bring the type of the second argument to codegen
+            result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
 #elif defined(TARGET_ARM64)
             if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
             {
@@ -6158,14 +6105,11 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
-            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
-            {
-                // Pop the value from the stack
-                impPopStack();
+            // Pop the value from the stack
+            impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_SSE42_X64_PopCount : NI_SSE42_PopCount;
-                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
-            }
+            hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
+            result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 #elif defined(TARGET_ARM64)
             // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
 #endif // TARGET_*
@@ -6729,7 +6673,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   call passes a combination of legality and profitability checks.
 //
 //   If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition
-
+//
 void Compiler::impCheckForPInvokeCall(
     GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
@@ -6847,6 +6791,110 @@ void Compiler::impCheckForPInvokeCall(
         unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
+    }
+}
+
+//------------------------------------------------------------------------
+// impSetupAndSpillForAsyncCall:
+//   Register a call as being async and set up context handling information depending on the IL.
+//   Also spill IL arguments if necessary.
+//
+// Arguments:
+//    call        - The call
+//    opcode      - The IL opcode for the call
+//    prefixFlags - Flags containing context handling information from IL
+//
+void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags)
+{
+    AsyncCallInfo asyncInfo;
+
+    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
+    {
+        JITDUMP("Call is an async task await\n");
+
+        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
+        asyncInfo.SaveAndRestoreSynchronizationContextField = true;
+
+        if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+        {
+            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+            JITDUMP("  Continuation continues on captured context\n");
+        }
+        else
+        {
+            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+            JITDUMP("  Continuation continues on thread pool\n");
+        }
+    }
+    else if (opcode == CEE_CALLI)
+    {
+        // Used for unboxing/instantiating stubs
+        JITDUMP("Call is an async calli\n");
+    }
+    else
+    {
+        JITDUMP("Call is an async non-task await\n");
+        // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
+        // These are awaits of custom awaitables, and they come with the behavior that the execution context
+        // is captured and restored on suspension/resumption.
+        // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
+        // that the safe INotifyCompletion will take care of flowing ExecutionContext.
+        asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
+    }
+
+    // For tailcalls the contexts does not need saving/restoring: they will be
+    // overwritten by the caller anyway.
+    //
+    // More specifically, if we can show that
+    // Thread.CurrentThread._executionContext is not accessed between the
+    // call and returning then we can omit save/restore of the execution
+    // context. We do not do that optimization yet.
+    if ((prefixFlags & PREFIX_TAILCALL) != 0)
+    {
+        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+        asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
+        asyncInfo.SaveAndRestoreSynchronizationContextField = false;
+    }
+
+    call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+    if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
+    {
+        compMustSaveAsyncContexts = true;
+
+        // In this case we will need to save the context after the arguments are evaluated.
+        // Spill the arguments to accomplish that.
+        // (We could do this via splitting in SaveAsyncContexts, but since we need to
+        //  handle inline candidates we won't gain much.)
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
+    }
+}
+
+//------------------------------------------------------------------------
+// impInsertAsyncContinuationForLdvirtftnCall:
+//   Insert the async continuation argument for a call the EE asked to be
+//   performed via ldvirtftn.
+//
+// Arguments:
+//    call - The call
+//
+// Remarks:
+//   Should be called before the 'this' arg is inserted, but after other IL args
+//   have been inserted.
+//
+void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
+{
+    assert(call->AsCall()->IsAsync());
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                   .WellKnown(WellKnownArg::AsyncContinuation));
+    }
+    else
+    {
+        call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                  .WellKnown(WellKnownArg::AsyncContinuation));
     }
 }
 
@@ -8256,6 +8304,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // instructions to directly compute round/ceiling/floor/truncate.
 
         case NI_System_Math_Abs:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
         case NI_System_Math_Max:
         case NI_System_Math_MaxMagnitude:
         case NI_System_Math_MaxMagnitudeNumber:
@@ -8269,14 +8319,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
-        case NI_System_Math_Sqrt:
-            return true;
-
-        case NI_System_Math_Ceiling:
-        case NI_System_Math_Floor:
         case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
         case NI_System_Math_Truncate:
-            return compOpportunisticallyDependsOn(InstructionSet_SSE42);
+            return true;
 
         case NI_System_Math_FusedMultiplyAdd:
             return compOpportunisticallyDependsOn(InstructionSet_AVX2);
@@ -10708,6 +10754,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     // Vector2/3/4 Matrix4x4, Quaternion, or Plane
                                     lookupMethodName = nullptr;
                                 }
+                            }
+                            else if (strcmp(methodName, "SquareRoot") == 0)
+                            {
+                                lookupMethodName = "Sqrt";
                             }
 
                             if (lookupMethodName != nullptr)

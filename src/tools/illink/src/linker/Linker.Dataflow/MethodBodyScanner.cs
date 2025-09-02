@@ -422,7 +422,9 @@ namespace Mono.Linker.Dataflow
                         break;
 
                     case Code.Ldftn:
-                        TrackNestedFunctionReference((MethodReference)operation.Operand, ref interproceduralState);
+                        MethodReference methodReference = (MethodReference)operation.Operand;
+                        HandleMethodTokenAccess(methodIL, operation.Offset, methodReference);
+                        TrackNestedFunctionReference(methodReference, ref interproceduralState);
                         PushUnknown(currentStack);
                         break;
 
@@ -457,7 +459,7 @@ namespace Mono.Linker.Dataflow
                     break;
 
                     case Code.Ldtoken:
-                        ScanLdtoken(operation, currentStack);
+                        ScanLdtoken(methodIL, operation, currentStack);
                         break;
 
                     case Code.Ldind_I:
@@ -510,12 +512,17 @@ namespace Mono.Linker.Dataflow
                     case Code.Conv_R8:
                     case Code.Ldind_Ref:
                     case Code.Ldobj:
-                    case Code.Mkrefany:
                     case Code.Unbox:
                     case Code.Unbox_Any:
-                    case Code.Box:
                     case Code.Neg:
                     case Code.Not:
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
+                        PushUnknown(currentStack);
+                        break;
+
+                    case Code.Box:
+                    case Code.Mkrefany:
+                        HandleTypeTokenAccess(methodIL, operation.Offset, (TypeReference)operation.Operand);
                         PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         PushUnknown(currentStack);
                         break;
@@ -537,7 +544,9 @@ namespace Mono.Linker.Dataflow
                     case Code.Newarr:
                     {
                         StackSlot count = PopUnknown(currentStack, 1, methodIL, operation.Offset);
-                        currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, (TypeReference)operation.Operand)));
+                        var arrayElementType = (TypeReference)operation.Operand;
+                        HandleTypeTokenAccess(methodIL, operation.Offset, arrayElementType);
+                        currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElementType)));
                     }
                     break;
 
@@ -828,7 +837,7 @@ namespace Mono.Linker.Dataflow
             currentStack.Push(newSlot);
         }
 
-        void ScanLdtoken(Instruction operation, Stack<StackSlot> currentStack)
+        void ScanLdtoken(MethodIL methodIL, Instruction operation, Stack<StackSlot> currentStack)
         {
             switch (operation.Operand)
             {
@@ -846,25 +855,36 @@ namespace Mono.Linker.Dataflow
                                 var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers(new TypeProxy(resolvedDefinition, _context),
                                     new RuntimeTypeHandleForGenericParameterValue(genericParam));
                                 currentStack.Push(new StackSlot(nullableDam));
-                                return;
+                                break;
                             case TypeReference underlyingTypeReference when ResolveToTypeDefinition(underlyingTypeReference) is TypeDefinition underlyingType:
                                 var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue(new TypeProxy(resolvedDefinition, _context), new SystemTypeValue(new(underlyingType, _context)));
                                 currentStack.Push(new StackSlot(nullableType));
-                                return;
+                                break;
                             default:
                                 PushUnknown(currentStack);
-                                return;
+                                break;
                         }
                     }
                     else
                     {
                         var typeHandle = new RuntimeTypeHandleValue(new TypeProxy(resolvedDefinition, _context));
                         currentStack.Push(new StackSlot(typeHandle));
-                        return;
                     }
+
+                    HandleTypeTokenAccess(methodIL, operation.Offset, typeReference);
+                    return;
+
                 case MethodReference methodReference when _context.TryResolve(methodReference) is MethodDefinition resolvedMethod:
                     var method = new RuntimeMethodHandleValue(resolvedMethod);
                     currentStack.Push(new StackSlot(method));
+
+                    HandleMethodTokenAccess(methodIL, operation.Offset, methodReference);
+                    return;
+
+                case FieldReference fieldReference:
+                    PushUnknown(currentStack);
+
+                    HandleFieldTokenAccess(methodIL, operation.Offset, fieldReference);
                     return;
                 default:
                     PushUnknown(currentStack);
@@ -1003,6 +1023,12 @@ namespace Mono.Linker.Dataflow
         {
         }
 
+        protected abstract void HandleTypeTokenAccess(MethodIL methodIL, int offset, TypeReference accessedType);
+
+        protected abstract void HandleMethodTokenAccess(MethodIL methodIL, int offset, MethodReference accessedMethod);
+
+        protected abstract void HandleFieldTokenAccess(MethodIL methodIL, int offset, FieldReference accessedField);
+
         private void ScanStfld(
             MethodIL methodIL,
             Instruction operation,
@@ -1014,12 +1040,13 @@ namespace Mono.Linker.Dataflow
             if (operation.OpCode.Code == Code.Stfld)
                 PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
-            FieldDefinition? field = _context.TryResolve((FieldReference)operation.Operand);
-            if (field != null)
+            var field = (FieldReference)operation.Operand;
+            FieldDefinition? fieldDefinition = _context.TryResolve(field);
+            if (fieldDefinition != null)
             {
-                if (CompilerGeneratedState.IsHoistedLocal(field))
+                if (CompilerGeneratedState.IsHoistedLocal(fieldDefinition))
                 {
-                    interproceduralState.SetHoistedLocal(new HoistedLocalKey(field), valueToStoreSlot.Value);
+                    interproceduralState.SetHoistedLocal(new HoistedLocalKey(fieldDefinition), valueToStoreSlot.Value);
                     return;
                 }
 

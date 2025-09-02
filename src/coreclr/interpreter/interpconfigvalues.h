@@ -20,6 +20,7 @@
 #endif
 
 RELEASE_CONFIG_METHODSET(Interpreter, "Interpreter")
+CONFIG_METHODSET(InterpHaltOnCall, "InterpHaltOnCall"); // Assert in the compiler when compiling a call to these method(s)
 CONFIG_METHODSET(InterpHalt, "InterpHalt");
 CONFIG_METHODSET(InterpDump, "InterpDump");
 CONFIG_INTEGER(InterpList, "InterpList", 0); // List the methods which are compiled by the interpreter JIT

@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -125,13 +128,170 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
-        => _legacyImpl is not null ? _legacyImpl.GetILOffsetsByAddress(address, offsetsLen, offsetsNeeded, ilOffsets) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            TargetCodePointer pCode = address.ToTargetCodePointer(_target);
+            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+                pCode,
+                preferUninstrumented: false,
+                out uint codeOffset).ToList();
+
+            uint hits = 0;
+            for (int i = 0; i < map.Count; i++)
+            {
+                bool isEpilog = map[i].ILOffset == unchecked((uint)-3); // -3 is used to indicate an epilog
+                bool lastValue = i == map.Count - 1;
+                uint nativeEndOffset = lastValue ? 0 : map[i + 1].NativeOffset;
+                if (codeOffset >= map[i].NativeOffset && (((isEpilog || lastValue) && nativeEndOffset == 0) || codeOffset < nativeEndOffset))
+                {
+                    if (hits < offsetsLen && ilOffsets is not null)
+                    {
+                        ilOffsets[hits] = map[i].ILOffset;
+                    }
+
+                    hits++;
+                }
+            }
+
+            if (offsetsNeeded is not null)
+            {
+                *offsetsNeeded = hits;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal;
+
+            bool validateOffsetsNeeded = offsetsNeeded is not null;
+            uint localOffsetsNeeded = 0;
+
+            bool validateIlOffsets = ilOffsets is not null;
+            uint[] localIlOffsets = new uint[offsetsLen];
+
+            fixed (uint* localIlOffsetsPtr = localIlOffsets)
+            {
+                hrLocal = _legacyImpl.GetILOffsetsByAddress(
+                    address,
+                    offsetsLen,
+                    validateOffsetsNeeded ? &localOffsetsNeeded : null,
+                    validateIlOffsets ? localIlOffsetsPtr : null);
+            }
+
+            // DAC function returns odd failure codes it doesn't make sense to match directly
+            Debug.Assert(hrLocal == hr || (hrLocal < 0 && hr < 0), $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hr == HResults.S_OK)
+            {
+                if (validateOffsetsNeeded)
+                {
+                    Debug.Assert(localOffsetsNeeded == *offsetsNeeded, $"cDAC: {*offsetsNeeded:x}, DAC: {localOffsetsNeeded:x}");
+                }
+
+                if (validateIlOffsets)
+                {
+                    for (int i = 0; i < localIlOffsets.Length; i++)
+                    {
+                        Debug.Assert(localIlOffsets[i] == ilOffsets[i], $"cDAC: {localIlOffsets[i]:x}, DAC: {ilOffsets[i]:x}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
         => _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, void* maps)
-        => _legacyImpl is not null ? _legacyImpl.GetILAddressMap(mapLen, mapNeeded, maps) : HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetPointer codeStart = pCode.ToAddress(_target);
+            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+                pCode,
+                preferUninstrumented: false,
+                out uint _).ToList();
+
+            if (maps is not null)
+            {
+                int outputMapIndex = 0;
+                for (int i = 0; i < map.Count; i++)
+                {
+                    OffsetMapping entry = map[i];
+
+                    bool lastValue = i == map.Count - 1;
+                    uint nativeEndOffset = lastValue ? 0 : map[i + 1].NativeOffset;
+
+                    if (outputMapIndex < maps.Length)
+                    {
+                        maps[outputMapIndex].ilOffset = entry.ILOffset;
+                        maps[outputMapIndex].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].endAddress = new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].type = ClrDataSourceType.CLRDATA_SOURCE_TYPE_INVALID;
+
+                        outputMapIndex++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (mapNeeded is not null)
+            {
+                *mapNeeded = (uint)map.Count;
+            }
+
+            hr = map.Count > 0 ? HResults.S_OK : HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint mapNeededLocal;
+            ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
+            int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(mapNeeded == null || *mapNeeded == mapNeededLocal);
+                if (mapsLocal is not null)
+                {
+                    for (int i = 0; i < mapsLocal.Length; i++)
+                    {
+                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
+                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
+                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
+                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
+                    }
+                }
+            }
+        }
+
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
         => _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
