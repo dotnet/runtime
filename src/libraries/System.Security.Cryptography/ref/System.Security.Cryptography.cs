@@ -2743,7 +2743,7 @@ namespace System.Security.Cryptography
         public int PssSaltLength { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pss { get { throw null; } }
-        public static RSASignaturePadding CreatePss(int saltLength) { throw null;}
+        public static RSASignaturePadding CreatePss(int saltLength) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.RSASignaturePadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
