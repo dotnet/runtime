@@ -77,6 +77,8 @@ Data descriptors used:
 | ILCodeVersioningState | ActiveVersionMethodDef | if the active version is synthetic or unknown, the MethodDef token for the method |
 | ILCodeVersionNode | VersionId | Version ID of the node |
 | ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
+| ILCodeVersionNode | RejitState | ReJIT state of the node |
+| ILCodeVersionNode | ILAddress | Address of IL corresponding to `ILCodeVersionNode`|
 | GCCoverageInfo | SavedCode | Pointer to the GCCover saved code copy, if supported |
 
 The flag indicates that the default version of the code for a method desc is active:

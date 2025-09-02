@@ -914,6 +914,16 @@ internal struct MethodDesc
         }
     }
 
+    internal bool IsAsyncThunkMethod()
+    {
+        if (!HasFlags(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
+            return false;
+
+        TargetPointer asyncMethodDataPtr = Address + Size;
+        AsyncMethodKind asyncMethodKind = (AsyncMethodKind)_target.Read<uint>(asyncMethodDataPtr + /* AsyncMethodData::Kind offset */);
+        return asyncMethodKind == AsyncMethodKind.AsyncVariantThunk || asyncMethodKind == AsyncMethodKind.RuntimeAsync;
+    }
+
     public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
 
     // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
@@ -1116,6 +1126,12 @@ And the various apis are implemented with the following algorithms
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;
+
+    bool MayHaveILHeader(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && !methodDesc.IsAsyncThunkMethod();
+    }
 ```
 
 Determining if a method is in a collectible module:

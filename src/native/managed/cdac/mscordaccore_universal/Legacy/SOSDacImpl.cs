@@ -2447,6 +2447,8 @@ internal sealed unsafe partial class SOSDacImpl
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
+                Debug.Assert(pRejitData->rejitID == rejitDataLocal.rejitID);
+                Debug.Assert(pRejitData->il == rejitDataLocal.il);
                 Debug.Assert(pRejitData->flags == rejitDataLocal.flags);
                 Debug.Assert(pRejitData->ilCodeVersionNodePtr == rejitDataLocal.ilCodeVersionNodePtr);
             }
