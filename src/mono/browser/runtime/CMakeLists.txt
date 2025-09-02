@@ -26,8 +26,8 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
-    ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
+    ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
     ${NATIVE_BIN_DIR}/libz.a)

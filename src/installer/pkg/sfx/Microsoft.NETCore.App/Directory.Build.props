@@ -82,6 +82,8 @@
     <PlatformManifestFileEntry Include="libSystem.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.Disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.so" IsNative="true" />
@@ -220,7 +222,6 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />

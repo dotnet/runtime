@@ -3,6 +3,7 @@
 //
 
 #include "pal_datetime.h"
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
@@ -71,18 +72,29 @@ extern const char *g_dataIndex[];
 const char* SystemNative_GetTimeZoneData(const char* name, int* length)
 {
 #ifdef TZ_DATA_ENABLED
-    // Small size and speed optimization: skip comparing the prefix.
-    static const char TZ_PREFIX[] = "/usr/share/zoneinfo/";
-    static const size_t TZ_PREFIX_LENGTH = STRING_LENGTH(TZ_PREFIX);
-
-    // TODO: use a binary search here. The index is ~500 entries long.
-    assert(strncmp(TZ_PREFIX, name, TZ_PREFIX_LENGTH) == 0);
-    for (size_t i = 0; i < ARRAY_SIZE(g_nameIndex); i++)
+    static int s_disabledViaConfig;
+    if (s_disabledViaConfig == 0)
     {
-        if (strcmp(name + TZ_PREFIX_LENGTH, g_nameIndex[i]) == 0)
+        char* isInvariantTimeZone = getenv("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+        bool isDisabled = strcmp(isInvariantTimeZone, "true") == 0 || strcmp(isInvariantTimeZone, "1") == 0;
+        s_disabledViaConfig = isDisabled ? 1 : -1;
+    }
+
+    if (s_disabledViaConfig != 1)
+    {
+        // Small size and speed optimization: skip comparing the prefix.
+        static const char TZ_PREFIX[] = "/usr/share/zoneinfo/";
+        static const size_t TZ_PREFIX_LENGTH = STRING_LENGTH(TZ_PREFIX);
+
+        // TODO: use a binary search here. The index is ~500 entries long.
+        assert(strncmp(TZ_PREFIX, name, TZ_PREFIX_LENGTH) == 0);
+        for (size_t i = 0; i < ARRAY_SIZE(g_nameIndex); i++)
         {
-            *length = (int)(g_dataIndex[i + 1] - g_dataIndex[i]);
-            return g_dataIndex[i];
+            if (strcmp(name + TZ_PREFIX_LENGTH, g_nameIndex[i]) == 0)
+            {
+                *length = (int)(g_dataIndex[i + 1] - g_dataIndex[i]);
+                return g_dataIndex[i];
+            }
         }
     }
 #endif // TZ_DATA_ENABLED

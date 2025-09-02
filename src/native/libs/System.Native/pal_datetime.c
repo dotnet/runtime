@@ -64,3 +64,13 @@ char* SystemNative_GetDefaultTimeZone(void)
     return NULL;
 }
 #endif
+
+#if !defined(TARGET_WASM)
+const char* SystemNative_GetTimeZoneData(const char* name, int* length)
+{
+    assert_msg(false, "Not supported on this platform", 0);
+    (void)name;
+    (void)length;
+    return NULL;
+}
+#endif
