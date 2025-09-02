@@ -60,7 +60,7 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    private enum CorTokenType: uint
+    private enum CorTokenType : uint
     {
         mdtTypeRef = 0x01000000,
         mdtTypeDef = 0x02000000,
