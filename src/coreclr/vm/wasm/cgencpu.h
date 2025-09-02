@@ -7,7 +7,6 @@
 
 #include "stublink.h"
 #include "utilcode.h"
-#include "../../interpreter/interpretershared.h"
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -23,8 +22,8 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    const unsigned stackSlotSize = INTERP_STACK_SLOT_SIZE;
-    return ALIGN_UP(parmSize, stackSlotSize);
+    _ASSERTE("The function is not implemented on wasm");
+    return 0;
 }
 
 inline TADDR GetSP(const T_CONTEXT * context)

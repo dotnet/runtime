@@ -12,6 +12,10 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#ifdef FEATURE_INTERPRETER
+#include "../../interpreter/interpretershared.h"
+#endif // FEATURE_INTERPRETER
+
 BOOL IsRetBuffPassedAsFirstArg();
 
 // Describes how a single argument is laid out in registers and/or stack locations when given as an input to a
@@ -1874,7 +1878,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_WASM)
-    int cbArg = ALIGN_UP(StackElemSize(argSize), INTERP_STACK_SLOT_SIZE);
+    int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
     m_ofsStack += cbArg;
