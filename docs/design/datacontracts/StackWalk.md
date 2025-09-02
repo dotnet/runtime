@@ -19,6 +19,9 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
+
+// Gets the method desc pointer associated with the given Frame.
+TargetPointer GetMethodDescPtr(TargetPointer framePtr);
 ```
 
 ## Version 1
@@ -43,9 +46,14 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CallerReturnAddress` | Return address saved in Frame |
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
 | `InlinedCallFrame` (arm) | `SPAfterProlog` | Value of the SP after prolog. Used on ARM to maintain additional JIT invariant |
+| `InlinedCallFrame` | `Datum` | MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k) |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
 | `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
+| `FramedMethodFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
+| `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
+| `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
+| `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
@@ -337,6 +345,15 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 `GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
 ```csharp
 string GetFrameName(TargetPointer frameIdentifier);
+```
+
+`GetMethodDescPtr` returns the method desc pointer associated with a Frame. If not applicable, it returns TargetPointer.Null.
+* For FramedMethodFrame and most of its subclasses the methoddesc is accessible as a pointer field on the object (MethodDescPtr). The two exceptions are PInvokeCalliFrame (no valid method desc) and StubDispatchFrame.
+  * StubDispatchFrame's MD may be either found on MethodDescPtr, or if this field is null, we look it up using a method table (RepresentativeMTPtr) and MT slot (RepresentativeSlot).
+* InlinedCallFrame also has a field from which we draw the method desc; however, we must first do some validation that the data in this field is valid.
+* MD is not applicable for other types of frames.
+```csharp
+TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```
 
 ### x86 Specifics

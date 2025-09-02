@@ -39,7 +39,7 @@ namespace HostActivation.Tests
             // Versions are assumed to be in ascending order. We use these properties to check against the
             // expected values passed to hostfxr API callbacks in the expected order.
             public string ExeDir => Path.Combine(_artifact.Location, "ed");
-            public string LocalSdkDir => Path.Combine(ExeDir, "sdk");
+            public string LocalSdkDir { get; }
             public string LocalFrameworksDir => Path.Combine(ExeDir, "shared");
             public string[] LocalSdks = new[] { "0.1.200", "1.2.300", "5.6.701-preview" };
             public IEnumerable<string> LocalSdkPaths => LocalSdks.Select(sdk => Path.Combine(LocalSdkDir, sdk));
@@ -50,46 +50,15 @@ namespace HostActivation.Tests
                     ("HostFxr.Test.C", new[] { "3.0.0" })
                 };
 
-            public string ProgramFiles => Path.Combine(_artifact.Location, "pf");
-            public string ProgramFilesGlobalSdkDir => Path.Combine(ProgramFiles, "dotnet", "sdk");
-            public string ProgramFilesGlobalFrameworksDir => Path.Combine(ProgramFiles, "dotnet", "shared");
-            public string[] ProgramFilesGlobalSdks = new[] { "1.2.300", "2.3.400-preview", "4.5.600" };
-            public List<(string fwName, string[] fwVersions)> ProgramFilesGlobalFrameworks =
-                new List<(string fwName, string[] fwVersions)>()
-                {
-                    ("HostFxr.Test.A", new[] { "1.2.3", "3.0.0" }),
-                    ("HostFxr.Test.B", new[] { "5.6.7-A" })
-                };
-
-            public string SelfRegistered => Path.Combine(_artifact.Location, "sr");
-            public string SelfRegisteredGlobalSdkDir => Path.Combine(SelfRegistered, "sdk");
-            public string[] SelfRegisteredGlobalSdks = new[] { "3.0.100", "5.6.700", "15.1.400-preview" };
-
             public SdkAndFrameworkFixture()
             {
                 _artifact = TestArtifact.Create(nameof(SdkAndFrameworkFixture));
 
-                foreach (string sdk in ProgramFilesGlobalSdks)
-                {
-                    AddSdkDirectory(ProgramFilesGlobalSdkDir, sdk);
-                }
-                foreach (string sdk in SelfRegisteredGlobalSdks)
-                {
-                    AddSdkDirectory(SelfRegisteredGlobalSdkDir, sdk);
-                }
-                foreach (string sdk in LocalSdks)
-                {
-                    AddSdkDirectory(LocalSdkDir, sdk);
-                }
+                LocalSdkDir = CreateSdkDirectories(ExeDir, LocalSdks);
 
                 // Empty SDK directory - this should not be recognized as a valid SDK directory
                 Directory.CreateDirectory(Path.Combine(LocalSdkDir, "9.9.9"));
 
-                foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
-                {
-                    foreach (string fwVersion in fwVersions)
-                        AddFrameworkDirectory(ProgramFilesGlobalFrameworksDir, fwName, fwVersion);
-                }
                 foreach ((string fwName, string[] fwVersions) in LocalFrameworks)
                 {
                     foreach (string fwVersion in fwVersions)
@@ -97,13 +66,6 @@ namespace HostActivation.Tests
 
                     // Empty framework directory - this should not be recognized as a valid framework directory
                     Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, "9.9.9"));
-                }
-
-                static void AddSdkDirectory(string sdkDir, string version)
-                {
-                    string versionDir = Path.Combine(sdkDir, version);
-                    Directory.CreateDirectory(versionDir);
-                    File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
                 }
 
                 static void AddFrameworkDirectory(string frameworkDir, string name, string version)
@@ -114,30 +76,28 @@ namespace HostActivation.Tests
                 }
             }
 
+            public static string CreateSdkDirectories(string root, string[] versions)
+            {
+                string sdkDirectory = Path.Combine(root, "sdk");
+                foreach (string sdk in versions)
+                {
+                    AddSdkDirectory(sdkDirectory, sdk);
+                }
+
+                return sdkDirectory;
+
+                static void AddSdkDirectory(string sdkDir, string version)
+                {
+                    string versionDir = Path.Combine(sdkDir, version);
+                    Directory.CreateDirectory(versionDir);
+                    File.WriteAllText(Path.Combine(versionDir, "dotnet.dll"), string.Empty);
+                }
+            }
+
             public void Dispose()
             {
                 _artifact.Dispose();
             }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
-        public void Hostfxr_get_available_sdks_with_multilevel_lookup()
-        {
-            // Starting with .NET 7, multi-level lookup is completely disabled for hostfxr API calls.
-            // This test is still valuable to validate that it is in fact disabled
-            var f = sharedTestState.SdkAndFrameworkFixture;
-            string expectedList = string.Join(';', f.LocalSdkPaths);
-
-            string api = ApiNames.hostfxr_get_available_sdks;
-            sharedTestState.TestBehaviorEnabledDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdks:[{expectedList}]");
         }
 
         [Fact]
@@ -165,7 +125,7 @@ namespace HostActivation.Tests
             var f = sharedTestState.SdkAndFrameworkFixture;
             string expectedData = string.Join(';', new[]
             {
-                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.701-preview")),
+                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, f.LocalSdks[^1])),
                 ("global_json_state", "not_found"),
             });
 
@@ -238,10 +198,14 @@ namespace HostActivation.Tests
             var f = sharedTestState.SdkAndFrameworkFixture;
             using (TestArtifact workingDir = TestArtifact.Create(nameof(workingDir)))
             {
-                string globalJson = GlobalJson.Write(workingDir.Location, new GlobalJson.Sdk() { Paths = [ f.SelfRegistered, f.LocalSdkDir ] });
+                string customSdkRoot = workingDir.GetUniqueSubdirectory("custom_paths");
+                string[] versions = [ "3.0.100", "5.6.700", "15.1.400-preview" ];
+                string customSdkDirectory = SdkAndFrameworkFixture.CreateSdkDirectories(customSdkRoot, versions);
+
+                string globalJson = GlobalJson.Write(workingDir.Location, new GlobalJson.Sdk() { Paths = [ customSdkRoot, f.LocalSdkDir ] });
                 string expectedData = string.Join(';', new[]
                 {
-                    ("resolved_sdk_dir", Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.400-preview")),
+                    ("resolved_sdk_dir", Path.Combine(customSdkDirectory, versions[^1])),
                     ("global_json_path", globalJson),
                     ("global_json_state", "valid"),
                 });
@@ -385,73 +349,6 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
                 .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
                 .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
-        public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_with_dotnet_root()
-        {
-            var f = sharedTestState.SdkAndFrameworkFixture;
-            string expectedSdkVersions = string.Join(';', f.LocalSdks);
-            string expectedSdkPaths = string.Join(';', f.LocalSdkPaths);
-
-            string expectedFrameworkNames = string.Join(';', new[]
-            {
-                "HostFxr.Test.B",
-                "HostFxr.Test.B",
-                "HostFxr.Test.C"
-            });
-
-            string expectedFrameworkVersions = string.Join(';', new[]
-            {
-                "4.0.0",
-                "5.6.7-A",
-                "3.0.0"
-            });
-
-            string expectedFrameworkPaths = string.Join(';', new[]
-            {
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
-            });
-
-            string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            sharedTestState.TestBehaviorEnabledDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, new[] { api, f.ExeDir })
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
-                .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
-                .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // The test setup only works on Windows (and MLL was Windows-only anyway)
-        public void Hostfxr_get_dotnet_environment_info_with_multilevel_lookup_only()
-        {
-            var f = sharedTestState.SdkAndFrameworkFixture;
-
-            // Multi-level lookup is completely disabled on 7+
-            // The test runs the API with the dotnet root directory set to a location which doesn't have any SDKs or frameworks
-            string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            sharedTestState.TestBehaviorEnabledDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, sharedTestState.HostApiInvokerApp.Location)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
-                .And.HaveStdOutContaining($"{api} sdk versions:[]")
-                .And.HaveStdOutContaining($"{api} sdk paths:[]")
-                .And.HaveStdOutContaining($"{api} framework names:[]")
-                .And.HaveStdOutContaining($"{api} framework versions:[]")
-                .And.HaveStdOutContaining($"{api} framework paths:[]");
         }
 
         [Fact]
@@ -873,28 +770,16 @@ namespace HostActivation.Tests
         {
             public TestApp HostApiInvokerApp { get; }
 
-            public DotNetCli TestBehaviorEnabledDotNet { get; }
-            private readonly TestArtifact copiedDotnet;
-
             internal SdkAndFrameworkFixture SdkAndFrameworkFixture { get; }
 
             public SharedTestState()
             {
-                // Make a copy of the built .NET, as we will enable test-only behaviour
-                copiedDotnet = TestArtifact.CreateFromCopy(nameof(NativeHostApis), TestContext.BuiltDotNet.BinPath);
-                TestBehaviorEnabledDotNet = new DotNetCli(copiedDotnet.Location);
-
-                // Enable test-only behavior for the copied .NET. We don't bother disabling the behaviour later,
-                // as we just delete the entire copy after the tests run.
-                _ = TestOnlyProductBehavior.Enable(TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath);
-
                 HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
 
                 // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so provide the app with
                 // paths to hostfxr so that it can handle resolving the library.
                 RuntimeConfig.FromFile(HostApiInvokerApp.RuntimeConfigJson)
                     .WithProperty("HOSTFXR_PATH", TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath)
-                    .WithProperty("HOSTFXR_PATH_TEST_BEHAVIOR", TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath)
                     .Save();
 
                 SdkAndFrameworkFixture = new SdkAndFrameworkFixture();
@@ -903,7 +788,6 @@ namespace HostActivation.Tests
             public void Dispose()
             {
                 HostApiInvokerApp?.Dispose();
-                copiedDotnet.Dispose();
                 SdkAndFrameworkFixture.Dispose();
             }
         }

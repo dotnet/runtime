@@ -9,6 +9,7 @@
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
