@@ -404,14 +404,12 @@ LOCAL_LABEL(NotHijacked):
         stp d14, d15, [sp, #0x30]
         stp x0, x1,   [sp, #0x40] // x0 to x3 are stored to restore them anytime
         stp x2, x3,   [sp, #0x50]
-        str xzr,      [sp, #0x60] // xzr makes space for the local "is_not_handling_thread_abort"; last qword will store the thread obj
 
-#define rsp_offset_is_not_handling_thread_abort 0x60
 #define rsp_offset_x0 0x40
 #define rsp_offset_x1 0x48
 #define rsp_offset_x2 0x50
 #define rsp_offset_x3 0x58
-#define rsp_CatchFunclet_offset_thread 0x68
+#define rsp_CatchFunclet_offset_thread 0x60
 
         //
         // clear the DoNotTriggerGc flag, trashes x4-x6
@@ -496,7 +494,6 @@ LOCAL_LABEL(DonePopping):
         mov         sp, x2
         br          x0
 
-#undef rsp_offset_is_not_handling_thread_abort
 #undef rsp_offset_x0
 #undef rsp_offset_x1
 #undef rsp_offset_x2

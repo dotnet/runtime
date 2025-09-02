@@ -1063,7 +1063,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            // TODO?
             SP += 6 + 1; // 6 locals and stack alignment
         }
         else
@@ -1201,7 +1200,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        // TODO?
         SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
 
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
@@ -1247,7 +1245,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        // TODO?
         SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pR23  = m_RegDisplay.pR23;
@@ -1292,7 +1289,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        // TODO?
         SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pS1  = m_RegDisplay.pS1;

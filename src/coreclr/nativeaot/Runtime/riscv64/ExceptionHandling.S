@@ -468,14 +468,12 @@ LOCAL_LABEL(NotHijacked):
         sd  a1, 0x68(sp)
         sd  a2, 0x70(sp)
         sd  a3, 0x78(sp)
-        sd  zero, 0x80(sp) // Make space for local "is_not_handling_thread_abort"; last qword will store the thread obj
 
-#define rsp_offset_is_not_handling_thread_abort 0x80
 #define rsp_offset_a0 0x60
 #define rsp_offset_a1 0x68
 #define rsp_offset_a2 0x70
 #define rsp_offset_a3 0x78
-#define rsp_CatchFunclet_offset_thread 0x88
+#define rsp_CatchFunclet_offset_thread 0x80
 
         // Clear the DoNotTriggerGc flag, trashes a4-a6
         call  C_FUNC(RhpGetThread)  // Call the RhpGetThread function
@@ -548,7 +546,6 @@ LOCAL_LABEL(DonePopping):
         mv  sp, a2
         jalr  zero, 0(a0)  // Jump to the continuation address
 
-#undef rsp_offset_is_not_handling_thread_abort
 #undef rsp_offset_a0
 #undef rsp_offset_a1
 #undef rsp_offset_a2

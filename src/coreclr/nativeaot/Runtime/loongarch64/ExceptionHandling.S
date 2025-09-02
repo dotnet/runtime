@@ -425,14 +425,12 @@ LOCAL_LABEL(NotHijacked):
         st.d  $a1, $sp, 0x48
         st.d  $a2, $sp, 0x50
         st.d  $a3, $sp, 0x58
-        st.d  $zero, $sp, 0x60  // $zero makes space for the local "is_not_handling_thread_abort"; last qword will store the thread obj
 
-#define rsp_offset_is_not_handling_thread_abort 0x60
 #define rsp_offset_a0 0x40
 #define rsp_offset_a1 0x48
 #define rsp_offset_a2 0x50
 #define rsp_offset_a3 0x58
-#define rsp_CatchFunclet_offset_thread 0x68
+#define rsp_CatchFunclet_offset_thread 0x60
 
         //
         // clear the DoNotTriggerGc flag, trashes a4-a6
@@ -513,7 +511,6 @@ LOCAL_LABEL(DonePopping):
         ori  $sp, $a2, 0
         jirl  $r0, $a0, 0
 
-#undef rsp_offset_is_not_handling_thread_abort
 #undef rsp_offset_a0
 #undef rsp_offset_a1
 #undef rsp_offset_a2

@@ -406,9 +406,8 @@ NotHijacked
         stp d12, d13, [sp, #0x20]
         stp d14, d15, [sp, #0x30]
         stp x0, x2,   [sp, #0x40]  ;; x0, x2 & x3 are saved so we have the exception object, REGDISPLAY and
-        stp x3, xzr,  [sp, #0x50]  ;; ExInfo later, xzr makes space for the local "is_not_handling_thread_abort"
+        str x3,       [sp, #0x50]  ;; ExInfo later
 
-#define rsp_offset_is_not_handling_thread_abort 0x58
 #define rsp_offset_x2 0x48
 #define rsp_offset_x3 0x50
 
