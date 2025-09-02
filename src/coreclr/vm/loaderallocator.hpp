@@ -232,6 +232,14 @@ public:
         m_pValue = value;
     };
     VOID Init();
+    bool HasAttachedDynamicAssemblies()
+    {
+        if (m_type == LAT_Assembly && m_pDomainAssembly != NULL)
+        {
+            return true;
+        }
+        return false;
+    }
     LoaderAllocatorType GetType();
     VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
     DomainAssemblyIterator GetDomainAssemblyIterator();
