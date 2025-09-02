@@ -146,7 +146,7 @@ namespace System.Text
 
         public void Insert(int index, string? s)
         {
-            if (s == null)
+            if (s == null || s == "")
             {
                 return;
             }
