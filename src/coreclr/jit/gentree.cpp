@@ -17170,6 +17170,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                 SplitOutUse(UseInfo{&(*use)->AsOp()->gtOp1, *use}, false);
                 *use = (*use)->gtGetOp2();
                 SplitOutUse(useInf, userIsReturned);
+                MadeChanges = true;
                 return;
             }
 
