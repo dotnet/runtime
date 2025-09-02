@@ -58,19 +58,16 @@ def run_command(cmd, retries=1):
     attempt = 0
     while True:
         try:
-            proc = subprocess.Popen(cmd)
-            output, error = proc.communicate()
-            returncode = proc.returncode
+            subprocess.run(cmd, check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}")
         except Exception as e:
             print(f"Failed to start command: {e}")
-            returncode = -1
-        if returncode == 0:
-            return True
         attempt += 1
         if attempt > retries:
             print(f"command failed after {retries} attempts")
             break
-        print(f"Command failed with return code {returncode}")
         time.sleep(3)
     return False
 
