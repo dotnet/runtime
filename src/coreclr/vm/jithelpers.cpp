@@ -2515,24 +2515,31 @@ enum __CorInfoHelpFunc {
 #include "jithelpers.h"
 
 #ifdef _DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv), #code },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (TADDR)(lpv), #code, isDynamicHelper },
+#elif defined(TARGET_WASM)
+#define HELPERDEF(code, lpv, isDynamicHelper) { (TADDR)(lpv), isDynamicHelper },
 #else // !_DEBUG
-#define HELPERDEF(code, lpv, sig) { (LPVOID)(lpv) },
+#define HELPERDEF(code, lpv, isDynamicHelper) { (TADDR)(lpv) },
 #endif // !_DEBUG
 
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, false)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, true)
 #include "jithelpers.h"
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// Collection of entry points for JIT helpers
+TADDR hlpFuncEntryPoints[CORINFO_HELP_COUNT] = {};
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 // dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
 #define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_##code, pfnHelper, true)
 #include "jithelpers.h"
 };
 
@@ -2543,6 +2550,30 @@ static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
 #define DYNAMICJITHELPER(code, pfnHelper, binderId) (pfnHelper != NULL) ? (BinderMethodID)METHOD__NIL : (BinderMethodID)binderId, // If pre-compiled code is provided for a jit helper, prefer that over the IL implementation
 #include "jithelpers.h"
 };
+
+bool VMHELPDEF::IsDynamicHelper(size_t& dynamicFtnNum) const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool isDynamic;
+    dynamicFtnNum = (size_t)(pfnHelper - 1);
+
+#ifdef TARGET_WASM
+    // Functions on Wasm are ordinal values, not memory addresses.
+    // On Wasm, we need some metadata to indicate whether the helper is a dynamic helper.
+    isDynamic = isDynamicHelper;
+#else // !TARGET_WASM
+    // If pfnHelper is an index into the dynamic helper table, it should be less
+    // than DYNAMIC_CORINFO_HELP_COUNT.
+    isDynamic = (dynamicFtnNum < DYNAMIC_CORINFO_HELP_COUNT);
+#endif // TARGET_WASM
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    _ASSERTE(isDynamic == isDynamicHelper);
+#endif // _DEBUG || TARGET_WASM
+
+    return isDynamic;
+}
 
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
@@ -2561,17 +2592,17 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (TADDR)pFunc;
 }
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+TADDR LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     MethodDesc* pMD = NULL;
-    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    TADDR helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
     if (helper == NULL)
     {
         BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
@@ -2584,7 +2615,7 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
 
         pMD = CoreLibBinder::GetMethod(binderId);
         PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
-        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+        InterlockedCompareExchangeT<TADDR>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (TADDR)pFunc, NULL);
     }
 
     // If the caller wants the MethodDesc, we may need to try and load it.
@@ -2600,7 +2631,7 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
         *methodDesc = pMD;
     }
 
-    return hlpDynamicFuncTable[ftnNum];
+    return hlpDynamicFuncTable[ftnNum].pfnHelper;
 }
 
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)

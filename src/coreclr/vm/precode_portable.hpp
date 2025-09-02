@@ -13,10 +13,8 @@ class PortableEntryPoint final
 {
 public: // static
     static bool IsNativeEntryPoint(TADDR addr);
-    static TADDR MarkNativeEntryPoint(TADDR entryPoint);
 
     static void* GetActualCode(TADDR addr);
-    static void SetActualCode(TADDR addr, void* actualCode);
     static MethodDesc* GetMethodDesc(TADDR addr);
     static void* GetInterpreterData(TADDR addr);
     static void SetInterpreterData(TADDR addr, PCODE interpreterData);
@@ -32,12 +30,15 @@ private:
     // We keep the canary value last to ensure a stable ABI across build flavors
     INDEBUG(size_t _canary);
 
+#ifdef _DEBUG
+    bool IsValid() const;
+#endif // _DEBUG
+
 public:
     void Init(MethodDesc* pMD);
+    void Init(void* nativeEntryPoint);
 
     // Query methods for entry point state.
-    bool IsValid() const;
-
     bool HasInterpreterCode() const
     {
         LIMITED_METHOD_CONTRACT;

@@ -10751,25 +10751,28 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                                    CORINFO_CONST_LOOKUP* pNativeEntrypoint, /* OUT */
                                    CORINFO_METHOD_HANDLE* pMethod)          /* OUT */
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
 
-    if (pMethod != NULL)
-    {
-        *pMethod = NULL;
-    }
-
     _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
 
-    void* pfnHelper = hlpFuncTable[ftnNum].pfnHelper;
+    InfoAccessType accessType = IAT_PVALUE;
+    LPVOID targetAddr = nullptr;
 
-    size_t dynamicFtnNum = ((size_t)pfnHelper - 1);
-    if (dynamicFtnNum < DYNAMIC_CORINFO_HELP_COUNT)
+    MethodDesc* helperMD = NULL;
+    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
+    TADDR pfnHelper = helperDef.pfnHelper;
+
+    size_t dynamicFtnNum;
+    bool isDynamicMethod = helperDef.IsDynamicHelper(dynamicFtnNum);
+    if (isDynamicMethod)
     {
 #if defined(TARGET_AMD64)
         // To avoid using a jump stub we always call certain helpers using an indirect call.
@@ -10787,45 +10790,33 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
-            if (pNativeEntrypoint != NULL)
-            {
-                pNativeEntrypoint->accessType = IAT_PVALUE;
-                _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
-                pNativeEntrypoint->addr = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-                _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
-            }
+            accessType = IAT_PVALUE;
+            _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
+            targetAddr = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+            _ASSERTE(IndirectionAllowedForJitHelper(ftnNum));
             goto exit;
         }
-#endif
+#endif // TARGET_AMD64
 
         // Check if we already have a cached address of the final target
         static LPVOID hlpFinalTierAddrTable[DYNAMIC_CORINFO_HELP_COUNT] = {};
         LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
         if (finalTierAddr != NULL)
         {
-            if (pNativeEntrypoint != NULL)
-            {
-                pNativeEntrypoint->accessType = IAT_VALUE;
-                pNativeEntrypoint->addr = finalTierAddr;
-            }
+            accessType = IAT_VALUE;
+            targetAddr = finalTierAddr;
             if (pMethod != nullptr && HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
             {
-                (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, (MethodDesc**)pMethod);
-                _ASSERT(*pMethod != NULL);
+                (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
+                _ASSERT(helperMD != NULL);
             }
             goto exit;
         }
 
         if (HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
         {
-            MethodDesc* helperMD = NULL;
             (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
             _ASSERT(helperMD != NULL);
-
-            if (pMethod != NULL)
-            {
-                *pMethod = (CORINFO_METHOD_HANDLE)helperMD;
-            }
 
             // Check if the target MethodDesc is already jitted to its final Tier
             // so we no longer need to use indirections and can emit a direct call instead.
@@ -10855,11 +10846,8 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                     {
                         // Cache it for future uses to avoid taking the lock again.
                         hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                        if (pNativeEntrypoint != NULL)
-                        {
-                            pNativeEntrypoint->accessType = IAT_VALUE;
-                            pNativeEntrypoint->addr = finalTierAddr;
-                        }
+                        accessType = IAT_VALUE;
+                        targetAddr = finalTierAddr;
                         goto exit;
                     }
                 }
@@ -10867,8 +10855,6 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
-                InfoAccessType accessType;
-                LPVOID targetAddr;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                 accessType = IAT_VALUE;
                 targetAddr = (LPVOID)helperMD->GetPortableEntryPoint();
@@ -10878,34 +10864,50 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                 accessType = IAT_PVALUE;
                 targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-                if (pNativeEntrypoint != NULL)
-                {
-                    pNativeEntrypoint->accessType = accessType;
-                    pNativeEntrypoint->addr = targetAddr;
-                }
                 goto exit;
             }
         }
 
-        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper;
+        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum);
     }
+
+    //
+    // Static helpers
+    //
 
     _ASSERTE(pfnHelper != NULL);
 
-    if (pNativeEntrypoint != NULL)
+    accessType = IAT_VALUE;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    targetAddr = (LPVOID)hlpFuncEntryPoints[ftnNum];
+    if (targetAddr == NULL)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     {
-        pNativeEntrypoint->accessType = IAT_VALUE;
         TADDR entryPoint = GetEEFuncEntryPoint(pfnHelper);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        entryPoint = PortableEntryPoint::MarkNativeEntryPoint(entryPoint);
+        NewHolder<PortableEntryPoint> portableEntryPoint = new PortableEntryPoint();
+        portableEntryPoint->Init((void*)entryPoint);
+        if (InterlockedCompareExchangeT<TADDR>(&hlpFuncEntryPoints[ftnNum], (TADDR)(PortableEntryPoint*)portableEntryPoint, NULL) == NULL)
+            portableEntryPoint.SuppressRelease();
+
+        entryPoint = hlpFuncEntryPoints[ftnNum];
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-        pNativeEntrypoint->addr = (LPVOID)entryPoint;
+        targetAddr = (LPVOID)entryPoint;
     }
 
 exit: ;
+    if (pNativeEntrypoint != NULL)
+    {
+        pNativeEntrypoint->accessType = accessType;
+        pNativeEntrypoint->addr = targetAddr;
+    }
+
+    if (pMethod != NULL)
+        *pMethod = (CORINFO_METHOD_HANDLE)helperMD;
+
     EE_TO_JIT_TRANSITION();
 }
 
@@ -10917,15 +10919,15 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void* pfnHelper = hlpFuncTable[ftnNum].pfnHelper;
+    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
+    TADDR pfnHelper = helperDef.pfnHelper;
 
-    // If pfnHelper is an index into the dynamic helper table, it should be less
-    // than DYNAMIC_CORINFO_HELP_COUNT.  In this case we need to find the actual pfnHelper
-    // using an extra indirection.  Note the special case
-    // where pfnHelper==0 where pfnHelper-1 will underflow and we will avoid the indirection.
-    if (((size_t)pfnHelper - 1) < DYNAMIC_CORINFO_HELP_COUNT)
+    // In this case we need to find the actual pfnHelper
+    // using an extra indirection.
+    size_t dynamicFtnNum;
+    if (helperDef.IsDynamicHelper(dynamicFtnNum))
     {
-        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)((size_t)pfnHelper - 1)).pfnHelper;
+        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum);
     }
 
     _ASSERTE(pfnHelper != NULL);

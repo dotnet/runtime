@@ -31,6 +31,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
 
     {
         GCX_PREEMP();
+        // WASM-TODO: Handle unmanaged calling conventions
         InvokeManagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
     }
 

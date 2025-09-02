@@ -973,12 +973,20 @@ public:
 /*********************************************************************/
 /*********************************************************************/
 
-typedef struct {
-    void * pfnHelper;
+struct VMHELPDEF
+{
+    TADDR pfnHelper;
+
 #ifdef _DEBUG
     const char* name;
-#endif
-} VMHELPDEF;
+#endif // _DEBUG
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    bool isDynamicHelper;
+#endif // _DEBUG || TARGET_WASM
+
+    bool IsDynamicHelper(size_t& dynamicFtnNum) const;
+};
 
 #if defined(DACCESS_COMPILE)
 
@@ -987,6 +995,10 @@ GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 #else
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+extern "C" TADDR hlpFuncEntryPoints[CORINFO_HELP_COUNT];
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif
 
@@ -1007,7 +1019,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+TADDR LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 

@@ -5635,7 +5635,7 @@ ClrDataAccess::GetJitHelperName(
 
         for (int i = 0; i < CORINFO_HELP_COUNT; i++)
         {
-            if (address == (TADDR)(pTable[i].pfnHelper))
+            if (address == pTable[i].pfnHelper)
                 return s_rgHelperNames[i];
         }
     }
@@ -5652,7 +5652,7 @@ ClrDataAccess::GetJitHelperName(
         PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
     for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
     {
-        if (address == (TADDR)(pDynamicTable[d].pfnHelper))
+        if (address == pDynamicTable[d].pfnHelper)
         {
             return s_rgHelperNames[s_rgDynamicHCallIds[d]];
         }
@@ -5991,7 +5991,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
-        BoundsType::Instrumented, 
+        BoundsType::Instrumented,
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
