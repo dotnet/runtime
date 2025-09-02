@@ -106,7 +106,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         // All keys created in this method are smaller than recommended,
         // but they only live for a few seconds (at most),
         // and never communicate out of process.
+        // Use different key sizes for crypto tests vs networking tests.
+        // Crypto tests prefer smaller keys for speed, networking tests need larger keys for compatibility.
+#if CRYPTO_TESTS
         const int DefaultKeySize = 1024;
+#else
+        const int DefaultKeySize = 2048;
+#endif
 
         internal CertificateAuthority(
             X509Certificate2 cert,
