@@ -125,6 +125,7 @@
     <Compile Include="SslStreamCredentialCacheTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
     <Compile Include="SslStreamRemoteExecutorTests.cs" />
+    <Compile Include="NetworkingCertificateKeySizeTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="TelemetryTest.cs" />

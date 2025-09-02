@@ -525,6 +525,7 @@
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="BlockSizeValueTests.cs" />
+    <Compile Include="CertificateAuthorityKeySizeTests.cs" />
     <Compile Include="ChaCha20Poly1305Tests.cs" />
     <Compile Include="CngKeyTests.cs" />
     <Compile Include="CngUtility.cs" />
