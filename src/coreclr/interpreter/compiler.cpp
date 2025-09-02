@@ -2309,7 +2309,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         case NI_System_StubHelpers_GetStubContext:
         {
-            assert(m_hiddenArgumentVar);
+            assert(m_hiddenArgumentVar >= 0);
             AddIns(INTOP_MOV_P);
             PushStackType(StackTypeI, NULL);
             m_pLastNewIns->SetSVar(m_hiddenArgumentVar);
