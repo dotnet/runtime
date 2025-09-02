@@ -21175,10 +21175,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (varTypeIsIntegral(simdBaseType))
             {
                 assert(!varTypeIsLong(simdBaseType));
-                if (((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) && simdSize > 16) ||
-                    (!compOpportunisticallyDependsOn(InstructionSet_AVX512) &&
-                     (simdSize > 32 || (varTypeIsInt(simdBaseType) && simdSize == 32))) ||
-                    (!compOpportunisticallyDependsOn(InstructionSet_AVX) && simdSize > 16) || simdSize == 64)
+                if ((varTypeIsSmall(simdBaseType) && simdSize > 16) ||
+                    (varTypeIsInt(simdBaseType) && simdSize == 32 &&
+                     !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
+                    simdSize == 64)
                 {
                     var_types divType  = simdSize == 64 ? TYP_SIMD32 : TYP_SIMD16;
                     GenTree*  op1Dup   = fgMakeMultiUse(&op1);
@@ -21195,7 +21195,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     return divResult;
                 }
 
-                if (varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType))
+                if (varTypeIsSmall(simdBaseType))
                 {
                     assert(simdSize == 16);
                     if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -21214,7 +21214,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                                 : (varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128Int16
                                                                  : NI_AVX512_ConvertToVector128UInt16);
                         var_types cvtType = varTypeIsByte(simdBaseType) ? TYP_SIMD64 : TYP_SIMD32;
-                        int       cvtSize = simdSize * (varTypeIsByte(simdBaseType) ? 4 : 2);
+                        int       cvtSize = varTypeIsByte(simdBaseType) ? 64 : 32;
 
                         op1 = gtNewSimdHWIntrinsicNode(cvtType, op1, widenCvtIntrinsic, simdBaseJitType, cvtSize);
                         op2 = gtNewSimdHWIntrinsicNode(cvtType, op2, widenCvtIntrinsic, simdBaseJitType, cvtSize);
@@ -29732,8 +29732,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_DIV:
         {
 #if defined(TARGET_XARCH)
-            assert(varTypeIsFloating(simdBaseType) ||
-                   (varTypeIsIntegral(simdBaseType) && !varTypeIsLong(simdBaseType)));
+            assert(varTypeIsFloating(simdBaseType) || !varTypeIsLong(simdBaseType));
 #else
             assert(varTypeIsFloating(simdBaseType));
 #endif

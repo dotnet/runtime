@@ -2274,10 +2274,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                {
-                    break;
-                }
                 impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for vector integer division"));
 #else
