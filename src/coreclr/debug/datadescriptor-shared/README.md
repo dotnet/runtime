@@ -82,6 +82,12 @@ The build system uses a two-phase approach:
 - Defines a global string value
 - `stringValue` must be a compile-time string literal
 
+**`CDAC_GLOBAL_SUB_DESCRIPTOR(globalName, address)`**
+- Defines a reference to another contract descriptor
+- `address` must be a compile-time constant pointer to a pointer to a contract descriptor
+- Used for multi-contract scenarios where one contract references another
+- Example: `CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))`
+
 
 ## Current Implementation
 

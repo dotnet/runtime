@@ -231,7 +231,7 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
+    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
     {
         return false;
     }
@@ -857,9 +857,9 @@ public:
             // don't use the secret parameter.
         }
         else if (SF_IsForwardPInvokeStub(m_dwStubFlags)
-                && !SF_IsCALLIStub(m_dwStubFlags))
+                && !SF_IsCALLIStub(m_dwStubFlags) && !SF_IsVarArgStub(m_dwStubFlags))
         {
-            // Forward stubs (i.e., PInvokes) don't use the secret parameter
+            // Regular PInvokes don't use the secret parameter
         }
         else
         {
@@ -2167,6 +2167,13 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDC(1);
             pcsEmit->EmitSHR_UN();
 #endif // TARGET_64BIT
+        }
+        else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
+        {
+            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
+            pcsEmit->EmitADD();
+            pcsEmit->EmitLDIND_I();
         }
         else  // forward P/Invoke
         {
@@ -4118,9 +4125,9 @@ namespace
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
 
-        static_assert_no_msg(nltMaxValue   <= 0xFF);
-        static_assert_no_msg(nlfMaxValue   <= 0xFF);
-        static_assert_no_msg(pmMaxValue    <= 0xFFFF);
+        static_assert(nltMaxValue   <= 0xFF);
+        static_assert(nlfMaxValue   <= 0xFF);
+        static_assert(pmMaxValue    <= 0xFFFF);
 
         NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
         // zero out the hash bytes to ensure all bit fields are deterministically set
@@ -6088,7 +6095,7 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 }
 
-EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie)
+EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
 {
     PreserveLastErrorHolder preserveLastError;
 
@@ -6102,9 +6109,6 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock,
 #ifdef _DEBUG
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
-
-    MethodDesc* pMD = pVASigCookie->pMethodDesc;
-    _ASSERTE(pMD != NULL);
 
     PrestubMethodFrame frame(pTransitionBlock, pMD);
     PrestubMethodFrame * pFrame = &frame;

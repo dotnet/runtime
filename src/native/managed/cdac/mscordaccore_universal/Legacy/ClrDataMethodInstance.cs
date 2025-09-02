@@ -289,8 +289,85 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
         => _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, void* maps)
-        => _legacyImpl is not null ? _legacyImpl.GetILAddressMap(mapLen, mapNeeded, maps) : HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetPointer codeStart = pCode.ToAddress(_target);
+            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+                pCode,
+                preferUninstrumented: false,
+                out uint _).ToList();
+
+            if (maps is not null)
+            {
+                int outputMapIndex = 0;
+                for (int i = 0; i < map.Count; i++)
+                {
+                    OffsetMapping entry = map[i];
+
+                    bool lastValue = i == map.Count - 1;
+                    uint nativeEndOffset = lastValue ? 0 : map[i + 1].NativeOffset;
+
+                    if (outputMapIndex < maps.Length)
+                    {
+                        maps[outputMapIndex].ilOffset = entry.ILOffset;
+                        maps[outputMapIndex].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].endAddress = new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
+                        maps[outputMapIndex].type = ClrDataSourceType.CLRDATA_SOURCE_TYPE_INVALID;
+
+                        outputMapIndex++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (mapNeeded is not null)
+            {
+                *mapNeeded = (uint)map.Count;
+            }
+
+            hr = map.Count > 0 ? HResults.S_OK : HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint mapNeededLocal;
+            ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
+            int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(mapNeeded == null || *mapNeeded == mapNeededLocal);
+                if (mapsLocal is not null)
+                {
+                    for (int i = 0; i < mapsLocal.Length; i++)
+                    {
+                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
+                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
+                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
+                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
+                    }
+                }
+            }
+        }
+
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
         => _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
