@@ -197,6 +197,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 void DBG_PrintInterpreterStack()
 {
     Thread* pThread = GetThread();
+    if (pThread == NULL)
+        return;
 
     int32_t frameCount = 0;
 
@@ -1926,7 +1928,8 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PS:
                 {
-                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
 
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
@@ -1937,8 +1940,8 @@ MAIN_LOOP:
                         callArgsOffset = stackOffset;
 
                         // Pass arguments to the target method
-                        LOCAL_VAR(stackOffset, void*) = helperArg;
-                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = LOCAL_VAR(ip[2], void*);
+                        LOCAL_VAR(stackOffset, void*) = helperArg1;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
@@ -1946,7 +1949,7 @@ MAIN_LOOP:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[2], void*));
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -1974,6 +1977,7 @@ MAIN_LOOP:
                         int stackOffset = pMethod->allocaSize;
                         callArgsOffset = stackOffset;
 
+                        // Pass argument to the target method
                         LOCAL_VAR(stackOffset, void*) = helperArg;
 
                         targetMethod = pILTargetMethod;
@@ -1990,7 +1994,8 @@ MAIN_LOOP:
                 case INTOP_CALL_HELPER_P_GS:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
-                    void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg1 = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    void* helperArg2 = LOCAL_VAR(ip[3], void*);
 
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[4], &pILTargetMethod);
@@ -2001,8 +2006,8 @@ MAIN_LOOP:
                         callArgsOffset = stackOffset;
 
                         // Pass arguments to the target method
-                        LOCAL_VAR(stackOffset, void*) = helperArg;
-                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = LOCAL_VAR(ip[3], void*);
+                        LOCAL_VAR(stackOffset, void*) = helperArg1;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
 
                         targetMethod = pILTargetMethod;
                         ip += 6;
@@ -2010,7 +2015,7 @@ MAIN_LOOP:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR(ip[3], void*));
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
