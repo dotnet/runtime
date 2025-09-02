@@ -99,7 +99,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
         try
         {
-            if (_currentFrameIsValid)
+            if (!_currentFrameIsValid)
                 throw new ArgumentException();
 
             // This is not fully implemented, but it allows us to shim calls in ClrDataFrame

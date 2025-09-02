@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -70,7 +71,50 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         => _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetMethodInstance(out IXCLRDataMethodInstance? method)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodInstance(out method) : (method = null) == null ? HResults.E_NOTIMPL : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        method = null;
+
+        IXCLRDataMethodInstance? legacyMethod = null;
+
+#if DEBUG
+        int hrLocal = default;
+        if (_legacyImpl is not null)
+        {
+            hrLocal = _legacyImpl.GetMethodInstance(out legacyMethod);
+        }
+#endif
+
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
+
+            if (methodDesc == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(/*E_NOINTERFACE*/ HResults.COR_E_INVALIDCAST)!;
+
+            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+            TargetPointer appDomain = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.AppDomain));
+
+            method = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataFrame.Request(
         uint reqCode,

@@ -175,6 +175,26 @@ internal readonly struct StackWalk_1 : IStackWalk
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
 
+    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
+        => FrameIterator.GetMethodDescPtr(framePtr, _target);
+
+    TargetPointer IStackWalk.GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        // if we are at a capital F Frame, we can get the method desc from the frame
+        TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
+        if (framePtr != TargetPointer.Null)
+            return ((IStackWalk)this).GetMethodDescPtr(framePtr);
+
+        // otherwise try to get the method desc from the IP
+        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? codeBlockHandle))
+            return TargetPointer.Null;
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        return eman.GetMethodDesc(codeBlockHandle.Value);
+    }
+
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;
@@ -203,11 +223,6 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
 
         context.FillFromBuffer(buffer);
-    }
-
-    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
-    {
-        return FrameIterator.GetMethodDescPtr(framePtr, _target);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

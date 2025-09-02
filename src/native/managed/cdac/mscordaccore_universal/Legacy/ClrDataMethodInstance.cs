@@ -178,7 +178,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
             if (nameBuf is not null)
             {
-                string dacName = new string(nameBufLocal, 0, (int)nameLenLocal);
+                string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
                 string cdacName = new string(nameBuf);
                 Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
             }
