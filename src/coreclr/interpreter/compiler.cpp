@@ -1256,9 +1256,8 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     assert(jitFlagsSize == sizeof(corJitFlags));
 
     bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-    bool hasHiddenArgument = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, hasHiddenArgument);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
 
     return pMethod;
 }
@@ -1289,6 +1288,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     : m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
+    , m_hiddenArgumentVar(-1)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -2309,8 +2309,10 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         case NI_System_StubHelpers_GetStubContext:
         {
-            AddIns(INTOP_GETSTUBCONTEXT);
+            assert(m_hiddenArgumentVar);
+            AddIns(INTOP_MOV_P);
             PushStackType(StackTypeI, NULL);
+            m_pLastNewIns->SetSVar(m_hiddenArgumentVar);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
         }
@@ -3624,6 +3626,17 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
+
+    CORJIT_FLAGS corJitFlags;
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
+    assert(jitFlagsSize == sizeof(corJitFlags));
+
+    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    {
+        m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
+        AddIns(INTOP_STORESTUBCONTEXT);
+        m_pLastNewIns->SetDVar(m_hiddenArgumentVar);
+    }
 
     CorInfoInitClassResult initOnFunctionStart = m_compHnd->initClass(NULL, NULL, METHOD_BEING_COMPILED_CONTEXT());
     if ((initOnFunctionStart & CORINFO_INITCLASS_USE_HELPER) == CORINFO_INITCLASS_USE_HELPER)

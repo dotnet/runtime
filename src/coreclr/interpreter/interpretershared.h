@@ -37,11 +37,10 @@ struct InterpMethod
     CallStubHeader *pCallStub;
     bool initLocals;
     bool unmanagedCallersOnly;
-    bool hasHiddenArgument;
 
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
-        void** pDataItems, bool initLocals, bool unmanagedCallersOnly, bool hasHiddenArgument
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly
     )
     {
 #if DEBUG
@@ -53,7 +52,6 @@ struct InterpMethod
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
         this->unmanagedCallersOnly = unmanagedCallersOnly;
-        this->hasHiddenArgument = hasHiddenArgument;
         pCallStub = NULL;
     }
 
