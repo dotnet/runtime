@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using Xunit;
 
@@ -307,37 +308,54 @@ namespace System.DirectoryServices.Protocols.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
-        public void NetworkTimeout_InitializationOnLinux_DoesNotThrow()
+        [Fact]
+        public void NetworkTimeout_Initialization_DoesNotThrow()
         {
-            // This test verifies that initialization with network timeout on Linux doesn't cause issues
-            // We test that the LDAP connection can be created and timeout set without throwing exceptions
             var connection = new LdapConnection("server")
             {
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-            // Verify the timeout is set correctly
             Assert.Equal(TimeSpan.FromSeconds(10), connection.Timeout);
-            
-            // Dispose to clean up any native resources
             connection.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
-        public void NetworkTimeout_ZeroTimeoutOnLinux_DoesNotThrow()
+        [Fact]
+        public void NetworkTimeout_ZeroTimeout_DoesNotThrow()
         {
-            // Test with zero timeout (infinite) which is a common edge case
             var connection = new LdapConnection("server")
             {
                 Timeout = TimeSpan.Zero
             };
 
-            // Verify the timeout is set correctly
             Assert.Equal(TimeSpan.Zero, connection.Timeout);
-            
-            // Dispose to clean up any native resources
             connection.Dispose();
+        }
+
+        [Fact]
+        public void NetworkTimeout_UnreachableServer_ThrowsTimeoutException()
+        {
+            // Use TEST-NET-1 address (192.0.2.x) which is reserved for documentation and testing
+            // and guaranteed to be unreachable, causing the connection to timeout
+            const string unreachableServer = "192.0.2.1";
+            var connection = new LdapConnection(unreachableServer)
+            {
+                Timeout = TimeSpan.FromSeconds(2) // Short timeout to make test faster
+            };
+
+            try
+            {
+                // Attempt to bind should timeout due to unreachable server
+                var ex = Assert.ThrowsAny<Exception>(() => connection.Bind());
+                
+                // The exact exception type may vary by platform but should indicate a timeout/connection failure
+                Assert.True(ex is LdapException or TimeoutException or SocketException,
+                    $"Expected LdapException, TimeoutException, or SocketException but got {ex.GetType().Name}");
+            }
+            finally
+            {
+                connection.Dispose();
+            }
         }
 
         public class CustomAsyncResult : IAsyncResult
