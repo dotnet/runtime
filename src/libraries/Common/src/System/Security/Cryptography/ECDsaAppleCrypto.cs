@@ -9,21 +9,21 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDsaImplementation
     {
-        public sealed partial class ECDsaSecurityTransforms : ECDsa, IRuntimeAlgorithm
+        public sealed partial class ECDsaAppleCrypto : ECDsa, IRuntimeAlgorithm
         {
-            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(typeof(ECDsa));
+            private readonly EccAppleCrypto _ecc = new EccAppleCrypto(typeof(ECDsa));
 
-            public ECDsaSecurityTransforms()
+            public ECDsaAppleCrypto()
             {
                 base.KeySize = 521;
             }
 
-            internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal ECDsaAppleCrypto(SafeSecKeyRefHandle publicKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal ECDsaAppleCrypto(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }

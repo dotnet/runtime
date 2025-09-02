@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static new partial ECDsa Create()
         {
-            return new ECDsaImplementation.ECDsaSecurityTransforms();
+            return new ECDsaImplementation.ECDsaAppleCrypto();
         }
 
         /// <summary>

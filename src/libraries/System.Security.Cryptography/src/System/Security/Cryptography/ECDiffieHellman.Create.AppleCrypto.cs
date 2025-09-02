@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
     {
         public static new partial ECDiffieHellman Create()
         {
-            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms();
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto();
         }
 
         public static partial ECDiffieHellman Create(ECCurve curve)
