@@ -1874,10 +1874,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_WASM)
-    // See duplicate definition in interpreter code.
-#define INTERP_STACK_SLOT_SIZE 8
     int cbArg = ALIGN_UP(StackElemSize(argSize), INTERP_STACK_SLOT_SIZE);
-#undef INTERP_STACK_SLOT_SIZE
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
     m_ofsStack += cbArg;

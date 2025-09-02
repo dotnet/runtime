@@ -7,6 +7,7 @@
 
 #include "stublink.h"
 #include "utilcode.h"
+#include "../../interpreter/interpretershared.h"
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -22,7 +23,7 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    const unsigned stackSlotSize = sizeof(void*);
+    const unsigned stackSlotSize = INTERP_STACK_SLOT_SIZE;
     return ALIGN_UP(parmSize, stackSlotSize);
 }
 
