@@ -76,6 +76,7 @@ internal partial class MockDescriptors
                     ArrayFields,
                     SyncTableEntryFields,
                     SyncBlockFields,
+                    AwareLockFields,
                     InteropSyncBlockFields,
                 ]);
             Debug.Assert(types[DataType.Array].Size == Builder.TargetTestHelpers.ArrayBaseSize);

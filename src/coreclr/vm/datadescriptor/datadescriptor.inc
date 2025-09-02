@@ -141,13 +141,28 @@ CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
+CDAC_TYPE_FIELD(SyncBlock, /*AwareLock*/, Monitor, cdac_data<SyncBlock>::Monitor)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, Link, cdac_data<SyncBlock>::Link)
 CDAC_TYPE_END(SyncBlock)
 
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
+CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, Object, offsetof(SyncTableEntry, m_Object))
 CDAC_TYPE_END(SyncTableEntry)
+
+CDAC_TYPE_BEGIN(SyncBlockCache)
+CDAC_TYPE_INDETERMINATE(SyncBlockCache)
+CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_END(SyncBlockCache)
+
+CDAC_TYPE_BEGIN(AwareLock)
+CDAC_TYPE_INDETERMINATE(AwareLock)
+CDAC_TYPE_FIELD(AwareLock, /*uint32*/, LockState, cdac_data<AwareLock>::LockState)
+CDAC_TYPE_FIELD(AwareLock, /*uint32*/, RecursionLevel, cdac_data<AwareLock>::RecursionLevel)
+CDAC_TYPE_FIELD(AwareLock, /*uint32*/, HoldingThreadId, cdac_data<AwareLock>::HoldingThreadId)
+CDAC_TYPE_END(AwareLock)
 
 // Loader
 
@@ -981,6 +996,7 @@ CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
 CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
+CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)

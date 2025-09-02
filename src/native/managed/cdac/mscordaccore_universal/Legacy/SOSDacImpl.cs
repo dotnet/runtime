@@ -2203,7 +2203,85 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            ISyncBlock sync = _target.Contracts.SyncBlock;
+
+            if (data == null)
+                throw new ArgumentException();
+
+            *data = default;
+
+            uint syncBlockCount = sync.GetSyncBlockCount();
+
+            data->SyncBlockCount = syncBlockCount;
+            data->bFree = (int)Interop.BOOL.TRUE;
+
+            if (syncBlockCount > 0 && number <= syncBlockCount)
+            {
+                SyncBlockData syncBlockData = sync.GetSyncBlockData(number);
+                if (!syncBlockData.IsFree)
+                {
+                    data->bFree = (int)Interop.BOOL.FALSE;
+                    data->Object = syncBlockData.Object.ToClrDataAddress(_target);
+
+                    data->SyncBlockPointer = syncBlockData.SyncBlock.ToClrDataAddress(_target);
+
+                    if (data->SyncBlockPointer != 0)
+                    {
+                        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0)
+                        {
+                            sync.TryGetBuiltInComData(number, out TargetPointer rcw, out TargetPointer ccw);
+                            if (rcw != TargetPointer.Null)
+                                data->COMFlags |= DacpSyncBlockData.COMFlag.RCW;
+                            if (ccw != TargetPointer.Null)
+                                data->COMFlags |= DacpSyncBlockData.COMFlag.CCW;
+                            // todo
+                        }
+
+                        data->MonitorHeld = syncBlockData.MonitorHeldState;
+                        data->Recursion = syncBlockData.RecursionLevel;
+                        IThread thread = _target.Contracts.Thread;
+                        data->HoldingThread = thread.IdToThread(syncBlockData.HoldingThreadId).ToClrDataAddress(_target);
+                        data->appDomainPtr = _target.ReadPointer(
+                            _target.ReadGlobalPointer(Constants.Globals.AppDomain))
+                            .ToClrDataAddress(_target);
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpSyncBlockData dataLocal = default;
+            int hrLocal = _legacyImpl.GetSyncBlockData(number, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->Object == dataLocal.Object, $"cDAC: {data->Object:x}, DAC: {dataLocal.Object:x}");
+                Debug.Assert(data->bFree == dataLocal.bFree, $"cDAC: {data->bFree}, DAC: {dataLocal.bFree}");
+                Debug.Assert(data->SyncBlockPointer == dataLocal.SyncBlockPointer, $"cDAC: {data->SyncBlockPointer:x}, DAC: {dataLocal.SyncBlockPointer:x}");
+                Debug.Assert(data->COMFlags == dataLocal.COMFlags, $"cDAC: {data->COMFlags}, DAC: {dataLocal.COMFlags}");
+                Debug.Assert(data->MonitorHeld == dataLocal.MonitorHeld, $"cDAC: {data->MonitorHeld}, DAC: {dataLocal.MonitorHeld}");
+                Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
+                Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
+                // Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
+                Debug.Assert(data->appDomainPtr == dataLocal.appDomainPtr, $"cDAC: {data->appDomainPtr:x}, DAC: {dataLocal.appDomainPtr:x}");
+                Debug.Assert(data->SyncBlockCount == dataLocal.SyncBlockCount, $"cDAC: {data->SyncBlockCount}, DAC: {dataLocal.SyncBlockCount}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
 

@@ -2,12 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public struct SyncBlockData
+public class SyncBlockData
 {
-
+    public bool IsFree { get; init; }
+    public TargetPointer SyncBlock { get; init; }
+    public TargetPointer Object { get; init; }
+    public uint RecursionLevel { get; init; }
+    public uint HoldingThreadId { get; init; }
+    public uint MonitorHeldState { get; init; }
 }
 
 public interface ISyncBlock : IContract
@@ -16,6 +22,8 @@ public interface ISyncBlock : IContract
 
     uint GetSyncBlockCount() => throw new NotImplementedException();
     SyncBlockData GetSyncBlockData(uint index) => throw new NotImplementedException();
+    bool TryGetSyncBlockData(uint index, [NotNullWhen(true)] out SyncBlockData? data) => throw new NotImplementedException();
+    bool TryGetBuiltInComData(uint index, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
 }
 
 public readonly struct SyncBlock : ISyncBlock

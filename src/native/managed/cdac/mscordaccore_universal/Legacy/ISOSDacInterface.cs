@@ -288,12 +288,21 @@ internal struct DacpGcHeapData
 
 internal struct DacpSyncBlockData
 {
+    [Flags]
+    internal enum COMFlag : uint
+    {
+        None = 0x0,
+        CCW = 0x1,
+        RCW = 0x2,
+        CF = 0x4,
+    }
+
     public ClrDataAddress Object;
     public int bFree; // if set, no other fields are useful
 
     // fields below provide data from this, so it's just for display
     public ClrDataAddress SyncBlockPointer;
-    public uint COMFlags;
+    public COMFlag COMFlags;
     public uint MonitorHeld;
     public uint Recursion;
     public ClrDataAddress HoldingThread;

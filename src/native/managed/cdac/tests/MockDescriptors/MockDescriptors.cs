@@ -107,6 +107,7 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.SyncTableEntry.SyncBlock), DataType.pointer),
+            new(nameof(Data.SyncTableEntry.Object), DataType.pointer)
         ]
     };
 
@@ -115,10 +116,22 @@ internal partial class MockDescriptors
         DataType = DataType.SyncBlock,
         Fields =
         [
+            new(nameof(Data.SyncBlock.Monitor), DataType.uint32),
             new(nameof(Data.SyncBlock.InteropInfo), DataType.pointer),
+            new(nameof(Data.SyncBlock.Link), DataType.pointer),
         ]
     };
 
+    private static readonly TypeFields AwareLockFields = new TypeFields()
+    {
+        DataType = DataType.AwareLock,
+        Fields =
+        [
+            new(nameof(Data.AwareLock.LockState), DataType.uint32),
+            new(nameof(Data.AwareLock.RecursionLevel), DataType.uint32),
+            new(nameof(Data.AwareLock.HoldingThreadID), DataType.uint32),
+        ]
+    };
     private static readonly TypeFields InteropSyncBlockFields = new TypeFields()
     {
         DataType = DataType.InteropSyncBlockInfo,

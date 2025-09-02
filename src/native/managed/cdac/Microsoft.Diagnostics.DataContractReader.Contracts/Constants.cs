@@ -48,6 +48,7 @@ public static class Constants
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
         public const string SyncTableEntries = nameof(SyncTableEntries);
+        public const string SyncBlockCache = nameof(SyncBlockCache);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
 

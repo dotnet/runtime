@@ -9,9 +9,12 @@ public sealed class SyncBlockFactory : IContractFactory<ISyncBlock>
 {
     ISyncBlock IContractFactory<ISyncBlock>.CreateContract(Target target, int version)
     {
+        TargetPointer syncTableEntries = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+
         return version switch
         {
-            1 => new SyncBlock_1(target),
+            1 => new SyncBlock_1(target, syncTableEntries),
             _ => default(SyncBlock),
         };
     }

@@ -12,10 +12,12 @@ internal sealed class SyncBlock : IData<SyncBlock>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
 
-        TargetPointer interopInfoPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(InteropInfo)].Offset);
-        if (interopInfoPointer != TargetPointer.Null)
-            InteropInfo = target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer);
+        Monitor = target.ProcessedData.GetOrAdd<AwareLock>(address + (ulong)type.Fields[nameof(Monitor)].Offset);
+        InteropInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(InteropInfo)].Offset);
+        Link = target.ReadPointer(address + (ulong)type.Fields[nameof(Link)].Offset);
     }
 
-    public InteropSyncBlockInfo? InteropInfo { get; init; }
+    public AwareLock Monitor { get; }
+    public TargetPointer InteropInfo { get; }
+    public TargetPointer Link { get; }
 }
