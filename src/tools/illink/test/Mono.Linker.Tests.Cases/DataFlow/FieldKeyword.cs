@@ -21,7 +21,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = WithFields;
             _ = WithMethods;
             _ = MismatchAssignedFromField;
+            _ = MismatchAssignedFromField_FieldAnnotated;
             _ = MismatchAssignedToField;
+            _ = MismatchAssignedToField_FieldAnnotated;
             MismatchAssignedFromValue = null;
             AssignNoneToMethods();
         }
@@ -69,11 +71,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
+        [field: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [Kept]
+        [KeptBackingField]
+        static Type MismatchAssignedToField_FieldAnnotated
+        {
+            [ExpectedWarning("IL2074", nameof(WithNone))]
+            [Kept]
+            get
+            {
+                field = WithNone;
+                return field;
+            }
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
             KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
         [Kept]
         [KeptBackingField]
         static Type MismatchAssignedFromField
+        {
+            [Kept]
+            [ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
+            [UnexpectedWarning("IL2078", "return value", Tool.Trimmer | Tool.NativeAot, "")]
+            get
+            {
+                WithMethods = field;
+                return field;
+            }
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields),
+            KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [field: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        [Kept]
+        [KeptBackingField]
+        static Type MismatchAssignedFromField_FieldAnnotated
         {
             [Kept]
             [ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]

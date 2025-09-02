@@ -117,15 +117,16 @@ namespace ILLink.Shared.TrimAnalysis
             if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None))
                 return DynamicallyAccessedMemberTypes.None;
 
-            if (field.AssociatedSymbol is IPropertySymbol property)
+            var fieldAnnotation = field.GetDynamicallyAccessedMemberTypes();
+            if (fieldAnnotation is DynamicallyAccessedMemberTypes.None
+                && field.AssociatedSymbol is IPropertySymbol property)
             {
-                // If the field is a backing field for a property, the field assumes the annotation of the property it is associated with.
-                // There should be no scenario where a field with an associated property has any other annotation
-                Debug.Assert(field.GetDynamicallyAccessedMemberTypes() is DynamicallyAccessedMemberTypes.None);
+                // If the field is a backing field for a property and is not otherwise annotated (with [field: DAM]),
+                // the field assumes the annotation of the property it is associated with.
                 return GetBackingFieldAnnotation(property);
             }
 
-            return field.GetDynamicallyAccessedMemberTypes();
+            return fieldAnnotation;
         }
 
         internal static DynamicallyAccessedMemberTypes GetBackingFieldAnnotation(IPropertySymbol property)

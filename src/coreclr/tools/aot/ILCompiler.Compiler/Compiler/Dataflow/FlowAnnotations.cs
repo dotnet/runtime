@@ -669,18 +669,17 @@ namespace ILLink.Shared.TrimAnalysis
                         case ILOpcode.ldfld when !write:
                         case ILOpcode.stsfld when write:
                         case ILOpcode.stfld when write:
-                        {
-                            // This writes/reads multiple fields - can't guess which one is the backing store.
-                            // Return failure.
-                            FieldDesc potentialField = (FieldDesc)body.GetObject(ilReader.ReadILToken());
-                            if (found != null && !found.Equals(potentialField))
                             {
-                                found = null;
-                                return false;
+                                // This writes/reads multiple fields - can't guess which one is the backing store.
+                                // Return failure.
+                                if (found != null)
+                                {
+                                    found = null;
+                                    return false;
+                                }
+                                found = (FieldDesc)body.GetObject(ilReader.ReadILToken());
                             }
-                            found = potentialField;
-                        }
-                        break;
+                            break;
                         default:
                             ilReader.Skip(opcode);
                             break;
