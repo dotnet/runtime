@@ -184,29 +184,31 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         [Fact]
-        public unsafe void HeapSize_GuidHeapSizes()
+        public void HeapSize_GuidHeapSizes()
         {
             MetadataReader baseReader = MetadataReaderTests.GetMetadataReader(NetModule.AppCS); ;
             var bytes = CreateMinimalReaderMetadataAsBytes(Guid.NewGuid());
-
-            fixed (byte* pointer = bytes)
+            unsafe
             {
-                MetadataReader mr1 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
-                MetadataReader mr2 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
-                IReadOnlyList<MetadataReader> metadataReaders = new List<MetadataReader> { mr1, mr2 };
+                fixed (byte* pointer = bytes)
+                {
+                    MetadataReader mr1 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
+                    MetadataReader mr2 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
+                    IReadOnlyList<MetadataReader> metadataReaders = new List<MetadataReader> { mr1, mr2 };
 
-                var aggregator = new MetadataAggregator(baseReader, metadataReaders);
+                    var aggregator = new MetadataAggregator(baseReader, metadataReaders);
 
-                var guidSizeReader1 = mr1.GetHeapSize(HeapIndex.Guid) / 16;
-                Assert.Equal(1, guidSizeReader1);
-                var guidSizeReader2 = mr2.GetHeapSize(HeapIndex.Guid) / 16;
-                Assert.Equal(1, guidSizeReader2);
+                    var guidSizeReader1 = mr1.GetHeapSize(HeapIndex.Guid) / 16;
+                    Assert.Equal(1, guidSizeReader1);
+                    var guidSizeReader2 = mr2.GetHeapSize(HeapIndex.Guid) / 16;
+                    Assert.Equal(1, guidSizeReader2);
 
-                TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(1), expectedHandle: MetadataTokens.GuidHandle(1), expectedGeneration: 1);
+                    TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(1), expectedHandle: MetadataTokens.GuidHandle(1), expectedGeneration: 1);
 
-                // GUID-heap allocation shouldn't be cumulative, since GUIDs are copied among generations.
-                // The delta-reader above need indeed a single GUID allocation in each gen.
-                AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 2));
+                    // GUID-heap allocation shouldn't be cumulative, since GUIDs are copied among generations.
+                    // The delta-reader above need indeed a single GUID allocation in each gen.
+                    AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 2));
+                }
             }
         }
 
