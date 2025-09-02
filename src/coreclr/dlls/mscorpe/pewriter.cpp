@@ -248,7 +248,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
     // Ensure that if someone adds a value to CeeSectionRelocType in cor.h,
     // that they also add an entry to RelocName.
-    static_assert_no_msg(ARRAY_SIZE(RelocName) == srRelocSentinel);
+    static_assert(ARRAY_SIZE(RelocName) == srRelocSentinel);
 #ifdef _DEBUG
     for (unsigned int i = 0; i < srRelocSentinel; i++)
     {
