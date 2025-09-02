@@ -3324,11 +3324,11 @@ public:
         DetachNotifications(CordbProcess * process) : m_process(process) { }
         ~DetachNotifications()
         {
+            DWORD dwProcessedFlares = InterlockedIncrement(&m_process->m_cProcessedFlares);
             if (m_process->m_fDetachInProgress)
             {
                 // notify that there has been an update to the number of processed 
                 // SetThreadContextNeeded events
-                DWORD dwProcessedFlares = InterlockedIncrement(&m_process->m_cProcessedFlares);
                 LOG((LF_CORDB, LL_INFO10000, "HSTCN: Detach in progress - %d\n", dwProcessedFlares));
                 SetEvent(m_process->m_detachSetThreadContextNeededEvent);
             }
