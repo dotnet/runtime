@@ -1072,6 +1072,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool TryExportEncryptedPkcs8PrivateKey(
             string password,
             PbeParameters pbeParameters,
