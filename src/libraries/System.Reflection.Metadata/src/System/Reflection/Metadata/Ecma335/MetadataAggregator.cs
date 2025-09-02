@@ -10,8 +10,8 @@ namespace System.Reflection.Metadata.Ecma335
     public sealed class MetadataAggregator
     {
         // For each heap handle and each delta contains aggregate heap lengths.
-        // For all other Types: heapSizes[heap kind][reader index] == Sum { 0..index | reader[i].XxxHeap.Block.Length }
-        // For GUIDs: heapSizes[heap kind][reader index] == reader[i].XxxHeap.Block.Length 
+        // For GUIDs: heapSizes[heap kind][reader index] == reader[reader index].GuidHeap.Block.Length
+        // For all other heaps: heapSizes[heap kind][reader index] == Sum { 0..reader index | reader[reader index].XxxHeap.Block.Length }
         private readonly ImmutableArray<ImmutableArray<int>> _heapSizes;
 
         private readonly ImmutableArray<ImmutableArray<RowCounts>> _rowCounts;

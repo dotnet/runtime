@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Tests;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -178,56 +179,38 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(3), expectedHandle: MetadataTokens.GuidHandle(3), expectedGeneration: 4);
 
             AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.StringHandle(22), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 0));
-            // Sizes are not cumulative for GUIDs. They represents the number of available GUIDs.
+            // Sizes are not cumulative for GUIDs. They represent the number of available GUIDs.
             AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(4), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 0));
         }
 
         [Fact]
-        public void HeapSize_GuidHeapSizes()
+        public unsafe void HeapSize_GuidHeapSizes()
         {
-            MetadataReader baseReader = CreateBaseMetadataReader();
-            MetadataReader mr1 = CreateMinimalReaderWithGuid(Guid.NewGuid());
-            MetadataReader mr2 = CreateMinimalReaderWithGuid(Guid.NewGuid());
-            IReadOnlyList<MetadataReader> metadataReaders = new List<MetadataReader> { mr1, mr2 };
+            MetadataReader baseReader = MetadataReaderTests.GetMetadataReader(NetModule.AppCS); ;
+            var bytes = CreateMinimalReaderMetadataAsBytes(Guid.NewGuid());
 
-            var aggregator = new MetadataAggregator(baseReader, metadataReaders);
-
-            var guidSizeReader1 = mr1.GetHeapSize(HeapIndex.Guid) / 16;
-            Assert.Equal(1, guidSizeReader1);
-            var guidSizeReader2 = mr2.GetHeapSize(HeapIndex.Guid) / 16;
-            Assert.Equal(1, guidSizeReader2);
-
-            TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(1), expectedHandle: MetadataTokens.GuidHandle(1), expectedGeneration: 1);
-
-            // GUID-heap allocation shouldn't be cumulative, since GUIDs are copied among generations.
-            // The delta-reader above need indeed a single GUID allocation in each gen.
-            AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 2));
-        }
-
-        private MetadataReader CreateBaseMetadataReader()
-        {
-            MetadataReader reader;
-
-            byte[] peImage = (byte[])PortablePdbs.DocumentsPdb.Clone();
-            int stringIndex = MetadataReaderTests.IndexOf(peImage, Encoding.ASCII.GetBytes(COR20Constants.StringStreamName), 0);
-            int remainingBytesIndex = MetadataReaderTests.IndexOf(peImage, BitConverter.GetBytes(180), 0);
-            int compressedIndex = MetadataReaderTests.IndexOf(peImage, Encoding.ASCII.GetBytes(COR20Constants.CompressedMetadataTableStreamName), 0);
-
-            Array.Copy(Encoding.ASCII.GetBytes(COR20Constants.MinimalDeltaMetadataTableStreamName), 0, peImage, stringIndex, Encoding.ASCII.GetBytes(COR20Constants.MinimalDeltaMetadataTableStreamName).Length);
-            peImage[stringIndex + COR20Constants.MinimalDeltaMetadataTableStreamName.Length] = (byte)0;
-            Array.Copy(BitConverter.GetBytes(250), 0, peImage, remainingBytesIndex, BitConverter.GetBytes(250).Length);
-            Array.Copy(Encoding.ASCII.GetBytes(COR20Constants.UncompressedMetadataTableStreamName), 0, peImage, compressedIndex, Encoding.ASCII.GetBytes(COR20Constants.UncompressedMetadataTableStreamName).Length);
-
-            GCHandle pinned = MetadataReaderTests.GetPinnedPEImage(peImage);
-
-            unsafe
+            fixed (byte* pointer = bytes)
             {
-                reader = new MetadataReader((byte*)pinned.AddrOfPinnedObject(), peImage.Length);
-                return reader;
+                MetadataReader mr1 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
+                MetadataReader mr2 = CreateMinimalReaderWithGuid(pointer, bytes.Length);
+                IReadOnlyList<MetadataReader> metadataReaders = new List<MetadataReader> { mr1, mr2 };
+
+                var aggregator = new MetadataAggregator(baseReader, metadataReaders);
+
+                var guidSizeReader1 = mr1.GetHeapSize(HeapIndex.Guid) / 16;
+                Assert.Equal(1, guidSizeReader1);
+                var guidSizeReader2 = mr2.GetHeapSize(HeapIndex.Guid) / 16;
+                Assert.Equal(1, guidSizeReader2);
+
+                TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(1), expectedHandle: MetadataTokens.GuidHandle(1), expectedGeneration: 1);
+
+                // GUID-heap allocation shouldn't be cumulative, since GUIDs are copied among generations.
+                // The delta-reader above need indeed a single GUID allocation in each gen.
+                AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 2));
             }
         }
 
-        private static unsafe MetadataReader CreateMinimalReaderWithGuid(Guid mvid)
+        private static byte[] CreateMinimalReaderMetadataAsBytes(Guid mvid)
         {
             var builder = new MetadataBuilder();
             GuidHandle mvidHandle = builder.GetOrAddGuid(mvid);
@@ -245,16 +228,16 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var root = new MetadataRootBuilder(builder);
             var bb = new BlobBuilder();
             root.Serialize(bb, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
-            byte[] bytes = bb.ToArray();
+            return bb.ToArray();
+        }
 
-            fixed (byte* p = bytes)
-            {
-                var reader = new MetadataReader(p, bytes.Length, MetadataReaderOptions.None);
-                // to avoid minimal flag exception.
-                reader.TableRowCounts[(int)TableIndex.EncMap] = 1;
-                reader.IsMinimalDelta = true;
-                return reader;
-            }
+        private static unsafe MetadataReader CreateMinimalReaderWithGuid(byte* pointer, int length)
+        {
+            var reader = new MetadataReader(pointer, length, MetadataReaderOptions.None);
+            // to avoid minimal flag exception.
+            reader.TableRowCounts[(int)TableIndex.EncMap] = 1;
+            reader.IsMinimalDelta = true;
+            return reader;
         }
     }
 }
