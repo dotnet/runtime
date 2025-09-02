@@ -43,7 +43,6 @@ if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
 if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [tzddir] ( set __tzdDir=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
@@ -77,9 +76,6 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYP
 
 if NOT %__icuDir% == "" (
     set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_ICU_DIR=%__icuDir%"
-)
-if NOT "%__tzdDir%" == "" (
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TZD_DIR=%__tzdDir%"
 )
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
