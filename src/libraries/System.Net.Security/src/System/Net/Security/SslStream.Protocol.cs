@@ -913,12 +913,12 @@ namespace System.Net.Security
 
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                         {
-                            refreshCredentialNeeded = true;
-                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
-
                             if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(this, "InitializeSecurityContext() returned 'CredentialsNeeded'.");
 
+                            refreshCredentialNeeded = true;
+                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
+                            
                             token = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
