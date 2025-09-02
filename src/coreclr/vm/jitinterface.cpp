@@ -452,10 +452,10 @@ static void ConvToJitSig(
 
     uint32_t sigRetFlags = 0;
 
-    static_assert_no_msg(CORINFO_CALLCONV_DEFAULT == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    static_assert_no_msg(CORINFO_CALLCONV_VARARG == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_VARARG);
-    static_assert_no_msg(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
-    static_assert_no_msg(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
+    static_assert(CORINFO_CALLCONV_DEFAULT == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    static_assert(CORINFO_CALLCONV_VARARG == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_VARARG);
+    static_assert(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
+    static_assert(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
 
     sig.GetSignature(&sigRet->pSig, &sigRet->cbSig);
     sigRet->methodSignature = 0;
@@ -5884,11 +5884,11 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     {
         const int delta = CORINFO_HELP_CHKCASTANY - CORINFO_HELP_ISINSTANCEOFANY;
 
-        static_assert_no_msg(CORINFO_HELP_CHKCASTINTERFACE
+        static_assert(CORINFO_HELP_CHKCASTINTERFACE
             == CORINFO_HELP_ISINSTANCEOFINTERFACE + delta);
-        static_assert_no_msg(CORINFO_HELP_CHKCASTARRAY
+        static_assert(CORINFO_HELP_CHKCASTARRAY
             == CORINFO_HELP_ISINSTANCEOFARRAY + delta);
-        static_assert_no_msg(CORINFO_HELP_CHKCASTCLASS
+        static_assert(CORINFO_HELP_CHKCASTCLASS
             == CORINFO_HELP_ISINSTANCEOFCLASS + delta);
 
         helper += delta;
@@ -6546,10 +6546,12 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DELEGATE_INVOKE;
     }
 
+#ifdef FEATURE_TIERED_COMPILATION
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
+#endif // FEATURE_TIERED_COMPILATION
 
     return result;
 }
@@ -13351,10 +13353,20 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
+            _ASSERTE(portableEntryPoint != NULL);
+            PortableEntryPoint::SetInterpreterData(PCODEToPINSTR(portableEntryPoint), ret);
+            ret = portableEntryPoint;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             AllocMemTracker amt;
             InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
             *isInterpreterCode = true;
             *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         }
@@ -14569,6 +14581,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     numArgs++;
 #endif
 
+#ifdef FEATURE_TIERED_COMPILATION
     // Resumption stubs are uniquely coupled to the code version (since the
     // continuation is), so we need to make sure we always keep calling the
     // same version here.
@@ -14583,11 +14596,12 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
         // so through information stored in the continuation).
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
         pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
-#else
+#else // !FEATURE_ON_STACK_REPLACEMENT
         _ASSERTE(!"Unexpected optimization tier with OSR disabled");
-#endif
+#endif // FEATURE_ON_STACK_REPLACEMENT
     }
     else
+#endif // FEATURE_TIERED_COMPILATION
     {
         {
             m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
@@ -14725,7 +14739,8 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
     amTracker.SuppressRelease();
 
-    const char* optimizationTierName = nullptr;
+    const char* optimizationTierName = "UnknownTier";
+#ifdef FEATURE_TIERED_COMPILATION
     switch (ncv.GetOptimizationTier())
     {
     case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
@@ -14734,8 +14749,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     case NativeCodeVersion::OptimizationTierOptimized: optimizationTierName = "Optimized"; break;
     case NativeCodeVersion::OptimizationTier0Instrumented: optimizationTierName = "Tier0Instrumented"; break;
     case NativeCodeVersion::OptimizationTier1Instrumented: optimizationTierName = "Tier1Instrumented"; break;
-    default: optimizationTierName = "UnknownTier"; break;
+    default: break;
     }
+#endif // FEATURE_TIERED_COMPILATION
 
     char name[256];
     int numWritten = sprintf_s(name, ARRAY_SIZE(name), "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);

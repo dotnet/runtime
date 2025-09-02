@@ -341,7 +341,7 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
 } // ResumeAllThreads
 
-C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
+static_assert(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
 PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
