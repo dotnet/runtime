@@ -71,4 +71,8 @@ public abstract class ContractRegistry
     /// Gets an instance of the DebugInfo contract for the target.
     /// </summary>
     public abstract IDebugInfo DebugInfo { get; }
+    /// <summary>
+    /// Gets an instance of the SHash contract for the target.
+    /// </summary>
+    public abstract ISHash SHash { get; }
 }

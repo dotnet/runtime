@@ -891,12 +891,11 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_d
 CDAC_TYPE_END(InstMethodHashTable)
 
 CDAC_TYPE_BEGIN(DynamicILBlobTable)
-CDAC_TYPE_INDETERMINATE(DynamicILBlobTable)
+CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, Table, cdac_data<DynamicILBlobTable>::Table)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, TableSize, cdac_data<DynamicILBlobTable>::TableSize)
-CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntrySize, sizeof(DynamicILBlobEntry))
-CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, offsetof(DynamicILBlobEntry, m_methodToken))
-CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryIL, offsetof(DynamicILBlobEntry, m_il))
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<DynamicILBlobTable>::EntryMethodToken)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)

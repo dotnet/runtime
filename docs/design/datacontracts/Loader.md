@@ -144,7 +144,12 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `Buckets` | Pointer to hash table buckets |
 | `InstMethodHashTable` | `Count` | Count of elements in the hash table |
 | `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
-| `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+| `DynamicILBlobTable` | `Table` | Pointer to IL blob table |
+| `DynamicILBlobTable` | `TableSize` | Number of entries in table |
+| `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
+| `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
+| `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+
 
 
 ### Global variables used:
@@ -164,6 +169,7 @@ Contracts used:
 | Contract Name |
 | --- |
 | EcmaMetadata |
+| SHash |
 
 ### Data Structures
 ```csharp
@@ -587,6 +593,15 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
+{
+    public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+    public bool Equals(uint left, uint right) => left == right;
+    public uint Hash(uint key) => key;
+    public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+    public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+}
+
 TargetPointer GetILHeader(ModuleHandle handle, uint token)
 {
     // we need module
@@ -594,9 +609,16 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
     TargetPointer peAssembly = loader.GetPEAssembly(handle);
     TargetPointer headerPtr = GetDynamicIL(handle, token);
     TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
-    Data.DynamicBlobTable dynamicBlobTable = new DynamicBlobTable(dynamicBlobTablePtr);
-    TargetPointer headerPtr = /* lookup in dynamicBlobTable with token as key, then return element of entry corresponding to IL address */;
-    if (headerPtr == TargetPointer.Null)
+    Contracts.IThread shashContract = target.Contracts.SHash;
+    DynamicILBlobTraits traits = new();
+    /* To construct an SHash we must pass a DataType enum.
+    We must be able to look up this enum in a dictionary of known types and retrieve a Target.TypeInfo struct.
+    This struct contains a dictionary of fields with keys corresponding to the names of offsets
+    and values corresponding to the offset values. Optionally, it contains a Size field.
+    */
+    SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
+    Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
+    if (blobEntry.EntryIL == TargetPointer.Null)
     {
         IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
         MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;

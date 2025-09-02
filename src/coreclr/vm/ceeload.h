@@ -430,6 +430,9 @@ struct cdac_data<DynamicILBlobTable>
 {
     static constexpr size_t Table = offsetof(DynamicILBlobTable, m_table);
     static constexpr size_t TableSize = offsetof(DynamicILBlobTable, m_tableSize);
+    static constexpr size_t EntrySize = sizeof(DynamicILBlobEntry);
+    static constexpr size_t EntryMethodToken = offsetof(DynamicILBlobEntry, m_methodToken);
+    static constexpr size_t EntryIL = offsetof(DynamicILBlobEntry, m_il);
 };
 
 #ifdef FEATURE_READYTORUN
