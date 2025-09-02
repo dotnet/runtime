@@ -4125,9 +4125,9 @@ namespace
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
 
-        static_assert_no_msg(nltMaxValue   <= 0xFF);
-        static_assert_no_msg(nlfMaxValue   <= 0xFF);
-        static_assert_no_msg(pmMaxValue    <= 0xFFFF);
+        static_assert(nltMaxValue   <= 0xFF);
+        static_assert(nlfMaxValue   <= 0xFF);
+        static_assert(pmMaxValue    <= 0xFFFF);
 
         NewArrayHolder<BYTE> pBytes = new BYTE[cbSizeOfBlob.Value()];
         // zero out the hash bytes to ensure all bit fields are deterministically set

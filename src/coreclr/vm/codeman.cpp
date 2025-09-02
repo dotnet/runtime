@@ -396,8 +396,8 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
-        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL));
-        if (pRS->_pjit->GetCodeType() == (miManaged | miIL))
+        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL) || pRS->_pjit->GetCodeType() == (miManaged | miIL | miOPTIL));
+        if (pRS->_pjit->GetCodeType() == (miManaged | miIL)) // Do this only for Jitted code, not for interpreted code
         {
             // This cast is justified because only EEJitManager's have the code type above.
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
@@ -2877,7 +2877,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     if (requestInfo.IsDynamicDomain())
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
-        static_assert_no_msg(CODE_SIZE_ALIGN >= sizeof(void*));
+        static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
     // Scope the lock
@@ -3541,7 +3541,12 @@ void EECodeGenManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAlloc
             {
                 pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
             }
-
+#ifdef FEATURE_INTERPRETER
+            if (pAllocator->m_pLastUsedInterpreterDynamicCodeHeap == ((void *) pHeapList))
+            {
+                pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+            }
+#endif // FEATURE_INTERPRETER
             break;
         }
     }
@@ -5060,7 +5065,26 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     }
     CONTRACTL_END
 
-    EECodeInfo codeInfo(currentPC);
+    ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, scanFlag);
+    if (pRS == NULL)
+        return NULL;
+
+    if (pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            PTR_StubPrecode pStubPrecode = dac_cast<PTR_StubPrecode>(PCODEToPINSTR(currentPC));
+            if (pStubPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                return dac_cast<PTR_MethodDesc>(pStubPrecode->GetMethodDesc());
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
+    EECodeInfo codeInfo(currentPC, scanFlag);
     if (!codeInfo.IsValid())
         return NULL;
     return codeInfo.GetMethodDesc();
