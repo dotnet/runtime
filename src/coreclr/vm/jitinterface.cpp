@@ -10875,7 +10875,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     // Static helpers
     //
 
-    _ASSERTE(pfnHelper != NULL);
+    _ASSERTE(pfnHelper != (TADDR)NULL);
 
     accessType = IAT_VALUE;
 
@@ -10930,7 +10930,7 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum);
     }
 
-    _ASSERTE(pfnHelper != NULL);
+    _ASSERTE(pfnHelper != (TADDR)NULL);
 
     return GetEEFuncEntryPoint(pfnHelper);
 }
