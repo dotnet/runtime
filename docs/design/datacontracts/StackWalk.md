@@ -359,7 +359,7 @@ string GetFrameName(TargetPointer frameIdentifier);
 TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```
 
-`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note this can either be at a capital 'F' frame or at a managed frame unlike the above API which works only at capital 'F' frames.
+`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note this can either be at a capital 'F' frame or a managed frame unlike the above API which works only at capital 'F' frames.
 This API is implemeted as follows:
 1. Try to get the current frame address with `GetFrameAddress`. If the address is not null, return `GetMethodDescPtr(<frameAddress>)`.
 2. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed contet, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
