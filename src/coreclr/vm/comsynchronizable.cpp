@@ -901,37 +901,12 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 }
 FCIMPLEND
 
-extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj)
-{
-    QCALL_CONTRACT;
-
-    int32_t index = -1;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    // Force creation of a SyncBlock for the object.
-    PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
-
-    // We expect this index to remain valid for this object and we're going to
-    // put data in it that makes it "precious" soon.
-    // Mark it as precious now so the sync block doesn't get cleaned up between now
-    // and when we use it by GC.
-    pSyncBlock->SetPrecious();
-    index = (int32_t)pSyncBlock->GetSyncBlockIndex();
-
-    END_QCALL;
-
-    return index;
-}
-
-FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
+FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, Object* pObj)
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
+    _ASSERTE(pObj != NULL);
+    PTR_SyncBlock pSyncBlock = pObj->PassiveGetSyncBlock();
     if (pSyncBlock == NULL)
     {
         return (OBJECTHANDLE)NULL;
@@ -940,7 +915,7 @@ FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE SyncTable_GetLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
@@ -948,16 +923,25 @@ extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOn
 
     GCX_COOP();
 
-    _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
-    if (pSyncBlock == NULL)
-    {
-        // We don't have a syncblock for the object, just the slot.
-        // Create the syncblock now.
-        pSyncBlock = obj.Get()->GetSyncBlock();
-    }
+    PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
 
     lockObj.Set(ObjectFromHandle(pSyncBlock->GetLock()));
 
     END_QCALL;
 }
+
+FCIMPL1(ObjHeader::AcquireHeaderResult, ObjHeader_AcquireThinLock, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    return obj->GetHeader()->AcquireHeaderThinLock(GetThread()->GetThreadId());
+}
+FCIMPLEND
+
+FCIMPL1(ObjHeader::ReleaseHeaderResult, ObjHeader_ReleaseThinLock, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
+}
+FCIMPLEND

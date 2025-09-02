@@ -235,6 +235,7 @@
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Lock.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SyncTable.CoreCLR.cs" />

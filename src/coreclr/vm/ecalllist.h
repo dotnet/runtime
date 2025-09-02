@@ -252,6 +252,11 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
+FCFuncStart(gObjectHeaderFuncs)
+    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
+    FCFuncElement("Release", ObjHeader_ReleaseThinLock)
+FCFuncEnd()
+
 FCFuncStart(gSyncTableFuncs)
     FCFuncElement("GetLockHandleIfExists", SyncTable_GetLockHandleIfExists)
 FCFuncEnd()
@@ -395,6 +400,8 @@ FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 
+FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
+
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
@@ -405,6 +412,7 @@ FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("SyncTable", "System.Threading", gSyncTableFuncs)
+
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 
 #undef FCFuncElement

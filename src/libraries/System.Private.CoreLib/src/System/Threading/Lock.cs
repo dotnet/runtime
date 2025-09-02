@@ -302,6 +302,31 @@ namespace System.Threading
             }
         }
 
+        internal uint ExitAll()
+        {
+            Debug.Assert(IsHeldByCurrentThread);
+
+            uint recursionCount = _recursionCount;
+            _owningThreadId = 0;
+            _recursionCount = 0;
+
+            State state = State.Unlock(this);
+            if (state.HasAnyWaiters)
+            {
+                SignalWaiterIfNecessary(state);
+            }
+
+            return recursionCount;
+        }
+
+        internal void Reenter(uint previousRecursionCount)
+        {
+            Debug.Assert(!IsHeldByCurrentThread);
+
+            Enter();
+            _recursionCount = previousRecursionCount;
+        }
+
         private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]

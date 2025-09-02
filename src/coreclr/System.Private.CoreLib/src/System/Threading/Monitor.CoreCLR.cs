@@ -23,7 +23,7 @@ namespace System.Threading
         #region Object->Lock/Condition mapping
 
         private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
+        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(SyncTable.GetLockObject(o));
 
         private static Condition GetCondition(object obj)
         {
@@ -35,26 +35,23 @@ namespace System.Threading
         #endregion
 
         #region Public Enter/Exit methods
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
-            if (resultOrIndex < 0)
+            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return;
 
-            // We may have initialized the thread Id in TryAcquire, so re-read it here.
-            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex, obj);
-
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
+            EnterSlow(obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void EnterSlow(object obj)
+        {
+            Lock lck = SyncTable.GetLockObject(obj);
+
+            lck.Enter();
+        }
+
         public static void Enter(object obj, ref bool lockTaken)
         {
             // we are inlining lockTaken check as the check is likely be optimized away
@@ -65,31 +62,24 @@ namespace System.Threading
             lockTaken = true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            int resultOrIndex = ObjectHeader.TryAcquire(obj, currentThreadID);
-            if (resultOrIndex < 0)
+            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return true;
 
-            if (resultOrIndex == 0)
+            if (result == ObjectHeader.AcquireHeaderResult.Contention)
                 return false;
 
-            // We may have initialized the thread Id in TryAcquire, so re-read it here.
-            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-
-            Lock lck = SyncTable.GetLockObject(resultOrIndex, obj);
-
-            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
-            // initialized, so cover it here in case it wasn't already done
-            if (currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
-                return true;
-
-            return lck.TryEnterSlow(0, currentThreadID);
+            return TryEnterSlow(obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryEnterSlow(object obj)
+        {
+            Lock lck = SyncTable.GetLockObject(obj);
+            return lck.TryEnter();
+        }
+
         public static void TryEnter(object obj, ref bool lockTaken)
         {
             // we are inlining lockTaken check as the check is likely be optimized away
@@ -99,32 +89,26 @@ namespace System.Threading
             lockTaken = TryEnter(obj);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            int resultOrIndex = ObjectHeader.TryAcquire(obj, currentThreadID);
-            if (resultOrIndex < 0)
+            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return true;
 
-            // We may have initialized the thread Id in TryAcquire, so re-read it here.
-            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
+            if (result == ObjectHeader.AcquireHeaderResult.Contention)
+                return false;
 
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex, obj);
-
-            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
-            // initialized, so cover it here in case it wasn't already done
-            if (millisecondsTimeout == 0 && currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
-                return true;
-
-            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID);
+            return TryEnterSlow(obj, millisecondsTimeout);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryEnterSlow(object obj, int millisecondsTimeout)
+        {
+            Lock lck = SyncTable.GetLockObject(obj);
+            return lck.TryEnter(millisecondsTimeout);
+        }
+
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
             // we are inlining lockTaken check as the check is likely be optimized away
@@ -146,7 +130,26 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Exit(object obj)
         {
-            ObjectHeader.Release(obj);
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.ReleaseHeaderResult result = ObjectHeader.Release(obj);
+
+            if (result == ObjectHeader.ReleaseHeaderResult.Success)
+            {
+                return;
+            }
+
+            if (result == ObjectHeader.ReleaseHeaderResult.Error)
+            {
+                throw new SynchronizationLockException();
+            }
+
+            ExitSlow(obj);
+        }
+
+        private static void ExitSlow(object obj)
+        {
+            Lock lck = SyncTable.GetLockObject(obj);
+            lck.Exit();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

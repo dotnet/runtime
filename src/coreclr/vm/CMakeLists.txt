@@ -226,6 +226,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     stublink.inl
     stubmgr.h
     syncblk.h
+    syncblk.inl
     threads.h
     threads.inl
     threadstatics.h

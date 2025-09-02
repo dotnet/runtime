@@ -967,6 +967,24 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
+    // These must match the values in ObjectHeader.CoreCLR.cs
+    enum class AcquireHeaderResult : int32_t {
+        Success = 0,
+        Contention = 1,
+        UseSlowPath = 2
+    };
+
+    // These must match the values in ObjectHeader.CoreCLR.cs
+    enum class ReleaseHeaderResult : int32_t {
+        Success = 0,
+        UseSlowPath = 1,
+        Error = 2
+    };
+
+    AcquireHeaderResult AcquireHeaderThinLock(DWORD tid);
+
+    ReleaseHeaderResult ReleaseHeaderThinLock(DWORD tid);
+
     friend struct ::cdac_data<ObjHeader>;
 };
 

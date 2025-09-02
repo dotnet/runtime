@@ -129,7 +129,7 @@ inline void Object::EnumMemoryRegions(void)
 }
 #endif // DACCESS_COMPILE
 
-        // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
+// Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
 inline CorElementType ArrayBase::GetArrayElementType() const
 {
     WRAPPER_NO_CONTRACT;

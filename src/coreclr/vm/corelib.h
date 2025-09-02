@@ -674,8 +674,7 @@ DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentTh
 DEFINE_CLASS(WAITER,                Threading,              Condition+Waiter)
 DEFINE_FIELD(WAITER,                NEXT,                   next)
 
-DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
-DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)
+DEFINE_CLASS(THREADID,              Threading,              Lock+ThreadId)
 
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 

@@ -48,6 +48,28 @@ namespace System.Threading
         private const int SBLK_MASK_LOCK_RECLEVEL = 0x003F0000;   // 64 recursion levels
         private const int SBLK_LOCK_RECLEVEL_INC = 0x00010000;    // each level is this much higher than the previous one
 
+        // These must match the values in syncblk.h
+        public enum AcquireHeaderResult
+        {
+            Success = 0,
+            Contention = 1,
+            UseSlowPath = 2
+        };
+
+        // These must match the values in syncblk.h
+        public enum ReleaseHeaderResult
+        {
+            Success = 0,
+            UseSlowPath = 1,
+            Error = 2
+        };
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern AcquireHeaderResult AcquireInternal(object obj);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern ReleaseHeaderResult Release(object obj);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
         {
@@ -70,30 +92,6 @@ namespace System.Threading
         {
             index = header & MASK_HASHCODE_INDEX;
             return HasSyncEntryIndex(header);
-        }
-
-        /// <summary>
-        /// Returns the Monitor synchronization object assigned to this object.  If no synchronization
-        /// object has yet been assigned, it assigns one in a thread-safe way.
-        /// </summary>
-        public static unsafe Lock GetLockObject(object o)
-        {
-            return SyncTable.GetLockObject(GetSyncIndex(o), o);
-        }
-
-        private static unsafe int GetSyncIndex(object o)
-        {
-            fixed (byte* pObjectData = &o.GetRawData())
-            {
-                int* pHeader = GetHeaderPtr(pObjectData);
-                if (GetSyncEntryIndex(*pHeader, out int syncIndex))
-                {
-                    return syncIndex;
-                }
-
-                // Assign a new sync entry
-                return SyncTable.AssignEntry(o, pHeader);
-            }
         }
 
         //
@@ -126,88 +124,28 @@ namespace System.Threading
         // back-off as it favors micro-contention scenario, which we expect.
         //
 
-        // Returs:
-        // -1 - success
-        // 0 - failed
-        // syncIndex - retry with the Lock
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Acquire(object obj, int currentThreadID)
-        {
-            return TryAcquire(obj, currentThreadID, oneShot: false);
-        }
-
-        // -1 - success
-        // 0 - failed
-        // syncIndex - retry with the Lock
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int TryAcquire(object obj, int currentThreadID, bool oneShot = true)
+        // Try acquiring the thin-lock
+        public static unsafe AcquireHeaderResult TryAcquireThinLock(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            // if thread ID is uninitialized or too big, we do "uncommon" part.
-            if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
+            AcquireHeaderResult result = AcquireInternal(obj);
+            if (result == AcquireHeaderResult.Contention)
             {
-                // for an object used in locking there are two common cases:
-                // - header bits are unused or
-                // - there is a sync entry
-                fixed (byte* pObjectData = &obj.GetRawData())
-                {
-                    int* pHeader = GetHeaderPtr(pObjectData);
-                    int oldBits = *pHeader;
-
-                    if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
-                    {
-                        // Spin lock is in use, we cannot use the fast path.
-                        // Another thread is setting up a sync block now.
-                        // Go to the slow path where we'll synchronize with the other thread.
-                        return TryAcquireUncommon(obj, currentThreadID, oneShot);
-                    }
-
-                    // if unused for anything, try setting our thread id
-                    // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                    if ((oldBits & MASK_HASHCODE_INDEX) == 0)
-                    {
-                        if (Interlocked.CompareExchange(ref *pHeader, oldBits | currentThreadID, oldBits) == oldBits)
-                        {
-                            return -1;
-                        }
-                    }
-                    else if (GetSyncEntryIndex(oldBits, out int syncIndex))
-                    {
-                        if (SyncTable.GetLockObject(syncIndex, obj).TryEnterOneShot(currentThreadID))
-                        {
-                            return -1;
-                        }
-
-                        // has sync entry -> slow path
-                        return syncIndex;
-                    }
-                }
+                return TryAcquireThinLockSpin(obj);
             }
-
-            return TryAcquireUncommon(obj, currentThreadID, oneShot);
+            return result;
         }
 
-        // handling uncommon cases here - recursive lock, contention, retries
-        // -1 - success
-        // 0 - failed
-        // syncIndex - retry with the Lock
-        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool oneShot)
+        private static unsafe AcquireHeaderResult TryAcquireThinLockSpin(object obj)
         {
-            if (currentThreadID == 0)
-            {
-                Lock.ThreadId id = new Lock.ThreadId((uint)currentThreadID);
-                id.InitializeForCurrentThread();
-                currentThreadID = (int)id.Id;
-            }
+            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
 
             // does thread ID fit?
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
-                return GetSyncIndex(obj);
+                return AcquireHeaderResult.UseSlowPath;
 
-            // Lock.IsSingleProcessor gets a value that is lazy-initialized at the first contended acquire.
-            // Until then it is false and we assume we have multicore machine.
-            int retries = oneShot || Lock.IsSingleProcessor ? 0 : 16;
+            int retries = Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
@@ -222,40 +160,15 @@ namespace System.Threading
                     while (true)
                     {
                         int oldBits = *pHeader;
-                        if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
+
+                        // If used for hashcode or has the spin-lock, we cannot use thin-lock.
+                        if ((oldBits & (BIT_SBLK_IS_HASHCODE | BIT_SBLK_SPIN_LOCK)) == 0)
                         {
-                            oldBits = SpinWait(pHeader);
+                            // Need to use a thick-lock.
+                            return AcquireHeaderResult.UseSlowPath;
                         }
-
-                        // if unused for anything, try setting our thread id
-                        // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                        if ((oldBits & MASK_HASHCODE_INDEX) == 0)
-                        {
-                            int newBits = oldBits | currentThreadID;
-                            if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
-                            {
-                                return -1;
-                            }
-
-                            // contention on a lock that noone owned,
-                            // but we do not know if there is an owner yet, so try again
-                            continue;
-                        }
-
-                        // has sync entry -> slow path
-                        if (GetSyncEntryIndex(oldBits, out int syncIndex))
-                        {
-                            return syncIndex;
-                        }
-
-                        // has hashcode -> slow path
-                        if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
-                        {
-                            return SyncTable.AssignEntry(obj, pHeader);
-                        }
-
-                        // we own the lock already
-                        if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
+                        // If we already own the lock, try incrementing recursion level.
+                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
                         {
                             // try incrementing recursion level, check for overflow
                             int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
@@ -263,7 +176,7 @@ namespace System.Threading
                             {
                                 if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
                                 {
-                                    return -1;
+                                    return AcquireHeaderResult.Success;
                                 }
 
                                 // rare contention on owned lock,
@@ -273,13 +186,28 @@ namespace System.Threading
                             }
                             else
                             {
-                                // overflow, transition to a fat Lock
-                                return SyncTable.AssignEntry(obj, pHeader);
+                                // overflow, need to transition to a fat Lock
+                                return AcquireHeaderResult.UseSlowPath;
                             }
                         }
+                        // If no one owns the lock, try acquiring it.
+                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == 0)
+                        {
+                            int newBits = oldBits | currentThreadID;
+                            if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                            {
+                                return AcquireHeaderResult.Success;
+                            }
 
-                        // someone else owns.
-                        break;
+                            // rare contention on lock.
+                            // Try again in case the finalization bits were touched.
+                            continue;
+                        }
+                        else
+                        {
+                            // Owned by somebody else. Now we spinwait and retry.
+                            break;
+                        }
                     }
                 }
 
@@ -292,69 +220,7 @@ namespace System.Threading
             }
 
             // owned by somebody else
-            return 0;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Release(object obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            if (currentThreadID == 0)
-            {
-                Lock.ThreadId id = new Lock.ThreadId((uint)currentThreadID);
-                id.InitializeForCurrentThread();
-                currentThreadID = (int)id.Id;
-            }
-
-            Lock fatLock;
-            fixed (byte* pObjectData = &obj.GetRawData())
-            {
-                int* pHeader = GetHeaderPtr(pObjectData);
-                while (true)
-                {
-                    int oldBits = *pHeader;
-                    if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
-                    {
-                        oldBits = SpinWait(pHeader);
-                    }
-
-                    // if we own the lock
-                    if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
-                        (oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
-                    {
-                        // decrement count or release entirely.
-                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
-                            oldBits - SBLK_LOCK_RECLEVEL_INC :
-                            oldBits & ~SBLK_MASK_LOCK_THREADID;
-
-                        // Don't support the sync-block spin lock here.
-                        // If we see it, we'll loop until the lock is released.
-                        int oldBitsWithoutSpinlock = oldBits & ~BIT_SBLK_SPIN_LOCK;
-
-                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBitsWithoutSpinlock) == oldBitsWithoutSpinlock)
-                        {
-                            return;
-                        }
-
-                        // rare contention on owned lock,
-                        // we still own the lock, try again
-                        continue;
-                    }
-
-                    if (!GetSyncEntryIndex(oldBits, out int syncIndex))
-                    {
-                        // someone else owns or noone.
-                        throw new SynchronizationLockException();
-                    }
-
-                    fatLock = SyncTable.GetLockObject(syncIndex, obj);
-                    break;
-                }
-            }
-
-            fatLock.Exit(currentThreadID);
+            return AcquireHeaderResult.Contention;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -382,27 +248,14 @@ namespace System.Threading
                     return true;
                 }
 
-                if (GetSyncEntryIndex(oldBits, out int syncIndex))
+                if (HasSyncEntryIndex(oldBits))
                 {
-                    return SyncTable.GetLockObject(syncIndex, obj).GetIsHeldByCurrentThread(currentThreadID);
+                    return SyncTable.GetLockObject(obj).IsHeldByCurrentThread;
                 }
 
                 // someone else owns or noone.
                 return false;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe int SpinWait(int* pHeader)
-        {
-            int oldBits = *pHeader;
-            for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
-            {
-                LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
-                oldBits = *pHeader;
-            }
-
-            return oldBits;
         }
     }
 }
