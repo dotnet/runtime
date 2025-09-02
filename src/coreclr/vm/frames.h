@@ -2505,6 +2505,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SSP;
     }
+#endif // HOST_AMD64 && HOST_WINDOWS
 
     void SetInterpExecMethodSP(TADDR sp)
     {
@@ -2517,7 +2518,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SP;
     }
-#endif // HOST_AMD64 && HOST_WINDOWS
 
     void SetIsFaulting(bool isFaulting)
     {
