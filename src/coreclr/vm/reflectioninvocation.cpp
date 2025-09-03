@@ -342,6 +342,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
+    if (pMeth->IsAsyncMethod())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Async"));
+    }
+
 #ifdef _DEBUG
     if (g_pConfig->ShouldInvokeHalt(pMeth))
     {
@@ -612,7 +617,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
-            gc.retVal = *(OBJECTREF *)pReturnValue;
+            gc.retVal = ObjectToOBJECTREF(*(Object**)pReturnValue);
         }
 
         // If it is a Nullable<T>, box it using Nullable<T> conventions.
@@ -1835,8 +1840,8 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         _ASSERTE(defaultValue.m_bType != ELEMENT_TYPE_STRING); // Strings in metadata are little-endian.
 
         // The following code assumes that the address of all union members is the same.
-        static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
-        static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
+        static_assert(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
+        static_assert(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
         temp.value = defaultValue.m_ullValue;
 
         temps.Append(temp);

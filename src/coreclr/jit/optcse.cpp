@@ -806,7 +806,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             return 0;
         }
 
-        C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
+        static_assert((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
 

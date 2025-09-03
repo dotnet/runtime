@@ -12,7 +12,7 @@ public unsafe class ImageSharp_2117
     {
         if (Sse.IsSupported)
         {
-            Vector128<float> fnan = Vector128.Create(float.NaN);
+            Vector128<float> fnan = Vector128<float>.NaN;
             Vector128<float> res1 = Sse.Max(Sse.LoadVector128((float*)(&fnan)), Vector128<float>.Zero);
             Vector128<float> res2 = Sse.Min(Sse.LoadVector128((float*)(&fnan)), Vector128<float>.Zero);
 
@@ -24,7 +24,7 @@ public unsafe class ImageSharp_2117
 
         if (Sse2.IsSupported)
         {
-            Vector128<double> dnan = Vector128.Create(double.NaN);
+            Vector128<double> dnan = Vector128<double>.NaN;
             Vector128<double> res3 = Sse2.Max(Sse2.LoadVector128((double*)(&dnan)), Vector128<double>.Zero);
             Vector128<double> res4 = Sse2.Min(Sse2.LoadVector128((double*)(&dnan)), Vector128<double>.Zero);
 

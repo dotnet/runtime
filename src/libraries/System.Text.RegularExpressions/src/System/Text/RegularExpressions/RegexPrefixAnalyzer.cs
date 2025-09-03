@@ -910,7 +910,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string? FindLastCharClass(RegexNode root) => FindFirstOrLastCharClass(root, findFirst: false);
 
-        private static string? FindFirstOrLastCharClass(RegexNode root, bool findFirst)
+        public static string? FindFirstOrLastCharClass(RegexNode root, bool findFirst)
         {
             // Explore the graph, adding found chars into a result set, which is lazily initialized so that
             // we can initialize it to a parsed set if we discover one first (this is helpful not just for allocation
@@ -1354,8 +1354,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Start:
                     case RegexNodeKind.EndZ:
                     case RegexNodeKind.End:
-                    case RegexNodeKind.Boundary:
-                    case RegexNodeKind.ECMABoundary:
                         // Return any anchor found.
                         return node.Kind;
 
@@ -1389,6 +1387,7 @@ namespace System.Text.RegularExpressions
                                     {
                                         case RegexNodeKind.Empty or RegexNodeKind.NegativeLookaround:
                                         case RegexNodeKind.PositiveLookaround when ((node.Options | tmpChild.Options) & RegexOptions.RightToLeft) != 0:
+                                        case RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
                                             // Skip over zero-width assertions.
                                             continue;
 

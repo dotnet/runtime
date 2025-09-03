@@ -1735,7 +1735,7 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
                               CrstAvailableParamTypes,
-                              CRST_DEBUGGER_THREAD);
+                              CrstFlags(CRST_DEBUGGER_THREAD | CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_UNSAFE_ANYMODE));
 
 #ifdef _DEBUG
     CorTypeInfo::CheckConsistency();

@@ -89,6 +89,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task RequiresOnBaseClass()
+        {
+            return RunTest(nameof(RequiresOnBaseClass));
+        }
+
+        [Fact]
         public Task RequiresOnClass()
         {
             return RunTest(nameof(RequiresOnClass));

@@ -35,6 +35,8 @@ namespace System.Text.RegularExpressions
         private static MethodInfo MatchLengthMethod => field ??= RegexRunnerMethod("MatchLength");
         private static MethodInfo MatchIndexMethod => field ??= RegexRunnerMethod("MatchIndex");
         private static MethodInfo IsBoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
+        private static MethodInfo IsPreWordCharBoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsPreWordCharBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
+        private static MethodInfo IsPostWordCharBoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsPostWordCharBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
         private static MethodInfo IsWordCharMethod => field ??= RegexRunnerMethod("IsWordChar");
         private static MethodInfo IsECMABoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
         private static MethodInfo CrawlposMethod => field ??= RegexRunnerMethod("Crawlpos");
@@ -3050,25 +3052,41 @@ namespace System.Text.RegularExpressions
                 }
                 switch (node.Kind)
                 {
-                    case RegexNodeKind.Boundary:
-                        Call(IsBoundaryMethod);
-                        BrfalseFar(doneLabel);
-                        break;
+                    case RegexNodeKind.Boundary or RegexNodeKind.NonBoundary:
+                        if (node.IsKnownPrecededByWordChar())
+                        {
+                            Call(IsPostWordCharBoundaryMethod);
+                        }
+                        else if (node.IsKnownSucceededByWordChar())
+                        {
+                            Call(IsPreWordCharBoundaryMethod);
+                        }
+                        else
+                        {
+                            Call(IsBoundaryMethod);
+                        }
 
-                    case RegexNodeKind.NonBoundary:
-                        Call(IsBoundaryMethod);
-                        BrtrueFar(doneLabel);
-                        break;
-
-                    case RegexNodeKind.ECMABoundary:
-                        Call(IsECMABoundaryMethod);
-                        BrfalseFar(doneLabel);
+                        if (node.Kind is RegexNodeKind.Boundary)
+                        {
+                            BrfalseFar(doneLabel);
+                        }
+                        else
+                        {
+                            BrtrueFar(doneLabel);
+                        }
                         break;
 
                     default:
-                        Debug.Assert(node.Kind == RegexNodeKind.NonECMABoundary);
                         Call(IsECMABoundaryMethod);
-                        BrtrueFar(doneLabel);
+
+                        if (node.Kind is RegexNodeKind.ECMABoundary)
+                        {
+                            BrfalseFar(doneLabel);
+                        }
+                        else
+                        {
+                            BrtrueFar(doneLabel);
+                        }
                         break;
                 }
             }
@@ -3735,7 +3753,7 @@ namespace System.Text.RegularExpressions
 
                     // startingPos = slice.IndexOf(literal);
                     Ldloc(slice);
-                    EmitIndexOf(node, useLast: false, negate: false);
+                    EmitIndexOf(literal2, useLast: false, negate: false);
                     Stloc(startingPos);
 
                     // if (startingPos < 0) goto doneLabel;

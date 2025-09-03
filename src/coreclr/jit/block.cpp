@@ -491,7 +491,6 @@ void BasicBlock::dspFlags() const
         {BBF_IMPORTED, "i"},
         {BBF_IS_LIR, "LIR"},
         {BBF_PROF_WEIGHT, "IBC"},
-        {BBF_RUN_RARELY, "rare"},
         {BBF_MARKED, "m"},
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},

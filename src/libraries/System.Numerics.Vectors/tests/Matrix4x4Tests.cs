@@ -67,14 +67,14 @@ namespace System.Numerics.Tests
 
         // The handedness-swapped matrix of matrix M is B^-1 * M * B where B is the change of handedness matrix.
         // Since only the Z coordinate is flipped when changing handedness,
-        // 
+        //
         // B = [ 1  0  0  0
         //       0  1  0  0
         //       0  0 -1  0
         //       0  0  0  1 ]
         //
         // and B is its own inverse. So the handedness swap can be simplified to
-        // 
+        //
         // B^-1 * M * B = [  m11  m12  -m13  m14
         //                   m21  m22  -m23  m24
         //                  -m31 -m32   m33 -m34
@@ -3174,10 +3174,10 @@ namespace System.Numerics.Tests
         {
             Matrix4x4 a = Matrix4x4.Create(float.Pi);
 
-            Assert.Equal(Vector4.Create(float.Pi), a.X);
-            Assert.Equal(Vector4.Create(float.Pi), a.Y);
-            Assert.Equal(Vector4.Create(float.Pi), a.Z);
-            Assert.Equal(Vector4.Create(float.Pi), a.W);
+            Assert.Equal(Vector4.Pi, a.X);
+            Assert.Equal(Vector4.Pi, a.Y);
+            Assert.Equal(Vector4.Pi, a.Z);
+            Assert.Equal(Vector4.Pi, a.W);
         }
 
         [Fact]

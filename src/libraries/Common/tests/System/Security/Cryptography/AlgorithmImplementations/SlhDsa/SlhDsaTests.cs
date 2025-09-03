@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     {
         protected abstract SlhDsa GenerateKey(SlhDsaAlgorithm algorithm);
         protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
-        protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        protected abstract SlhDsa ImportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         public static IEnumerable<object[]> NistPureSigVerTestVectorsData =>
             from vector in SlhDsaTestData.NistSigVerTestVectors
@@ -32,8 +32,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
             Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyData(msg, sig, ctx));
 
-            // Test signature verification with secret key
-            using SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey);
+            // Test signature verification with private key
+            using SlhDsa secretSlhDsa = ImportSlhDsaPrivateKey(vector.Algorithm, vector.PrivateKey);
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyData(msg, sig, ctx));
         }
 
@@ -55,8 +55,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
             Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
 
-            // Test signature verification with secret key
-            using SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey);
+            // Test signature verification with private key
+            using SlhDsa secretSlhDsa = ImportSlhDsaPrivateKey(vector.Algorithm, vector.PrivateKey);
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
         }
 
@@ -156,19 +156,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(AlgorithmsData_Small))]
-        public void GenerateExportSecretKeySignAndVerify(SlhDsaAlgorithm algorithm)
+        public void GenerateExportPrivateKeySignAndVerify(SlhDsaAlgorithm algorithm)
         {
-            byte[] secretKey;
+            byte[] privateKey;
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
 
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
                 signature = slhDsa.SignData(data);
-                secretKey = slhDsa.ExportSlhDsaSecretKey();
+                privateKey = slhDsa.ExportSlhDsaPrivateKey();
             }
 
-            using (SlhDsa slhDsa = ImportSlhDsaSecretKey(algorithm, secretKey))
+            using (SlhDsa slhDsa = ImportSlhDsaPrivateKey(algorithm, privateKey))
             {
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
@@ -204,9 +204,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(AlgorithmsData_Small))]
-        public void GenerateExportSecretKeySignPreHashAndVerify(SlhDsaAlgorithm algorithm)
+        public void GenerateExportPrivateKeySignPreHashAndVerify(SlhDsaAlgorithm algorithm)
         {
-            byte[] secretKey;
+            byte[] privateKey;
             string shake256Oid = HashInfo.Shake256.Oid;
             byte[] data = new byte[HashInfo.Shake256.OutputSize];
             byte[] signature;
@@ -214,10 +214,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
                 signature = slhDsa.SignPreHash(data, shake256Oid);
-                secretKey = slhDsa.ExportSlhDsaSecretKey();
+                privateKey = slhDsa.ExportSlhDsaPrivateKey();
             }
 
-            using (SlhDsa slhDsa = ImportSlhDsaSecretKey(algorithm, secretKey))
+            using (SlhDsa slhDsa = ImportSlhDsaPrivateKey(algorithm, privateKey))
             {
                 ExerciseSuccessfulVerifyPreHash(slhDsa, data, signature, shake256Oid, []);
 

@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal enum KnownPrecodeType
 {
     Stub = 1,
-    PInvokeImport, // also known as NDirectImport in the runtime
+    PInvokeImport,
     Fixup,
     ThisPtrRetBuf,
     UMEntry,

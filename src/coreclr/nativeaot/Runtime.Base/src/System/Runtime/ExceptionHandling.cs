@@ -979,8 +979,10 @@ namespace System.Runtime
         private static void DebugVerifyHandlingFrame(UIntPtr handlingFrameSP)
         {
             Debug.Assert(handlingFrameSP != MaxSP, "Handling frame must have an SP value");
+#if !FEATURE_INTERPRETER
             Debug.Assert(((UIntPtr*)handlingFrameSP) > &handlingFrameSP,
                 "Handling frame must have a valid stack frame pointer");
+#endif
         }
 
         // Caclulate the code offset from the start of the method as if the hot and cold regions were

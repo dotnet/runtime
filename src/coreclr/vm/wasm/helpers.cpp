@@ -58,9 +58,9 @@ extern "C" void STDCALL DelayLoad_Helper_ObjObj()
     PORTABILITY_ASSERT("DelayLoad_Helper_ObjObj is not implemented on wasm");
 }
 
-extern "C" void STDCALL NDirectImportThunk()
+extern "C" void STDCALL PInvokeImportThunk()
 {
-    PORTABILITY_ASSERT("NDirectImportThunk is not implemented on wasm");
+    PORTABILITY_ASSERT("PInvokeImportThunk is not implemented on wasm");
 }
 
 extern "C" void STDCALL StubPrecodeCode()
@@ -484,6 +484,11 @@ void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArg
 }
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+{
+    PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+}
+
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }

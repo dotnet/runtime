@@ -55,7 +55,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(0, 0, null)]
         [InlineData(1, 2, "")]
         [InlineData(1, 2, "target")]
-        public void Ctor_BeforeCount_AfterCount_Target(int beforeCount, int afterCount, string target)
+        public void Ctor_BeforeCount_AfterCount_Target(int beforeCount, int afterCount, string? target)
         {
             var listView = new DirectoryVirtualListView(beforeCount, afterCount, target);
             Assert.Equal(afterCount, listView.AfterCount);

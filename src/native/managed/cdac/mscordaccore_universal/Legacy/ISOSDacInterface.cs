@@ -11,6 +11,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // See src/coreclr/inc/sospriv.idl
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+
+internal enum CLRDataOtherNotifyFlag
+{
+    CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,
+    CLRDATA_NOTIFY_ON_MODULE_UNLOAD = 0x2,
+    CLRDATA_NOTIFY_ON_EXCEPTION = 0x4,
+    CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER = 0x8
+}
+
 internal struct DacpThreadStoreData
 {
     public int threadCount;
@@ -65,6 +74,21 @@ internal struct DacpAppDomainStoreData
     public ClrDataAddress systemDomain;
     public int DomainCount;
 };
+
+internal struct DacpAssemblyData
+{
+    public ClrDataAddress AssemblyPtr;
+    public ClrDataAddress ClassLoader;
+    public ClrDataAddress ParentDomain;
+    public ClrDataAddress DomainPtr;
+    public ClrDataAddress AssemblySecDesc;
+    public int isDynamic;
+    public uint ModuleCount;
+    public uint LoadContext;
+    public int isDomainNeutral; // Always false, preserved for backward compatibility
+    public uint dwLocationFlags;
+}
+
 internal struct DacpThreadData
 {
     public int corThreadId;
@@ -112,6 +136,12 @@ internal struct DacpModuleData
     public ClrDataAddress ThunkHeap;
 
     public ulong dwModuleIndex; // Always 0 - .NET no longer has this
+}
+
+internal enum ModuleMapType
+{
+    TYPEDEFTOMETHODTABLE = 0x0,
+    TYPEREFTOMETHODTABLE = 0x1
 }
 
 internal struct DacpMethodTableData
@@ -179,6 +209,12 @@ internal struct DacpMethodTableFieldData
     public ushort wContextStaticsSize;
 };
 
+internal enum MethodTableInitializationFlags
+{
+    MethodTableInitialized = 1,
+    MethodTableInitializationFailed = 2
+};
+
 internal struct DacpReJitData
 {
     // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
@@ -228,6 +264,28 @@ internal struct DacpMethodDescData
 
 }
 
+internal struct DacpMethodDescTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
+internal struct DacpMethodTableTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
+internal struct DacpGcHeapData
+{
+    public int bServerMode;
+    public int bGcStructuresValid;
+    public uint HeapCount;
+    public uint g_max_generation;
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
@@ -255,7 +313,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
     [PreserveSig]
-    int GetAssemblyData(ClrDataAddress baseDomainPtr, ClrDataAddress assembly, /*struct DacpAssemblyData*/ void* data);
+    int GetAssemblyData(ClrDataAddress domain, ClrDataAddress assembly, DacpAssemblyData* data);
     [PreserveSig]
     int GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 
@@ -265,7 +323,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(/*ModuleMapType*/ int mmt, ClrDataAddress moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
     [PreserveSig]
     int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]
@@ -291,7 +349,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodDescFromToken(ClrDataAddress moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
     [PreserveSig]
-    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, /*struct DacpMethodDescTransparencyData*/ void* data);
+    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, DacpMethodDescTransparencyData* data);
 
     // JIT Data
     [PreserveSig]
@@ -329,7 +387,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data);
     [PreserveSig]
-    int GetMethodTableTransparencyData(ClrDataAddress mt, /*struct DacpMethodTableTransparencyData*/ void* data);
+    int GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data);
 
     // EEClass
     [PreserveSig]
@@ -351,7 +409,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // GC
     [PreserveSig]
-    int GetGCHeapData(/*struct DacpGcHeapData*/ void* data);
+    int GetGCHeapData(DacpGcHeapData* data);
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
@@ -638,7 +696,7 @@ internal unsafe partial interface ISOSDacInterface14
     [PreserveSig]
     int GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
+    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
 }
 
 [GeneratedComInterface]

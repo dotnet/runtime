@@ -2416,25 +2416,6 @@ public class InterpreterTest
         // Test marshaling wrappers
         writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
 
-        /* fails, with output:
-            Assert failure(PID 32748 [0x00007fec], Thread: 24256 [0x5ec0]): pMD == codeInfo.GetMethodDesc()
-
-            CORECLR! AppendExceptionStackFrame + 0x331 (0x00007ff9`85879b71)
-            SYSTEM.PRIVATE.CORELIB! <no symbol> + 0x0 (0x00007ff9`80d91f30)
-            SYSTEM.PRIVATE.CORELIB! <no symbol> + 0x0 (0x00007ff9`80d926b7)
-            SYSTEM.PRIVATE.CORELIB! <no symbol> + 0x0 (0x00007ff9`80d92289)
-            CORECLR! CallDescrWorkerInternal + 0x83 (0x00007ff9`859811c3)
-            CORECLR! CallDescrWorkerWithHandler + 0x130 (0x00007ff9`854755c0)
-            CORECLR! DispatchCallSimple + 0x26C (0x00007ff9`8547655c)
-            CORECLR! DispatchManagedException + 0x388 (0x00007ff9`85872998)
-            CORECLR! DispatchManagedException + 0x67 (0x00007ff9`858725a7)
-            CORECLR! UnwindAndContinueRethrowHelperAfterCatch + 0x1F8 (0x00007ff9`851be5e8)
-            File: Z:\runtime\src\coreclr\vm\exceptionhandling.cpp:3032
-            Image: Z:\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\corerun.exe
-
-            pMD is TestPInvoke (correct) and codeInfo.GetMethodDesc() is Main (wrong)
-        */
-        /*
         bool caught = false;
         try {
             Console.WriteLine("calling missingPInvoke");
@@ -2447,28 +2428,7 @@ public class InterpreterTest
 
         if (!caught)
             return false;
-        */
 
-        /* fails, with output:
-            calling missingPInvokeWithMarshaling
-            caught #2
-
-            Assert failure(PID 59772 [0x0000e97c], Thread: 24864 [0x6120]): ohThrowable
-
-            CORECLR! PreStubWorker$catch$10 + 0x93 (0x00007ff9`580972b3)
-            CORECLR! CallSettingFrame_LookupContinuationIndex + 0x20 (0x00007ff9`57f32e70)
-            CORECLR! _FrameHandler4::CxxCallCatchBlock + 0x1DE (0x00007ff9`57f1e83e)
-            NTDLL! RtlCaptureContext2 + 0x4A6 (0x00007ffa`b7e46606)
-            CORECLR! PreStubWorker + 0x4F8 (0x00007ff9`5789dd78)
-            CORECLR! ThePreStub + 0x55 (0x00007ff9`57ec29c5)
-            CORECLR! CallJittedMethodRetVoid + 0x14 (0x00007ff9`57ec0f34)
-            CORECLR! InvokeCompiledMethod + 0x5D7 (0x00007ff9`57afaf67)
-            CORECLR! InterpExecMethod + 0x84BB (0x00007ff9`57af68cb)
-            CORECLR! ExecuteInterpretedMethod + 0x11B (0x00007ff9`5789c77b)
-            File: Z:\runtime\src\coreclr\vm\prestub.cpp:1965
-            Image: Z:\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\corerun.exe
-        */
-        /*
         bool caught2 = false;
         try {
             Console.WriteLine("calling missingPInvokeWithMarshaling");
@@ -2481,7 +2441,6 @@ public class InterpreterTest
 
         if (!caught2)
             return false;
-        */
 
         return true;
     }

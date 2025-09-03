@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();

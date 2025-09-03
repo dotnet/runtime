@@ -441,6 +441,15 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT,
         }
     }
 
+    if (pRetMethod != NULL && pRetMethod->IsAsyncVariantMethod())
+    {
+        // do not return methoddescs for async variants.
+        // NOTE: The only scenario where this is relevant is when caller iterates through all slots.
+        //       If GetMethodAt is used to find a method associated with another one,
+        //       then we would be starting with "real" method and will get a "real" method here.
+        pRetMethod = NULL;
+    }
+
     END_QCALL;
 
     return pRetMethod;

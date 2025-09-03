@@ -28,7 +28,7 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(path: expected);
         TargetPointer moduleAddrEmptyPath = loader.AddModule();
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 
@@ -62,7 +62,7 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(fileName: expected);
         TargetPointer moduleAddrEmptyName = loader.AddModule();
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 

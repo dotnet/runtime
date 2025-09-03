@@ -975,7 +975,8 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
-    IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
+    IMAGE_CEE_CS_CALLCONV_ASYNC         = 0xc,  // used for calli in IL stubs
+    IMAGE_CEE_CS_CALLCONV_MAX           = 0xd,  // first invalid calling convention
 
 
         // The high bits of the calling convention convey additional info

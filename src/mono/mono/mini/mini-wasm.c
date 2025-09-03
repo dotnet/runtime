@@ -799,7 +799,7 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		} else if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
-		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
+		} else if (!(MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t))) {
 			return FALSE;
 		} else {
 			if (etype)
@@ -807,10 +807,12 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		}
 	}
 
-	if (etype) {
-		if (!(*etype))
-			*etype = mono_get_int32_type ();
+	// empty struct
+	if (nfields == 0 && etype) {
+		*etype = m_class_get_byval_arg (mono_defaults.sbyte_class);
 	}
+
+	g_assert (!etype || *etype);
 
 	return TRUE;
 }

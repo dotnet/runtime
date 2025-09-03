@@ -55,8 +55,8 @@ namespace System.Security.Cryptography.Tests
             {
                 ExerciseSuccessfulVerify(privateKey, data, signature, []);
 
-                signature.AsSpan().Clear();
-                privateKey.SignData(data, signature, []);
+                signature = new byte[algorithm.MaxSignatureSizeInBytes];
+                Array.Resize(ref signature, privateKey.SignData(data, signature, []));
 
                 ExerciseSuccessfulVerify(privateKey, data, signature, []);
             }
@@ -71,8 +71,8 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = dsa.SignData(data);
             ExerciseSuccessfulVerify(dsa, data, signature, []);
 
-            signature.AsSpan().Clear();
-            dsa.SignData(data, signature, Array.Empty<byte>());
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(data, signature, Array.Empty<byte>()));
             ExerciseSuccessfulVerify(dsa, data, signature, Array.Empty<byte>());
         }
 
@@ -86,6 +86,10 @@ namespace System.Security.Cryptography.Tests
 
             byte[] signature = dsa.SignData(data, context);
             ExerciseSuccessfulVerify(dsa, data, signature, context);
+
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(data, signature, context));
+            ExerciseSuccessfulVerify(dsa, data, signature, context);
         }
 
         [Theory]
@@ -96,8 +100,8 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = dsa.SignData([]);
             ExerciseSuccessfulVerify(dsa, [], signature, []);
 
-            signature.AsSpan().Clear();
-            dsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>());
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>()));
             ExerciseSuccessfulVerify(dsa, [], signature, []);
         }
 
@@ -110,8 +114,8 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = dsa.SignData([], context);
             ExerciseSuccessfulVerify(dsa, [], signature, context);
 
-            signature.AsSpan().Clear();
-            dsa.SignData(Array.Empty<byte>(), signature, context);
+            signature = new byte[algorithm.MaxSignatureSizeInBytes];
+            Array.Resize(ref signature, dsa.SignData(Array.Empty<byte>(), signature, context));
             ExerciseSuccessfulVerify(dsa, [], signature, context);
         }
 
@@ -154,14 +158,14 @@ namespace System.Security.Cryptography.Tests
             {
                 signature = privateKey.SignData(vector.Message, null);
 
-                Assert.Equal(vector.Signature.Length, signature.Length);
-
                 ExerciseSuccessfulVerify(privateKey, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(privateKey, vector.Message, vector.Signature, []);
             }
 
             using (CompositeMLDsa publicKey = ImportPublicKey(vector.Algorithm, vector.PublicKey))
             {
                 ExerciseSuccessfulVerify(publicKey, vector.Message, signature, []);
+                ExerciseSuccessfulVerify(publicKey, vector.Message, vector.Signature, []);
             }
         }
 
