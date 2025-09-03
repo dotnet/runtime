@@ -895,9 +895,10 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 	// Handle arrays: if the argument type is an array and the value is an array,
 	// we need to wrap each element in CustomAttributeTypedArgument and put them in an array
 	// The managed CanonicalizeValue will then convert the CustomAttributeTypedArgument[] to ReadOnlyCollection
-	if (t->type == MONO_TYPE_SZARRAY && val && mono_object_class (val)->rank == 1) {
+	if (t->type == MONO_TYPE_SZARRAY && val && m_class_get_rank (mono_object_class (val)) == 1) {
 		MonoArray *arr = (MonoArray*)val;
-		MonoClass *element_class = m_type_data_get_klass (t)->element_class;
+		MonoClass *array_class = m_type_data_get_klass (t);
+		MonoClass *element_class = m_class_get_element_class (array_class);
 		MonoType *element_type = m_class_get_byval_arg (element_class);
 		int len = mono_array_length_internal (arr);
 		
