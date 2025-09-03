@@ -176,8 +176,16 @@ charset = utf-8
 indent_size = 2
 
 # Xml files
-[*.{xml,stylecop,resx,ruleset}]
+[*.{xml,stylecop,ruleset}]
 indent_size = 2
+
+# Resources - match defaults for VS
+[*.resx]
+charset = utf-8-bom
+indent_size = 2
+indent_style = space
+insert_final_newline = false
+trim_trailing_whitespace = false
 
 # Xml config files
 [*.{props,targets,config,nuspec}]
