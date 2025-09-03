@@ -63,7 +63,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    PalFlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     SyncClean::CleanUp();
@@ -404,7 +404,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            PalFlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 
@@ -415,7 +415,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            PalFlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
         return;

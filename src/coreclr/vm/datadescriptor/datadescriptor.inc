@@ -22,6 +22,7 @@ CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::Except
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_data<Thread>::TEB)
 #endif
@@ -47,6 +48,33 @@ CDAC_TYPE_INDETERMINATE(IdDispenser)
 CDAC_TYPE_FIELD(IdDispenser, /*pointer*/, IdToThread, cdac_data<IdDispenser>::IdToThread)
 CDAC_TYPE_FIELD(IdDispenser, /*uint32*/, HighestId, cdac_data<IdDispenser>::HighestId)
 CDAC_TYPE_END(IdDispenser)
+
+CDAC_TYPE_BEGIN(ThreadStaticsInfo)
+CDAC_TYPE_SIZE(sizeof(ThreadStaticsInfo))
+CDAC_TYPE_FIELD(ThreadStaticsInfo, /*TLSIndex*/, GCTlsIndex, offsetof(ThreadStaticsInfo, GCTlsIndex))
+CDAC_TYPE_FIELD(ThreadStaticsInfo, /*TLSIndex*/, NonGCTlsIndex, offsetof(ThreadStaticsInfo, NonGCTlsIndex))
+CDAC_TYPE_END(ThreadStaticsInfo)
+
+CDAC_TYPE_BEGIN(ThreadLocalData)
+CDAC_TYPE_INDETERMINATE(ThreadLocalData)
+CDAC_TYPE_FIELD(ThreadLocalData, /*pointer*/, CollectibleTlsArrayData, offsetof(ThreadLocalData, pCollectibleTlsArrayData))
+CDAC_TYPE_FIELD(ThreadLocalData, /*pointer*/, NonCollectibleTlsArrayData, offsetof(ThreadLocalData, pNonCollectibleTlsArrayData))
+CDAC_TYPE_FIELD(ThreadLocalData, /*int32*/, CollectibleTlsDataCount, offsetof(ThreadLocalData, cCollectibleTlsData))
+CDAC_TYPE_FIELD(ThreadLocalData, /*int32*/, NonCollectibleTlsDataCount, offsetof(ThreadLocalData, cNonCollectibleTlsData))
+CDAC_TYPE_FIELD(ThreadLocalData, /*pointer*/, InFlightData, offsetof(ThreadLocalData, pInFlightData))
+CDAC_TYPE_END(ThreadLocalData)
+
+CDAC_TYPE_BEGIN(InFlightTLSData)
+CDAC_TYPE_INDETERMINATE(InFlightTLSData)
+CDAC_TYPE_FIELD(InFlightTLSData, /*pointer*/, Next, offsetof(InFlightTLSData, pNext))
+CDAC_TYPE_FIELD(InFlightTLSData, /*TLSIndex*/, TlsIndex, offsetof(InFlightTLSData, tlsIndex))
+CDAC_TYPE_FIELD(InFlightTLSData, /*OBJECTHANDLE*/, TLSData, offsetof(InFlightTLSData, hTLSData))
+CDAC_TYPE_END(InFlightTLSData)
+
+CDAC_TYPE_BEGIN(TLSIndex)
+CDAC_TYPE_INDETERMINATE(TLSIndex)
+CDAC_TYPE_FIELD(TLSIndex, /*uint32*/, TLSIndexRawIndex, offsetof(TLSIndex, TLSIndexRawIndex))
+CDAC_TYPE_END(TLSIndex)
 
 CDAC_TYPE_BEGIN(EEAllocContext)
 CDAC_TYPE_INDETERMINATE(EEAllocContext)
@@ -135,6 +163,8 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
 CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
+CDAC_TYPE_FIELD(Module, /*pointer*/, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
+CDAC_TYPE_FIELD(Module, /*pointer*/, InstMethodHashTable, offsetof(Module, m_pInstMethodHashTable))
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -157,6 +187,7 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*bool*/, IsDynamic, cdac_data<Assembly>::IsDynamic)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
 CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
@@ -246,15 +277,23 @@ CDAC_TYPE_FIELD(MethodTable, /*pointer*/, PerInstInfo, cdac_data<MethodTable>::P
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_data<MethodTable>::AuxiliaryData)
 CDAC_TYPE_END(MethodTable)
 
+CDAC_TYPE_BEGIN(DynamicStaticsInfo)
+CDAC_TYPE_SIZE(sizeof(DynamicStaticsInfo))
+CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, GCStatics, offsetof(DynamicStaticsInfo, m_pGCStatics))
+CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, NonGCStatics, offsetof(DynamicStaticsInfo, m_pNonGCStatics))
+CDAC_TYPE_END(DynamicStaticsInfo)
+
 CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
 CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*pointer*/, LoaderModule, offsetof(MethodTableAuxiliaryData, m_pLoaderModule))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*int16*/, OffsetToNonVirtualSlots, offsetof(MethodTableAuxiliaryData, m_offsetToNonVirtualSlots))
+CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*uint32*/, Flags, offsetof(MethodTableAuxiliaryData, m_dwFlags))
 CDAC_TYPE_END(MethodTableAuxiliaryData)
 
 CDAC_TYPE_BEGIN(EEClass)
 CDAC_TYPE_INDETERMINATE(EEClass)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_data<EEClass>::MethodTable)
+CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodDescChunk, cdac_data<EEClass>::MethodDescChunk)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_data<EEClass>::NumMethods)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, FieldDescList, cdac_data<EEClass>::FieldDescList)
 CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_data<EEClass>::CorTypeAttr)
@@ -516,6 +555,7 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, RuntimeFunctions, cdac_data<ReadyTo
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
 
@@ -582,15 +622,26 @@ CDAC_TYPE_FIELD(RangeSection, /*pointer*/, HeapList, cdac_data<RangeSection>::He
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, R2RModule, cdac_data<RangeSection>::R2RModule)
 CDAC_TYPE_END(RangeSection)
 
+CDAC_TYPE_BEGIN(EEJitManager)
+CDAC_TYPE_INDETERMINATE(EEJitManager)
+CDAC_TYPE_FIELD(EEJitManager, /*bool*/, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
+CDAC_TYPE_END(EEJitManager)
+
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 #ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
+
+CDAC_TYPE_BEGIN(PatchpointInfo)
+CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
+CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
+CDAC_TYPE_END(PatchpointInfo)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
@@ -649,6 +700,7 @@ CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, Datum, offsetof(InlinedCallFrame, m_Datum))
 #ifdef TARGET_ARM
 CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, SPAfterProlog, offsetof(InlinedCallFrame, m_pSPAfterProlog))
 #endif // TARGET_ARM
@@ -663,6 +715,7 @@ CDAC_TYPE_END(SoftwareExceptionFrame)
 CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
 CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
+CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_END(FramedMethodFrame)
 
 CDAC_TYPE_BEGIN(TransitionBlock)
@@ -686,6 +739,13 @@ CDAC_TYPE_FIELD(DebuggerEval, /*T_CONTEXT*/, TargetContext, offsetof(DebuggerEva
 CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
+
+CDAC_TYPE_BEGIN(StubDispatchFrame)
+CDAC_TYPE_SIZE(sizeof(StubDispatchFrame))
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, RepresentativeMTPtr, cdac_data<StubDispatchFrame>::RepresentativeMTPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*uint32*/, RepresentativeSlot, cdac_data<StubDispatchFrame>::RepresentativeSlot)
+CDAC_TYPE_END(StubDispatchFrame)
 
 #ifdef FEATURE_HIJACK
 CDAC_TYPE_BEGIN(ResumableFrame)
@@ -822,6 +882,22 @@ CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegiste
 #endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)
 
+CDAC_TYPE_BEGIN(EETypeHashTable)
+CDAC_TYPE_INDETERMINATE(EETypeHashTable)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, Buckets, cdac_data<EETypeHashTable>::Buckets)
+CDAC_TYPE_FIELD(EETypeHashTable, /*uint32*/, Count, cdac_data<EETypeHashTable>::Count)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, VolatileEntryValue, cdac_data<EETypeHashTable>::VolatileEntryValue)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<EETypeHashTable>::VolatileEntryNextEntry)
+CDAC_TYPE_END(EETypeHashTable)
+
+CDAC_TYPE_BEGIN(InstMethodHashTable)
+CDAC_TYPE_INDETERMINATE(InstMethodHashTable)
+CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, Buckets, cdac_data<InstMethodHashTable>::Buckets)
+CDAC_TYPE_FIELD(InstMethodHashTable, /*uint32*/, Count, cdac_data<InstMethodHashTable>::Count)
+CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<InstMethodHashTable>::VolatileEntryValue)
+CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
+CDAC_TYPE_END(InstMethodHashTable)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -873,6 +949,11 @@ CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
 #endif
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
+#endif // FEATURE_ON_STACK_REPLACEMENT
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
@@ -888,6 +969,9 @@ CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
+CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMASK)
+CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
+CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
@@ -919,4 +1003,8 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
+
+CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
+
 CDAC_GLOBALS_END()

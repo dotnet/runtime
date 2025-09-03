@@ -152,7 +152,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // It can also happen that we see this for a static method - for example a delegate creation
             // over a local function does this, even thought the "this" makes no sense inside a static scope.
             if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
-                return new MethodParameterValue(method, (ParameterIndex)0, FlowAnnotations.GetMethodParameterAnnotation(new ParameterProxy(new(method), (ParameterIndex)0)));
+                return new MethodParameterValue(new ParameterProxy(new(method), (ParameterIndex)0));
 
             return TopValue;
         }
@@ -255,7 +255,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
-            => new MethodParameterValue(parameter);
+        {
+            return new MethodParameterValue(new ParameterProxy(parameter, parameter.ContainingSymbol as IMethodSymbol ?? (IMethodSymbol)OwningSymbol));
+        }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
