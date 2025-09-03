@@ -802,8 +802,8 @@ namespace System.Runtime
             if (elementType != obj.GetMethodTable())
                 goto notExactMatch;
 
-            doWrite:
-            WriteBarrier(ref element, obj);
+        doWrite:
+            RuntimeHelpers.WriteBarrier(ref element, obj);
             return;
 
         assigningNull:
@@ -826,7 +826,7 @@ namespace System.Runtime
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                WriteBarrier(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -843,7 +843,7 @@ namespace System.Runtime
                 throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            WriteBarrier(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, obj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
@@ -1275,8 +1275,5 @@ namespace System.Runtime
 
             return obj;
         }
-
-        [Intrinsic]
-        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
     }
 }
