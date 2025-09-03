@@ -990,7 +990,7 @@ struct VMHELPDEF
 #endif // _DEBUG
 
 #if defined(_DEBUG) || defined(TARGET_WASM)
-    bool isDynamicHelper;
+    bool _isDynamicHelper;
 #endif // _DEBUG || TARGET_WASM
 
     bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
