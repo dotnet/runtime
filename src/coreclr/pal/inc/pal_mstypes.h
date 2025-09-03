@@ -71,10 +71,6 @@ extern "C" {
 
 #define CALLBACK __cdecl
 
-#if !defined(_declspec)
-#define _declspec(e)  __declspec(e)
-#endif
-
 #if defined(_VAC_) && defined(__cplusplus)
 #define __inline        inline
 #endif
@@ -100,13 +96,6 @@ extern "C" {
 #define OUT
 #define OPTIONAL
 #define FAR
-
-#ifdef UNICODE
-#define __TEXT(x) L##x
-#else
-#define __TEXT(x) x
-#endif
-#define TEXT(x) __TEXT(x)
 
 ////////////////////////////////////////////////////////////////////////
 // Some special values
@@ -136,10 +125,6 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////
 // Misc. types
 ////////////////////////////////////////////////////////////////////////
-
-#if HOST_64BIT
-typedef long double LONG_DOUBLE;
-#endif
 
 typedef void VOID;
 

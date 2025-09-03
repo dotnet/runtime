@@ -151,10 +151,6 @@ extern bool g_arm64_atomics_present;
 #endif
 #endif
 
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
-#endif
-
 /******************* PAL-Specific Entrypoints *****************************/
 
 #define DLL_PROCESS_ATTACH 1
