@@ -875,4 +875,3 @@ public class Neural : NNetStruct
     }
     */
 }
-

@@ -1047,4 +1047,3 @@ public class Test_sbyte {
 		return 0;
 	} // end Main
 } // end class Test_sbyte
-

@@ -31,4 +31,3 @@ public class child
         return x;
     }
 }
-

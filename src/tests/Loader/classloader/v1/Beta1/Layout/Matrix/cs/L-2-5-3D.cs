@@ -155,11 +155,3 @@ public struct A{
 		
 	}
 }
-
-
-
-
-
-
-
-

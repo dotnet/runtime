@@ -370,4 +370,3 @@ public class Tests
 	}	
 */
 }
-

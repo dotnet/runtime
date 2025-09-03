@@ -874,4 +874,3 @@ class Tests
 	}
 
 }
-

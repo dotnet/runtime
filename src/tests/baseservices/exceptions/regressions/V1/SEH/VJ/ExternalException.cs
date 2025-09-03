@@ -82,6 +82,3 @@ public class ExternalException : Exception {
 	
 	}
 }
-
-
-

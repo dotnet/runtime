@@ -76,5 +76,3 @@ class ThrowInCatchTest
         return _trace.Match();
     }
 }
-
-

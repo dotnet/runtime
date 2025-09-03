@@ -37,4 +37,3 @@ namespace Test
         public DerivedClass(string selector) : base(selector ?? "NeededToFallBack") { }
     }
 }
-

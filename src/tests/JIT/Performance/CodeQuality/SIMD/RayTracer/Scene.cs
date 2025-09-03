@@ -20,4 +20,3 @@ internal class Scene
         }
     }
 }
-

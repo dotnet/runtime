@@ -48,4 +48,3 @@ public class Runtime_61040_4
     [Fact]
     public static int TestEntryPoint() => Problem();
 }
-

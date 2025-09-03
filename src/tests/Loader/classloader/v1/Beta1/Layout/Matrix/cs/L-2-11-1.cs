@@ -262,7 +262,3 @@ internal static int MethAsmStat(){
   return 100;
 }
 }
-
-
-
-

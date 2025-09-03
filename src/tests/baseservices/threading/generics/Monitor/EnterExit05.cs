@@ -96,5 +96,3 @@ public class Test_EnterExit05
 		}
 	}
 }		
-
-

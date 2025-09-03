@@ -190,5 +190,3 @@ new one_pass();
         return 100;
     }
 }
-
-

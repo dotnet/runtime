@@ -21,4 +21,3 @@ public class Test_b00719
         int[] a = new int[i];
     }
 }
-

@@ -164,5 +164,3 @@ public class Test_EnterExit02
 		}
 	}
 }		
-
-

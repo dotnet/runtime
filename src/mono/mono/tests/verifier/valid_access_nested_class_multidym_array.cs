@@ -12,5 +12,3 @@ class MainClass
 		f[0,0] =new Foo ();
 	}
 }
-
-

@@ -76,4 +76,3 @@ public class Test : MarshalByRefObject {
 		return 0;
 	}
 }
-

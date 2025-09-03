@@ -222,5 +222,3 @@ class Driver {
 		return TestDriver.RunTests (typeof (Driver), args);
 	}
 }
-
-

@@ -1264,4 +1264,3 @@ class Tests
 		return (int)(x % 0x80000000L);
 	}
 }
-

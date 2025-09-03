@@ -18,5 +18,3 @@ public class Ex2 {
 		return res;
 	}
 }
-
-

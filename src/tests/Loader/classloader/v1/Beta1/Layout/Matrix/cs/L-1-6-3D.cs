@@ -404,4 +404,3 @@ public class A{
 		}
 	}
 }
-

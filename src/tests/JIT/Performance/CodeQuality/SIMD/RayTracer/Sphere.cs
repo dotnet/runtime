@@ -34,4 +34,3 @@ internal class Sphere : SceneObject
         return Vector.Norm(Vector.Minus(pos, Center));
     }
 }
-

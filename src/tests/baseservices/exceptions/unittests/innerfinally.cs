@@ -99,5 +99,3 @@ class InnerFinallyTest
         return _trace.Match();
     }
 }
-
-

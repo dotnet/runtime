@@ -190,5 +190,3 @@ public class Test_thread22
 		}
 	}
 }		
-
-

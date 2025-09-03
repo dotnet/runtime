@@ -174,5 +174,3 @@ public class Test_TryEnter06
 		}
 	}
 }		
-
-

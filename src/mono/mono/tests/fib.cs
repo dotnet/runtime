@@ -27,5 +27,3 @@ public class Fib {
 		return 0;
 	}
 }
-
-

@@ -117,4 +117,3 @@ public class Test_struct04
     }
 
 }
-

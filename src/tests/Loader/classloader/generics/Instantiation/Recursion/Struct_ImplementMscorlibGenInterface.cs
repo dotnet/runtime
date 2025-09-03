@@ -382,4 +382,3 @@ public class Test_Struct_ImplementMscorlibGenInterface
 
 	}
 }
-

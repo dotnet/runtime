@@ -35,4 +35,3 @@ public class MyClass
 		return 0;
 	}
 }
-

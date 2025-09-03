@@ -369,4 +369,3 @@ public class A{
 		}
 	}
 }
-

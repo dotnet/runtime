@@ -816,4 +816,3 @@ public class Test_castclassinterface
         return 100;
     }
 }
-

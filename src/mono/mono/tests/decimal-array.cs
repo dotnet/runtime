@@ -24,5 +24,3 @@ class Test
 		return 0;
 	}
 }
-
-

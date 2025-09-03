@@ -10,4 +10,3 @@ internal abstract class SceneObject
 
     public SceneObject(Surface surface) { Surface = surface; }
 }
-

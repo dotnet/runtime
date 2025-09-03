@@ -129,4 +129,3 @@ class InnerFinallyAndCatchTest
         return _trace.Match();
     }
 }
-

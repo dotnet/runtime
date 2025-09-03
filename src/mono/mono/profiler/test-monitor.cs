@@ -21,4 +21,3 @@ class T {
 		t.Join ();
 	}
 }
-

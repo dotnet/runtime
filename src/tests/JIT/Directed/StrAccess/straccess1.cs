@@ -219,7 +219,3 @@ public class StrAccess1
         }
     }
 }
-
-
-
-

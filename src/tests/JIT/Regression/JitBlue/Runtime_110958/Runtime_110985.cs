@@ -77,4 +77,3 @@ public class Runtime_110958
         new Runtime_110958().Method0();
     }
 }
-

@@ -118,4 +118,3 @@ namespace IntelHardwareIntrinsicTest.SSE2.X64
         }
     }
 }
-

@@ -33,4 +33,3 @@ class T {
 		return 0;
 	}
 }
-

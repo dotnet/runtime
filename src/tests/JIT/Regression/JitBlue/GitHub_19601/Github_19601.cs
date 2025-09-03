@@ -22,4 +22,3 @@ public class GitHub_19601
         s_8 <<= (0 & s_2) + 186;
     }
 }
-

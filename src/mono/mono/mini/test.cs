@@ -351,4 +351,3 @@ namespace SSA {
 #endif
 	}
 }
-

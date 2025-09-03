@@ -71,6 +71,3 @@ public class Test_keepalivescope {
         return returnValue;
 	}
 }
-
-
-

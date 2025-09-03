@@ -834,4 +834,3 @@ public class Test_boxunboxinterface
         return 100;
     }
 }
-

@@ -38,5 +38,3 @@ public class Switch {
 		return 0;
 	}
 }
-
-

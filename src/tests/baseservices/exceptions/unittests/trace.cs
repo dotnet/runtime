@@ -50,4 +50,3 @@ public class Trace
   string _actual;
   string _expected;
 }
-

@@ -1211,5 +1211,3 @@ public enum CustomActionType
     None,
     LegacySecurityPolicy
 }
-
-

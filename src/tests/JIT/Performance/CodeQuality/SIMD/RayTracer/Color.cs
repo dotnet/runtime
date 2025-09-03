@@ -139,4 +139,3 @@ public struct Color
         }
     }
 }
-

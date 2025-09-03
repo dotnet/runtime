@@ -48,5 +48,3 @@ public class ReturnStruct
         return iret;
     }
 }
-
-

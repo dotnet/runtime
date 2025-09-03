@@ -20,4 +20,3 @@ class Test {
 		Environment.Exit (0);
 	}
 }
-

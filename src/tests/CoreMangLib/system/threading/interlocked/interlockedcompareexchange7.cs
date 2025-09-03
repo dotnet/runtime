@@ -359,4 +359,3 @@ public class InterlockedCompareExchange7
     }
 
 }
-

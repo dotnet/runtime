@@ -36,5 +36,3 @@ public class BinaryWrTest {
 		return 0;
 	}
 }
-
-

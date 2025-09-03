@@ -240,5 +240,3 @@ public class Test_thread23
 		}
 	}
 }		
-
-

@@ -98,4 +98,3 @@ public struct FloatConverter
         return converter._f;
     }
 }
-

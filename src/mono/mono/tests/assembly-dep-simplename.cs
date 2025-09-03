@@ -23,4 +23,3 @@ public class MidClass
 
 	public int X;
 }
-

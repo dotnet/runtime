@@ -84,4 +84,3 @@ public class TestClass
 		return 66;
 	}
 }
-

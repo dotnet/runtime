@@ -39,5 +39,3 @@ class Tests
 	  }
   }  
 }
-
-

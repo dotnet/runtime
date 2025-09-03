@@ -86,4 +86,3 @@ class B{
 		return mi_RetCode;
 	}
 }
-

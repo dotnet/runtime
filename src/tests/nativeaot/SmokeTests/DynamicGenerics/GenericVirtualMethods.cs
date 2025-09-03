@@ -495,4 +495,3 @@ public static class GenericVirtualMethods
         Assert.AreEqual<string>("CallOnDerived" , ((IOutVariant<Derived>)testClass).Func<object>());
     }
 }
-

@@ -13,4 +13,3 @@ public unsafe class Tests {
 			return 1;
 	}
 }
-

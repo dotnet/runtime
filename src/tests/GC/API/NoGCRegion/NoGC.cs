@@ -203,4 +203,3 @@ public class Test
         return isTestSucceeded ? 100 : 1;
     }
 }
-

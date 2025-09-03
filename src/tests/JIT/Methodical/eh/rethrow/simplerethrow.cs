@@ -60,4 +60,3 @@ namespace hello_simplerethrow_rethrow_cs
         }
     }
 }
-

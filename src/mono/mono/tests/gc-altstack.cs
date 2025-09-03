@@ -61,4 +61,3 @@ public class Tests
 		test (true, niter);
 	}
 }
-

@@ -64,6 +64,3 @@ public class CreateObj
         return 1;
     }
 }
-
-
-

@@ -122,5 +122,3 @@ public class RethrowAndFinallysTest
         return _trace.Match();
     }
 }
-
-

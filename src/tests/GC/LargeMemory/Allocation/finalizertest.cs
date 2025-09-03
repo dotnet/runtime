@@ -168,4 +168,3 @@ public sealed class FinalizerTest {
         return 0;
     }
 }
-

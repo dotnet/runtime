@@ -210,7 +210,3 @@ public class StrAccess1
         }
     }
 }
-
-
-
-

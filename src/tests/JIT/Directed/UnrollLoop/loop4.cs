@@ -420,7 +420,3 @@ public class SmallLoop1
         }
     }
 }
-
-
-
-

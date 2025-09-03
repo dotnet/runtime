@@ -1615,4 +1615,3 @@ public class Test_nullcomparaison
         return 100;
     }
 }
-

@@ -29,5 +29,3 @@ public class NullableTest
             return ExitCode.Failed;
     }
 }
-
-

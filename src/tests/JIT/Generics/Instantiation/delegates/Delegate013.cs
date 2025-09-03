@@ -41,4 +41,3 @@ public class Test_Delegate013
         return 100;
     }
 }
-

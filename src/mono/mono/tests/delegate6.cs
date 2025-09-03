@@ -17,5 +17,3 @@ public class T
 		o.DynamicInvoke (new Object[] {});
 	}
 }
-
-

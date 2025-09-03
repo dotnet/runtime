@@ -59,4 +59,3 @@ public class Test_method010
 		
 	}
 }
-

@@ -35,4 +35,3 @@ public class Class1
         return 1;
     }
 }
-

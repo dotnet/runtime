@@ -40,5 +40,3 @@ public static class GitHub_22850
         return Sse2.CompareEqual(left, right);
     }
 }
-
-
