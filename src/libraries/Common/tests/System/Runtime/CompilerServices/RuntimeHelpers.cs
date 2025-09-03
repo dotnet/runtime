@@ -38,9 +38,6 @@ namespace System.Runtime.CompilerServices
                 return dest;
             }
         }
-        
-        [Intrinsic]
-        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
     }
 }
 
