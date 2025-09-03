@@ -560,7 +560,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Debug.Assert(cachedMembers![freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers[freeSlotIndex] == null);
                             Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
@@ -1350,7 +1350,7 @@ namespace System
 
                                 for (int j = 0; j < list.Count; j++)
                                 {
-                                    if (propertyInfo.EqualsSig(list[j]!))
+                                    if (propertyInfo.EqualsSig(list[j]))
                                     {
                                         duplicate = true;
                                         break;
@@ -3542,8 +3542,7 @@ namespace System
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
-            return types ?? EmptyTypes;
+            return GetRootElementType().TypeHandle.GetInstantiationPublic() ?? [];
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -3636,8 +3635,7 @@ namespace System
             if (!IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-            Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? EmptyTypes;
+            return new RuntimeTypeHandle(this).GetConstraints() ?? [];
         }
         #endregion
 
@@ -3756,7 +3754,7 @@ namespace System
             }
 
             // Requires a modified type to return the modifiers.
-            return EmptyTypes;
+            return [];
         }
 
         public override Type[] GetFunctionPointerParameterTypes()
@@ -3771,7 +3769,7 @@ namespace System
 
             if (parameters.Length == 1)
             {
-                return EmptyTypes;
+                return [];
             }
 
             return parameters.AsSpan(1).ToArray();
@@ -3844,7 +3842,7 @@ namespace System
                 int consCount = 0;
 
                 // We cannot use Type.GetTypeArray here because some of the args might be null
-                Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
+                Type[] argsType = args.Length != 0 ? new Type[args.Length] : [];
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] is object arg)

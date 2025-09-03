@@ -16,7 +16,7 @@ namespace System.Linq
 
             public SizeOptIListWhereIterator(IList<TSource> source, Func<TSource, bool> predicate)
             {
-                Debug.Assert(source is not null && source.Count > 0);
+                Debug.Assert(source is not null);
                 Debug.Assert(predicate is not null);
                 _source = source;
                 _predicate = predicate;

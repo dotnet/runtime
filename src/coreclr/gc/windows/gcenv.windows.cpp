@@ -640,12 +640,6 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
     return true;
 }
 
-// Flush write buffers of processors that are executing threads of the current process
-void GCToOSInterface::FlushProcessWriteBuffers()
-{
-    ::FlushProcessWriteBuffers();
-}
-
 // Break into a debugger
 void GCToOSInterface::DebugBreak()
 {

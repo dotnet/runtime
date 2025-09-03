@@ -1944,7 +1944,7 @@
     <value>startIndex cannot be larger than length of string.</value>
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+    <value>Stream length must be non-negative and less than the maximum array length (0x7FFFFFC7) - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -4387,5 +4387,34 @@
   </data>
   <data name="PlatformNotSupported_DynamicEntrypoint" xml:space="preserve">
     <value>Dynamic entrypoint allocation is not supported in the current environment.</value>
+  </data>  <data name="Arg_InvalidOperationException_CannotReleaseUnownedMutex" xml:space="preserve">
+    <value>Cannot release a lock that is not owned by the current thread.</value>
+  </data>
+  <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
+    <value>Failed to initialize pthread mutex</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
+  <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
+    <value>The file '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_FilePermissionsIncorrect" xml:space="preserve">
+    <value>The file '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
+    <value>The path '{0}' exists but is not a directory.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
+    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
 </root>

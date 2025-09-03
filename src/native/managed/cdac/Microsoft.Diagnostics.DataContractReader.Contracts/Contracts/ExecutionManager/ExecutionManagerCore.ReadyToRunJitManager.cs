@@ -70,6 +70,40 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
         }
 
+        public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
+        {
+            // ReadyToRun does not contain PatchpointInfo
+            hasFlagByte = false;
+
+            // ReadyToRunJitManager::GetDebugInfo
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return TargetPointer.Null;
+
+            index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
+            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+
+            Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfoSection);
+
+            ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
+                new TargetStream(Target, imageBase, debugInfoData.VirtualAddress + debugInfoData.Size),
+                Target.IsLittleEndian
+            );
+            ILCompiler.Reflection.ReadyToRun.NativeArray debugInfoArray = new(imageReader, debugInfoData.VirtualAddress);
+
+            int offset = 0;
+            if (!debugInfoArray.TryGetAt(index, ref offset))
+                // If the index is not found in the debug info array, return null
+                return TargetPointer.Null;
+
+            uint lookBack = 0;
+            uint debugInfoOffset = imageReader.DecodeUnsigned((uint)offset, ref lookBack);
+            if (lookBack != 0)
+                debugInfoOffset = (uint)offset - lookBack;
+
+            return imageBase + debugInfoOffset;
+        }
+
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
         {
             gcInfo = TargetPointer.Null;

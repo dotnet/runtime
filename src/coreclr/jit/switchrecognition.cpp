@@ -386,7 +386,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
         return false;
     }
 
-    static_assert_no_msg(SWITCH_MIN_TESTS > 0);
+    static_assert(SWITCH_MIN_TESTS > 0);
 
     // Find max and min values in the testValues array
     // At this point we have at least SWITCH_MIN_TESTS values in the array

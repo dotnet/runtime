@@ -141,7 +141,9 @@ namespace System
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
                 {
-                    target = Unsafe.As<T?>(ComAwareWeakReference.GetTarget(th));
+                    ComAwareWeakReference cwr = ComAwareWeakReference.GetFromTaggedReference(th);
+
+                    target = Unsafe.As<T?>(cwr.Target) ?? cwr.RehydrateTarget<T>();
 
                     // must keep the instance alive as long as we use the handle.
                     GC.KeepAlive(this);
