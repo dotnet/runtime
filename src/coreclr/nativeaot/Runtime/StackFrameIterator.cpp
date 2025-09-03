@@ -1161,7 +1161,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
     // thunks, but we don't need to know what they are here, so we just skip them.
-    // TODO?
     SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
 
     if (!isFilterInvoke)
