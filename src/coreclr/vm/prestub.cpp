@@ -996,8 +996,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         InterpByteCodeStart* interpreterCode;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(PCODEToPINSTR(pCode));
-
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);

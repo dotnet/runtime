@@ -12,15 +12,15 @@
 class PortableEntryPoint final
 {
 public: // static
-    static bool IsNativeEntryPoint(TADDR addr);
+    static bool HasNativeEntryPoint(PCODE addr);
 
-    static void* GetActualCode(TADDR addr);
-    static MethodDesc* GetMethodDesc(TADDR addr);
-    static void* GetInterpreterData(TADDR addr);
-    static void SetInterpreterData(TADDR addr, PCODE interpreterData);
+    static void* GetActualCode(PCODE addr);
+    static MethodDesc* GetMethodDesc(PCODE addr);
+    static void* GetInterpreterData(PCODE addr);
+    static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 
 private: // static
-    static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;

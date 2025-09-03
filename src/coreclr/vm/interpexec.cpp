@@ -308,13 +308,13 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (!PortableEntryPoint::IsNativeEntryPoint((TADDR)addr))
+    if (!PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
     {
         _ASSERTE(pILTargetMethod != NULL);
-        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((PCODE)addr);
         return NULL; // Return null to interpret this entrypoint
     }
-    addr = PortableEntryPoint::GetActualCode((TADDR)addr);
+    addr = PortableEntryPoint::GetActualCode((PCODE)addr);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     return (THelper)addr;

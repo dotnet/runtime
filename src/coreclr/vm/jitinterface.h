@@ -973,9 +973,17 @@ public:
 /*********************************************************************/
 /*********************************************************************/
 
+// enum for dynamically assigned helper calls
+enum DynamicCorInfoHelpFunc {
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
+#include "jithelpers.h"
+    DYNAMIC_CORINFO_HELP_COUNT
+};
+
 struct VMHELPDEF
 {
-    TADDR pfnHelper;
+    PCODE pfnHelper;
 
 #ifdef _DEBUG
     const char* name;
@@ -985,7 +993,7 @@ struct VMHELPDEF
     bool isDynamicHelper;
 #endif // _DEBUG || TARGET_WASM
 
-    bool IsDynamicHelper(size_t& dynamicFtnNum) const;
+    bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
 };
 
 #if defined(DACCESS_COMPILE)
@@ -997,18 +1005,10 @@ GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-extern "C" TADDR hlpFuncEntryPoints[CORINFO_HELP_COUNT];
+extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif
-
-// enum for dynamically assigned helper calls
-enum DynamicCorInfoHelpFunc {
-#define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
-#include "jithelpers.h"
-    DYNAMIC_CORINFO_HELP_COUNT
-};
 
 #ifdef _MSC_VER
 // GCC complains about duplicate "extern". And it is not needed for the GCC build
@@ -1019,7 +1019,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-TADDR LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
