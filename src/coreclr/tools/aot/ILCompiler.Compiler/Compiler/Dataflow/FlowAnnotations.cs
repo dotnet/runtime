@@ -594,31 +594,35 @@ namespace ILLink.Shared.TrimAnalysis
 
                     // Only treat as auto-property if both accessors are compiler-generated
                     FieldDesc? backingField = null;
-                    if (IsFullyAutoProperty(property))
+                    if (IsAutoProperty(property))
+                    {
+                        switch (property)
                         {
-                            switch (property)
-                            {
-                                case { GetMethod: null, SetMethod: { } }:
-                                    if (backingFieldFromSetter is null)
-                                    {
-                                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                                    }
-                                    else
-                                    {
-                                        backingField = backingFieldFromSetter;
-                                    }
-                                    break;
-                                case { GetMethod: { }, SetMethod: null }:
-                                    if (backingFieldFromGetter is null)
-                                    {
-                                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                                    }
-                                    else
-                                    {
-                                        backingField = backingFieldFromGetter;
-                                    }
-                                    break;
-                                case { GetMethod: { }, SetMethod: { } }:
+                            case { GetMethod: null, SetMethod: { } }:
+                                if (backingFieldFromSetter is null)
+                                {
+                                    _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                }
+                                else
+                                {
+                                    backingField = backingFieldFromSetter;
+                                }
+                                break;
+                            case { GetMethod: { }, SetMethod: null }:
+                                if (backingFieldFromGetter is null)
+                                {
+                                    _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                }
+                                else
+                                {
+                                    backingField = backingFieldFromGetter;
+                                }
+                                break;
+                            case { GetMethod: { } getter, SetMethod: { } setter}:
+                                if (getter.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
+                                    && setter.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute"))
+                                {
+                                    // If both accessors are compiler generated, then we can be more strict and require that we find the same backing field from both
                                     if (backingFieldFromGetter is null
                                         || backingFieldFromSetter is null
                                         || backingFieldFromGetter != backingFieldFromSetter)
@@ -629,23 +633,30 @@ namespace ILLink.Shared.TrimAnalysis
                                     {
                                         backingField = backingFieldFromGetter;
                                     }
-                                    break;
-                                case { GetMethod: null, SetMethod: null }:
-                                    throw new UnreachableException();
-                            }
-
-                            if (backingField != null)
-                            {
-                                if (annotatedFields.Any(a => a.Field == backingField))
-                                {
-                                    _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
                                 }
                                 else
                                 {
-                                    annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                                    // If either accessor is not compiler generated, then we can't be sure that this is a simple auto-property.
+                                    // In that case just pick whatever backing field we were able to find.
+                                    backingField = backingFieldFromGetter ?? backingFieldFromSetter;
                                 }
+                                break;
+                            case { GetMethod: null, SetMethod: null }:
+                                throw new UnreachableException();
+                        }
+
+                        if (backingField != null)
+                        {
+                            if (annotatedFields.Any(a => a.Field == backingField))
+                            {
+                                _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            }
+                            else
+                            {
+                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
                             }
                         }
+                    }
                 }
 
                 DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
@@ -681,13 +692,18 @@ namespace ILLink.Shared.TrimAnalysis
                 return attrs;
             }
 
-            // Consider only compiler-generated accessors for compiler-detected auto-props.
-            private static bool IsFullyAutoProperty(PropertyPseudoDesc property)
+            /// <summary>
+            /// Returns true if the property has a single accessor which is compiler generated,
+            /// indicating that it is an auto-property.
+            /// </summary>
+            /// <remarks>
+            /// Ideally this would be tightened to only return true if both accessors are auto-property accessors,
+            /// but it allows for either for back compatibility with existing behavior.
+            /// </remarks>
+            private static bool IsAutoProperty(PropertyPseudoDesc property)
             {
-                return (property.SetMethod is null
-                        || property.SetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute"))
-                    && (property.GetMethod is null
-                        || property.GetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute"));
+                return property.SetMethod?.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") == true
+                    || property.GetMethod?.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") == true;
             }
 
             private static FieldDesc? GetAutoPropertyCompilerGeneratedField(MethodIL body, bool isWriteAccessor)

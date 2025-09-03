@@ -81,6 +81,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [ExpectedWarning("IL2074", nameof(WithNone))]
             [Kept]
+            [return: KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             get
             {
                 field = WithNone;

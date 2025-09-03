@@ -434,7 +434,7 @@ namespace ILLink.Shared.TrimAnalysis
                     }
 
                     FieldDefinition? backingField = null;
-                    if (IsFullyAutoProperty(property))
+                    if (IsAutoProperty(property))
                     {
                         // If it's an annotated auto-prop, we should be able to find the compiler generated field
                         switch (property)
@@ -459,16 +459,27 @@ namespace ILLink.Shared.TrimAnalysis
                                     backingField = backingFieldFromGetter;
                                 }
                                 break;
-                            case { GetMethod: { }, SetMethod: { } }:
-                                if (backingFieldFromGetter is null
-                                    || backingFieldFromSetter is null
-                                    || backingFieldFromGetter != backingFieldFromSetter)
+                            case { GetMethod: { } getter, SetMethod: { } setter }:
+                                if (getter.IsCompilerGenerated() && setter.IsCompilerGenerated())
                                 {
-                                    _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                    // If both accessors are compiler generated, then we can be more strict and require that we find the same backing field from both
+                                    // accessors.
+                                    if (backingFieldFromGetter is null
+                                        || backingFieldFromSetter is null
+                                        || backingFieldFromGetter != backingFieldFromSetter)
+                                    {
+                                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                    }
+                                    else
+                                    {
+                                        backingField = backingFieldFromGetter;
+                                    }
                                 }
                                 else
                                 {
-                                    backingField = backingFieldFromGetter;
+                                    // If either accessor is not compiler generated, then we can't be sure that this is a simple auto-property.
+                                    // In that case just pick whatever backing field we were able to find.
+                                    backingField = backingFieldFromGetter ?? backingFieldFromSetter;
                                 }
                                 break;
                             case { GetMethod: null, SetMethod: null }:
@@ -508,10 +519,18 @@ namespace ILLink.Shared.TrimAnalysis
             return new TypeAnnotations(type, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
         }
 
-        private static bool IsFullyAutoProperty(PropertyDefinition property)
+        /// <summary>
+        /// Returns true if the property has a single accessor which is compiler generated,
+        /// indicating that it is an auto-property.
+        /// </summary>
+        /// <remarks>
+        /// Ideally this would be tightened to only return true if both accessors are auto-property accessors,
+        /// but it allows for either for back compatibility with existing behavior.
+        /// </remarks>
+        private static bool IsAutoProperty(PropertyDefinition property)
         {
-            return (property.SetMethod is null || property.SetMethod.IsCompilerGenerated())
-                && (property.GetMethod is null || property.GetMethod.IsCompilerGenerated());
+            return property.SetMethod?.IsCompilerGenerated() == true
+                || property.GetMethod?.IsCompilerGenerated() == true;
         }
 
         private IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition typeDef)

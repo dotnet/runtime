@@ -51,6 +51,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             AnnotationOnUnsupportedType.Test();
             AutoPropertyUnrecognizedField.Test();
+
+            OneAutoPropAccessor.Test();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -1093,6 +1095,40 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 var instance = new AutoPropertyUnrecognizedField();
                 instance.PropertyOnlyGet.RequiresPublicConstructors();
                 instance.PropertyOnlyGet.RequiresAll();
+            }
+        }
+
+        // Validate that auto-property accessors are recognized and annotation is propagated to backing field
+        // Even when there is only one auto-property accessor and the other is manually implemented.
+        class OneAutoPropAccessor
+        {
+            private Type Property_BackingField;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type AutoGet
+            {
+                get;
+                set { field = value; }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type AutoSet
+            {
+                // Annotation does propagate to the backing field, so no warning
+                [UnexpectedWarning("IL2078", producedBy: Tool.Analyzer, "Analyzer does not propagate annotation to backing field")]
+                get { return field; }
+                set;
+            }
+
+            [ExpectedWarning("IL2072", nameof(AutoSet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", nameof(AutoGet), nameof(GetUnknownType))]
+            public static void Test()
+            {
+                var instance = new OneAutoPropAccessor();
+                instance.AutoGet = GetUnknownType();
+                _ = instance.AutoGet;
+                instance.AutoSet = GetUnknownType();
+                _ = instance.AutoSet;
             }
         }
 
