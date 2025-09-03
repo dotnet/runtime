@@ -73,11 +73,12 @@ internal static partial class Interop
             }
         }
 
-        static void ThrowInvalidSysctlException(ReadOnlySpan<int> name, nint errno)
-        {
-            throw new InvalidOperationException(SR.Format(SR.InvalidSysctl,
-                                                          string.Join(",", name.ToArray()),
-                                                          errno));
+            static void ThrowInvalidSysctlException(ReadOnlySpan<int> name, nint errno)
+            {
+                throw new InvalidOperationException(SR.Format(SR.InvalidSysctl,
+                                                              string.Join(",", name.ToArray()),
+                                                              errno));
+            }
         }
     }
 }
