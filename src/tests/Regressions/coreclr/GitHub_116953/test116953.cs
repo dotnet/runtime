@@ -38,7 +38,7 @@ public class Test116953
     public static Assembly AssemblyA;
     public static Assembly AssemblyC;
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void TestEntryPoint()
     {
         for (int i = 0; i < 3; i++)
