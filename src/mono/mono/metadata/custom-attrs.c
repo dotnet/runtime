@@ -892,7 +892,32 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 	return_val_if_nok (error, NULL);
 	MONO_HANDLE_PIN ((MonoObject*)params [0]);
 
-	params [1] = val;
+	// Handle arrays: if the argument type is an array and the value is an array,
+	// we need to wrap each element in CustomAttributeTypedArgument and put them in an array
+	// The managed CanonicalizeValue will then convert the CustomAttributeTypedArgument[] to ReadOnlyCollection
+	if (t->type == MONO_TYPE_SZARRAY && val && mono_object_class (val)->rank == 1) {
+		MonoArray *arr = (MonoArray*)val;
+		MonoClass *element_class = m_type_data_get_klass (t)->element_class;
+		MonoType *element_type = m_class_get_byval_arg (element_class);
+		int len = mono_array_length_internal (arr);
+		
+		// Create an array of CustomAttributeTypedArgument
+		MonoArray *typed_args_array = mono_array_new_checked (mono_class_get_custom_attribute_typed_argument_class (), len, error);
+		return_val_if_nok (error, NULL);
+		
+		// Convert each element to CustomAttributeTypedArgument
+		for (int i = 0; i < len; i++) {
+			MonoObject *element = mono_array_get_internal (arr, MonoObject*, i);
+			MonoObject *typed_arg = create_cattr_typed_arg (element_type, element, error);
+			return_val_if_nok (error, NULL);
+			mono_array_setref_internal (typed_args_array, i, typed_arg);
+		}
+		
+		params [1] = typed_args_array;
+	} else {
+		params [1] = val;
+	}
+
 	retval = mono_object_new_checked (mono_class_get_custom_attribute_typed_argument_class (), error);
 	return_val_if_nok (error, NULL);
 	MONO_HANDLE_PIN (retval);
