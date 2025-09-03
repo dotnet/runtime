@@ -50,7 +50,7 @@ else()
 endif()
 
 set_property(TARGET clrinterpreter APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
-add_dependencies(clrinterpreter dn-containers clrinterpreter_exports)
+add_dependencies(clrinterpreter clrinterpreter_exports)
 
 target_link_libraries(clrinterpreter
         PRIVATE
