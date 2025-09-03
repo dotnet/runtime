@@ -306,6 +306,10 @@ namespace System.IO.Compression
         /// <summary>
         /// The filename of the entry. This is equivalent to the substring of Fullname that follows the final directory separator character.
         /// </summary>
+        /// <remarks>
+        /// On Windows, colons (':') are also treated as separators due to NTFS rules, so <see cref="Name"/> can differ across platforms.
+        /// As an alternative, <see cref="FullName"/> is platform-independent and reflects the exact name stored in the archive.
+        /// </remarks>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
         internal ZipArchive.ChangeState Changes { get; private set; }
