@@ -129,7 +129,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.AwareLock.LockState), DataType.uint32),
             new(nameof(Data.AwareLock.RecursionLevel), DataType.uint32),
-            new(nameof(Data.AwareLock.HoldingThreadID), DataType.uint32),
+            new(nameof(Data.AwareLock.HoldingThreadId), DataType.uint32),
         ]
     };
     private static readonly TypeFields InteropSyncBlockFields = new TypeFields()

@@ -29,7 +29,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         SyncBlockCache syncBlockCache = _target.ProcessedData.GetOrAdd<SyncBlockCache>(syncBlockCacheAddr);
 
         // Return the count of sync blocks which have ever been used
-        return syncBlockCache.FreeSyncTableIndex;
+        return syncBlockCache.FreeSyncTableIndex - 1;
     }
 
     SyncBlockData ISyncBlock.GetSyncBlockData(uint index)
