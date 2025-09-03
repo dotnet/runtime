@@ -57,7 +57,7 @@ internal static partial class Interop
                         bytesLength *= 2;
                     }
                     value = (byte*)NativeMemory.Alloc(bytesLength);
-                    ret = Sysctl(name, name_len, value, &bytesLength);
+                    ret = Sysctl(name_ptr, name_len, value, &bytesLength);
                 }
                 if (ret != 0)
                 {
