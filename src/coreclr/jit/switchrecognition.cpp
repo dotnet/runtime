@@ -87,19 +87,18 @@ static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
 
     // We might consider ignoring statements with only NOPs if that is profitable.
 
-    BitVecTraits traits(comp->fgBBNumMax + 1, comp);
+    BitVecTraits traits(comp->compBasicBlockID, comp);
     BitVec       visited = BitVecOps::MakeEmpty(&traits);
-    BitVecOps::AddElemD(&traits, visited, block->bbNum);
+    BitVecOps::AddElemD(&traits, visited, block->bbID);
     while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
            BasicBlock::sameEHRegion(block, block->GetTarget()))
     {
         block = block->GetTarget();
-        if (BitVecOps::IsMember(&traits, visited, block->bbNum))
+        if (!BitVecOps::TryAddElemD(&traits, visited, block->bbID))
         {
             // A cycle detected, bail out.
             return origBlock;
         }
-        BitVecOps::AddElemD(&traits, visited, block->bbNum);
     }
     return block;
 }
