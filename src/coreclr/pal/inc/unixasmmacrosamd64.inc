@@ -52,25 +52,6 @@ C_FUNC(\Name):
         .cfi_endproc
 .endm
 
-// Special version of the LEAF_ENTRY macro that should be used inside
-// patchable code region to prevent the linker from relocating the code.
-// On most Unix platforms this is identical to LEAF_ENTRY. However, on
-// Apple platforms it produces the function entry points at .alt_entry
-// symbols that create external labels but keep the whole patched region
-// as single atom for the linker.
-.macro LEAF_ENTRY_PATCHABLE Name, Section
-#if defined(__APPLE__)
-        .text
-        .p2align 4
-        .alt_entry C_FUNC(\Name)
-        .private_extern C_FUNC(\Name)
-C_FUNC(\Name):
-        .cfi_startproc
-#else
-        LEAF_ENTRY \Name, \Section
-#endif
-.endm
-
 .macro LEAF_END_MARKED Name, Section
 #if defined(__APPLE__)
         .alt_entry C_FUNC(\Name\()_End)
