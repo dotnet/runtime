@@ -1088,7 +1088,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     IEnumerable<TargetPointer> IRuntimeTypeSystem.GetIntroducedMethodDescs(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
-            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+            yield break;
 
         TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
         foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
@@ -1102,7 +1102,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     TargetPointer IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
     {
         if (!typeHandle.IsMethodTable())
-            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+            // TypeDesc do not contain any slots.
+            return TargetPointer.Null;
 
         TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
         if (slot < GetNumVtableSlots(canonMT))
@@ -1127,7 +1128,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         // based on MethodTable::GetMethodDescForSlot_NoThrow
         if (!typeHandle.IsMethodTable())
-            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+            // TypeDesc do not contain any slots.
+            throw new ArgumentException(nameof(slot), "Slot number is greater than the number of slots");
 
         TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
         TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
@@ -1182,8 +1184,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     TargetCodePointer IRuntimeTypeSystem.GetSlot(TypeHandle typeHandle, uint slot)
     {
         // based on MethodTable::GetSlot(uint slotNumber)
-        if (!typeHandle.IsMethodTable())
-            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
 
         if (slot < GetNumVtableSlots(typeHandle))
         {
