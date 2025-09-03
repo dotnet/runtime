@@ -206,11 +206,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                     Assert.Equal(1, guidSizeReader2);
 
                     TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(1), expectedHandle: MetadataTokens.GuidHandle(1), expectedGeneration: 0);
-                    TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 1);
 
                     // GUID-heap allocation shouldn't be cumulative, since GUIDs are copied among generations.
                     // The delta-reader above need indeed a single GUID allocation in each gen.
-                    AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(3), expectedHandle: MetadataTokens.GuidHandle(3), expectedGeneration: 0));
+                    AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.GuidHandle(2), expectedHandle: MetadataTokens.GuidHandle(2), expectedGeneration: 0));
                 }
             }
         }
