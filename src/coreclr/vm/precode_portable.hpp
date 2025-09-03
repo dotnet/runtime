@@ -12,25 +12,55 @@
 class PortableEntryPoint final
 {
 public: // static
-    static bool IsNativeEntryPoint(TADDR addr);
-    static void* GetActualCode(TADDR addr);
-    static MethodDesc* GetMethodDesc(TADDR addr);
-    static void* GetInterpreterData(TADDR addr);
-    static void SetInterpreterData(TADDR addr, PCODE interpreterData);
+    static bool HasNativeEntryPoint(PCODE addr);
+
+    static void* GetActualCode(PCODE addr);
+    static MethodDesc* GetMethodDesc(PCODE addr);
+    static void* GetInterpreterData(PCODE addr);
+    static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 
 private: // static
-    static PortableEntryPoint* ToPortableEntryPoint(TADDR addr);
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
 
 private:
-    void* _pActualCode;
+    Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
 
     // We keep the canary value last to ensure a stable ABI across build flavors
     INDEBUG(size_t _canary);
 
+#ifdef _DEBUG
+    bool IsValid() const;
+#endif // _DEBUG
+
 public:
     void Init(MethodDesc* pMD);
+    void Init(void* nativeEntryPoint);
+
+    // Query methods for entry point state.
+    bool HasInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pInterpreterData != nullptr;
+    }
+
+    bool HasNativeCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pActualCode != nullptr;
+    }
+
+    bool IsPreparedForNativeCall() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        // State when interpreted method was prepared to be called from R2R compiled code.
+        // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
+        return _pInterpreterData != nullptr && _pActualCode != nullptr;
+    }
 };
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
