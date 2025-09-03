@@ -164,7 +164,6 @@ namespace System.Net.Test.Common
 
             internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
             {
-                const int keySize = 2048;
                 if (PlatformDetection.IsWindows && testName != null)
                 {
                     CleanupCertificates(testName);
@@ -182,7 +181,6 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
-                    keyFactory: CertificateAuthority.KeyFactory.RSASize(keySize),
                     extensions: extensions);
 
                 if (!ephemeralKey && PlatformDetection.IsWindows)
