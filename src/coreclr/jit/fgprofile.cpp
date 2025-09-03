@@ -2503,7 +2503,7 @@ void ValueInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        block->bbCountSchemaIndex = -1;
+        block->bbValueSchemaIndex = -1;
     }
 #endif
 }
@@ -2515,7 +2515,7 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
         return;
     }
 
-    block->bbHistogramSchemaIndex = (int)schema.size();
+    block->bbValueSchemaIndex = (int)schema.size();
 
     BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
     ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
@@ -2532,10 +2532,10 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
         return;
     }
 
-    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
-    assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
+    int valueSchemaIndex = block->bbValueSchemaIndex;
+    assert((valueSchemaIndex >= 0) && (valueSchemaIndex < (int)schema.size()));
 
-    ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    ValueHistogramProbeInserter insertProbes(schema, profileMemory, &valueSchemaIndex, m_instrCount);
     ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_comp, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
