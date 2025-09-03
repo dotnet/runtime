@@ -398,7 +398,7 @@ namespace System.Security.Cryptography
                 ArgumentNullException.ThrowIfNull(padding);
 
                 // Apple does not support custom salt length for the PSS padding
-                if (padding.Mode == RSASignaturePaddingMode.Pss && (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength || padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
+                if (padding.Mode == RSASignaturePaddingMode.Pss && (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength && padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
                 {
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                 }

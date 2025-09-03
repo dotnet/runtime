@@ -127,14 +127,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Throws<CryptographicException>(() => signer.CheckHash());
 
             // At this time we cannot support the PSS parameters for this document.
-            Assert.Throws<CryptographicException>(() => signer.CheckSignature(true));
+            signer.CheckSignature(true);
 
             // Since there are no NoSignature signers the document CheckHash will succeed.
             // Assert.NotThrows
             cms.CheckHash();
 
             // Since at least one signer fails, the document signature will fail
-            Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckSignature(true);
         }
 
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
