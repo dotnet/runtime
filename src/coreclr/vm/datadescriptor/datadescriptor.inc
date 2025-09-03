@@ -167,8 +167,6 @@ CDAC_TYPE_FIELD(AwareLock, /*uint32*/, RecursionLevel, cdac_data<AwareLock>::Rec
 CDAC_TYPE_FIELD(AwareLock, /*uint32*/, HoldingThreadId, cdac_data<AwareLock>::HoldingThreadId)
 CDAC_TYPE_END(AwareLock)
 
-CDAC_TYPE_BEGIN(SLink)
-
 // Loader
 
 CDAC_TYPE_BEGIN(Module)
