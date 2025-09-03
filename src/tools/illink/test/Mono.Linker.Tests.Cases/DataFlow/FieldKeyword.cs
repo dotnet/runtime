@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static Type WithMethods
         {
             [Kept]
+            [ExpectedWarning("IL2078", "return value", nameof(WithMethods), "BackingField")]
             get => field;
             [Kept]
             set => field = value;
@@ -51,6 +52,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static Type WithFields
         {
             [Kept]
+            [ExpectedWarning("IL2078", "return value", nameof(WithFields), "BackingField")]
             get => field;
             [Kept]
             set => field = value;
@@ -62,7 +64,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [KeptBackingField]
         static Type MismatchAssignedToField
         {
-            [ExpectedWarning("IL2074", nameof(WithNone))]
+            [ExpectedWarning("IL2078", "return value", nameof(MismatchAssignedToField))]
             [Kept]
             get
             {
@@ -94,7 +96,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [Kept]
             [ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
-            [UnexpectedWarning("IL2078", "return value", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2078", "return value")]
             get
             {
                 WithMethods = field;

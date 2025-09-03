@@ -354,7 +354,7 @@ namespace ILLink.Shared.TrimAnalysis
                     FieldDefinition? backingFieldFromSetter = null;
 
                     // Propagate the annotation to the setter method
-                    MethodDefinition setMethod = property.SetMethod;
+                    MethodDefinition? setMethod = property.SetMethod;
                     if (setMethod != null)
                     {
 
@@ -365,7 +365,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(setMethod.Body, write: true, out backingFieldFromSetter);
+                            backingFieldFromSetter = GetAutoPropertyCompilerGeneratedField(setMethod.Body, isWriteAccessor: true);
                         }
 
                         MethodAnnotations? setterAnnotation = null;
@@ -399,7 +399,7 @@ namespace ILLink.Shared.TrimAnalysis
                     FieldDefinition? backingFieldFromGetter = null;
 
                     // Propagate the annotation to the getter method
-                    MethodDefinition getMethod = property.GetMethod;
+                    MethodDefinition? getMethod = property.GetMethod;
                     if (getMethod != null)
                     {
 
@@ -410,7 +410,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(getMethod.Body, write: false, out backingFieldFromGetter);
+                            backingFieldFromGetter = GetAutoPropertyCompilerGeneratedField(getMethod.Body, isWriteAccessor: false);
                         }
                         MethodAnnotations? getterAnnotation = null;
                         foreach (var annotatedMethod in annotatedMethods)
@@ -433,27 +433,57 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDefinition? backingField;
-                    if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
-                        backingFieldFromGetter != backingFieldFromSetter)
+                    FieldDefinition? backingField = null;
+                    if (IsFullyAutoProperty(property))
                     {
-                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        backingField = null;
-                    }
-                    else
-                    {
-                        backingField = backingFieldFromGetter ?? backingFieldFromSetter;
-                    }
-
-                    if (backingField != null)
-                    {
-                        if (annotatedFields.Any(a => a.Field == backingField))
+                        // If it's an annotated auto-prop, we should be able to find the compiler generated field
+                        switch (property)
                         {
-                            _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            case { GetMethod: null, SetMethod: { } }:
+                                if (backingFieldFromSetter is null)
+                                {
+                                    _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                }
+                                else
+                                {
+                                    backingField = backingFieldFromSetter;
+                                }
+                                break;
+                            case { GetMethod: { }, SetMethod: null }:
+                                if (backingFieldFromGetter is null)
+                                {
+                                    _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                }
+                                else
+                                {
+                                    backingField = backingFieldFromGetter;
+                                }
+                                break;
+                            case { GetMethod: { }, SetMethod: { } }:
+                                if (backingFieldFromGetter is null
+                                    || backingFieldFromSetter is null
+                                    || backingFieldFromGetter != backingFieldFromSetter)
+                                {
+                                    _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                                }
+                                else
+                                {
+                                    backingField = backingFieldFromGetter;
+                                }
+                                break;
+                            case { GetMethod: null, SetMethod: null }:
+                                throw new UnreachableException();
                         }
-                        else
+                        if (backingField != null)
                         {
-                            annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            if (annotatedFields.Any(a => a.Field == backingField))
+                            {
+                                _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            }
+                            else
+                            {
+                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            }
                         }
                     }
                 }
@@ -478,6 +508,12 @@ namespace ILLink.Shared.TrimAnalysis
             return new TypeAnnotations(type, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
         }
 
+        private static bool IsFullyAutoProperty(PropertyDefinition property)
+        {
+            return (property.SetMethod is null || property.SetMethod.IsCompilerGenerated())
+                && (property.GetMethod is null || property.GetMethod.IsCompilerGenerated());
+        }
+
         private IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
         {
             if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
@@ -489,11 +525,15 @@ namespace ILLink.Shared.TrimAnalysis
             return attrs;
         }
 
-        bool ScanMethodBodyForFieldAccess(MethodBody body, bool write, out FieldDefinition? found)
+        FieldDefinition? GetAutoPropertyCompilerGeneratedField(MethodBody body, bool isWriteAccessor)
         {
             // Tries to find the backing field for a property getter/setter.
             // Returns true if this is a method body that we can unambiguously analyze.
             // The found field could still be null if there's no backing store.
+
+            // Auto properties have CompilerGeneratedAttribute
+            if (!body.Method.IsCompilerGenerated())
+                return null;
 
             FieldReference? foundReference = null;
 
@@ -501,17 +541,16 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 switch (instruction.OpCode.Code)
                 {
-                    case Code.Ldsfld when !write:
-                    case Code.Ldfld when !write:
-                    case Code.Stsfld when write:
-                    case Code.Stfld when write:
+                    case Code.Ldsfld when !isWriteAccessor:
+                    case Code.Ldfld when !isWriteAccessor:
+                    case Code.Stsfld when isWriteAccessor:
+                    case Code.Stfld when isWriteAccessor:
 
                         if (foundReference != null)
                         {
                             // This writes/reads multiple fields - can't guess which one is the backing store.
                             // Return failure.
-                            found = null;
-                            return false;
+                            return null;
                         }
 
                         foundReference = (FieldReference)instruction.Operand;
@@ -523,17 +562,16 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 // Doesn't access any fields. Could be e.g. "Type Foo => typeof(Bar);"
                 // Return success.
-                found = null;
-                return true;
+                return null;
             }
 
-            found = _context.Resolve(foundReference);
+            var found = _context.Resolve(foundReference);
 
             if (found == null)
             {
                 // If the field doesn't resolve, it can't be a field on the current type
                 // anyway. Return failure.
-                return false;
+                return null;
             }
 
             if (found.DeclaringType != body.Method.DeclaringType ||
@@ -542,11 +580,10 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 // A couple heuristics to make sure we got the right field.
                 // Return failure.
-                found = null;
-                return false;
+                return null;
             }
 
-            return true;
+            return found;
         }
 
         internal void ValidateMethodAnnotationsAreSame(OverrideInformation ov)
