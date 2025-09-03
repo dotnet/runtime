@@ -21,6 +21,9 @@ extern "C"
 
 static bool AllowR2RForImage(PEImage* pOwner)
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    return false;
+#else
     // Allow R2R for files
     if (pOwner->IsFile())
         return true;
@@ -31,6 +34,7 @@ static bool AllowR2RForImage(PEImage* pOwner)
         return true;
 
     return false;
+#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -595,6 +599,11 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 
     if (HasReadyToRunHeader())
     {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+        *loadFailure = COR_E_BADIMAGEFORMAT;
+        Reset();
+        return;
+#else
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
         {
@@ -606,6 +615,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
         ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
         SetRelocated();
+#endif
     }
 #endif
 }
@@ -888,7 +898,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     for (section = sectionStart; section < sectionEnd; section++)
     {
         DWORD executableProtection = PAGE_EXECUTE_READ;
-#if defined(__APPLE__) && defined(HOST_ARM64)
+#if defined(__APPLE__) && defined(HOST_ARM64) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_MACCATALYST)
         executableProtection = PAGE_EXECUTE_READWRITE;
 #endif
         // Add appropriate page protection.
