@@ -57,4 +57,4 @@ target_link_libraries(clrinterpreter
         ${INTERPRETER_LINK_LIBRARIES}
     )
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime OPTIONAL)
+install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
