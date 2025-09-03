@@ -63,7 +63,6 @@ extends:
             export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
             mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
-            docker-compose down
           timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -73,8 +72,8 @@ extends:
             export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
             export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
             mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
             docker-compose down
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -83,8 +82,8 @@ extends:
             export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
             export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
             mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
             docker-compose down
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
