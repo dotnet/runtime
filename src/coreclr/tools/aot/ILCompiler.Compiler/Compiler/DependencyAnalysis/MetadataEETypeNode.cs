@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Reflection-visible valuetypes are considered constructed due to APIs like RuntimeHelpers.Box,
             // or Enum.ToObject.
-            if (_type.IsValueType)
+            if (_type.IsEnum)
                 dependencyList.Add(factory.MaximallyConstructableType(_type), "Reflection visible valuetype");
 
             // Delegates can be constructed through runtime magic APIs so consider constructed.
