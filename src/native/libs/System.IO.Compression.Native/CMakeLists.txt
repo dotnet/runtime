@@ -20,10 +20,17 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     endif()
 endif()
 
+if (CLR_CMAKE_USE_SYSTEM_ZSTD)
+    find_library(ZSTD zstd REQUIRED)
+    list(APPEND ${ZSTD_LIBRARIES} ${ZSTD})
+else()
+    include(${CLR_SRC_NATIVE_DIR}/external/zstd.cmake)
+endif()
+
 if (STATIC_LIBS_ONLY)
     # For every vendored library that we're actually vendoring (and not referencing the system one)
     # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
-    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS zlib)
+    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ZSTD_LIBRARIES ITEMS zlib)
         if (TARGET ${VENDORED_LIB})
             set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
         endif()
@@ -75,6 +82,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PRIVATE ${BROTLI_LIBRARIES})
 
+        target_include_directories(System.IO.Compression.Native PUBLIC ${ZSTD_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native PUBLIC ${ZSTD_LIBRARIES})
+
         if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
@@ -119,6 +129,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
+        target_include_directories(System.IO.Compression.Native-Static PUBLIC ${ZSTD_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${ZSTD_LIBRARIES})
+
         foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
             # Brotli's build scripts can add some system dependencies like libm
             # to BROTLI_LIBRARIES. Only install the libraries that are actually
@@ -127,6 +140,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
                 install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
             endif()
         endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
+
+        foreach(ZSTD_LIB ${ZSTD_LIBRARIES})
+            # Only install the libraries that are actually defined as CMake targets.
+            if (TARGET "${ZSTD_LIB}")
+                install (TARGETS ${ZSTD_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+            endif()
+        endforeach(ZSTD_LIB ${ZSTD_LIBRARIES})
+
     endif()
 
     if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
@@ -158,6 +179,9 @@ else ()
 
         target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
+
+        target_include_directories(System.IO.Compression.Native PUBLIC ${ZSTD_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native PUBLIC ${ZSTD_LIBRARIES})
     endif ()
 
     if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
@@ -176,6 +200,9 @@ else ()
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
+    target_include_directories(System.IO.Compression.Native-Static PUBLIC ${ZSTD_INCLUDE_DIRS})
+    target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${ZSTD_LIBRARIES})
+
     if(STATIC_LIBS_ONLY)
         add_library(System.IO.Compression.Native.Aot
             STATIC
@@ -188,6 +215,9 @@ else ()
 
         target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_LIBRARIES})
+
+        target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${ZSTD_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native.Aot PUBLIC ${ZSTD_LIBRARIES})
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
@@ -213,6 +243,14 @@ else ()
                 install_static_library(${BROTLI_LIB} aotsdk nativeaot)
             endif()
         endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        foreach(ZSTD_LIB ${ZSTD_LIBRARIES})
+            # Zstd's build scripts can add some system dependencies like libm
+            # to ZSTD_LIBRARIES. Only install the libraries that are actually
+            # defined as CMake targets.
+            if (TARGET "${ZSTD_LIB}")
+                install_static_library(${ZSTD_LIB} aotsdk nativeaot)
+            endif()
+        endforeach(ZSTD_LIB ${ZSTD_LIBRARIES})
         if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             install_static_library(zlib aotsdk nativeaot)
         endif()
@@ -228,6 +266,12 @@ if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CM
     foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
         if (TARGET "${BROTLI_LIB}")
             install (TARGETS ${BROTLI_LIB} DESTINATION sharedFramework COMPONENT runtime)
+        endif()
+    endforeach()
+
+    foreach(ZSTD_LIB ${ZSTD_LIBRARIES})
+        if (TARGET "${ZSTD_LIB}")
+            install (TARGETS ${ZSTD_LIB} DESTINATION sharedFramework COMPONENT runtime)
         endif()
     endforeach()
 endif()
