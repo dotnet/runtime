@@ -36,7 +36,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     {
         Data.SyncTableEntry entry = GetSyncTableEntry(index);
 
-        if (IsSyncBlockFree(index))
+        if (IsSyncBlockFree(entry))
             return new SyncBlockData { IsFree = true };
 
         if (entry.SyncBlock != TargetPointer.Null)
@@ -64,10 +64,33 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         };
     }
 
-    bool ISyncBlock.TryGetBuiltInComData(uint index, out TargetPointer rcw, out TargetPointer ccw)
+    uint ISyncBlock.GetAdditionalThreadCount(uint index, uint maximumIterations)
+    {
+        Data.SyncTableEntry entry = GetSyncTableEntry(index);
+        if (entry.SyncBlock == TargetPointer.Null)
+            return 0;
+
+        uint additionalThreadCount = 0;
+        Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(entry.SyncBlock);
+        if (syncBlock.Link != TargetPointer.Null)
+        {
+            TargetPointer pLink = syncBlock.Link;
+            do
+            {
+                additionalThreadCount += 1;
+                pLink = _target.ReadPointer(pLink);
+            }
+            while (pLink != TargetPointer.Null && additionalThreadCount < maximumIterations);
+        }
+
+        return additionalThreadCount;
+    }
+
+    bool ISyncBlock.TryGetBuiltInComData(uint index, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer classFactory)
     {
         rcw = TargetPointer.Null;
         ccw = TargetPointer.Null;
+        classFactory = TargetPointer.Null;
 
         Data.SyncTableEntry entry = GetSyncTableEntry(index);
 
@@ -81,12 +104,12 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
         rcw = interopInfo.RCW;
         ccw = interopInfo.CCW;
-        return rcw != TargetPointer.Null || ccw != TargetPointer.Null;
+        classFactory = interopInfo.ClassFactory;
+        return rcw != TargetPointer.Null || ccw != TargetPointer.Null || classFactory != TargetPointer.Null;
     }
 
-    private bool IsSyncBlockFree(uint index)
+    private static bool IsSyncBlockFree(Data.SyncTableEntry entry)
     {
-        Data.SyncTableEntry entry = GetSyncTableEntry(index);
         // Lowest bit is set if this entry is free
         return (entry.Object & 0x1) == 0x1;
     }

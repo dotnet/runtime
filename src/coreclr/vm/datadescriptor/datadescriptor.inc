@@ -134,6 +134,9 @@ CDAC_TYPE_END(Array)
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, ClassFactory, cdac_data<InteropSyncBlockInfo>::ClassFactory)
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 #endif // FEATURE_COMINTEROP
@@ -163,6 +166,8 @@ CDAC_TYPE_FIELD(AwareLock, /*uint32*/, LockState, cdac_data<AwareLock>::LockStat
 CDAC_TYPE_FIELD(AwareLock, /*uint32*/, RecursionLevel, cdac_data<AwareLock>::RecursionLevel)
 CDAC_TYPE_FIELD(AwareLock, /*uint32*/, HoldingThreadId, cdac_data<AwareLock>::HoldingThreadId)
 CDAC_TYPE_END(AwareLock)
+
+CDAC_TYPE_BEGIN(SLink)
 
 // Loader
 

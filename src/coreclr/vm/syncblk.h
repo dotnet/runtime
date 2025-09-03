@@ -840,6 +840,9 @@ template<>
 struct cdac_data<InteropSyncBlockInfo>
 {
 #ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+    static constexpr size_t ClassFactory = offsetof(InteropSyncBlockInfo, m_pCCF);
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
 #endif // FEATURE_COMINTEROP

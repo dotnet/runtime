@@ -2209,6 +2209,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             ISyncBlock sync = _target.Contracts.SyncBlock;
+            IThread thread = _target.Contracts.Thread;
 
             if (data == null)
                 throw new ArgumentException();
@@ -2232,23 +2233,25 @@ internal sealed unsafe partial class SOSDacImpl
 
                     if (data->SyncBlockPointer != 0)
                     {
-                        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0)
-                        {
-                            sync.TryGetBuiltInComData(number, out TargetPointer rcw, out TargetPointer ccw);
-                            if (rcw != TargetPointer.Null)
-                                data->COMFlags |= DacpSyncBlockData.COMFlag.RCW;
-                            if (ccw != TargetPointer.Null)
-                                data->COMFlags |= DacpSyncBlockData.COMFlag.CCW;
-                            // todo
-                        }
+                        // In the runtime this block is under FEATURE_COMINTEROP / FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+                        // feature flags. The checks are not needed here as the API will report 0 if no data is available.
+                        sync.TryGetBuiltInComData(number, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer cf);
+                        if (rcw != TargetPointer.Null)
+                            data->COMFlags |= DacpSyncBlockData.COMFlag.RCW;
+                        if (ccw != TargetPointer.Null)
+                            data->COMFlags |= DacpSyncBlockData.COMFlag.CCW;
+                        if (cf != TargetPointer.Null)
+                            data->COMFlags |= DacpSyncBlockData.COMFlag.CF;
 
                         data->MonitorHeld = syncBlockData.MonitorHeldState;
                         data->Recursion = syncBlockData.RecursionLevel;
-                        IThread thread = _target.Contracts.Thread;
                         data->HoldingThread = thread.IdToThread(syncBlockData.HoldingThreadId).ToClrDataAddress(_target);
                         data->appDomainPtr = _target.ReadPointer(
                             _target.ReadGlobalPointer(Constants.Globals.AppDomain))
                             .ToClrDataAddress(_target);
+
+                        // maximumIterations set to 1000 to match the DAC behavior
+                        data->AdditionalThreadCount = sync.GetAdditionalThreadCount(number, maximumIterations: 1000);
                     }
                 }
             }
@@ -2273,7 +2276,7 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->MonitorHeld == dataLocal.MonitorHeld, $"cDAC: {data->MonitorHeld}, DAC: {dataLocal.MonitorHeld}");
                 Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
                 Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
-                // Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
+                Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
                 Debug.Assert(data->appDomainPtr == dataLocal.appDomainPtr, $"cDAC: {data->appDomainPtr:x}, DAC: {dataLocal.appDomainPtr:x}");
                 Debug.Assert(data->SyncBlockCount == dataLocal.SyncBlockCount, $"cDAC: {data->SyncBlockCount}, DAC: {dataLocal.SyncBlockCount}");
             }

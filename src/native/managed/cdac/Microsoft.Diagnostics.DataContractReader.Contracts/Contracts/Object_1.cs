@@ -107,7 +107,7 @@ internal readonly struct Object_1 : IObject
 
         ISyncBlock sync = _target.Contracts.SyncBlock;
 
-        return sync.TryGetBuiltInComData(index, out rcw, out ccw);
+        return sync.TryGetBuiltInComData(index, out rcw, out ccw, out TargetPointer _);
     }
 
     private bool TryGetSyncBlockIndex(TargetPointer address, out uint index)

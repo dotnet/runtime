@@ -22,8 +22,8 @@ public interface ISyncBlock : IContract
 
     uint GetSyncBlockCount() => throw new NotImplementedException();
     SyncBlockData GetSyncBlockData(uint index) => throw new NotImplementedException();
-    bool TryGetSyncBlockData(uint index, [NotNullWhen(true)] out SyncBlockData? data) => throw new NotImplementedException();
-    bool TryGetBuiltInComData(uint index, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
+    uint GetAdditionalThreadCount(uint index, uint maximumIterations = 1000) => throw new NotImplementedException();
+    bool TryGetBuiltInComData(uint index, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer cf) => throw new NotImplementedException();
 }
 
 public readonly struct SyncBlock : ISyncBlock
