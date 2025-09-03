@@ -96,6 +96,15 @@ namespace System.Reflection
         public Type ArgumentType => _argumentType;
         public object? Value => _value;
 
-        private static object? CanonicalizeValue(object? value) => (value is Enum e) ? e.GetValue() : value;
+        private static object? CanonicalizeValue(object? value)
+        {
+            if (value is Enum e)
+                return e.GetValue();
+
+            if (value is CustomAttributeTypedArgument[] array)
+                return Array.AsReadOnly(array);
+
+            return value;
+        }
     }
 }
