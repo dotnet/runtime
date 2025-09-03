@@ -535,7 +535,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>

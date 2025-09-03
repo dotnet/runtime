@@ -230,7 +230,7 @@ namespace Wasm.Build.Tests
             else
                 expectedWasmNativeStripValue = true;
 
-            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, /*wasmNativeDebugSymbols*/true, isPublish);
+            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, /*wasmNativeDebugSymbols*/false, isPublish);
         }
 
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
