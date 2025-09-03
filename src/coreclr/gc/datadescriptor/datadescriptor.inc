@@ -26,6 +26,7 @@ CDAC_TYPE_FIELD(GCHeap, /*pointer*/, GenerationTable, cdac_data<GC_NAMESPACE::gc
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
+CDAC_TYPE_FIELD(GCHeap, /*oom_history*/, OOMData, cdac_data<GC_NAMESPACE::gc_heap>::OOMData)
 CDAC_TYPE_END(GCHeap)
 #endif // SERVER_GC
 
@@ -42,6 +43,34 @@ CDAC_TYPE_BEGIN(CFinalize)
 CDAC_TYPE_INDETERMINATE(CFinalize)
 CDAC_TYPE_FIELD(CFinalize, /*pointer*/, FillPointers, cdac_data<GC_NAMESPACE::CFinalize>::FillPointers)
 CDAC_TYPE_END(CFinalize)
+
+CDAC_TYPE_BEGIN(HeapSegment)
+CDAC_TYPE_INDETERMINATE(HeapSegment)
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Allocated, offsetof(GC_NAMESPACE::heap_segment, allocated))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Committed, offsetof(GC_NAMESPACE::heap_segment, committed))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Reserved, offsetof(GC_NAMESPACE::heap_segment, reserved))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Used, offsetof(GC_NAMESPACE::heap_segment, used))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Mem, offsetof(GC_NAMESPACE::heap_segment, mem))
+CDAC_TYPE_FIELD(HeapSegment, /*nuint*/, Flags, offsetof(GC_NAMESPACE::heap_segment, flags))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Next, offsetof(GC_NAMESPACE::heap_segment, next))
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, BackgroundAllocated, offsetof(GC_NAMESPACE::heap_segment, background_allocated))
+#ifdef MULTIPLE_HEAPS
+CDAC_TYPE_FIELD(HeapSegment, /*pointer*/, Heap, offsetof(GC_NAMESPACE::heap_segment, heap))
+#endif // MULTIPLE_HEAPS
+CDAC_TYPE_END(HeapSegment)
+
+CDAC_TYPE_BEGIN(OOMHistory)
+CDAC_TYPE_INDETERMINATE(OOMHistory)
+CDAC_TYPE_FIELD(OOMHistory, /*int32*/, Reason, offsetof(oom_history, reason))
+CDAC_TYPE_FIELD(OOMHistory, /*nuint*/, AllocSize, offsetof(oom_history, alloc_size))
+CDAC_TYPE_FIELD(OOMHistory, /*pointer*/, Reserved, offsetof(oom_history, reserved))
+CDAC_TYPE_FIELD(OOMHistory, /*pointer*/, Allocated, offsetof(oom_history, allocated))
+CDAC_TYPE_FIELD(OOMHistory, /*nuint*/, GcIndex, offsetof(oom_history, gc_index))
+CDAC_TYPE_FIELD(OOMHistory, /*int32*/, Fgm, offsetof(oom_history, fgm))
+CDAC_TYPE_FIELD(OOMHistory, /*nuint*/, Size, offsetof(oom_history, size))
+CDAC_TYPE_FIELD(OOMHistory, /*nuint*/, AvailablePagefileMb, offsetof(oom_history, available_pagefile_mb))
+CDAC_TYPE_FIELD(OOMHistory, /*uint32*/, LohP, offsetof(oom_history, loh_p))
+CDAC_TYPE_END(OOMHistory)
 
 CDAC_TYPES_END()
 
@@ -64,6 +93,7 @@ CDAC_GLOBAL_POINTER(GCHeapGenerationTable, cdac_data<GC_NAMESPACE::gc_heap>::Gen
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralSeg)
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
+CDAC_GLOBAL_POINTER(GCHeapOOMData, cdac_data<GC_NAMESPACE::gc_heap>::OOMData)
 #endif // !SERVER_GC
 
 #ifdef SERVER_GC
@@ -108,7 +138,7 @@ CDAC_GLOBAL_POINTER(CurrentGCState, cdac_data<GC_NAMESPACE::gc_heap>::CurrentGCS
 #endif // BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
-CDAC_GLOBAL_POINTER(DynamicAdaptationMode, &GC_NAMESPACE::gc_heap::dynamic_adaptation_mode)
+CDAC_GLOBAL_POINTER(DynamicAdaptationMode, cdac_data<GC_NAMESPACE::gc_heap>::DynamicAdaptationMode)
 #endif // DYNAMIC_HEAP_COUNT
 
 CDAC_GLOBALS_END()

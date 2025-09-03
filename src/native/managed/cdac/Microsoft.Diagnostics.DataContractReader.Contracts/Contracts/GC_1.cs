@@ -81,6 +81,23 @@ internal readonly struct GC_1 : IGC
         return _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.DynamicAdaptationMode));
     }
 
+    GCHeapSegmentData IGC.GetHeapSegmentData(TargetPointer segmentAddress)
+    {
+        Data.HeapSegment heapSegment = _target.ProcessedData.GetOrAdd<Data.HeapSegment>(segmentAddress);
+        return new GCHeapSegmentData()
+        {
+            Allocated = heapSegment.Allocated,
+            Committed = heapSegment.Committed,
+            Reserved = heapSegment.Reserved,
+            Used = heapSegment.Used,
+            Mem = heapSegment.Mem,
+            Flags = heapSegment.Flags,
+            Next = heapSegment.Next,
+            BackgroundAllocated = heapSegment.BackgroundAllocated,
+            Heap = heapSegment.Heap ?? TargetPointer.Null,
+        };
+    }
+
     IEnumerable<TargetPointer> IGC.GetGCHeaps()
     {
         if (GetGCType() != GCType.Server)
@@ -159,6 +176,39 @@ internal readonly struct GC_1 : IGC
             SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
         };
     }
+
+    GCOOMData IGC.WKSGetOOMData()
+    {
+        if (GetGCType() != GCType.Workstation)
+            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
+
+        TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData);
+        Data.OOMHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OOMHistory>(oomHistory);
+        return GetGCOOMData(oomHistoryData);
+    }
+
+    GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
+    {
+        if (GetGCType() != GCType.Server)
+            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+
+        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
+        return GetGCOOMData(heap.OOMData);
+    }
+
+    private static GCOOMData GetGCOOMData(Data.OOMHistory oomHistory)
+        => new GCOOMData()
+        {
+            Reason = oomHistory.Reason,
+            AllocSize = oomHistory.AllocSize,
+            Reserved = oomHistory.Reserved,
+            Allocated = oomHistory.Allocated,
+            GCIndex = oomHistory.GcIndex,
+            Fgm = oomHistory.Fgm,
+            Size = oomHistory.Size,
+            AvailablePagefileMB = oomHistory.AvailablePagefileMb,
+            LohP = oomHistory.LohP != 0,
+        };
 
     private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
     {

@@ -48,6 +48,8 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     static constexpr GC_NAMESPACE::gc_heap*** Heaps = &GC_NAMESPACE::gc_heap::g_heaps;
 #endif // SERVER_GC
 
+    GC_HEAP_FIELD(OOMData, oom_info)
+
     GC_HEAP_FIELD(MarkArray, mark_array)
     GC_HEAP_FIELD(NextSweepObj, next_sweep_obj)
     GC_HEAP_FIELD(BackgroundMinSavedAddr, background_saved_lowest_address)

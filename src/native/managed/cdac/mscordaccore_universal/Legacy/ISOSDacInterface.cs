@@ -335,6 +335,17 @@ internal struct DacpGcHeapDetails
     public ClrDataAddress card_table;
 }
 
+internal struct DacpOomData
+{
+    public int reason;
+    public ulong alloc_size;
+    public ulong available_pagefile_mb;
+    public ulong gc_index;
+    public int fgm;
+    public ulong size;
+    public int loh_p; // BOOL -> int
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
@@ -468,9 +479,9 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
     [PreserveSig]
-    int GetOOMData(ClrDataAddress oomAddr, /*struct DacpOomData */ void* data);
+    int GetOOMData(ClrDataAddress oomAddr, DacpOomData* data);
     [PreserveSig]
-    int GetOOMStaticData(/*struct DacpOomData */ void* data);
+    int GetOOMStaticData(DacpOomData* data);
     [PreserveSig]
     int GetHeapAnalyzeData(ClrDataAddress addr, /*struct DacpGcHeapAnalyzeData */ void* data);
     [PreserveSig]

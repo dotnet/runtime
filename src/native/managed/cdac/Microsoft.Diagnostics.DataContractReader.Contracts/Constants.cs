@@ -100,6 +100,7 @@ public static class Constants
         public const string GCHeapGenerationTable = nameof(GCHeapGenerationTable);
         public const string GCHeapSavedSweepEphemeralSeg = nameof(GCHeapSavedSweepEphemeralSeg);
         public const string GCHeapSavedSweepEphemeralStart = nameof(GCHeapSavedSweepEphemeralStart);
+        public const string GCHeapOOMData = nameof(GCHeapOOMData);
     }
     public static class FieldNames
     {

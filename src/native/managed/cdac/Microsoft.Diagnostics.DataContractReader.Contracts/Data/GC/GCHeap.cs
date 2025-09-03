@@ -28,6 +28,8 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
             SavedSweepEphemeralSeg = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralSeg)].Offset);
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
             SavedSweepEphemeralStart = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralStart)].Offset);
+
+        OOMData = target.ProcessedData.GetOrAdd<OOMHistory>(address + (ulong)type.Fields[nameof(OOMData)].Offset);
     }
 
     public TargetPointer MarkArray { get; }
@@ -42,4 +44,6 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
 
     public TargetPointer? SavedSweepEphemeralSeg { get; }
     public TargetPointer? SavedSweepEphemeralStart { get; }
+
+    public OOMHistory OOMData { get; }
 }

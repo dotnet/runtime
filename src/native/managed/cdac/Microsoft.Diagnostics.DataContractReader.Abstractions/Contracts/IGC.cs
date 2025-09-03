@@ -46,6 +46,32 @@ public readonly struct GCGenerationData
     public TargetPointer AllocationContextLimit { get; init; }
 }
 
+public readonly struct GCHeapSegmentData
+{
+    public TargetPointer Allocated { get; init; }
+    public TargetPointer Committed { get; init; }
+    public TargetPointer Reserved { get; init; }
+    public TargetPointer Used { get; init; }
+    public TargetPointer Mem { get; init; }
+    public TargetNUInt Flags { get; init; }
+    public TargetPointer Next { get; init; }
+    public TargetPointer BackgroundAllocated { get; init; }
+    public TargetPointer Heap { get; init; }
+}
+
+public readonly struct GCOOMData
+{
+    public int Reason { get; init; }
+    public TargetNUInt AllocSize { get; init; }
+    public TargetPointer Reserved { get; init; }
+    public TargetPointer Allocated { get; init; }
+    public TargetNUInt GCIndex { get; init; }
+    public int Fgm { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetNUInt AvailablePagefileMB { get; init; }
+    public bool LohP { get; init; }
+}
+
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -58,13 +84,16 @@ public interface IGC : IContract
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr) => throw new NotImplementedException();
     uint GetCurrentGCState() => throw new NotImplementedException();
     int GetDynamicAdaptationMode() => throw new NotImplementedException();
+    GCHeapSegmentData GetHeapSegmentData(TargetPointer segmentAddress) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 
     /* WKS only APIs */
     GCHeapData WKSGetHeapData() => throw new NotImplementedException();
+    GCOOMData WKSGetOOMData() => throw new NotImplementedException();
 
     /* SVR only APIs */
     GCHeapData SVRGetHeapData(TargetPointer heapAddress) => throw new NotImplementedException();
+    GCOOMData SVRGetOOMData(TargetPointer heapAddress) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

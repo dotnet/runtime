@@ -2326,10 +2326,106 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetOOMData(ClrDataAddress oomAddr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetOOMData(oomAddr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetOOMStaticData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetOOMStaticData(data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetOOMData(ClrDataAddress oomAddr, DacpOomData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (oomAddr == 0 || data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // This method is only valid for server GC mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            GCOOMData oomData = gc.SVRGetOOMData(oomAddr.ToTargetPointer(_target));
+
+            data->reason = oomData.Reason;
+            data->alloc_size = oomData.AllocSize.Value;
+            data->available_pagefile_mb = oomData.AvailablePagefileMB.Value;
+            data->gc_index = oomData.GCIndex.Value;
+            data->fgm = oomData.Fgm;
+            data->size = oomData.Size.Value;
+            data->loh_p = oomData.LohP ? 1 : 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpOomData dataLocal;
+            int hrLocal = _legacyImpl.GetOOMData(oomAddr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->reason == dataLocal.reason, $"cDAC: {data->reason}, DAC: {dataLocal.reason}");
+                Debug.Assert(data->alloc_size == dataLocal.alloc_size, $"cDAC: {data->alloc_size}, DAC: {dataLocal.alloc_size}");
+                Debug.Assert(data->available_pagefile_mb == dataLocal.available_pagefile_mb, $"cDAC: {data->available_pagefile_mb}, DAC: {dataLocal.available_pagefile_mb}");
+                Debug.Assert(data->gc_index == dataLocal.gc_index, $"cDAC: {data->gc_index}, DAC: {dataLocal.gc_index}");
+                Debug.Assert(data->fgm == dataLocal.fgm, $"cDAC: {data->fgm}, DAC: {dataLocal.fgm}");
+                Debug.Assert(data->size == dataLocal.size, $"cDAC: {data->size}, DAC: {dataLocal.size}");
+                Debug.Assert(data->loh_p == dataLocal.loh_p, $"cDAC: {data->loh_p}, DAC: {dataLocal.loh_p}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    int ISOSDacInterface.GetOOMStaticData(DacpOomData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // This method is only valid for workstation GC mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            GCOOMData oomData = gc.WKSGetOOMData();
+
+            data->reason = oomData.Reason;
+            data->alloc_size = oomData.AllocSize.Value;
+            data->available_pagefile_mb = oomData.AvailablePagefileMB.Value;
+            data->gc_index = oomData.GCIndex.Value;
+            data->fgm = oomData.Fgm;
+            data->size = oomData.Size.Value;
+            data->loh_p = oomData.LohP ? 1 : 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpOomData dataLocal;
+            int hrLocal = _legacyImpl.GetOOMStaticData(&dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->reason == dataLocal.reason, $"cDAC: {data->reason}, DAC: {dataLocal.reason}");
+                Debug.Assert(data->alloc_size == dataLocal.alloc_size, $"cDAC: {data->alloc_size}, DAC: {dataLocal.alloc_size}");
+                Debug.Assert(data->available_pagefile_mb == dataLocal.available_pagefile_mb, $"cDAC: {data->available_pagefile_mb}, DAC: {dataLocal.available_pagefile_mb}");
+                Debug.Assert(data->gc_index == dataLocal.gc_index, $"cDAC: {data->gc_index}, DAC: {dataLocal.gc_index}");
+                Debug.Assert(data->fgm == dataLocal.fgm, $"cDAC: {data->fgm}, DAC: {dataLocal.fgm}");
+                Debug.Assert(data->size == dataLocal.size, $"cDAC: {data->size}, DAC: {dataLocal.size}");
+                Debug.Assert(data->loh_p == dataLocal.loh_p, $"cDAC: {data->loh_p}, DAC: {dataLocal.loh_p}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase)
     {
@@ -3230,6 +3326,35 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface16
     int ISOSDacInterface16.GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
-        => _legacyImpl16 is not null ? _legacyImpl16.GetGCDynamicAdaptationMode(pDynamicAdaptationMode) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (pDynamicAdaptationMode == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            *pDynamicAdaptationMode = gc.GetDynamicAdaptationMode();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl16 is not null)
+        {
+            int dynamicAdaptationModeLocal;
+            int hrLocal = _legacyImpl16.GetGCDynamicAdaptationMode(&dynamicAdaptationModeLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK && pDynamicAdaptationMode != null)
+            {
+                Debug.Assert(*pDynamicAdaptationMode == dynamicAdaptationModeLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface16
 }
