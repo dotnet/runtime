@@ -4,23 +4,20 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal static partial class RSAImplementation
+    internal sealed partial class EccAppleCrypto
     {
-        public sealed partial class RSASecurityTransforms
-        {
 #pragma warning disable IDE0060
-            private static RSAParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
-                => throw new CryptographicException();
+        private static ECParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
+            => throw new CryptographicException();
+
+        private static void ExtractPublicKeyFromPrivateKey(ref ECParameters ecParameters)
+            => throw new PlatformNotSupportedException(SR.Cryptography_NotValidPublicOrPrivateKey);
 #pragma warning restore IDE0060
-        }
     }
 }
