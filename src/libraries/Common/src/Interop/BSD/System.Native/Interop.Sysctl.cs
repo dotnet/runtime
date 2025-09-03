@@ -71,7 +71,6 @@ internal static partial class Interop
 
                 len = (uint)bytesLength;
             }
-        }
 
             static void ThrowInvalidSysctlException(ReadOnlySpan<int> name, nint errno)
             {
