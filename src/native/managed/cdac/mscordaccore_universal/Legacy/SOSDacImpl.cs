@@ -2001,7 +2001,74 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodTableSlot(mt, slot, value) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+        try
+        {
+            if (mt == 0 || value == null)
+                throw new ArgumentException();
+
+            TargetPointer methodTable = mt.ToTargetPointer(_target);
+            TypeHandle methodTableHandle = rts.GetTypeHandle(methodTable); // validate MT
+
+            ushort vtableSlots = rts.GetNumVtableSlots(methodTableHandle);
+
+            if (slot < vtableSlots)
+            {
+                *value = rts.GetSlot(methodTableHandle, slot).ToClrDataAddress(_target);
+                if (*value == 0)
+                {
+                    hr = HResults.S_FALSE;
+                }
+            }
+            else
+            {
+                hr = HResults.E_INVALIDARG;
+                foreach (TargetPointer mdAddr in rts.GetIntroducedMethodDescs(methodTableHandle))
+                {
+                    MethodDescHandle mdHandle = rts.GetMethodDescHandle(mdAddr);
+                    if (rts.GetSlotNumber(mdHandle) == slot)
+                    {
+                        *value = rts.GetMethodEntryPointIfExists(mdHandle).ToClrDataAddress(_target);
+                        if (*value == 0)
+                        {
+                            hr = HResults.S_FALSE;
+                        }
+                        else
+                        {
+                            hr = HResults.S_OK;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal;
+            ClrDataAddress valueLocal;
+
+            hrLocal = _legacyImpl.GetMethodTableSlot(mt, slot, &valueLocal);
+
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*value == valueLocal, $"cDAC: {*value:x}, DAC: {valueLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data)
     {
@@ -3224,8 +3291,210 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface14
 
     #region ISOSDacInterface15
-    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator)
-        => _legacyImpl15 is not null ? _legacyImpl15.GetMethodTableSlotEnumerator(mt, enumerator) : HResults.E_NOTIMPL;
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSMethodEnum : ISOSMethodEnum
+    {
+        private readonly Target _target;
+        private readonly IRuntimeTypeSystem _rts;
+        private readonly TypeHandle _methodTable;
+
+        private readonly ISOSMethodEnum? _legacyMethodEnum;
+
+        private uint _iteratorIndex;
+        private List<SOSMethodData> _methods = [];
+
+        public SOSMethodEnum(Target target, TypeHandle methodTable, ISOSMethodEnum? legacyMethodEnum)
+        {
+            _target = target;
+            _rts = _target.Contracts.RuntimeTypeSystem;
+            _methodTable = methodTable;
+            _legacyMethodEnum = legacyMethodEnum;
+
+            PopulateMethods();
+        }
+
+        private void PopulateMethods()
+        {
+            ushort numVtableSlots = _rts.GetNumVtableSlots(_methodTable);
+
+            for (ushort i = 0; i < numVtableSlots; i++)
+            {
+                SOSMethodData methodData = default;
+                TargetPointer mdAddr = TargetPointer.Null;
+                try
+                {
+                    mdAddr = _rts.GetMethodDescForSlot(_methodTable, i);
+                }
+                catch (System.Exception)
+                {
+                    // Ignore exceptions reading method data
+                }
+
+                if (mdAddr != TargetPointer.Null)
+                {
+                    MethodDescHandle mdh = _rts.GetMethodDescHandle(mdAddr);
+
+                    methodData.MethodDesc = mdAddr.ToClrDataAddress(_target);
+
+                    TargetPointer mtAddr = _rts.GetMethodTable(mdh);
+                    methodData.DefiningMethodTable = mtAddr.ToClrDataAddress(_target);
+
+                    TypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
+                    methodData.DefiningModule = _rts.GetModule(typeHandle).ToClrDataAddress(_target);
+                    methodData.Token = _rts.GetMethodToken(mdh);
+                }
+
+                methodData.Entrypoint = _rts.GetSlot(_methodTable, i).ToClrDataAddress(_target);
+                methodData.Slot = i;
+
+                _methods.Add(methodData);
+            }
+
+            foreach (TargetPointer mdAddr in _rts.GetIntroducedMethodDescs(_methodTable))
+            {
+                MethodDescHandle mdh = _rts.GetMethodDescHandle(mdAddr);
+                ushort slot = _rts.GetSlotNumber(mdh);
+                if (slot >= numVtableSlots)
+                {
+                    SOSMethodData methodData = default;
+                    methodData.MethodDesc = mdAddr.ToClrDataAddress(_target);
+                    methodData.Entrypoint = _rts.GetMethodEntryPointIfExists(mdh).ToClrDataAddress(_target);
+
+                    TargetPointer mtAddr = _rts.GetMethodTable(mdh);
+                    methodData.DefiningMethodTable = mtAddr.ToClrDataAddress(_target);
+
+                    TypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
+                    methodData.DefiningModule = _rts.GetModule(typeHandle).ToClrDataAddress(_target);
+                    methodData.Token = _rts.GetMethodToken(mdh);
+
+                    if (slot == ushort.MaxValue)
+                        methodData.Slot = uint.MaxValue;
+                    else
+                        methodData.Slot = slot;
+
+                    _methods.Add(methodData);
+                }
+            }
+        }
+
+        int ISOSMethodEnum.Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMethodData[] values, uint* pNeeded)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pNeeded is null)
+                    throw new NullReferenceException();
+                if (values is null)
+                    throw new NullReferenceException();
+
+                uint i = 0;
+                while (i < count && _iteratorIndex < _methods.Count)
+                {
+                    values[i++] = _methods[(int)_iteratorIndex++];
+                }
+
+                *pNeeded = i;
+
+                hr = i < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+#if DEBUG
+            if (_legacyMethodEnum is not null)
+            {
+                SOSMethodData[] valuesLocal = new SOSMethodData[count];
+                uint neededLocal;
+                int hrLocal = _legacyMethodEnum.Next(count, valuesLocal, &neededLocal);
+
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+                {
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC: {*pNeeded}, DAC: {neededLocal}");
+                    for (uint i = 0; i < *pNeeded; i++)
+                    {
+                        Debug.Assert(values[i].MethodDesc == valuesLocal[i].MethodDesc, $"cDAC: {values[i].MethodDesc:x}, DAC: {valuesLocal[i].MethodDesc:x}");
+                        Debug.Assert(values[i].DefiningMethodTable == valuesLocal[i].DefiningMethodTable, $"cDAC: {values[i].DefiningMethodTable:x}, DAC: {valuesLocal[i].DefiningMethodTable:x}");
+                        Debug.Assert(values[i].DefiningModule == valuesLocal[i].DefiningModule, $"cDAC: {values[i].DefiningModule:x}, DAC: {valuesLocal[i].DefiningModule:x}");
+                        Debug.Assert(values[i].Token == valuesLocal[i].Token, $"cDAC: {values[i].Token}, DAC: {valuesLocal[i].Token}");
+                        Debug.Assert(values[i].Entrypoint == valuesLocal[i].Entrypoint, $"cDAC: {values[i].Entrypoint:x}, DAC: {valuesLocal[i].Entrypoint:x}");
+                        Debug.Assert(values[i].Slot == valuesLocal[i].Slot, $"cDAC: {values[i].Slot}, DAC: {valuesLocal[i].Slot}");
+                    }
+                }
+            }
+#endif
+
+            return hr;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _iteratorIndex += count;
+#if DEBUG
+            _legacyMethodEnum?.Skip(count);
+#endif
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _iteratorIndex = 0;
+#if DEBUG
+            _legacyMethodEnum?.Reset();
+#endif
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount == null)
+                return HResults.E_POINTER;
+#if DEBUG
+            if (_legacyMethodEnum is not null)
+            {
+                uint countLocal;
+                _legacyMethodEnum.GetCount(&countLocal);
+                Debug.Assert(countLocal == (uint)_methods.Count);
+            }
+#endif
+            *pCount = (uint)_methods.Count;
+            return HResults.S_OK;
+        }
+    }
+
+    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator)
+    {
+        int hr = HResults.S_OK;
+        enumerator = default;
+
+        try
+        {
+            if (mt == 0)
+                throw new ArgumentException();
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle methodTableHandle = rts.GetTypeHandle(mt.ToTargetPointer(_target));
+
+            ISOSMethodEnum? legacyMethodEnum = null;
+#if DEBUG
+            if (_legacyImpl15 is not null)
+            {
+                int hrLocal = _legacyImpl15.GetMethodTableSlotEnumerator(mt, out legacyMethodEnum);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            }
+#endif
+
+            enumerator = new SOSMethodEnum(_target, methodTableHandle, legacyMethodEnum);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
     #endregion ISOSDacInterface15
 
     #region ISOSDacInterface16

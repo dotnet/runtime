@@ -336,6 +336,20 @@ internal struct DacpGcHeapDetails
 }
 
 [GeneratedComInterface]
+[Guid("286CA186-E763-4F61-9760-487D43AE4341")]
+internal unsafe partial interface ISOSEnum
+{
+    [PreserveSig]
+    int Skip(uint count);
+
+    [PreserveSig]
+    int Reset();
+
+    [PreserveSig]
+    int GetCount(uint* pCount);
+}
+
+[GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
 {
@@ -748,12 +762,30 @@ internal unsafe partial interface ISOSDacInterface14
     int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
 }
 
+internal struct SOSMethodData
+{
+    public ClrDataAddress MethodDesc;
+    public ClrDataAddress Entrypoint;
+    public ClrDataAddress DefiningMethodTable;
+    public ClrDataAddress DefiningModule;
+    public uint Token;
+    public uint Slot;
+}
+
+[GeneratedComInterface]
+[Guid("3c0fe725-c324-4a4f-8100-d399588a662e")]
+internal unsafe partial interface ISOSMethodEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMethodData[] values, uint* pNeeded);
+}
+
 [GeneratedComInterface]
 [Guid("7ed81261-52a9-4a23-a358-c3313dea30a8")]
 internal unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
-    int GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator);
+    int GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator);
 }
 
 [GeneratedComInterface]
