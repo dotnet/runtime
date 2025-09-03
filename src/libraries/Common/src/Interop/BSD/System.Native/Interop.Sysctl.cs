@@ -17,7 +17,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
         private static unsafe partial int Sysctl(int* name, uint namelen, void* value, nuint* len);
 
-        private static unsafe void Sysctl(ReadOnlySpan<int> name, ref byte* value, ref uint len)
+        internal static unsafe void Sysctl(ReadOnlySpan<int> name, ref byte* value, ref uint len)
         {
             fixed (int* name_ptr = &MemoryMarshal.GetReference(name))
             {
