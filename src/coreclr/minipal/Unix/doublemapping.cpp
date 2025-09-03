@@ -91,14 +91,21 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         long pageSize = sysconf(_SC_PAGE_SIZE);
         if (pageSize != -1)
         {
-            maxDoubleMappedMemorySize = (off_t)pages * pageSize;
+            long physicalMemorySize = (long)pages * pageSize;
+            if (maxDoubleMappedMemorySize > physicalMemorySize)
+            {
+                maxDoubleMappedMemorySize = physicalMemorySize;
+            }
         }
     }
 
-    // Clip the maximum double mapped memory size to the virtual address space limit
+    // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
+    // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
+    // for the rest of the process.
     struct rlimit virtualAddressSpaceLimit;
-    if (getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0)
+    if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
+        virtualAddressSpaceLimit.rlim_cur /= 4;
         if (maxDoubleMappedMemorySize > virtualAddressSpaceLimit.rlim_cur)
         {
             maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
@@ -107,7 +114,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
     // Clip the maximum double mapped memory size to the file size limit
     struct rlimit fileSizeLimit;
-    if (getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0)
+    if ((getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0) && (fileSizeLimit.rlim_cur != RLIM_INFINITY))
     {
         if (maxDoubleMappedMemorySize > fileSizeLimit.rlim_cur)
         {
