@@ -13,7 +13,7 @@ namespace System.IO.Compression
 {
     /// <remarks>
     /// The exact compressed byte sequence returned by DeflateStream can vary
-    /// between.NET releases, platforms, or underlying compression engines.
+    /// between .NET releases, platforms, or underlying compression engines.
     /// Changes in zlib versions, algorithm tweaks, or performance optimizations
     /// may produce different outputs for the same input data.
     /// Despite these variations, any data compressed by DeflateStream
