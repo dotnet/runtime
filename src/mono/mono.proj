@@ -347,8 +347,7 @@ JS_ENGINES = [NODE_JS]
   </Target>
 
   <!-- Mono runtime build -->
-  <Target Name="BuildMonoRuntime"
-          DependsOnTargets="AcquireWasiSdk">
+  <Target Name="BuildMonoRuntime">
     <PropertyGroup Condition="'$(MonoUseLLVMPackage)' == 'true'">
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
@@ -1000,6 +999,7 @@ JS_ENGINES = [NODE_JS]
   <PropertyGroup>
     <MonoDependsOnTargets>CheckEnv;GetXcodeDir;GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
     <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
   <!-- General targets -->
