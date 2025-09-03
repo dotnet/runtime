@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
     {
         public static new partial RSA Create()
         {
-            return new RSAImplementation.RSASecurityTransforms();
+            return new RSAImplementation.RSAAppleCrypto();
         }
     }
 }
