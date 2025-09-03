@@ -10771,6 +10771,37 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     PCODE pfnHelper = helperDef.pfnHelper;
 
     DynamicCorInfoHelpFunc dynamicFtnNum;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+
+    accessType = IAT_VALUE;
+    targetAddr = (LPVOID)VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
+    if (targetAddr == NULL)
+    {
+        if (helperDef.IsDynamicHelper(&dynamicFtnNum))
+        {
+            pfnHelper = LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+        }
+
+        // LoadDynamicJitHelper returns PortableEntryPoint for helpers backed by managed methods. We need to wrap
+        // the code address by PortableEntryPoint in all other cases.
+        if (helperMD == NULL)
+        {
+            AllocMemHolder<PortableEntryPoint> portableEntryPoint{ SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }) };
+            portableEntryPoint->Init((void*)pfnHelper);
+            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], (PCODE)(PortableEntryPoint*)portableEntryPoint, (PCODE)NULL) == (PCODE)NULL)
+                portableEntryPoint.SuppressRelease();
+            pfnHelper = hlpFuncEntryPoints[ftnNum];
+        }
+        else
+        {
+            hlpFuncEntryPoints[ftnNum] = pfnHelper;
+        }
+        targetAddr = pfnHelper;
+    }
+
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+
     if (helperDef.IsDynamicHelper(&dynamicFtnNum))
     {
 #if defined(TARGET_AMD64)
@@ -10854,50 +10885,22 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                accessType = IAT_VALUE;
-                targetAddr = (LPVOID)helperMD->GetPortableEntryPoint();
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
                 Precode* pPrecode = helperMD->GetPrecode();
                 _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
                 accessType = IAT_PVALUE;
                 targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
                 goto exit;
             }
         }
 
         pfnHelper = LoadDynamicJitHelper(dynamicFtnNum);
-
-        accessType = IAT_VALUE;
-        targetAddr = (LPVOID)pfnHelper;
     }
-    else
-    {
-        // Static helper
-        _ASSERTE(pfnHelper != (PCODE)NULL);
 
-        accessType = IAT_VALUE;
+    _ASSERTE(pfnHelper != (PCODE)NULL);
+    accessType = IAT_VALUE;
+    targetAddr = (LPVOID)pfnHelper;
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        targetAddr = (LPVOID)VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
-        if (targetAddr == NULL)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-        {
-            PCODE entryPoint = pfnHelper;
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            AllocMemHolder<PortableEntryPoint> portableEntryPoint{ SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }) };
-            portableEntryPoint->Init((void*)entryPoint);
-            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], (PCODE)(PortableEntryPoint*)portableEntryPoint, (PCODE)NULL) == (PCODE)NULL)
-                portableEntryPoint.SuppressRelease();
-
-            entryPoint = hlpFuncEntryPoints[ftnNum];
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-            targetAddr = (LPVOID)entryPoint;
-        }
-    }
 
 exit: ;
     if (pNativeEntrypoint != NULL)
