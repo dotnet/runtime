@@ -10868,14 +10868,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     namespaceName += 8;
 
-                    if (strcmp(className, "TypeCast") == 0)
-                    {
-                        if (strcmp(methodName, "WriteBarrier") == 0)
-                        {
-                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
-                        }
-                    }
-                    else if (strcmp(namespaceName, "CompilerServices") == 0)
+                    if (strcmp(namespaceName, "CompilerServices") == 0)
                     {
                         if (strcmp(className, "RuntimeHelpers") == 0)
                         {
