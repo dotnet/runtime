@@ -38,7 +38,7 @@ internal static partial class Interop
                 }
 
                 ret = Sysctl(name_ptr, name_len, value, &bytesLength);
-                while (autoSize && ret != 0 && Marshal.GetLastPInvokeError() == Error.ENOMEM)
+                while (autoSize && ret != 0 && Interop.Sys.GetLastError() == Error.ENOMEM)
                 {
                     // Do not realloc here: we don't care about
                     // previous contents, and proper checking of value returned
