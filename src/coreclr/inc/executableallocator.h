@@ -303,9 +303,7 @@ class ExecutableWriterHolder
 #if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         if (m_addressRX != NULL)
         {
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
             PAL_JitWriteProtect(false);
-#endif
         }
 #else
         if (m_addressRX != m_addressRW)
@@ -340,9 +338,7 @@ public:
         m_addressRX = addressRX;
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
         m_addressRW = addressRX;
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
         PAL_JitWriteProtect(true);
-#endif
 #else
         m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size, cacheMapping);
 #endif

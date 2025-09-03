@@ -275,11 +275,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
                     PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
                 // Disable writing on Apple Silicon
                 if (bExecRegion)
                     PAL_JitWriteProtect(false);
-#endif
 #else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
@@ -305,9 +303,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 {
 #if defined(__APPLE__) && defined(HOST_ARM64)
                     // Enable writing on Apple Silicon
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
                     PAL_JitWriteProtect(true);
-#endif
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -384,11 +380,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
         // Disable writing on Apple Silicon
         if (bExecRegion)
             PAL_JitWriteProtect(false);
-#endif
 #else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
@@ -599,11 +593,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 
     if (HasReadyToRunHeader())
     {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
-        *loadFailure = COR_E_BADIMAGEFORMAT;
-        Reset();
-        return;
-#else
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
         {
@@ -615,7 +604,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
         ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
         SetRelocated();
-#endif
     }
 #endif
 }
@@ -898,7 +886,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     for (section = sectionStart; section < sectionEnd; section++)
     {
         DWORD executableProtection = PAGE_EXECUTE_READ;
-#if defined(__APPLE__) && defined(HOST_ARM64) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_MACCATALYST)
+#if defined(HOST_OSX) && defined(HOST_ARM64)
         executableProtection = PAGE_EXECUTE_READWRITE;
 #endif
         // Add appropriate page protection.
