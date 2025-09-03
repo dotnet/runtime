@@ -338,7 +338,7 @@ OPDEF(INTOP_LDIND_I4, "ldind.i4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_I8, "ldind.i8", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R4, "ldind.r4", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_LDIND_R8, "ldind.r8", 4, 1, 1, InterpOpInt)
-OPDEF(INTOP_LDIND_O, "ldind.o", 4, 1, 1, InterpOpInt)
+// No LDIND_O, use LDIND_I
 OPDEF(INTOP_LDIND_VT, "ldind.vt", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_STIND_I1, "stind.i1", 4, 0, 2, InterpOpInt)
@@ -415,6 +415,9 @@ OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpNoArgs)
 OPDEF(INTOP_COMPARE_EXCHANGE_I8, "compare.exchange.i8", 5, 1, 3, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I4, "exchange.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_I8, "exchange.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
