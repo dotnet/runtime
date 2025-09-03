@@ -2750,8 +2750,8 @@ public:
     virtual DWORD GetCodeType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        // Interpreter-TODO: consider adding some extra flag for the interpreter
-        return (miManaged | miIL);
+        // Reuse the OPTIL flag to indicate interpreter code
+        return (miManaged | miIL | miOPTIL);
     }
 
     GCInfoToken GetGCInfoToken(const METHODTOKEN& MethodToken);
@@ -2876,6 +2876,11 @@ public:
     EECodeInfo(PCODE codeAddress)
     {
         Init(codeAddress);
+    }
+
+    EECodeInfo(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
+    {
+        Init(codeAddress, scanFlag);
     }
 
     // Explicit initialization

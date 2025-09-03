@@ -396,8 +396,8 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
-        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL));
-        if (pRS->_pjit->GetCodeType() == (miManaged | miIL))
+        _ASSERTE(pRS->_pjit->GetCodeType() == (miManaged | miIL) || pRS->_pjit->GetCodeType() == (miManaged | miIL | miOPTIL));
+        if (pRS->_pjit->GetCodeType() == (miManaged | miIL)) // Do this only for Jitted code, not for interpreted code
         {
             // This cast is justified because only EEJitManager's have the code type above.
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
@@ -1180,6 +1180,19 @@ void EEJitManager::SetCpuInfo()
 
     int cpuFeatures = minipal_getcpufeatures();
 
+    if ((cpuFeatures & IntrinsicConstants_Invalid) != 0)
+    {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n"));
+#elif defined(TARGET_ARM64) && (defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_MACCATALYST))
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n"));
+#elif defined(TARGET_ARM64)
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n"));
+#else
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("\nThe current CPU is missing one or more of the baseline instruction sets.\n"));
+#endif
+    }
+
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
@@ -1198,18 +1211,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT512);
     }
 
-    // x86-64-v1
+    // x86-64-v2
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_X86Base);
-    }
-
-    // x86-64-v2
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE42);
     }
 
     // x86-64-v3
@@ -2871,7 +2877,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     if (requestInfo.IsDynamicDomain())
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
-        static_assert_no_msg(CODE_SIZE_ALIGN >= sizeof(void*));
+        static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
     // Scope the lock
@@ -2934,7 +2940,9 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
             DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
 
             // If the IL Stub is a P/Invoke stub, set the CodeHeader's MethodDesc
-            // to be the real target method and not the stub.
+            // to be the real target method and not the stub. This adjustment makes
+            // the stub frame show up with the P/Invoke method identity in stack
+            // traces without any special handling in the stackwalker.
             if (pDMD->IsPInvokeStub())
                 pMDTarget = pDMD->GetILStubResolver()->GetStubTargetMethodDesc();
         }
@@ -3533,7 +3541,12 @@ void EECodeGenManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAlloc
             {
                 pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
             }
-
+#ifdef FEATURE_INTERPRETER
+            if (pAllocator->m_pLastUsedInterpreterDynamicCodeHeap == ((void *) pHeapList))
+            {
+                pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+            }
+#endif // FEATURE_INTERPRETER
             break;
         }
     }
@@ -5052,7 +5065,26 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     }
     CONTRACTL_END
 
-    EECodeInfo codeInfo(currentPC);
+    ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
+#ifdef FEATURE_INTERPRETER
+    RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, scanFlag);
+    if (pRS == NULL)
+        return NULL;
+
+    if (pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            PTR_StubPrecode pStubPrecode = dac_cast<PTR_StubPrecode>(PCODEToPINSTR(currentPC));
+            if (pStubPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                return dac_cast<PTR_MethodDesc>(pStubPrecode->GetMethodDesc());
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
+    EECodeInfo codeInfo(currentPC, scanFlag);
     if (!codeInfo.IsValid())
         return NULL;
     return codeInfo.GetMethodDesc();

@@ -1575,7 +1575,7 @@ namespace System.Reflection
 
                             RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
+                                attributeType.GetProperty(name, type, [])) ??
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 

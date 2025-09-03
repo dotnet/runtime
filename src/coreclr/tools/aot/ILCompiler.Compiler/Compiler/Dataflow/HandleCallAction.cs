@@ -82,7 +82,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                                if (typeInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
                                             }
                                             else
                                             {
@@ -154,7 +155,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
+                                                if (methodInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
                                             }
                                             else
                                             {

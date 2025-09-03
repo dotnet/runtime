@@ -1534,7 +1534,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 #define DLL_NAME "_CorDllMain"
 #define EXE_NAME "_CorExeMain"
 
-    static_assert_no_msg(sizeof(DLL_NAME) == sizeof(EXE_NAME));
+    static_assert(sizeof(DLL_NAME) == sizeof(EXE_NAME));
 
     // Check if we have enough space to hold 2 bytes +
     // _CorExeMain or _CorDllMain and a NULL char
