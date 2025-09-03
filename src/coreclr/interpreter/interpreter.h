@@ -19,7 +19,7 @@
 #include "corhdr.h"
 #include "corjit.h"
 
-#include "inc\interpretershared.h"
+#include "inc/interpretershared.h"
 #include "compiler.h"
 #include "interpconfig.h"
 
