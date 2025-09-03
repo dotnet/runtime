@@ -112,7 +112,6 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
-            CoseKey = new CoseKey(key, signaturePadding, hashAlgorithm);
 #if NET10_0_OR_GREATER
             if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
             {
@@ -122,6 +121,7 @@ namespace System.Security.Cryptography.Cose
                 }
             }
 #endif
+            CoseKey = new CoseKey(key, signaturePadding, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;

@@ -269,8 +269,11 @@ namespace System.Security.Cryptography.Cose
         {
             Debug.Assert(signaturePadding != null);
 
-            if (signaturePadding == RSASignaturePadding.Pss)
+            if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
             {
+#if NET10_0_OR_GREATER
+                Debug.Assert(signaturePadding.PssSaltLength == RSASignaturePadding.PssSaltLengthIsHashLength);
+#endif
                 return hashAlgorithm.Name switch
                 {
                     nameof(HashAlgorithmName.SHA256) => CoseAlgorithm.PS256,

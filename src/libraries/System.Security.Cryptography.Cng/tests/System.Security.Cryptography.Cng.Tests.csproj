@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);TESTING_CNG_IMPLEMENTATION</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="RSACngPkcs8TestsPssSaltLength.cs" />
     <Compile Include="CreateTests.cs" />
     <Compile Include="HandleTests.cs" />
     <Compile Include="OpenTests.cs" />
