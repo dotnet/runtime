@@ -195,7 +195,7 @@
                         Version="2.5.5"
                         PrivateAssets="all"
                         GeneratePathProperty="true" />
-      <NativeBinPlaceItem Include="$(PkgRuntime_MsQuic_Native)\runtimes\osx-$(TargetArchitecture)\native\*" />
+      <NativeBinPlaceItem Include="$(PkgMsQuic_Native)\runtimes\osx-$(TargetArchitecture)\native\*" />
   </ItemGroup>
 
   <ItemGroup Condition="'@(NativeBinplaceItem)' != ''">
