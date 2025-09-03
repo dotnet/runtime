@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAImplementation
     {
-        public sealed partial class RSASecurityTransforms : RSA
+        public sealed partial class RSAAppleCrypto : RSA
         {
             private static RSAParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
             {

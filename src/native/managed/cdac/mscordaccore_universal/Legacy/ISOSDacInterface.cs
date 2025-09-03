@@ -278,12 +278,61 @@ internal struct DacpMethodTableTransparencyData
     public int bIsTreatAsSafe;
 }
 
+internal static class GCConstants
+{
+    public const int DAC_NUMBERGENERATIONS = 4;
+}
+
 internal struct DacpGcHeapData
 {
     public int bServerMode;
     public int bGcStructuresValid;
     public uint HeapCount;
     public uint g_max_generation;
+}
+
+internal struct DacpGenerationData
+{
+    public ClrDataAddress start_segment;
+    public ClrDataAddress allocation_start;
+
+    // These are examined only for generation 0, otherwise NULL
+    public ClrDataAddress allocContextPtr;
+    public ClrDataAddress allocContextLimit;
+}
+
+internal struct DacpGcHeapDetails
+{
+    public ClrDataAddress heapAddr; // Only filled in server mode, otherwise NULL
+    public ClrDataAddress alloc_allocated;
+
+    public ClrDataAddress mark_array;
+    public ClrDataAddress current_c_gc_state;
+    public ClrDataAddress next_sweep_obj;
+    public ClrDataAddress saved_sweep_ephemeral_seg;
+    public ClrDataAddress saved_sweep_ephemeral_start;
+    public ClrDataAddress background_saved_lowest_address;
+    public ClrDataAddress background_saved_highest_address;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS)]
+    public struct GenerationDataArray
+    {
+        private DacpGenerationData _;
+    }
+    public GenerationDataArray generation_table;
+
+    public ClrDataAddress ephemeral_heap_segment;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS + 3)]
+    public struct FinalizationDataArray
+    {
+        private ClrDataAddress _;
+    }
+    public FinalizationDataArray finalization_fill_pointers;
+
+    public ClrDataAddress lowest_address;
+    public ClrDataAddress highest_address;
+    public ClrDataAddress card_table;
 }
 
 internal struct DacpSyncBlockData
@@ -323,6 +372,7 @@ internal struct DacpSyncBlockCleanupData
     public ClrDataAddress blockClassFactory;
     public ClrDataAddress blockCCW;
 }
+
 
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
@@ -369,7 +419,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Threads
     [PreserveSig]
-    int GetThreadData(ClrDataAddress thread, DacpThreadData *data);
+    int GetThreadData(ClrDataAddress thread, DacpThreadData* data);
     [PreserveSig]
     int GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread);
     [PreserveSig]
@@ -451,9 +501,9 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
-    int GetGCHeapDetails(ClrDataAddress heap, /*struct DacpGcHeapDetails */ void* details); // wks only
+    int GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details);
     [PreserveSig]
-    int GetGCHeapStaticData(/*struct DacpGcHeapDetails */ void* data);
+    int GetGCHeapStaticData(DacpGcHeapDetails* details);
     [PreserveSig]
     int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
     [PreserveSig]
