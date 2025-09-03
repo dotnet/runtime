@@ -53,6 +53,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AutoPropertyUnrecognizedField.Test();
 
             OneAutoPropAccessor.Test();
+            AutoPropertySyntaxVariations.Test();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -1115,7 +1116,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public Type AutoSet
             {
                 // Annotation does propagate to the backing field, so no warning
-                [UnexpectedWarning("IL2078", producedBy: Tool.Analyzer, "Analyzer does not propagate annotation to backing field")]
                 get { return field; }
                 set;
             }
@@ -1129,6 +1129,40 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 _ = instance.AutoGet;
                 instance.AutoSet = GetUnknownType();
                 _ = instance.AutoSet;
+            }
+        }
+
+        // Validates a number of different auto-property syntax variations to ensure that they are all recognized and the annotation is propagated
+        class AutoPropertySyntaxVariations
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type BodySetter
+            {
+                get;
+                [ExpectedWarning("IL2074", nameof(BodySetter), nameof(GetUnknownType))]
+                set { field = GetUnknownType(); }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+
+            public Type ExpressionSetter
+            {
+                get;
+                [ExpectedWarning("IL2074", nameof(ExpressionSetter), nameof(GetUnknownType))]
+                set => field = GetUnknownType();
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type BodyGetter { get { return field; } set; }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type ExpressionGetter { get => field; set; }
+
+            public static void Test()
+            {
+                var instance = new AutoPropertySyntaxVariations();
+                instance.BodySetter = instance.BodyGetter;
+                instance.ExpressionSetter = instance.ExpressionGetter;
             }
         }
 
