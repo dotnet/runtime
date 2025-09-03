@@ -120,7 +120,7 @@
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.5.0</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
