@@ -53,6 +53,30 @@
 #endif
 
 #if defined(_MSC_VER)
+
+// MSVC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#define I64_HELPER(x) x ## i64
+#define I64(x)        I64_HELPER(x)
+
+#define UI64_HELPER(x) x ## ui64
+#define UI64(x)        UI64_HELPER(x)
+
+#else
+
+// GCC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#define I64_HELPER(x) x ## LL
+#define I64(x)        I64_HELPER(x)
+
+#define UI64_HELPER(x) x ## ULL
+#define UI64(x)        UI64_HELPER(x)
+
+#endif
+
+#if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else
 #define LIBC_CALLBACK

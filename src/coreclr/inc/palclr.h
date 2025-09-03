@@ -173,46 +173,6 @@
 #endif
 
 
-// PAL Numbers
-// Used to ensure cross-compiler compatibility when declaring large
-// integer constants. 64-bit integer constants should be wrapped in the
-// declarations listed here.
-//
-// Each of the #defines here is wrapped to avoid conflicts with pal.h.
-
-#if defined(_MSC_VER)
-
-// MSVC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## i64
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#ifndef UI64
-#define UI64_HELPER(x) x ## ui64
-#define UI64(x)        UI64_HELPER(x)
-#endif
-
-#else
-
-// GCC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## LL
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#ifndef UI64
-#define UI64_HELPER(x) x ## ULL
-#define UI64(x)        UI64_HELPER(x)
-#endif
-
-#endif
-
-
 // PAL SEH
 // Macros for portable exception handling. The Win32 SEH is emulated using
 // these macros and setjmp/longjmp on Unix

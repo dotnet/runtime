@@ -438,7 +438,6 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
 #define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
-#define UI64(_literal) _literal##ULL
 
 class ObjHeader;
 class MethodTable;

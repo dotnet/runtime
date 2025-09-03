@@ -11,12 +11,7 @@
 #ifndef CLRTYPES_H_
 #define CLRTYPES_H_
 
-#if defined(_MSC_VER) && !defined(SOURCE_FORMATTING)
-    // Prefer intsafe.h when available, which defines many of the MAX/MIN
-    // values below (which is why they are in #ifndef blocks).
-    #include <intsafe.h>
-#endif
-
+#include <stdint.h>
 #include "crtwrap.h"
 #include "winwrap.h"
 #include "staticcontract.h"
@@ -26,60 +21,6 @@
 #else
     #define POINTER_BITS (32)
 #endif
-
-// ================================================================================
-// Integral types - use these for all integral types
-// These types are in ALL_CAPS.  Each type has a _MIN and _MAX defined for it.
-// ================================================================================
-
-// --------------------------------------------------------------------------------
-// Use these types for fixed size integers:
-// INT8 UINT8 INT16 UINT16 INT32 UINT32 INT64 UINT64
-// --------------------------------------------------------------------------------
-
-#ifndef INT8_MAX
-    typedef signed char           INT8;
-    typedef unsigned char         UINT8;
-    typedef short                 INT16;
-    typedef unsigned short        UINT16;
-    typedef int                   INT32;
-    typedef unsigned int          UINT32;
-    typedef __int64               INT64;
-    typedef unsigned __int64      UINT64;
-
-    #ifdef _MSC_VER
-        /* These macros must exactly match those in the Windows SDK's intsafe.h */
-        #define INT8_MIN        (-127i8 - 1)
-        #define INT16_MIN       (-32767i16 - 1)
-        #define INT32_MIN       (-2147483647i32 - 1)
-        #define INT64_MIN       (-9223372036854775807i64 - 1)
-
-        #define INT8_MAX        127i8
-        #define INT16_MAX       32767i16
-        #define INT32_MAX       2147483647i32
-        #define INT64_MAX       9223372036854775807i64
-
-        #define UINT8_MAX       0xffui8
-        #define UINT16_MAX      0xffffui16
-        #define UINT32_MAX      0xffffffffui32
-        #define UINT64_MAX      0xffffffffffffffffui64
-    #else
-        #define INT8_MIN        ((INT8)0x80)
-        #define INT16_MIN       ((INT16)0x8000)
-        #define INT32_MIN       ((INT32)0x80000000)
-        #define INT64_MIN       ((INT64) I64(0x8000000000000000))
-
-        #define INT8_MAX        ((INT8)0x7f)
-        #define INT16_MAX       ((INT16)0x7fff)
-        #define INT32_MAX       ((INT32)0x7fffffff)
-        #define INT64_MAX       ((INT64) I64(0x7fffffffffffffff))
-
-        #define UINT8_MAX       ((UINT8)0xffU)
-        #define UINT16_MAX      ((UINT16)0xffffU)
-        #define UINT32_MAX      ((UINT32)0xffffffffU)
-        #define UINT64_MAX      ((UINT64) UI64(0xffffffffffffffff))
-    #endif
-#endif // !INT8_MAX
 
 // UINTX_MINs aren't defined in standard header files,
 // so definition must be separately predicated.
