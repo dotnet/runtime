@@ -10666,9 +10666,7 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP_THREAD_EXISTS(GET_THREAD());
-HCIMPL_PROLOG(ProfileEnter)
+HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
