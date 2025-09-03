@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Calculates the length of the salt for PSS signatures based on the RSA key size and hash algorithm.
         /// </summary>
-        /// <param name="pssSaltLength">The salt lenght used for the padding.</param>
+        /// <param name="pssSaltLength">The salt length used for the padding.</param>
         /// <param name="rsaKeySizeInBits">The key size of the RSA key used.</param>
         /// <param name="hashAlgorithm">The hash algorithm used.</param>
         /// <returns></returns>

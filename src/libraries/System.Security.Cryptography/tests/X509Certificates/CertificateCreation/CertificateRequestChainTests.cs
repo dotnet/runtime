@@ -505,7 +505,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 X509Certificate2 leafCert = null;
                 CertificateRequest request;
 
-                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength); ;
+                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
 
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow;
                 DateTimeOffset notAfter = notBefore.AddHours(1);
