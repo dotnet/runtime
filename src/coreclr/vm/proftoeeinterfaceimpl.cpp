@@ -10842,11 +10842,11 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP();
-HCIMPL_PROLOG(ProfileLeave)
+HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 
