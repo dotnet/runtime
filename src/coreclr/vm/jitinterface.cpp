@@ -10763,8 +10763,8 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
     _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
 
-    InfoAccessType accessType = IAT_PVALUE;
-    LPVOID targetAddr = nullptr;
+    InfoAccessType accessType;
+    LPVOID targetAddr;
 
     MethodDesc* helperMD = NULL;
     VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
@@ -10795,12 +10795,13 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         }
         else
         {
-            hlpFuncEntryPoints[ftnNum] = pfnHelper;
+            VolatileStore(&hlpFuncEntryPoints[ftnNum], pfnHelper);
         }
-        targetAddr = pfnHelper;
+
+        targetAddr = (LPVOID)pfnHelper;
     }
 
-#else // FEATURE_PORTABLE_ENTRYPOINTS
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (helperDef.IsDynamicHelper(&dynamicFtnNum))
     {
@@ -10900,9 +10901,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     accessType = IAT_VALUE;
     targetAddr = (LPVOID)pfnHelper;
 
+exit: ;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-exit: ;
     if (pNativeEntrypoint != NULL)
     {
         pNativeEntrypoint->accessType = accessType;
