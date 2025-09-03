@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -15,18 +13,18 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
+    private readonly TargetPointer _syncBlockCache;
 
-    internal SyncBlock_1(Target target, TargetPointer syncTableEntries)
+    internal SyncBlock_1(Target target, TargetPointer syncTableEntries, TargetPointer syncBlockCache)
     {
         _target = target;
         _syncTableEntries = syncTableEntries;
+        _syncBlockCache = syncBlockCache;
     }
 
     public uint GetSyncBlockCount()
     {
-        TargetPointer syncBlockCacheAddr = _target.ReadPointer(
-            _target.ReadGlobalPointer(Constants.Globals.SyncBlockCache));
-        SyncBlockCache syncBlockCache = _target.ProcessedData.GetOrAdd<SyncBlockCache>(syncBlockCacheAddr);
+        SyncBlockCache syncBlockCache = _target.ProcessedData.GetOrAdd<SyncBlockCache>(_syncBlockCache);
 
         // Return the count of sync blocks which have ever been used
         return syncBlockCache.FreeSyncTableIndex - 1;
@@ -42,6 +40,13 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         if (entry.SyncBlock != TargetPointer.Null)
         {
             Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(entry.SyncBlock);
+
+            // monitorHeldState lsb is 1 if locked, 0 if unlocked
+            // the higher bits contain the waiter count shifted up
+            bool locked = (syncBlock.Monitor.LockState & IS_LOCKED_MASK) == IS_LOCKED_MASK;
+            uint waiterCount = syncBlock.Monitor.LockState >> (int)WAITER_COUNT_SHIFT;
+            uint monitorHeldState = (locked ? 0x1u : 0x0u) | (waiterCount << 1);
+
             return new SyncBlockData
             {
                 IsFree = false,
@@ -49,7 +54,7 @@ internal readonly struct SyncBlock_1 : ISyncBlock
                 SyncBlock = entry.SyncBlock,
                 RecursionLevel = syncBlock.Monitor.RecursionLevel,
                 HoldingThreadId = syncBlock.Monitor.HoldingThreadId,
-                MonitorHeldState = (syncBlock.Monitor.LockState & IS_LOCKED_MASK) | ((syncBlock.Monitor.LockState >> (int)WAITER_COUNT_SHIFT) << 1)
+                MonitorHeldState = monitorHeldState,
             };
         }
 
@@ -72,15 +77,11 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
         uint additionalThreadCount = 0;
         Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(entry.SyncBlock);
-        if (syncBlock.Link != TargetPointer.Null)
+        TargetPointer pLink = syncBlock.Link;
+        while (pLink != TargetPointer.Null && additionalThreadCount < maximumIterations)
         {
-            TargetPointer pLink = syncBlock.Link;
-            do
-            {
-                additionalThreadCount += 1;
-                pLink = _target.ReadPointer(pLink);
-            }
-            while (pLink != TargetPointer.Null && additionalThreadCount < maximumIterations);
+            additionalThreadCount += 1;
+            pLink = _target.ReadPointer(pLink);
         }
 
         return additionalThreadCount;

@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public class SyncBlockData
+public readonly struct SyncBlockData
 {
     public bool IsFree { get; init; }
     public TargetPointer SyncBlock { get; init; }

@@ -12,9 +12,12 @@ public sealed class SyncBlockFactory : IContractFactory<ISyncBlock>
         TargetPointer syncTableEntries = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
 
+        TargetPointer syncBlockCacheAddr = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.SyncBlockCache));
+
         return version switch
         {
-            1 => new SyncBlock_1(target, syncTableEntries),
+            1 => new SyncBlock_1(target, syncTableEntries, syncBlockCacheAddr),
             _ => default(SyncBlock),
         };
     }
