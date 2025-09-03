@@ -80,7 +80,7 @@ namespace System.Reflection.Tests
         {
             var argument = new CustomAttributeTypedArgument(new [] { new CustomAttributeTypedArgument(0) });
 
-            Assert.Equal("new CustomAttributeTypedArgument[1] { 0 }", argument.ToString());
+            Assert.Equal("new CustomAttributeTypedArgument[1] { (Int32)0 }", argument.ToString());
         }
 
         [Fact]

@@ -19,16 +19,16 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(argumentType);
 
-            _value = CanonicalizeValue(value);
             _argumentType = argumentType;
+            _value = CanonicalizeValue(argumentType, value);
         }
 
         public CustomAttributeTypedArgument(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _value = CanonicalizeValue(value);
             _argumentType = value.GetType();
+            _value = CanonicalizeValue(_argumentType, value);
         }
 
 
@@ -96,13 +96,23 @@ namespace System.Reflection
         public Type ArgumentType => _argumentType;
         public object? Value => _value;
 
-        private static object? CanonicalizeValue(object? value)
+        private static object? CanonicalizeValue(Type argumentType, object? value)
         {
             if (value is Enum e)
                 return e.GetValue();
 
-            if (value is CustomAttributeTypedArgument[] array)
-                return Array.AsReadOnly(array);
+            // Handle arrays: if the argument type is an array and the value is an array,
+            // we need to wrap each element in CustomAttributeTypedArgument and return ReadOnlyCollection
+            if (argumentType.IsArray && value is Array array)
+            {
+                Type elementType = argumentType.GetElementType()!;
+                var typedArgs = new CustomAttributeTypedArgument[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    typedArgs[i] = new CustomAttributeTypedArgument(elementType, array.GetValue(i));
+                }
+                return Array.AsReadOnly(typedArgs);
+            }
 
             return value;
         }
