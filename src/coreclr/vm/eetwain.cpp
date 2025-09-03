@@ -2211,53 +2211,32 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 
     ClrCaptureContext(pContext);
 
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = GetSSPForFrameOnCurrentStack(GetIP(pContext));
-#endif // HOST_AMD64 && HOST_WINDOWS
-
-    CONTEXT firstNativeContext;
-    size_t firstNativeSSP;
-
-    // Find the native frames chain that contains the resumeSP
+    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
+    // the resumeSP
     do
     {
-        // Skip all managed frames upto a native frame
-        while (ExecutionManager::IsManagedCode(GetIP(pContext)))
+        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
         {
+            // JIT / AOT generated managed code
             Thread::VirtualUnwindCallFrame(pContext);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
-
-        // Save the first native context after managed frames. This will be the context where we throw the resume after catch exception from.
-        firstNativeContext = *pContext;
-        firstNativeSSP = targetSSP;
-        // Move over all native frames until we move over the resumeSP
-        while ((GetSP(pContext) < resumeSP) && !ExecutionManager::IsManagedCode(GetIP(pContext)))
+        else
         {
 #ifdef TARGET_UNIX
             PAL_VirtualUnwind(pContext, NULL);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
     }
-    while (GetSP(pContext) < resumeSP);
+    while (GetSP(pContext) != targetSP);
 
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &firstNativeContext, firstNativeSSP, resumeSP, resumeIP);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
+#endif    
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

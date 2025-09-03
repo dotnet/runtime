@@ -158,6 +158,25 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
 #endif // !TARGET_WASM
 
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+NOINLINE void InvokePInvokeMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    {
+        GCX_PREEMP();
+        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+    }
+
+    inlinedCallFrame.Pop();
+}
+
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -213,23 +232,38 @@ static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod *pMethod, int32_t _data)
+template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
 {
-    InterpHelperData data;
-    memcpy(&data, &_data, sizeof(int32_t));
+    InterpHelperData data{};
+    memcpy(&data, &_data, sizeof(_data));
 
-    void *addr = pMethod->pDataItems[data.addressDataItemIndex];
-    switch (data.accessType) {
+    void* addr = pMethod->pDataItems[data.addressDataItemIndex];
+    switch (data.accessType)
+    {
         case IAT_VALUE:
-            return (THelper)addr;
+            break;
         case IAT_PVALUE:
-            return *(THelper *)addr;
+            addr = *(void**)addr;
+            break;
         case IAT_PPVALUE:
-            return **(THelper **)addr;
+            addr = **(void***)addr;
+            break;
         default:
             COMPlusThrowHR(COR_E_EXECUTIONENGINE);
-            return (THelper)nullptr;
+            break;
     }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (!PortableEntryPoint::IsNativeEntryPoint((TADDR)addr))
+    {
+        _ASSERTE(pILTargetMethod != NULL);
+        *pILTargetMethod = PortableEntryPoint::GetMethodDesc((TADDR)addr);
+        return NULL; // Return null to interpret this entrypoint
+    }
+    addr = PortableEntryPoint::GetActualCode((TADDR)addr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return (THelper)addr;
 }
 
 // At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
@@ -496,6 +530,8 @@ void PrepareInitialCode(MethodDesc *pMD)
     PAL_ENDTRY
 }
 
+UMEntryThunkData * GetMostRecentUMEntryThunkData();
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -546,6 +582,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool isTailcall = false;
     MethodDesc* targetMethod;
 
+    // Save the lowest SP in the current method so that we can identify it by that during stackwalk
+    pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+
 MAIN_LOOP:
     try
     {
@@ -575,6 +614,10 @@ MAIN_LOOP:
                 case INTOP_MEMBAR:
                     MemoryBarrier();
                     ip++;
+                    break;
+                case INTOP_STORESTUBCONTEXT:
+                    LOCAL_VAR(ip[1], void*) = GetMostRecentUMEntryThunkData();
+                    ip += 2;
                     break;
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
@@ -646,6 +689,7 @@ MAIN_LOOP:
                 // Normal moves between vars
                 case INTOP_MOV_4: MOV(int32_t, int32_t); break;
                 case INTOP_MOV_8: MOV(int64_t, int64_t); break;
+#undef MOV
 
                 case INTOP_MOV_VT:
                     memmove(stack + ip[1], stack + ip[2], ip[3]);
@@ -1016,6 +1060,7 @@ MAIN_LOOP:
                 case INTOP_BRTRUE_I8:
                     BR_UNOP(int64_t, != 0);
                     break;
+#undef BR_UNOP
 
 #define BR_BINOP_COND(cond) \
     if (cond)               \
@@ -1226,6 +1271,8 @@ MAIN_LOOP:
                     BR_BINOP_COND(isunordered(d1, d2) || d1 < d2);
                     break;
                 }
+#undef BR_BINOP_COND
+#undef BR_BINOP
 
                 case INTOP_ADD_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
@@ -1682,6 +1729,7 @@ MAIN_LOOP:
                 case INTOP_CLT_UN_R8:
                     CMP_BINOP_FP(double, <, 1);
                     break;
+#undef CMP_BINOP_FP
 
 #define LDIND(dtype, ftype)                                 \
     do {                                                    \
@@ -1715,6 +1763,7 @@ MAIN_LOOP:
                 case INTOP_LDIND_R8:
                     LDIND(double, double);
                     break;
+#undef LDIND
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
@@ -1757,6 +1806,7 @@ MAIN_LOOP:
                 case INTOP_STIND_R8:
                     STIND(double, double);
                     break;
+#undef STIND
                 case INTOP_STIND_O:
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
@@ -1958,20 +2008,14 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InlinedCallFrame inlinedCallFrame;
-                    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
-                    inlinedCallFrame.m_pCallSiteSP = pFrame;
-                    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-                    inlinedCallFrame.m_pThread = GetThread();
-                    inlinedCallFrame.m_Datum = NULL;
-                    inlinedCallFrame.Push();
-
+                    if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
-
-                    inlinedCallFrame.Pop();
+                    else
+                    {
+                        InvokePInvokeMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                    }
 
                     break;
                 }
@@ -2074,6 +2118,8 @@ CALL_INTERP_METHOD:
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
+                                // Save the lowest SP in the current method so that we can identify it by that during stackwalk
+                                pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                             }
                             pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
                             pFrame = pChildFrame;
@@ -2169,6 +2215,18 @@ CALL_INTERP_METHOD:
                         COMPlusThrow(kNullReferenceException);
                     else
                         memcpyNoGCRefs(dst, src, size);
+                    ip += 4;
+                    break;
+                }
+                case INTOP_INITBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    uint8_t value = LOCAL_VAR(ip[2], uint8_t);
+                    uint32_t size = LOCAL_VAR(ip[3], uint32_t);
+                    if (size && !dst)
+                        COMPlusThrow(kNullReferenceException);
+                    else
+                        memset(dst, value, size);
                     ip += 4;
                     break;
                 }
@@ -2349,6 +2407,7 @@ do {                                                                           \
                     LDELEM(double, double);
                     break;
                 }
+#undef LDELEM
                 case INTOP_LDELEM_REF:
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
@@ -2425,6 +2484,16 @@ do {                                                                           \
                     STELEM(int64_t, int64_t);
                     break;
                 }
+                case INTOP_STELEM_U1:
+                {
+                    STELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_STELEM_U2:
+                {
+                    STELEM(int32_t, uint16_t);
+                    break;
+                }
                 case INTOP_STELEM_R4:
                 {
                     STELEM(float, float);
@@ -2435,6 +2504,7 @@ do {                                                                           \
                     STELEM(double, double);
                     break;
                 }
+#undef STELEM
                 case INTOP_STELEM_REF:
                 {
                     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);
@@ -2613,6 +2683,31 @@ do                                                                      \
                     COMPARE_EXCHANGE(int64_t);
                     break;
                 }
+#undef COMPARE_EXCHANGE
+
+#define EXCHANGE(type)                                                  \
+do                                                                      \
+{                                                                       \
+    type* dst = LOCAL_VAR(ip[2], type*);                                \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type old = InterlockedExchangeT(dst, newValue);                     \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 4;                                                            \
+} while (0)
+
+                case INTOP_EXCHANGE_I4:
+                {
+                    EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_EXCHANGE_I8:
+                {
+                    EXCHANGE(int64_t);
+                    break;
+                }
+#undef EXCHANGE
 
                 case INTOP_CALL_FINALLY:
                 {
@@ -2628,6 +2723,8 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
+                            // Save the lowest SP in the current method so that we can identify it by that during stackwalk
+                            pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);

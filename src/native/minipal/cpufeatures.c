@@ -502,16 +502,25 @@ int minipal_getcpufeatures(void)
     int64_t valueFromSysctl = 0;
     size_t sz = sizeof(valueFromSysctl);
 
-    if ((sysctlbyname("hw.optional.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0) ||
-        (sysctlbyname("hw.optional.arm.FEAT_LSE", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0))
+    if (((sysctlbyname("hw.optional.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0)) &&
+        ((sysctlbyname("hw.optional.arm.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0)))
     {
-        // One of the baseline ISAs is not supported
+        // We need to check both for AdvSIMD support as different OS versions may use a different name. However,
+        // if both checks fail then the baseline ISA is not supported.
         result |= IntrinsicConstants_Invalid;
     }
-    else
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LSE", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
     {
         result |= ARM64IntrinsicConstants_Atomics;
     }
+#if defined(HOST_OSX) || defined(HOST_MACCATALYST)
+    else
+    {
+        // For osx-arm64 and maccatalyst, we know that the baseline is apple-m1
+        result |= IntrinsicConstants_Invalid;
+    }
+#endif // HOST_OSX || HOST_MACCATALYST
 
     if ((sysctlbyname("hw.optional.arm.FEAT_AES", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Aes;

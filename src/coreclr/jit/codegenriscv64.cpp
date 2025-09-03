@@ -1460,7 +1460,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         ssize_t imm = -16;
 
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        static_assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
         size_t stpCount = amount / (REGSIZE_BYTES * 2);
         if (compiler->info.compInitMem)
