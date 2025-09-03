@@ -2354,7 +2354,7 @@ public:
         GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
         unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
 
-        if (lengthNode->TypeGet() != TYP_I_IMPL)
+        if (!lengthNode->TypeIs(TYP_I_IMPL))
         {
             lengthNode = compiler->gtNewCastNode(TYP_I_IMPL, lengthNode, /* isUnsigned */ false, TYP_I_IMPL);
         }
