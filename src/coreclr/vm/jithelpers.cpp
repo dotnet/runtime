@@ -2556,9 +2556,9 @@ bool VMHELPDEF::IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(dynamicFtnNum != nullptr);
 
-    bool isDynamic;
-    *dynamicFtnNum = (DynamicCorInfoHelpFunc)((size_t)pfnHelper - 1);
+    size_t dynamicFtnNumMaybe = (size_t)pfnHelper - 1;
 
+    bool isDynamic;
 #ifdef TARGET_WASM
     // Functions on Wasm are ordinal values, not memory addresses.
     // On Wasm, we need some metadata to indicate whether the helper is a dynamic helper.
@@ -2566,12 +2566,15 @@ bool VMHELPDEF::IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const
 #else // !TARGET_WASM
     // If pfnHelper is an index into the dynamic helper table, it should be less
     // than DYNAMIC_CORINFO_HELP_COUNT.
-    isDynamic = (*dynamicFtnNum < DYNAMIC_CORINFO_HELP_COUNT);
+    isDynamic = (dynamicFtnNumMaybe < DYNAMIC_CORINFO_HELP_COUNT);
 #endif // TARGET_WASM
 
 #if defined(_DEBUG) || defined(TARGET_WASM)
     _ASSERTE(isDynamic == _isDynamicHelper);
 #endif // _DEBUG || TARGET_WASM
+
+    if (isDynamic)
+        *dynamicFtnNum = (DynamicCorInfoHelpFunc)dynamicFtnNumMaybe;
 
     return isDynamic;
 }
