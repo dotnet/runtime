@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -29,7 +28,7 @@ internal readonly struct GC_1 : IGC
     string[] IGC.GetGCIdentifiers()
     {
         string gcIdentifiers = _target.ReadGlobalString(Constants.Globals.GCIdentifiers);
-        return gcIdentifiers.Split(", ");
+        return gcIdentifiers.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     uint IGC.GetGCHeapCount()
@@ -70,6 +69,16 @@ internal readonly struct GC_1 : IGC
         if (!IsBackgroundGCEnabled())
             return 0;
         return _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.CurrentGCState));
+    }
+
+    int IGC.GetDynamicAdaptationMode()
+    {
+        // not enabled = -1
+        // dynamic_adaptation_default = 0,
+        // dynamic_adaptation_to_application_sizes = 1,
+        if (!IsDatasEnabled())
+            return -1;
+        return _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.DynamicAdaptationMode));
     }
 
     IEnumerable<TargetPointer> IGC.GetGCHeaps()
@@ -203,5 +212,11 @@ internal readonly struct GC_1 : IGC
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
         return identifiers.Contains(GCIdentifiers.Background);
+    }
+
+    private bool IsDatasEnabled()
+    {
+        string[] identifiers = ((IGC)this).GetGCIdentifiers();
+        return identifiers.Contains(GCIdentifiers.DynamicHeapCount);
     }
 }

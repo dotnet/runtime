@@ -15,6 +15,8 @@ public static class GCIdentifiers
     public const string Segments = "segments";
 
     public const string Background = "background";
+
+    public const string DynamicHeapCount = "dynamic_heap";
 }
 
 public readonly struct GCHeapData
@@ -55,6 +57,7 @@ public interface IGC : IContract
     uint GetMaxGeneration() => throw new NotImplementedException();
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr) => throw new NotImplementedException();
     uint GetCurrentGCState() => throw new NotImplementedException();
+    int GetDynamicAdaptationMode() => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 
     /* WKS only APIs */

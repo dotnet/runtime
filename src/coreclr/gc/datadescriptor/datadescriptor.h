@@ -41,6 +41,9 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 #ifdef BACKGROUND_GC
     static constexpr c_gc_state* CurrentGCState = const_cast<c_gc_state*>(&GC_NAMESPACE::gc_heap::current_c_gc_state);
 #endif // BACKGROUND_GC
+#ifdef DYNAMIC_HEAP_COUNT
+    static constexpr int* DynamicAdaptationMode = &GC_NAMESPACE::gc_heap::dynamic_adaptation_mode;
+#endif // DYNAMIC_HEAP_COUNT
 #ifdef SERVER_GC
     static constexpr GC_NAMESPACE::gc_heap*** Heaps = &GC_NAMESPACE::gc_heap::g_heaps;
 #endif // SERVER_GC

@@ -78,15 +78,22 @@ CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_h
 #define HEAP_TYPE segments
 #endif // USE_REGIONS
 
+#ifdef BACKGROUND_GC
+#define BACKGROUND_TYPE background
+#else // BACKGROUND_GC
+#define BACKGROUND_TYPE
+#endif // BACKGROUND_GC
+
+#ifdef DYNAMIC_HEAP_COUNT
+#define DYNAMIC_HEAP_TYPE dynamic_heap
+#else // DYNAMIC_HEAP_COUNT
+#define DYNAMIC_HEAP_TYPE
+#endif // DYNAMIC_HEAP_COUNT
+
 // CDAC_GLOBAL_STRING takes a single value argument.
 // To avoid issues with commas in the string we wrap the input string in a macro.
 #define GC_IDENTIFIER(...) __VA_ARGS__ // GC_IDENTIFIER(gc, heap) expands to: gc, heap
-
-#ifdef BACKGROUND_GC
-CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER(GC_TYPE, HEAP_TYPE, background))
-#else
-CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER(GC_TYPE, HEAP_TYPE))
-#endif // BACKGROUND_GC
+CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER(GC_TYPE, HEAP_TYPE, BACKGROUND_TYPE, DYNAMIC_HEAP_TYPE))
 
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
 CDAC_GLOBAL_POINTER(StructureInvalidCount, &GCScan::m_GcStructuresInvalidCnt)
@@ -99,5 +106,9 @@ CDAC_GLOBAL_POINTER(Heaps, cdac_data<GC_NAMESPACE::gc_heap>::Heaps)
 #ifdef BACKGROUND_GC
 CDAC_GLOBAL_POINTER(CurrentGCState, cdac_data<GC_NAMESPACE::gc_heap>::CurrentGCState)
 #endif // BACKGROUND_GC
+
+#ifdef DYNAMIC_HEAP_COUNT
+CDAC_GLOBAL_POINTER(DynamicAdaptationMode, &GC_NAMESPACE::gc_heap::dynamic_adaptation_mode)
+#endif // DYNAMIC_HEAP_COUNT
 
 CDAC_GLOBALS_END()
