@@ -13,7 +13,6 @@ internal readonly struct Object_1 : IObject
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
-    private readonly TargetPointer _syncTableEntries;
 
     private static class SyncBlockValue
     {
@@ -30,13 +29,12 @@ internal readonly struct Object_1 : IObject
         public const uint SyncBlockIndexMask = (1 << 26) - 1;
     }
 
-    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
+    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable)
     {
         _target = target;
         _methodTableOffset = methodTableOffset;
         _stringMethodTable = stringMethodTable;
         _objectToMethodTableUnmask = objectToMethodTableUnmask;
-        _syncTableEntries = syncTableEntries;
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)

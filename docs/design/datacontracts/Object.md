@@ -29,8 +29,6 @@ Data descriptors used:
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
-| `SyncBlock` | `InteropInfo` | Optional `InteropSyncBlockInfo` for the sync block |
-| `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -39,13 +37,13 @@ Global variables used:
 | `ObjectHeaderSize` | uint32 | Size of the object header (sync block and alignment) |
 | `ObjectToMethodTableUnmask` | uint8 | Bits to clear for converting to a method table address |
 | `StringMethodTable` | TargetPointer | The method table for System.String |
-| `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
 
 Contracts used:
 | Contract Name |
 | --- |
 | `RuntimeTypeSystem` |
+| `SyncBlock` |
 
 ``` csharp
 TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -111,18 +109,8 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
 
     // Get the offset into the sync table entries
     uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
-    ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
 
-    TargetPointer syncBlock = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
-    if (syncBlock == TargetPointer.Null)
-        return false;
-
-    TargetPointer interopInfo = target.ReadPointer(syncBlock + /* SyncTableEntry::InteropInfo offset */);
-    if (interopInfo == TargetPointer.Null)
-        return false;
-
-    rcw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
-    ccw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
-    return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
+    Contracts.ISyncBlock sync = target.Contracts.SyncBlock;
+    return sync.TryGetBuiltInComData(index, out rcw, out ccw, out TargetPointer _);
 }
 ```
