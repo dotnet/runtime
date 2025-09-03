@@ -918,7 +918,7 @@ namespace System.Net.Security
 
                             refreshCredentialNeeded = true;
                             cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
-                            
+
                             token = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
