@@ -11,6 +11,14 @@ using static System.IO.Compression.ZLibNative;
 
 namespace System.IO.Compression
 {
+    /// <remarks>
+    /// The exact compressed byte sequence returned by DeflateStream can vary
+    /// between.NET releases, platforms, or underlying compression engines.
+    /// Changes in zlib versions, algorithm tweaks, or performance optimizations
+    /// may produce different outputs for the same input data.
+    /// Despite these variations, any data compressed by DeflateStream
+    /// can always be decompressed to its original form without loss.
+    /// </remarks>
     public partial class DeflateStream : Stream
     {
         private const int DefaultBufferSize = 8192;
