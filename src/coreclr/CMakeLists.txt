@@ -204,10 +204,10 @@ include_directories("classlibnative/bcltype")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
+include_directories("interpreter/inc")
 include_directories("minipal")
 
 if(FEATURE_INTERPRETER)
-  include_directories(interpreter/inc)
   add_subdirectory(interpreter)
 endif()
 
