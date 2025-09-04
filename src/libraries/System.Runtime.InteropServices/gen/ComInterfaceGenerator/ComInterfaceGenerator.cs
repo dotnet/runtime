@@ -64,10 +64,6 @@ namespace Microsoft.Interop
                         List<DiagnosticInfo> diags = new();
                         foreach (var (syntax, symbol) in input.Left)
                         {
-                            //if (d == default)
-                            //{
-                            //    continue;
-                            //}
                             var cii = ComInterfaceInfo.From(symbol, syntax, stubEnvironment, CancellationToken.None);
                             if (cii.HasDiagnostic)
                             {
@@ -76,7 +72,7 @@ namespace Microsoft.Interop
                             }
                             if (cii.HasValue)
                                 interfaceInfos.Add(cii.Value);
-                            var externalBase = ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(d.Symbol);
+                            var externalBase = ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(symbol);
                             // Avoid adding duplicates if multiple interfaces derive from the same external interface.
                             if (!externalBase.IsDefaultOrEmpty)
                             {
