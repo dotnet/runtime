@@ -379,20 +379,19 @@ namespace System.IO.Compression
             public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? string.Empty;
         }
 
-            private static string GenerateExceptionMessage(ErrorCode nativeErrorCode)
-                => nativeErrorCode switch
-                {
-                    // Not enough memory
-                    ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
+        private static string GenerateExceptionMessage(ErrorCode nativeErrorCode)
+            => nativeErrorCode switch
+            {
+                // Not enough memory
+                ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
 
-                    // zlib library is incompatible with the version assumed
-                    ErrorCode.VersionError => SR.ZLibErrorVersionMismatch,
+                // zlib library is incompatible with the version assumed
+                ErrorCode.VersionError => SR.ZLibErrorVersionMismatch,
 
-                    // Parameters are invalid
-                    ErrorCode.StreamError => SR.ZLibErrorIncorrectInitParameters,
+                // Parameters are invalid
+                ErrorCode.StreamError => SR.ZLibErrorIncorrectInitParameters,
 
-                    _ => SR.Format(SR.ZLibErrorUnexpected, (int)nativeErrorCode)
-                };
-        }
+                _ => SR.Format(SR.ZLibErrorUnexpected, (int)nativeErrorCode)
+            };
     }
 }
