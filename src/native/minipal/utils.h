@@ -76,6 +76,12 @@
 
 #endif
 
+#ifdef _MSC_VER
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
+#endif
+
 #if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else
