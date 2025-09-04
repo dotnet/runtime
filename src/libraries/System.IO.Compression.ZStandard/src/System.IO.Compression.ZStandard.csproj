@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
+
+    <!--missing xml comments on net10.0 (not supported stubs)-->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IOCompressionZStandard_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="$(CommonPath)Interop\Interop.ZStd.cs" />
+    <Compile Include="System\IO\Compression\ZStandardCompressionOptions.cs" />
+    <Compile Include="System\IO\Compression\ZStandardStream.cs" />
+    <Compile Include="System\IO\Compression\ZStandardEncoder.cs" />
+    <Compile Include="System\IO\Compression\ZStandardDecoder.cs" />
+    <Compile Include="System\IO\Compression\ZStandardDictionary.cs" />
+    <Compile Include="System\IO\Compression\ZStandardUtils.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZStdHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeZStdHandle.cs" />
+  </ItemGroup>
+
+  <!-- Windows specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <!-- Unix specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' ">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>
