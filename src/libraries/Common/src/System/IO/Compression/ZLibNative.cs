@@ -190,11 +190,7 @@ namespace System.IO.Compression
                     throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
                 }
 
-                if (errC == ErrorCode.Ok)
-                {
-                    return zLibStreamHandle;
-                }
-                else
+                if (errC is not ErrorCode.Ok)
                 {
                     string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
                     string exceptionMessage = GenerateExceptionMessage(errC);
@@ -202,6 +198,8 @@ namespace System.IO.Compression
                     zLibStreamHandle.Dispose();
                     throw new ZLibException(exceptionMessage, "deflateInit2_", (int)errC, zlibErrorMessage);
                 }
+
+                return zLibStreamHandle;
             }
 
             public static ZLibStreamHandle CreateForInflate(int windowBits)
@@ -219,11 +217,7 @@ namespace System.IO.Compression
                     throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
                 }
 
-                if (errC == ErrorCode.Ok)
-                {
-                    return zLibStreamHandle;
-                }
-                else
+                if (errC is not ErrorCode.Ok)
                 {
                     string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
                     string exceptionMessage = GenerateExceptionMessage(errC);
@@ -231,6 +225,8 @@ namespace System.IO.Compression
                     zLibStreamHandle.Dispose();
                     throw new ZLibException(exceptionMessage, "inflateInit2_", (int)errC, zlibErrorMessage);
                 }
+
+                return zLibStreamHandle;
             }
 
             public override bool IsInvalid
