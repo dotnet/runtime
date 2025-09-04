@@ -4,12 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// IMPORTANT:
-// ConcurrentQueue and ConcurrentDictionary exist in the coreLib assembly.
-// When moving any more types from System.Collections.Concurrent to coreLib, ensure moving this type outside #if !BUILDING_CORELIB_REFERENCE block.
-// otherwise, the moved type will not be included in the the coreLib ref assembly and will produce build break when trying compile System.Collections.Concurrent
-// as complied as partial facade and require to find the moved types in the coreLib ref assembly.
-
 #if !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Concurrent
 {
