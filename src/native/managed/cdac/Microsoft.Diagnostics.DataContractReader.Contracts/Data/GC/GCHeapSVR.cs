@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class GCHeap_svr : IData<GCHeap_svr>
+internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 {
-    static GCHeap_svr IData<GCHeap_svr>.Create(Target target, TargetPointer address) => new GCHeap_svr(target, address);
-    public GCHeap_svr(Target target, TargetPointer address)
+    static GCHeapSVR IData<GCHeapSVR>.Create(Target target, TargetPointer address) => new GCHeapSVR(target, address);
+    public GCHeapSVR(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.GCHeap);
 
@@ -30,6 +31,15 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
             SavedSweepEphemeralStart = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralStart)].Offset);
 
         OOMData = target.ProcessedData.GetOrAdd<OOMHistory>(address + (ulong)type.Fields[nameof(OOMData)].Offset);
+
+        InternalRootArray = address + (ulong)type.Fields[nameof(InternalRootArray)].Offset;
+        InternalRootArrayIndex = target.ReadNUInt(address + (ulong)type.Fields[nameof(InternalRootArrayIndex)].Offset);
+        HeapAnalyzeSuccess = target.Read<int>(address + (ulong)type.Fields[nameof(HeapAnalyzeSuccess)].Offset) != 0;
+
+        InterestingData = address + (ulong)type.Fields[nameof(InterestingData)].Offset;
+        CompactReasons = address + (ulong)type.Fields[nameof(CompactReasons)].Offset;
+        ExpandMechanisms = address + (ulong)type.Fields[nameof(ExpandMechanisms)].Offset;
+        InterestingMechanismBits = address + (ulong)type.Fields[nameof(InterestingMechanismBits)].Offset;
     }
 
     public TargetPointer MarkArray { get; }
@@ -46,4 +56,13 @@ internal sealed class GCHeap_svr : IData<GCHeap_svr>
     public TargetPointer? SavedSweepEphemeralStart { get; }
 
     public OOMHistory OOMData { get; }
+
+    public TargetPointer InternalRootArray { get; }
+    public TargetNUInt InternalRootArrayIndex { get; }
+    public bool HeapAnalyzeSuccess { get; }
+
+    public TargetPointer InterestingData { get; }
+    public TargetPointer CompactReasons { get; }
+    public TargetPointer ExpandMechanisms { get; }
+    public TargetPointer InterestingMechanismBits { get; }
 }

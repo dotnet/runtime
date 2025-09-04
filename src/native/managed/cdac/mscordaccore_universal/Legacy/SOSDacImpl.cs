@@ -1110,10 +1110,103 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForTypes(types, count, ppHandleEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHeapAnalyzeStaticData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeStaticData(data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (addr == 0 || data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // doesn't make sense to call this on WKS mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            GCHeapData heapData = gc.SVRGetHeapData(addr.ToTargetPointer(_target));
+
+            data->heapAddr = addr;
+            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
+            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
+            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpGcHeapAnalyzeData dataLocal = default;
+            int hrLocal = _legacyImpl.GetHeapAnalyzeData(addr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->heapAddr == dataLocal.heapAddr, $"cDAC: {data->heapAddr:x}, DAC: {dataLocal.heapAddr:x}");
+                Debug.Assert(data->internal_root_array == dataLocal.internal_root_array, $"cDAC: {data->internal_root_array:x}, DAC: {dataLocal.internal_root_array:x}");
+                Debug.Assert(data->internal_root_array_index == dataLocal.internal_root_array_index, $"cDAC: {data->internal_root_array_index}, DAC: {dataLocal.internal_root_array_index}");
+                Debug.Assert(data->heap_analyze_success == dataLocal.heap_analyze_success, $"cDAC: {data->heap_analyze_success}, DAC: {dataLocal.heap_analyze_success}");
+            }
+        }
+#endif
+
+        return hr;
+    }
+    int ISOSDacInterface.GetHeapAnalyzeStaticData(DacpGcHeapAnalyzeData* data)
+    {
+        if (data == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // doesn't make sense to call this on SVR mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            // For workstation GC, use WKSGetHeapData
+            GCHeapData heapData = gc.WKSGetHeapData();
+
+            data->heapAddr = 0; // Not applicable for static data
+            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
+            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
+            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpGcHeapAnalyzeData dataLocal = default;
+            int hrLocal = _legacyImpl.GetHeapAnalyzeStaticData(&dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->heapAddr == dataLocal.heapAddr, $"cDAC: {data->heapAddr:x}, DAC: {dataLocal.heapAddr:x}");
+                Debug.Assert(data->internal_root_array == dataLocal.internal_root_array, $"cDAC: {data->internal_root_array:x}, DAC: {dataLocal.internal_root_array:x}");
+                Debug.Assert(data->internal_root_array_index == dataLocal.internal_root_array_index, $"cDAC: {data->internal_root_array_index}, DAC: {dataLocal.internal_root_array_index}");
+                Debug.Assert(data->heap_analyze_success == dataLocal.heap_analyze_success, $"cDAC: {data->heap_analyze_success}, DAC: {dataLocal.heap_analyze_success}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetHeapSegmentData(seg, data) : HResults.E_NOTIMPL;
 
@@ -2349,7 +2442,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->gc_index = oomData.GCIndex.Value;
             data->fgm = oomData.Fgm;
             data->size = oomData.Size.Value;
-            data->loh_p = oomData.LohP ? 1 : 0;
+            data->loh_p = oomData.LohP ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -2399,7 +2492,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->gc_index = oomData.GCIndex.Value;
             data->fgm = oomData.Fgm;
             data->size = oomData.Size.Value;
-            data->loh_p = oomData.LohP ? 1 : 0;
+            data->loh_p = oomData.LohP ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -116,41 +117,7 @@ internal readonly struct GC_1 : IGC
         if (GetGCType() != GCType.Workstation)
             throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
 
-        TargetPointer markArray = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapMarkArray));
-        TargetPointer nextSweepObj = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapNextSweepObj));
-        TargetPointer backgroundMinSavedAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMinSavedAddr));
-        TargetPointer backgroundMaxSavedAddr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapBackgroundMaxSavedAddr));
-        TargetPointer allocAllocated = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapAllocAllocated));
-        TargetPointer ephemeralHeapSegment = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapEphemeralHeapSegment));
-        TargetPointer cardTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapCardTable));
-
-        TargetPointer finalizeQueue = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCHeapFinalizeQueue));
-        Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(finalizeQueue);
-        TargetPointer generationTableArrayStart = _target.ReadGlobalPointer(Constants.Globals.GCHeapGenerationTable);
-
-        TargetPointer? savedSweepEphemeralSeg = null;
-        TargetPointer? savedSweepEphemeralStart = null;
-        if (_target.TryReadGlobalPointer(Constants.Globals.GCHeapSavedSweepEphemeralSeg, out TargetPointer? savedSweepEphemeralSegPtr) &&
-            _target.TryReadGlobalPointer(Constants.Globals.GCHeapSavedSweepEphemeralStart, out TargetPointer? savedSweepEphemeralStartPtr))
-        {
-            savedSweepEphemeralSeg = _target.ReadPointer(savedSweepEphemeralSegPtr.Value);
-            savedSweepEphemeralStart = _target.ReadPointer(savedSweepEphemeralStartPtr.Value);
-        }
-
-        return new GCHeapData()
-        {
-            MarkArray = markArray,
-            NextSweepObject = nextSweepObj,
-            BackGroundSavedMinAddress = backgroundMinSavedAddr,
-            BackGroundSavedMaxAddress = backgroundMaxSavedAddr,
-            AllocAllocated = allocAllocated,
-            EphemeralHeapSegment = ephemeralHeapSegment,
-            CardTable = cardTable,
-            GenerationTable = GetGenerationData(generationTableArrayStart).AsReadOnly(),
-            FillPointers = GetFillPointers(finalize).AsReadOnly(),
-            SavedSweepEphemeralSegment = savedSweepEphemeralSeg ?? TargetPointer.Null,
-            SavedSweepEphemeralStart = savedSweepEphemeralStart ?? TargetPointer.Null,
-        };
+        return GetGCHeapDataFromHeap(new GCHeapWKS(_target));
     }
 
     GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
@@ -158,7 +125,12 @@ internal readonly struct GC_1 : IGC
         if (GetGCType() != GCType.Server)
             throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
 
-        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
+        Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
+        return GetGCHeapDataFromHeap(heap);
+    }
+
+    private GCHeapData GetGCHeapDataFromHeap(IGCHeap heap)
+    {
         Data.CFinalize finalize = _target.ProcessedData.GetOrAdd<Data.CFinalize>(heap.FinalizeQueue);
 
         return new GCHeapData()
@@ -174,41 +146,12 @@ internal readonly struct GC_1 : IGC
             FillPointers = GetFillPointers(finalize).AsReadOnly(),
             SavedSweepEphemeralSegment = heap.SavedSweepEphemeralSeg ?? TargetPointer.Null,
             SavedSweepEphemeralStart = heap.SavedSweepEphemeralStart ?? TargetPointer.Null,
+
+            InternalRootArray = heap.InternalRootArray,
+            InternalRootArrayIndex = heap.InternalRootArrayIndex,
+            HeapAnalyzeSuccess = heap.HeapAnalyzeSuccess,
         };
     }
-
-    GCOOMData IGC.WKSGetOOMData()
-    {
-        if (GetGCType() != GCType.Workstation)
-            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
-
-        TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData);
-        Data.OOMHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OOMHistory>(oomHistory);
-        return GetGCOOMData(oomHistoryData);
-    }
-
-    GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
-    {
-        if (GetGCType() != GCType.Server)
-            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
-
-        Data.GCHeap_svr heap = _target.ProcessedData.GetOrAdd<Data.GCHeap_svr>(heapAddress);
-        return GetGCOOMData(heap.OOMData);
-    }
-
-    private static GCOOMData GetGCOOMData(Data.OOMHistory oomHistory)
-        => new GCOOMData()
-        {
-            Reason = oomHistory.Reason,
-            AllocSize = oomHistory.AllocSize,
-            Reserved = oomHistory.Reserved,
-            Allocated = oomHistory.Allocated,
-            GCIndex = oomHistory.GcIndex,
-            Fgm = oomHistory.Fgm,
-            Size = oomHistory.Size,
-            AvailablePagefileMB = oomHistory.AvailablePagefileMb,
-            LohP = oomHistory.LohP != 0,
-        };
 
     private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
     {
@@ -241,6 +184,39 @@ internal readonly struct GC_1 : IGC
         return fillPointers;
     }
 
+    GCOOMData IGC.WKSGetOOMData()
+    {
+        if (GetGCType() != GCType.Workstation)
+            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
+
+        TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData);
+        Data.OOMHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OOMHistory>(oomHistory);
+        return GetGCOOMData(oomHistoryData);
+    }
+
+    GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
+    {
+        if (GetGCType() != GCType.Server)
+            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+
+        Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
+        return GetGCOOMData(heap.OOMData);
+    }
+
+    private static GCOOMData GetGCOOMData(Data.OOMHistory oomHistory)
+        => new GCOOMData()
+        {
+            Reason = oomHistory.Reason,
+            AllocSize = oomHistory.AllocSize,
+            Reserved = oomHistory.Reserved,
+            Allocated = oomHistory.Allocated,
+            GCIndex = oomHistory.GcIndex,
+            Fgm = oomHistory.Fgm,
+            Size = oomHistory.Size,
+            AvailablePagefileMB = oomHistory.AvailablePagefileMb,
+            LohP = oomHistory.LohP != 0,
+        };
+
     private GCType GetGCType()
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
@@ -268,5 +244,10 @@ internal readonly struct GC_1 : IGC
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
         return identifiers.Contains(GCIdentifiers.DynamicHeapCount);
+    }
+
+    private sealed class GCHeap_WKS
+    {
+
     }
 }

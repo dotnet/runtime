@@ -50,6 +50,7 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
 
     GC_HEAP_FIELD(OOMData, oom_info)
 
+    /* For use in GCHeapDetails APIs */
     GC_HEAP_FIELD(MarkArray, mark_array)
     GC_HEAP_FIELD(NextSweepObj, next_sweep_obj)
     GC_HEAP_FIELD(BackgroundMinSavedAddr, background_saved_lowest_address)
@@ -58,13 +59,22 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     GC_HEAP_FIELD(EphemeralHeapSegment, ephemeral_heap_segment)
     GC_HEAP_FIELD(CardTable, card_table)
     GC_HEAP_FIELD(FinalizeQueue, finalize_queue)
-
     GC_HEAP_FIELD(GenerationTable, generation_table)
-
 #ifndef USE_REGIONS
     GC_HEAP_FIELD(SavedSweepEphemeralSeg, saved_sweep_ephemeral_seg)
     GC_HEAP_FIELD(SavedSweepEphemeralStart, saved_sweep_ephemeral_start)
 #endif // !USE_REGIONS
+
+    /* For use in GCHeapAnalyzeData APIs */
+    GC_HEAP_FIELD(InternalRootArray, internal_root_array)
+    GC_HEAP_FIELD(InternalRootArrayIndex, internal_root_array_index)
+    GC_HEAP_FIELD(HeapAnalyzeSuccess, heap_analyze_success)
+
+    /* For use in GCInterestingInfo APIs */
+    GC_HEAP_FIELD(InterestingData, interesting_data_per_heap)
+    GC_HEAP_FIELD(CompactReasons, compact_reasons_per_heap)
+    GC_HEAP_FIELD(ExpandMechanisms, expand_mechanisms_per_heap)
+    GC_HEAP_FIELD(InterestingMechanismBits, interesting_mechanism_bits_per_heap)
 };
 
 template<>

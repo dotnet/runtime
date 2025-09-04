@@ -27,6 +27,13 @@ CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralSeg, cdac_data<GC_NAMESP
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, SavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
 CDAC_TYPE_FIELD(GCHeap, /*oom_history*/, OOMData, cdac_data<GC_NAMESPACE::gc_heap>::OOMData)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)
+CDAC_TYPE_FIELD(GCHeap, /*nuint*/, InternalRootArrayIndex, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArrayIndex)
+CDAC_TYPE_FIELD(GCHeap, /*int*/, HeapAnalyzeSuccess, cdac_data<GC_NAMESPACE::gc_heap>::HeapAnalyzeSuccess)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingData, cdac_data<GC_NAMESPACE::gc_heap>::InterestingData)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, CompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, ExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingMechanismBits, cdac_data<GC_NAMESPACE::gc_heap>::InterestingMechanismBits)
 CDAC_TYPE_END(GCHeap)
 #endif // SERVER_GC
 
@@ -78,6 +85,12 @@ CDAC_GLOBALS_BEGIN()
 
 CDAC_GLOBAL(TotalGenerationCount, /*uint32*/, (uint32_t)total_generation_count)
 CDAC_GLOBAL(CFinalizeFillPointersLength, /*uint32*/, (uint32_t)cdac_data<GC_NAMESPACE::CFinalize>::FillPointersLength)
+CDAC_GLOBAL(InterestingDataLength, /*uint32*/, NUM_GC_DATA_POINTS)
+CDAC_GLOBAL(CompactReasonsLength, /*uint32*/, MAX_COMPACT_REASONS_COUNT)
+CDAC_GLOBAL(ExpandMechanismsLength, /*uint32*/, MAX_EXPAND_MECHANISMS_COUNT)
+CDAC_GLOBAL(InterestingMechanismBitsLength, /*uint32*/, MAX_GC_MECHANISM_BITS_COUNT)
+CDAC_GLOBAL(GlobalMechanismsLength, /*uint32*/, MAX_GLOBAL_GC_MECHANISMS_COUNT)
+
 
 #ifndef SERVER_GC
 CDAC_GLOBAL_POINTER(GCHeapMarkArray, cdac_data<GC_NAMESPACE::gc_heap>::MarkArray)
@@ -94,6 +107,14 @@ CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralSeg, cdac_data<GC_NAMESPACE::gc_hea
 CDAC_GLOBAL_POINTER(GCHeapSavedSweepEphemeralStart, cdac_data<GC_NAMESPACE::gc_heap>::SavedSweepEphemeralStart)
 #endif // !USE_REGIONS
 CDAC_GLOBAL_POINTER(GCHeapOOMData, cdac_data<GC_NAMESPACE::gc_heap>::OOMData)
+CDAC_GLOBAL_POINTER(GCHeapInternalRootArray, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArray)
+CDAC_GLOBAL_POINTER(GCHeapInternalRootArrayIndex, cdac_data<GC_NAMESPACE::gc_heap>::InternalRootArrayIndex)
+CDAC_GLOBAL_POINTER(GCHeapHeapAnalyzeSuccess, cdac_data<GC_NAMESPACE::gc_heap>::HeapAnalyzeSuccess)
+CDAC_GLOBAL_POINTER(GCHeapInterestingData, cdac_data<GC_NAMESPACE::gc_heap>::InterestingData)
+CDAC_GLOBAL_POINTER(GCHeapCompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
+CDAC_GLOBAL_POINTER(GCHeapExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
+CDAC_GLOBAL_POINTER(GCHeapInterestingMechanismBits, cdac_data<GC_NAMESPACE::gc_heap>::InterestingMechanismBits)
+
 #endif // !SERVER_GC
 
 #ifdef SERVER_GC
@@ -140,5 +161,9 @@ CDAC_GLOBAL_POINTER(CurrentGCState, cdac_data<GC_NAMESPACE::gc_heap>::CurrentGCS
 #ifdef DYNAMIC_HEAP_COUNT
 CDAC_GLOBAL_POINTER(DynamicAdaptationMode, cdac_data<GC_NAMESPACE::gc_heap>::DynamicAdaptationMode)
 #endif // DYNAMIC_HEAP_COUNT
+
+#ifdef GC_CONFIG_DRIVEN
+CDAC_GLOBAL_POINTER(GCGlobalMechanisms, &gc_global_mechanisms)
+#endif // GC_CONFIG_DRIVEN
 
 CDAC_GLOBALS_END()

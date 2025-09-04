@@ -25,17 +25,17 @@ public readonly struct GCHeapData
     public TargetPointer NextSweepObject { get; init; }
     public TargetPointer BackGroundSavedMinAddress { get; init; }
     public TargetPointer BackGroundSavedMaxAddress { get; init; }
-
     public TargetPointer AllocAllocated { get; init; }
     public TargetPointer EphemeralHeapSegment { get; init; }
     public TargetPointer CardTable { get; init; }
     public IReadOnlyList<GCGenerationData> GenerationTable { get; init; }
-
     public IReadOnlyList<TargetPointer> FillPointers { get; init; }
+    public TargetPointer SavedSweepEphemeralSegment { get; init; } /* Only valid in segment GC builds */
+    public TargetPointer SavedSweepEphemeralStart { get; init; } /* Only valid in segment GC builds */
 
-    // Fields only valid in segment GC builds
-    public TargetPointer SavedSweepEphemeralSegment { get; init; }
-    public TargetPointer SavedSweepEphemeralStart { get; init; }
+    public TargetPointer InternalRootArray { get; init; }
+    public TargetNUInt InternalRootArrayIndex { get; init; }
+    public bool HeapAnalyzeSuccess { get; init; }
 }
 
 public readonly struct GCGenerationData

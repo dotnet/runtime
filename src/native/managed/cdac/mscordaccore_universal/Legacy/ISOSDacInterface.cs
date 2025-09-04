@@ -281,6 +281,12 @@ internal struct DacpMethodTableTransparencyData
 internal static class GCConstants
 {
     public const int DAC_NUMBERGENERATIONS = 4;
+
+    public const int DAC_NUM_GC_DATA_POINTS = 9;
+    public const int DAC_MAX_COMPACT_REASONS_COUNT = 11;
+    public const int DAC_MAX_EXPAND_MECHANISMS_COUNT = 6;
+    public const int DAC_MAX_GC_MECHANISM_BITS_COUNT = 2;
+    public const int DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT = 6;
 }
 
 internal struct DacpGcHeapData
@@ -343,7 +349,15 @@ internal struct DacpOomData
     public ulong gc_index;
     public int fgm;
     public ulong size;
-    public int loh_p; // BOOL -> int
+    public int loh_p; // BOOL
+}
+
+internal struct DacpGcHeapAnalyzeData
+{
+    public ClrDataAddress heapAddr;
+    public ClrDataAddress internal_root_array;
+    public ulong internal_root_array_index;
+    public int heap_analyze_success; // BOOL
 }
 
 [GeneratedComInterface]
@@ -483,9 +497,9 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetOOMStaticData(DacpOomData* data);
     [PreserveSig]
-    int GetHeapAnalyzeData(ClrDataAddress addr, /*struct DacpGcHeapAnalyzeData */ void* data);
+    int GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data);
     [PreserveSig]
-    int GetHeapAnalyzeStaticData(/*struct DacpGcHeapAnalyzeData */ void* data);
+    int GetHeapAnalyzeStaticData(DacpGcHeapAnalyzeData* data);
 
     // DomainLocal
     [PreserveSig]
@@ -611,14 +625,53 @@ internal unsafe partial interface ISOSDacInterface2
     int IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy);
 }
 
+internal struct DacpGCInterestingInfoData
+{
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUM_GC_DATA_POINTS)]
+    public struct InterestingDataPointsArray
+    {
+        private nuint _;
+    }
+    public InterestingDataPointsArray interestingDataPoints;
+
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_COMPACT_REASONS_COUNT)]
+    public struct CompactReasonsArray
+    {
+        private nuint _;
+    }
+    public CompactReasonsArray compactReasons;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_EXPAND_MECHANISMS_COUNT)]
+    public struct ExpandMechanismsArray
+    {
+        private nuint _;
+    }
+    public ExpandMechanismsArray expandMechanisms;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_GC_MECHANISM_BITS_COUNT)]
+    public struct BitMechanismsArray
+    {
+        private nuint _;
+    }
+    public BitMechanismsArray bitMechanisms;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT)]
+    public struct GlobalMechanismsArray
+    {
+        private nuint _;
+    }
+    public GlobalMechanismsArray globalMechanisms;
+}
+
 [GeneratedComInterface]
 [Guid("B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4")]
 internal unsafe partial interface ISOSDacInterface3
 {
     [PreserveSig]
-    int GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data);
+    int GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, DacpGCInterestingInfoData* data);
     [PreserveSig]
-    int GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data);
+    int GetGCInterestingInfoStaticData(DacpGCInterestingInfoData* data);
     [PreserveSig]
     int GetGCGlobalMechanisms(nuint* globalMechanisms);
 };
