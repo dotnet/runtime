@@ -53,6 +53,14 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "StartupCodeMain"u8;
+            }
+        }
+
         public override string DiagnosticName
         {
             get
@@ -235,6 +243,14 @@ namespace Internal.IL.Stubs.StartupCode
                 get
                 {
                     return "MainMethodWrapper";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return "MainMethodWrapper"u8;
                 }
             }
 

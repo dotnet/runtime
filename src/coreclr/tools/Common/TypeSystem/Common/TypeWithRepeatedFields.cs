@@ -94,7 +94,11 @@ namespace Internal.TypeSystem
 
         public override string Namespace => MetadataType.Namespace;
 
+        public override ReadOnlySpan<byte> U8Namespace => MetadataType.U8Namespace;
+
         public override string Name => MetadataType.Name;
+
+        public override ReadOnlySpan<byte> U8Name => MetadataType.U8Name;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

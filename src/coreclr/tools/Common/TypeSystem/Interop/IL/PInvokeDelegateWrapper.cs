@@ -34,6 +34,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "PInvokeDelegateWrapper__"u8.Append(DelegateType.U8Name);
+            }
+        }
+
         public override string DiagnosticName
         {
             get
@@ -47,6 +55,14 @@ namespace Internal.TypeSystem.Interop
             get
             {
                 return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return "Internal.CompilerGenerated"u8;
             }
         }
 

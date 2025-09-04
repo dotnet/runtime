@@ -620,6 +620,8 @@ namespace ILCompiler.IBC
         {
             private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
+                public ReadOnlySpan<byte> Name => "System.Private.Canon"u8;
+
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
                 }

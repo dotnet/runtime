@@ -33,6 +33,7 @@ namespace ILCompiler
 
                 public TypeSystemException Exception { get; }
                 public override string Name { get; }
+                public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
                 public override MethodIL EmitIL()
                 {
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);

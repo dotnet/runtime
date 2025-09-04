@@ -220,6 +220,14 @@ namespace TypeSystemTests
                 }
             }
 
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return System.Text.Encoding.UTF8.GetBytes(Name);
+                }
+            }
+
             public override TypeDesc OwningType
             {
                 get

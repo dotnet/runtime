@@ -36,10 +36,12 @@ namespace ILCompiler
 
             public override IAssemblyDesc Assembly => this;
 
+            public ReadOnlySpan<byte> Name => "System.Private.CompilerGenerated"u8;
+
             public CompilerGeneratedAssembly(TypeSystemContext context)
                 : base(context, null)
             {
-                _globalModuleType = new CompilerGeneratedType(this, "<Module>");
+                _globalModuleType = new CompilerGeneratedType(this);
             }
 
             public override IEnumerable<MetadataType> GetAllTypes()
@@ -72,10 +74,9 @@ namespace ILCompiler
         {
             private int _hashcode;
 
-            public CompilerGeneratedType(ModuleDesc module, string name)
+            public CompilerGeneratedType(ModuleDesc module)
             {
                 Module = module;
-                Name = name;
             }
 
             public override TypeSystemContext Context
@@ -88,14 +89,25 @@ namespace ILCompiler
 
             public override string Name
             {
-                get;
+                get
+                {
+                    return "<Module>";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return "<Module>"u8;
+                }
             }
 
             public override string DiagnosticName
             {
                 get
                 {
-                    return Name;
+                    return "<Module>";
                 }
             }
 
@@ -104,6 +116,14 @@ namespace ILCompiler
                 get
                 {
                     return "Internal.CompilerGenerated";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Namespace
+            {
+                get
+                {
+                    return "Internal.CompilerGenerated"u8;
                 }
             }
 

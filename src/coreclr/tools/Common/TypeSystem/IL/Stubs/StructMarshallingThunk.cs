@@ -121,11 +121,38 @@ namespace Internal.IL.Stubs
             }
         }
 
+        private ReadOnlySpan<byte> U8NamePrefix
+        {
+            get
+            {
+                switch (ThunkType)
+                {
+                    case StructMarshallingThunkType.ManagedToNative:
+                        return "ManagedToNative"u8;
+                    case StructMarshallingThunkType.NativeToManaged:
+                        return "NativeToManaged"u8;
+                    case StructMarshallingThunkType.Cleanup:
+                        return "Cleanup"u8;
+                    default:
+                        Debug.Fail("Unexpected Struct marshalling thunk type");
+                        return [];
+                }
+            }
+        }
+
         public override string Name
         {
             get
             {
                 return NamePrefix + "__" + ((MetadataType)ManagedType).Name;
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return U8NamePrefix.Append("__"u8, ManagedType.U8Name);
             }
         }
 

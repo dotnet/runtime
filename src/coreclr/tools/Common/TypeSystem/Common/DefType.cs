@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -14,10 +16,14 @@ namespace Internal.TypeSystem
         /// </summary>
         public virtual string Namespace => null;
 
+        public virtual ReadOnlySpan<byte> U8Namespace => [];
+
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
         public virtual string Name => null;
+
+        public virtual ReadOnlySpan<byte> U8Name => [];
 
         /// <summary>
         /// Gets the containing type of this type or null if the type is not nested.

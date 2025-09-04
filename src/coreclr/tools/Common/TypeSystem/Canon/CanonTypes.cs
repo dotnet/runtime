@@ -59,17 +59,21 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class CanonType : CanonBaseType
     {
-        private const string _Namespace = "System";
-        private const string _Name = "__Canon";
-        public const string FullName = _Namespace + "." + _Name;
-
         private int _hashcode;
 
         public override string Namespace
         {
             get
             {
-                return _Namespace;
+                return "System";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return "System"u8;
             }
         }
 
@@ -77,7 +81,15 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _Name;
+                return "__Canon";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "__Canon"u8;
             }
         }
 
@@ -135,7 +147,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode(FullName);
+                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.__Canon");
             }
 
             return _hashcode;
@@ -147,17 +159,21 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class UniversalCanonType : CanonBaseType
     {
-        private const string _Namespace = "System";
-        private const string _Name = "__UniversalCanon";
-        public const string FullName = _Namespace + "." + _Name;
-
         private int _hashcode;
 
         public override string Namespace
         {
             get
             {
-                return _Namespace;
+                return "System";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return "System"u8;
             }
         }
 
@@ -165,7 +181,15 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _Name;
+                return "__UniversalCanon";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "__UniversalCanon"u8;
             }
         }
 
@@ -221,7 +245,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode(FullName);
+                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.__UniversalCanon");
             }
 
             return _hashcode;

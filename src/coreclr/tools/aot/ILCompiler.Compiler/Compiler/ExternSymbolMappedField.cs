@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -20,6 +21,8 @@ namespace ILCompiler
         }
 
         public override string Name => _symbolName;
+
+        public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
 
         public string SymbolName => _symbolName;
 

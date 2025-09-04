@@ -443,5 +443,26 @@ namespace Internal.TypeSystem
 
             return false;
         }
+
+        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2)
+        {
+            Span<T> buffer = new T[s1.Length + s2.Length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2, ReadOnlySpan<T> s3)
+        {
+            Span<T> buffer = new T[s1.Length + s2.Length + s3.Length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+
+            return buffer;
+        }
     }
 }

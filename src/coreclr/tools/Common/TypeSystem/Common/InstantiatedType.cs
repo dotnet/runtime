@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -126,11 +127,27 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return _typeDef.U8Name;
+            }
+        }
+
         public override string Namespace
         {
             get
             {
                 return _typeDef.Namespace;
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return _typeDef.U8Namespace;
             }
         }
 

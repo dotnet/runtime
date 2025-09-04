@@ -9,14 +9,14 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _Name;
+                return Name;
             }
         }
         public override string DiagnosticNamespace
         {
             get
             {
-                return _Namespace;
+                return Namespace;
             }
         }
     }
@@ -27,14 +27,14 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _Name;
+                return Name;
             }
         }
         public override string DiagnosticNamespace
         {
             get
             {
-                return _Namespace;
+                return Namespace;
             }
         }
     }

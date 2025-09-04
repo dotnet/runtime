@@ -595,6 +595,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public virtual ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return [];
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether the method is virtual.
         /// </summary>

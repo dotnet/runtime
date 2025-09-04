@@ -292,6 +292,15 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+            }
+        }
+
         private string InitializeNamespace()
         {
             var metadataReader = this.MetadataReader;
@@ -306,6 +315,15 @@ namespace Internal.TypeSystem.Ecma
                 if (_typeNamespace == null)
                     return InitializeNamespace();
                 return _typeNamespace;
+            }
+        }
+
+        public override unsafe ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Namespace);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
             }
         }
 

@@ -237,11 +237,38 @@ namespace Internal.IL.Stubs
             }
         }
 
+        private ReadOnlySpan<byte> U8NamePrefix
+        {
+            get
+            {
+                switch (Kind)
+                {
+                    case DelegateMarshallingMethodThunkKind.ReverseOpenStatic:
+                        return "ReverseOpenStaticDelegateStub"u8;
+                    case DelegateMarshallingMethodThunkKind.ReverseClosed:
+                        return "ReverseDelegateStub"u8;
+                    case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
+                        return "ForwardNativeFunctionWrapper"u8;
+                    default:
+                        Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
+                        return [];
+                }
+            }
+        }
+
         public override string Name
         {
             get
             {
                 return NamePrefix + "__" + DelegateType.Name;
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return U8NamePrefix.Append("__"u8, DelegateType.U8Name);
             }
         }
 

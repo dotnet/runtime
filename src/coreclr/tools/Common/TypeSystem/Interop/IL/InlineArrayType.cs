@@ -35,6 +35,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return System.Text.Encoding.UTF8.GetBytes(Name);
+            }
+        }
+
         public override string DiagnosticName
         {
             get
@@ -48,6 +56,14 @@ namespace Internal.TypeSystem.Interop
             get
             {
                 return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return "Internal.CompilerGenerated"u8;
             }
         }
 
@@ -342,6 +358,21 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    if (_kind == InlineArrayMethodKind.Getter)
+                    {
+                        return "get_Item"u8;
+                    }
+                    else
+                    {
+                        return "set_Item"u8;
+                    }
+                }
+            }
+
             public override string DiagnosticName
             {
                 get
@@ -502,6 +533,14 @@ namespace Internal.TypeSystem.Interop
                 get
                 {
                     return "InlineArrayField";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return "InlineArrayField"u8;
                 }
             }
 

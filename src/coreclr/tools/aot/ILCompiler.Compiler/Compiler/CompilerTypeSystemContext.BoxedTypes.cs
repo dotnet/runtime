@@ -256,8 +256,10 @@ namespace ILCompiler
             public override ModuleDesc Module { get; }
 
             public override string Name => "Boxed_" + ValueTypeRepresented.Name;
+            public override ReadOnlySpan<byte> U8Name => "Boxed_"u8.Append(ValueTypeRepresented.U8Name);
 
             public override string Namespace => ValueTypeRepresented.Namespace;
+            public override ReadOnlySpan<byte> U8Namespace => ValueTypeRepresented.U8Namespace;
             public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
@@ -417,6 +419,14 @@ namespace ILCompiler
                 }
             }
 
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _targetMethod.U8Name.Append("_Unbox"u8);
+                }
+            }
+
             public override string DiagnosticName
             {
                 get
@@ -511,6 +521,14 @@ namespace ILCompiler
                 get
                 {
                     return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _targetMethod.U8Name.Append("_Unbox"u8);
                 }
             }
 
@@ -609,6 +627,8 @@ namespace ILCompiler
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
             public override string Name => _methodRepresented.Name;
+
+            public override ReadOnlySpan<byte> U8Name => _methodRepresented.U8Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

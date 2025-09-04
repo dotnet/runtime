@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
+using System;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -399,6 +400,16 @@ namespace Internal.TypeSystem.Ecma
                 if (_name == null)
                     return InitializeName();
                 return _name;
+            }
+        }
+
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                var metadataReader = MetadataReader;
+                var blob = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
             }
         }
 

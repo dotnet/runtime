@@ -29,6 +29,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "__NativeType__"u8.Append(ManagedStructType.U8Name);
+            }
+        }
+
         public override string DiagnosticName
         {
             get
@@ -42,6 +50,14 @@ namespace Internal.TypeSystem.Interop
             get
             {
                 return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                return "Internal.CompilerGenerated"u8;
             }
         }
 
@@ -414,6 +430,14 @@ namespace Internal.TypeSystem.Interop
                 get
                 {
                     return _managedField.Name;
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _managedField.U8Name;
                 }
             }
 

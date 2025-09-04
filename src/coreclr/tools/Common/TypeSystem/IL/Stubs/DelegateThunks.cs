@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -134,6 +135,14 @@ namespace Internal.IL.Stubs
                 return "InvokeOpenStaticThunk";
             }
         }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeOpenStaticThunk"u8;
+            }
+        }
     }
 
     /// <summary>
@@ -227,6 +236,14 @@ namespace Internal.IL.Stubs
                 return "InvokeOpenInstanceThunk";
             }
         }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeOpenInstanceThunk"u8;
+            }
+        }
     }
 
     /// <summary>
@@ -285,6 +302,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return "InvokeClosedStaticThunk";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeClosedStaticThunk"u8;
             }
         }
     }
@@ -422,6 +447,14 @@ namespace Internal.IL.Stubs
                 return "InvokeMulticastThunk";
             }
         }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeMulticastThunk"u8;
+            }
+        }
     }
 
     /// <summary>
@@ -468,6 +501,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return "InvokeInstanceClosedOverGenericMethodThunk";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeInstanceClosedOverGenericMethodThunk"u8;
             }
         }
     }
@@ -647,6 +688,14 @@ namespace Internal.IL.Stubs
                 return "InvokeObjectArrayThunk";
             }
         }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "InvokeObjectArrayThunk"u8;
+            }
+        }
     }
 
     /// <summary>
@@ -762,6 +811,14 @@ namespace Internal.IL.Stubs
             get
             {
                 return "GetThunk";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "GetThunk"u8;
             }
         }
 
