@@ -1317,49 +1317,49 @@ namespace System
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 1);
                 lookUp1 = Unsafe.Add(ref second, index + 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 2);
                 lookUp1 = Unsafe.Add(ref second, index + 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 3);
                 lookUp1 = Unsafe.Add(ref second, index + 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 4);
                 lookUp1 = Unsafe.Add(ref second, index + 4);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 5);
                 lookUp1 = Unsafe.Add(ref second, index + 5);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 6);
                 lookUp1 = Unsafe.Add(ref second, index + 6);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 7);
                 lookUp1 = Unsafe.Add(ref second, index + 7);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
@@ -1380,21 +1380,21 @@ namespace System
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 1);
                 lookUp1 = Unsafe.Add(ref second, index + 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 2);
                 lookUp1 = Unsafe.Add(ref second, index + 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
                 {
                     return false;
                 }
-                
+
                 lookUp0 = Unsafe.Add(ref first, index + 3);
                 lookUp1 = Unsafe.Add(ref second, index + 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
@@ -1413,7 +1413,7 @@ namespace System
                 {
                     return false;
                 }
-                
+
                 index += 1;
                 length--;
             }
