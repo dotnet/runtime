@@ -82,7 +82,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         return false;
     }
 #endif
-    off_t maxDoubleMappedMemorySize = MaxDoubleMappedSize;
+    uint64_t maxDoubleMappedMemorySize = MaxDoubleMappedSize;
     
     // Set the maximum double mapped memory size to the size of the physical memory
     long pages = sysconf(_SC_PHYS_PAGES);
@@ -91,7 +91,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         long pageSize = sysconf(_SC_PAGE_SIZE);
         if (pageSize != -1)
         {
-            long physicalMemorySize = (long)pages * pageSize;
+            uint64_t physicalMemorySize = (uint64_t)pages * pageSize;
             if (maxDoubleMappedMemorySize > physicalMemorySize)
             {
                 maxDoubleMappedMemorySize = physicalMemorySize;
