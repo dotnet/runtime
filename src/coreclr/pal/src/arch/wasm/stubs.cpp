@@ -3,6 +3,7 @@
 
 #include "pal/dbgmsg.h"
 #include "pal/signal.hpp"
+#include <emscripten/emscripten.h>
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do this first
 
@@ -18,7 +19,7 @@ DBG_DebugBreak()
 #ifdef _DEBUG
     DBG_PrintInterpreterStack();
 #endif // _DEBUG
-    asm volatile ("unreachable");
+    emscripten_debugger();
 }
 
 /* context */
