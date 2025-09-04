@@ -16,10 +16,10 @@ namespace Internal
         /// <summary>
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L14">ComputeNameHashCode</a>
         /// </summary>
-        /// <param name="name">Name string to hash</param>
-        public static int NameHashCode(string name)
+        /// <param name="src">Name string to hash</param>
+        public static int NameHashCode(ReadOnlySpan<byte> src)
         {
-            if (string.IsNullOrEmpty(name))
+            if (src.Length == 0)
             {
                 return 0;
             }
@@ -27,8 +27,6 @@ namespace Internal
             int hash1 = 0x6DA3B944;
             int hash2 = 0;
 
-            // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
-            byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
                 hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ (int)unchecked((sbyte)src[i]);
@@ -57,7 +55,7 @@ namespace Internal
         /// </summary>
         /// <param name="namespacePart">Namespace name</param>
         /// <param name="namePart">Type name within the namespace</param>
-        public static int NameHashCode(string namespacePart, string namePart)
+        public static int NameHashCode(ReadOnlySpan<byte> namespacePart, ReadOnlySpan<byte> namePart)
         {
             return NameHashCode(namespacePart) ^ NameHashCode(namePart);
         }
@@ -84,7 +82,7 @@ namespace Internal
             int hashCode = unchecked((int)0xd5313556 + rank);
             if (rank == 1)
             {
-                Debug.Assert(hashCode == NameHashCode("System.Array`1"));
+                Debug.Assert(hashCode == NameHashCode("System.Array`1"u8));
             }
             hashCode = unchecked(hashCode + RotateLeft(hashCode, 13)) ^ elementTypeHashcode;
             return unchecked(hashCode + RotateLeft(hashCode, 15));

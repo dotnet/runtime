@@ -24,7 +24,7 @@ namespace Internal
             int hashcode = 0;
             do
             {
-                hashcode ^= NameHashCode(type.Namespace, type.Name);
+                hashcode ^= NameHashCode(type.U8Namespace, type.U8Name);
                 type = type.ContainingType;
             }
             while (type != null);
@@ -39,7 +39,7 @@ namespace Internal
         {
             if (type.GetTypeDefinition() is DefType defType)
             {
-                int hashcode = NameHashCode(defType.Namespace, defType.Name);
+                int hashcode = NameHashCode(defType.U8Namespace, defType.U8Name);
                 DefType containingType = defType.ContainingType;
                 if (containingType != null)
                 {
@@ -95,7 +95,7 @@ namespace Internal
         public static int MethodHashCode(MethodDesc method)
         {
             int hashCode = TypeHashCode(method.OwningType);
-            int methodNameHashCode = NameHashCode(method.Name);
+            int methodNameHashCode = NameHashCode(method.U8Name);
 
             // Todo: Add signature to hash.
             if (method.HasInstantiation && !method.IsGenericMethodDefinition)
@@ -114,7 +114,7 @@ namespace Internal
         {
             IAssemblyDesc assembly = module.Assembly;
             Debug.Assert(assembly == module);
-            return NameHashCode(assembly.GetName().Name);
+            return NameHashCode(assembly.Name);
         }
     }
 }
