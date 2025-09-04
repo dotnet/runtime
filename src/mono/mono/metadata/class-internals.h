@@ -889,6 +889,7 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+	MonoClass *gc_class;
 	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
@@ -1422,6 +1423,9 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+
+void
+mono_class_set_skip_generic_constraints (MonoClass *klass);
 
 void
 mono_class_set_deferred_failure (MonoClass *klass);

@@ -571,6 +571,23 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 }
 
 /**
+ * mono_class_set_skip_generic_constraints:
+ * \param klass class that should not validate generic constraints
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_set_skip_generic_constraints (MonoClass *klass)
+{
+	if (klass->skip_generic_constraints)
+		return;
+
+	mono_loader_lock ();
+	klass->skip_generic_constraints = 1;
+	mono_loader_unlock ();
+}
+
+/**
  * mono_class_set_deferred_failure:
  * \param klass class in which the failure was detected
  

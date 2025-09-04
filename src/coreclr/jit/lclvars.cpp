@@ -2010,6 +2010,14 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvKeepType = 1;
 #endif
     }
+
+#ifdef TARGET_ARM
+    if (varDsc->lvIsParam)
+    {
+        // TODO-Cleanup: Allow independent promotion for ARM struct parameters
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+    }
+#endif
 }
 
 //--------------------------------------------------------------------------------------------

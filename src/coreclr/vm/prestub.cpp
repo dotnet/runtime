@@ -375,31 +375,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pConfig->MayUsePrecompiledCode())
     {
-#ifdef FEATURE_READYTORUN
-        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
-        {
-            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
-            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
-            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
-            {
-                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
-                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
-                {
-                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
-                    {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != (PCODE)NULL)
-                        {
-                            LOG_USING_R2R_CODE(this);
-                            pConfig->SetNativeCode(pCode, &pCode);
-                        }
-                    }
-                }
-            }
-        }
-#endif // FEATURE_READYTORUN
-
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -972,7 +947,25 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             return pOtherCode;
         }
 
-        SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+        NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+
+        if (IsILStub())
+        {
+            CodeHeader* pHdr = ((CodeHeader*)PCODEToPINSTR(pCode)) - 1;
+            MethodDesc* pActualMethodDesc = pHdr->GetMethodDesc();
+
+            if (pActualMethodDesc != this)
+            {
+                // Compensate for PInvoke MethodDesc adjustment done in EECodeGenManager::AllocCode.
+                // The GC stress instrumentation must save the non-instrumented version of the code
+                // on MethodDesc that matches CodeHeader so that it can be retrieved later during
+                // GC stress interrupts.
+                _ASSERTE(pActualMethodDesc->IsPInvoke());
+                nativeCodeVersion = NativeCodeVersion(pActualMethodDesc);
+            }
+        }
+
+        SetupGcCoverage(nativeCodeVersion, (BYTE*)pCode);
     }
 #endif // HAVE_GCCOVER
 
@@ -1001,8 +994,14 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
+        InterpByteCodeStart* interpreterCode;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
-        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
@@ -2279,8 +2278,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsPInvoke())
     {
-        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
         {
+            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
             // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
@@ -2296,7 +2296,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             pCode = GetStubForInteropMethod(this);
         }
 
-        GetOrCreatePrecode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Store the IL Stub interpreter data on the actual
+        // P/Invoke MethodDesc.
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsFCall())
     {
@@ -2377,13 +2383,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+// Interpreter-FIXME: Call stubs are not yet supported on WASM
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }
@@ -2944,7 +2951,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
-    BinderMethodID managedHelperId = fUnbox ? 
+    BinderMethodID managedHelperId = fUnbox ?
         METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
         METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
 
