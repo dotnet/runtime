@@ -13,7 +13,7 @@
 #define __CALLING_CONVENTION_INCLUDED
 
 #ifdef FEATURE_INTERPRETER
-#include "../../interpreter/interpretershared.h"
+#include <interpretershared.h>
 #endif // FEATURE_INTERPRETER
 
 BOOL IsRetBuffPassedAsFirstArg();
