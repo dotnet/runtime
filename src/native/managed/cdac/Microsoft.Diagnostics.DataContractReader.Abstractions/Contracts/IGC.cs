@@ -88,7 +88,7 @@ public interface IGC : IContract
     uint GetMaxGeneration() => throw new NotImplementedException();
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr) => throw new NotImplementedException();
     uint GetCurrentGCState() => throw new NotImplementedException();
-    int GetDynamicAdaptationMode() => throw new NotImplementedException();
+    bool TryGetGCDynamicAdaptationMode(out int mode) => throw new NotImplementedException();
     GCHeapSegmentData GetHeapSegmentData(TargetPointer segmentAddress) => throw new NotImplementedException();
     IReadOnlyList<TargetNUInt> GetGlobalMechanisms() => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();

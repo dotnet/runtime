@@ -72,14 +72,13 @@ internal readonly struct GC_1 : IGC
         return _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.CurrentGCState));
     }
 
-    int IGC.GetDynamicAdaptationMode()
+    bool IGC.TryGetGCDynamicAdaptationMode(out int mode)
     {
-        // not enabled = -1
-        // dynamic_adaptation_default = 0,
-        // dynamic_adaptation_to_application_sizes = 1,
+        mode = default;
         if (!IsDatasEnabled())
-            return -1;
-        return _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.DynamicAdaptationMode));
+            return false;
+        mode = _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.DynamicAdaptationMode));
+        return true;
     }
 
     GCHeapSegmentData IGC.GetHeapSegmentData(TargetPointer segmentAddress)

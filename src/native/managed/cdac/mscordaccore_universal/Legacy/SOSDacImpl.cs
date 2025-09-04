@@ -3687,7 +3687,15 @@ internal sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
-            *pDynamicAdaptationMode = gc.GetDynamicAdaptationMode();
+            if (gc.TryGetGCDynamicAdaptationMode(out int mode))
+            {
+                *pDynamicAdaptationMode = mode;
+            }
+            else
+            {
+                *pDynamicAdaptationMode = -1;
+                hr = HResults.S_FALSE;
+            }
         }
         catch (System.Exception ex)
         {
