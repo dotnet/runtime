@@ -22,8 +22,10 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Lock GetLockObjectFallback(object obj)
             {
-                object? lockObj = null;
-                GetLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                object lockObj = new Lock();
+#pragma warning restore CS9216
+                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
                 return (Lock)lockObj!;
             }
         }
@@ -31,7 +33,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_GetLockObject")]
-        private static partial void GetLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_GetOrCreateLockObject")]
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
     }
 }

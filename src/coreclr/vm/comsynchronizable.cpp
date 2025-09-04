@@ -915,7 +915,7 @@ FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, Object* pObj)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE SyncTable_GetLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE SyncTable_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
@@ -925,7 +925,7 @@ extern "C" void QCALLTYPE SyncTable_GetLockObject(QCall::ObjectHandleOnStack obj
 
     PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
 
-    lockObj.Set(ObjectFromHandle(pSyncBlock->GetLock()));
+    lockObj.Set(ObjectFromHandle(pSyncBlock->GetOrCreateLock(lockObj.Get())));
 
     END_QCALL;
 }

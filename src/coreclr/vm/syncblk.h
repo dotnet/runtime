@@ -486,7 +486,7 @@ class SyncBlock
        return m_Lock;
    }
 
-   OBJECTHANDLE GetLock();
+   OBJECTHANDLE GetOrCreateLock(OBJECTREF lockObj);
 
     // True is the syncblock and its index are disposable.
     // If new members are added to the syncblock, this

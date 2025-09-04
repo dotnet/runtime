@@ -72,7 +72,7 @@ extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
-extern "C" void QCALLTYPE SyncTable_GetLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj);
+extern "C" void QCALLTYPE SyncTable_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj);
 
 FCDECL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, Object* obj);
 
