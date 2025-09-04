@@ -186,7 +186,7 @@ namespace System.IO.Compression
                 catch (Exception cause) // could not load the ZLib dll
                 {
                     zLibStreamHandle.Dispose();
-                    throw new ZLibNativeException(cause);
+                    throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
                 }
 
                 if (errC == ErrorCode.Ok)
@@ -196,9 +196,10 @@ namespace System.IO.Compression
                 else
                 {
                     string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
+                    string exceptionMessage = GenerateExceptionMessage(errC);
 
                     zLibStreamHandle.Dispose();
-                    throw new ZLibNativeException("deflateInit2_", errC, zlibErrorMessage);
+                    throw new ZLibException(exceptionMessage, "deflateInit2_", (int)errC, zlibErrorMessage);
                 }
             }
 
@@ -214,7 +215,7 @@ namespace System.IO.Compression
                 catch (Exception cause) // could not load the ZLib dll
                 {
                     zLibStreamHandle.Dispose();
-                    throw new ZLibNativeException(cause);
+                    throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
                 }
 
                 if (errC == ErrorCode.Ok)
@@ -224,9 +225,10 @@ namespace System.IO.Compression
                 else
                 {
                     string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
+                    string exceptionMessage = GenerateExceptionMessage(errC);
 
                     zLibStreamHandle.Dispose();
-                    throw new ZLibNativeException("inflateInit2_", errC, zlibErrorMessage);
+                    throw new ZLibException(exceptionMessage, "inflateInit2_", (int)errC, zlibErrorMessage);
                 }
             }
 
@@ -372,41 +374,8 @@ namespace System.IO.Compression
                 }
             }
 
-            // This can work even after XxflateEnd().
+            // This can work even after XxflateEnd(). Gets the error message from the native library.
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
-        }
-
-        public sealed class ZLibNativeException : Exception
-        {
-            public string? Context { get; }
-
-            public string? NativeMessage { get; }
-
-            public ErrorCode NativeErrorCode { get; }
-
-            /// <summary>
-            /// Represents an exception that occurs when an error is returned by a native ZLib operation.
-            /// </summary>
-            /// <param name="zlibErrorContext">A string describing the context in which the ZLib error occurred.</param>
-            /// <param name="nativeErrorCode">The native error code returned by the ZLib library.</param>
-            /// <param name="zlibErrorMessage">An optional message provided by the ZLib library describing the error.</param>
-            public ZLibNativeException(string zlibErrorContext, ErrorCode nativeErrorCode, string zlibErrorMessage)
-                : base(GenerateExceptionMessage(nativeErrorCode))
-            {
-                Context = zlibErrorContext;
-                NativeErrorCode = nativeErrorCode;
-                NativeMessage = zlibErrorMessage;
-            }
-
-            /// <summary>
-            /// Represents an exception that occurs when the ZLib native library cannot be loaded.
-            /// </summary>
-            /// <param name="loadException">The exception that prevented the ZLib native library from being loaded.</param>
-            public ZLibNativeException(Exception loadException)
-                : base(SR.ZLibErrorDLLLoadError, loadException)
-            {
-                NativeErrorCode = ErrorCode.Ok;
-            }
 
             private static string GenerateExceptionMessage(ErrorCode nativeErrorCode)
                 => nativeErrorCode switch

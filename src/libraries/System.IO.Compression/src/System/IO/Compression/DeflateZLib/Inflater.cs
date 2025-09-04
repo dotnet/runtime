@@ -301,25 +301,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
 
-            ZLibNative.ZLibStreamHandle zlibStream;
-
-            try
-            {
-                zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
-            }
-            catch (ZLibNative.ZLibNativeException ex)
-            {
-                if (ex.InnerException is not null)
-                {
-                    // ZLib library could not be loaded correctly. The inner exception contains the details
-                    throw new ZLibException(ex.Message, ex.InnerException);
-                }
-                else
-                {
-                    // The ZLib library was loaded correctly and returned an unacceptable error code
-                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
-                }
-            }
+            ZLibNative.ZLibStreamHandle zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
 
             return new Inflater(windowBits, uncompressedSize, zlibStream);
         }

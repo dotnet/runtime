@@ -200,23 +200,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
-            ZLibNative.ZLibStreamHandle zlibStream;
-
-            try
-            {
-                zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
-            }
-            catch (ZLibNative.ZLibNativeException ex)
-            {
-                if (ex.InnerException is not null)
-                {
-                    throw new ZLibException(ex.Message, ex.InnerException);
-                }
-                else
-                {
-                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
-                }
-            }
+            ZLibNative.ZLibStreamHandle zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
 
             return new Deflater(zlibStream);
         }
