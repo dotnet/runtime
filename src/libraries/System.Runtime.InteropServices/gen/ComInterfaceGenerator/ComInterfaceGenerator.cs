@@ -47,6 +47,9 @@ namespace Microsoft.Interop
                 .Collect()
                 .Combine(stubEnvironment)
                 .Select(
+                    // Do all the work to get to the IncrementalComInterfaceContext in one step
+                    // Intermediate results with symbols won't be incremental, and considering the overhead of setting up the incremental
+                    // steps for projects that don't use the generator, we make this tradeoff.
                     static (input, ct) =>
                     {
                         if (input.Left.Length == 0)
@@ -167,7 +170,7 @@ namespace Microsoft.Interop
 
             // Generate the code for the managed-to-unmanaged stubs.
             var syntaxes = interfaceAndMethodsContexts
-                .Select(static (x, ct) => new PipelineItem<ComInterfaceAndMethodsContext>(x,
+                .Select(static (x, ct) => new ItemAndSyntaxes<ComInterfaceAndMethodsContext>(x,
                 [
                     GenerateImplementationInterface(x, ct).NormalizeWhitespace(),
                     GenerateInterfaceImplementationVtable(x, ct).NormalizeWhitespace(),

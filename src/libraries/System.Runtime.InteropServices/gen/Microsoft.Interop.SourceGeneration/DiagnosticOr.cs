@@ -30,22 +30,6 @@ namespace Microsoft.Interop
         /// </summary>
         public abstract ImmutableArray<DiagnosticInfo> Diagnostics { get; }
 
-        public DiagnosticOr<U> Bind<U>(Func<T, DiagnosticOr<U>> f)
-        {
-            return this switch
-            {
-                Diag d => new DiagnosticOr<U>.Diag(d.Diagnostics),
-                Val v => f(v.Value),
-                ValueAndDiagnostic vd => f(vd.Value).AddDiagnostics(vd.Diagnostics),
-                _ => throw new InvalidOperationException("Unrecognized variant of DiagnosticOr<T>")
-            };
-        }
-
-        public DiagnosticOr<U> Map<U>(Func<T, U> f)
-        {
-            return Bind(value => DiagnosticOr<U>.From(f(value)));
-        }
-
         private sealed record Diag : DiagnosticOr<T>
         {
             private readonly SequenceEqualImmutableArray<DiagnosticInfo> _diagnostics;
@@ -77,38 +61,6 @@ namespace Microsoft.Interop
             public override ImmutableArray<DiagnosticInfo> Diagnostics => _diagnostics.Array;
         }
 
-        private sealed record None : DiagnosticOr<T>
-        {
-            public static readonly None Instance = new();
-            private None() { }
-            public override bool HasValue => false;
-            public override bool HasDiagnostic => false;
-            public override T Value => throw new InvalidOperationException();
-            public override ImmutableArray<DiagnosticInfo> Diagnostics => throw new InvalidOperationException();
-        }
-
-        /// <summary>
-        /// Adds a diagnostic to the <see cref="DiagnosticOr{T}.Diagnostics"/> property
-        /// </summary>
-        private DiagnosticOr<T> AddDiagnostics(params ImmutableArray<DiagnosticInfo> diagnostics) => this switch
-        {
-            Diag d => new Diag(d.Diagnostics.AddRange(diagnostics)),
-            Val v => new ValueAndDiagnostic(v.Value, diagnostics),
-            ValueAndDiagnostic vad => new ValueAndDiagnostic(vad.Value, vad.Diagnostics.AddRange(diagnostics)),
-            _ => throw new UnreachableException()
-        };
-
-        /// <summary>
-        /// Creates a new <see cref="DiagnosticOr{T}"/> with the <see cref="DiagnosticOr{T}.Value"/> set to <paramref name="value"/>
-        /// </summary>
-        public DiagnosticOr<T> WithValue(T value) => this switch
-        {
-            Diag d => new ValueAndDiagnostic(value, d.Diagnostics),
-            Val => new Val(value),
-            ValueAndDiagnostic vad => new ValueAndDiagnostic(value, vad.Diagnostics),
-            _ => throw new UnreachableException()
-        };
-
         /// <summary>
         /// Create a Diagnostic variant
         /// </summary>
@@ -122,10 +74,6 @@ namespace Microsoft.Interop
         /// </summary>
         public static DiagnosticOr<T> From(T value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
             Debug.Assert(value is not null);
             return new Val(value);
         }
@@ -154,56 +102,11 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Splits the inner arrays of <paramref name="provider"/> into values and diagnostics.
-        /// </summary>
-        public static (IncrementalValuesProvider<SequenceEqualImmutableArray<T>>, IncrementalValuesProvider<DiagnosticInfo>) SplitArrays<T>(this IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> provider)
-        {
-            var values = provider.Select((arr, ct) => arr.Where(x => x.HasValue).Select((x, ct) => x.Value).ToSequenceEqualImmutableArray());
-            var diagnostics = provider.SelectMany((arr, ct) => arr.Where(x => x.HasDiagnostic).SelectMany((x, ct) => x.Diagnostics));
-            return (values, diagnostics);
-        }
-
-        /// <summary>
-        /// Splits the elements of <paramref name="provider"/> into groups depending on whether Item1 is a value or a Diagnostic.
-        /// </summary>
-        public static (IncrementalValuesProvider<(T, T2)>, IncrementalValuesProvider<DiagnosticInfo>) Split<T, T2>(this IncrementalValuesProvider<(DiagnosticOr<T>, T2)> provider)
-        {
-            var values = provider.Where(x => x.Item1.HasValue).Select(static (x, ct) => (x.Item1.Value, x.Item2));
-            var diagnostics = provider.Where(x => x.Item1.HasDiagnostic).SelectMany(static (x, ct) => x.Item1.Diagnostics);
-            return (values, diagnostics);
-        }
-
-        /// <summary>
         /// Filters the <see cref="IncrementalValuesProvider{TValue}"/> by whether or not the is a <see cref="Diagnostic"/>, reports the diagnostics, and returns the values.
         /// </summary>
         public static IncrementalValuesProvider<T> FilterAndReportDiagnostics<T>(this IncrementalGeneratorInitializationContext ctx, IncrementalValuesProvider<DiagnosticOr<T>> diagnosticOrValues)
         {
             var (values, diagnostics) = diagnosticOrValues.Split();
-            ctx.RegisterDiagnostics(diagnostics);
-            return values;
-        }
-
-        /// <summary>
-        /// Filters both <see cref="IncrementalValuesProvider{TValue}"/> by whether or not the value in <paramref name="diagnosticOrValues"/> is a <see cref="Diagnostic"/>, reports the diagnostics, and returns the values.
-        /// </summary>
-        public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<T2>) FilterAndReportDiagnostics<T, T2>(
-            this IncrementalGeneratorInitializationContext ctx,
-            IncrementalValuesProvider<DiagnosticOr<T>> diagnosticOrValues,
-            IncrementalValuesProvider<T2> associatedValues)
-        {
-            var (values, diagnostics) = diagnosticOrValues.Zip(associatedValues).Split();
-            ctx.RegisterDiagnostics(diagnostics);
-            return values.Split();
-        }
-
-        /// <summary>
-        /// Filters each inner <see cref="IEnumerable{T}"/> of <see cref="DiagnosticOr{T}"/> by whether the elements are <see cref="Diagnostic"/>s, reports the diagnostics, and returns the values.
-        /// </summary>
-        public static IncrementalValuesProvider<SequenceEqualImmutableArray<T>> FilterAndReportDiagnostics<T>(
-            this IncrementalGeneratorInitializationContext ctx,
-            IncrementalValuesProvider<SequenceEqualImmutableArray<DiagnosticOr<T>>> diagnosticOrValues)
-        {
-            var (values, diagnostics) = diagnosticOrValues.SplitArrays<T>();
             ctx.RegisterDiagnostics(diagnostics);
             return values;
         }

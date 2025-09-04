@@ -9,12 +9,12 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal sealed class PipelineItem<T> : IEquatable<PipelineItem<T>>
+    internal sealed class ItemAndSyntaxes<T> : IEquatable<ItemAndSyntaxes<T>>
     {
         private T _item;
         private ImmutableArray<SyntaxNode> _syntaxNodes;
         public SyntaxNode this[int index] => _syntaxNodes[index];
-        public PipelineItem(T item, params ImmutableArray<SyntaxNode> nodes)
+        public ItemAndSyntaxes(T item, params ImmutableArray<SyntaxNode> nodes)
         {
             _item = item;
             _syntaxNodes = nodes;
@@ -22,12 +22,7 @@ namespace Microsoft.Interop
 
         public T Context => _item;
 
-        public PipelineItem<T> WithNode(SyntaxNode node)
-        {
-            return new PipelineItem<T>(_item, _syntaxNodes.Add(node));
-        }
-
-        public bool Equals(PipelineItem<T> other)
+        public bool Equals(ItemAndSyntaxes<T> other)
         {
             if (other is null) return false;
             if (!other._item.Equals(_item)) return false;
@@ -47,7 +42,7 @@ namespace Microsoft.Interop
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as PipelineItem<T>);
+            return Equals(obj as ItemAndSyntaxes<T>);
         }
 
         public override int GetHashCode()

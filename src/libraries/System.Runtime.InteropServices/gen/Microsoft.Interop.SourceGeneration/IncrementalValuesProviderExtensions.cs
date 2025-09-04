@@ -9,26 +9,6 @@ namespace Microsoft.Interop
 {
     public static class IncrementalValuesProviderExtensions
     {
-        public static IncrementalValuesProvider<(T Left, U Right)> Zip<T, U>(this IncrementalValuesProvider<T> left, IncrementalValuesProvider<U> right)
-        {
-            return left
-                .Collect()
-                .Combine(right.Collect())
-                .SelectMany(static (data, ct) =>
-                {
-                    if (data.Left.Length != data.Right.Length)
-                    {
-                        throw new InvalidOperationException("The two value providers must provide the same number of values.");
-                    }
-                    ImmutableArray<(T, U)>.Builder builder = ImmutableArray.CreateBuilder<(T, U)>(data.Left.Length);
-                    for (int i = 0; i < data.Left.Length; i++)
-                    {
-                        builder.Add((data.Left[i], data.Right[i]));
-                    }
-                    return builder.MoveToImmutable();
-                });
-        }
-
         /// <summary>
         /// Format the syntax nodes in the given provider such that we will not re-normalize if the input nodes have not changed.
         /// </summary>

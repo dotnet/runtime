@@ -38,7 +38,7 @@ namespace Microsoft.Interop
             var attributedClasses = context.FilterAndReportDiagnostics(attributedClassesOrDiagnostics);
 
             var classInfoType = attributedClasses
-                .Select(static (info, ct) => new PipelineItem<ComClassInfo>(info,
+                .Select(static (info, ct) => new ItemAndSyntaxes<ComClassInfo>(info,
                 [
                     GenerateClassInfoType(info.ImplementedInterfacesNames.Array).NormalizeWhitespace(),
                     GenerateClassInfoAttributeOnUserType(info.ContainingSyntaxContext, info.ClassSyntax).NormalizeWhitespace()
