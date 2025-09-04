@@ -2854,6 +2854,16 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CorInfoCallConv callConv)
+{
+    AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
+    m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
+    m_pLastNewIns->data[1] = (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG) ? 0 : 1;
+    m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -3259,9 +3269,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, callInfo.sig.getCallConv());
             }
             else
             {
@@ -3318,9 +3326,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-            m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-            m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
+            EmitCalli(tailcall, calliCookie, codePointerLookupResult, callInfo.sig.getCallConv());
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
@@ -3353,9 +3359,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
+                EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, callInfo.sig.getCallConv());
             }
             else
             {

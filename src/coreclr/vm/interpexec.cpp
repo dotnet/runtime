@@ -14,7 +14,8 @@
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget);
-void InvokeCalliStub(PCODE ftn, void* stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet);
+void InvokePInvokeCalliStub(PCODE ftn, void *cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
@@ -127,6 +128,40 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(target); // The method to call
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+}
+
+void InvokePInvokeCalliStub(PCODE ftn, void *cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(stubHeaderTemplate));
+    }
+    CONTRACTL_END
+
+    // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
+    // copied to a local buffer before we can actually set their target address.
+    CallStubHeader* stubHeaderTemplate = (CallStubHeader*)cookie;
+    size_t templateSize = stubHeaderTemplate->GetSize();
+    uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
+    memcpy(actualCallStub, stubHeaderTemplate, templateSize);
+    CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
+    pHeader->SetTarget(ftn); // The method to call
+
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+    {
+        GCX_PREEMP();
+        pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+    }
+    inlinedCallFrame.Pop();
 }
 
 void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
@@ -2117,15 +2152,24 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
+                    bool isPInvoke = ip[5] != 0;
 
                     void* cookie = pMethod->pDataItems[calliCookie];
-                    ip += 5;
+                    ip += 6;
 
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
                     // Interpreter-FIXME: isTailcall
-                    InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                    if (isPInvoke)
+                    {
+                        InvokePInvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
+                    }
+                    else
+                    {
+                        InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                    }
+
                     break;
                 }
 
