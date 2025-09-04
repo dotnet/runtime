@@ -3971,7 +3971,7 @@ bool InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     if (HasFlag(m_originalRetryFlags, InterpreterRetryFlags::RetryWithSavedThisPointer))
     {
-        // If this flag is set, then we need to handle the case where an IL instruction may change the 
+        // If this flag is set, then we need to handle the case where an IL instruction may change the
         // value of the this pointer during the execution of the method. We do that by operating on a
         // local copy of the this pointer instead of the original this pointer for most operations.
 
