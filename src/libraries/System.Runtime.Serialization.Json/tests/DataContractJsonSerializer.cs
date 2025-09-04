@@ -3108,14 +3108,14 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_SerializationSurrogateProvider_PassedToInternalSerializer()
     {
-        // Setup: Create a test surrogate that transforms TestClassA to TestClassB
-        var surrogateProvider = new TestSurrogateProvider();
+        // Setup: Create a test surrogate that transforms NonSerializablePerson
+        var surrogateProvider = new MyPersonSurrogateProvider();
         
         // Create the serializer and set the surrogate provider
-        var serializer = new DataContractJsonSerializer(typeof(TestClassA));
+        var serializer = new DataContractJsonSerializer(typeof(NonSerializablePerson));
         serializer.SetSerializationSurrogateProvider(surrogateProvider);
         
-        var testObj = new TestClassA { Value = "OriginalValue" };
+        var testObj = new NonSerializablePerson("John", 30);
         
         // Act: Serialize the object
         byte[] serializedData;
@@ -3126,72 +3126,22 @@ public static partial class DataContractJsonSerializerTests
         }
         
         // The surrogate should have been called during serialization
-        Assert.True(surrogateProvider.SerializationSurrogateWasCalled, "Serialization surrogate should have been called during WriteObject");
+        Assert.True(surrogateProvider.GetSurrogateTypeWasCalled, "GetSurrogateType should have been called during WriteObject");
+        Assert.True(surrogateProvider.GetObjectToSerializeWasCalled, "GetObjectToSerialize should have been called during WriteObject");
         
         // Act: Deserialize the object
-        TestClassA deserializedObj;
+        NonSerializablePerson deserializedObj;
         using (var ms = new MemoryStream(serializedData))
         {
-            deserializedObj = (TestClassA)serializer.ReadObject(ms);
+            deserializedObj = (NonSerializablePerson)serializer.ReadObject(ms);
         }
         
         // The surrogate should have been called during deserialization
-        Assert.True(surrogateProvider.DeserializationSurrogateWasCalled, "Deserialization surrogate should have been called during ReadObject");
+        Assert.True(surrogateProvider.GetDeserializedObjectWasCalled, "GetDeserializedObject should have been called during ReadObject");
         
-        // Verify the surrogate transformation was applied
-        Assert.Equal("TransformedValue", deserializedObj.Value);
+        // Verify the object was properly deserialized
+        Assert.Equal("John", deserializedObj.Name);
+        Assert.Equal(30, deserializedObj.Age);
     }
 
-    // Test classes for surrogate provider testing
-    [DataContract]
-    public class TestClassA
-    {
-        [DataMember]
-        public string Value { get; set; }
-    }
-
-    [DataContract]
-    public class TestClassB
-    {
-        [DataMember]
-        public string TransformedValue { get; set; }
-    }
-
-    // Test surrogate provider implementation
-    public class TestSurrogateProvider : ISerializationSurrogateProvider
-    {
-        public bool SerializationSurrogateWasCalled { get; private set; }
-        public bool DeserializationSurrogateWasCalled { get; private set; }
-
-        public Type GetSurrogateType(Type type)
-        {
-            if (type == typeof(TestClassA))
-            {
-                return typeof(TestClassB);
-            }
-            return type;
-        }
-
-        public object GetObjectToSerialize(object obj, Type targetType)
-        {
-            SerializationSurrogateWasCalled = true;
-            
-            if (obj is TestClassA testA && targetType == typeof(TestClassB))
-            {
-                return new TestClassB { TransformedValue = testA.Value };
-            }
-            return obj;
-        }
-
-        public object GetDeserializedObject(object obj, Type targetType)
-        {
-            DeserializationSurrogateWasCalled = true;
-            
-            if (obj is TestClassB testB && targetType == typeof(TestClassA))
-            {
-                return new TestClassA { Value = "TransformedValue" };
-            }
-            return obj;
-        }
-    }
 }
