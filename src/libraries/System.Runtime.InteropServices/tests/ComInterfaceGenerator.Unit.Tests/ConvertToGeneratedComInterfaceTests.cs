@@ -479,5 +479,26 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
+
+        [Fact]
+        public async Task Event()
+        {
+            // Events are not supported at this time.
+            // Make sure we don't offer a fix in this scenario.
+            string source = """
+               using System;
+               using System.Runtime.InteropServices;
+
+               [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public interface I
+               {
+                   event Action Evt;
+               }
+               """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
     }
 }
