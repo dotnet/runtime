@@ -1889,49 +1889,49 @@ namespace System
                         {
                             return (int)(offset);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 1);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 1);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 2);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 2);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 3);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 3);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 4);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 4);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 5);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 5);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 6);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 6);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 7);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset + 7);
                         }
-    
+
                         offset += 8;
                     }
                 }
@@ -2130,43 +2130,43 @@ namespace System
                         {
                             return (int)(offset);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 1);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 1);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 2);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 2);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 3);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 3);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 4);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 4);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 5);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 5);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 6);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset + 6);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, 7);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
@@ -2849,43 +2849,43 @@ namespace System
                         {
                             return (int)(offset);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -1);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 1);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -2);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 2);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -3);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 3);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -4);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 4);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -5);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 5);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -6);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
                             return (int)(offset - 6);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -7);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1))
                         {
@@ -3066,43 +3066,43 @@ namespace System
                         {
                             return (int)(offset);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -1);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 1);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -2);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 2);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -3);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 3);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -4);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 4);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -5);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 5);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -6);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
                             return (int)(offset - 6);
                         }
-    
+
                         lookUp = Unsafe.Add(ref current, -7);
                         if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2))
                         {
