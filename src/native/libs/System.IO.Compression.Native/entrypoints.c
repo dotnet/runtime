@@ -11,6 +11,7 @@
 #include <brotli/encode.h>
 #include <brotli/port.h>
 #include <brotli/types.h>
+#include <zstd.h>
 #endif // !TARGET_WASM
 
 static const Entry s_compressionNative[] =
@@ -37,6 +38,27 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
+#if !defined(TARGET_WASM)
+    DllImportEntry(ZSTD_compress)
+    DllImportEntry(ZSTD_compressBound)
+    DllImportEntry(ZSTD_compressStream2)
+    DllImportEntry(ZSTD_createCCtx)
+    DllImportEntry(ZSTD_createDCtx)
+    DllImportEntry(ZSTD_CCtx_setParameter)
+    DllImportEntry(ZSTD_CStreamInSize)
+    DllImportEntry(ZSTD_CStreamOutSize)
+    DllImportEntry(ZSTD_decompress)
+    DllImportEntry(ZSTD_decompressStream)
+    DllImportEntry(ZSTD_defaultCLevel)
+    DllImportEntry(ZSTD_DStreamInSize)
+    DllImportEntry(ZSTD_DStreamOutSize)
+    DllImportEntry(ZSTD_freeCCtx)
+    DllImportEntry(ZSTD_freeDCtx)
+    DllImportEntry(ZSTD_getErrorName)
+    DllImportEntry(ZSTD_isError)
+    DllImportEntry(ZSTD_maxCLevel)
+    DllImportEntry(ZSTD_minCLevel)
+#endif // !TARGET_WASM
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);
