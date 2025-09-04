@@ -128,6 +128,9 @@ namespace ILLink.RoslynAnalyzer
                 foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
                     context.RegisterSyntaxNodeAction(extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
 
+                // Register the implicit base constructor analysis for all analyzers
+                context.RegisterSymbolAction(AnalyzeImplicitBaseCtor, SymbolKind.NamedType);
+
                 foreach (var extraSymbolAction in ExtraSymbolActions)
                     context.RegisterSymbolAction(extraSymbolAction.Action, extraSymbolAction.SymbolKind);
 
@@ -195,6 +198,33 @@ namespace ILLink.RoslynAnalyzer
                 return;
 
             CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
+        }
+
+        private void AnalyzeImplicitBaseCtor(SymbolAnalysisContext context)
+        {
+            var typeSymbol = (INamedTypeSymbol)context.Symbol;
+
+            if (typeSymbol.TypeKind != TypeKind.Class || typeSymbol.BaseType == null)
+                return;
+
+            if (typeSymbol.InstanceConstructors.Length != 1 || !typeSymbol.InstanceConstructors[0].IsImplicitlyDeclared)
+                return;
+
+            var implicitCtor = typeSymbol.InstanceConstructors[0];
+
+            var baseCtor = typeSymbol.BaseType.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+            if (baseCtor == null)
+                return;
+
+            var diagnosticContext = new DiagnosticContext(
+                typeSymbol.Locations[0],
+                context.ReportDiagnostic);
+
+            CheckAndCreateRequiresDiagnostic(
+                baseCtor,
+                implicitCtor,
+                ImmutableArray<ISymbol>.Empty,
+                diagnosticContext);
         }
 
         [Flags]

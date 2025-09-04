@@ -138,10 +138,10 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             {
                 result = contract.GetPath(handle);
             }
-            catch (InvalidOperationException)
+            catch (VirtualReadException)
             {
                 // The memory for the path may not be enumerated - for example, in triage dumps
-                // In this case, GetPath will throw InvalidOperationException
+                // In this case, GetPath will throw VirtualReadException
             }
 
             if (string.IsNullOrEmpty(result))

@@ -45,7 +45,7 @@ public class ConvertDllsToWebCil : Task
         if (!Directory.Exists(OutputPath))
             Directory.CreateDirectory(OutputPath);
 
-        string tmpDir = IntermediateOutputPath;
+        string tmpDir = Path.Combine(IntermediateOutputPath, Guid.NewGuid().ToString("N"));
         if (!Directory.Exists(tmpDir))
             Directory.CreateDirectory(tmpDir);
 
@@ -72,6 +72,8 @@ public class ConvertDllsToWebCil : Task
             }
         }
 
+        Directory.Delete(tmpDir, true);
+
         WebCilCandidates = webCilCandidates.ToArray();
         return true;
     }
@@ -96,7 +98,7 @@ public class ConvertDllsToWebCil : Task
             if (!Directory.Exists(candidatePath))
                 Directory.CreateDirectory(candidatePath);
 
-            if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+            if (Utils.MoveIfDifferent(tmpWebcil, finalWebcil))
                 Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
             else
                 Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
