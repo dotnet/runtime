@@ -258,7 +258,7 @@ FCFuncStart(gObjectHeaderFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
-    FCFuncElement("GetLockHandleIfExists", MonitorGetLockHandleIfExists)
+    FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
 FCFuncEnd()
 
 FCFuncStart(gCastHelpers)
