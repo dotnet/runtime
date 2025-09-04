@@ -310,8 +310,12 @@ protected:
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+#ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS

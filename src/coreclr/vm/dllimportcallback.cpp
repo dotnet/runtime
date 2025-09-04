@@ -289,7 +289,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
         UMEntryThunk* pThunk;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        _ASSERTE(!"Not implemented");
+        PORTABILITY_ASSERT("WASMTODO: Marshalled delegates are not supported with wasm.");
         pThunk = NULL;
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
