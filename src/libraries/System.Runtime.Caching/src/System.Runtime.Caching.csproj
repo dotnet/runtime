@@ -83,6 +83,7 @@ System.Runtime.Caching.ObjectCache</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="System\Runtime\Caching\MemoryMonitor.Unix.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Unix.cs" />
   </ItemGroup>
 
