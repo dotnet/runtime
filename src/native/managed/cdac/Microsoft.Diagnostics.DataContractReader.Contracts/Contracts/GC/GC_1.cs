@@ -150,6 +150,23 @@ internal readonly struct GC_1 : IGC
             InternalRootArray = heap.InternalRootArray,
             InternalRootArrayIndex = heap.InternalRootArrayIndex,
             HeapAnalyzeSuccess = heap.HeapAnalyzeSuccess,
+
+            InterestingData = ReadGCHeapDataArray(
+                heap.InterestingData,
+                _target.ReadGlobal<uint>(Constants.Globals.InterestingDataLength))
+                .AsReadOnly(),
+            CompactReasons = ReadGCHeapDataArray(
+                heap.CompactReasons,
+                _target.ReadGlobal<uint>(Constants.Globals.CompactReasonsLength))
+                .AsReadOnly(),
+            ExpandMechanisms = ReadGCHeapDataArray(
+                heap.ExpandMechanisms,
+                _target.ReadGlobal<uint>(Constants.Globals.ExpandMechanismsLength))
+                .AsReadOnly(),
+            InterestingMechanismBits = ReadGCHeapDataArray(
+                heap.InterestingMechanismBits,
+                _target.ReadGlobal<uint>(Constants.Globals.InterestingMechanismBitsLength))
+                .AsReadOnly(),
         };
     }
 
@@ -180,8 +197,16 @@ internal readonly struct GC_1 : IGC
         TargetPointer fillPointersArrayStart = cFinalize.FillPointers;
         List<TargetPointer> fillPointers = [];
         for (uint i = 0; i < fillPointersLength; i++)
-            fillPointers.Add(_target.ReadPointer(fillPointersArrayStart + i * (ulong)_target.PointerSize));
+            fillPointers.Add(_target.ReadPointer(fillPointersArrayStart + i * (uint)_target.PointerSize));
         return fillPointers;
+    }
+
+    private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint length)
+    {
+        List<TargetNUInt> arr = [];
+        for (uint i = 0; i < length; i++)
+            arr.Add(_target.ReadNUInt(arrayStart + (i * (uint)_target.PointerSize)));
+        return arr;
     }
 
     GCOOMData IGC.WKSGetOOMData()

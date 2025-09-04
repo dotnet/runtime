@@ -3051,10 +3051,150 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface2
 
     #region ISOSDacInterface3
-    int ISOSDacInterface3.GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoData(interestingInfoAddr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface3.GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoStaticData(data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface3.GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, DacpGCInterestingInfoData* data)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (interestingInfoAddr == 0 || data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // doesn't make sense to call this on WKS mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            GCHeapData heapData = gc.SVRGetHeapData(interestingInfoAddr.ToTargetPointer(_target));
+
+            PopulateGCInterestingInfoData(heapData, data);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl3 is not null)
+        {
+            DacpGCInterestingInfoData dataLocal = default;
+            int hrLocal = _legacyImpl3.GetGCInterestingInfoData(interestingInfoAddr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                VerifyGCInterestingInfoData(data, &dataLocal);
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int ISOSDacInterface3.GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ DacpGCInterestingInfoData* data)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+
+            // doesn't make sense to call this on SVR mode
+            if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            // For workstation GC, use WKSGetHeapData
+            GCHeapData heapData = gc.WKSGetHeapData();
+
+            PopulateGCInterestingInfoData(heapData, data);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl3 is not null)
+        {
+            DacpGCInterestingInfoData dataLocal = default;
+            int hrLocal = _legacyImpl3.GetGCInterestingInfoStaticData(&dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                VerifyGCInterestingInfoData(data, &dataLocal);
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    private static void PopulateGCInterestingInfoData(GCHeapData heapData, DacpGCInterestingInfoData* data)
+    {
+        *data = default;
+
+        // Copy interesting data points
+        for (int i = 0; i < Math.Min(GCConstants.DAC_NUM_GC_DATA_POINTS, heapData.InterestingData.Count); i++)
+            data->interestingDataPoints[i] = (nuint)heapData.InterestingData[i].Value;
+
+        // Copy compact reasons
+        for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_COMPACT_REASONS_COUNT, heapData.CompactReasons.Count); i++)
+            data->compactReasons[i] = (nuint)heapData.CompactReasons[i].Value;
+
+        // Copy expand mechanisms
+        for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_EXPAND_MECHANISMS_COUNT, heapData.ExpandMechanisms.Count); i++)
+            data->expandMechanisms[i] = (nuint)heapData.ExpandMechanisms[i].Value;
+
+        // Copy interesting mechanism bits
+        for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_GC_MECHANISM_BITS_COUNT, heapData.InterestingMechanismBits.Count); i++)
+            data->bitMechanisms[i] = (nuint)heapData.InterestingMechanismBits[i].Value;
+    }
+
+#if DEBUG
+    private static void VerifyGCInterestingInfoData(DacpGCInterestingInfoData* cdacData, DacpGCInterestingInfoData* legacyData)
+    {
+        // Compare interesting data points array
+        for (int i = 0; i < GCConstants.DAC_NUM_GC_DATA_POINTS; i++)
+        {
+            Debug.Assert(cdacData->interestingDataPoints[i] == legacyData->interestingDataPoints[i],
+                $"interestingDataPoints[{i}] - cDAC: {cdacData->interestingDataPoints[i]}, DAC: {legacyData->interestingDataPoints[i]}");
+        }
+
+        // Compare compact reasons array
+        for (int i = 0; i < GCConstants.DAC_MAX_COMPACT_REASONS_COUNT; i++)
+        {
+            Debug.Assert(cdacData->compactReasons[i] == legacyData->compactReasons[i],
+                $"compactReasons[{i}] - cDAC: {cdacData->compactReasons[i]}, DAC: {legacyData->compactReasons[i]}");
+        }
+
+        // Compare expand mechanisms array
+        for (int i = 0; i < GCConstants.DAC_MAX_EXPAND_MECHANISMS_COUNT; i++)
+        {
+            Debug.Assert(cdacData->expandMechanisms[i] == legacyData->expandMechanisms[i],
+                $"expandMechanisms[{i}] - cDAC: {cdacData->expandMechanisms[i]}, DAC: {legacyData->expandMechanisms[i]}");
+        }
+
+        // Compare bit mechanisms array
+        for (int i = 0; i < GCConstants.DAC_MAX_GC_MECHANISM_BITS_COUNT; i++)
+        {
+            Debug.Assert(cdacData->bitMechanisms[i] == legacyData->bitMechanisms[i],
+                $"bitMechanisms[{i}] - cDAC: {cdacData->bitMechanisms[i]}, DAC: {legacyData->bitMechanisms[i]}");
+        }
+
+        // Compare global mechanisms array
+        for (int i = 0; i < GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+        {
+            Debug.Assert(cdacData->globalMechanisms[i] == legacyData->globalMechanisms[i],
+                $"globalMechanisms[{i}] - cDAC: {cdacData->globalMechanisms[i]}, DAC: {legacyData->globalMechanisms[i]}");
+        }
+    }
+#endif
+
     int ISOSDacInterface3.GetGCGlobalMechanisms(nuint* globalMechanisms)
         => _legacyImpl3 is not null ? _legacyImpl3.GetGCGlobalMechanisms(globalMechanisms) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface3

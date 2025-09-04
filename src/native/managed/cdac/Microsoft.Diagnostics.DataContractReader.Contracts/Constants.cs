@@ -86,8 +86,14 @@ public static class Constants
         public const string Heaps = nameof(Heaps);
         public const string CurrentGCState = nameof(CurrentGCState);
         public const string DynamicAdaptationMode = nameof(DynamicAdaptationMode);
-        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+
         public const string TotalGenerationCount = nameof(TotalGenerationCount);
+        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string InterestingDataLength = nameof(InterestingDataLength);
+        public const string CompactReasonsLength = nameof(CompactReasonsLength);
+        public const string ExpandMechanismsLength = nameof(ExpandMechanismsLength);
+        public const string InterestingMechanismBitsLength = nameof(InterestingMechanismBitsLength);
+        public const string GlobalMechanismsLength = nameof(GlobalMechanismsLength);
 
         public const string GCHeapMarkArray = nameof(GCHeapMarkArray);
         public const string GCHeapNextSweepObj = nameof(GCHeapNextSweepObj);

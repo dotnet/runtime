@@ -36,6 +36,11 @@ public readonly struct GCHeapData
     public TargetPointer InternalRootArray { get; init; }
     public TargetNUInt InternalRootArrayIndex { get; init; }
     public bool HeapAnalyzeSuccess { get; init; }
+
+    public IReadOnlyList<TargetNUInt> InterestingData { get; init; }
+    public IReadOnlyList<TargetNUInt> CompactReasons { get; init; }
+    public IReadOnlyList<TargetNUInt> ExpandMechanisms { get; init; }
+    public IReadOnlyList<TargetNUInt> InterestingMechanismBits { get; init; }
 }
 
 public readonly struct GCGenerationData
