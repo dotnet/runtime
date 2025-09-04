@@ -341,6 +341,22 @@ internal struct DacpGcHeapDetails
     public ClrDataAddress card_table;
 }
 
+internal struct DacpHeapSegmentData
+{
+    public ClrDataAddress segmentAddr;
+    public ClrDataAddress allocated;
+    public ClrDataAddress committed;
+    public ClrDataAddress reserved;
+    public ClrDataAddress used;
+    public ClrDataAddress mem;
+    public ClrDataAddress next; /* pass this to request if non-null to get the next segments */
+    public ClrDataAddress gc_heap; /* only filled in server mode, otherwise NULL */
+    public ClrDataAddress highAllocMark; /* if this is the ephemeral segment highMark includes the ephemeral generation */
+
+    public nuint flags;
+    public ClrDataAddress background_allocated;
+}
+
 internal struct DacpOomData
 {
     public int reason;
@@ -491,7 +507,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapStaticData(DacpGcHeapDetails* details);
     [PreserveSig]
-    int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
+    int GetHeapSegmentData(ClrDataAddress seg, DacpHeapSegmentData* data);
     [PreserveSig]
     int GetOOMData(ClrDataAddress oomAddr, DacpOomData* data);
     [PreserveSig]

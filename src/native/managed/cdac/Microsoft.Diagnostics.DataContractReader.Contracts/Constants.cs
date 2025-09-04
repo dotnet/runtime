@@ -86,6 +86,7 @@ public static class Constants
         public const string Heaps = nameof(Heaps);
         public const string CurrentGCState = nameof(CurrentGCState);
         public const string DynamicAdaptationMode = nameof(DynamicAdaptationMode);
+        public const string GCGlobalMechanisms = nameof(GCGlobalMechanisms);
 
         public const string TotalGenerationCount = nameof(TotalGenerationCount);
         public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);

@@ -99,6 +99,14 @@ internal readonly struct GC_1 : IGC
         };
     }
 
+    IReadOnlyList<TargetNUInt> IGC.GetGlobalMechanisms()
+    {
+        if (!_target.TryReadGlobalPointer(Constants.Globals.GCGlobalMechanisms, out TargetPointer? globalMechanismsArrayStart))
+            return Array.Empty<TargetNUInt>();
+        uint globalMechanismsLength = _target.ReadGlobal<uint>(Constants.Globals.GlobalMechanismsLength);
+        return ReadGCHeapDataArray(globalMechanismsArrayStart.Value, globalMechanismsLength);
+    }
+
     IEnumerable<TargetPointer> IGC.GetGCHeaps()
     {
         if (GetGCType() != GCType.Server)

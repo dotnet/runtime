@@ -90,6 +90,7 @@ public interface IGC : IContract
     uint GetCurrentGCState() => throw new NotImplementedException();
     int GetDynamicAdaptationMode() => throw new NotImplementedException();
     GCHeapSegmentData GetHeapSegmentData(TargetPointer segmentAddress) => throw new NotImplementedException();
+    IReadOnlyList<TargetNUInt> GetGlobalMechanisms() => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 
     /* WKS only APIs */

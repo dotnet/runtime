@@ -1207,8 +1207,74 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHeapSegmentData(seg, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, DacpHeapSegmentData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (seg == 0 || data == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            GCHeapSegmentData segmentData = gc.GetHeapSegmentData(seg.ToTargetPointer(_target));
+
+            data->segmentAddr = seg;
+            data->allocated = segmentData.Allocated.ToClrDataAddress(_target);
+            data->committed = segmentData.Committed.ToClrDataAddress(_target);
+            data->reserved = segmentData.Reserved.ToClrDataAddress(_target);
+            data->used = segmentData.Used.ToClrDataAddress(_target);
+            data->mem = segmentData.Mem.ToClrDataAddress(_target);
+            data->next = segmentData.Next.ToClrDataAddress(_target);
+            data->gc_heap = segmentData.Heap.ToClrDataAddress(_target);
+            data->flags = (nuint)segmentData.Flags.Value;
+            data->background_allocated = segmentData.BackgroundAllocated.ToClrDataAddress(_target);
+
+            // TODO: Compute highAllocMark - need to determine if this is the ephemeral segment
+            // and get the allocation mark from the appropriate heap data
+            // For now, use allocated as a fallback (similar to non-ephemeral segments in legacy code)
+            data->highAllocMark = data->allocated;
+
+            GCHeapData heapData = gcIdentifiers.Contains(GCIdentifiers.Server) ? gc.SVRGetHeapData(segmentData.Heap) : gc.WKSGetHeapData();
+            if (seg.ToTargetPointer(_target) == heapData.EphemeralHeapSegment)
+            {
+                data->highAllocMark = heapData.AllocAllocated.ToClrDataAddress(_target);
+            }
+            else
+            {
+                data->highAllocMark = data->allocated;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpHeapSegmentData dataLocal = default;
+            int hrLocal = _legacyImpl.GetHeapSegmentData(seg, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->segmentAddr == dataLocal.segmentAddr, $"segmentAddr - cDAC: {data->segmentAddr:x}, DAC: {dataLocal.segmentAddr:x}");
+                Debug.Assert(data->allocated == dataLocal.allocated, $"allocated - cDAC: {data->allocated:x}, DAC: {dataLocal.allocated:x}");
+                Debug.Assert(data->committed == dataLocal.committed, $"committed - cDAC: {data->committed:x}, DAC: {dataLocal.committed:x}");
+                Debug.Assert(data->reserved == dataLocal.reserved, $"reserved - cDAC: {data->reserved:x}, DAC: {dataLocal.reserved:x}");
+                Debug.Assert(data->used == dataLocal.used, $"used - cDAC: {data->used:x}, DAC: {dataLocal.used:x}");
+                Debug.Assert(data->mem == dataLocal.mem, $"mem - cDAC: {data->mem:x}, DAC: {dataLocal.mem:x}");
+                Debug.Assert(data->next == dataLocal.next, $"next - cDAC: {data->next:x}, DAC: {dataLocal.next:x}");
+                Debug.Assert(data->gc_heap == dataLocal.gc_heap, $"gc_heap - cDAC: {data->gc_heap:x}, DAC: {dataLocal.gc_heap:x}");
+                Debug.Assert(data->highAllocMark == dataLocal.highAllocMark, $"highAllocMark - cDAC: {data->highAllocMark:x}, DAC: {dataLocal.highAllocMark:x}");
+                Debug.Assert(data->flags == dataLocal.flags, $"flags - cDAC: {data->flags:x}, DAC: {dataLocal.flags:x}");
+                Debug.Assert(data->background_allocated == dataLocal.background_allocated, $"background_allocated - cDAC: {data->background_allocated:x}, DAC: {dataLocal.background_allocated:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int ISOSDacInterface.GetHillClimbingLogEntry(ClrDataAddress addr, void* data)
     {
@@ -3092,7 +3158,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface3.GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ DacpGCInterestingInfoData* data)
+    int ISOSDacInterface3.GetGCInterestingInfoStaticData(DacpGCInterestingInfoData* data)
     {
         int hr = HResults.S_OK;
 
@@ -3137,6 +3203,10 @@ internal sealed unsafe partial class SOSDacImpl
     private static void PopulateGCInterestingInfoData(GCHeapData heapData, DacpGCInterestingInfoData* data)
     {
         *data = default;
+
+        // The DacpGCInterestingInfoData struct hardcodes platform sized ints.
+        // This is problematic for new cross-bit scenarios.
+        // If the target platform is 64-bits but the cDAC/SOS is 32-bits, the values will be truncated.
 
         // Copy interesting data points
         for (int i = 0; i < Math.Min(GCConstants.DAC_NUM_GC_DATA_POINTS, heapData.InterestingData.Count); i++)
@@ -3196,7 +3266,56 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
 
     int ISOSDacInterface3.GetGCGlobalMechanisms(nuint* globalMechanisms)
-        => _legacyImpl3 is not null ? _legacyImpl3.GetGCGlobalMechanisms(globalMechanisms) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (globalMechanisms == null)
+                throw new ArgumentException();
+
+            IGC gc = _target.Contracts.GC;
+            IReadOnlyList<TargetNUInt> globalMechanismsData = gc.GetGlobalMechanisms();
+
+            // Clear the array
+            for (int i = 0; i < GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+                globalMechanisms[i] = 0;
+
+            // Copy global mechanisms data
+            for (int i = 0; i < Math.Min(GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT, globalMechanismsData.Count); i++)
+            {
+                // This API hardcodes platform sized ints in the struct
+                // This is problematic for new cross-bit scenarios.
+                // If the target platform is 64-bits but the cDAC/SOS is 32-bits, the values will be truncated.
+                globalMechanisms[i] = (nuint)globalMechanismsData[i].Value;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl3 is not null)
+        {
+            nuint[] globalMechanismsLocal = new nuint[GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT];
+            fixed (nuint* pLocal = globalMechanismsLocal)
+            {
+                int hrLocal = _legacyImpl3.GetGCGlobalMechanisms(pLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK)
+                {
+                    for (int i = 0; i < GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+                    {
+                        Debug.Assert(globalMechanisms[i] == globalMechanismsLocal[i],
+                            $"globalMechanisms[{i}] - cDAC: {globalMechanisms[i]}, DAC: {globalMechanismsLocal[i]}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
     #endregion ISOSDacInterface3
 
     #region ISOSDacInterface4
