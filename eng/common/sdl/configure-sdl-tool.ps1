@@ -95,7 +95,7 @@ try {
         if ($targetDirectory) {
           # Binskim crashes due to specific PDBs. GitHub issue: https://github.com/microsoft/binskim/issues/924.
           # We are excluding all `_.pdb` files from the scan.
-          $tool.Args += "`"Target < $TargetDirectory\**;-:file|$TargetDirectory\**\_.pdb`""
+          $tool.Args += "`"Target < $TargetDirectory\**;-:file|$TargetDirectory\**\_.pdb;-:file|$TargetDirectory\**\llvm-mca.exe;-:file|$TargetDirectory\**\FileCheck.exe`""
         }
         $tool.Args += $BinskimAdditionalRunConfigParams
       }
