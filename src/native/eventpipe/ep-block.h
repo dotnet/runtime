@@ -184,6 +184,7 @@ bool
 ep_event_block_base_write_event (
 	EventPipeEventBlockBase *event_block_base,
 	EventPipeEventInstance *event_instance,
+	uint32_t metadata_id,
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
 	uint32_t stack_id,
