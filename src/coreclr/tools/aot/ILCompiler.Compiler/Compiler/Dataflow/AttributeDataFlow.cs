@@ -37,11 +37,14 @@ namespace ILCompiler.Dataflow
             _logger = logger;
             _origin = origin;
 
+            // Warnings for attributes on type declarations are not suppressed by RUC on the type.
+            // This allows attribute warnings to still be reported when attributes are applied to RUC types.
+            bool isAttributeOnType = _origin.MemberDefinition is TypeDesc;
             _diagnosticContext = new DiagnosticContext(
                 _origin,
-                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
-                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                !isAttributeOnType && _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                !isAttributeOnType && _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                !isAttributeOnType && _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 _logger);
         }
 
