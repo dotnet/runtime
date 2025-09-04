@@ -20,15 +20,17 @@ namespace System.Collections.Concurrent.Tests
                 {
                     var events = new ConcurrentQueue<int>();
 
-                    const int AcquiringAllLocksEventId = 3;
                     Clear(events);
-                    listener.RunWithCallback(ev => events.Enqueue(ev.EventId), () =>
-                    {
-                        var cd = new ConcurrentDictionary<int, int>();
-                        cd.TryAdd(1, 1);
-                        cd.Clear();
-                    });
-                    Assert.True(events.Count(i => i == AcquiringAllLocksEventId) > 0);
+
+                    // No longer fired after we moved ConcurrentDictionary to coreLib.
+                    // const int AcquiringAllLocksEventId = 3;
+                    // listener.RunWithCallback(ev => events.Enqueue(ev.EventId), () =>
+                    // {
+                    //     var cd = new ConcurrentDictionary<int, int>();
+                    //     cd.TryAdd(1, 1);
+                    //     cd.Clear();
+                    // });
+                    // Assert.True(events.Count(i => i == AcquiringAllLocksEventId) > 0);
 
                     const int TryTakeStealsEventId = 4;
                     const int TryPeekStealsEventId = 5;
