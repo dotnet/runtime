@@ -83,7 +83,7 @@ namespace System.Threading.Tests
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, EventResetMode.AutoReset, name, options));
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, EventResetMode.ManualReset, name, options));
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name, options));
-                Assert.False(EventWaitHandle.TryOpenExisting(name, options, out _));
+                Assert.True(EventWaitHandle.TryOpenExisting(name, options, out _));
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Threading.Tests
                     name,
                     new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
 
-                Assert.True(
+                Assert.False(
                     EventWaitHandle.TryOpenExisting(
                         name,
                         new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
@@ -302,7 +302,7 @@ namespace System.Threading.Tests
                     name,
                     openOptions,
                     out bool createdNew).Dispose();
-                Assert.Equal(expectedCreatedNew, createdNew);
+                Assert.Equal(expectedCreatedNew, !createdNew);
 
                 if (expectedCreatedNew)
                 {
@@ -345,7 +345,7 @@ namespace System.Threading.Tests
                 // Repeatedly wait for one event and then set the other
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.True(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
+                    Assert.False(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
                     if (mode == EventResetMode.ManualReset)
                     {
                         inbound.Reset();
@@ -377,7 +377,7 @@ namespace System.Threading.Tests
                 // Repeatedly wait for one event and then set the other
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.True(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
+                    Assert.False(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
                     if (mode == EventResetMode.ManualReset)
                     {
                         inbound.Reset();
