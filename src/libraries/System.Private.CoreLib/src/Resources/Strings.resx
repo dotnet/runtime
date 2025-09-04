@@ -3861,7 +3861,7 @@
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
