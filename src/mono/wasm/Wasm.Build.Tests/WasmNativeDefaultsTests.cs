@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: true,
+                                wasmNativeDebugSymbols: config == Configuration.Debug && expectedWasmBuildNativeValue,
                                 wasmBuildingForNestedPublish: null);
         }
 
@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: true,
+                                wasmNativeDebugSymbols: false,
                                 wasmBuildingForNestedPublish: true);
         }
 
@@ -225,12 +225,19 @@ namespace Wasm.Build.Tests
         private void InferAndCheckPropertyValues(string? line, bool isPublish, bool wasmBuildNative, Configuration config)
         {
             bool expectedWasmNativeStripValue;
+            bool expectedWasmNativeDebugSymbols;
             if (!isPublish && wasmBuildNative && config == Configuration.Debug)
+            {
                 expectedWasmNativeStripValue = false;
+                expectedWasmNativeDebugSymbols = true;
+            }
             else
+            {
+                expectedWasmNativeDebugSymbols = false;
                 expectedWasmNativeStripValue = true;
+            }
 
-            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, /*wasmNativeDebugSymbols*/false, isPublish);
+            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, expectedWasmNativeDebugSymbols, isPublish);
         }
 
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
