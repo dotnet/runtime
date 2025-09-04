@@ -366,6 +366,8 @@
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Disabled.a" Condition="'$(InvariantTimezone)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -390,10 +392,7 @@
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
-      <_WasmNativeFileForLinking Condition="'$(InvariantTimezone)' == 'true'" Remove="libSystem.Native.TimeZoneData.a" />
-      <_WasmNativeFileForLinking Condition="'$(InvariantTimezone)' != 'true'" Remove="libSystem.Native.TimeZoneData.Disabled.a" />
       <_WasmNativeFileForLinking Include="-lstdc++" />
-
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
