@@ -32,7 +32,7 @@ namespace Microsoft.Interop
                 var item = _syntaxNodes[i];
                 var otherItem = other._syntaxNodes[i];
 
-                if (SyntaxEquivalentComparer.Instance.Equals(item, otherItem))
+                if (!SyntaxEquivalentComparer.Instance.Equals(item, otherItem))
                 {
                     return false;
                 }
