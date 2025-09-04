@@ -61,6 +61,8 @@ namespace Internal.IL
 
         private bool _isReadOnly;
         private TypeDesc _constrained;
+        private int _currentInstructionOffset;
+        private int _previousInstructionOffset;
 
         private DependencyList _dependencies;
         private BasicBlock _lateBasicBlocks;
@@ -258,6 +260,13 @@ namespace Internal.IL
 
             _typeEqualityPatternAnalyzer = default;
             _isInstCheckPatternAnalyzer = default;
+            _currentInstructionOffset = 0;
+            _previousInstructionOffset = -1;
+        }
+
+        private void StartImportingInstruction()
+        {
+            _currentInstructionOffset = _currentOffset;
         }
 
         partial void StartImportingInstruction(ILOpcode opcode)
@@ -271,6 +280,8 @@ namespace Internal.IL
             // The instruction should have consumed any prefixes.
             _constrained = null;
             _isReadOnly = false;
+
+            _previousInstructionOffset = _currentInstructionOffset;
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -850,6 +861,17 @@ namespace Internal.IL
                     && !_factory.TypeSystemContext.IsArrayVariantCastable(isinstCheckType))
                 {
                     condition = _factory.MaximallyConstructableType(isinstCheckType);
+                }
+            }
+
+            if (opcode == ILOpcode.brfalse && _previousInstructionOffset >= 0)
+            {
+                var reader = new ILReader(_ilBytes, _previousInstructionOffset);
+                if (reader.ReadILOpcode() == ILOpcode.call
+                    && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc { IsIntrinsic: true } intrinsicMethod
+                    && intrinsicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
+                {
+                    condition = _factory.AnalysisCharacteristic(intrinsicMethod.Name);
                 }
             }
 
@@ -1531,7 +1553,6 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
-        private static void StartImportingInstruction() { }
         private static void ImportNop() { }
         private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }

@@ -203,7 +203,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException">Provided assembly name was invalid.</exception>
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)
-                ? result!
+                ? result
                 : throw new ArgumentException(SR.InvalidAssemblyName, nameof(assemblyName));
 
         /// <summary>

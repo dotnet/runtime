@@ -622,15 +622,15 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 
 #endif // TARGET_XARCH
 
-C_ASSERT(REG_FIRST == 0);
-C_ASSERT(REG_INT_FIRST < REG_INT_LAST);
-C_ASSERT(REG_FP_FIRST  < REG_FP_LAST);
+static_assert(REG_FIRST == 0);
+static_assert(REG_INT_FIRST < REG_INT_LAST);
+static_assert(REG_FP_FIRST  < REG_FP_LAST);
 
 // Opportunistic tail call feature converts non-tail prefixed calls into
 // tail calls where possible. It requires fast tail calling mechanism for
 // performance. Otherwise, we are better off not converting non-tail prefixed
 // calls into tail calls.
-C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
+static_assert((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 
 /*****************************************************************************/
 
@@ -954,17 +954,7 @@ inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types t
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
-#ifdef TARGET_AMD64
-    // shift is faster than a L1 hit on modern x86
-    // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
-    // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
-    // and the result needs to be zero.
-    SingleTypeRegSet result = 1ULL << reg;
-    assert(result == regMasks[reg]);
-    return result;
-#else
     return regMasks[reg];
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -1152,20 +1142,20 @@ inline bool isFloatRegType(var_types type)
 // Some sanity checks on some of the register masks
 // Stack pointer is never part of RBM_ALLINT
 #if defined(TARGET_AMD64)
-C_ASSERT((RBM_ALLINT_ALL & RBM_SPBASE) == RBM_NONE);
+static_assert((RBM_ALLINT_ALL & RBM_SPBASE) == RBM_NONE);
 #else
-C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
+static_assert((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
 #endif
-C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
+static_assert((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 
 #if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
 #if defined(TARGET_AMD64)
-C_ASSERT((RBM_ALLINT_ALL & RBM_FPBASE) == RBM_NONE);
+static_assert((RBM_ALLINT_ALL & RBM_FPBASE) == RBM_NONE);
 #else
-C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
+static_assert((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 #endif
-C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
+static_assert((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
 
@@ -1181,8 +1171,8 @@ typedef int          target_ssize_t;
 
 #endif // !TARGET_64BIT
 
-C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
-C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
+static_assert(sizeof(target_size_t) == TARGET_POINTER_SIZE);
+static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 
 #if defined(TARGET_X86)
 // instrDescCns holds constant values for the emitter. The X86 compiler is unique in that it

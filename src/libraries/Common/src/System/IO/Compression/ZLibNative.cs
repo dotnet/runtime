@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 namespace System.IO.Compression
@@ -375,7 +376,8 @@ namespace System.IO.Compression
             }
 
             // This can work even after XxflateEnd(). Gets the error message from the native library.
-            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
+            public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? string.Empty;
+        }
 
             private static string GenerateExceptionMessage(ErrorCode nativeErrorCode)
                 => nativeErrorCode switch

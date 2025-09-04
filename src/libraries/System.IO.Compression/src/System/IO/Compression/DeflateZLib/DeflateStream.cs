@@ -153,7 +153,14 @@ namespace System.IO.Compression
             }
         }
 
-        public Stream BaseStream => _stream;
+        public Stream BaseStream
+        {
+            get
+            {
+                EnsureNotDisposed();
+                return _stream;
+            }
+        }
 
         public override bool CanRead
         {
