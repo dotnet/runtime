@@ -76,14 +76,12 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         method = null;
 
         IXCLRDataMethodInstance? legacyMethod = null;
-
-#if DEBUG
-        int hrLocal = default;
         if (_legacyImpl is not null)
         {
-            hrLocal = _legacyImpl.GetMethodInstance(out legacyMethod);
+            int hrLocal = _legacyImpl.GetMethodInstance(out legacyMethod);
+            if (hrLocal < 0)
+                return hrLocal;
         }
-#endif
 
         try
         {
@@ -105,13 +103,6 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         {
             hr = ex.HResult;
         }
-
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-        }
-#endif
 
         return hr;
     }
