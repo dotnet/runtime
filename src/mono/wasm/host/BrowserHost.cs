@@ -118,16 +118,16 @@ internal sealed class BrowserHost
         }
 
         // Otherwise for old template, use web server
-        WebServerOptions webServerOptions = CreateWebServerOptions(urls, args.CommonConfig.AppPath, onConsoleConnected);
+        WebServerOptions webServerOptions = CreateWebServerOptions(args, urls, onConsoleConnected);
         return await WebServer.StartAsync(webServerOptions, _logger, token);
     }
 
-    private static WebServerOptions CreateWebServerOptions(string[] urls, string appPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static WebServerOptions CreateWebServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected) => new
     (
         OnConsoleConnected: onConsoleConnected,
-        ContentRootPath: Path.GetFullPath(appPath),
+        ContentRootPath: Path.GetFullPath(args.CommonConfig.AppPath),
         WebServerUseCors: true,
-        WebServerUseCrossOriginPolicy: true,
+        WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
         Urls: urls
     );
 
@@ -148,17 +148,17 @@ internal sealed class BrowserHost
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
             else
             {
                 staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
                 if (File.Exists(staticWebAssetsPath))
-                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                    devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
 
             if (devServerOptions == null)
-                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
         }
         else
         {
@@ -170,7 +170,7 @@ internal sealed class BrowserHost
             var endpointsManifest = FindFirstFileWithExtension(appPath, ".staticwebassets.endpoints.json");
 
             if (staticWebAssetsPath != null)
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(args, urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
 
             if (devServerOptions == null)
                 throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
@@ -179,13 +179,13 @@ internal sealed class BrowserHost
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static DevServerOptions CreateDevServerOptions(BrowserArguments args, string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
     (
         OnConsoleConnected: onConsoleConnected,
         StaticWebAssetsPath: staticWebAssetsPath,
         StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
-        WebServerUseCrossOriginPolicy: true,
+        WebServerUseCrossOriginPolicy: args.CommonConfig.ApplyCopHeaders,
         Urls: urls
     );
 

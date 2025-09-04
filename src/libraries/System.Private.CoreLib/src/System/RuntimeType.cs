@@ -297,7 +297,7 @@ namespace System
                 if (c.IsSubclassOf(this))
                     return true;
 
-                if (IsInterface)
+                if (IsActualInterface)
                 {
                     return c.ImplementInterface(this);
                 }
@@ -686,7 +686,7 @@ namespace System
                 object? state = null;
                 MethodBase? invokeMethod = null;
 
-                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs!, modifiers, culture, namedParams, out state); }
+                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs, modifiers, culture, namedParams, out state); }
                 catch (MissingMethodException) { }
 
                 if (invokeMethod == null)
@@ -711,7 +711,7 @@ namespace System
         // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
-            if (IsInterface)
+            if (IsActualInterface)
                 return null;
 
             if (RuntimeTypeHandle.IsGenericVariable(this))
@@ -724,7 +724,7 @@ namespace System
                 {
                     RuntimeType constraint = (RuntimeType)constraints[i];
 
-                    if (constraint.IsInterface)
+                    if (constraint.IsActualInterface)
                         continue;
 
                     if (constraint.IsGenericParameter)

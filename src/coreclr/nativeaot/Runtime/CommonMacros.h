@@ -331,10 +331,6 @@ extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
 
-#ifndef C_ASSERT
-#define C_ASSERT(e) static_assert(e, #e)
-#endif // C_ASSERT
-
 // PAL Numbers
 // Used to ensure cross-compiler compatibility when declaring large
 // integer constants. 64-bit integer constants should be wrapped in the

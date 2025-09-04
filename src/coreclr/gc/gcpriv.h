@@ -1547,6 +1547,8 @@ class gc_heap
 
     friend class mark_queue_t;
 
+    friend struct ::cdac_data<gc_heap>;
+
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
 #define call_fn(this_arg,fn) (this_arg->*fn)
@@ -4388,6 +4390,18 @@ private:
         float target_tcp = 2.0;
         float target_gen2_tcp = 10.0;
 
+        // The following 3 constants are used in the computation for the total gen0 budget relative to the stable soh size.
+        // 
+        // By default DATAS computes a multiplier (gen0_growth_soh_ratio) that scales the size. This multiplier follows
+        // a power decay curve where the multiplier decreases rapidly as the size increases. We cap it at 10x at the low
+        // end and 10% at the high end.
+        //
+        // You can choose to modify these by specifying gen0_growth_factor_percent to reduce or increase this multiplier
+        // and the min/max multipliers.
+        float gen0_growth_soh_ratio_percent = 1.0;
+        float gen0_growth_soh_ratio_min = 0.1f;
+        float gen0_growth_soh_ratio_max = 10.0;
+
         static const int recorded_adjustment_size = 4;
         static const int sample_size = 3;
         static const int recorded_tcp_array_size = 64;
@@ -5069,23 +5083,23 @@ private:
         // time in msl).
         //
 
-        size_t          max_gen0_new_allocation;
-        size_t          min_gen0_new_allocation;
+        size_t max_gen0_new_allocation = 64 * 1024 * 1024;
+        size_t min_gen0_new_allocation = 0;
 
         size_t compute_total_gen0_budget (size_t total_soh_stable_size)
         {
             assert (total_soh_stable_size > 0);
 
-            float factor = (float)(20 - conserve_mem_setting);
-            double old_gen_growth_factor = factor / sqrt ((double)total_soh_stable_size / 1000.0 / 1000.0);
-            double saved_old_gen_growth_factor = old_gen_growth_factor;
-            old_gen_growth_factor = min (10.0, old_gen_growth_factor);
-            old_gen_growth_factor = max (0.1, old_gen_growth_factor);
+            float factor = (float)(20 - conserve_mem_setting) * gen0_growth_soh_ratio_percent;
+            double gen0_growth_soh_ratio = factor / sqrt ((double)total_soh_stable_size / 1000.0 / 1000.0);
+            double saved_gen0_growth_soh_ratio = gen0_growth_soh_ratio;
+            gen0_growth_soh_ratio = min ((double)gen0_growth_soh_ratio_max, gen0_growth_soh_ratio);
+            gen0_growth_soh_ratio = max ((double)gen0_growth_soh_ratio_min, gen0_growth_soh_ratio);
 
-            size_t total_new_allocation_old_gen = (size_t)(old_gen_growth_factor * (double)total_soh_stable_size);
+            size_t total_new_allocation_old_gen = (size_t)(gen0_growth_soh_ratio * (double)total_soh_stable_size);
             dprintf (6666, ("stable soh %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%.3fmb)",
                 total_soh_stable_size, ((double)total_soh_stable_size / 1000.0 / 1000.0),
-                saved_old_gen_growth_factor, old_gen_growth_factor, total_new_allocation_old_gen,
+                saved_gen0_growth_soh_ratio, gen0_growth_soh_ratio, total_new_allocation_old_gen,
                 ((double)total_new_allocation_old_gen  / 1000.0 / 1000.0)));
             return total_new_allocation_old_gen;
         }
@@ -5666,6 +5680,7 @@ class CFinalize
 {
 
     friend class CFinalizeStaticAsserts;
+    friend struct ::cdac_data<CFinalize>;
 
 private:
 
