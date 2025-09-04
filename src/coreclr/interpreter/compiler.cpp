@@ -1482,9 +1482,7 @@ void InterpCompiler::CreateILVars()
     if (HasFlag(m_originalRetryFlags, InterpreterRetryFlags::RetryWithSavedThisPointer))
     {
         hasThisPointerShadowCopyAsParamIndex = true;
-        if (hasParamArg)
-        {
-            BADCODE("Unexpected param arg in combination with mitigation for this pointer used as param arg");
+            BADCODE("Unexpected param arg in combination with this pointer mitigation");
         }
     }
     int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
