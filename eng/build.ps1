@@ -24,6 +24,8 @@ Param(
   [string]$cmakeargs,
   [switch]$pgoinstrument,
   [string[]]$fsanitize,
+  [switch]$bootstrap,
+  [switch]$useBoostrap,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -57,6 +59,8 @@ function Get-Help() {
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
+  Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
+  Write-Host "  --bootstrap                     Build the bootstrap subset and then build the repo with --use-bootstrap."
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
   Write-Host "                                 Path or any project or solution name is accepted."
   Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.sln)"
@@ -175,7 +179,7 @@ if ($vs) {
     $configToOpen = $runtimeConfiguration
   }
 
-  # Auto-generated solution file that still uses the sln format 
+  # Auto-generated solution file that still uses the sln format
   if ($vs -ieq "coreclr.sln" -or $vs -ieq "coreclr") {
     # If someone passes in coreclr.sln or just coreclr (case-insensitive),
     # launch the generated CMake solution.
@@ -214,7 +218,7 @@ if ($vs) {
     } else {
       # Search for the solution in coreclr
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
-      
+
       # Also, search for the solution in coreclr\tools\aot
       if (-Not (Test-Path $vs)) {
         $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\tools\aot\$solution.slnx"
@@ -330,6 +334,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "configuration"          {}
     "arch"                   {}
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
+    "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
@@ -346,6 +351,49 @@ $arguments += " /clp:ForceNoAlign"
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
+
+if ($bootstrap -eq $True) {
+
+  if ($actionPassedIn) {
+    # Filter out all actions
+    $bootstrapArguments = $(($arguments -split ' ') | Where-Object {
+        $_ -notmatch '^/p:(' + ($actionPassedIn -join '|') + ')=.*'
+    }) -join ' '
+
+    # Preserve Restore and Build if they're passed in
+    if ($arguments -match "/p:Restore=true") {
+      $bootstrapArguments += "/p:Restore=true"
+    }
+    if ($arguments -match "/p:Build=true") {
+      $bootstrapArguments += "/p:Build=true"
+    }
+  } else {
+    $bootstrapArguments = $arguments
+  }
+
+  if ($configuration.Count -gt 1) {
+    Write-Error "Building the bootstrap build does not support multiple configurations. Please specify a single configuration using -configuration."
+    exit 1
+  }
+
+  if ($arch.Count -gt 1) {
+    Write-Error "Building the bootstrap build does not support multiple architectures. Please specify a single architecture using -arch."
+    exit 1
+  }
+
+  $bootstrapArguments += " /p:TargetArchitecture=$($arch[0])"
+  $config = $((Get-Culture).TextInfo.ToTitleCase($configuration[0]))
+  $bootstrapArguments += " -configuration $config"
+
+  $bootstrapArguments += " /p:Subset=bootstrap /bl:$PSScriptRoot/../artifacts/log/$config/bootstrap.binlog"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $bootstrapArguments"
+
+  # Remove artifacts from the bootstrap build so the product build is a "clean" build.
+  Write-Host "Cleaning up artifacts from bootstrap build..."
+  Remove-Item -Recurse "$PSScriptRoot/../artifacts/bin"
+  Remove-Item -Recurse "$PSScriptRoot/../artifacts/obj"
+  $arguments += " /p:UseBootstrap=true"
+}
 
 $failedBuilds = @()
 
