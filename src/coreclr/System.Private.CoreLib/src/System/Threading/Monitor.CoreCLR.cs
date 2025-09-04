@@ -44,7 +44,6 @@ namespace System.Threading
             EnterSlow(obj);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void EnterSlow(object obj)
         {
             Lock lck = SyncTable.GetLockObject(obj);
