@@ -495,7 +495,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHelp()
         {
             Console.Out.WriteLine(SR.HelpDescription);
-            Console.Out.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name.Substring("dotnet-".Length)));
+            Console.Out.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name));
             Console.Out.WriteLine(SR.HelpDevOptions);
             Console.Out.WriteLine(SR.Format(SR.HelpAssembly, "-a", "--assembly"));
             Console.Out.WriteLine(SR.Format(SR.HelpType, "--type"));

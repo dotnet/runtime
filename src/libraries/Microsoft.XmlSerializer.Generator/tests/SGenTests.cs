@@ -26,13 +26,13 @@ namespace Microsoft.XmlSerializer.Generator.Tests
              * 'Expected.SerializableAssembly.XmlSerializers.cs' file with the new code output
              * to use for comparison.
              * 
-             * [dotnet.exe $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)SerializableAssembly.dll --force --quiet]
+             * [dotnet.exe exec $(OutputPath)Microsoft.XmlSerializer.Generator.dll $(OutputPath)SerializableAssembly.dll --force --quiet]
              */
 
             const string CodeFile = "SerializableAssembly.XmlSerializers.cs";
             const string LKGCodeFile = "Expected.SerializableAssembly.XmlSerializers.cs";
 
-            var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, dotnet-Microsoft.XmlSerializer.Generator");
+            var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, Microsoft.XmlSerializer.Generator");
             MethodInfo md = type.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
             string[] args = new string[] { "SerializableAssembly.dll", "--force", "--quiet" };
             int n = (int)md.Invoke(null, new object[] { args });
