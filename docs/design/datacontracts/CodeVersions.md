@@ -46,8 +46,8 @@ public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersi
 // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
 public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle);
 
-// Gets the IL address given a code version and method desc
-public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle, TargetPointer methodDescPtr);
+// Gets the IL address given a code version
+public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
 ```
 ### Extension Methods
 ```csharp
@@ -115,6 +115,73 @@ Contracts used:
 | ExecutionManager |
 | Loader |
 | RuntimeTypeSystem |
+
+Implementation of CodeVersionHandles
+
+```csharp
+private readonly struct ILCodeVersionHandle
+{
+    public readonly TargetPointer Module;
+    public readonly uint MethodDefinition;
+    public readonly TargetPointer ILCodeVersionNode;
+    private ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
+    {
+        if (module != TargetPointer.Null && ilCodeVersionNodeAddress != TargetPointer.Null)
+            throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
+
+        if (module != TargetPointer.Null && methodDef == 0)
+            throw new ArgumentException("MethodDefinition must be non-zero if Module is non-null");
+
+        if (module == TargetPointer.Null && methodDef != 0)
+            throw new ArgumentException("MethodDefinition must be zero if Module is null");
+
+        Module = module;
+        MethodDefinition = methodDef;
+        ILCodeVersionNode = ilCodeVersionNodeAddress;
+    }
+
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    public static ILCodeVersionHandle CreateExplicit(TargetPointer ilCodeVersionNodeAddress) =>
+        new ILCodeVersionHandle(TargetPointer.Null, 0, ilCodeVersionNodeAddress);
+    public static ILCodeVersionHandle CreateSynthetic(TargetPointer module, uint methodDef) =>
+        new ILCodeVersionHandle(module, methodDef, TargetPointer.Null);
+
+    public static ILCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, 0, TargetPointer.Null);
+
+    public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+
+    public bool IsExplicit => ILCodeVersionNode != TargetPointer.Null;
+}
+```
+
+```csharp
+private readonly struct NativeCodeVersionHandle
+{
+    public readonly TargetPointer MethodDescAddress;
+    public readonly TargetPointer CodeVersionNodeAddress;
+    private NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
+    {
+        if (methodDescAddress != TargetPointer.Null && codeVersionNodeAddress != TargetPointer.Null)
+        {
+            throw new ArgumentException("Only one of methodDescAddress and codeVersionNodeAddress can be non-null");
+        }
+        MethodDescAddress = methodDescAddress;
+        CodeVersionNodeAddress = codeVersionNodeAddress;
+    }
+
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    public static NativeCodeVersionHandle CreateExplicit(TargetPointer codeVersionNodeAddress) =>
+        new NativeCodeVersionHandle(TargetPointer.Null, codeVersionNodeAddress);
+    public static NativeCodeVersionHandle CreateSynthetic(TargetPointer methodDescAddress) =>
+        new NativeCodeVersionHandle(methodDescAddress, TargetPointer.Null);
+
+    public static NativeCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, TargetPointer.Null);
+
+    public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
+
+    public bool IsExplicit => CodeVersionNodeAddress != TargetPointer.Null;
+}
+```
 
 ### Finding active ILCodeVersion for a method
 ```csharp
@@ -314,6 +381,12 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     if (ilAddress == TargetPointer.Null)
     {
         // Synthetic ILCodeVersion, get the IL from the method desc
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+        TargetPointer methodDefToDescTable = loader.GetLookupTables(moduleHandle).MethodDefToDesc;
+        TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(methodDefToDescTable, ilCodeVersionHandle.MethodDefinition, out _);
+
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(methodDescPtr);
         if (methodDescPtr != TargetPointer.Null && rts.MayHaveILHeader(md))

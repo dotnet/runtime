@@ -2735,8 +2735,7 @@ internal sealed unsafe partial class SOSDacImpl
                             pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                             break;
                     }
-                    TargetPointer mdPtr = methodDescPtr;
-                    pRejitData->il = cv.GetIL(ilCodeVersion, mdPtr).ToClrDataAddress(_target);
+                    pRejitData->il = cv.GetIL(ilCodeVersion).ToClrDataAddress(_target);
                     if (ilCodeVersion.IsExplicit)
                         pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
                     else
