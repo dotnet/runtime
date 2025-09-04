@@ -104,6 +104,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
+        [InlineData("6.1.0", "", "6.1.3")]      // Roll forward to 6.1.3 - empty value has no effect on resolution
+        [InlineData("6.1.0", "   ", "6.1.3")]   // Roll forward to 6.1.3 - whitespace value has no effect on resolution
         [InlineData("6.1.0", "6.1.2", "6.1.3")] // Roll forward to 6.1.3 when 6.1.2 is disabled
         [InlineData("6.1.0", "6.1.3", "6.1.2")] // Roll forward to 6.1.2 when 6.1.3 is disabled
         [InlineData("6.1.3", "6.1.3", ResolvedFramework.NotFound)] // Fail when the only matching version is disabled
@@ -115,8 +117,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithRuntimeConfigCustomizer(rc => rc.WithFramework(MicrosoftNETCoreApp, requestedVersion))
                     .WithEnvironment(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion));
 
-            result.ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, expectedResolution)
-                .And.HaveStdErrContaining($"Ignoring disabled version [{disabledVersion}]");
+            result.ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, expectedResolution);
+            if (string.IsNullOrWhiteSpace(disabledVersion))
+            {
+                result.Should().NotHaveStdErrContaining($"Ignoring disabled version");
+            }
+            else
+            { 
+                result.Should().HaveStdErrContaining($"Ignoring disabled version [{disabledVersion}]");
+            }
         }
 
         [Fact]

@@ -318,35 +318,36 @@ namespace
 
         return std::unique_ptr<fx_definition_t>(new fx_definition_t(fx_ref.get_fx_name(), selected_fx_dir, oldest_requested_version, selected_fx_version));
     }
+}
 
-    std::vector<pal::string_t> get_disabled_versions()
+// static
+std::vector<pal::string_t> fx_resolver_t::get_disabled_versions()
+{
+    pal::string_t env_var;
+    if (!pal::getenv(_X("DOTNET_DISABLE_RUNTIME_VERSIONS"), &env_var) || env_var.empty())
+        return {};
+
+    std::vector<pal::string_t> disabled_versions;
+    size_t start = 0;
+    size_t pos = 0;
+    while ((pos = env_var.find(_X(';'), start)) != pal::string_t::npos)
     {
-        pal::string_t env_var;
-        if (!pal::getenv(_X("DOTNET_DISABLE_RUNTIME_VERSIONS"), &env_var) || env_var.empty())
-            return {};
-
-        std::vector<pal::string_t> disabled_versions;
-        size_t start = 0;
-        size_t pos = 0;
-        while ((pos = env_var.find(_X(';'), start)) != pal::string_t::npos)
+        pal::string_t version = env_var.substr(start, pos - start);
+        if (!version.empty())
         {
-            pal::string_t version = env_var.substr(start, pos - start);
-            if (!version.empty())
-            {
-                disabled_versions.push_back(version);
-            }
-            start = pos + 1;
+            disabled_versions.push_back(version);
         }
-
-        // Add the last version (after the last semicolon or the only version if no semicolons)
-        pal::string_t last_version = env_var.substr(start);
-        if (!last_version.empty())
-        {
-            disabled_versions.push_back(last_version);
-        }
-
-        return disabled_versions;
+        start = pos + 1;
     }
+
+    // Add the last version (after the last semicolon or the only version if no semicolons)
+    pal::string_t last_version = env_var.substr(start);
+    if (!last_version.empty())
+    {
+        disabled_versions.push_back(last_version);
+    }
+
+    return disabled_versions;
 }
 
 fx_resolver_t::fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
