@@ -14,16 +14,47 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading
 {
     public static partial class Monitor
     {
-        #region Object->Lock/Condition mapping
+        #region Object->Lock mapping
+        internal static Lock GetLockObject(object obj)
+        {
+            IntPtr lockHandle = GetLockHandleIfExists(obj);
+            if (lockHandle != 0)
+            {
+                return GCHandle<Lock>.FromIntPtr(lockHandle).Target;
+            }
+
+            return GetLockObjectFallback(obj);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Lock GetLockObjectFallback(object obj)
+            {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                object lockObj = new Lock();
+#pragma warning restore CS9216
+                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
+                return (Lock)lockObj!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetLockHandleIfExists(object obj);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_GetOrCreateLockObject")]
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
+
+        #endregion
+
+        #region Object->Condition mapping
 
         private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(SyncTable.GetLockObject(o));
+        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(GetLockObject(o));
 
         private static Condition GetCondition(object obj)
         {
@@ -41,7 +72,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return;
 
-            SyncTable.GetLockObject(obj).Enter();
+            GetLockObject(obj).Enter();
         }
 
         public static void Enter(object obj, ref bool lockTaken)
@@ -63,7 +94,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Contention)
                 return false;
 
-            return SyncTable.GetLockObject(obj).TryEnter();
+            return GetLockObject(obj).TryEnter();
         }
 
         public static void TryEnter(object obj, ref bool lockTaken)
@@ -86,7 +117,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Contention)
                 return false;
 
-            return SyncTable.GetLockObject(obj).TryEnter(millisecondsTimeout);
+            return GetLockObject(obj).TryEnter(millisecondsTimeout);
         }
 
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
@@ -123,7 +154,7 @@ namespace System.Threading
                 throw new SynchronizationLockException();
             }
 
-            SyncTable.GetLockObject(obj).Exit();
+            GetLockObject(obj).Exit();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

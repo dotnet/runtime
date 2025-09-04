@@ -257,8 +257,8 @@ FCFuncStart(gObjectHeaderFuncs)
     FCFuncElement("Release", ObjHeader_ReleaseThinLock)
 FCFuncEnd()
 
-FCFuncStart(gSyncTableFuncs)
-    FCFuncElement("GetLockHandleIfExists", SyncTable_GetLockHandleIfExists)
+FCFuncStart(gMonitorFuncs)
+    FCFuncElement("GetLockHandleIfExists", MonitorGetLockHandleIfExists)
 FCFuncEnd()
 
 FCFuncStart(gCastHelpers)
@@ -399,6 +399,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
+FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 
 FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
 
@@ -411,7 +412,6 @@ FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
-FCClassElement("SyncTable", "System.Threading", gSyncTableFuncs)
 
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 

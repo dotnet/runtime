@@ -250,7 +250,7 @@ namespace System.Threading
 
                 if (HasSyncEntryIndex(oldBits))
                 {
-                    return SyncTable.GetLockObject(obj).IsHeldByCurrentThread;
+                    return Monitor.GetLockObject(obj).IsHeldByCurrentThread;
                 }
 
                 // someone else owns or noone.
