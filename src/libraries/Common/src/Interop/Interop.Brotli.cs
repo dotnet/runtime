@@ -49,5 +49,27 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static unsafe partial BOOL BrotliEncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
+
+        internal enum BrotliSharedDictionaryType
+        {
+            // Raw LZ77 prefix dictionary.
+            RAW = 0
+        }
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static unsafe partial SafeBrotliPreparedDictionaryHandle BrotliEncoderPrepareDictionary(
+            BrotliSharedDictionaryType type, nuint size, byte* data, int quality,
+            IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial BOOL BrotliEncoderAttachPreparedDictionary(
+            SafeBrotliEncoderHandle state, SafeBrotliPreparedDictionaryHandle preparedDictionary);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static unsafe partial BOOL BrotliDecoderAttachDictionary(
+            SafeBrotliDecoderHandle state, BrotliSharedDictionaryType type, nuint size, byte* data);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial void BrotliEncoderDestroyPreparedDictionary(IntPtr dictionary);
     }
 }
