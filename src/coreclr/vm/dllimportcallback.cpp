@@ -290,6 +290,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         UMEntryThunk* pThunk;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         _ASSERTE(!"Not implemented");
+        pThunk = NULL;
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
