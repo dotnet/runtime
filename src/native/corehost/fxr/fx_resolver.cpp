@@ -332,19 +332,17 @@ std::vector<pal::string_t> fx_resolver_t::get_disabled_versions()
     size_t pos = 0;
     while ((pos = env_var.find(_X(';'), start)) != pal::string_t::npos)
     {
-        pal::string_t version = env_var.substr(start, pos - start);
-        if (!version.empty())
+        if (pos > start)
         {
-            disabled_versions.push_back(version);
+            disabled_versions.emplace_back(env_var, start, pos - start);
         }
         start = pos + 1;
     }
 
     // Add the last version (after the last semicolon or the only version if no semicolons)
-    pal::string_t last_version = env_var.substr(start);
-    if (!last_version.empty())
+    if (start < env_var.size())
     {
-        disabled_versions.push_back(last_version);
+        disabled_versions.emplace_back(env_var, start, env_var.size() - start);
     }
 
     return disabled_versions;
