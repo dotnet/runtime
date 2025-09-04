@@ -63,9 +63,11 @@ This will start a local HTTP server and you can open the provided URL in your br
 You can also run the runtime directly in Node.js:
 
 ```bash
-cd artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun/
-node corewasmrun.js
+cd artifacts/bin/coreclr/browser.wasm.Debug/
+node ./corerun.js -c /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/helloworld.dll
 ```
+
+Note that path in the `args` need to be absolute path on your host file system in unix format (even on Windows).
 
 ## Debugging
 
