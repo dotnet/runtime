@@ -1235,10 +1235,12 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 
     initReservedMem += dwStubHeapReserveSize;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
                                                                            false /* fUnlocked */,
                                                                            &s_stubPrecodeHeapConfig);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
     if (IsCollectible())
