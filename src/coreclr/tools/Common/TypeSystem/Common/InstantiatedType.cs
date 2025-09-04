@@ -29,11 +29,19 @@ namespace Internal.TypeSystem
 
         private int _hashCode;
 
+        private int InitializeHashCode()
+        {
+            return _hashCode = VersionResilientHashCode.GenericInstanceHashCode(_typeDef.GetHashCode(), Instantiation);
+        }
+
         public override int GetHashCode()
         {
-            if (_hashCode == 0)
-                _hashCode = _instantiation.ComputeGenericInstanceHashCode(_typeDef.GetHashCode());
-            return _hashCode;
+            if (_hashCode != 0)
+            {
+                return _hashCode;
+            }
+
+            return InitializeHashCode();
         }
 
         public override TypeSystemContext Context

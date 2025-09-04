@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
+using Internal;
 using Internal.TypeSystem;
 
 using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
@@ -144,14 +145,7 @@ namespace ILCompiler
 
             private int InitializeHashCode()
             {
-                string ns = Namespace;
-                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                _hashcode = hashCodeBuilder.ToHashCode();
-
-                return _hashcode;
+                return _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
             }
 
             public override bool IsCanonicalSubtype(CanonicalFormKind policy)

@@ -74,21 +74,6 @@ namespace Internal
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L87">ComputeGenericInstanceHashCode</a>
-        /// </summary>
-        /// <param name="hashcode">Base hash code</param>
-        /// <param name="instantiation">Instantiation to include in the hash</param>
-        private static int GenericInstanceHashCode(int hashcode, Instantiation instantiation)
-        {
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                int argumentHashCode = TypeHashCode(instantiation[i]);
-                hashcode = unchecked(hashcode + RotateLeft(hashcode, 13)) ^ argumentHashCode;
-            }
-            return unchecked(hashcode + RotateLeft(hashcode, 15));
-        }
-
-        /// <summary>
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/versionresilienthashcode.cpp#L161">GetVersionResilientMethodHashCode</a>
         /// </summary>
         /// <param name="method">Method to hash</param>

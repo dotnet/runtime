@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -309,15 +310,7 @@ namespace ILCompiler
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
             public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => Array.Empty<MethodImplRecord>();
 
-            public override int GetHashCode()
-            {
-                string ns = Namespace;
-                var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                return hashCodeBuilder.ToHashCode();
-            }
+            public override int GetHashCode() => VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
 
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
             {

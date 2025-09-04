@@ -3,7 +3,7 @@
 
 using System;
 using Debug = System.Diagnostics.Debug;
-using HashCodeBuilder = Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder;
+using HashCodeBuilder = Internal.VersionResilientHashCode.HashCodeBuilder;
 using TypeAttributes = System.Reflection.TypeAttributes;
 using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
 
@@ -11,7 +11,7 @@ namespace Internal.Metadata.NativeFormat
 {
     internal static class MetadataTypeHashingAlgorithms
     {
-        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceDefinitionHandle namespaceDefHandle, MetadataReader reader)
+        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceDefinitionHandle namespaceDefHandle, MetadataReader reader, bool appendDot)
         {
             NamespaceDefinition namespaceDefinition = reader.GetNamespaceDefinition(namespaceDefHandle);
 
@@ -19,10 +19,11 @@ namespace Internal.Metadata.NativeFormat
             HandleType parentHandleType = parentHandle.HandleType;
             if (parentHandleType == HandleType.NamespaceDefinition)
             {
-                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceDefinitionHandle(reader), reader);
-                string namespaceNamePart = reader.GetString(namespaceDefinition.Name);
+                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceDefinitionHandle(reader), reader, appendDot: true);
+                ReadOnlySpan<byte> namespaceNamePart = reader.ReadStringAsBytes(namespaceDefinition.Name);
                 builder.Append(namespaceNamePart);
-                builder.Append(".");
+                if (appendDot)
+                    builder.Append("."u8);
             }
             else
             {
@@ -31,7 +32,7 @@ namespace Internal.Metadata.NativeFormat
             }
         }
 
-        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceReferenceHandle namespaceRefHandle, MetadataReader reader)
+        private static void AppendNamespaceHashCode(ref HashCodeBuilder builder, NamespaceReferenceHandle namespaceRefHandle, MetadataReader reader, bool appendDot)
         {
             NamespaceReference namespaceReference = reader.GetNamespaceReference(namespaceRefHandle);
 
@@ -39,10 +40,11 @@ namespace Internal.Metadata.NativeFormat
             HandleType parentHandleType = parentHandle.HandleType;
             if (parentHandleType == HandleType.NamespaceReference)
             {
-                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceReferenceHandle(reader), reader);
-                string namespaceNamePart = reader.GetString(namespaceReference.Name);
+                AppendNamespaceHashCode(ref builder, parentHandle.ToNamespaceReferenceHandle(reader), reader, appendDot: true);
+                ReadOnlySpan<byte> namespaceNamePart = reader.ReadStringAsBytes(namespaceReference.Name);
                 builder.Append(namespaceNamePart);
-                builder.Append(".");
+                if (appendDot)
+                    builder.Append("."u8);
             }
             else
             {
@@ -53,50 +55,40 @@ namespace Internal.Metadata.NativeFormat
 
         public static int ComputeHashCode(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
         {
-            HashCodeBuilder builder = new HashCodeBuilder("");
-
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
-            bool isNested = typeDef.Flags.IsNested();
-            if (!isNested)
-            {
-                AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader);
-            }
 
-            string typeName = reader.GetString(typeDef.Name);
-            builder.Append(typeName);
+            HashCodeBuilder builder = new HashCodeBuilder(""u8);
+            AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader, appendDot: false);
+            int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeDef.Name));
 
-            if (isNested)
+            int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
+
+            if (typeDef.Flags.IsNested())
             {
                 int enclosingTypeHashCode = typeDef.EnclosingType.ComputeHashCode(reader);
-                return TypeHashingAlgorithms.ComputeNestedTypeHashCode(enclosingTypeHashCode, builder.ToHashCode());
+                return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
-            return builder.ToHashCode();
+            return hashCode;
         }
 
         public static int ComputeHashCode(this TypeReferenceHandle typeRefHandle, MetadataReader reader)
         {
-            HashCodeBuilder builder = new HashCodeBuilder("");
-
             TypeReference typeRef = reader.GetTypeReference(typeRefHandle);
-            HandleType parentHandleType = typeRef.ParentNamespaceOrType.HandleType;
-            bool isNested = parentHandleType == HandleType.TypeReference;
-            if (!isNested)
-            {
-                Debug.Assert(parentHandleType == HandleType.NamespaceReference);
-                AppendNamespaceHashCode(ref builder, typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader), reader);
-            }
 
-            string typeName = reader.GetString(typeRef.TypeName);
-            builder.Append(typeName);
+            HashCodeBuilder builder = new HashCodeBuilder(""u8);
+            AppendNamespaceHashCode(ref builder, typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(reader), reader, appendDot: false);
+            int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeRef.TypeName));
 
-            if (isNested)
+            int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
+
+            if (typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference)
             {
                 int enclosingTypeHashCode = typeRef.ParentNamespaceOrType.ToTypeReferenceHandle(reader).ComputeHashCode(reader);
-                return TypeHashingAlgorithms.ComputeNestedTypeHashCode(enclosingTypeHashCode, builder.ToHashCode());
+                return VersionResilientHashCode.NestedTypeHashCode(enclosingTypeHashCode, hashCode);
             }
 
-            return builder.ToHashCode();
+            return hashCode;
         }
 
         // This mask is the fastest way to check if a type is nested from its flags,

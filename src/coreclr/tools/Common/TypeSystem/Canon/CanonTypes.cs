@@ -147,7 +147,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.__Canon");
+                _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
             }
 
             return _hashcode;
@@ -245,7 +245,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.__UniversalCanon");
+                _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
             }
 
             return _hashcode;

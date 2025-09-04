@@ -23,8 +23,7 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            // ComputeArrayTypeHashCode expects -1 for an SzArray
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank);
+            return VersionResilientHashCode.ArrayTypeHashCode(this.ElementType.GetHashCode(), Rank);
         }
 
         public override DefType BaseType

@@ -93,12 +93,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(ArrayTypeKey key)
                 {
-                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
+                    return VersionResilientHashCode.ArrayTypeHashCode(key._elementType.GetHashCode(), key._rank == -1 ? 1 : key._rank);
                 }
 
                 protected override int GetValueHashCode(ArrayType value)
                 {
-                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
+                    return value.GetHashCode();
                 }
 
                 protected override bool CompareKeyToValue(ArrayTypeKey key, ArrayType value)
@@ -284,12 +284,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(InstantiatedTypeKey key)
                 {
-                    return key._instantiation.ComputeGenericInstanceHashCode(key._typeDef.GetHashCode());
+                    return VersionResilientHashCode.GenericInstanceHashCode(key._typeDef.GetHashCode(), key._instantiation);
                 }
 
                 protected override int GetValueHashCode(InstantiatedType value)
                 {
-                    return value.Instantiation.ComputeGenericInstanceHashCode(value.GetTypeDefinition().GetHashCode());
+                    return value.GetHashCode();
                 }
 
                 protected override bool CompareKeyToValue(InstantiatedTypeKey key, InstantiatedType value)
@@ -359,8 +359,8 @@ namespace Internal.TypeSystem
             {
                 _methodDef = methodDef;
                 _instantiation = instantiation;
-                _hashcode = TypeHashingAlgorithms.ComputeMethodHashCode(methodDef.OwningType.GetHashCode(),
-                    instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(methodDef.Name)));
+                _hashcode = methodDef.OwningType.GetHashCode()
+                    ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(methodDef.U8Name), instantiation);
             }
 
             public MethodDesc MethodDef
@@ -459,7 +459,7 @@ namespace Internal.TypeSystem
             {
                 _typicalMethodDef = typicalMethodDef;
                 _instantiatedType = instantiatedType;
-                _hashcode = TypeHashingAlgorithms.ComputeMethodHashCode(instantiatedType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(typicalMethodDef.Name));
+                _hashcode = instantiatedType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(typicalMethodDef.U8Name);
             }
 
             public MethodDesc TypicalMethodDef

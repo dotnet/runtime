@@ -496,7 +496,7 @@ namespace Internal.TypeSystem
         /// </summary>
         protected virtual int ComputeHashCode()
         {
-            return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(U8Name);
         }
 
         public override bool Equals(object o)

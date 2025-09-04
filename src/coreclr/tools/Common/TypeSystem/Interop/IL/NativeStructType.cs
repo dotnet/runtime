@@ -295,26 +295,18 @@ namespace Internal.TypeSystem.Interop
 
         private int _hashCode;
 
-        private void InitializeHashCode()
+        private int InitializeHashCode()
         {
-            var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(Namespace);
-
-            if (Namespace.Length > 0)
-            {
-                hashCodeBuilder.Append(".");
-            }
-
-            hashCodeBuilder.Append(Name);
-            _hashCode = hashCodeBuilder.ToHashCode();
+            return _hashCode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
         }
 
         public override int GetHashCode()
         {
-            if (_hashCode == 0)
+            if (_hashCode != 0)
             {
-                InitializeHashCode();
+                return _hashCode;
             }
-            return _hashCode;
+            return InitializeHashCode();
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

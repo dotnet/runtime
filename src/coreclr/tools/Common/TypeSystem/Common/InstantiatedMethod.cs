@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
 
         protected override int ComputeHashCode()
         {
-            return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), Instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(Name)));
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(U8Name), Instantiation);
         }
 
         public override TypeSystemContext Context
