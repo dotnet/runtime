@@ -476,12 +476,6 @@ class SyncBlock
        return (m_dwSyncIndex & SyncBlockPrecious) != 0;
    }
 
-   OBJECTHANDLE GetLockNoCreate()
-   {
-        WRAPPER_NO_CONTRACT;
-        return m_Lock;
-   }
-
    // Get the lock information for this sync block.
    // Returns false when the lock is not locked or has not been created yet.
    BOOL TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel);

@@ -3103,11 +3103,9 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
 
         GCPROTECT_BEGIN(obj);
 
-        OBJECTHANDLE lockHandle = obj->GetSyncBlock()->GetLockNoCreate();
-
-        OBJECTREF lockObj = ObjectFromHandle(lockHandle);
-
-        DWORD owningThreadId = CoreLibBinder::GetField(FIELD__LOCK__OWNING_THREAD_ID)->GetValue32(lockObj);
+        DWORD owningThreadId = 0;
+        DWORD recursionLevel;
+        obj->GetSyncBlock()->TryGetLockInfo(&owningThreadId, &recursionLevel);
         _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
 
         GCPROTECT_END();
