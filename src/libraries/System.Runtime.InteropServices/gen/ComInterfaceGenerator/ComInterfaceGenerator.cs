@@ -131,7 +131,7 @@ namespace Microsoft.Interop
                                 ifaceCtxs.Add((cic.Value, methods[i].ToSequenceEqualImmutableArray()));
                             }
                         }
-                        ifaceCtxs.GroupBy(x => x.Item1.GetTopLevelBase());
+
                         var result = ComMethodContext.CalculateAllMethods(ifaceCtxs, ct);
 
                         List<ComMethodContext> methodContexts = new();
