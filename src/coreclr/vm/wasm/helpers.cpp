@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-#include "../../interpreter/interpretershared.h"
+#include <interpretershared.h>
 
 extern "C" void STDCALL CallCountingStubCode()
 {

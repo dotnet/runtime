@@ -7,7 +7,7 @@
 #include "openum.h"
 #include <stdint.h>
 
-#include "intopsshared.h"
+#include <intopsshared.h>
 
 typedef enum
 {
