@@ -1240,7 +1240,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                            &m_stubPrecodeRangeList,
                                                                            false /* fUnlocked */,
                                                                            &s_stubPrecodeHeapConfig);
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
     if (IsCollectible())
@@ -1436,11 +1436,13 @@ void LoaderAllocator::Terminate()
         m_pStubHeap = NULL;
     }
 
+#ifdef HAS_FIXUP_PRECODE
     if (m_pFixupPrecodeHeap != NULL)
     {
         m_pFixupPrecodeHeap->~InterleavedLoaderHeap();
         m_pFixupPrecodeHeap = NULL;
     }
+#endif // HAS_FIXUP_PRECODE
 
     #ifdef FEATURE_READYTORUN
     #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -1461,11 +1463,13 @@ void LoaderAllocator::Terminate()
     #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     #endif
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (m_pNewStubPrecodeHeap != NULL)
     {
         m_pNewStubPrecodeHeap->~InterleavedLoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (m_pFuncPtrStubs != NULL)
     {

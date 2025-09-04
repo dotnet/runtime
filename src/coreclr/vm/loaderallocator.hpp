@@ -330,8 +330,15 @@ protected:
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
+
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap      m_pFixupPrecodeHeap;
+#endif // HAS_FIXUP_PRECODE
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap      m_pNewStubPrecodeHeap;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -626,11 +633,13 @@ public:
         return m_pStubHeap;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap GetNewStubPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     PTR_InterleavedLoaderHeap GetDynamicHelpersStubHeap()
@@ -648,11 +657,13 @@ public:
         return m_pExecutableHeap;
     }
 
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap GetFixupPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pFixupPrecodeHeap;
     }
+#endif // HAS_FIXUP_PRECODE
 
     PTR_CodeFragmentHeap GetDynamicHelpersHeap();
 
