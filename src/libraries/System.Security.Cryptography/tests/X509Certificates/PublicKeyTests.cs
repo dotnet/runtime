@@ -106,8 +106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void TestPublicKey_Key_DSA()
         {
             PublicKey pk = GetTestDsaKey();
@@ -585,8 +584,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void TestDSAPublicKey()
         {
             using (var cert = new X509Certificate2(TestData.DssCer))
@@ -597,8 +595,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void TestDSAPublicKey_VerifiesSignature()
         {
             byte[] data = { 1, 2, 3, 4, 5 };
@@ -617,8 +614,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void TestDSAPublicKey_RSACert()
         {
             using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
@@ -628,8 +624,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void TestDSAPublicKey_ECDSACert()
         {
             using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
@@ -680,8 +675,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertExportSubjectPublicKeyInfo(key, rsa.ExportSubjectPublicKeyInfo());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void ExportSubjectPublicKeyInfo_DSA()
         {
             using DSA dsa = DSA.Create();
@@ -733,6 +727,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.NotSame(spki1, spki2);
         }
 
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            AssertExportSubjectPublicKeyInfo(key, mldsa.ExportSubjectPublicKeyInfo());
+        }
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa_Independent(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            byte[] spki1 = mldsa.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = mldsa.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
+        }
+
         [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ExportSubjectPublicKeyInfo_SlhDsa(SlhDsaAlgorithm algorithm)
@@ -770,8 +786,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(spki.Length, read);
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA()
         {
             using DSA dsa = DSA.Create();
@@ -816,8 +831,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(spki.Length, read);
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void CreateFromSubjectPublicKeyInfo_Roundtrip_DSA_InvalidKey()
         {
             // The DSA key is invalid here, but we should be able to round-trip the
@@ -905,8 +919,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Null(key.GetECDiffieHellmanPublicKey());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void GetDSAPublicKey_NullForDifferentAlgorithm()
         {
             byte[] spki = TestData.GostR3410SubjectPublicKeyInfo;
@@ -936,8 +949,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(() => key.GetRSAPublicKey());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void GetDSAPublicKey_ReturnsDsaKey()
         {
             PublicKey key = GetTestDsaKey();
@@ -949,8 +961,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void GetDSAPublicKey_ThrowsForCorruptKey()
         {
             AsnEncodedData badData = new AsnEncodedData(new byte[] { 1, 2, 3, 4 });

@@ -32,9 +32,20 @@
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
     <GeneratePackageOnBuild Condition="'$(IsRIDSpecificProject)' == 'true' and '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
 
+    <AllowedOutputExtensionsInPackageBuildOutputFolder Condition="'$(IncludeSymbolsInPackage)' == 'true'">$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;.mdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
+  
+  <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsPackable>true</IsPackable>
+      <PackageId>$(PackageId)</PackageId>
+      <PackageVersion>$(PackageVersion)</PackageVersion>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <!-- In servicing, the live package is compared against the GA version in strict mode. -->
@@ -239,13 +250,13 @@
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
       <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)\$(_referringTargetFramework)\'))" />
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(_referringTargetFramework)/'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
-                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)%(Filename)%(Extension)"
                                    TargetFramework="$(_referringTargetFramework)"
                                    Condition="'$(IncludeSymbols)' == 'true'" />
       <!-- Remove symbol from the non symbol package. -->
-      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" Condition="'$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->
       <TfmSpecificPackageFile Remove="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
     </ItemGroup>

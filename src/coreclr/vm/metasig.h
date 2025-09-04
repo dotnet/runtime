@@ -169,8 +169,8 @@
 
 
 // static methods:
-DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType, P(u) C(ASSEMBLY) F F, C(CLASS)))
+DEFINE_METASIG_T(SM(Int_IntPtr_IntPtr_RetException, i I I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType, P(u) C(ASSEMBLY) F F I, C(CLASS)))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(IntPtr_UInt_VoidPtr_RetObj, I K P(v), j))
@@ -330,7 +330,6 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
-DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))

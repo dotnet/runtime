@@ -2912,7 +2912,7 @@ ErrExit:
     return hr;
 } // HRESULT MDInfo::GetOneElementType()
 
-// Display the fields of the N/Direct custom value structure.
+// Display the fields of the PInvoke custom value structure.
 
 void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 {

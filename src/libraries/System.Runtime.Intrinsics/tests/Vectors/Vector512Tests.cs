@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -5972,14 +5973,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector512DoubleEqualsNaNTest()
         {
-            Vector512<double> nan = Vector512.Create(double.NaN);
+            Vector512<double> nan = Vector512<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector512SingleEqualsNaNTest()
         {
-            Vector512<float> nan = Vector512.Create(float.NaN);
+            Vector512<float> nan = Vector512<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
@@ -7631,5 +7632,375 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Fact]
         public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMaxTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector512<T> left = Vector512.CreateSequence<T>(start, T.One);
+            Vector512<T> right = Vector512.Create<T>(T.MaxValue - T.CreateTruncating(Vector512<T>.Count) + T.One);
+
+            Vector512<T> result = Vector512.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector512<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector512<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMinTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector512<T> left = Vector512.CreateSequence<T>(start, T.NegativeOne);
+            Vector512<T> right = Vector512.Create<T>(T.MinValue + T.CreateTruncating(Vector512<T>.Count) - T.One);
+
+            Vector512<T> result = Vector512.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector512<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector512<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void AddSaturateByteTest() => AddSaturateToMaxTest<byte>(1);
+
+        [Fact]
+        public void AddSaturateInt16Test()
+        {
+            AddSaturateToMinTest<short>(-1);
+            AddSaturateToMaxTest<short>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt32Test()
+        {
+            AddSaturateToMinTest<int>(-1);
+            AddSaturateToMaxTest<int>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt64Test()
+        {
+            AddSaturateToMinTest<long>(-1);
+            AddSaturateToMaxTest<long>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateIntPtrTest()
+        {
+            AddSaturateToMinTest<nint>(-1);
+            AddSaturateToMaxTest<nint>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateSByteTest()
+        {
+            AddSaturateToMinTest<sbyte>(-1);
+            AddSaturateToMaxTest<sbyte>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateUInt16Test() => AddSaturateToMaxTest<ushort>(1);
+
+        [Fact]
+        public void AddSaturateUInt32Test() => AddSaturateToMaxTest<uint>(1);
+
+        [Fact]
+        public void AddSaturateUInt64Test() => AddSaturateToMaxTest<ulong>(1);
+
+        [Fact]
+        public void AddSaturateUIntPtrTest() => AddSaturateToMaxTest<nuint>(1);
+
+        private (Vector512<TFrom> lower, Vector512<TFrom> upper) GetNarrowWithSaturationInputs<TFrom, TTo>()
+            where TFrom : unmanaged, IMinMaxValue<TFrom>, INumber<TFrom>
+            where TTo : unmanaged, IMinMaxValue<TTo>, INumber<TTo>
+        {
+            Vector512<TFrom> lower = Vector512.Create<TFrom>(TFrom.CreateTruncating(TTo.MaxValue) - TFrom.CreateTruncating(Vector512<TFrom>.Count) + TFrom.One)
+                                  + Vector512.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            Vector512<TFrom> upper = Vector512.Create<TFrom>(TFrom.CreateTruncating(TTo.MinValue) + TFrom.CreateTruncating(Vector512<TFrom>.Count) - TFrom.One)
+                                  - Vector512.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            return (lower, upper);
+        }
+
+        private void NarrowWithSaturationTest<TFrom, TTo>(Vector512<TFrom> lower, Vector512<TFrom> upper, Vector512<TTo> result)
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            for (int i = 0; i < Vector512<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(lower[i]);
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            for (int i = 0; i < Vector512<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(upper[i]);
+                Assert.Equal(expectedResult, result[Vector512<TFrom>.Count + i]);
+            }
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt16Test()
+        {
+            (Vector512<short> lower, Vector512<short> upper) = GetNarrowWithSaturationInputs<short, sbyte>();
+            Vector512<sbyte> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt32Test()
+        {
+            (Vector512<int> lower, Vector512<int> upper) = GetNarrowWithSaturationInputs<int, short>();
+            Vector512<short> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt64Test()
+        {
+            (Vector512<long> lower, Vector512<long> upper) = GetNarrowWithSaturationInputs<long, int>();
+            Vector512<int> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt16Test()
+        {
+            (Vector512<ushort> lower, Vector512<ushort> upper) = GetNarrowWithSaturationInputs<ushort, byte>();
+            Vector512<byte> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt32Test()
+        {
+            (Vector512<uint> lower, Vector512<uint> upper) = GetNarrowWithSaturationInputs<uint, ushort>();
+            Vector512<ushort> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt64Test()
+        {
+            (Vector512<ulong> lower, Vector512<ulong> upper) = GetNarrowWithSaturationInputs<ulong, uint>();
+            Vector512<uint> result = Vector512.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMaxTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector512<T> left = Vector512.Create<T>(T.MaxValue - T.CreateTruncating(Vector512<T>.Count) + T.One);
+            Vector512<T> right = Vector512.CreateSequence<T>(start, T.NegativeOne);
+
+            Vector512<T> result = Vector512.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector512<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector512<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMinTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector512<T> left = Vector512.Create<T>(T.MinValue + T.CreateTruncating(Vector512<T>.Count) - T.One);
+            Vector512<T> right = Vector512.CreateSequence<T>(start, T.One);
+
+            Vector512<T> result = Vector512.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector512<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector512<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void SubtractSaturateByteTest() => SubtractSaturateToMinTest<byte>(1);
+
+        [Fact]
+        public void SubtractSaturateInt16Test()
+        {
+            SubtractSaturateToMinTest<short>(+1);
+            SubtractSaturateToMaxTest<short>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt32Test()
+        {
+            SubtractSaturateToMinTest<int>(+1);
+            SubtractSaturateToMaxTest<int>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt64Test()
+        {
+            SubtractSaturateToMinTest<long>(+1);
+            SubtractSaturateToMaxTest<long>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateIntPtrTest()
+        {
+            SubtractSaturateToMinTest<nint>(+1);
+            SubtractSaturateToMaxTest<nint>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateSByteTest()
+        {
+            SubtractSaturateToMinTest<sbyte>(+1);
+            SubtractSaturateToMaxTest<sbyte>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateUInt16Test() => SubtractSaturateToMinTest<ushort>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt32Test() => SubtractSaturateToMinTest<uint>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt64Test() => SubtractSaturateToMinTest<ulong>(1);
+
+        [Fact]
+        public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
+
+        [Fact]
+        public void EDoubleTest() => TestConstant(Vector512<double>.E, double.E);
+
+        [Fact]
+        public void ESingleTest() => TestConstant(Vector512<float>.E, float.E);
+
+        [Fact]
+        public void EpsilonDoubleTest() => TestConstant(Vector512<double>.Epsilon, double.Epsilon);
+
+        [Fact]
+        public void EpsilonSingleTest() => TestConstant(Vector512<float>.Epsilon, float.Epsilon);
+
+        [Fact]
+        public void NaNDoubleTest() => TestConstant(Vector512<double>.NaN, double.NaN);
+
+        [Fact]
+        public void NaNSingleTest() => TestConstant(Vector512<float>.NaN, float.NaN);
+
+        [Fact]
+        public void NegativeInfinityDoubleTest() => TestConstant(Vector512<double>.NegativeInfinity, double.NegativeInfinity);
+
+        [Fact]
+        public void NegativeInfinitySingleTest() => TestConstant(Vector512<float>.NegativeInfinity, float.NegativeInfinity);
+
+        [Fact]
+        public void NegativeOneDoubleTest() => TestConstant(Vector512<double>.NegativeOne, -1.0);
+
+        [Fact]
+        public void NegativeOneInt16Test() => TestConstant<short>(Vector512<short>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt32Test() => TestConstant<int>(Vector512<int>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt64Test() => TestConstant<long>(Vector512<long>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSByteTest() => TestConstant<sbyte>(Vector512<sbyte>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSingleTest() => TestConstant(Vector512<float>.NegativeOne, -1.0f);
+
+        [Fact]
+        public void NegativeZeroDoubleTest() => TestConstant(Vector512<double>.NegativeZero, double.NegativeZero);
+
+        [Fact]
+        public void NegativeZeroSingleTest() => TestConstant(Vector512<float>.NegativeZero, float.NegativeZero);
+
+        [Fact]
+        public void PiDoubleTest() => TestConstant(Vector512<double>.Pi, double.Pi);
+
+        [Fact]
+        public void PiSingleTest() => TestConstant(Vector512<float>.Pi, float.Pi);
+
+        [Fact]
+        public void PositiveInfinityDoubleTest() => TestConstant(Vector512<double>.PositiveInfinity, double.PositiveInfinity);
+
+        [Fact]
+        public void PositiveInfinitySingleTest() => TestConstant(Vector512<float>.PositiveInfinity, float.PositiveInfinity);
+
+        [Fact]
+        public void TauDoubleTest() => TestConstant(Vector512<double>.Tau, double.Tau);
+
+        [Fact]
+        public void TauSingleTest() => TestConstant(Vector512<float>.Tau, float.Tau);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector512<double> actual, double expected)
+        {
+            for (int i = 0; i < Vector512<double>.Count; i++)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector512<float> actual, float expected)
+        {
+            for (int i = 0; i < Vector512<float>.Count; i++)
+            {
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant<T>(Vector512<T> actual, T expected)
+            where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < Vector512<T>.Count; i++)
+            {
+                Assert.Equal(expected, actual[i]);
+            }
+        }
     }
 }

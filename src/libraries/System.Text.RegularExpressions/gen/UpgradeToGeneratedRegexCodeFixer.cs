@@ -281,29 +281,35 @@ namespace System.Text.RegularExpressions.Generator
                     return null;
                 }
 
-                Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
-                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
+                // Literals and class-level field references should be preserved as-is.
+                if (argument.Value is ILiteralOperation ||
+                    argument.Value is IFieldReferenceOperation { Member: IFieldSymbol { IsConst: true } })
                 {
-                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
-                    return SyntaxFactory.ParseExpression(optionsLiteral);
+                    return argument.Value.Syntax;
                 }
-                else if (argument.Value is ILiteralOperation literalOperation)
+
+                switch (parameterName)
                 {
-                    return literalOperation.Syntax;
-                }
-                else if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
-                    fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
-                {
-                    return generator.Argument(fieldReferenceOperation.Syntax);
-                }
-                else if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
-                {
-                    string escapedVerbatimText = str.Replace("\"", "\"\"");
-                    return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
-                }
-                else
-                {
-                    return generator.LiteralExpression(argument.Value.ConstantValue.Value);
+                    case UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName:
+                        string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                        return SyntaxFactory.ParseExpression(optionsLiteral);
+
+                    case UpgradeToGeneratedRegexAnalyzer.PatternArgumentName:
+                        if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
+                        {
+                            // Special handling for string patterns with escaped characters
+                            string escapedVerbatimText = str.Replace("\"", "\"\"");
+                            return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
+                        }
+                        else
+                        {
+                            // Default handling for all other patterns.
+                            return generator.LiteralExpression(argument.Value.ConstantValue.Value);
+                        }
+
+                    default:
+                        Debug.Fail($"Unknown parameter: {parameterName}");
+                        return argument.Syntax;
                 }
             }
 

@@ -18,15 +18,11 @@
 #include "../../vm/common.h"
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
+#include "../../vm/cdacplatformmetadata.hpp"
 
 #ifdef DEBUGGING_SUPPORTED
 
-extern PTR_ECHash gFCallMethods[FCALL_HASH_SIZE];
-extern TADDR gLowestFCall;
-extern TADDR gHighestFCall;
 extern PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS];
-extern DWORD gThreadTLSIndex;
-extern DWORD gAppDomainTLSIndex;
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
 #ifdef FEATURE_COMWRAPPERS

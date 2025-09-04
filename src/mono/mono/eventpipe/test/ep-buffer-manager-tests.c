@@ -103,7 +103,8 @@ buffer_manager_init (
 			current_provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (*session != NULL);

@@ -63,7 +63,7 @@ namespace Microsoft.Interop
             }
             if (type.TypeKind == TypeKind.Delegate)
             {
-                return new DelegateTypeInfo(typeName, diagnosticFormattedName);
+                return new DelegateTypeInfo(typeName, diagnosticFormattedName, type is INamedTypeSymbol { IsGenericType: true });
             }
             if (type.TypeKind == TypeKind.TypeParameter)
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Interop
 
     public sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
 
-    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsGeneric) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
     public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 

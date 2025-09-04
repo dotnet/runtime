@@ -121,7 +121,7 @@ void StackLevelSetter::ProcessBlocks()
 // Notes:
 //   Block starts and ends with an empty outgoing stack.
 //   Nodes in blocks are iterated in the reverse order to memorize GT_PUTARG_STK
-//   and GT_PUTARG_SPLIT stack sizes.
+//   stack sizes.
 //
 //   Also note which (if any) throw helper blocks might end up being used by
 //   codegen.
@@ -139,7 +139,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         GenTree* node = *i;
 
 #ifdef TARGET_X86
-        if (node->OperIsPutArgStkOrSplit())
+        if (node->OperIsPutArgStk())
         {
             GenTreePutArgStk* putArg   = node->AsPutArgStk();
             unsigned          numSlots = putArgNumSlots[putArg];
@@ -375,7 +375,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
             if (slotCount != 0)
             {
                 GenTree* node = arg.GetNode();
-                assert(node->OperIsPutArgStkOrSplit());
+                assert(node->OperIsPutArgStk());
 
                 GenTreePutArgStk* putArg = node->AsPutArgStk();
 

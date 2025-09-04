@@ -129,7 +129,10 @@ static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t ms
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
+
+    if (msg[0] == '\0')
+        return 0;
 
     size_t msg_len = strlen(msg);
     const char* msg_end = msg + msg_len;
@@ -302,7 +305,10 @@ typedef ssize_t (*write_file_fnptr)(minipal_log_flags flags, const char* msg, si
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
+
+    if (msg[0] == '\0')
+        return 0;
 
     size_t bytes_to_write = 0;
     size_t bytes_written = 0;

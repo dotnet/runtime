@@ -114,6 +114,10 @@ namespace System.Net.Security.Tests
                     Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
                 }
             }
+
+            // Assert that the certificates are not being disposed
+            Assert.NotEqual(_clientCertificate.Handle, IntPtr.Zero);
+            Assert.NotEqual(_serverCertificate.Handle, IntPtr.Zero);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
@@ -152,7 +156,8 @@ namespace System.Net.Security.Tests
                     // mutual authentication should only be set if server required client cert
                     Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
                     Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
-                };
+                }
+                ;
             }
         }
 
@@ -268,7 +273,8 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
@@ -322,7 +328,8 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
@@ -380,7 +387,8 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 

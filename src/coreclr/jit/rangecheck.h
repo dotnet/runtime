@@ -217,7 +217,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         switch (type)
         {
@@ -283,11 +283,34 @@ struct Range
     }
 
 #ifdef DEBUG
-    const char* ToString(Compiler* comp)
+    const char* ToString(Compiler* comp) const
     {
         return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
     }
 #endif
+
+    bool IsValid() const
+    {
+        // A valid range must have lower limit <= upper limit.
+        if (lLimit.IsConstant() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // When both limits are BinOpArray, we check if their offsets are valid
+        if (lLimit.IsBinOpArray() && uLimit.IsBinOpArray() && lLimit.vn == uLimit.vn)
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // e.g. <$bnd + 10, 5> is not a valid range since $bnd is expected to be >= 0
+        if (lLimit.IsBinOpArray() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        return true;
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -452,6 +475,9 @@ struct RangeOps
     // then ignore the dependent variables for the lower bound but not for the upper bound.
     static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
     {
+        assert(r1.IsValid());
+        assert(r2.IsValid());
+
         const Limit& r1lo = r1.LowerLimit();
         const Limit& r1hi = r1.UpperLimit();
         const Limit& r2lo = r2.LowerLimit();
@@ -639,6 +665,9 @@ struct RangeOps
     //
     static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
+        assert(x.IsValid());
+        assert(y.IsValid());
+
         const Limit& xLower = x.LowerLimit();
         const Limit& yLower = y.LowerLimit();
         const Limit& xUpper = x.UpperLimit();

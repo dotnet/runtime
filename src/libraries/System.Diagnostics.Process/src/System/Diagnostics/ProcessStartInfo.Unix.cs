@@ -52,5 +52,12 @@ namespace System.Diagnostics
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }
         }
+
+        [SupportedOSPlatform("windows")]
+        public bool CreateNewProcessGroup
+        {
+            get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(CreateNewProcessGroup))); }
+            set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(CreateNewProcessGroup))); }
+        }
     }
 }

@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Finalize in different assembly from Dispose, tries to load the assembly with Dispose after the ALC unload started -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <SetIlcRPath>false</SetIlcRPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -44,7 +45,11 @@
     <ItemGroup>
       <NativeLibrariesToCopyAOT Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToCopyAOT Include="$(OutDir)/NativeLibrary.*" />
+      <GlobalLoadHelpersToCopy Include="$(OutDir)/libGlobalLoadHelper.*" />
+      <GlobalLoadHelpersToCopy Include="$(OutDir)/GlobalLoadHelper.*" />
     </ItemGroup>
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
+    <Copy SourceFiles="@(GlobalLoadHelpersToCopy)" DestinationFiles="@(GlobalLoadHelpersToCopy -> '$(NativeOutputPath)/%(Filename)%(Extension)')" />
   </Target>
 </Project>

@@ -9,11 +9,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 {
     public class PatternMatchingTests
     {
+        protected virtual bool PreserveFilterOrder => false;
+
         [Fact]
         public void EmptyCollectionWhenNoFilesPresent()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("alpha.txt")
                 .Execute();
 
@@ -23,8 +24,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void MatchingFileIsFound()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("alpha.txt")
                 .Files("alpha.txt")
                 .Execute();
@@ -35,8 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void MismatchedFileIsIgnored()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("alpha.txt")
                 .Files("omega.txt")
                 .Execute();
@@ -47,8 +46,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void FolderNamesAreTraversed()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("beta/alpha.txt")
                 .Files("beta/alpha.txt")
                 .Execute();
@@ -64,8 +62,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"\beta\alpha.txt", @"beta\alpha.txt")]
         public void SlashPolarityIsIgnored(string includePattern, string filePath)
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include(includePattern)
                 .Files("one/two.txt", filePath, "three/four.txt")
                 .Execute();
@@ -83,8 +80,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"b*et*x", new string[0])]
         public void PatternMatchingWorks(string includePattern, string[] matchesExpected)
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include(includePattern)
                 .Files("alpha.txt", "beta.txt", "gamma.dat")
                 .Execute();
@@ -101,8 +97,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"*45*56", new string[0])]
         public void PatternBeginAndEndCantOverlap(string includePattern, string[] matchesExpected)
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include(includePattern)
                 .Files("12345678")
                 .Execute();
@@ -122,8 +117,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"/*.*/*", new[] { "alpha/hello.txt", "beta/hello.txt", "gamma/hello.txt" })]
         public void PatternMatchingWorksInFolders(string includePattern, string[] matchesExpected)
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include(includePattern)
                 .Files("alpha/hello.txt", "beta/hello.txt", "gamma/hello.txt")
                 .Execute();
@@ -143,8 +137,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"./*mm*/*", new string[] { "gamma/hello.txt" })]
         public void PatternMatchingCurrent(string includePattern, string[] matchesExpected)
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include(includePattern)
                 .Files("alpha/hello.txt", "beta/hello.txt", "gamma/hello.txt")
                 .Execute();
@@ -155,8 +148,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void StarDotStarIsSameAsStar()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.*")
                 .Files("alpha.txt", "alpha.", ".txt", ".", "alpha", "txt")
                 .Execute();
@@ -167,8 +159,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void IncompletePatternsDoNotInclude()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*/*.txt")
                 .Files("one/x.txt", "two/x.txt", "x.txt")
                 .Execute();
@@ -179,8 +170,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void IncompletePatternsDoNotExclude()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*/*.txt")
                 .Exclude("one/hello.txt")
                 .Files("one/x.txt", "two/x.txt")
@@ -192,8 +182,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void TrailingRecursiveWildcardMatchesAllFiles()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("one/**")
                 .Files("one/x.txt", "two/x.txt", "one/x/y.txt")
                 .Execute();
@@ -204,8 +193,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void LeadingRecursiveWildcardMatchesAllLeadingPaths()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("**/*.cs")
                 .Files("one/x.cs", "two/x.cs", "one/two/x.cs", "x.cs")
                 .Files("one/x.txt", "two/x.txt", "one/two/x.txt", "x.txt")
@@ -217,8 +205,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void InnerRecursiveWildcardMuseStartWithAndEndWith()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("one/**/*.cs")
                 .Files("one/x.cs", "two/x.cs", "one/two/x.cs", "x.cs")
                 .Files("one/x.txt", "two/x.txt", "one/two/x.txt", "x.txt")
@@ -231,8 +218,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ExcludeMayEndInDirectoryName()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.cs", "*/*.cs", "*/*/*.cs")
                 .Exclude("bin", "one/two")
                 .Files("one/x.cs", "two/x.cs", "one/two/x.cs", "x.cs", "bin/x.cs", "bin/two/x.cs")
@@ -245,8 +231,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void RecursiveWildcardSurroundingContainsWith()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("**/x/**")
                 .Files("x/1", "1/x/2", "1/x", "x", "1", "1/2")
                 .Execute();
@@ -258,8 +243,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void SequentialFoldersMayBeRequired()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("a/b/**/1/2/**/2/3/**")
                 .Files("1/2/2/3/x", "1/2/3/y", "a/1/2/4/2/3/b", "a/2/3/1/2/b")
                 .Files("a/b/1/2/2/3/x", "a/b/1/2/3/y", "a/b/a/1/2/4/2/3/b", "a/b/a/2/3/1/2/b")
@@ -271,8 +255,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void RecursiveAloneIncludesEverything()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("**")
                 .Files("1/2/2/3/x", "1/2/3/y")
                 .Execute();
@@ -283,8 +266,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ExcludeCanHaveSurroundingRecursiveWildcards()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("**")
                 .Exclude("**/x/**")
                 .Files("x/1", "1/x/2", "1/x", "x", "1", "1/2")
@@ -296,8 +278,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void LeadingDotDotCanComeThroughPattern()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.cs")
                 .Include("../2/*.cs")
                 .Files("1/x.cs", "1/x.txt", "2/x.cs", "2/x.txt")
@@ -310,8 +291,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void LeadingDotDotWithRecursiveCanComeThroughPattern()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.cs")
                 .Include("../2/**/*.cs")
                 .Files("1/x.cs", "1/x.txt", "2/x.cs", "2/x.txt", "2/3/x.cs", "2/3/4/z.cs", "2/3/x.txt")
@@ -324,8 +304,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ExcludeFolderRecursively()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.*")
                 .Include("../sibling/**/*.*")
                 .Exclude("../sibling/exc/**/*.*")
@@ -340,8 +319,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ExcludeFolderByName()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("*.*")
                 .Include("../sibling/**/*.*")
                 .Exclude("../sibling/exc/")
@@ -356,8 +334,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void MultipleRecursiveWildcardStemMatch()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/**/bar/**/*.txt")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/sub2/bar/baz/three.txt", "sub/sub3/sub4/bar/three.txt")
                 .Execute();
@@ -372,8 +349,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void RecursiveWildcardStemMatch()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/**/*.txt")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/sub2/three.txt")
                 .Execute();
@@ -389,8 +365,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void WildcardMidSegmentMatch()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/w*.txt")
                 .Files("root.txt", "sub/woah.txt", "sub/wow.txt", "sub/blah.txt")
                 .Execute();
@@ -405,8 +380,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void StemMatchOnExactFile()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/sub/three.txt")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/sub/three.txt")
                 .Execute();
@@ -420,8 +394,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void SimpleStemMatching()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/*")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/sub/three.txt")
                 .Execute();
@@ -436,8 +409,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void StemMatchingWithFileExtension()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("sub/*.txt")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/three.dat")
                 .Execute();
@@ -452,8 +424,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void StemMatchingWithParentDir()
         {
-            var matcher = new Matcher();
-            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", matcher)
+            var scenario = new FileSystemGlobbingTestContext(@"c:\files\", PreserveFilterOrder)
                 .Include("../files/sub/*.txt")
                 .Files("root.txt", "sub/one.txt", "sub/two.txt", "sub/three.dat")
                 .Execute();

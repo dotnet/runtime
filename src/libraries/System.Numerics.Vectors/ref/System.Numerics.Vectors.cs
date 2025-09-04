@@ -238,6 +238,7 @@ namespace System.Numerics
         public static bool IsHardwareAccelerated { get { throw null; } }
         public static System.Numerics.Vector<T> Abs<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<T> Add<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> AddSaturate<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool All<T>(System.Numerics.Vector<T> vector, T value) { throw null; }
         public static bool AllWhereAllBitsSet<T>(System.Numerics.Vector<T> vector) { throw null; }
         public static System.Numerics.Vector<T> AndNot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -427,6 +428,17 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
+        public static System.Numerics.Vector<System.Single> NarrowWithSaturation(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> NarrowWithSaturation(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
+        public static System.Numerics.Vector<System.Int16> NarrowWithSaturation(System.Numerics.Vector<System.Int32> low, System.Numerics.Vector<System.Int32> high) { throw null; }
+        public static System.Numerics.Vector<System.Int32> NarrowWithSaturation(System.Numerics.Vector<System.Int64> low, System.Numerics.Vector<System.Int64> high) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.Byte> NarrowWithSaturation(System.Numerics.Vector<System.UInt16> low, System.Numerics.Vector<System.UInt16> high) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt16> NarrowWithSaturation(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> NarrowWithSaturation(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) { throw null; }
         public static bool None<T>(System.Numerics.Vector<T> vector, T value) { throw null; }
         public static bool NoneWhereAllBitsSet<T>(System.Numerics.Vector<T> vector) { throw null; }
@@ -515,6 +527,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe(this System.Numerics.Vector4 source, ref float destination, nuint elementOffset) { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> SubtractSaturate<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static T Sum<T>(System.Numerics.Vector<T> value) { throw null; }
         public static T ToScalar<T>(this System.Numerics.Vector<T> vector) { throw null; }
         public static float ToScalar(this System.Numerics.Vector2 vector) { throw null; }
@@ -560,6 +573,24 @@ namespace System.Numerics
         public static System.Numerics.Vector3 WithElement(this System.Numerics.Vector3 vector, int index, float value) { throw null; }
         public static System.Numerics.Vector4 WithElement(this System.Numerics.Vector4 vector, int index, float value) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        extension<T>(Vector<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Numerics.Vector<T> E { get { throw null; } }
+            public static System.Numerics.Vector<T> Pi { get { throw null; } }
+            public static System.Numerics.Vector<T> Tau { get { throw null; } }
+        }
+        extension<T>(Vector<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Numerics.Vector<T> Epsilon { get { throw null; } }
+            public static System.Numerics.Vector<T> NaN { get { throw null; } }
+            public static System.Numerics.Vector<T> NegativeInfinity { get { throw null; } }
+            public static System.Numerics.Vector<T> NegativeZero { get { throw null; } }
+            public static System.Numerics.Vector<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(Vector<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Numerics.Vector<T> NegativeOne { get { throw null; } }
+        }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
     {

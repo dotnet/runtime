@@ -31,6 +31,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
@@ -48,7 +49,7 @@
     <None Include="$(_MonoSrcWasmDir)Wasm.Build.Tests\data\WasmOverridePacks.targets" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
+  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="AcquireWasiSdkUnconditional;_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''"
            Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
 
@@ -97,8 +98,8 @@
 
     <PropertyGroup>
       <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasm.Build.Tests -->
-      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_RuntimePackCurrentVersion>
-      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' != 'true'">$(PackageVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
     <ItemGroup>
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" />
@@ -111,6 +112,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASI_SDK_PATH=&quot;$(RuntimeBuildWasiSdkPath)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)&quot;" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />

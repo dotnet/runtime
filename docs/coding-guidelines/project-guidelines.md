@@ -151,7 +151,7 @@ src\<Library Name>\tests - Contains the test code for a library.
 ## ref
 Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md).
 
-In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property. Ref projects should use `<ProjectReference>` for its dependencies.
+In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property.
 
 ### ref output
 All ref outputs should be under
@@ -159,11 +159,11 @@ All ref outputs should be under
 `bin\$(MSBuildProjectName)\ref\$(TargetFramework)`
 
 ## src
-In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFrameworks` property.
+In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library for various target frameworks. All supported target frameworks should be listed in the `TargetFramework` or `TargetFrameworks` property.
 
-All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
+Libraries should use `ProjectReference` items to reference live dependencies.
 
-Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net8.0`) should use ProjectReference items to reference dependencies.
+`Reference` items should only be used when targeting .NET Framework to  reference prebuilt assemblies from the targeting pack and which aren't included by default (i.e. `System.DirectoryServices`). For anything else, `Reference` items should not be used as they are not supported in those frameworks.
 
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
@@ -172,6 +172,24 @@ Contains the files used to direct the trimming tool. See [ILLink files](../workf
 All src outputs are under
 
 `artifacts\bin\$(MSBuildProjectName)\$(TargetFramework)`
+
+### XML Documentation Files
+The `UseCompilerGeneratedDocXmlFile` property controls how XML documentation files are generated for a library project. XML documentation files are used for IntelliSense, API reference documentation, and code analysis.
+
+- When set to `true` (default), the compiler generates the XML documentation file based on XML comments in the source code.
+- When set to `false`, the build system attempts to use a pre-built XML documentation file from the Microsoft.Private.Intellisense package.
+
+```xml
+<PropertyGroup>
+  <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+</PropertyGroup>
+```
+
+Setting `UseCompilerGeneratedDocXmlFile` to `false` is typically done for stable APIs where manually curated documentation exists that should be preferred over compiler-generated documentation.
+
+If a project sets this to `false` but the Microsoft.Private.Intellisense package doesn't have documentation for the assembly, a warning is shown suggesting to remove the property to let the compiler generate the file.
+
+The implementation of this property can be found in `eng/intellisense.targets`.
 
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.

@@ -31,6 +31,8 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     _Out_ void** fpAddRef,
     _Out_ void** fpRelease);
 
+extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease();
+
 extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj);
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();
@@ -71,9 +73,9 @@ class ManagedObjectWrapperHolderObject : public Object
     friend class ClrDataAccess;
 private:
     OBJECTREF _releaser;
-    OBJECTREF _wrappedObject;
 public:
-    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) ManagedObjectWrapper;
+    OBJECTREF _wrappedObject;
+    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
 };
 
 class NativeObjectWrapperObject : public Object

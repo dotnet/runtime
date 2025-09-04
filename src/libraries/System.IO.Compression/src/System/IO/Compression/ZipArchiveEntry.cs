@@ -678,9 +678,9 @@ namespace System.IO.Compression
 
                 for (int i = 0; i < _compressedBytes.Length - 1; i++)
                 {
-                    ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[i], maxSingleBufferSize);
+                    _archive.ArchiveStream.ReadAtLeast(_compressedBytes[i], maxSingleBufferSize, throwOnEndOfStream: true);
                 }
-                ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize));
+                _archive.ArchiveStream.ReadAtLeast(_compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), throwOnEndOfStream: true);
             }
         }
 

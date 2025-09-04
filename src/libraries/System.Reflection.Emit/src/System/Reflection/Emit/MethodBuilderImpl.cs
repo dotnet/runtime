@@ -29,7 +29,6 @@ namespace System.Reflection.Emit
         internal Type[][]? _parameterTypeRequiredCustomModifiers;
         internal Type[][]? _parameterTypeOptionalCustomModifiers;
 
-        internal bool _canBeRuntimeImpl;
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal ParameterBuilderImpl[]? _parameterBuilders;
@@ -178,13 +177,11 @@ namespace System.Reflection.Emit
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
                     int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     _methodImplFlags |= (MethodImplAttributes)implValue;
-                    _canBeRuntimeImpl = true;
                     return;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {
                         _dllImportData = DllImportData.Create(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
                         _attributes |= MethodAttributes.PinvokeImpl;
-                        _canBeRuntimeImpl = true;
                         if (preserveSig)
                         {
                             _methodImplFlags |= MethodImplAttributes.PreserveSig;
@@ -209,8 +206,6 @@ namespace System.Reflection.Emit
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             _declaringType.ThrowIfCreated();
-
-            _canBeRuntimeImpl = true;
             _methodImplFlags = attributes;
         }
 

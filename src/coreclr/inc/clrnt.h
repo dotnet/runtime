@@ -211,7 +211,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
+    DPTR(UNWIND_INFO) pUnwindInfo = dac_cast<DPTR(UNWIND_INFO)>(ImageBase + FunctionEntry->UnwindData);
 
     return FunctionEntry->BeginAddress + pUnwindInfo->FunctionLength;
 }
@@ -470,7 +470,7 @@ RtlpGetFunctionEndAddress (
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
@@ -510,7 +510,7 @@ RtlVirtualUnwind(
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
 #define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
 
-PEXCEPTION_ROUTINE
+inline PEXCEPTION_ROUTINE
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,
@@ -520,7 +520,11 @@ RtlVirtualUnwind (
     _Out_ PVOID *HandlerData,
     _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
-    );
+    )
+{
+    PORTABILITY_ASSERT("The function RtlVirtualUnwind is not implemented on wasm");
+    return nullptr;
+}
 
 FORCEINLINE
 ULONG
@@ -529,7 +533,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    _ASSERTE("The function RtlpGetFunctionEndAddress is not implemented on wasm");
+    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
     return 0;
 }
 

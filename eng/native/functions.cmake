@@ -548,11 +548,11 @@ function(install_static_library targetName destination component)
   endif()
 endfunction()
 
-# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
+# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName] [OPTIONAL])
 function(install_clr)
   set(multiValueArgs TARGETS DESTINATIONS)
   set(singleValueArgs COMPONENT)
-  set(options "")
+  set(options OPTIONAL)
   cmake_parse_arguments(INSTALL_CLR "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
@@ -587,12 +587,36 @@ function(install_clr)
       get_symbol_file_name(${targetName} symbolFile)
     endif()
 
+    if (${INSTALL_CLR_OPTIONAL})
+      set(INSTALL_CLR_OPTIONAL "OPTIONAL")
+    else()
+      set(INSTALL_CLR_OPTIONAL "")
+    endif()
+
     foreach(destination ${destinations})
-      # We don't need to install the export libraries for our DLLs
-      # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
+      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Use install FILES since these are WASM assets that aren't executable.
+        install(FILES
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+
+        # Conditionally check for and copy any extra data file at install time.
+        install(CODE
+        "
+          if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
+              file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
+          endif()
+        "
+        COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      else()
+        # We don't need to install the export libraries for our DLLs
+        # since they won't be directly linked against.
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)

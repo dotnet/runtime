@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
-        private string? _strFullName;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private readonly TypeBuilderImpl? _declaringType;
@@ -131,14 +130,6 @@ namespace System.Reflection.Emit
                 MethodBuilderImpl method = _methodDefinitions[i];
                 MethodAttributes methodAttrs = method.Attributes;
 
-                // Any of these flags in the implementation flags is set, we will not check the IL method body
-                if (((method.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
-                    ((methodAttrs & MethodAttributes.PinvokeImpl) != 0))
-                {
-                    continue;
-                }
-
-                ILGeneratorImpl? body = method.ILGeneratorImpl;
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // Check if an abstract method declared on a non-abstract class
@@ -148,14 +139,11 @@ namespace System.Reflection.Emit
                     }
 
                     // If this is an abstract method or an interface should not have body.
+                    ILGeneratorImpl? body = method.ILGeneratorImpl;
                     if (body != null && body.ILOffset > 0)
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, method.Name));
                     }
-                }
-                else if ((body == null || body.ILOffset == 0) && !method._canBeRuntimeImpl)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, method.Name));
                 }
             }
         }
@@ -611,7 +599,7 @@ namespace System.Reflection.Emit
         // You will never have to deal with a TypeBuilder if you are just referring to arrays.
         public override Type GetElementType() => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
-        public override string? FullName => _strFullName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? FullName => field ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;

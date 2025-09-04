@@ -173,11 +173,7 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    void *v;
-
-    *((OBJECTREF *)&v) = *(OBJECTREF *)handle;
-
-    return v;
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
 OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
@@ -721,19 +717,6 @@ COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
     RETURN NULL;
 }
 
-ULONG EEDbgInterfaceImpl::MethodDescGetRVA(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    return pFD->GetRVA();
-}
-
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
                                                           mdToken memberRef)
 {
@@ -1266,7 +1249,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         _ASSERTE(!"Fail to trace a stub through TraceManager()");
         fResult = false;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceManager on %s (0x%p) for IP=0x%p, yields:\n", stubManager->DbgGetName(), stubManager, GetIP(context));

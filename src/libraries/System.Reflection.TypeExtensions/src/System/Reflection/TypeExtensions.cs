@@ -168,7 +168,13 @@ namespace System.Reflection
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMember(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type,
+            [DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+                DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+                DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+                DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+                DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+                DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] this Type type,
             string name,
             BindingFlags bindingAttr)
         {
@@ -194,7 +200,13 @@ namespace System.Reflection
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMembers(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type,
+            [DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+                DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+                DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+                DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+                DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+                DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] this Type type,
             BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(type);

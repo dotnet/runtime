@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <NoWarn>NU1511</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
+    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features
+    -->
+    <MetricsSupport>true</MetricsSupport>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);MEMORYMARSHAL_SUPPORT;OS_ISBROWSER_SUPPORT</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />
+    <Compile Include="Common.cs" />
+    <Compile Include="MetricEventSourceTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Diagnostics.DiagnosticSource.csproj" />
+  </ItemGroup>
+
+</Project>

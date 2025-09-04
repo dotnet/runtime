@@ -81,10 +81,6 @@ typedef enum {
 	 * Instrument method samplepoints
 	 */
 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT = 1 << 7,
-	/**
-	 * Instrument method samplepoints with context.
-	 */
-	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT = 1 << 8,
 } MonoProfilerCallInstrumentationFlags;
 
 typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);

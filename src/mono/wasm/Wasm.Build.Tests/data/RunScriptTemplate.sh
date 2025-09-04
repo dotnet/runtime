@@ -45,6 +45,12 @@ function set_env_vars()
         export USE_FINGERPRINTING_FOR_TESTS=true
     fi
 
+    if [ "x$WASM_BUNDLER_FRIENDLY_BOOT_CONFIG" = "xtrue" ]; then
+        export USE_JAVASCRIPT_BUNDLER_FOR_TESTS=true
+    else
+        export USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
+    fi
+
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         cp -r $BASE_DIR/$SDK_DIR_NAME $EXECUTION_DIR

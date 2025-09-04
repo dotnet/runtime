@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "opcode.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 /*****************************************************************************/
 
@@ -1086,7 +1087,7 @@ void ConfigDoubleArray::Dump()
 
 #endif // defined(DEBUG)
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 void Counter::dump(FILE* output)
 {
@@ -1252,7 +1253,7 @@ void DumpOnShutdown::DumpAll()
     }
 }
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************
  * Fixed bit vector class
@@ -1529,11 +1530,11 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_LMUL:
+            case CORINFO_HELP_LNG2FLT:
             case CORINFO_HELP_LNG2DBL:
+            case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
@@ -1595,7 +1596,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
                 isAllocator   = true;
@@ -2196,22 +2197,15 @@ double CycleCount::ElapsedTime()
 
 bool PerfCounter::Start()
 {
-    bool result = QueryPerformanceFrequency(&beg) != 0;
-    if (!result)
-    {
-        return result;
-    }
-    freq = (double)beg.QuadPart / 1000.0;
-    (void)QueryPerformanceCounter(&beg);
-    return result;
+    freq = (double)minipal_hires_tick_frequency() / 1000.0;
+    beg  = minipal_hires_ticks();
+    return true;
 }
 
 // Return elapsed time from Start() in millis.
 double PerfCounter::ElapsedTime()
 {
-    LARGE_INTEGER li;
-    (void)QueryPerformanceCounter(&li);
-    return (double)(li.QuadPart - beg.QuadPart) / freq;
+    return (double)(minipal_hires_ticks() - beg) / freq;
 }
 
 #endif
@@ -3175,7 +3169,7 @@ double FloatingPointUtils::normalize(double value)
     }
 
     uint64_t bits;
-    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    static_assert(sizeof(bits) == sizeof(value));
     memcpy(&bits, &value, sizeof(value));
     bits |= 1ull << 51;
     memcpy(&value, &bits, sizeof(bits));

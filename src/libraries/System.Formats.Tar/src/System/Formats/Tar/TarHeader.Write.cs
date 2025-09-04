@@ -790,19 +790,8 @@ namespace System.Formats.Tar
 
             if (_typeFlag is not TarEntryType.LongLink and not TarEntryType.LongPath)
             {
-                if (_aTime != default)
-                {
-                    checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-                }
-                if (_cTime != default)
-                {
-                    checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-                }
-            }
-
-            if (_gnuUnusedBytes != null)
-            {
-                checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+                checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             }
 
             return checksum;
@@ -1179,6 +1168,12 @@ namespace System.Formats.Tar
         // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
         private int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
+            // For 'default' we leave the buffer zero-ed to indicate: "no timestamp".
+            if (timestamp == default)
+            {
+                return 0;
+            }
+
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
             return FormatNumeric(unixTimeSeconds, destination);
         }
