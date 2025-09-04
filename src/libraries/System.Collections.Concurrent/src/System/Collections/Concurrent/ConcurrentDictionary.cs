@@ -182,11 +182,10 @@ namespace System.Collections.Concurrent
             }
             capacity = HashHelpers.GetPrime(capacity);
 
-            var locks = new object[concurrencyLevel];
-            locks[0] = locks; // reuse array as the first lock object just to avoid an additional allocation
-            for (int i = 1; i < locks.Length; i++)
+            var locks = new Lock[concurrencyLevel];
+            for (int i = 0; i < locks.Length; i++)
             {
-                locks[i] = new object();
+                locks[i] = new Lock();
             }
 
             var countPerLock = new int[locks.Length];
@@ -446,7 +445,7 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                object[] locks = tables._locks;
+                Lock[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
                 lock (locks[lockNo])
@@ -641,7 +640,7 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                object[] locks = tables._locks;
+                Lock[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
                 lock (locks[lockNo])
@@ -927,19 +926,13 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                object[] locks = tables._locks;
+                Lock[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
                 bool resizeDesired = false;
                 bool forceRehash = false;
-                bool lockTaken = false;
-                try
+                using (acquireLock ? locks[lockNo].EnterScope() : default)
                 {
-                    if (acquireLock)
-                    {
-                        Monitor.Enter(locks[lockNo], ref lockTaken);
-                    }
-
                     // If the table just got resized, we may not be holding the right lock, and must retry.
                     // This should be a rare occurrence.
                     if (tables != _tables)
@@ -1024,13 +1017,6 @@ namespace System.Collections.Concurrent
                         comparer is NonRandomizedStringEqualityComparer)
                     {
                         forceRehash = true;
-                    }
-                }
-                finally
-                {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(locks[lockNo]);
                     }
                 }
 
@@ -1996,16 +1982,16 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                object[] newLocks = tables._locks;
+                Lock[] newLocks = tables._locks;
 
                 // Add more locks
                 if (_growLockArray && tables._locks.Length < MaxLockNumber)
                 {
-                    newLocks = new object[tables._locks.Length * 2];
+                    newLocks = new Lock[tables._locks.Length * 2];
                     Array.Copy(tables._locks, newLocks, tables._locks.Length);
                     for (int i = tables._locks.Length; i < newLocks.Length; i++)
                     {
-                        newLocks[i] = new object();
+                        newLocks[i] = new Lock();
                     }
                 }
 
@@ -2080,11 +2066,10 @@ namespace System.Collections.Concurrent
         /// </remarks>
         private void AcquireFirstLock(ref int locksAcquired)
         {
-            object[] locks = _tables._locks;
+            Lock[] locks = _tables._locks;
             Debug.Assert(locksAcquired == 0);
-            Debug.Assert(!Monitor.IsEntered(locks[0]));
 
-            Monitor.Enter(locks[0]);
+            locks[0].Enter();
             locksAcquired = 1;
         }
 
@@ -2097,13 +2082,12 @@ namespace System.Collections.Concurrent
         /// </param>
         private static void AcquirePostFirstLock(Tables tables, ref int locksAcquired)
         {
-            object[] locks = tables._locks;
-            Debug.Assert(Monitor.IsEntered(locks[0]));
+            Lock[] locks = tables._locks;
             Debug.Assert(locksAcquired == 1);
 
             for (int i = 1; i < locks.Length; i++)
             {
-                Monitor.Enter(locks[i]);
+                locks[i].Enter();
                 locksAcquired++;
             }
 
@@ -2116,10 +2100,10 @@ namespace System.Collections.Concurrent
         {
             Debug.Assert(locksAcquired >= 0);
 
-            object[] locks = _tables._locks;
+            Lock[] locks = _tables._locks;
             for (int i = 0; i < locksAcquired; i++)
             {
-                Monitor.Exit(locks[i]);
+                locks[i].Exit();
             }
         }
 
@@ -2269,11 +2253,11 @@ namespace System.Collections.Concurrent
             /// <summary>Pre-computed multiplier for use on 64-bit performing faster modulo operations.</summary>
             internal readonly ulong _fastModBucketsMultiplier;
             /// <summary>A set of locks, each guarding a section of the table.</summary>
-            internal readonly object[] _locks;
+            internal readonly Lock[] _locks;
             /// <summary>The number of elements guarded by each lock.</summary>
             internal readonly int[] _countPerLock;
 
-            internal Tables(VolatileNode[] buckets, object[] locks, int[] countPerLock, IEqualityComparer<TKey>? comparer)
+            internal Tables(VolatileNode[] buckets, Lock[] locks, int[] countPerLock, IEqualityComparer<TKey>? comparer)
             {
                 Debug.Assert(typeof(TKey).IsValueType || comparer is not null);
 
@@ -2395,16 +2379,13 @@ namespace System.Collections.Concurrent
 
                 while (true)
                 {
-                    object[] locks = tables._locks;
+                    Lock[] locks = tables._locks;
                     ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
                     bool resizeDesired = false;
                     bool forceRehash = false;
-                    bool lockTaken = false;
-                    try
+                    using (locks[lockNo].EnterScope())
                     {
-                        Monitor.Enter(locks[lockNo], ref lockTaken);
-
                         // If the table just got resized, we may not be holding the right lock, and must retry.
                         // This should be a rare occurrence.
                         if (tables != Dictionary._tables)
@@ -2495,13 +2476,6 @@ namespace System.Collections.Concurrent
                             comparer is NonRandomizedStringEqualityComparer)
                         {
                             forceRehash = true;
-                        }
-                    }
-                    finally
-                    {
-                        if (lockTaken)
-                        {
-                            Monitor.Exit(locks[lockNo]);
                         }
                     }
 
@@ -2599,7 +2573,7 @@ namespace System.Collections.Concurrent
 
                 while (true)
                 {
-                    object[] locks = tables._locks;
+                    Lock[] locks = tables._locks;
                     ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
                     // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
