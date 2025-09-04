@@ -131,15 +131,10 @@ PTFF_SAVE_ALL_PRESERVED equ 00000007h   ;; NOTE: RBP is not included in this set
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref and we're in hijack handler
 PTFF_SAVE_ALL_SCRATCH   equ 00000700h
-PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
-TrapThreadsFlags_AbortInProgress equ 1
-TrapThreadsFlags_TrapThreads     equ 2
-
-;; This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
-STATUS_NATIVEAOT_THREAD_ABORT      equ 43h
+TrapThreadsFlags_TrapThreads     equ 1
 
 ;;
 ;; Rename fields of nested structs

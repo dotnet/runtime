@@ -112,6 +112,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peimage.cpp
     perfmap.cpp
     pgo.cpp
+    precode_portable.cpp
     precode.cpp
     prestub.cpp
     readytorunstandalonemethodmetadata.cpp
@@ -215,6 +216,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimagelayout.inl
     perfmap.h
     pgo.h
+    precode_portable.hpp
     precode.h
     rejit.h
     rejit.inl

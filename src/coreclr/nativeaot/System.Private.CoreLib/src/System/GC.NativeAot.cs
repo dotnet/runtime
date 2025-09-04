@@ -192,7 +192,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
+            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         /// <summary>
@@ -427,7 +427,11 @@ namespace System
             }
 
             StartNoGCRegionStatus status =
-                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(
+                    totalSize,
+                    hasLohSize ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    lohSize,
+                    disallowFullBlockingGC ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
             switch (status)
             {
                 case StartNoGCRegionStatus.NotEnoughMemory:

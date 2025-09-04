@@ -13666,7 +13666,7 @@ bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
 #ifndef DBG_FORCE_CONTINUE
 #define DBG_FORCE_CONTINUE MY_DBG_FORCE_CONTINUE
 #else
-static_assert_no_msg(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
+static_assert(DBG_FORCE_CONTINUE == MY_DBG_FORCE_CONTINUE);
 #endif
 
 DWORD GetDbgContinueFlag()

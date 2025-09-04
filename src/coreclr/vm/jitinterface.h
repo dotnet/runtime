@@ -971,12 +971,28 @@ public:
 /*********************************************************************/
 /*********************************************************************/
 
-typedef struct {
-    void * pfnHelper;
+// enum for dynamically assigned helper calls
+enum DynamicCorInfoHelpFunc {
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
+#include "jithelpers.h"
+    DYNAMIC_CORINFO_HELP_COUNT
+};
+
+struct VMHELPDEF
+{
+    PCODE pfnHelper;
+
 #ifdef _DEBUG
     const char* name;
-#endif
-} VMHELPDEF;
+#endif // _DEBUG
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    bool _isDynamicHelper;
+#endif // _DEBUG || TARGET_WASM
+
+    bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
+};
 
 #if defined(DACCESS_COMPILE)
 
@@ -986,15 +1002,11 @@ GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
-#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-// enum for dynamically assigned helper calls
-enum DynamicCorInfoHelpFunc {
-#define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
-#include "jithelpers.h"
-    DYNAMIC_CORINFO_HELP_COUNT
-};
+#endif
 
 #ifdef _MSC_VER
 // GCC complains about duplicate "extern". And it is not needed for the GCC build
@@ -1005,7 +1017,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
