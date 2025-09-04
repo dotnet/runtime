@@ -406,9 +406,8 @@ NotHijacked
         stp d12, d13, [sp, #0x20]
         stp d14, d15, [sp, #0x30]
         stp x0, x2,   [sp, #0x40]  ;; x0, x2 & x3 are saved so we have the exception object, REGDISPLAY and
-        stp x3, xzr,  [sp, #0x50]  ;; ExInfo later, xzr makes space for the local "is_not_handling_thread_abort"
+        str x3,       [sp, #0x50]  ;; ExInfo later
 
-#define rsp_offset_is_not_handling_thread_abort 0x58
 #define rsp_offset_x2 0x48
 #define rsp_offset_x3 0x50
 
@@ -416,10 +415,6 @@ NotHijacked
         ;; clear the DoNotTriggerGc flag, trashes x4-x6
         ;;
         INLINE_GETTHREAD    x5, x6      ;; x5 <- Thread*, x6 <- trashed
-
-        ldr         x4, [x5, #OFFSETOF__Thread__m_threadAbortException]
-        sub         x4, x4, x0
-        str         x4, [sp, #rsp_offset_is_not_handling_thread_abort] ;; Non-zero if the exception is not ThreadAbortException
 
         add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
 
@@ -472,21 +467,6 @@ PopExInfoLoop
 DonePopping
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     ;; store the new head on the Thread
 
-        ldr         x3, =RhpTrapThreads
-        ldr         w3, [x3]
-        tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, NoAbort
-
-        ldr         x3, [sp, #rsp_offset_is_not_handling_thread_abort]
-        cbnz        x3, NoAbort
-
-        ;; It was the ThreadAbortException, so rethrow it
-        ;; reset SP
-        mov         x1, x0                                     ;; x1 <- continuation address as exception PC
-        mov         w0, #STATUS_NATIVEAOT_THREAD_ABORT
-        mov         sp, x2
-        b           RhpThrowHwEx
-
-NoAbort
         ;; reset SP and jump to continuation address
         mov         sp, x2
         br          x0

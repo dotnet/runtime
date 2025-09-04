@@ -1062,10 +1062,12 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
+#ifndef TARGET_WASM
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+#endif // !TARGET_WASM
 
     if (IsWriteBarrierCopyEnabled())
     {
