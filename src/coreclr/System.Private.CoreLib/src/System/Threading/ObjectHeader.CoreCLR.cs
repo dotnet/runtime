@@ -161,8 +161,8 @@ namespace System.Threading
                     {
                         int oldBits = *pHeader;
 
-                        // If used for hashcode or has the spin-lock, we cannot use thin-lock.
-                        if ((oldBits & (BIT_SBLK_IS_HASHCODE | BIT_SBLK_SPIN_LOCK)) == 0)
+                        // If has a syncblk, we cannot use thin-lock.
+                        if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                         {
                             // Need to use a thick-lock.
                             return AcquireHeaderResult.UseSlowPath;
