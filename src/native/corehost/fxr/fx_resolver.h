@@ -41,10 +41,7 @@ public:
         const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
 
 private:
-    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
-        : m_disable_multilevel_lookup{disable_multilevel_lookup}
-        , m_override_settings{override_settings}
-    { }
+    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings);
 
     void update_newest_references(
         const runtime_config_t& config);
@@ -97,6 +94,9 @@ private:
 
     bool m_disable_multilevel_lookup;
     const runtime_config_t::settings_t& m_override_settings;
+
+    // Disabled runtime versions
+    std::vector<pal::string_t> m_disabled_versions;
 };
 
 #endif // __FX_RESOLVER_H__
