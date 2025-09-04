@@ -215,7 +215,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>9.0.0-preview-20241010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.5-alpha.25370.2</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.5-alpha.25431.3</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>9.0.0-rtm.24511.16</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
