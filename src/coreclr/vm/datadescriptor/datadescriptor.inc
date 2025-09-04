@@ -905,7 +905,7 @@ CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, Table, cdac_data<DynamicILBlobTable>::Table)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, TableSize, cdac_data<DynamicILBlobTable>::TableSize)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<DynamicILBlobTable>::EntryMethodToken)
-CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)

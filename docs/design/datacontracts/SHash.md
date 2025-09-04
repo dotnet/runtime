@@ -84,7 +84,7 @@ TEntry ISHash.LookupSHash<TKey, TEntry>(ISHash<TKey, TEntry> hashTable, TKey key
         if (shashTable.Traits.IsNull(current))
             return shashTable.Traits.Null();
         // we don't support the removal of entries
-        if (!shashTable.Traits.IsDeleted(key) && shashTable.Traits.Equals(key, shashTable.Traits.GetKey(current)))
+        if (!shashTable.Traits.IsDeleted(current) && shashTable.Traits.Equals(key, shashTable.Traits.GetKey(current)))
             return current;
 
         if (increment == 0)

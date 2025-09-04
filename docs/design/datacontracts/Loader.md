@@ -653,7 +653,7 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
     This struct contains a dictionary of fields with keys corresponding to the names of offsets
     and values corresponding to the offset values. Optionally, it contains a Size field.
     */
-    SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
+    SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     if (blobEntry.EntryIL == TargetPointer.Null)
     {
