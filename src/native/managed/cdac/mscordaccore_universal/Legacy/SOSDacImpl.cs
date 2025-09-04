@@ -3708,9 +3708,9 @@ internal sealed unsafe partial class SOSDacImpl
             int dynamicAdaptationModeLocal;
             int hrLocal = _legacyImpl16.GetGCDynamicAdaptationMode(&dynamicAdaptationModeLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (hr == HResults.S_OK && pDynamicAdaptationMode != null)
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
             {
-                Debug.Assert(*pDynamicAdaptationMode == dynamicAdaptationModeLocal);
+                Debug.Assert(pDynamicAdaptationMode == null || *pDynamicAdaptationMode == dynamicAdaptationModeLocal);
             }
         }
 #endif
