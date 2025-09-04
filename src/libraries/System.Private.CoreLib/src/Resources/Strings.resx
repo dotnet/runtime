@@ -1944,7 +1944,7 @@
     <value>startIndex cannot be larger than length of string.</value>
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+    <value>Stream length must be non-negative and less than the maximum array length (0x7FFFFFC7) - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -3861,7 +3861,7 @@
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>

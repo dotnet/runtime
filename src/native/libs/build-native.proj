@@ -26,18 +26,21 @@
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
-    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-    <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);WASI_SDK_PATH=$(WASI_SDK_PATH)</_BuildNativeEnvironmentVariables>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
+
+  <Target Name="BuildNativeCommon"
+          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile">
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+      <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="BuildNativeUnix"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="BuildNativeCommon"
           BeforeTargets="Build"
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
@@ -92,7 +95,7 @@
   </Target>
 
   <Target Name="BuildNativeWindows"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="BuildNativeCommon"
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>

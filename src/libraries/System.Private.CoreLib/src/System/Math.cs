@@ -525,7 +525,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte Clamp(byte value, byte min, byte max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -542,7 +545,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Clamp(decimal value, decimal min, decimal max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -559,7 +565,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Clamp(double value, double min, double max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -576,7 +585,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Clamp(short value, short min, short max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -593,7 +605,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Clamp(int value, int min, int max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -610,7 +625,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Clamp(long value, long min, long max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -642,7 +660,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Clamp(nint value, nint min, nint max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -660,7 +681,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte Clamp(sbyte value, sbyte min, sbyte max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -677,7 +701,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Clamp(float value, float min, float max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -695,7 +722,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort Clamp(ushort value, ushort min, ushort max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -713,7 +743,10 @@ namespace System
         [CLSCompliant(false)]
         public static uint Clamp(uint value, uint min, uint max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -731,7 +764,10 @@ namespace System
         [CLSCompliant(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -764,7 +800,10 @@ namespace System
         [CLSCompliant(false)]
         public static nuint Clamp(nuint value, nuint min, nuint max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
@@ -1457,7 +1496,7 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowMinMaxException<T>(T min, T max)
         {
-            throw new ArgumentOutOfRangeException(nameof(max), max, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(max), max, min));
+            throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }
 
         public static double ScaleB(double x, int n)

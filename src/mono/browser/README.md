@@ -393,7 +393,7 @@ Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 - V8: the version used is from `eng/testing/BrowserVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
-- wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
+- wasmtime - fixed version in `src/mono/wasi/wasmtime-version.txt`.
 
 ### `eng/testing/BrowserVersions.props`
 

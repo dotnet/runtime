@@ -1201,7 +1201,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static Int128 Clamp(Int128 value, Int128 min, Int128 max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
 
             if (value < min)
             {
