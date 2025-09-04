@@ -42,6 +42,10 @@ endif()
 
 add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
 
+if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
+  set_target_properties(clrinterpreter PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
+endif()
+
 if(CLR_CMAKE_HOST_WIN32)
     target_sources(clrinterpreter PRIVATE ${EXPORTS_FILE})
 else()
