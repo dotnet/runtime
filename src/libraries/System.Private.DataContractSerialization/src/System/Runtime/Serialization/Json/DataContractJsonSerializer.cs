@@ -105,12 +105,7 @@ namespace System.Runtime.Serialization.Json
         internal ISerializationSurrogateProvider? SerializationSurrogateProvider
         {
             get { return _serializationSurrogateProvider; }
-            set
-            {
-                _serializationSurrogateProvider = value;
-                // Reset _rootContract when surrogate provider changes so it gets recalculated
-                _rootContract = null;
-            }
+            set { _serializationSurrogateProvider = value; }
         }
 
         public bool IgnoreExtensionDataObject
@@ -193,12 +188,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (_rootContract == null)
                 {
-                    Type contractType = _rootType;
-                    if (_serializationSurrogateProvider != null)
-                    {
-                        contractType = DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, _rootType);
-                    }
-                    _rootContract = DataContract.GetDataContract(contractType);
+                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
                     CheckIfTypeIsReference(_rootContract);
                 }
                 return _rootContract;
@@ -625,9 +615,6 @@ namespace System.Runtime.Serialization.Json
             _serializeReadOnlyTypes = serializeReadOnlyTypes;
             _dateTimeFormat = dateTimeFormat;
             _useSimpleDictionaryFormat = useSimpleDictionaryFormat;
-
-            // Reset _rootContract when parameters change so it gets recalculated with surrogate
-            _rootContract = null;
         }
 
         [MemberNotNull(nameof(_rootType))]
@@ -666,6 +653,13 @@ namespace System.Runtime.Serialization.Json
             DataContract contract = DataContractSerializer.GetDataContract(declaredTypeContract, declaredType, objectType);
             CheckIfTypeIsReference(contract);
             return contract;
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal static Type GetSurrogatedType(ISerializationSurrogateProvider serializationSurrogateProvider, Type type)
+        {
+            return DataContractSurrogateCaller.GetDataContractType(serializationSurrogateProvider, DataContract.UnwrapNullableType(type));
         }
     }
 }
