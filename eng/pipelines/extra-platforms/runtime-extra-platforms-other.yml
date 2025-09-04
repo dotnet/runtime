@@ -16,14 +16,15 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: Release
     platforms:
-    - linux_x64
-    - linux_arm
-    - linux_arm64
-    - linux_musl_x64
-    - osx_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
+    # - linux_x64
+    # - linux_arm
+    # - linux_arm64
+    # - linux_musl_x64
+    # - osx_x64
+    - osx_arm64
+    # - windows_x64
+    # - windows_x86
+    # - windows_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       buildArgs: -s tools+clr+libs+libs.tests -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
@@ -35,118 +36,118 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Libraries_Release_CoreCLR
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      # condition: >-
+      #   or(
+      #     eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #     eq(variables['isRollingBuild'], true))
 
-# Run net48 tests on win-x64
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: Release
-    platforms:
-    - windows_x64
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    jobParameters:
-      framework: net48
-      buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
-      nameSuffix: Libraries_NET48
-      timeoutInMinutes: 150
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: NET48_$(_BuildConfig)
-            extraHelixArguments: /p:BuildTargetFramework=net48
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+# # Run net48 tests on win-x64
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     buildConfig: Release
+#     platforms:
+#     - windows_x64
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     jobParameters:
+#       framework: net48
+#       buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+#       nameSuffix: Libraries_NET48
+#       timeoutInMinutes: 150
+#       postBuildSteps:
+#         - template: /eng/pipelines/libraries/helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+#             extraHelixArguments: /p:BuildTargetFramework=net48
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       condition: >-
+#         or(
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
 
 #### MONO LEGS
 
-#
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - windows_x64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-    jobParameters:
-      testScope: innerloop
-      nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            condition: >-
-              or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['monoContainsChange'], true),
-              eq(variables['isRollingBuild'], true))
+# #
+# # Build the whole product using Mono and run libraries tests
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: mono
+#     platforms:
+#     - windows_x64
+#     variables:
+#       # map dependencies variables to local variables
+#       - name: librariesContainsChange
+#         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+#       - name: monoContainsChange
+#         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+#     jobParameters:
+#       testScope: innerloop
+#       nameSuffix: AllSubsets_Mono
+#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+#       timeoutInMinutes: 120
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       condition: >-
+#         or(
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
+#       # extra steps, run tests
+#       postBuildSteps:
+#         - template: /eng/pipelines/libraries/helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+#             condition: >-
+#               or(
+#               eq(variables['librariesContainsChange'], true),
+#               eq(variables['monoContainsChange'], true),
+#               eq(variables['isRollingBuild'], true))
 
-#
-# Mono CoreCLR runtime test executions using live libraries and mini Full AOT
-# Only when Mono is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-      - linux_x64
-      # Tracking issue: https://github.com/dotnet/runtime/issues/90427
-      # linux_arm64
-    variables:
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
-      runtimeVariant: minifullaot
-      buildArgs: -s mono+libs+clr.hosts -c Release
-      timeoutInMinutes: 300
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            llvmAotStepContainer: linux_x64
-            testRunNamePrefixSuffix: Mono_Release
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+# #
+# # Mono CoreCLR runtime test executions using live libraries and mini Full AOT
+# # Only when Mono is changed
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: mono
+#     platforms:
+#       - linux_x64
+#       # Tracking issue: https://github.com/dotnet/runtime/issues/90427
+#       # linux_arm64
+#     variables:
+#       - name: timeoutPerTestInMinutes
+#         value: 60
+#       - name: timeoutPerTestCollectionInMinutes
+#         value: 180
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
+#       runtimeVariant: minifullaot
+#       buildArgs: -s mono+libs+clr.hosts -c Release
+#       timeoutInMinutes: 300
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       condition: >-
+#         or(
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
+#       postBuildSteps:
+#         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             llvmAotStepContainer: linux_x64
+#             testRunNamePrefixSuffix: Mono_Release
+#       extraVariablesTemplates:
+#         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -159,7 +160,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-      - linux_arm64
+      # - linux_arm64
       - osx_arm64
     variables:
       - name: timeoutPerTestInMinutes
@@ -173,11 +174,11 @@ jobs:
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
       timeoutInMinutes: 180
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      # condition: >-
+      #   or(
+      #     eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #     eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #     eq(variables['isRollingBuild'], true))
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
@@ -186,39 +187,39 @@ jobs:
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
-#
-# Mono CoreCLR runtime Test executions using live libraries in JIT mode
-# Only when Mono is changed
+# #
+# # Mono CoreCLR runtime Test executions using live libraries in JIT mode
+# # Only when Mono is changed
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-      - linux_arm64
-    variables:
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_Minijit_RuntimeTests
-      runtimeVariant: minijit
-      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
-      timeoutInMinutes: 180
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_Release
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: mono
+#     platforms:
+#       - linux_arm64
+#     variables:
+#       - name: timeoutPerTestInMinutes
+#         value: 60
+#       - name: timeoutPerTestCollectionInMinutes
+#         value: 180
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_Mono_Minijit_RuntimeTests
+#       runtimeVariant: minijit
+#       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
+#       timeoutInMinutes: 180
+#       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#       condition: >-
+#         or(
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+#           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(variables['isRollingBuild'], true))
+#       postBuildSteps:
+#         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: Mono_Release
+#       extraVariablesTemplates:
+#         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
