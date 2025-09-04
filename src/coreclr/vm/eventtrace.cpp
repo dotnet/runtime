@@ -1925,10 +1925,12 @@ VOID ETW::EnumerationLog::SendOneTimeRundownEvents()
     // Fire the runtime information event
     ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Callback);
 
+#if defined(FEATURE_TIERED_COMPILATION)
     if (ETW::CompilationLog::TieredCompilation::Rundown::IsEnabled() && g_pConfig->TieredCompilation())
     {
         ETW::CompilationLog::TieredCompilation::Rundown::SendSettings();
     }
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 
@@ -5443,6 +5445,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerat
     }
 }
 
+#if defined(FEATURE_TIERED_COMPILATION)
 void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
 {
     CONTRACTL {
@@ -5484,7 +5487,9 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
 #endif
     *flagsRef = flags;
 }
+#endif // FEATURE_TIERED_COMPILATION
 
+#if defined(FEATURE_TIERED_COMPILATION)
 void ETW::CompilationLog::TieredCompilation::Runtime::SendSettings()
 {
     CONTRACTL {
@@ -5556,6 +5561,7 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT
 
     FireEtwTieredCompilationBackgroundJitStop(GetClrInstanceId(), pendingMethodCount, jittedMethodCount);
 }
+#endif // FEATURE_TIERED_COMPILATION
 
 #endif // !FEATURE_NATIVEAOT
 

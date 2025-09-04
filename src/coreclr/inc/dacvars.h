@@ -98,7 +98,9 @@ DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLink
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+#ifdef FEATURE_TIERED_COMPILATION
 DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
+#endif
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
