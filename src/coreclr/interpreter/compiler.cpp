@@ -3877,7 +3877,7 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
-    // Check for the unusual case of storing to the this pointer variable within a generic method which uses the this pointer as a generic context arg
+    // Check for the unusual case of taking the address of the this pointer variable within a generic method which uses the this pointer as a generic context arg
     // and if doing so and the mitigation for this pointer changing is not enabled, restart the compile to enable it
     if (var == 0 && ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
     {
