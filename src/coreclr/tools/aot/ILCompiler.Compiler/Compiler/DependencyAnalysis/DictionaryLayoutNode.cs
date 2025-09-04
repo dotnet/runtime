@@ -212,6 +212,30 @@ namespace ILCompiler.DependencyAnalysis
         {
             slot = Array.IndexOf(_layout, entry);
 
+
+            // If we're looking for a low type handle load level and it doesn't exist, check for a higher load level.
+            var necessaryLookup = entry as NecessaryTypeHandleGenericLookupResult;
+            var metadataLookup = entry as MetadataTypeHandleGenericLookupResult;
+            if (slot < 0
+                && (necessaryLookup != null || metadataLookup != null))
+            {
+                for (int i = 0; i < _layout.Length; i++)
+                {
+                    if (_layout[i] is TypeHandleGenericLookupResult thOther
+                        && (thOther.Type == necessaryLookup?.Type || thOther.Type == metadataLookup?.Type))
+                    {
+                        slot = i;
+                        return true;
+                    }
+                    if (_layout[i] is MetadataTypeHandleGenericLookupResult mdOther
+                        && mdOther.Type == necessaryLookup?.Type)
+                    {
+                        slot = i;
+                        return true;
+                    }
+                }
+            }
+
             // If this is a slot we should discard, respond false
             if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
                 return false;

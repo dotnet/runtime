@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -30,9 +31,10 @@ namespace System.Text.Json.Serialization.Metadata
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0? arg0, TArg1? arg1, TArg2? arg2, TArg3? arg3);
 
         /// <summary>
-        /// Indices of required properties.
+        /// Negated bitmask of the required properties, indexed by <see cref="JsonPropertyInfo.PropertyIndex"/>.
         /// </summary>
-        internal int NumberOfRequiredProperties { get; private set; }
+        internal BitArray? OptionalPropertiesMask { get; private set; }
+        internal bool ShouldTrackRequiredProperties => OptionalPropertiesMask is not null;
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -1041,6 +1043,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level deserialization methods
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
+        internal abstract ValueTask<object?> DeserializeAsObjectAsync(PipeReader utf8Json, CancellationToken cancellationToken);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
 
@@ -1072,12 +1075,13 @@ namespace System.Text.Json.Serialization.Metadata
             Dictionary<string, JsonPropertyInfo> propertyIndex = new(properties.Count, comparer);
             List<JsonPropertyInfo> propertyCache = new(properties.Count);
 
-            int numberOfRequiredProperties = 0;
             bool arePropertiesSorted = true;
             int previousPropertyOrder = int.MinValue;
+            BitArray? requiredPropertiesMask = null;
 
-            foreach (JsonPropertyInfo property in properties)
+            for (int i = 0; i < properties.Count; i++)
             {
+                JsonPropertyInfo property = properties[i];
                 Debug.Assert(property.DeclaringTypeInfo == this);
 
                 if (property.IsExtensionData)
@@ -1096,9 +1100,11 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
+                    property.PropertyIndex = i;
+
                     if (property.IsRequired)
                     {
-                        property.RequiredPropertyIndex = numberOfRequiredProperties++;
+                        (requiredPropertiesMask ??= new BitArray(properties.Count))[i] = true;
                     }
 
                     if (arePropertiesSorted)
@@ -1125,7 +1131,7 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyCache.StableSortByKey(static propInfo => propInfo.Order);
             }
 
-            NumberOfRequiredProperties = numberOfRequiredProperties;
+            OptionalPropertiesMask = requiredPropertiesMask?.Not();
             _propertyCache = propertyCache.ToArray();
             _propertyIndex = propertyIndex;
 

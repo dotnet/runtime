@@ -76,41 +76,21 @@ VOID InstallEEFunctionTable (
     CONTRACTL_END;
 
     static LPWSTR wszModuleName = NULL;
-    static WCHAR  rgwModuleName[MAX_LONGPATH] = { 0 };
 
     if (wszModuleName == NULL)
     {
         StackSString ssTempName;
-        DWORD dwTempNameSize;
 
-        // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"
-        LPCWSTR pszSysDir = GetInternalSystemDirectory(&dwTempNameSize);
+        IfFailThrow(GetClrModuleDirectory(ssTempName));
 
-        //finish creating complete path and copy to buffer if we can
-        if (pszSysDir == NULL)
-        {   // The CLR should become unavailable in this case.
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        ssTempName.Set(pszSysDir);
         ssTempName.Append(MAIN_DAC_MODULE_DLL_NAME_W);
 
-        if (ssTempName.GetCount() < MAX_LONGPATH)
-        {
-            wcscpy_s(rgwModuleName, MAX_LONGPATH, ssTempName.GetUnicode());
+        NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
 
-            // publish result
-            InterlockedExchangeT(&wszModuleName, rgwModuleName);
-        }
-        else
+        // publish result
+        if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
         {
-            NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
-
-            // publish result
-            if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
-            {
-                wzTempName.SuppressRelease();
-            }
+            wzTempName.SuppressRelease();
         }
     }
 

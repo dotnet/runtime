@@ -10,6 +10,7 @@ using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
 using Internal.LowLevelLinq;
 using Internal.NativeFormat;
 using Graph = Internal.Metadata.NativeFormat.Writer.AdjacencyGraph;
+using System.Runtime.InteropServices;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
@@ -335,8 +336,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             _visitor = new RecordVisitor();
 
-            _visitor.Run(ScopeDefinitions.AsEnumerable());
-            _visitor.Run(AdditionalRootRecords.AsEnumerable());
+            _visitor.Run(ScopeDefinitions);
+            _visitor.Run(AdditionalRootRecords);
 
             IEnumerable<MetadataRecord> records = _visitor.Graph.Vertices.Where(v => v != _visitor.MetaSourceVertex);
 
@@ -439,7 +440,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             {
                 foreach (var elem in dst)
                     Log(elem);
-                return dst.ToList();
+                return dst;
             }
 
             private bool _notFirst;           // The first child should not have a space before it.  This tracks this
@@ -547,15 +548,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             return string.Join(sep, arr.Select(v => v.ToString(includeHandleValue)));
         }
-    }
-
-    public interface ICustomAttributeMetadataRecord
-    {
-        IList<CustomAttribute> GetCustomAttributes();
-    }
-
-    public abstract partial class Blob : MetadataRecord
-    {
     }
 
     /// <summary>
@@ -738,7 +730,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return Kind.FlagsToString() + " " + Name.Value + "(" + Number.ToString() + ")";
+            return Kind.ToString() + " " + Name.Value + "(" + Number.ToString() + ")";
         }
     }
 
@@ -810,7 +802,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
+            return this.GenericType.ToString() + "<" + string.Join(", ", this.GenericTypeArguments) + ">";
         }
     }
 
@@ -830,7 +822,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             return Method.ToString()
                 + "(Arguments: "
                 + "<"
-                + string.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
+                + string.Join(", ", this.GenericTypeArguments)
                 + ">";
         }
     }
@@ -848,8 +840,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             string str = Constructor.ToString();
-            str += "(" + string.Join(", ", FixedArguments.Select(fa => fa.ToString()))
-                + string.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
+            str += "(" + string.Join(", ", FixedArguments)
+                + string.Join(", ", NamedArguments) + ")";
             str += "(ctor: " + Constructor.Handle.ToString();
             return str;
         }
@@ -945,7 +937,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string flags = Flags.FlagsToString();
+            string flags = Flags.ToString();
             return string.Format("{0}{1} (Seq:{2}) {3}",
                 flags,
                 Name.ToString(),
@@ -964,61 +956,29 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public static class EnumHelpers
     {
-        public static string FlagsToString<T>(this T value) where T : struct, Enum, IConvertible
+        public static string FlagsToString(this SignatureCallingConvention value)
         {
-            var flags = Enum.GetValues<T>().Where(
-                eVal => (((IConvertible)eVal).ToInt32(null) != 0) && ((((IConvertible)value).ToInt32(null) & ((IConvertible)eVal).ToInt32(null)) == ((IConvertible)eVal).ToInt32(null)));
-            if (flags.Count() == 0)
-                return "";
-            else
-                return "[" + string.Join(" | ", flags.Select(Enum.GetName<T>)) + "] ";
-        }
-    }
-
-    public static class ListExtensions
-    {
-        public static T FirstOrDefault<T>(this List<T> list)
-        {
-            if (list.Count != 0)
-                return list[0];
-            return default(T);
-        }
-        public static T First<T>(this List<T> list) where T : class
-        {
-            if (list.Count != 0)
-                return list[0];
-            return null;
-        }
-    }
-
-    public static partial class DictionaryExtensions
-    {
-        internal static T FirstOrDefault<T>(this Dictionary<string, T> dict)
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return default(T);
-        }
-        internal static T First<T>(this Dictionary<string, T> dict) where T : class
-        {
-            if (dict.Count != 0)
-                foreach (var value in dict.Values)
-                    return value;
-            return null;
-        }
-
-        internal static IEnumerable<T> AsSingleEnumerable<T>(this T value)
-        {
-            yield return value;
-        }
-    }
-
-    public static partial class SignatureHelpers
-    {
-        public static SZArraySignature AsSZArray(this MetadataRecord record)
-        {
-            return new SZArraySignature() { ElementType = record };
+            var values = new List<string>();
+            if ((value & SignatureCallingConvention.HasThis) == SignatureCallingConvention.HasThis)
+            {
+                values.Add(nameof(SignatureCallingConvention.HasThis));
+                value &= ~SignatureCallingConvention.HasThis;
+            }
+            if ((value & SignatureCallingConvention.ExplicitThis) == SignatureCallingConvention.ExplicitThis)
+            {
+                values.Add(nameof(SignatureCallingConvention.ExplicitThis));
+                value &= ~SignatureCallingConvention.ExplicitThis;
+            }
+            if ((value & SignatureCallingConvention.UnmanagedCallingConventionMask) != default)
+            {
+                values.Add((value & SignatureCallingConvention.UnmanagedCallingConventionMask).ToString());
+                value &= ~SignatureCallingConvention.UnmanagedCallingConventionMask;
+            }
+            if (value != default)
+            {
+                values.Add(value.ToString());
+            }
+            return values.Count == 0 ? "" : "[" + string.Join(" | ", values) + "] ";
         }
     }
 
@@ -1032,56 +992,16 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public static bool SequenceEqual<T>(this List<T> first, List<T> second, IEqualityComparer<T> comparer)
         {
-            if (first.Count != second.Count)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Count; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second)
-        {
-            return first.SequenceEqual(second, null);
-        }
-
-        public static bool SequenceEqual<T>(this T[] first, T[] second, IEqualityComparer<T> comparer)
-        {
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-
-            comparer ??= EqualityComparer<T>.Default;
-
-            for (int i = 0; i < first.Length; i++)
-            {
-                if (!comparer.Equals(first[i], second[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return CollectionsMarshal.AsSpan(first).SequenceEqual(CollectionsMarshal.AsSpan(second), comparer);
         }
     }
 
     // Distinguishes positive and negative zeros for float and double values
     public static class CustomComparer
     {
-        public static unsafe bool Equals(float x, float y)
+        public static bool Equals(float x, float y)
         {
-            return *(int*)&x == *(int*)&y;
+            return BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y);
         }
 
         public static bool Equals(double x, double y)

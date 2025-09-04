@@ -4,10 +4,12 @@
 using System.Collections.Specialized;
 using System.Net.Mail;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mime
 {
-    internal class MimeBasePart
+    internal abstract class MimeBasePart
     {
         internal const string DefaultCharSet = "utf-8";
 
@@ -186,46 +188,6 @@ namespace System.Net.Mime
             }
         }
 
-        internal virtual void Send(BaseWriter writer, bool allowUnicode)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal virtual IAsyncResult BeginSend(BaseWriter writer, AsyncCallback? callback,
-            bool allowUnicode, object? state)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal void EndSend(IAsyncResult asyncResult)
-        {
-            ArgumentNullException.ThrowIfNull(asyncResult);
-
-            LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
-
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndSend)));
-            }
-
-            castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-            if (castedAsyncResult.Result is Exception)
-            {
-                throw (Exception)castedAsyncResult.Result;
-            }
-        }
-
-        internal sealed class MimePartAsyncResult : LazyAsyncResult
-        {
-            internal MimePartAsyncResult(MimeBasePart part, object? state, AsyncCallback? callback) : base(part, state, callback)
-            {
-            }
-        }
+        internal abstract Task SendAsync<TIOAdapter>(BaseWriter writer, bool allowUnicode, CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter;
     }
 }

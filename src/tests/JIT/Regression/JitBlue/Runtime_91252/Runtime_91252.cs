@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// This test verifies if we correctly value number the operation of 
+// This test verifies if we correctly value number the operation of
 // x ^ x to zero.
 //
 // Found by Antigen
@@ -13,7 +13,7 @@ using Xunit;
 public class Issue_91252
 {
     static Vector64<int> s_v64_int_22 = Vector64.Create(-5);
-    Vector64<int> v64_int_72 = Vector64.Create(-1);
+    Vector64<int> v64_int_72 = Vector64<int>.NegativeOne;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public int Repro()

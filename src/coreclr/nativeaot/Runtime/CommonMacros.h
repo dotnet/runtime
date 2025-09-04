@@ -6,6 +6,9 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
+#ifdef PROFILE_STARTUP
+#include <minipal/time.h>
+#endif
 
 #define EXTERN_C extern "C"
 
@@ -323,36 +326,10 @@ enum STARTUP_TIMELINE_EVENT_ID
 
 #ifdef PROFILE_STARTUP
 extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
+#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
-
-#ifndef C_ASSERT
-#define C_ASSERT(e) static_assert(e, #e)
-#endif // C_ASSERT
-
-#ifdef _MSC_VER
-#define DECLSPEC_THREAD __declspec(thread)
-#else // _MSC_VER
-#define DECLSPEC_THREAD __thread
-#endif // !_MSC_VER
-
-#ifndef __GCENV_BASE_INCLUDED__
-#if !defined(_INC_WINDOWS)
-#ifdef _WIN32
-// this must exactly match the typedef used by windows.h
-typedef long HRESULT;
-#else
-typedef int32_t HRESULT;
-#endif
-
-#define S_OK  0x0
-#define E_FAIL 0x80004005
-
-#define UNREFERENCED_PARAMETER(P)          (void)(P)
-#endif // !defined(_INC_WINDOWS)
-#endif // __GCENV_BASE_INCLUDED__
 
 // PAL Numbers
 // Used to ensure cross-compiler compatibility when declaring large

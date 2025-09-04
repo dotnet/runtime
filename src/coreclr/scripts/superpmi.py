@@ -24,26 +24,27 @@ import json
 import locale
 import logging
 import math
-import os
 import multiprocessing
+import os
 import platform
+import queue
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
-import queue
-import re
+import time
 import urllib
 import urllib.request
 import zipfile
-import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory
+    get_deepest_existing_directory, run_command
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -3897,28 +3898,75 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
-    # Determine if a URL in Azure Storage should be allowed. The path looks like:
-    #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
-    # Filter to just the current jit-ee-guid, OS, and architecture.
-    # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
-    # If there are filters, only download those matching files.
-    def filter_superpmi_collections(path):
-        path = path.lower()
-        return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
+    path_var = os.environ.get("PATH")
+    azcopy_exe = "azcopy.exe" if platform.system() == "Windows" else "azcopy"
+    azcopy_path = find_file(azcopy_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
-    paths = list_superpmi_collections_container(filter_superpmi_collections)
-    if paths is None or len(paths) == 0:
-        print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
-        return []
+    if azcopy_path is None or authenticate_using_azure:
+        # Determine if a URL in Azure Storage should be allowed. The path looks like:
+        #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
+        # Filter to just the current jit-ee-guid, OS, and architecture.
+        # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
+        # If there are filters, only download those matching files.
+        def filter_superpmi_collections(path):
+            path = path.lower()
+            return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
 
-    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
-    urls = [blob_url_prefix + path for path in paths]
+        paths = list_superpmi_collections_container(filter_superpmi_collections)
+        if paths is None or len(paths) == 0:
+            print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
+            return []
 
-    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+        urls = [blob_url_prefix + path for path in paths]
 
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+    else:
+        logging.info("azcopy was found in PATH; will use azcopy for download")
+        local_paths = []
+        with TempDir() as temp_location:
+            source_url = "{}{}*".format(blob_url_prefix, blob_filter_string)
+            cli = [azcopy_path, "cp", source_url, temp_location]
+            if coreclr_args.filter is not None:
+                cli.append("--include-pattern")
+                cli.append(";".join("*" + filter_name + "*" for filter_name in coreclr_args.filter))
+    
+            # Log to a file to get "tee-like" behavior (streaming output in the console)
+            azcopy_log_path = os.path.join(temp_location, "azcopy.log")
+            run_command(cli, _output_file=azcopy_log_path)
+            os.remove(azcopy_log_path)
+
+            for file in os.listdir(temp_location):
+                download_path = os.path.join(temp_location, file)
+                if file.lower().endswith(".zip") or file.lower().endswith(".tar.gz"):
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
+
+                    if file.lower().endswith(".zip"):
+                        with zipfile.ZipFile(download_path, "r") as zip:
+                            zip.extractall(target_dir)
+                            archive_names = zip.namelist()
+                    else:
+                        with tarfile.open(download_path, "r") as tar:
+                            tar.extractall(target_dir)
+                            archive_names = tar.getnames()
+
+                    for archive_name in archive_names:
+                        if archive_name.endswith("/"):
+                            # Directory
+                            continue
+
+                        target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                        local_paths.append(target_path)
+                else:
+                    logging.info("Copy %s => %s", download_path, target_dir)
+                    target_path = os.path.join(target_dir, file)
+                    shutil.copy2(download_path, target_path)
+                    local_paths.append(target_path)
+
+        return local_paths
 
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.

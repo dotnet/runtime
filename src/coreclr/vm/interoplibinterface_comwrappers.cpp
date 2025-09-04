@@ -355,14 +355,18 @@ namespace InteropLibImports
                 return TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
         }
 
+        // Switch to Cooperative mode since object references
+        // are being manipulated and the catchFrame needs that so that it can push
+        // itself to the explicit frame stack.
+        GCX_COOP();
+        // Indicate to the debugger and exception handling that managed exceptions are being caught
+        // here.
+        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         HRESULT hr;
         auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
         EX_TRY_THREAD(CURRENT_THREAD)
         {
-            // Switch to Cooperative mode since object references
-            // are being manipulated.
-            GCX_COOP();
-
             struct
             {
                 OBJECTREF objRef;
@@ -379,6 +383,8 @@ namespace InteropLibImports
             GCPROTECT_END();
         }
         EX_CATCH_HRESULT(hr);
+
+        catchFrame.Pop();
 
         // Assert valid value.
         _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result
@@ -453,16 +459,23 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         // Get the external object's managed wrapper
-        ::OBJECTHANDLE srcHandle = static_cast<::OBJECTHANDLE>(targetHandle);
+        ::OBJECTHANDLE srcHandle = static_cast<::OBJECTHANDLE>(sourceHandle);
         OBJECTREF source = ObjectFromHandle(srcHandle);
 
         // Get the target of the external object's reference.
         ::OBJECTHANDLE tgtHandle = static_cast<::OBJECTHANDLE>(targetHandle);
-        OBJECTREF target = ObjectFromHandle(tgtHandle );
+        MOWHOLDERREF holder = (MOWHOLDERREF)ObjectFromHandle(tgtHandle);
 
-        // Return if the target has been collected or these are the same object.
-        if (target == NULL
-            || source->PassiveGetSyncBlock() == target->PassiveGetSyncBlock())
+        // Return if the holder has been collected
+        if (holder == NULL)
+        {
+            return S_FALSE;
+        }
+
+        OBJECTREF target = holder->_wrappedObject;
+
+        // Return if these are the same object.
+        if (source == target)
         {
             return S_FALSE;
         }
@@ -496,7 +509,7 @@ bool ComWrappersNative::IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWr
 
     MOWHOLDERREF holder = (MOWHOLDERREF)managedObjectWrapperHolderRef;
 
-    *pIsRooted = InteropLib::Com::IsRooted(holder->ManagedObjectWrapper);
+    *pIsRooted = InteropLib::Com::IsRooted(holder->_wrapper);
 
     return true;
 }
@@ -612,6 +625,25 @@ extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
     return InteropLibImports::GetGlobalPeggingState();
+}
+
+// Some of our "Untracked" COM objects may be owned by static globals
+// in client code. We need to ensure that we don't try executing a managed
+// method for the first time when the process is shutting down.
+// Therefore, we need to provide unmanaged implementations of AddRef and Release.
+namespace
+{
+    int STDMETHODCALLTYPE Untracked_AddRefRelease(void*)
+    {
+        return 1;
+    }
+}
+
+extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (void*)Untracked_AddRefRelease;
 }
 
 #endif // FEATURE_COMWRAPPERS

@@ -106,7 +106,9 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+    // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
+    // we need to actually load/map it into virtual addresses
+    if ((pFlat->HasReadyToRunHeader() && !pFlat->IsComponentAssembly() && AllowR2RForImage(pOwner))
         || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);

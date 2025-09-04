@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
-#include "RedhawkWarnings.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "regdisplay.h"
@@ -1111,7 +1107,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP += 3; // 3 locals
+            SP += 2 + 1; // 2 locals and stack alignment
         }
         else
         {
@@ -1147,14 +1143,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-    {
-        SP += 2; // 2 locals
-    }
-    else
-    {
-        SP++; // 1 local
-    }
+    SP++; // local / stack alignment
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;

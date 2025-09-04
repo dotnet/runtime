@@ -7,8 +7,8 @@
 #include "gcinterface.dac.h"
 #include "rhassert.h"
 #include "TargetPtrs.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "holder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
@@ -80,7 +80,7 @@ struct DotNetRuntimeDebugHeader
     //  v1-v4 were never doc'ed but history is source control if you need it
     //  v5 - Thread now has an m_eeAllocContext field and the previous m_rgbAllocContextBuffer
     //       field is nested inside of it.
-    //          
+    //
     const uint16_t MajorVersion = 5;
 
     // This counter can be incremented to indicate back-compatible changes

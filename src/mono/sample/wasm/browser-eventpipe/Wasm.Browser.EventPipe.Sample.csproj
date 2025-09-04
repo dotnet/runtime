@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmPerfTracing>true</WasmPerfTracing>
-    <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+    <EnableDiagnostics>true</EnableDiagnostics>
+    <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
     <!--
     <RunAOTCompilation>true</RunAOTCompilation>
+    -->
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
-    -->
 
   </PropertyGroup>
   <ItemGroup>

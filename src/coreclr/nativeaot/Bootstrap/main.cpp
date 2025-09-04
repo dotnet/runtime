@@ -2,7 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
+#include <minipal/descriptorlimit.h>
+
+#if defined(DEBUG) && defined(_WIN32)
+#include <process.h>
+#include <windows.h>
+#endif
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -102,21 +108,21 @@ extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
+void* PalGetModuleHandleFromPointer(void* pointer);
 
 #if defined(HOST_X86) && defined(HOST_WINDOWS)
 #define STRINGIFY(s) #s
 #define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
+#define MANAGED_RUNTIME_EXPORT_CALLCONV __cdecl
 #define MANAGED_RUNTIME_EXPORT(_name) \
     __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
-    extern "C" void __cdecl _name();
+    extern "C" void MANAGED_RUNTIME_EXPORT_CALLCONV _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
-#define CDECL __cdecl
 #else
+#define MANAGED_RUNTIME_EXPORT_CALLCONV
 #define MANAGED_RUNTIME_EXPORT(_name) \
     extern "C" void _name();
 #define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
-#define CDECL
 #endif
 
 MANAGED_RUNTIME_EXPORT(GetRuntimeException)
@@ -125,8 +131,6 @@ MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
 MANAGED_RUNTIME_EXPORT(OnUnhandledException)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableIsInterfaceImplemented)
-MANAGED_RUNTIME_EXPORT(IDynamicCastableGetInterfaceImplementation)
 #ifdef FEATURE_OBJCMARSHAL
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalTryGetTaggedMemory)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
@@ -134,19 +138,23 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
 MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 #endif
 
-typedef void (CDECL *pfn)();
+typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
+
+#if defined(_WIN32)
+extern "C" int ThreadEntryPoint(void* pContext);
+#else
+extern "C" size_t ThreadEntryPoint(void* pContext);
+#endif
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
-    nullptr, // &UnhandledExceptionHandler,
+    (pfn)&ThreadEntryPoint,
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     nullptr, // &CheckStaticClassConstruction,
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
     &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
     &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableIsInterfaceImplemented),
-    &MANAGED_RUNTIME_EXPORT_NAME(IDynamicCastableGetInterfaceImplementation),
 #ifdef FEATURE_OBJCMARSHAL
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalTryGetTaggedMemory),
     &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetIsTrackedReferenceCallback),
@@ -214,7 +222,7 @@ static int InitializeRuntime()
 #ifndef NATIVEAOT_DLL
 
 #if defined(_WIN32)
-int CDECL wmain(int argc, wchar_t* argv[])
+int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -223,9 +231,13 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
+    minipal_increase_descriptor_limit();
+
 #if defined(DEBUG) && defined(_WIN32)
-    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
-    quick_exit(__managed__Main(argc, argv));
+    // work around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    int exitCode = __managed__Main(argc, argv);
+    _cexit();
+    ExitProcess(exitCode);
 #else
     return __managed__Main(argc, argv);
 #endif

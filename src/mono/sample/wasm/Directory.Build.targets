@@ -34,7 +34,8 @@
     <NestedBuildProperty Include="WasmEmitSourceMap" />
     <NestedBuildProperty Include="WasmEmitSymbolMap" />
     <NestedBuildProperty Include="WasmEnableThreads" />
-    <NestedBuildProperty Include="WasmPerfTracing" />
+    <NestedBuildProperty Include="EnableDiagnostics" />
+    <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
   </ItemGroup>
 
   <Target Name="BuildSampleInTree"
@@ -82,7 +83,7 @@
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -S -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -S -o -d:bin/$(Configuration)/AppBundle -p:8080 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />

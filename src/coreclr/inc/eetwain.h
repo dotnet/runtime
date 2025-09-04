@@ -191,6 +191,8 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pRD,
                               EECodeInfo     *pCodeInfo,
                               unsigned        flags) = 0;
 
+virtual void UnwindStackFrame(T_CONTEXT *pContext) = 0;
+
 #ifdef FEATURE_EH_FUNCLETS
 virtual void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) = 0;
 #endif // FEATURE_EH_FUNCLETS
@@ -259,7 +261,7 @@ virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
 virtual bool IsInPrologOrEpilog(DWORD  relPCOffset,
                                 GCInfoToken gcInfoToken,
                                 size_t* prologSize) = 0;
-
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized methods only)
 */
@@ -267,6 +269,7 @@ virtual bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags) = 0;
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -404,6 +407,9 @@ bool UnwindStackFrame(
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags);
 
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
+
 #ifdef HAS_LIGHTUNWIND
 enum LightUnwindFlag
 {
@@ -513,6 +519,7 @@ bool IsInPrologOrEpilog(
                 GCInfoToken gcInfoToken,
                 size_t*     prologSize);
 
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
@@ -521,6 +528,7 @@ bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -651,6 +659,9 @@ bool UnwindStackFrame(
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags);
 
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
+
 #ifdef FEATURE_EH_FUNCLETS
 virtual 
 void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
@@ -710,6 +721,7 @@ bool IsInPrologOrEpilog(
     return false;
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 virtual
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
@@ -720,6 +732,7 @@ bool IsInSynchronizedRegion(
     _ASSERTE(FALSE);
     return false;
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 virtual

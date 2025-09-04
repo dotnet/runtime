@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,7 +23,7 @@ namespace System.ComponentModel
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // ReflectedTypeData contains all of the type information we have gathered for a given type.
-        private readonly ConcurrentDictionary<Type, ReflectedTypeData> _typeData = new ConcurrentDictionary<Type, ReflectedTypeData>();
+        private readonly CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData> _typeData = new CollectibleKeyConcurrentHashtable<Type, ReflectedTypeData>();
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -49,10 +48,10 @@ namespace System.ComponentModel
         // on Control, Component and object are also automatically filled
         // in. The keys to the property and event caches are types.
         // The keys to the attribute cache are either MemberInfos or types.
-        private static Hashtable? s_propertyCache;
-        private static Hashtable? s_eventCache;
-        private static Hashtable? s_attributeCache;
-        private static Hashtable? s_extendedPropertyCache;
+        private static CollectibleKeyHashtable? s_propertyCache;
+        private static CollectibleKeyHashtable? s_eventCache;
+        private static CollectibleKeyHashtable? s_attributeCache;
+        private static CollectibleKeyHashtable? s_extendedPropertyCache;
 
         // These are keys we stuff into our object cache. We use this
         // cache data to store extender provider info for an object.
@@ -193,13 +192,13 @@ namespace System.ComponentModel
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
-        private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
+        private static CollectibleKeyHashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new Hashtable());
+        private static CollectibleKeyHashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new Hashtable());
+        private static CollectibleKeyHashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new CollectibleKeyHashtable());
 
-        private static Hashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new Hashtable());
+        private static CollectibleKeyHashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new CollectibleKeyHashtable());
 
         /// <summary>Clear the global caches this maintains on top of reflection.</summary>
         internal static void ClearReflectionCaches()
@@ -307,7 +306,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves custom attributes.
         /// </summary>
-        internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal AttributeCollection GetAttributes([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetAttributes();
@@ -340,7 +339,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal string? GetClassName([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetClassName();
@@ -368,7 +367,7 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal TypeConverter GetConverter([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetConverter(instance, verifyIsRegisteredType: false);
@@ -385,7 +384,7 @@ namespace System.ComponentModel
         /// presence of a DefaultEventAttribute on the class.
         /// </summary>
         [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        internal EventDescriptor? GetDefaultEvent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal EventDescriptor? GetDefaultEvent([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetDefaultEvent(instance);
@@ -395,7 +394,7 @@ namespace System.ComponentModel
         /// Return the default property.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
-        internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal PropertyDescriptor? GetDefaultProperty([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetDefaultProperty(instance);
@@ -405,7 +404,7 @@ namespace System.ComponentModel
         /// Retrieves the editor for the given base type.
         /// </summary>
         [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
-        internal object? GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance, Type editorBaseType)
+        internal object? GetEditor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, object? instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetEditor(instance, editorBaseType);
@@ -461,7 +460,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal EventDescriptorCollection GetEvents([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetEvents();
@@ -877,7 +876,7 @@ namespace System.ComponentModel
         /// Retrieves the properties for this type.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
-        internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, createIfNeeded: true)!;
             return td.GetProperties();
@@ -918,7 +917,7 @@ namespace System.ComponentModel
         /// null if there is no type data for the type yet and
         /// createIfNeeded is false.
         /// </summary>
-        private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool createIfNeeded)
+        private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, bool createIfNeeded)
         {
             if (_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
@@ -1031,7 +1030,7 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
         {
             Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
             return null;
@@ -1096,7 +1095,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(Type type)
         {
-            Hashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[type];
             if (attrs != null)
             {
@@ -1124,7 +1123,7 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(MemberInfo member)
         {
-            Hashtable attributeCache = AttributeCache;
+            CollectibleKeyHashtable attributeCache = AttributeCache;
             Attribute[]? attrs = (Attribute[]?)attributeCache[member];
             if (attrs != null)
             {
@@ -1152,7 +1151,7 @@ namespace System.ComponentModel
         /// </summary>
         private static EventDescriptor[] ReflectGetEvents(Type type)
         {
-            Hashtable eventCache = EventCache;
+            CollectibleKeyHashtable eventCache = EventCache;
             EventDescriptor[]? events = (EventDescriptor[]?)eventCache[type];
             if (events != null)
             {
@@ -1252,7 +1251,7 @@ namespace System.ComponentModel
             // property store.
             //
             Type providerType = provider.GetType();
-            Hashtable extendedPropertyCache = ExtendedPropertyCache;
+            CollectibleKeyHashtable extendedPropertyCache = ExtendedPropertyCache;
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
@@ -1327,7 +1326,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         private static PropertyDescriptor[] ReflectGetProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type) =>
                 ReflectGetPropertiesImpl(type);
 
         private static PropertyDescriptor[] ReflectGetPropertiesFromRegisteredType(Type type)
@@ -1337,7 +1336,7 @@ namespace System.ComponentModel
 
         private static PropertyDescriptor[] ReflectGetPropertiesImpl(Type type)
         {
-            Hashtable propertyCache = PropertyCache;
+            CollectibleKeyHashtable propertyCache = PropertyCache;
             PropertyDescriptor[]? properties = (PropertyDescriptor[]?)propertyCache[type];
             if (properties != null)
             {

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // Found by Antigen
 // Reduced from 206.63 KB to 1.9 KB.
 

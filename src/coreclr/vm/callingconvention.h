@@ -12,6 +12,10 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#ifdef FEATURE_INTERPRETER
+#include "../../interpreter/interpretershared.h"
+#endif // FEATURE_INTERPRETER
+
 BOOL IsRetBuffPassedAsFirstArg();
 
 // Describes how a single argument is laid out in registers and/or stack locations when given as an input to a
@@ -491,31 +495,31 @@ public:
 
                 while (typ == ELEMENT_TYPE_VALUETYPE &&
                     pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()	||
-                    pMT->GetNumInstanceFieldBytes() == 4	
-                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.	
-                {	
-                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
+                    pMT->GetNumInstanceFieldBytes() == 4
+                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.
+                {
+                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
                     CorElementType type = pFD->GetFieldType();
 
                     bool exitLoop = false;
-                    switch (type)	
+                    switch (type)
                     {
                         case ELEMENT_TYPE_VALUETYPE:
                         {
-                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
-                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
+                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?
+                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
                             pMT = fldHnd.GetMethodTable();
                             FALLTHROUGH;
-                        }	
+                        }
                         case ELEMENT_TYPE_PTR:
                         case ELEMENT_TYPE_I:
                         case ELEMENT_TYPE_U:
-                        case ELEMENT_TYPE_I4:	
+                        case ELEMENT_TYPE_I4:
                         case ELEMENT_TYPE_U4:
-                        {	
+                        {
                             typ = type;
-                            break;	
+                            break;
                         }
                         default:
                             exitLoop = true;
@@ -641,6 +645,7 @@ public:
     int GetRetBuffArgOffset();
     int GetVASigCookieOffset();
     int GetParamTypeArgOffset();
+    int GetAsyncContinuationArgOffset();
 
     //------------------------------------------------------------
     // Each time this is called, this returns a byte offset of the next
@@ -675,6 +680,7 @@ public:
     // explicit arguments have been scanned is platform dependent.
     void GetThisLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetThisOffset(), pLoc); }
     void GetParamTypeLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetParamTypeArgOffset(), pLoc); }
+    void GetAsyncContinuationLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetAsyncContinuationArgOffset(), pLoc); }
     void GetVASigCookieLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetVASigCookieOffset(), pLoc); }
 
 #ifndef CALLDESCR_RETBUFFARGREG
@@ -851,7 +857,7 @@ public:
             pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
-        else 
+        else
 #endif // UNIX_AMD64_ABI
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
@@ -1000,21 +1006,26 @@ protected:
 #endif
 
     enum {
-        ITERATION_STARTED               = 0x0001,   // Started iterating over arguments
-        SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
-        RETURN_FLAGS_COMPUTED           = 0x0004,
-        RETURN_HAS_RET_BUFFER           = 0x0008,   // Cached value of HasRetBuffArg
+        ITERATION_STARTED                 = 0x0001,   // Started iterating over arguments
+        SIZE_OF_ARG_STACK_COMPUTED        = 0x0002,
+        RETURN_FLAGS_COMPUTED             = 0x0004,
+        RETURN_HAS_RET_BUFFER             = 0x0008,   // Cached value of HasRetBuffArg
 
 #ifdef TARGET_X86
-        PARAM_TYPE_REGISTER_MASK        = 0x0030,
-        PARAM_TYPE_REGISTER_STACK       = 0x0010,
-        PARAM_TYPE_REGISTER_ECX         = 0x0020,
-        PARAM_TYPE_REGISTER_EDX         = 0x0030,
+        PARAM_TYPE_REGISTER_MASK          = 0x0030,
+        PARAM_TYPE_REGISTER_STACK         = 0x0010,
+        PARAM_TYPE_REGISTER_ECX           = 0x0020,
+        PARAM_TYPE_REGISTER_EDX           = 0x0030,
+
+        ASYNC_CONTINUATION_REGISTER_MASK  = 0x00C0,
+        ASYNC_CONTINUATION_REGISTER_STACK = 0x0040,
+        ASYNC_CONTINUATION_REGISTER_ECX   = 0x0080,
+        ASYNC_CONTINUATION_REGISTER_EDX   = 0x00C0,
 #endif
 
-        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
+        METHOD_INVOKE_NEEDS_ACTIVATION    = 0x0100,   // Flag used by ArgIteratorForMethodInvoke
 
-        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
+        RETURN_FP_SIZE_SHIFT              = 10,       // The rest of the flags is cached value of GetFPReturnSize
     };
 
     void ComputeReturnFlags();
@@ -1158,6 +1169,68 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
 #endif
 }
 
+template<class ARGITERATOR_BASE>
+int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(this->HasAsyncContinuation());
+
+#ifdef TARGET_X86
+    // x86 is special as always
+    if (!(m_dwFlags & SIZE_OF_ARG_STACK_COMPUTED))
+        ForceSigWalk();
+
+    switch (m_dwFlags & ASYNC_CONTINUATION_REGISTER_MASK)
+    {
+    case ASYNC_CONTINUATION_REGISTER_ECX:
+        return TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, ECX);
+    case ASYNC_CONTINUATION_REGISTER_EDX:
+        return TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, EDX);
+    default:
+        break;
+    }
+
+    // If the async continuation is a stack arg, then it comes last unless
+    // there also is a param type arg on the stack, in which case it comes
+    // before it.
+    if (this->HasParamType() && (m_dwFlags & PARAM_TYPE_REGISTER_MASK) == PARAM_TYPE_REGISTER_STACK)
+    {
+        return sizeof(TransitionBlock) + sizeof(void*);
+    }
+
+    return sizeof(TransitionBlock);
+#else
+    // The hidden arg is after this, retbuf and param type arguments by default.
+    int ret = TransitionBlock::GetOffsetOfArgumentRegisters();
+
+    if (this->HasThis())
+    {
+        ret += TARGET_POINTER_SIZE;
+    }
+
+    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    {
+        ret += TARGET_POINTER_SIZE;
+    }
+
+    if (this->HasParamType())
+    {
+        ret += TARGET_POINTER_SIZE;
+    }
+
+    return ret;
+#endif
+}
+
 // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
 #define MAX_ARG_SIZE 0xFFFFFF
 
@@ -1187,6 +1260,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
 #ifndef TARGET_X86
         if (this->IsVarArg() || this->HasParamType())
+        {
+            numRegistersUsed++;
+        }
+
+        if (this->HasAsyncContinuation())
         {
             numRegistersUsed++;
         }
@@ -1223,6 +1301,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
+#elif defined(TARGET_WASM)
+        // we put everything on the stack, we don't have registers
+        // WASM_TODO find out whether we can use implicit stack here
+        m_ofsStack = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif
@@ -1795,6 +1877,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;
+#elif defined(TARGET_WASM)
+    int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+
+    m_ofsStack += cbArg;
+
+    return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;
@@ -2002,6 +2091,23 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         }
     }
 
+    if (this->HasAsyncContinuation())
+    {
+        DWORD asyncContFlags = 0;
+        if (numRegistersUsed < NUM_ARGUMENT_REGISTERS)
+        {
+            numRegistersUsed++;
+            asyncContFlags = (numRegistersUsed == 1) ?
+                ASYNC_CONTINUATION_REGISTER_ECX : ASYNC_CONTINUATION_REGISTER_EDX;
+        }
+        else
+        {
+            nSizeOfArgStack += sizeof(void *);
+            asyncContFlags = ASYNC_CONTINUATION_REGISTER_STACK;
+        }
+        m_dwFlags |= asyncContFlags;
+    }
+
     if (this->HasParamType())
     {
         DWORD paramTypeFlags = 0;
@@ -2139,25 +2245,19 @@ public:
     BOOL HasParamType()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pSig->GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE;
-    }
-
-    BOOL IsVarArg()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSig->IsVarArg() || m_pSig->IsTreatAsVarArg();
-    }
-
-    BOOL IsAsyncCall()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSig->IsAsyncCall();
+        return m_pSig->HasGenericContextArg();
     }
 
     BOOL HasAsyncContinuation()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pSig->HasAsyncContinuation();
+    }
+
+    BOOL IsVarArg()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->IsVarArg() || m_pSig->IsTreatAsVarArg();
     }
 
     DWORD NumFixedArgs()

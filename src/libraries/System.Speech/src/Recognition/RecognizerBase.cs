@@ -2101,7 +2101,7 @@ ISpGrammarResourceLoader
             lock (_thisObjectLock)
             {
                 SpeechEvent speechEvent = eventData as SpeechEvent;
-                if (!_disposed && eventData != null)
+                if (!_disposed && speechEvent != null)
                 {
                     switch (speechEvent.EventId)
                     {

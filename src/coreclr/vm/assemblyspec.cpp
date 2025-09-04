@@ -40,7 +40,6 @@ BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *
 
     EX_TRY
     {
-        SCAN_IGNORE_FAULT; // Won't go away: This wrapper exists precisely to turn an OOM here into something our postconditions can deal with.
         result = (pComparator == pCache->LookupAssembly(pSpec));
     }
     EX_CATCH
@@ -49,7 +48,7 @@ BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 
@@ -71,7 +70,6 @@ BOOL UnsafeVerifyLookupFile(AssemblySpecBindingCache *pCache, AssemblySpec *pSpe
 
     EX_TRY
     {
-        SCAN_IGNORE_FAULT; // Won't go away: This wrapper exists precisely to turn an OOM here into something our postconditions can deal with.
         result = pCache->LookupFile(pSpec)->Equals(pComparator);
     }
     EX_CATCH
@@ -80,7 +78,7 @@ BOOL UnsafeVerifyLookupFile(AssemblySpecBindingCache *pCache, AssemblySpec *pSpe
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 
@@ -104,7 +102,6 @@ BOOL UnsafeContains(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec)
 
     EX_TRY
     {
-        SCAN_IGNORE_FAULT; // Won't go away: This wrapper exists precisely to turn an OOM here into something our postconditions can deal with.
         result = pCache->Contains(pSpec);
     }
     EX_CATCH
@@ -113,7 +110,7 @@ BOOL UnsafeContains(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec)
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 

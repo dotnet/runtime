@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace System.Numerics.Tensors
 {
@@ -24,8 +23,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T Min<T>(ReadOnlySpan<T> x)
-            where T : INumber<T> =>
-            MinMaxCore<T, MinOperator<T>>(x);
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MinOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MinOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -49,8 +55,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MinOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -72,8 +85,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MinOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.Min(x, y)</summary>
         internal readonly struct MinOperator<T> : IAggregationOperator<T>

@@ -636,7 +636,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)
     {
         // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
@@ -755,7 +755,7 @@ HRESULT CorHost2::CreateDelegate(
         }
         else
         {
-            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
         }
     }

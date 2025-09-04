@@ -94,7 +94,14 @@ namespace System.Threading
             // This also avoids OOM after creating the thread.
             _stopped = new ManualResetEvent(false);
 
-            if (!Interop.Sys.CreateThread((IntPtr)_startHelper!._maxStackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
+            nint stackSize = _startHelper!._maxStackSize;
+
+            if (stackSize <= 0)
+            {
+                stackSize = RuntimeImports.RhGetDefaultStackSize();
+            }
+
+            if (!Interop.Sys.CreateThread(stackSize, RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }
@@ -108,7 +115,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static IntPtr ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);

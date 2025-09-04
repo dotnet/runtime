@@ -712,56 +712,54 @@ namespace System.IO.Tests
             return stream;
         }
 
-        protected async IAsyncEnumerable<Stream?> GetStreamsForValidation()
-        {
-            yield return await CreateReadOnlyStream();
-            yield return await CreateReadOnlyStream(new byte[4]);
-
-            yield return await CreateWriteOnlyStream();
-            yield return await CreateWriteOnlyStream(new byte[4]);
-
-            yield return await CreateReadWriteStream();
-            yield return await CreateReadWriteStream(new byte[4]);
-        }
+        protected async Task<List<Stream>> GetStreamsForValidationAsync() =>
+            [
+                await CreateReadOnlyStream(),
+                await CreateReadOnlyStream(new byte[4]),
+                await CreateWriteOnlyStream(),
+                await CreateWriteOnlyStream(new byte[4]),
+                await CreateReadWriteStream(),
+                await CreateReadWriteStream(new byte[4]),
+            ];
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
-            await foreach (Stream? stream in GetStreamsForValidation())
-            {
-                if (stream != null)
+            await Task.WhenAll(
+                from stream in await GetStreamsForValidationAsync()
+                where stream is not null
+                select Task.Run(async () =>
                 {
                     using var _ = stream;
                     await ValidateMisuseExceptionsAsync(stream);
-                }
-            }
+                }));
         }
 
         [Fact]
         public virtual async Task Disposed_ThrowsObjectDisposedException()
         {
-            await foreach (Stream? stream in GetStreamsForValidation())
-            {
-                if (stream != null)
+            await Task.WhenAll(
+                from stream in await GetStreamsForValidationAsync()
+                where stream is not null
+                select Task.Run(async () =>
                 {
                     using var _ = stream;
                     await ValidateDisposedExceptionsAsync(stream);
-                }
-            }
+                }));
         }
 
         [Fact]
         public virtual async Task ReadWriteAsync_Precanceled_ThrowsOperationCanceledException()
         {
-            await foreach (Stream? stream in GetStreamsForValidation())
-            {
-                if (stream != null)
+            await Task.WhenAll(
+                from stream in await GetStreamsForValidationAsync()
+                where stream is not null
+                select Task.Run(async () =>
                 {
                     using var _ = stream;
                     await ValidatePrecanceledOperations_ThrowsCancellationException(stream);
-                }
-            }
+                }));
         }
 
         [Theory]
@@ -1743,47 +1741,46 @@ namespace System.IO.Tests
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
 
-            foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            byte[] writerBytes = GetRandomBytes(42);
+            var readerBytes = new byte[writerBytes.Length];
+
+            Task writes = Task.Run(() =>
             {
-                byte[] writerBytes = GetRandomBytes(42);
-                var readerBytes = new byte[writerBytes.Length];
-
-                Task writes = Task.Run(() =>
+                foreach (byte b in writerBytes)
                 {
-                    foreach (byte b in writerBytes)
-                    {
-                        writeable.WriteByte(b);
-                    }
-
-                    if (FlushRequiredToWriteData)
-                    {
-                        if (FlushGuaranteesAllDataWritten)
-                        {
-                            writeable.Flush();
-                        }
-                        else
-                        {
-                            writeable.Dispose();
-                        }
-                    }
-                });
-
-                for (int i = 0; i < readerBytes.Length; i++)
-                {
-                    int r = readable.ReadByte();
-                    Assert.InRange(r, 0, 255);
-                    readerBytes[i] = (byte)r;
+                    writeable.WriteByte(b);
                 }
 
-                AssertExtensions.SequenceEqual(writerBytes, readerBytes);
-
-                await writes;
-
-                if (!FlushGuaranteesAllDataWritten)
+                if (FlushRequiredToWriteData)
                 {
-                    break;
+                    if (FlushGuaranteesAllDataWritten)
+                    {
+                        writeable.Flush();
+                    }
+                    else
+                    {
+                        writeable.Dispose();
+                    }
                 }
+            });
+
+            for (int i = 0; i < readerBytes.Length; i++)
+            {
+                int r = readable.ReadByte();
+                Assert.InRange(r, 0, 255);
+                readerBytes[i] = (byte)r;
             }
+
+            AssertExtensions.SequenceEqual(writerBytes, readerBytes);
+
+            if (FlushRequiredToWriteData && !FlushGuaranteesAllDataWritten)
+            {
+                await readable.DisposeAsync();
+            }
+
+            await writes;
         }
 
         public static IEnumerable<object[]> ReadWrite_Modes =>
@@ -1824,51 +1821,50 @@ namespace System.IO.Tests
             {
                 using StreamPair streams = await CreateConnectedStreamsAsync();
 
-                foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+                (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+                if (startWithFlush)
                 {
-                    if (startWithFlush)
-                    {
-                        await FlushAsync(mode, writeable, nonCanceledToken);
-                    }
-
-                    byte[] writerBytes = GetRandomBytes(writeSize);
-                    var readerBytes = new byte[writerBytes.Length];
-
-                    Task writes = Task.Run(async () =>
-                    {
-                        await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
-
-                        if (FlushRequiredToWriteData)
-                        {
-                            if (FlushGuaranteesAllDataWritten)
-                            {
-                                await writeable.FlushAsync();
-                            }
-                            else
-                            {
-                                await writeable.DisposeAsync();
-                            }
-                        }
-                    });
-
-                    int n = 0;
-                    while (n < readerBytes.Length)
-                    {
-                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
-                        Assert.InRange(r, 1, readerBytes.Length - n);
-                        n += r;
-                    }
-
-                    Assert.Equal(readerBytes.Length, n);
-                    AssertExtensions.SequenceEqual(writerBytes, readerBytes);
-
-                    await writes;
-
-                    if (!FlushGuaranteesAllDataWritten)
-                    {
-                        break;
-                    }
+                    await FlushAsync(mode, writeable, nonCanceledToken);
                 }
+
+                byte[] writerBytes = GetRandomBytes(writeSize);
+                var readerBytes = new byte[writerBytes.Length];
+
+                Task writes = Task.Run(async () =>
+                {
+                    await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
+
+                    if (FlushRequiredToWriteData)
+                    {
+                        if (FlushGuaranteesAllDataWritten)
+                        {
+                            await writeable.FlushAsync();
+                        }
+                        else
+                        {
+                            await writeable.DisposeAsync();
+                        }
+                    }
+                });
+
+                int n = 0;
+                while (n < readerBytes.Length)
+                {
+                    int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
+                    Assert.InRange(r, 1, readerBytes.Length - n);
+                    n += r;
+                }
+
+                Assert.Equal(readerBytes.Length, n);
+                AssertExtensions.SequenceEqual(writerBytes, readerBytes);
+
+                if (FlushRequiredToWriteData && !FlushGuaranteesAllDataWritten)
+                {
+                    await readable.DisposeAsync();
+                }
+
+                await writes;
             }
         }
 
@@ -1946,8 +1942,7 @@ namespace System.IO.Tests
             }
             else
             {
-                writeable.Dispose();
-                write = Task.CompletedTask;
+                write = writeable.DisposeAsync().AsTask();
             }
 
             if (dataAvailableFirst)
@@ -1959,9 +1954,10 @@ namespace System.IO.Tests
                 Assert.Equal('o', readable.ReadByte());
             }
 
-            await write;
-
             Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1));
+
+            await readable.DisposeAsync();
+            await write;
         }
 
         [Theory]
@@ -1990,6 +1986,7 @@ namespace System.IO.Tests
 
             Assert.Equal(1, await ReadAsync(mode, readable, buffer, offset, buffer.Length - offset));
 
+            await readable.DisposeAsync();
             await write;
 
             for (int i = 0; i < buffer.Length; i++)
@@ -2021,8 +2018,10 @@ namespace System.IO.Tests
                 writeable.Dispose();
             });
 
-            using StreamReader reader = new StreamReader(readable);
-            Assert.Equal("hello", reader.ReadToEnd());
+            using (StreamReader reader = new StreamReader(readable))
+            {
+                Assert.Equal("hello", reader.ReadToEnd());
+            }
 
             await write;
         }
@@ -2038,7 +2037,7 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            readable.Dispose();
+            await readable.DisposeAsync();
             byte[] buffer = new byte[4];
 
             Assert.Throws<IOException>(() => writeable.WriteByte(123));
@@ -2356,49 +2355,49 @@ namespace System.IO.Tests
             byte[][] buffers = new[] { Array.Empty<byte>(), "hello"u8.ToArray(), Array.Empty<byte>(), "world"u8.ToArray() };
 
             using StreamPair streams = await CreateConnectedStreamsAsync();
-            foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            Task writes = Task.Run(async () =>
             {
-                Task writes = Task.Run(async () =>
+                foreach (byte[] buffer in buffers)
                 {
-                    foreach (byte[] buffer in buffers)
+                    await WriteAsync(mode, writeable, buffer, 0, buffer.Length);
+                }
+            });
+
+            if (FlushRequiredToWriteData)
+            {
+                writes = writes.ContinueWith(t =>
+                {
+                    t.GetAwaiter().GetResult();
+                    if (FlushGuaranteesAllDataWritten)
                     {
-                        await WriteAsync(mode, writeable, buffer, 0, buffer.Length);
+                        writeable.Flush();
                     }
-                });
-
-                if (FlushRequiredToWriteData)
-                {
-                    writes = writes.ContinueWith(t =>
+                    else
                     {
-                        t.GetAwaiter().GetResult();
-                        if (FlushGuaranteesAllDataWritten)
-                        {
-                            writeable.Flush();
-                        }
-                        else
-                        {
-                            writeable.Dispose();
-                        }
-                    }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-                }
-
-                var readBytes = new byte[buffers.Sum(b => b.Length)];
-                int count = 0;
-                while (count < readBytes.Length)
-                {
-                    int n = await readable.ReadAsync(readBytes.AsMemory(count));
-                    Assert.InRange(n, 1, readBytes.Length - count);
-                    count += n;
-                }
-
-                Assert.Equal("helloworld", Encoding.UTF8.GetString(readBytes));
-                await writes;
-
-                if (!FlushGuaranteesAllDataWritten)
-                {
-                    break;
-                }
+                        writeable.Dispose();
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
+
+            var readBytes = new byte[buffers.Sum(b => b.Length)];
+            int count = 0;
+            while (count < readBytes.Length)
+            {
+                int n = await readable.ReadAsync(readBytes.AsMemory(count));
+                Assert.InRange(n, 1, readBytes.Length - count);
+                count += n;
+            }
+
+            Assert.Equal("helloworld", Encoding.UTF8.GetString(readBytes));
+
+            if (FlushRequiredToWriteData && !FlushGuaranteesAllDataWritten)
+            {
+                await readable.DisposeAsync();
+            }
+
+            await writes;
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -2409,63 +2408,62 @@ namespace System.IO.Tests
         public virtual async Task ReadWrite_CustomMemoryManager_Success(bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
-            foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            using MemoryManager<byte> writeBuffer = new NativeMemoryManager(1024);
+            using MemoryManager<byte> readBuffer = new NativeMemoryManager(writeBuffer.Memory.Length);
+
+            Assert.Equal(1024, writeBuffer.Memory.Length);
+            Assert.Equal(writeBuffer.Memory.Length, readBuffer.Memory.Length);
+
+            Random.Shared.NextBytes(writeBuffer.Memory.Span);
+            readBuffer.Memory.Span.Clear();
+
+            Task write = useAsync ?
+                writeable.WriteAsync(writeBuffer.Memory).AsTask() :
+                Task.Run(() => writeable.Write(writeBuffer.Memory.Span));
+            if (FlushRequiredToWriteData)
             {
-                using MemoryManager<byte> writeBuffer = new NativeMemoryManager(1024);
-                using MemoryManager<byte> readBuffer = new NativeMemoryManager(writeBuffer.Memory.Length);
-
-                Assert.Equal(1024, writeBuffer.Memory.Length);
-                Assert.Equal(writeBuffer.Memory.Length, readBuffer.Memory.Length);
-
-                Random.Shared.NextBytes(writeBuffer.Memory.Span);
-                readBuffer.Memory.Span.Clear();
-
-                Task write = useAsync ?
-                    writeable.WriteAsync(writeBuffer.Memory).AsTask() :
-                    Task.Run(() => writeable.Write(writeBuffer.Memory.Span));
-                if (FlushRequiredToWriteData)
+                write = write.ContinueWith(t =>
                 {
-                    write = write.ContinueWith(t =>
+                    t.GetAwaiter().GetResult();
+                    if (FlushGuaranteesAllDataWritten)
                     {
-                        t.GetAwaiter().GetResult();
-                        if (FlushGuaranteesAllDataWritten)
-                        {
-                            writeable.Flush();
-                        }
-                        else
-                        {
-                            writeable.Dispose();
-                        }
-                    }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-                }
-
-                try
-                {
-                    int bytesRead = 0;
-                    while (bytesRead < readBuffer.Memory.Length)
-                    {
-                        int n = useAsync ?
-                            await readable.ReadAsync(readBuffer.Memory.Slice(bytesRead)) :
-                            readable.Read(readBuffer.Memory.Span.Slice(bytesRead));
-                        if (n == 0)
-                        {
-                            break;
-                        }
-                        Assert.InRange(n, 1, readBuffer.Memory.Length - bytesRead);
-                        bytesRead += n;
+                        writeable.Flush();
                     }
+                    else
+                    {
+                        writeable.Dispose();
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            }
 
-                    Assert.True(writeBuffer.Memory.Span.SequenceEqual(readBuffer.Memory.Span));
-                }
-                finally
+            try
+            {
+                int bytesRead = 0;
+                while (bytesRead < readBuffer.Memory.Length)
                 {
-                    await write;
+                    int n = useAsync ?
+                        await readable.ReadAsync(readBuffer.Memory.Slice(bytesRead)) :
+                        readable.Read(readBuffer.Memory.Span.Slice(bytesRead));
+                    if (n == 0)
+                    {
+                        break;
+                    }
+                    Assert.InRange(n, 1, readBuffer.Memory.Length - bytesRead);
+                    bytesRead += n;
                 }
 
-                if (!FlushGuaranteesAllDataWritten)
+                Assert.True(writeBuffer.Memory.Span.SequenceEqual(readBuffer.Memory.Span));
+            }
+            finally
+            {
+                if (FlushRequiredToWriteData && !FlushGuaranteesAllDataWritten)
                 {
-                    break;
+                    await readable.DisposeAsync();
                 }
+
+                await write;
             }
         }
 
@@ -2542,12 +2540,20 @@ namespace System.IO.Tests
             Task copyTask;
             if (useAsync)
             {
-                copyTask = readable.CopyToAsync(results);
+                copyTask = readable.CopyToAsync(results).ContinueWith(t =>
+                {
+                    t.GetAwaiter().GetResult();
+                    readable.Dispose();
+                }, TaskScheduler.Default);
                 await writeable.WriteAsync(dataToCopy);
             }
             else
             {
-                copyTask = Task.Run(() => readable.CopyTo(results));
+                copyTask = Task.Run(() =>
+                {
+                    readable.CopyTo(results);
+                    readable.Dispose();
+                });
                 writeable.Write(new ReadOnlySpan<byte>(dataToCopy));
             }
 
@@ -2713,7 +2719,8 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            readable.Dispose();
+            await readable.DisposeAsync();
+
             Assert.Throws<IOException>(() => writeable.WriteByte(1));
             Assert.Throws<IOException>(() => writeable.Write(new byte[1], 0, 1));
             Assert.Throws<IOException>(() => writeable.Write(new byte[1]));
@@ -2740,7 +2747,10 @@ namespace System.IO.Tests
             await Assert.ThrowsAsync(UnsupportedConcurrentExceptionType, async () => await readable.ReadAsync(new byte[1]));
 
             writeable.WriteByte(1);
-            writeable.Dispose();
+            if (FlushRequiredToWriteData)
+            {
+                writeable.Flush();
+            }
 
             Assert.Equal(1, await read);
         }
@@ -2792,7 +2802,7 @@ namespace System.IO.Tests
 
             using StreamPair streams = await CreateConnectedStreamsAsync();
 
-            foreach (Stream stream in streams)
+            await Task.WhenAll(streams.Select(stream => Task.Run(async () =>
             {
                 switch (disposeMode)
                 {
@@ -2803,7 +2813,7 @@ namespace System.IO.Tests
 
                 Assert.False(stream.CanRead);
                 Assert.False(stream.CanWrite);
-            }
+            })));
         }
     }
 
@@ -2869,18 +2879,25 @@ namespace System.IO.Tests
             using StreamPair wrapper = await CreateWrappedConnectedStreamsAsync(streams, leaveOpen);
             (Stream writeable, Stream readable) = GetReadWritePair(wrapper);
 
-            writeable.WriteByte(1);
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    writeable.WriteByte(1);
 
-            if (useAsync)
-            {
-                await writeable.DisposeAsync();
-            }
-            else
-            {
-                writeable.Dispose();
-            }
-
-            Assert.Equal(1, readable.ReadByte());
+                    if (useAsync)
+                    {
+                        await writeable.DisposeAsync();
+                    }
+                    else
+                    {
+                        writeable.Dispose();
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    Assert.Equal(1, readable.ReadByte());
+                    readable.Dispose();
+                }));
         }
 
         [Theory]
@@ -2900,14 +2917,29 @@ namespace System.IO.Tests
             using StreamPair wrapper = await CreateWrappedConnectedStreamsAsync((writeable, readable), leaveOpen);
             (Stream writeableWrapper, Stream readableWrapper) = GetReadWritePair(wrapper);
 
-            if (useAsync)
-            {
-                await writeableWrapper.DisposeAsync();
-            }
-            else
-            {
-                writeableWrapper.Dispose();
-            }
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    if (useAsync)
+                    {
+                        await writeableWrapper.DisposeAsync();
+                    }
+                    else
+                    {
+                        writeableWrapper.Dispose();
+                    }
+                }),
+                Task.Run(async () =>
+                {
+                    if (useAsync)
+                    {
+                        await readableWrapper.DisposeAsync();
+                    }
+                    else
+                    {
+                        readableWrapper.Dispose();
+                    }
+                }));
 
             if (leaveOpen)
             {
@@ -2993,6 +3025,7 @@ namespace System.IO.Tests
                             Assert.Equal(i, readable.ReadByte());
                         }
                         Assert.Equal(-1, readable.ReadByte());
+                        readable.Dispose();
                     }));
             }
         }
@@ -3164,8 +3197,9 @@ namespace System.IO.Tests
 
         public virtual void Dispose()
         {
-            Stream1?.Dispose();
-            Stream2?.Dispose();
+            Task.WaitAll(
+                Task.Run(() => Stream1?.Dispose()),
+                Task.Run(() => Stream2?.Dispose()));
         }
 
         public IEnumerator<Stream> GetEnumerator()

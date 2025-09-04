@@ -27,18 +27,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 #ifdef FEATURE_METADATA_EMIT
 

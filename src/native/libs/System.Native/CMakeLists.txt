@@ -41,6 +41,15 @@ else()
     )
 endif()
 
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+    list (APPEND NATIVE_SOURCES
+        pal_crossprocessmutex_unsupported.c)
+else()
+    list (APPEND NATIVE_SOURCES
+        pal_crossprocessmutex.c
+    )
+endif()
+
 if (CLR_CMAKE_TARGET_APPLE)
     list (APPEND NATIVE_SOURCES_OBJC_NO_ARC
         pal_autoreleasepool.m
@@ -138,3 +147,7 @@ add_library(System.Native-Static
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
+    install (TARGETS System.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()

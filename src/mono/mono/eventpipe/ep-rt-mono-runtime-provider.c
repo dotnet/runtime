@@ -1380,7 +1380,7 @@ sample_current_thread_stack_trace ()
 				mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 		}
 		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, NULL, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, current_sampling_thread, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 	}
 }
 
@@ -1391,7 +1391,7 @@ ep_write_empty_profile_event ()
 	MonoThreadInfo *thread_info = mono_thread_info_current ();
 	SampleProfileStackWalkData stack_walk_data;
 	SampleProfileStackWalkData *data= &stack_walk_data;
-	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, sample_current_thread_stack_trace);
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ep_write_empty_profile_event);
 
 	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
 	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx);
@@ -1406,7 +1406,7 @@ ep_write_empty_profile_event ()
 	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
 	uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, NULL, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+	ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, current_sampling_thread, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 }
 
 static double desired_sample_interval_ms;

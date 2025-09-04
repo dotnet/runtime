@@ -43,6 +43,8 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static bool DefaultCertificateRevocationCheck { get; }
+
         internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
@@ -68,7 +70,7 @@ namespace System.Net.Http
             X509Chain,
             SslPolicyErrors,
             bool>? _serverCertificateValidationCallback;
-        private bool _checkCertificateRevocationList;
+        private bool _checkCertificateRevocationList = DefaultCertificateRevocationCheck;
         private ClientCertificateOption _clientCertificateOption = ClientCertificateOption.Manual;
         private X509Certificate2Collection? _clientCertificates; // Only create collection when required.
         private ICredentials? _serverCredentials;
@@ -89,7 +91,6 @@ namespace System.Net.Http
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
-        private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
         private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
@@ -570,7 +571,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties => _properties ??= new Dictionary<string, object>();
+        public IDictionary<string, object> Properties => field ??= new Dictionary<string, object>();
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -764,7 +765,7 @@ namespace System.Net.Http
                 (uint)requestHeadersBuffer.Length,
                 Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
             {
-                WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
+                throw WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
             }
         }
 

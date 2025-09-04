@@ -976,10 +976,6 @@ namespace CorUnix
             CPalThread *pThread
             ) = 0;
 
-        virtual
-        PAL_ERROR
-        SendTerminationRequestToWorkerThread() = 0;
-
         //
         // This routine is primarily meant for use by WaitForMultipleObjects[Ex].
         // The caller must individually release each of the returned controller

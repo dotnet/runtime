@@ -29,8 +29,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Log<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ILogarithmicFunctions<T> =>
+            where T : ILogarithmicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, LogOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, LogOperator<T>>(x, destination);
+        }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -50,8 +57,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Log<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : ILogarithmicFunctions<T> =>
+            where T : ILogarithmicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, LogBaseOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, LogBaseOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -69,8 +83,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Log<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : ILogarithmicFunctions<T> =>
+            where T : ILogarithmicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, LogBaseOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, LogBaseOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.Log(x)</summary>
         internal readonly struct LogOperator<T> : IUnaryOperator<T, T>

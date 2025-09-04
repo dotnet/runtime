@@ -11,15 +11,10 @@ internal class FaultingExceptionFrame : IData<FaultingExceptionFrame>
     public FaultingExceptionFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.FaultingExceptionFrame);
-
-        // TargetContextPtr only exists when FEATURE_EH_FUNCLETS is defined
-        if (type.Fields.ContainsKey(nameof(TargetContext)))
-        {
-            TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        }
+        TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
         Address = address;
     }
 
     public TargetPointer Address { get; }
-    public TargetPointer? TargetContext { get; }
+    public TargetPointer TargetContext { get; }
 }

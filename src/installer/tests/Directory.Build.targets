@@ -48,7 +48,7 @@
     -->
     <ItemGroup>
       <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
-      <TestContextVariable Include="BUILD_RID=$(OutputRID)" />
+      <TestContextVariable Include="BUILD_RID=$(TargetRid)" />
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />

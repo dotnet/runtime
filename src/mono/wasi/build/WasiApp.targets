@@ -4,6 +4,11 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasiAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
+    <PrepareInputsForWasmBuildDependsOn>
+      $(PrepareInputsForWasmBuildDependsOn);
+      _WasmGetRuntimeConfigPath;
+    </PrepareInputsForWasmBuildDependsOn>
+
     <PrepareForWasmBuildNativeDependsOn>
       _CheckToolchainIsExpectedVersion;
       _PrepareForWasiBuildNative;
@@ -11,11 +16,13 @@
     </PrepareForWasmBuildNativeDependsOn>
 
     <WasmLinkDotNetDependsOn>
+      _WasmGenerateRuntimeConfig;
       $(WasmLinkDotNetDependsOn);
       _WasiLinkDotNet;
     </WasmLinkDotNetDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
+      _WasmGenerateRuntimeConfig;
       $(WasmGenerateAppBundleDependsOn);
       _GetWasiGenerateAppBundleDependencies;
       _WasiGenerateAppBundle;
@@ -45,6 +52,44 @@
     <!-- FIXME: rename to WasmHost?? -->
     <!--<WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>-->
   </PropertyGroup>
+
+  <Target Name="_WasmGenerateRuntimeConfig"
+          Inputs="$(_WasmRuntimeConfigFilePath)"
+          Outputs="$(_ParsedRuntimeConfigFilePath)"
+          Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
+    <ItemGroup>
+      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+    </ItemGroup>
+
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
+        OutputFile="$(_ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
+
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmGetRuntimeConfigPath">
+    <PropertyGroup>
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_PrepareForNestedPublish" DependsOnTargets="_GetDefaultWasmAssembliesToBundle" Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+    <PropertyGroup>
+      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
+      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
@@ -94,9 +139,12 @@
       />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)WasiSdk.Defaults.props" />
   <Target Name="_SetupWasiSdk" BeforeTargets="_SetupToolchain">
     <PropertyGroup>
+      <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
+      <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
+      <WasiSdkBinPath>$([MSBuild]::NormalizeDirectory($(WASI_SDK_PATH), 'bin'))</WasiSdkBinPath>
+
       <_ToolchainMissingPaths Condition="'$(_ToolchainMissingPaths)' == '' and ('$(WasiClang)' == '' or !Exists('$(WasiClang)'))">%24(WasiClang)=$(WasiClang) </_ToolchainMissingPaths>
     </PropertyGroup>
 
@@ -112,8 +160,10 @@
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
     </PropertyGroup>
 
+    <ItemGroup>
+      <WasmToolchainEnvVars Include="PATH=$(WasiSdkBinPath)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+    </ItemGroup>
     <PropertyGroup>
-      <WasiSdkBinPath Condition="'$(WasiSdkBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(WasiSdkBinPath)))</WasiSdkBinPath>
       <_WasmLLVMPathForAOT>$(WasiSdkBinPath)</_WasmLLVMPathForAOT>
     </PropertyGroup>
   </Target>
@@ -316,8 +366,8 @@
 
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(WasmPerfTracing)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -342,10 +392,7 @@
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
-
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++abi.a" />
-
+      <_WasmNativeFileForLinking Include="-lstdc++" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 

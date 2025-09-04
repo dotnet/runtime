@@ -5,11 +5,6 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
-// HACK: debugreturn.h breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #ifndef FEATURE_NATIVEAOT
 #include "gcinfo.h"
 #endif
@@ -211,15 +206,6 @@ inline bool IsPointerFieldReturnKind(ReturnKind returnKind)
     return (returnKind == RT_Object || returnKind == RT_ByRef);
 }
 
-inline bool IsValidReturnRegister(size_t regNo)
-{
-    return (regNo == 0)
-#ifdef FEATURE_MULTIREG_RETURN
-        || (regNo == 1)
-#endif // FEATURE_MULTIREG_RETURN
-        ;
-}
-
 inline bool IsStructReturnKind(ReturnKind returnKind)
 {
     // Two bits encode integer/ref/float return-kinds.
@@ -260,7 +246,6 @@ inline ReturnKind GetStructReturnKind(ReturnKind reg0, ReturnKind reg1)
 inline ReturnKind ExtractRegReturnKind(ReturnKind returnKind, size_t returnRegOrdinal, bool& moreRegs)
 {
     _ASSERTE(IsValidReturnKind(returnKind));
-    _ASSERTE(IsValidReturnRegister(returnRegOrdinal));
 
     // Return kind of each return register is encoded in two bits at returnRegOrdinal*2 position from LSB
     ReturnKind regReturnKind = (ReturnKind)((returnKind >> (returnRegOrdinal * 2)) & 3);
@@ -320,7 +305,8 @@ enum infoHdrAdjustConstants {
     SET_EPILOGSIZE_MAX = 10,  // Change to 6
     SET_EPILOGCNT_MAX = 4,
     SET_UNTRACKED_MAX = 3,
-    SET_RET_KIND_MAX = 4,   // 2 bits for ReturnKind
+    SET_RET_KIND_MAX = 3,   // 2 bits for ReturnKind
+    SET_NOGCREGIONS_MAX = 4,
     ADJ_ENCODING_MAX = 0x7f, // Maximum valid encoding in a byte
                              // Also used to mask off next bit from each encoding byte.
     MORE_BYTES_TO_FOLLOW = 0x80 // If the High-bit of a header or adjustment byte
@@ -372,10 +358,13 @@ enum infoHdrAdjust {
 // Second set of opcodes, when first code is 0x4F
 enum infoHdrAdjust2 {
     SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
+    SET_NOGCREGIONS_CNT = SET_RETURNKIND + SET_RET_KIND_MAX + 1,        // 0x04
+    FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
 };
 
 #define HAS_UNTRACKED               ((unsigned int) -1)
 #define HAS_VARPTR                  ((unsigned int) -1)
+#define HAS_NOGCREGIONS             ((unsigned int) -1)
 
 // 0 is a valid offset for the Reverse P/Invoke block
 // So use -1 as the sentinel for invalid and -2 as the sentinel for present.
@@ -424,7 +413,7 @@ struct InfoHdrSmall {
     unsigned short argCount;          // 5,6        in bytes
     unsigned int   frameSize;         // 7,8,9,10   in bytes
     unsigned int   untrackedCnt;      // 11,12,13,14
-    unsigned int   varPtrTableSize;   // 15.16,17,18
+    unsigned int   varPtrTableSize;   // 15,16,17,18
 
                                       // Checks whether "this" is compatible with "target".
                                       // It is not an exact bit match as "this" could have some
@@ -442,7 +431,8 @@ struct InfoHdr : public InfoHdrSmall {
     unsigned int   syncStartOffset;   // 23,24,25,26
     unsigned int   syncEndOffset;     // 27,28,29,30
     unsigned int   revPInvokeOffset;  // 31,32,33,34 Available GcInfo v2 onwards, previously undefined
-                                      // 35 bytes total
+    unsigned int   noGCRegionCnt;     // 35,36,37,38
+                                      // 39 bytes total
 
                                       // Checks whether "this" is compatible with "target".
                                       // It is not an exact bit match as "this" could have some
@@ -457,7 +447,8 @@ struct InfoHdr : public InfoHdrSmall {
             target.varPtrTableSize != HAS_VARPTR &&
             target.gsCookieOffset != HAS_GS_COOKIE_OFFSET &&
             target.syncStartOffset != HAS_SYNC_OFFSET &&
-            target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET);
+            target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET &&
+            target.noGCRegionCnt != HAS_NOGCREGIONS);
 #endif
 
         // compare two InfoHdr's up to but not including the untrackCnt field
@@ -487,6 +478,13 @@ struct InfoHdr : public InfoHdrSmall {
         if ((revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET) !=
             (target.revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET))
             return false;
+
+        if (noGCRegionCnt != target.noGCRegionCnt) {
+            if (target.noGCRegionCnt <= SET_NOGCREGIONS_MAX)
+                return false;
+            else if (noGCRegionCnt != HAS_UNTRACKED)
+                return false;
+        }
 
         return true;
     }
@@ -518,6 +516,7 @@ inline void GetInfoHdr(int index, InfoHdr * header)
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset = INVALID_SYNC_OFFSET;
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
+    header->noGCRegionCnt = 0;
 }
 
 PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header);
@@ -804,18 +803,18 @@ struct RISCV64GcInfoEncoding {
     // GC Pointers are 8-bytes aligned
     static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return ((x)>>3); }
     static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return ((x)<<3); }
-    // All Instructions are 4 bytes long
-    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
-    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
+    // All Instructions are 2/4 bytes long
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>1); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<1); }
     // Encode Frame pointer X8 as zero, sp/x2 as 1
     static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 8 ? 0u : 1u); }
     static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x) == 0 ? 8u : 2u); }
     static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
     static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = true;
-    // Instructions are 4 bytes long
-    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
-    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
+    // Instructions are 2/4 bytes long
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>1); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<1); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;

@@ -1709,6 +1709,8 @@ namespace System.Text.Json
             }
         }
 
+        internal readonly int MetadataDbIndex => _idx;
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"ValueKind = {ValueKind} : \"{ToString()}\"";
     }

@@ -444,9 +444,8 @@ namespace System.Runtime
 
         private enum HwExceptionCode : uint
         {
-            STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
-            STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE = 0x00000042u,
-            STATUS_REDHAWK_THREAD_ABORT = 0x00000043u,
+            STATUS_NATIVEAOT_NULL_REFERENCE = 0x00000000u,
+            STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE = 0x00000042u,
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
@@ -574,11 +573,11 @@ namespace System.Runtime
 
             switch (exceptionCode)
             {
-                case (uint)HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
+                case (uint)HwExceptionCode.STATUS_NATIVEAOT_NULL_REFERENCE:
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
-                case (uint)HwExceptionCode.STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE:
+                case (uint)HwExceptionCode.STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE:
                     // The write barrier where the actual fault happened has been unwound already.
                     // The IP of this fault needs to be treated as return address, not as IP of
                     // faulting instruction.
@@ -586,18 +585,12 @@ namespace System.Runtime
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
-#if NATIVEAOT
-                case (uint)HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT:
-                    exceptionToThrow = InternalCalls.RhpGetThreadAbortException();
-                    break;
-#endif
-
                 case (uint)HwExceptionCode.STATUS_DATATYPE_MISALIGNMENT:
                     exceptionId = ExceptionIDs.DataMisaligned;
                     break;
 
                 // N.B. -- AVs that have a read/write address lower than 64k are already transformed to
-                //         HwExceptionCode.REDHAWK_NULL_REFERENCE prior to calling this routine.
+                //         HwExceptionCode.STATUS_NATIVEAOT_NULL_REFERENCE prior to calling this routine.
                 case (uint)HwExceptionCode.STATUS_ACCESS_VIOLATION:
                     exceptionId = ExceptionIDs.AccessViolation;
                     break;
@@ -649,11 +642,18 @@ namespace System.Runtime
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
 #if NATIVEAOT
+
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceExceptionNotification();
+#endif // TARGET_WINDOWS
+
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // Transform attempted throws of null to a throw of NullReferenceException.
             if (exceptionObj == null)
             {
@@ -665,6 +665,7 @@ namespace System.Runtime
             DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+
 #if !NATIVEAOT
         public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
         {
@@ -731,11 +732,18 @@ namespace System.Runtime
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
 #if NATIVEAOT
+
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceExceptionNotification();
+#endif // TARGET_WINDOWS
+
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // We need to copy the exception object to this stack location because collided unwinds
             // will cause the original stack location to go dead.
             object rethrownException = activeExInfo.ThrownException;
@@ -964,8 +972,10 @@ namespace System.Runtime
         private static void DebugVerifyHandlingFrame(UIntPtr handlingFrameSP)
         {
             Debug.Assert(handlingFrameSP != MaxSP, "Handling frame must have an SP value");
+#if !FEATURE_INTERPRETER
             Debug.Assert(((UIntPtr*)handlingFrameSP) > &handlingFrameSP,
                 "Handling frame must have a valid stack frame pointer");
+#endif
         }
 
         // Caclulate the code offset from the start of the method as if the hot and cold regions were

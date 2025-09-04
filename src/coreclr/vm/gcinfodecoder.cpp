@@ -672,7 +672,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasTailC
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::WantsReportOnlyLeaf()
 {
     // Only AMD64 with JIT64 can return false here.
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(DECODE_OLD_FORMATS)
     return ((m_headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
 #else
     return true;
@@ -2181,6 +2181,15 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
                                 void *          hCallBack)
 {
     _ASSERTE( !"NYI" );
+}
+
+template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE( !"NYI" );
+    return nullptr;
 }
 
 #endif // Unknown platform

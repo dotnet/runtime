@@ -166,6 +166,7 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     switch(varLoc1.vlType)
     {
     case ICorDebugInfo::VLT_REG:
+    case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_REG_BYREF:
         return varLoc1.vlReg.vlrReg == varLoc2.vlReg.vlrReg;
 
@@ -194,6 +195,9 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 
     case ICorDebugInfo::VLT_FPSTK:
         return varLoc1.vlFPstk.vlfReg == varLoc2.vlFPstk.vlfReg;
+
+    case ICorDebugInfo::VLT_FIXED_VA:
+        return varLoc1.vlFixedVarArg.vlfvOffset == varLoc2.vlFixedVarArg.vlfvOffset;
 
     default:
         _ASSERTE(!"Bad vlType"); return false;
@@ -426,7 +430,7 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #endif // !DACCESS_COMPILE
 
@@ -1564,23 +1568,6 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLoc
     DACNotifyExceptionHelper(Args, 3);
 }
 
-void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPitched(MethodDescPtr);
-#endif
-    TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
-    DACNotifyExceptionHelper(Args, 2);
-}
-
 void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
 {
     CONTRACTL
@@ -1691,19 +1678,6 @@ BOOL DACNotify::ParseJITNotification(TADDR Args[], TADDR& MethodDescPtr, TADDR& 
 
     MethodDescPtr = Args[1];
     NativeCodeLocation = Args[2];
-
-    return TRUE;
-}
-
-BOOL DACNotify::ParseJITPitchingNotification(TADDR Args[], TADDR& MethodDescPtr)
-{
-    _ASSERTE(Args[0] == JIT_PITCHING_NOTIFICATION);
-    if (Args[0] != JIT_PITCHING_NOTIFICATION)
-    {
-        return FALSE;
-    }
-
-    MethodDescPtr = Args[1];
 
     return TRUE;
 }

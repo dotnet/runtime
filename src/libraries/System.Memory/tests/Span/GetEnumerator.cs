@@ -4,6 +4,7 @@
 using Xunit;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace System.SpanTests
 {
@@ -29,6 +30,8 @@ namespace System.SpanTests
             }
 
             Assert.Equal(Enumerable.Sum(array), sum);
+            Assert.Equal(Enumerable.Sum(array), SumGI(span.GetEnumerator()));
+            Assert.Equal(Enumerable.Sum(array), SumI(span.GetEnumerator()));
         }
 
         [Theory]
@@ -48,6 +51,8 @@ namespace System.SpanTests
             Assert.False(e.MoveNext());
 
             Assert.Equal(Enumerable.Sum(array), sum);
+            Assert.Equal(Enumerable.Sum(array), SumGI(span.GetEnumerator()));
+            Assert.Equal(Enumerable.Sum(array), SumI(span.GetEnumerator()));
         }
 
         [Fact]
@@ -78,6 +83,70 @@ namespace System.SpanTests
         {
             Assert.False(default(Span<int>.Enumerator).MoveNext());
             Assert.ThrowsAny<Exception>(() => default(Span<int>.Enumerator).Current);
+
+            TestGI(default(Span<int>.Enumerator));
+            TestI(default(Span<int>.Enumerator));
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<int>, allows ref struct
+            {
+                Assert.False(enumerator.MoveNext());
+                enumerator.Dispose();
+                enumerator.Reset();
+                Assert.False(enumerator.MoveNext());
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+            {
+                Assert.False(enumerator.MoveNext());
+                enumerator.Reset();
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        private static int SumGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<int>, allows ref struct
+        {
+            int sum1 = 0;
+            enumerator.Dispose();
+            while (enumerator.MoveNext())
+            {
+                sum1 += enumerator.Current;
+                enumerator.Dispose();
+            }
+            Assert.False(enumerator.MoveNext());
+
+            int sum2 = 0;
+            enumerator.Reset();
+            enumerator.Dispose();
+            while (enumerator.MoveNext())
+            {
+                sum2 += enumerator.Current;
+                enumerator.Dispose();
+            }
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(sum1, sum2);
+            return sum2;
+        }
+
+        private static int SumI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+        {
+            int sum1 = 0;
+            while (enumerator.MoveNext())
+            {
+                sum1 += (int)enumerator.Current;
+            }
+            Assert.False(enumerator.MoveNext());
+
+            int sum2 = 0;
+            enumerator.Reset();
+            while (enumerator.MoveNext())
+            {
+                sum2 += (int)enumerator.Current;
+            }
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(sum1, sum2);
+            return sum2;
         }
     }
 }

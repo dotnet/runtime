@@ -418,15 +418,14 @@ namespace System.Security.Cryptography.Pkcs
             RemoveSignature(idx);
         }
 
-        internal ReadOnlySpan<byte> GetHashableContentSpan()
+        internal ReadOnlyMemory<byte> GetHashableContentMemory()
         {
             Debug.Assert(_heldContent.HasValue);
             ReadOnlyMemory<byte> content = _heldContent.Value;
-            ReadOnlySpan<byte> contentSpan = content.Span;
 
             if (!_hasPkcs7Content)
             {
-                return contentSpan;
+                return content;
             }
 
             // In PKCS#7 compat, only return the contents within the outermost tag.
@@ -434,13 +433,13 @@ namespace System.Security.Cryptography.Pkcs
             try
             {
                 AsnDecoder.ReadEncodedValue(
-                    contentSpan,
+                    content.Span,
                     AsnEncodingRules.BER,
                     out int contentOffset,
                     out int contentLength,
                     out _);
 
-                return contentSpan.Slice(contentOffset, contentLength);
+                return content.Slice(contentOffset, contentLength);
             }
             catch (AsnContentException e)
             {
