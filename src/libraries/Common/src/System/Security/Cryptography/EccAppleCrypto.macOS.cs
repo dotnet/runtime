@@ -10,7 +10,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal sealed partial class EccSecurityTransforms
+    internal sealed partial class EccAppleCrypto
     {
         private static ECParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
         {

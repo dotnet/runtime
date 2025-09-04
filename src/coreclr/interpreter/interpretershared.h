@@ -38,7 +38,10 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
 
-    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize, void** pDataItems, bool initLocals, bool unmanagedCallersOnly)
+    InterpMethod(
+        CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly
+    )
     {
 #if DEBUG
         this->self = this;

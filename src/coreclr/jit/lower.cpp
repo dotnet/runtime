@@ -5177,6 +5177,14 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
+            // All SIMDs insertions are not yet supported
+            if (varTypeIsSIMD(regType) && ((fieldStart != regStart) || (fieldEnd != regEnd)))
+            {
+                JITDUMP("it is not; field [%06u] requires an insertion into SIMD register %u\n",
+                        Compiler::dspTreeID(use->GetNode()), i);
+                return false;
+            }
+
             use = use->GetNext();
         } while (use != nullptr);
     }

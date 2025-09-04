@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAImplementation
     {
-        public sealed partial class RSASecurityTransforms : RSA, IRuntimeAlgorithm
+        public sealed partial class RSAAppleCrypto : RSA, IRuntimeAlgorithm
         {
             private SecKeyPair? _keys;
 
@@ -24,22 +24,22 @@ namespace System.Security.Cryptography
             // 8192 generated successfully, 8192+8 produced errSecParam.
             private static readonly KeySizes s_legalKeySize = new KeySizes(minSize: 1024, maxSize: 8192, skipSize: 8);
 
-            public RSASecurityTransforms()
+            public RSAAppleCrypto()
                 : this(2048)
             {
             }
 
-            public RSASecurityTransforms(int keySize)
+            public RSAAppleCrypto(int keySize)
             {
                 base.KeySize = keySize;
             }
 
-            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal RSAAppleCrypto(SafeSecKeyRefHandle publicKey)
             {
                 SetKey(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal RSAAppleCrypto(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
             {
                 SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }

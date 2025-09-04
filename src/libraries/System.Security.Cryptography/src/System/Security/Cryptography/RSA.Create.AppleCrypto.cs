@@ -3,11 +3,11 @@
 
 namespace System.Security.Cryptography
 {
-    public partial class DSA : AsymmetricAlgorithm
+    public partial class RSA : AsymmetricAlgorithm
     {
-        private static DSAImplementation.DSASecurityTransforms CreateCore()
+        public static new partial RSA Create()
         {
-            return new DSAImplementation.DSASecurityTransforms();
+            return new RSAImplementation.RSAAppleCrypto();
         }
     }
 }

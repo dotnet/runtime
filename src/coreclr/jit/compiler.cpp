@@ -2890,10 +2890,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (RunningSuperPmiReplay())
         {
 #ifdef HOST_64BIT
-            static_assert_no_msg(sizeof(void*) == 8);
+            static_assert(sizeof(void*) == 8);
             compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
 #else
-            static_assert_no_msg(sizeof(void*) == 4);
+            static_assert(sizeof(void*) == 4);
             compProfilerMethHnd = (void*)0x0BADF00D;
 #endif
         }
