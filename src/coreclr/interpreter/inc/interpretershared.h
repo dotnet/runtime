@@ -6,7 +6,7 @@
 #ifndef _INTERPRETERSHARED_H_
 #define _INTERPRETERSHARED_H_
 
-#include "../intopsshared.h"
+#include "intopsshared.h"
 
 #ifdef _MSC_VER
 #define INTERP_API
