@@ -41,14 +41,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return;
 
-            EnterSlow(obj);
-        }
-
-        private static void EnterSlow(object obj)
-        {
-            Lock lck = SyncTable.GetLockObject(obj);
-
-            lck.Enter();
+            SyncTable.GetLockObject(obj).Enter();
         }
 
         public static void Enter(object obj, ref bool lockTaken)
@@ -70,13 +63,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Contention)
                 return false;
 
-            return TryEnterSlow(obj);
-        }
-
-        private static bool TryEnterSlow(object obj)
-        {
-            Lock lck = SyncTable.GetLockObject(obj);
-            return lck.TryEnter();
+            return SyncTable.GetLockObject(obj).TryEnter();
         }
 
         public static void TryEnter(object obj, ref bool lockTaken)
@@ -99,13 +86,7 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Contention)
                 return false;
 
-            return TryEnterSlow(obj, millisecondsTimeout);
-        }
-
-        private static bool TryEnterSlow(object obj, int millisecondsTimeout)
-        {
-            Lock lck = SyncTable.GetLockObject(obj);
-            return lck.TryEnter(millisecondsTimeout);
+            return SyncTable.GetLockObject(obj).TryEnter(millisecondsTimeout);
         }
 
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
@@ -142,13 +123,7 @@ namespace System.Threading
                 throw new SynchronizationLockException();
             }
 
-            ExitSlow(obj);
-        }
-
-        private static void ExitSlow(object obj)
-        {
-            Lock lck = SyncTable.GetLockObject(obj);
-            lck.Exit();
+            SyncTable.GetLockObject(obj).Exit();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
