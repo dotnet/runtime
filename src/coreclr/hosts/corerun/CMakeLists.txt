@@ -11,6 +11,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 #Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
+if (DEFINED CLR_CMAKE_ICU_DIR)
+  link_directories(${CLR_CMAKE_ICU_DIR}/lib)
+endif(DEFINED CLR_CMAKE_ICU_DIR)
+
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
@@ -46,6 +50,17 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(corerun "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    target_compile_options(corerun PRIVATE -fwasm-exceptions)
+    target_link_options(corerun PRIVATE -fwasm-exceptions -sEXPORTED_RUNTIME_METHODS=FS -sEXIT_RUNTIME=1 -sINITIAL_MEMORY=134217728 -sSTACK_SIZE=5MB -lnoderawfs.js -lnodefs.js --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js -Wl,-error-limit=0)
+    target_link_libraries(corerun PRIVATE
+    coreclr_static
+    clrinterpreter
+    icuuc
+    icui18n
+    icudata)
 endif()
 
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
