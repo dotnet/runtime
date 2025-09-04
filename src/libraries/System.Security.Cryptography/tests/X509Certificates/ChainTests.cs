@@ -344,6 +344,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chainTest.ChainPolicy.ExtraStore.Add(issuerCert);
 
+                X509ChainStatusFlags allowedFlags = X509ChainStatusFlags.NoError;
+
                 switch (testArguments)
                 {
                     case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
@@ -361,6 +363,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainHolder.DisposeChainElements();
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        allowedFlags |= X509ChainStatusFlags.UntrustedRoot;
                         break;
                     default:
                         throw new InvalidDataException();
@@ -368,7 +373,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
                 Assert.Equal(3, chainTest.ChainElements.Count);
-                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+
+                X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
+                actualFlags &= ~allowedFlags;
+
+                Assert.Equal(chainFlags, actualFlags);
             }
         }
 
