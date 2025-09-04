@@ -1662,6 +1662,7 @@ namespace System.Text
             }
         }
 
+#if !NET10_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
         {
@@ -1702,6 +1703,7 @@ namespace System.Text
                 ? PackedSpanHelpers.FixUpPackedVector512Result(Avx512BW.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16()))
                 : Vector512.Narrow(vectorFirst, vectorSecond);
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
@@ -1735,7 +1737,11 @@ namespace System.Text
             // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
+#if NET10_0_OR_GREATER
+            Vector128<byte> asciiVector = Vector128.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             Vector128<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.StoreLowerUnsafe(ref asciiBuffer, 0);
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
@@ -1762,7 +1768,11 @@ namespace System.Text
                 }
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
+#if NET10_0_OR_GREATER
+                asciiVector = Vector128.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
                 asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
@@ -1792,7 +1802,11 @@ namespace System.Text
                 // Build up the ASCII vector and perform the store.
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % SizeOfVector128 == 0, "Write should be aligned.");
+#if NET10_0_OR_GREATER
+                asciiVector = Vector128.NarrowNative(utf16VectorFirst, utf16VectorSecond);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
+#endif
                 asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += SizeOfVector128;
@@ -1815,7 +1829,11 @@ namespace System.Text
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+#if NET10_0_OR_GREATER
+            asciiVector = Vector128.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += SizeOfVector128 / 2;
 
@@ -1853,7 +1871,11 @@ namespace System.Text
             // Turn the 16 ASCII chars we just read into 16 ASCII bytes, then copy it to the destination.
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
+#if NET10_0_OR_GREATER
+            Vector256<byte> asciiVector = Vector256.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             Vector256<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, 0);
             nuint currentOffsetInElements = Vector256.Size / 2; // we processed 16 elements so far
 
@@ -1879,7 +1901,11 @@ namespace System.Text
                 }
 
                 // Turn the 16 ASCII chars we just read into 16 ASCII bytes, then copy it to the destination.
+#if NET10_0_OR_GREATER
+                asciiVector = Vector256.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
                 asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
@@ -1909,7 +1935,11 @@ namespace System.Text
                 // Build up the ASCII vector and perform the store.
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector256.Size == 0, "Write should be aligned.");
+#if NET10_0_OR_GREATER
+                asciiVector = Vector256.NarrowNative(utf16VectorFirst, utf16VectorSecond);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
+#endif
                 asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += Vector256.Size;
@@ -1932,7 +1962,11 @@ namespace System.Text
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector128.Size == 0, "Destination should be 128-bit-aligned.");
+#if NET10_0_OR_GREATER
+            asciiVector = Vector256.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector256.Size / 2;
 
@@ -1970,7 +2004,11 @@ namespace System.Text
             // Turn the 32 ASCII chars we just read into 32 ASCII bytes, then copy it to the destination.
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
+#if NET10_0_OR_GREATER
+            Vector512<byte> asciiVector = Vector512.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             Vector512<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, 0); // how to store the lower part of a avx512
             nuint currentOffsetInElements = Vector512.Size / 2; // we processed 32 elements so far
 
@@ -1997,7 +2035,11 @@ namespace System.Text
                 }
 
                 // Turn the 32 ASCII chars we just read into 32 ASCII bytes, then copy it to the destination.
+#if NET10_0_OR_GREATER
+                asciiVector = Vector512.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
                 asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
@@ -2027,7 +2069,11 @@ namespace System.Text
                 // Build up the ASCII vector and perform the store.
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector512.Size == 0, "Write should be aligned.");
+#if NET10_0_OR_GREATER
+                asciiVector = Vector512.NarrowNative(utf16VectorFirst, utf16VectorSecond);
+#else
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
+#endif
                 asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += Vector512.Size;
@@ -2050,7 +2096,11 @@ namespace System.Text
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector256.Size == 0, "Destination should be 256-bit-aligned.");
+#if NET10_0_OR_GREATER
+            asciiVector = Vector512.NarrowNative(utf16VectorFirst, utf16VectorFirst);
+#else
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+#endif
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector512.Size / 2;
 
