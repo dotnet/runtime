@@ -131,9 +131,15 @@ namespace System
 
         public bool Equals(char right, StringComparison comparisonType)
         {
-            ReadOnlySpan<char> leftCharsSlice = [this];
-            ReadOnlySpan<char> rightCharsSlice = [right];
-            return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+            switch (comparisonType)
+            {
+                case StringComparison.Ordinal:
+                    return Equals(right);
+                default:
+                    ReadOnlySpan<char> leftCharsSlice = [this];
+                    ReadOnlySpan<char> rightCharsSlice = [right];
+                    return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+            }
         }
 
         // Compares this object to another object, returning an integer that
