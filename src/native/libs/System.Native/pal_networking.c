@@ -1186,6 +1186,28 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
+#ifdef __APPLE__
+static int32_t Apple_SetIPv4MulticastInterface(int fd, IPv4MulticastOption* option)
+{
+    if (option->InterfaceIndex != 0)
+    {
+        // On Apple platforms, IP_MULTICAST_IF with interface index uses the interface index directly
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+    else
+    {
+        struct ip_mreq opt;
+        memset(&opt, 0, sizeof(struct ip_mreq));
+        opt.imr_multiaddr.s_addr = option->MulticastAddress;
+        opt.imr_interface.s_addr = option->LocalAddress;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &opt, sizeof(opt));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+}
+#endif
+
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
@@ -1200,6 +1222,14 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     {
         return Error_EINVAL;
     }
+
+#ifdef __APPLE__
+    // Special handling for IP_MULTICAST_IF on Apple platforms
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    {
+        return Apple_SetIPv4MulticastInterface(fd, option);
+    }
+#endif
 
 #if HAVE_IP_MREQN
     struct ip_mreqn opt;
