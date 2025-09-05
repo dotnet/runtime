@@ -293,7 +293,7 @@ namespace Microsoft.NET.HostModel.Bundle
             // We will memory map a larger file than needed, but we'll take that trade-off.
             foreach (var (spec, type) in relativePathToSpec)
             {
-                bundledFilesSize += new FileInfo(spec.SourcePath).Length;
+                bundledFilesSize += HostModelUtils.GetFileLength(spec.SourcePath);
                 if (type == FileType.Assembly)
                 {
                     // Alignment could be as much as AssemblyAlignment - 1 bytes.
@@ -314,7 +314,7 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 Directory.CreateDirectory(destinationDirectory);
             }
-            var hostLength = new FileInfo(hostSource).Length;
+            var hostLength = HostModelUtils.GetFileLength(hostSource);
             var bundleManifestLength = Manifest.GetManifestLength(BundleManifest.BundleMajorVersion, relativePathToSpec.Select(x => x.Spec.BundleRelativePath));
             long bundleTotalSize = hostLength + bundledFilesSize + bundleManifestLength;
             if (_target.IsOSX && _macosCodesign)
