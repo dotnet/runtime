@@ -770,8 +770,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    bool noTrackedRefs = false;
-
     if(m_SafePointIndex < m_NumSafePoints && !executionAborted)
     {
         // Skip interruptibility information
@@ -790,18 +788,9 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
         //    or execution will not resume at the current method
         //    and nothing should be reported
         //
-        if(!executionAborted)
-        {
-            if(m_NumInterruptibleRanges == 0)
-            {
-                // No ranges and no explicit safepoint - must be MinOpts with untracked refs.
-                noTrackedRefs = true;
-            }
-        }
-
+        int countIntersections = 0;
         if(m_NumInterruptibleRanges != 0)
         {
-            int countIntersections = 0;
             UINT32 lastNormStop = 0;
             for(UINT32 i=0; i<m_NumInterruptibleRanges; i++)
             {
@@ -820,12 +809,12 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
                 lastNormStop = normStop;
             }
             _ASSERTE(countIntersections <= 1);
-            if(countIntersections == 0)
-            {
-                _ASSERTE(executionAborted);
-                LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it is aborted and not fully interruptible.\n"));
-                goto ExitSuccess;
-            }
+        }
+        if(countIntersections == 0)
+        {
+            _ASSERTE(executionAborted);
+            LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it is aborted and not fully interruptible.\n"));
+            goto ExitSuccess;
         }
     }
 #else   // !PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
