@@ -119,18 +119,7 @@ if NOT [%errorlevel%] == [0] goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __generatorArgs=
-if [%__Ninja%] == [1] (
-    set __generatorArgs=
-) else if [%__TargetOS%] == [browser] (
-    set __generatorArgs=
-) else if [%__TargetOS%] == [wasi] (
-    set __generatorArgs=
-) else (
-    set __generatorArgs=
-)
-
-call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
