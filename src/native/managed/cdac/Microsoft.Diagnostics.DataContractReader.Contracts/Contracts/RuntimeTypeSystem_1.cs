@@ -425,6 +425,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodTable methodTable = _methodTables[typeHandle.Address];
         return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
+    public ushort GetNumVtableSlots(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return 0;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        ushort numNonVirtualSlots = methodTable.IsCanonMT ? GetClassData(typeHandle).NumNonVirtualSlots : (ushort)0;
+        return checked((ushort)(methodTable.NumVirtuals + numNonVirtualSlots));
+    }
     public ushort GetNumMethods(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumMethods;
     public uint GetTypeDefTypeAttributes(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : GetClassData(typeHandle).CorTypeAttr;
     public ushort GetNumInstanceFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumInstanceFields;
@@ -712,15 +720,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
             }
         }
-    }
-
-    private ushort GetNumVtableSlots(TypeHandle typeHandle)
-    {
-        if (!typeHandle.IsMethodTable())
-            return 0;
-        MethodTable methodTable = _methodTables[typeHandle.Address];
-        ushort numNonVirtualSlots = methodTable.IsCanonMT ? GetClassData(typeHandle).NumNonVirtualSlots : (ushort)0;
-        return checked((ushort)(methodTable.NumVirtuals + numNonVirtualSlots));
     }
 
     public MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer)
@@ -1101,23 +1100,68 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    IEnumerable<TargetPointer> IRuntimeTypeSystem.GetIntroducedMethodDescs(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            yield break;
+
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+        {
+            yield return mdh.Address;
+        }
+    }
+
+    // Uses GetMethodDescForVtableSlot if slot is less than the number of vtable slots
+    // otherwise looks for the slot in the introduced methods
     TargetPointer IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
+    {
+        if (!typeHandle.IsMethodTable())
+            // TypeDesc do not contain any slots.
+            return TargetPointer.Null;
+
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        if (slot < GetNumVtableSlots(canonMT))
+        {
+            return GetMethodDescForVtableSlot(canonMT, slot);
+        }
+        else
+        {
+            foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+            {
+                MethodDesc md = _methodDescs[mdh.Address];
+                if (md.Slot == slot)
+                {
+                    return mdh.Address;
+                }
+            }
+            return TargetPointer.Null;
+        }
+    }
+
+    private TargetPointer GetMethodDescForVtableSlot(TypeHandle typeHandle, ushort slot)
     {
         // based on MethodTable::GetMethodDescForSlot_NoThrow
         if (!typeHandle.IsMethodTable())
-            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+            // TypeDesc do not contain any slots.
+            throw new ArgumentException(nameof(slot), "Slot number is greater than the number of slots");
 
         TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
         TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        if (slot >= GetNumVtableSlots(canonMT))
+            throw new ArgumentException(nameof(slot), "Slot number is greater than the number of slots");
+
         TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
         TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
 
         if (pCode == TargetCodePointer.Null)
         {
-            while (canonMT.Address != TargetPointer.Null)
+            TargetPointer lookupMTPtr = cannonMTPTr;
+            while (lookupMTPtr != TargetPointer.Null)
             {
                 // if pCode is null, we iterate through the method descs in the MT.
-                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+                TypeHandle lookupMT = GetTypeHandle(lookupMTPtr);
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(lookupMT))
                 {
                     MethodDesc md = _methodDescs[mdh.Address];
                     if (md.Slot == slot)
@@ -1125,9 +1169,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                         return mdh.Address;
                     }
                 }
-                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
+                lookupMTPtr = GetParentMethodTable(lookupMT);
+                if (lookupMTPtr != TargetPointer.Null)
+                    lookupMTPtr = GetCanonicalMethodTable(GetTypeHandle(lookupMTPtr));
             }
-            Debug.Fail("We should never reach here, as there should always be a MethodDesc for a slot");
+            return TargetPointer.Null;
         }
 
         return GetMethodDescForEntrypoint(pCode);
@@ -1174,6 +1220,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    TargetCodePointer IRuntimeTypeSystem.GetSlot(TypeHandle typeHandle, uint slot)
+    {
+        // based on MethodTable::GetSlot(uint slotNumber)
+
+        if (slot < GetNumVtableSlots(typeHandle))
+        {
+            TargetPointer slotPtr = GetAddressOfSlot(typeHandle, slot);
+            return _target.ReadCodePointer(slotPtr);
+        }
+
+        return TargetCodePointer.Null;
+    }
+
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
@@ -1198,6 +1257,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetCodePointer.Null;
 
         return GetStableEntryPoint(md);
+    }
+
+    TargetCodePointer IRuntimeTypeSystem.GetMethodEntryPointIfExists(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return GetMethodEntryPointIfExists(md);
     }
 
     private TargetCodePointer GetStableEntryPoint(MethodDesc md)

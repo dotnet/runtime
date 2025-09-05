@@ -232,6 +232,14 @@ public:
         m_pValue = value;
     };
     VOID Init();
+    bool HasAttachedDynamicAssemblies()
+    {
+        if (m_type == LAT_Assembly && m_pDomainAssembly != NULL)
+        {
+            return true;
+        }
+        return false;
+    }
     LoaderAllocatorType GetType();
     VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
     DomainAssemblyIterator GetDomainAssemblyIterator();
@@ -302,8 +310,12 @@ protected:
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+#ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -322,8 +334,15 @@ protected:
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
+
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap      m_pFixupPrecodeHeap;
+#endif // HAS_FIXUP_PRECODE
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap      m_pNewStubPrecodeHeap;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -618,11 +637,13 @@ public:
         return m_pStubHeap;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap GetNewStubPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     PTR_InterleavedLoaderHeap GetDynamicHelpersStubHeap()
@@ -640,11 +661,13 @@ public:
         return m_pExecutableHeap;
     }
 
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap GetFixupPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pFixupPrecodeHeap;
     }
+#endif // HAS_FIXUP_PRECODE
 
     PTR_CodeFragmentHeap GetDynamicHelpersHeap();
 

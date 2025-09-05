@@ -294,12 +294,75 @@ internal struct DacpMethodTableTransparencyData
     public int bIsTreatAsSafe;
 }
 
+internal static class GCConstants
+{
+    public const int DAC_NUMBERGENERATIONS = 4;
+}
+
 internal struct DacpGcHeapData
 {
     public int bServerMode;
     public int bGcStructuresValid;
     public uint HeapCount;
     public uint g_max_generation;
+}
+
+internal struct DacpGenerationData
+{
+    public ClrDataAddress start_segment;
+    public ClrDataAddress allocation_start;
+
+    // These are examined only for generation 0, otherwise NULL
+    public ClrDataAddress allocContextPtr;
+    public ClrDataAddress allocContextLimit;
+}
+
+internal struct DacpGcHeapDetails
+{
+    public ClrDataAddress heapAddr; // Only filled in server mode, otherwise NULL
+    public ClrDataAddress alloc_allocated;
+
+    public ClrDataAddress mark_array;
+    public ClrDataAddress current_c_gc_state;
+    public ClrDataAddress next_sweep_obj;
+    public ClrDataAddress saved_sweep_ephemeral_seg;
+    public ClrDataAddress saved_sweep_ephemeral_start;
+    public ClrDataAddress background_saved_lowest_address;
+    public ClrDataAddress background_saved_highest_address;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS)]
+    public struct GenerationDataArray
+    {
+        private DacpGenerationData _;
+    }
+    public GenerationDataArray generation_table;
+
+    public ClrDataAddress ephemeral_heap_segment;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS + 3)]
+    public struct FinalizationDataArray
+    {
+        private ClrDataAddress _;
+    }
+    public FinalizationDataArray finalization_fill_pointers;
+
+    public ClrDataAddress lowest_address;
+    public ClrDataAddress highest_address;
+    public ClrDataAddress card_table;
+}
+
+[GeneratedComInterface]
+[Guid("286CA186-E763-4F61-9760-487D43AE4341")]
+internal unsafe partial interface ISOSEnum
+{
+    [PreserveSig]
+    int Skip(uint count);
+
+    [PreserveSig]
+    int Reset();
+
+    [PreserveSig]
+    int GetCount(uint* pCount);
 }
 
 [GeneratedComInterface]
@@ -347,7 +410,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Threads
     [PreserveSig]
-    int GetThreadData(ClrDataAddress thread, DacpThreadData *data);
+    int GetThreadData(ClrDataAddress thread, DacpThreadData* data);
     [PreserveSig]
     int GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread);
     [PreserveSig]
@@ -429,9 +492,9 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
-    int GetGCHeapDetails(ClrDataAddress heap, /*struct DacpGcHeapDetails */ void* details); // wks only
+    int GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details);
     [PreserveSig]
-    int GetGCHeapStaticData(/*struct DacpGcHeapDetails */ void* data);
+    int GetGCHeapStaticData(DacpGcHeapDetails* details);
     [PreserveSig]
     int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
     [PreserveSig]
@@ -715,12 +778,30 @@ internal unsafe partial interface ISOSDacInterface14
     int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
 }
 
+internal struct SOSMethodData
+{
+    public ClrDataAddress MethodDesc;
+    public ClrDataAddress Entrypoint;
+    public ClrDataAddress DefiningMethodTable;
+    public ClrDataAddress DefiningModule;
+    public uint Token;
+    public uint Slot;
+}
+
+[GeneratedComInterface]
+[Guid("3c0fe725-c324-4a4f-8100-d399588a662e")]
+internal unsafe partial interface ISOSMethodEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMethodData[] values, uint* pNeeded);
+}
+
 [GeneratedComInterface]
 [Guid("7ed81261-52a9-4a23-a358-c3313dea30a8")]
 internal unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
-    int GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator);
+    int GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator);
 }
 
 [GeneratedComInterface]
