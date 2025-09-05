@@ -7937,7 +7937,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 
 #if DEBUG
         CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
-        if (impInlineRoot()->GetHelperToManagedMap()->Lookup(helperCallHnd, &existingValue))
+        if (impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &existingValue))
         {
             // Let's make sure HelperToManagedMap::Overwrite behavior always overwrites the same value.
             assert(existingValue == managedCallHnd);
