@@ -11,7 +11,9 @@
 
 #include "common.h"
 #include "dllimportcallback.h"
-#include "../interpreter/interpretershared.h"
+#ifdef FEATURE_INTERPRETER
+#include <interpretershared.h>
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
