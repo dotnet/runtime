@@ -4128,7 +4128,7 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    const bool noTrackedGCSlots = compiler->opts.MinOpts();
+    const bool noTrackedGCSlots = false;
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
