@@ -308,7 +308,6 @@ export type GlobalObjects = {
 };
 export type EmscriptenReplacements = {
     fetch: any,
-    require: any,
     modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
