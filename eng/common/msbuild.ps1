@@ -11,7 +11,8 @@ Param(
 )
 
 . $PSScriptRoot\tools.ps1
-
+$env:DOTNET_CLI_USE_MSBUILD_SERVER=1
+$env:MSBUILDUSESERVER=1
 try {
   if ($ci) {
     $nodeReuse = $false

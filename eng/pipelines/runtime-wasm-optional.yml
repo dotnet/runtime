@@ -24,3 +24,6 @@ extends:
           excludeLibTests: true
           excludeNonLibTests: true
           excludeOptional: false
+        env:
+          MSBUILDUSESERVER: 1
+          DOTNET_CLI_USE_MSBUILD_SERVER: 1

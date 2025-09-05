@@ -18,6 +18,8 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 source $scriptroot/tools.sh
 InitializeDotNetCli true # install
 
+export DOTNET_CLI_USE_MSBUILD_SERVER=1
+
 # Invoke acquired SDK with args if they are provided
 if [[ $# > 0 ]]; then
   __dotnetDir=${_InitializeDotNetCli}
