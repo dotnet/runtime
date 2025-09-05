@@ -2152,7 +2152,7 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
-                    bool isPInvoke = ip[5] != 0;
+                    int32_t flags = ip[5];
 
                     void* cookie = pMethod->pDataItems[calliCookie];
                     ip += 6;
@@ -2161,7 +2161,7 @@ MAIN_LOOP:
                     pFrame->ip = ip;
 
                     // Interpreter-FIXME: isTailcall
-                    if (isPInvoke)
+                    if ((flags & (int32_t)CalliFlags::PInvoke) && !(flags & (int32_t)CalliFlags::SuppressGCTransition) && !(flags & (int32_t)CalliFlags::PInvokeMarshalled))
                     {
                         InvokePInvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
                     }
