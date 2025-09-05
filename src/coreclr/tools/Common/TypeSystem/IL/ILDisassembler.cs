@@ -87,7 +87,7 @@ namespace Internal.IL
             sb.Append(' ');
             AppendOwningType(sb, method.OwningType);
             sb.Append("::");
-            sb.Append(method.Name);
+            sb.Append(method.GetName());
 
             if (method.HasInstantiation)
             {

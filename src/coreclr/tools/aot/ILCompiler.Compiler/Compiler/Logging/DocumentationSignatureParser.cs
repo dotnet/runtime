@@ -585,7 +585,7 @@ namespace ILCompiler.Logging
             foreach (var method in type.GetMethods())
             {
                 index = startIndex;
-                if (method.Name != memberName)
+                if (!method.U8Name.StringEquals(memberName))
                     continue;
 
                 var methodArity = method.Instantiation.Length;

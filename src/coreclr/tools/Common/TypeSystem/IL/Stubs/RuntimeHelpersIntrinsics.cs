@@ -17,7 +17,6 @@ namespace Internal.IL.Stubs
         public static MethodIL EmitIL(MethodDesc method)
         {
             Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("RuntimeHelpers"u8));
-            string methodName = method.Name;
 
             // All the methods handled below are per-instantiation generic methods
             if (method.Instantiation.Length != 1 || method.IsTypicalMethodDefinition)
@@ -30,7 +29,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsBitwiseEquatable")
+            if (method.U8Name.SequenceEqual("IsBitwiseEquatable"u8))
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
                 // (i.e., its operator == could be implemented via memcmp). But for now we'll

@@ -974,7 +974,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Object.Finalize shouldn't get a virtual slot. Finalizer is stored in an optional field
                 // instead: most MethodTable don't have a finalizer, but all EETypes contain Object's vtable.
                 // This lets us save a pointer (+reloc) on most EETypes.
-                Debug.Assert(!declType.IsObject || declMethod.Name != "Finalize");
+                Debug.Assert(!declType.IsObject || !declMethod.U8Name.SequenceEqual("Finalize"u8));
 
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
@@ -999,8 +999,8 @@ namespace ILCompiler.DependencyAnalysis
                 // We also null out Equals/GetHashCode - that's just a marginal size/startup optimization.
                 if (isAsyncStateMachineValueType)
                 {
-                    if ((declType.IsObject && declMethod.Name is "Equals" or "GetHashCode" && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
-                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name == ValueTypeGetFieldHelperMethodOverride.MetadataName))
+                    if ((declType.IsObject && (declMethod.U8Name.SequenceEqual("Equals"u8) || declMethod.U8Name.SequenceEqual("GetHashCode"u8)) && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.U8Name.SequenceEqual(ValueTypeGetFieldHelperMethodOverride.U8MetadataName)))
                     {
                         shouldEmitImpl = false;
                     }

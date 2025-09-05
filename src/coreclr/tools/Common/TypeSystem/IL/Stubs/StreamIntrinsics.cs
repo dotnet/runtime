@@ -18,8 +18,8 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("Stream"u8));
 
-            bool isRead = method.Name == "HasOverriddenBeginEndRead";
-            if (!isRead && method.Name != "HasOverriddenBeginEndWrite")
+            bool isRead = method.U8Name.SequenceEqual("HasOverriddenBeginEndRead"u8);
+            if (!isRead && !method.U8Name.SequenceEqual("HasOverriddenBeginEndWrite"u8))
                 return null;
 
             TypeDesc streamClass = method.OwningType;

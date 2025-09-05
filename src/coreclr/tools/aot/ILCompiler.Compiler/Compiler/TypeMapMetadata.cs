@@ -41,12 +41,12 @@ namespace ILCompiler
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
                 {
-                    return Name.CompareTo(other.Name, StringComparison.Ordinal);
+                    return U8Name.SequenceCompareTo(other.U8Name);
                 }
 
                 public override bool IsPInvoke => false;
 
-                public override string DiagnosticName => Name;
+                public override string DiagnosticName => GetName();
 
                 protected override int ClassCode => 1744789196;
 

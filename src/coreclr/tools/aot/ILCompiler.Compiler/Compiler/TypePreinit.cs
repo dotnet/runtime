@@ -1869,7 +1869,7 @@ namespace ILCompiler
         {
             retVal = default;
 
-            switch (method.Name)
+            switch (method.GetName())
             {
                 case "InitializeArray":
                     if (method.OwningType is MetadataType mdType
@@ -3260,7 +3260,7 @@ namespace ILCompiler
 
                 if (_methodPointed.Signature.IsStatic)
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
+                    Debug.Assert(creationInfo.Constructor.Method.U8Name.SequenceEqual("InitializeOpenStaticThunk"u8));
 
                     // _firstParameter
                     builder.EmitPointerReloc(thisNode);
@@ -3277,7 +3277,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
+                    Debug.Assert(creationInfo.Constructor.Method.U8Name.SequenceEqual("InitializeClosedInstance"u8));
 
                     // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);

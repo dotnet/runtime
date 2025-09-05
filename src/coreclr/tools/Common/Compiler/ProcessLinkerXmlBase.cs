@@ -367,7 +367,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    if (name == method.Name)
+                    if (method.U8Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessMethod(type, method, nav, customData);
@@ -532,7 +532,7 @@ namespace ILCompiler
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
             sb.Append(' ');
-            sb.Append(meth.Name);
+            sb.Append(meth.GetName());
             if (includeGenericParameters && meth.HasInstantiation)
             {
                 sb.Append('`');

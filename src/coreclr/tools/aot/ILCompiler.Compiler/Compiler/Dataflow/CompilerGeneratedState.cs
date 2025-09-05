@@ -133,7 +133,7 @@ namespace ILCompiler.Dataflow
                     Debug.Assert(method == method.GetTypicalMethodDefinition());
 
                     bool isStateMachineMember = CompilerGeneratedNames.IsStateMachineType(((MetadataType)method.OwningType).GetName());
-                    if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+                    if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.GetName()))
                     {
                         if (!isStateMachineMember)
                         {
@@ -190,7 +190,7 @@ namespace ILCompiler.Dataflow
                                             continue;
                                         }
 
-                                        if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.Name))
+                                        if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.GetName()))
                                             continue;
 
                                         if (isStateMachineMember)
@@ -319,7 +319,7 @@ namespace ILCompiler.Dataflow
                         switch (compilerGeneratedMember)
                         {
                             case MethodDesc nestedFunction:
-                                Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(nestedFunction.Name));
+                                Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(nestedFunction.GetName()));
                                 // Nested functions get suppressions from the user method only.
                                 _compilerGeneratedMethodToUserCodeMethod ??= new Dictionary<MethodDesc, MethodDesc>();
                                 if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd(nestedFunction, userDefinedMethod))
@@ -595,7 +595,7 @@ namespace ILCompiler.Dataflow
         // "Nested function" refers to lambdas and local functions.
         public static bool IsNestedFunctionOrStateMachineMember(TypeSystemEntity member)
         {
-            if (member is MethodDesc method && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+            if (member is MethodDesc method && CompilerGeneratedNames.IsLambdaOrLocalFunction(method.GetName()))
                 return true;
 
             if (member.GetOwningType() is not MetadataType declaringType)

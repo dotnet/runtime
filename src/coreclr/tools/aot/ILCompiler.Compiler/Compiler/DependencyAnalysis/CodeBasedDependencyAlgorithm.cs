@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (method.OwningType is MetadataType owningType)
                 {
-                    string name = method.Name;
+                    string name = method.GetName();
 
                     switch (name)
                     {

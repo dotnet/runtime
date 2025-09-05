@@ -399,7 +399,7 @@ namespace ILCompiler.IBC
             var methodEntry = (BlobEntry.ExternalMethodEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalMethodDef)];
             var signatureEntry = (BlobEntry.ExternalSignatureEntry)blobs[new IBCBlobKey(methodEntry.SignatureToken, BlobType.ExternalSignatureDef)];
 
-            string methodName = Encoding.UTF8.GetString(methodEntry.Name);
+            byte[] methodName = methodEntry.Name;
 
 
             var ecmaType = (EcmaType)methodMetadataType.GetTypeDefinition();
@@ -411,7 +411,7 @@ namespace ILCompiler.IBC
 
             foreach (MethodDesc method in ecmaType.GetMethods())
             {
-                if (method.Name == methodName)
+                if (method.U8Name.SequenceEqual(methodName))
                 {
                     EcmaMethod ecmaCandidateMethod = method as EcmaMethod;
                     if (ecmaCandidateMethod == null)

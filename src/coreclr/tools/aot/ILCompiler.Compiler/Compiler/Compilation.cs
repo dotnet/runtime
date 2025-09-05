@@ -189,7 +189,7 @@ namespace ILCompiler
             }
             else if (intrinsicOwningType.U8Name.SequenceEqual("Assembly"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetExecutingAssembly"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)

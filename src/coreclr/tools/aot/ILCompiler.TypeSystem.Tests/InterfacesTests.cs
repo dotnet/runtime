@@ -146,8 +146,8 @@ namespace TypeSystemTests
             MetadataType ifooOfInt = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             MetadataType ifooOfString = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.String));
 
-            MethodDesc ifooOfIntMethod = ifooOfInt.GetMethods().Where(m => m.Name == "IMethod").Single();
-            MethodDesc ifooOfStringMethod = ifooOfString.GetMethods().Where(m => m.Name == "IMethod").Single();
+            MethodDesc ifooOfIntMethod = ifooOfInt.GetMethods().Where(m => m.GetName() == "IMethod").Single();
+            MethodDesc ifooOfStringMethod = ifooOfString.GetMethods().Where(m => m.GetName() == "IMethod").Single();
 
             MethodDesc result;
 

@@ -85,7 +85,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Name;
+                return GetName();
             }
         }
     }

@@ -48,7 +48,7 @@ namespace TypeSystemTests
 
             foreach(MethodDesc m in interfaceType.GetMethods())
             {
-                if (m.Name == "GenMethod")
+                if (m.GetName() == "GenMethod")
                 {
                     interfaceMethod = m;
                     break;
@@ -60,7 +60,7 @@ namespace TypeSystemTests
             MethodDesc expectedVirtualMethod = null;
             foreach (MethodDesc m in objectType.GetMethods())
             {
-                if (m.Name.Contains("GenMethod"))
+                if (m.GetName().Contains("GenMethod"))
                 {
                     expectedVirtualMethod = m;
                     break;
@@ -211,7 +211,7 @@ namespace TypeSystemTests
             // it in an ad hoc manner
             foreach (MethodDesc method in baseType.GetMethods())
             {
-                if (method.Name != "Method")
+                if (method.GetName() != "Method")
                     continue;
 
                 if (method.GetTypicalMethodDefinition().Signature[0] == bang2Type)
@@ -272,8 +272,8 @@ namespace TypeSystemTests
             Assert.Equal(bang0Type, md2.GetTypicalMethodDefinition().Signature[1]);
 
             ResolveInterfaceDispatch_ForMultiGenericTest(intImplementorType, out md1, out md2);
-            Assert.Contains("!0,!1", md1.Name);
-            Assert.Contains("!1,!0", md2.Name);
+            Assert.Contains("!0,!1", md1.GetName());
+            Assert.Contains("!1,!0", md2.GetName());
         }
 
         [Fact]

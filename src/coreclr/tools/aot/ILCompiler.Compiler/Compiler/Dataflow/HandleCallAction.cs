@@ -657,7 +657,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name == name, bindingFlags))
+            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.U8Name.StringEquals(name), bindingFlags))
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 

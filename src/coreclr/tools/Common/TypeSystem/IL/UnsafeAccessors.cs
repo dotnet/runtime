@@ -206,7 +206,7 @@ namespace Internal.IL
                 // as empty at the use site.
                 if (kind is not UnsafeAccessorKind.Constructor)
                 {
-                    name = method.Name;
+                    name = method.GetName();
                 }
             }
 
@@ -434,7 +434,7 @@ namespace Internal.IL
                 }
 
                 // Check for matching name
-                if (!md.Name.Equals(name))
+                if (!md.GetName().Equals(name))
                 {
                     continue;
                 }

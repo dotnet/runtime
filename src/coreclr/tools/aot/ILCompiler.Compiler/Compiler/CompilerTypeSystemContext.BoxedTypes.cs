@@ -308,7 +308,7 @@ namespace ILCompiler
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
             public override MetadataType GetNestedType(string name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => Array.Empty<MethodImplRecord>();
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 
             public override int GetHashCode() => VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
 

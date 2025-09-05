@@ -417,7 +417,7 @@ namespace ILCompiler
                             && calleeType.U8Name.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeName)
                             && calleeType.U8Namespace.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeNamespace)
                             && callee.Signature is { Length: 0, IsStatic: true }
-                            && callee.Name.StartsWith("get_", StringComparison.Ordinal))
+                            && callee.U8Name.StartsWith("get_"u8))
                         {
                             flags[offset] |= OpcodeFlags.GetResourceStringCall;
                             hasGetResourceStringCall = true;
@@ -822,10 +822,10 @@ namespace ILCompiler
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
+                        else if (method.IsIntrinsic && (method.U8Name.SequenceEqual("get_IsValueType"u8) || method.U8Name.SequenceEqual("get_IsEnum"u8))
                             && method.OwningType is MetadataType mdt
                             && mdt.U8Name.SequenceEqual("Type"u8) && mdt.U8Namespace.SequenceEqual("System"u8) && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.GetName(), out constant))
                         {
                             return true;
                         }
@@ -1133,7 +1133,7 @@ namespace ILCompiler
 
             MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
 
-            if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
+            if (!method.IsIntrinsic || !method.U8Name.SequenceEqual("GetTypeFromHandle"u8))
                 return false;
 
             if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
@@ -1147,7 +1147,7 @@ namespace ILCompiler
             if (maybeCharacteristicMethod.IsIntrinsic
                 && maybeCharacteristicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
             {
-                value = _characteristics == null || _characteristics.Contains(maybeCharacteristicMethod.Name);
+                value = _characteristics == null || _characteristics.Contains(maybeCharacteristicMethod.GetName());
                 return true;
             }
 

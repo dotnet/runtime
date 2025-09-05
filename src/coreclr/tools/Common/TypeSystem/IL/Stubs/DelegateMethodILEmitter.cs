@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -15,7 +17,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(method.OwningType.IsTypeDefinition);
             Debug.Assert(method.IsRuntimeImplemented);
 
-            if (method.Name == "BeginInvoke" || method.Name == "EndInvoke")
+            if (method.U8Name.SequenceEqual("BeginInvoke"u8) || method.U8Name.SequenceEqual("EndInvoke"u8))
             {
                 // BeginInvoke and EndInvoke are not supported on .NET Core
                 ILEmitter emit = new ILEmitter();
@@ -25,7 +27,7 @@ namespace Internal.IL.Stubs
                 return emit.Link(method);
             }
 
-            if (method.Name == ".ctor")
+            if (method.U8Name.SequenceEqual(".ctor"u8))
             {
                 // We only support delegate creation if the IL follows the delegate creation verifiability requirements
                 // described in ECMA-335 III.4.21 (newobj - create a new object). The codegen is expected to
@@ -40,7 +42,7 @@ namespace Internal.IL.Stubs
                 return emit.Link(method);
             }
 
-            if (method.Name == "Invoke")
+            if (method.U8Name.SequenceEqual("Invoke"u8))
             {
                 TypeSystemContext context = method.Context;
 

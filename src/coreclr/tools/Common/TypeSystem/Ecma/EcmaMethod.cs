@@ -349,7 +349,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && Name == ".ctor"
+                    && U8Name.SequenceEqual(".ctor"u8)
                     && !_type.IsAbstract;
             }
         }
@@ -366,7 +366,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && Name == ".cctor";
+                return Attributes.IsRuntimeSpecialName() && U8Name.SequenceEqual(".cctor"u8);
             }
         }
 

@@ -192,7 +192,7 @@ namespace ILCompiler
                 return Array.Empty<MethodImplRecord>();
             }
 
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
             {
                 return Array.Empty<MethodImplRecord>();
             }

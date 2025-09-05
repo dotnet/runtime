@@ -536,7 +536,7 @@ namespace Internal.TypeSystem
         {
             foreach (var method in GetMethods())
             {
-                if (method.Name == name)
+                if (method.GetName() == name)
                 {
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
@@ -549,7 +549,7 @@ namespace Internal.TypeSystem
         {
             foreach (var method in GetMethods())
             {
-                if (method.Name == name)
+                if (method.GetName() == name)
                 {
                     if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
                         return method;

@@ -39,6 +39,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override string Name => _name;
 
+        public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
+
         public override Instantiation Instantiation => _instantiation;
 
         public override TypeDesc OwningType => _type;

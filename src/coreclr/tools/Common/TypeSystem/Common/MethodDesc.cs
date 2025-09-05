@@ -557,7 +557,7 @@ namespace Internal.TypeSystem
             {
                 // TODO: Precise check
                 // TODO: Cache?
-                return this.Name == ".ctor";
+                return this.U8Name.SequenceEqual(".ctor"u8);
             }
         }
 
@@ -601,6 +601,15 @@ namespace Internal.TypeSystem
             {
                 return [];
             }
+        }
+
+        public string GetName()
+        {
+            return System.Text.Encoding.UTF8.GetString(U8Name
+#if NETSTANDARD
+                .ToArray()
+#endif
+                );
         }
 
         /// <summary>
@@ -718,7 +727,7 @@ namespace Internal.TypeSystem
             get
             {
                 TypeDesc owningType = OwningType;
-                return (owningType.IsObject && Name == "Finalize") || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
+                return (owningType.IsObject && U8Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

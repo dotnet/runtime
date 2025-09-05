@@ -134,8 +134,8 @@ namespace ILCompiler
 
         internal string GetResourceStringForAccessor(EcmaMethod method)
         {
-            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
-            string resourceStringName = method.Name.Substring(4);
+            Debug.Assert(method.U8Name.StartsWith("get_"u8));
+            string resourceStringName = System.Text.Encoding.UTF8.GetString(method.U8Name.Slice(4));
 
             Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
             if (dict != null

@@ -70,7 +70,7 @@ namespace ILCompiler
 #endif
             else
             {
-                sb.Append(method.Name);
+                sb.Append(method.GetName());
             }
 
             if (method.HasInstantiation)

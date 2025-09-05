@@ -62,7 +62,7 @@ namespace ILCompiler
             {
                 if (metadataType.U8Name.SequenceEqual("Marshal"u8) && metadataType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
                 {
-                    string methodName = method.Name;
+                    string methodName = method.GetName();
                     if (methodName == "GetFunctionPointerForDelegate" ||
                         methodName == "GetDelegateForFunctionPointer" ||
                         methodName == "PtrToStructure" ||
