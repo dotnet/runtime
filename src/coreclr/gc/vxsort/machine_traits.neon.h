@@ -40,9 +40,10 @@ class vxsort_machine_traits<uint64_t, NEON> {
     typedef uint64_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
+    // Requires hardware support for a masked store.
     static constexpr bool supports_compress_writes() { return false; }
 
-    // TODO: Enabling this may give additional performance.
+    // TODO: Enabling this may give additional performance. Requires adding NEON uint32_t version
     static constexpr bool supports_packing() { return false; }
 
     template <int Shift>
