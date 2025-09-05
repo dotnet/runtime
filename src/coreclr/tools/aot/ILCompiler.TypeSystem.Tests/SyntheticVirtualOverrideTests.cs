@@ -37,13 +37,13 @@ namespace TypeSystemTests
 
             MetadataType t = _testModule.GetType("SyntheticVirtualOverride", "StructWithNoEqualsAndGetHashCode");
 
-            Assert.DoesNotContain(t.GetMethods(), m => m.Name == "Equals");
-            Assert.DoesNotContain(t.GetMethods(), m => m.Name == "GetHashCode");
+            Assert.DoesNotContain(t.GetMethods(), m => m.GetName() == "Equals");
+            Assert.DoesNotContain(t.GetMethods(), m => m.GetName() == "GetHashCode");
 
             List<MethodDesc> introducedVirtualMethods = new List<MethodDesc>(t.GetAllMethods().Where(m => m.IsVirtual));
             Assert.Equal(2, introducedVirtualMethods.Count);
-            Assert.Contains(introducedVirtualMethods, m => m.Name == "Equals");
-            Assert.Contains(introducedVirtualMethods, m => m.Name == "GetHashCode");
+            Assert.Contains(introducedVirtualMethods, m => m.GetName() == "Equals");
+            Assert.Contains(introducedVirtualMethods, m => m.GetName() == "GetHashCode");
             Assert.All(introducedVirtualMethods, m => { Assert.Same(t, m.OwningType); });
 
             List<MethodDesc> virtualSlots = new List<MethodDesc>(t.EnumAllVirtualSlots());
@@ -52,10 +52,10 @@ namespace TypeSystemTests
 
             List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
-            Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
-            Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
-            Assert.Contains(vtable, m => m.Name == "Finalize" && m.OwningType.IsObject);
-            Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "Equals" && m.OwningType == t);
+            Assert.Contains(vtable, m => m.GetName() == "GetHashCode" && m.OwningType == t);
+            Assert.Contains(vtable, m => m.GetName() == "Finalize" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "ToString" && m.OwningType.IsObject);
         }
 
         [Fact]
@@ -75,10 +75,10 @@ namespace TypeSystemTests
 
             List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
-            Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == baseType);
-            Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == baseType);
-            Assert.Contains(vtable, m => m.Name == "Finalize" && m.OwningType.IsObject);
-            Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "Equals" && m.OwningType == baseType);
+            Assert.Contains(vtable, m => m.GetName() == "GetHashCode" && m.OwningType == baseType);
+            Assert.Contains(vtable, m => m.GetName() == "Finalize" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "ToString" && m.OwningType.IsObject);
         }
 
         [Fact]
@@ -98,10 +98,10 @@ namespace TypeSystemTests
 
             List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
-            Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
-            Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
-            Assert.Contains(vtable, m => m.Name == "Finalize" && m.OwningType.IsObject);
-            Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "Equals" && m.OwningType == t);
+            Assert.Contains(vtable, m => m.GetName() == "GetHashCode" && m.OwningType == t);
+            Assert.Contains(vtable, m => m.GetName() == "Finalize" && m.OwningType.IsObject);
+            Assert.Contains(vtable, m => m.GetName() == "ToString" && m.OwningType.IsObject);
         }
 
         private sealed class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
@@ -143,8 +143,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.Name == "StructWithNoEqualsAndGetHashCode"
-                    || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode")
+                if (mdType.U8Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
+                    || mdType.U8Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
@@ -158,8 +158,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.Name == "StructWithNoEqualsAndGetHashCode"
-                    || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode")
+                if (mdType.U8Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
+                    || mdType.U8Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
@@ -217,6 +217,14 @@ namespace TypeSystemTests
                 get
                 {
                     return _name;
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return System.Text.Encoding.UTF8.GetBytes(Name);
                 }
             }
 

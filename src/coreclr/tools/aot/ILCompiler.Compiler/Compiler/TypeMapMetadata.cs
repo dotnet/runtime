@@ -33,6 +33,7 @@ namespace ILCompiler
 
                 public TypeSystemException Exception { get; }
                 public override string Name { get; }
+                public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
                 public override MethodIL EmitIL()
                 {
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
@@ -40,12 +41,12 @@ namespace ILCompiler
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
                 {
-                    return Name.CompareTo(other.Name, StringComparison.Ordinal);
+                    return U8Name.SequenceCompareTo(other.U8Name);
                 }
 
                 public override bool IsPInvoke => false;
 
-                public override string DiagnosticName => Name;
+                public override string DiagnosticName => GetName();
 
                 protected override int ClassCode => 1744789196;
 

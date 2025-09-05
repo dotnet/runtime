@@ -620,6 +620,8 @@ namespace ILCompiler.IBC
         {
             private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
+                public ReadOnlySpan<byte> Name => "System.Private.Canon"u8;
+
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
                 }
@@ -638,9 +640,9 @@ namespace ILCompiler.IBC
                 {
                     TypeSystemContext context = Context;
 
-                    if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
+                    if (context.SupportsCanon && (nameSpace == context.CanonType.GetNamespace()) && (name == context.CanonType.GetName()))
                         return Context.CanonType;
-                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
+                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.GetNamespace()) && (name == context.UniversalCanonType.GetName()))
                         return Context.UniversalCanonType;
                     else
                     {

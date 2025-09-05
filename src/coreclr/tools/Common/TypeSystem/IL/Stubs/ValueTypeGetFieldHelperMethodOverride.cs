@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler;
@@ -215,12 +216,21 @@ namespace Internal.IL.Stubs
         }
 
         internal const string MetadataName = "__GetFieldHelper";
+        internal static ReadOnlySpan<byte> U8MetadataName => "__GetFieldHelper"u8;
 
         public override string Name
         {
             get
             {
                 return MetadataName;
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return U8MetadataName;
             }
         }
 

@@ -164,12 +164,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private static string GetTypeName(DefType type)
         {
-            return type.Name;
+            return type.GetName();
         }
 
         private static string GetTypeNamespace(DefType type)
         {
-            return type.Namespace;
+            return type.GetNamespace();
         }
 
         private static char[] s_escapedChars = new char[] { ',', '=', '"', ']', '[', '*', '&', '+', '\\' };

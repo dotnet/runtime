@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -18,10 +20,10 @@ namespace Internal.IL.Stubs
 #endif // READYTORUN
             MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "Interlocked");
+            Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("Interlocked"u8));
             Debug.Assert(!method.IsGenericMethodDefinition);
 
-            if (method.HasInstantiation && method.Name == "CompareExchange")
+            if (method.HasInstantiation && method.U8Name.SequenceEqual("CompareExchange"u8))
             {
 #if READYTORUN
                 // Check to see if the tokens needed to describe the CompareExchange are naturally present within

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -379,7 +381,7 @@ namespace Internal.IL
                 }
             }
 
-            if (method.OwningType.IsDelegate && method.Name == "Invoke" &&
+            if (method.OwningType.IsDelegate && method.U8Name.SequenceEqual("Invoke"u8) &&
                 opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
             {
                 // This call is expanded as an intrinsic; it's not an actual function call.
@@ -871,7 +873,7 @@ namespace Internal.IL
                     && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc { IsIntrinsic: true } intrinsicMethod
                     && intrinsicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
                 {
-                    condition = _factory.AnalysisCharacteristic(intrinsicMethod.Name);
+                    condition = _factory.AnalysisCharacteristic(intrinsicMethod.GetName());
                 }
             }
 
@@ -995,7 +997,7 @@ namespace Internal.IL
                 {
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     {
-                        Debug.Assert(_methodIL.OwningMethod.Name == "GetCanonType");
+                        Debug.Assert(_methodIL.OwningMethod.U8Name.SequenceEqual("GetCanonType"u8));
                         helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                     }
 
@@ -1466,12 +1468,12 @@ namespace Internal.IL
 
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "GetTypeFromHandle")
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("GetTypeFromHandle"u8))
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Type" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Type"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1480,12 +1482,12 @@ namespace Internal.IL
 
         private static bool IsActivatorDefaultConstructorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "DefaultConstructorOf" && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("DefaultConstructorOf"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1494,12 +1496,12 @@ namespace Internal.IL
 
         private static bool IsActivatorAllocatorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "AllocatorOf" && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("AllocatorOf"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1508,12 +1510,12 @@ namespace Internal.IL
 
         private static bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "Of" && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("Of"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
+                    return owningType.U8Name.SequenceEqual("MethodTable"u8) && owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8);
                 }
             }
 
@@ -1522,12 +1524,12 @@ namespace Internal.IL
 
         private static bool IsRuntimeHelpersIsReferenceOrContainsReferences(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "IsReferenceOrContainsReferences" && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("IsReferenceOrContainsReferences"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
+                    return owningType.U8Name.SequenceEqual("RuntimeHelpers"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
                 }
             }
 
@@ -1536,12 +1538,12 @@ namespace Internal.IL
 
         private static bool IsMemoryMarshalGetArrayDataReference(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "GetArrayDataReference" && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.U8Name.SequenceEqual("GetArrayDataReference"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "MemoryMarshal" && owningType.Namespace == "System.Runtime.InteropServices";
+                    return owningType.U8Name.SequenceEqual("MemoryMarshal"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
                 }
             }
 

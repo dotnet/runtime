@@ -88,9 +88,9 @@ namespace Internal.TypeSystem.Ecma
         {
             var metadataType = type as MetadataType;
             return metadataType != null
-                && metadataType.Name == "Type"
+                && metadataType.U8Name.SequenceEqual("Type"u8)
                 && metadataType.Module == _module.Context.SystemModule
-                && metadataType.Namespace == "System";
+                && metadataType.U8Namespace.SequenceEqual("System"u8);
         }
     }
 }

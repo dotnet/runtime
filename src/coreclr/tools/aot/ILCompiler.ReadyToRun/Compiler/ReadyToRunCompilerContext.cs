@@ -314,7 +314,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+            return type.IsIntrinsic && type.U8Namespace.SequenceEqual("System.Numerics"u8) && type.U8Name.SequenceEqual("Vector`1"u8);
         }
     }
 }

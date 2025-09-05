@@ -77,6 +77,9 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>

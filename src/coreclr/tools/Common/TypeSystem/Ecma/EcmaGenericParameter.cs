@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Threading;
@@ -58,6 +59,16 @@ namespace Internal.TypeSystem.Ecma
             {
                 MetadataReader reader = _module.MetadataReader;
                 return reader.GetString(reader.GetGenericParameter(_handle).Name);
+            }
+        }
+
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                MetadataReader reader = _module.MetadataReader;
+                BlobReader blob = reader.GetBlobReader(reader.GetGenericParameter(_handle).Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
             }
         }
 

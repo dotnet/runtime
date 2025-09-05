@@ -367,7 +367,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    if (name == method.Name)
+                    if (method.U8Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessMethod(type, method, nav, customData);
@@ -532,7 +532,7 @@ namespace ILCompiler
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
             sb.Append(' ');
-            sb.Append(meth.Name);
+            sb.Append(meth.GetName());
             if (includeGenericParameters && meth.HasInstantiation)
             {
                 sb.Append('`');
@@ -642,20 +642,20 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!string.IsNullOrEmpty(type.Namespace))
+                if (!type.U8Namespace.IsEmpty)
                 {
-                    sb.Append(type.Namespace);
+                    sb.Append(type.GetNamespace());
                     sb.Append('.');
                 }
 
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
             }
 
             protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
                 AppendName(sb, containingType);
                 sb.Append('/');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
             }
 
 #if false

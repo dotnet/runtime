@@ -233,7 +233,7 @@ namespace ILCompiler
 
                 descriptor.MemberFunction = GetMethodTypeIndex(method);
                 descriptor.ParentClass = GetTypeIndex(method.OwningType, true);
-                descriptor.Name = method.Name;
+                descriptor.Name = method.GetName();
 
                 typeIndex = _objectWriter.GetMemberFunctionId(descriptor);
                 _methodIdIndices.Add(method, typeIndex);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -59,6 +60,15 @@ namespace Internal.TypeSystem.Ecma
             }
 
             return _assemblyName;
+        }
+
+        public unsafe ReadOnlySpan<byte> Name
+        {
+            get
+            {
+                BlobReader blob = MetadataReader.GetBlobReader(_assemblyDefinition.Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+            }
         }
 
         public override string ToString()

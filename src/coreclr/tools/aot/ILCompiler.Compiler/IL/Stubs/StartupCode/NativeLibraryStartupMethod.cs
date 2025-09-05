@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -44,6 +45,14 @@ namespace Internal.IL.Stubs.StartupCode
             get
             {
                 return "NativeLibraryStartup";
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return "NativeLibraryStartup"u8;
             }
         }
 

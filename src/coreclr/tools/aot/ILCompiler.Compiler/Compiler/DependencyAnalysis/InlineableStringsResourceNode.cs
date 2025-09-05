@@ -20,8 +20,11 @@ namespace ILCompiler.DependencyAnalysis
         private readonly EcmaModule _module;
 
         public const string ResourceAccessorTypeName = "SR";
+        public static ReadOnlySpan<byte> U8ResourceAccessorTypeName => "SR"u8;
         public const string ResourceAccessorTypeNamespace = "System";
+        public static ReadOnlySpan<byte> U8ResourceAccessorTypeNamespace => "System"u8;
         public const string ResourceAccessorGetStringMethodName = "GetResourceString";
+        public static ReadOnlySpan<byte> U8ResourceAccessorGetStringMethodName => "GetResourceString"u8;
 
         public InlineableStringsResourceNode(EcmaModule module)
         {
@@ -60,8 +63,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.Name == ResourceAccessorGetStringMethodName && method.OwningType is MetadataType mdType
-                && mdType.Name == ResourceAccessorTypeName && mdType.Namespace == ResourceAccessorTypeNamespace)
+            if (method.U8Name.SequenceEqual(U8ResourceAccessorGetStringMethodName) && method.OwningType is MetadataType mdType
+                && mdType.U8Name.SequenceEqual(U8ResourceAccessorTypeName) && mdType.U8Namespace.SequenceEqual(U8ResourceAccessorTypeNamespace))
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");

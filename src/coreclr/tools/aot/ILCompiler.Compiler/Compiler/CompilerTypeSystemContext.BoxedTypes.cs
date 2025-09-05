@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -256,8 +257,10 @@ namespace ILCompiler
             public override ModuleDesc Module { get; }
 
             public override string Name => "Boxed_" + ValueTypeRepresented.Name;
+            public override ReadOnlySpan<byte> U8Name => "Boxed_"u8.Append(ValueTypeRepresented.U8Name);
 
             public override string Namespace => ValueTypeRepresented.Namespace;
+            public override ReadOnlySpan<byte> U8Namespace => ValueTypeRepresented.U8Namespace;
             public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
@@ -305,17 +308,9 @@ namespace ILCompiler
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
             public override MetadataType GetNestedType(string name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => Array.Empty<MethodImplRecord>();
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 
-            public override int GetHashCode()
-            {
-                string ns = Namespace;
-                var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                return hashCodeBuilder.ToHashCode();
-            }
+            public override int GetHashCode() => VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
 
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
             {
@@ -417,6 +412,14 @@ namespace ILCompiler
                 }
             }
 
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _targetMethod.U8Name.Append("_Unbox"u8);
+                }
+            }
+
             public override string DiagnosticName
             {
                 get
@@ -511,6 +514,14 @@ namespace ILCompiler
                 get
                 {
                     return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _targetMethod.U8Name.Append("_Unbox"u8);
                 }
             }
 
@@ -609,6 +620,8 @@ namespace ILCompiler
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
             public override string Name => _methodRepresented.Name;
+
+            public override ReadOnlySpan<byte> U8Name => _methodRepresented.U8Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

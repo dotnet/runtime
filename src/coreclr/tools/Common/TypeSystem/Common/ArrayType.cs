@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -22,8 +23,7 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            // ComputeArrayTypeHashCode expects -1 for an SzArray
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank);
+            return VersionResilientHashCode.ArrayTypeHashCode(this.ElementType.GetHashCode(), Rank);
         }
 
         public override DefType BaseType
@@ -314,6 +314,25 @@ namespace Internal.TypeSystem
                         return "Address";
                     default:
                         return ".ctor";
+                }
+            }
+        }
+
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                switch (_kind)
+                {
+                    case ArrayMethodKind.Get:
+                        return "Get"u8;
+                    case ArrayMethodKind.Set:
+                        return "Set"u8;
+                    case ArrayMethodKind.Address:
+                    case ArrayMethodKind.AddressWithHiddenArg:
+                        return "Address"u8;
+                    default:
+                        return ".ctor"u8;
                 }
             }
         }

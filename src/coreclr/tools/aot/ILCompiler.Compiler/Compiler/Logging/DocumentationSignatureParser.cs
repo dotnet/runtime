@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
+using ILCompiler.Dataflow;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -555,8 +557,8 @@ namespace ILCompiler.Logging
 
             foreach (var nestedType in mdDeclaringType.GetNestedTypes())
             {
-                Debug.Assert(string.IsNullOrEmpty(nestedType.Namespace));
-                if (nestedType.Name != name)
+                Debug.Assert(nestedType.U8Namespace.IsEmpty);
+                if (!nestedType.U8Name.StringEquals(name))
                     continue;
 
                 // Compute arity counting only the newly-introduced generic parameters
@@ -583,7 +585,7 @@ namespace ILCompiler.Logging
             foreach (var method in type.GetMethods())
             {
                 index = startIndex;
-                if (method.Name != memberName)
+                if (!method.U8Name.StringEquals(memberName))
                     continue;
 
                 var methodArity = method.Instantiation.Length;

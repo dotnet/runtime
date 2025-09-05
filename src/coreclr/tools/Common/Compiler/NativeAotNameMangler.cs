@@ -421,7 +421,7 @@ namespace ILCompiler
                     {
                         foreach (var m in method.OwningType.GetMethods())
                         {
-                            string name = SanitizeName(m.Name);
+                            string name = SanitizeName(m.GetName());
 
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
@@ -480,7 +480,7 @@ namespace ILCompiler
                 else
                 {
                     // Assume that Name is unique for all other methods
-                    utf8MangledName = new Utf8String(SanitizeName(method.Name));
+                    utf8MangledName = new Utf8String(SanitizeName(method.GetName()));
                 }
             }
 

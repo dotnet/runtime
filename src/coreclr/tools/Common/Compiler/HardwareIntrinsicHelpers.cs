@@ -23,9 +23,9 @@ namespace ILCompiler
             {
                 var owningMdType = (MetadataType)owningType;
                 DefType containingType = owningMdType.ContainingType;
-                string ns = containingType?.ContainingType?.Namespace ??
-                            containingType?.Namespace ??
-                            owningMdType.Namespace;
+                string ns = containingType?.ContainingType?.GetNamespace() ??
+                            containingType?.GetNamespace() ??
+                            owningMdType.GetNamespace();
                 return method.Context.Target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",

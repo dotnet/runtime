@@ -79,20 +79,20 @@ namespace Internal.JitInterface
 
         protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
         {
-            string ns = type.Namespace;
+            string ns = type.GetNamespace();
             if (ns.Length > 0)
             {
                 sb.Append(ns);
                 sb.Append('.');
             }
-            sb.Append(type.Name);
+            sb.Append(type.GetName());
         }
 
         protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
         {
             AppendName(sb, containingType);
             sb.Append('+');
-            sb.Append(nestedType.Name);
+            sb.Append(nestedType.GetName());
         }
     }
 }

@@ -1876,7 +1876,7 @@ namespace Internal.JitInterface
 
             pResult.compileTimeHandle = null;
 
-            switch (method.Name)
+            switch (method.GetName())
             {
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);

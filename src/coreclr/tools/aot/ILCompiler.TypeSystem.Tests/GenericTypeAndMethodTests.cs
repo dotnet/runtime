@@ -36,7 +36,7 @@ namespace TypeSystemTests
             Assert.True(t.Instantiation[0].IsTypeDefinition);
 
             // Verify that we got a method definition
-            MethodDesc fooMethod = t.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooMethod = t.GetMethods().First(m => m.GetName() == "Foo");
             Assert.True(fooMethod.IsTypicalMethodDefinition);
 
             // Verify that instantiating a method definition has no effect
@@ -52,7 +52,7 @@ namespace TypeSystemTests
             Assert.Equal(_context.GetWellKnownType(WellKnownType.Int32), instantiatedType.Instantiation[0]);
 
             // Verify that we get an instantiated method with the proper signature
-            MethodDesc fooInstantiatedMethod = instantiatedType.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooInstantiatedMethod = instantiatedType.GetMethods().First(m => m.GetName() == "Foo");
             Assert.False(fooInstantiatedMethod.IsTypicalMethodDefinition);
             Assert.Equal(_context.GetWellKnownType(WellKnownType.Int32), fooInstantiatedMethod.Signature.ReturnType);
             Assert.Same(fooInstantiatedMethod.GetTypicalMethodDefinition(), fooMethod);
@@ -72,9 +72,9 @@ namespace TypeSystemTests
             MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-            MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Foo");
-            MethodDesc barInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Bar");
-            MethodDesc fooDerivedInstantiatedMethod = derivedGenOfInt.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Foo");
+            MethodDesc barInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Bar");
+            MethodDesc fooDerivedInstantiatedMethod = derivedGenOfInt.GetMethods().First(m => m.GetName() == "Foo");
 
             Assert.False(barInstantiatedMethod.IsVirtual);
             Assert.False(barInstantiatedMethod.IsNewSlot);
@@ -99,7 +99,7 @@ namespace TypeSystemTests
             MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-            MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Finalize");
+            MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Finalize");
 
             Assert.Equal(finalizeInstantiatedMethod, genOfInt.GetFinalizer());
             Assert.Equal(finalizeInstantiatedMethod, derivedGenOfInt.GetFinalizer());

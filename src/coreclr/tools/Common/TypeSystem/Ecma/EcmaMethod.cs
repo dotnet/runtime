@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
+using System;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -348,7 +349,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && Name == ".ctor"
+                    && U8Name.SequenceEqual(".ctor"u8)
                     && !_type.IsAbstract;
             }
         }
@@ -365,7 +366,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && Name == ".cctor";
+                return Attributes.IsRuntimeSpecialName() && U8Name.SequenceEqual(".cctor"u8);
             }
         }
 
@@ -399,6 +400,16 @@ namespace Internal.TypeSystem.Ecma
                 if (_name == null)
                     return InitializeName();
                 return _name;
+            }
+        }
+
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                var metadataReader = MetadataReader;
+                var blob = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
             }
         }
 

@@ -86,7 +86,7 @@ namespace Internal.TypeSystem
         public override IEnumerable<MetadataType> GetNestedTypes() => (IEnumerable<MetadataType>)EmptyTypes;
         public override MetadataType GetNestedType(string name) => null;
         public override int GetInlineArrayLength() => MetadataType.GetInlineArrayLength();
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
 
@@ -94,7 +94,11 @@ namespace Internal.TypeSystem
 
         public override string Namespace => MetadataType.Namespace;
 
+        public override ReadOnlySpan<byte> U8Namespace => MetadataType.U8Namespace;
+
         public override string Name => MetadataType.Name;
+
+        public override ReadOnlySpan<byte> U8Name => MetadataType.U8Name;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

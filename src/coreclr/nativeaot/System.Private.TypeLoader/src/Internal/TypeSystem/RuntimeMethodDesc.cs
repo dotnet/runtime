@@ -97,6 +97,14 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
+        public override ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                return NameAndSignature.Name;
+            }
+        }
+
         private bool _unboxingStub;
         public override bool UnboxingStub
         {
@@ -163,7 +171,7 @@ namespace Internal.TypeSystem.NoMetadata
 
         public override string ToString()
         {
-            string result = OwningType.ToString() + ".Method(" + Name + ")";
+            string result = OwningType.ToString() + ".Method(" + GetName() + ")";
             return result;
         }
 #endif

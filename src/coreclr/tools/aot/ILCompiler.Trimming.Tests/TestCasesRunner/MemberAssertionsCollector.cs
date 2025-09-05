@@ -79,13 +79,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (attributeType == null)
                 return false;
 
-            if (attributeType.Namespace != "Mono.Linker.Tests.Cases.Expectations.Assertions")
+            if (!attributeType.U8Namespace.SequenceEqual("Mono.Linker.Tests.Cases.Expectations.Assertions"u8))
                 return false;
 
             MetadataType t = attributeType;
             while (t != null)
             {
-                if (t.Name == nameof(BaseMemberAssertionAttribute))
+                if (t.GetName() == nameof(BaseMemberAssertionAttribute))
                     return true;
 
                 t = t.MetadataBaseType;

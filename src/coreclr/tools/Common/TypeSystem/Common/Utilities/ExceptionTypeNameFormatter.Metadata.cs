@@ -8,12 +8,12 @@ namespace Internal.TypeSystem
     {
         private static string GetTypeName(DefType type)
         {
-            return type.Name;
+            return type.GetName();
         }
 
         private static string GetTypeNamespace(DefType type)
         {
-            return type.Namespace;
+            return type.GetNamespace();
         }
     }
 }

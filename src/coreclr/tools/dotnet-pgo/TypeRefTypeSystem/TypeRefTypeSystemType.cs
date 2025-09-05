@@ -18,22 +18,22 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         List<TypeRefTypeSystemField> _fields = new List<TypeRefTypeSystemField>();
         bool? _isValueType;
         Instantiation? _instantiation;
-        string _name;
-        string _namespace;
+        byte[] _name;
+        byte[] _namespace;
         Dictionary<string, TypeRefTypeSystemType> _nestedType;
         TypeRefTypeSystemType _containingType;
 
         public TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemModule module)
         {
-            _namespace = nameSpace;
-            _name = name;
+            _namespace = string.IsNullOrEmpty(nameSpace) ? [] : Encoding.UTF8.GetBytes(nameSpace);
+            _name = string.IsNullOrEmpty(name) ? [] : Encoding.UTF8.GetBytes(name);
             _module = module;
         }
 
         private TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemType containingType, TypeRefTypeSystemModule module)
         {
-            _namespace = nameSpace;
-            _name = name;
+            _namespace = string.IsNullOrEmpty(nameSpace) ? [] : Encoding.UTF8.GetBytes(nameSpace);
+            _name = string.IsNullOrEmpty(name) ? [] : Encoding.UTF8.GetBytes(name);
             _module = module;
             _containingType = containingType;
         }
@@ -140,9 +140,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override PInvokeStringFormat PInvokeStringFormat => throw new NotImplementedException();
 
-        public override string Name => _name;
+        public override string Name => Encoding.UTF8.GetString(_name);
 
-        public override string Namespace => _namespace;
+        public override ReadOnlySpan<byte> U8Name => _name;
+
+        public override string Namespace => Encoding.UTF8.GetString(_namespace);
+
+        public override ReadOnlySpan<byte> U8Namespace => _namespace;
 
         public override bool IsExplicitLayout => throw new NotImplementedException();
 
@@ -174,17 +178,25 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
-        public override string DiagnosticName => Name;
+        public override string DiagnosticName => GetName();
 
-        public override string DiagnosticNamespace => Namespace;
+        public override string DiagnosticNamespace => GetNamespace();
 
         public override TypeSystemContext Context => Module.Context;
 
         protected override int ClassCode => throw new NotImplementedException();
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => throw new NotImplementedException();
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => throw new NotImplementedException();
         public override ClassLayoutMetadata GetClassLayout() => throw new NotImplementedException();
-        public override int GetHashCode() => (Namespace != null) ? HashCode.Combine(Namespace, Name, Module) : HashCode.Combine(Name, Module);
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.AddBytes(U8Namespace);
+            hash.AddBytes(U8Name);
+            hash.Add(Module);
+            return hash.ToHashCode();
+        }
+
         public override MetadataType GetNestedType(string name)
         {
             TypeRefTypeSystemType type = null;

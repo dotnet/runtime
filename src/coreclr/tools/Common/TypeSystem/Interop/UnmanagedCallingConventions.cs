@@ -189,10 +189,10 @@ namespace Internal.TypeSystem
 
         private static UnmanagedCallingConventions AccumulateCallingConventions(UnmanagedCallingConventions existing, MetadataType newConvention)
         {
-            if (newConvention.Namespace != "System.Runtime.CompilerServices")
+            if (!newConvention.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
-            UnmanagedCallingConventions? addedCallConv = newConvention.Name switch
+            UnmanagedCallingConventions? addedCallConv = newConvention.GetName() switch
             {
                 "CallConvCdecl" => UnmanagedCallingConventions.Cdecl,
                 "CallConvStdcall" => UnmanagedCallingConventions.Stdcall,

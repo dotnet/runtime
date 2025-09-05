@@ -203,6 +203,14 @@ namespace ILCompiler
                 }
             }
 
+            public override ReadOnlySpan<byte> U8Name
+            {
+                get
+                {
+                    return _targetMethod.U8Name;
+                }
+            }
+
             public override string DiagnosticName
             {
                 get
@@ -308,6 +316,7 @@ namespace ILCompiler
             public override TypeDesc OwningType => _owningType;
 
             public override string Name => _methodRepresented.Name;
+            public override ReadOnlySpan<byte> U8Name => _methodRepresented.U8Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

@@ -278,6 +278,16 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                var metadataReader = MetadataReader;
+                var blob = metadataReader.GetBlobReader(metadataReader.GetFieldDefinition(_handle).Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),

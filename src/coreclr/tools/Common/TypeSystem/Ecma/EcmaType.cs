@@ -55,23 +55,15 @@ namespace Internal.TypeSystem.Ecma
 
         private int InitializeHashCode()
         {
+            int hashCode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+
             DefType containingType = ContainingType;
-            if (containingType == null)
+            if (containingType != null)
             {
-                string ns = Namespace;
-                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                _hashcode = hashCodeBuilder.ToHashCode();
-            }
-            else
-            {
-                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(
-                    containingType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
+                hashCode = VersionResilientHashCode.NestedTypeHashCode(containingType.GetHashCode(), hashCode);
             }
 
-            return _hashcode;
+            return _hashcode = hashCode;
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -165,7 +157,7 @@ namespace Internal.TypeSystem.Ecma
             if (type == null)
             {
                 // PREFER: "new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this)" but the metadata is too broken
-                ThrowHelper.ThrowTypeLoadException(Namespace, Name, Module);
+                ThrowHelper.ThrowTypeLoadException(GetNamespace(), GetName(), Module);
             }
             _baseType = type;
             return type;
@@ -292,6 +284,15 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override unsafe ReadOnlySpan<byte> U8Name
+        {
+            get
+            {
+                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Name);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+            }
+        }
+
         private string InitializeNamespace()
         {
             var metadataReader = this.MetadataReader;
@@ -306,6 +307,15 @@ namespace Internal.TypeSystem.Ecma
                 if (_typeNamespace == null)
                     return InitializeNamespace();
                 return _typeNamespace;
+            }
+        }
+
+        public override unsafe ReadOnlySpan<byte> U8Namespace
+        {
+            get
+            {
+                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Namespace);
+                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
             }
         }
 
