@@ -1,9 +1,10 @@
 trigger: none
 
-variables:
-  - template: /eng/pipelines/common/variables.yml
-  - name: diagnosticsBranch
-    value: main
+parameters:
+- name: diagnosticsBranch
+  displayName: Diagnostics Branch
+  type: string
+  default: main
 
 resources:
   repositories:
@@ -12,6 +13,9 @@ resources:
       endpoint: public
       name: dotnet/diagnostics
       ref: $(diagnosticsBranch)
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 schedules:
 - cron: "30 2 * * *"
