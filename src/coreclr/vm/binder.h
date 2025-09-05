@@ -294,6 +294,7 @@ private:
     USHORT m_cFields;
 
     static CrstStatic s_SigConvertCrst;
+    friend struct ::cdac_data<CoreLibBinder>;
 
 #ifdef _DEBUG
 
@@ -309,7 +310,6 @@ private:
     };
 
     static const OffsetAndSizeCheck OffsetsAndSizes[];
-    friend struct ::cdac_data<CoreLibBinder>;
 
 #endif
 };
