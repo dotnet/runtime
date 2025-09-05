@@ -298,6 +298,7 @@ JS_ENGINES = [NODE_JS]
     <Copy SourceFiles="@(_ShellFiles)" 
           DestinationFolder="$(EMSDK_PATH)">
     </Copy>
+    <Delete Files="$(EMSDK_PATH)/emsdk_env.bat;$(EMSDK_PATH)/emsdk_env.ps1" />
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
       <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
     </ReadLinesFromFile>
