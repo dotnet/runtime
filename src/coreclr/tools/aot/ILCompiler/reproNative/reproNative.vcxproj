@@ -45,6 +45,7 @@
     <CoreClrSourceRoot>..\..\..\..\</CoreClrSourceRoot>
     <NativeAotSourceRoot>$(CoreClrSourceRoot)nativeaot\</NativeAotSourceRoot>
     <ArtifactsRoot>$(CoreClrSourceRoot)..\..\artifacts\</ArtifactsRoot>
+    <NativeRoot>$(CoreClrSourceRoot)..\native\</NativeRoot>
     <Win32SDKLibs>advapi32.lib;bcrypt.lib;crypt32.lib;iphlpapi.lib;kernel32.lib;mswsock.lib;ncrypt.lib;normaliz.lib;ntdll.lib;ole32.lib;oleaut32.lib;secur32.lib;user32.lib;version.lib;ws2_32.lib</Win32SDKLibs>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -181,7 +182,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
@@ -199,7 +200,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
@@ -217,7 +218,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_X86;HOST_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
@@ -238,7 +239,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -258,7 +259,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -279,7 +280,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_X86;HOST_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CallingConvention>StdCall</CallingConvention>
@@ -300,7 +301,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;HOST_AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -320,7 +321,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -340,7 +341,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;HOST_X86;HOST_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env;$(NativeRoot)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CallingConvention>StdCall</CallingConvention>

@@ -18,15 +18,15 @@ struct ContractDescriptor
     const char *descriptor;
     const uint32_t pointer_data_count;
     uint32_t pad0;
-    const uintptr_t *pointer_data;
+    const void** pointer_data;
 };
 
 // POINTER_DATA_NAME and CONTRACT_NAME are macros provided by
 // contractconfiguration.h which is configured by CMake
-extern const uintptr_t POINTER_DATA_NAME[];
+extern const void* POINTER_DATA_NAME[];
 
 // just the placeholder pointer
-const uintptr_t POINTER_DATA_NAME[] = { (uintptr_t)0 };
+const void* POINTER_DATA_NAME[] = { (void*)0 };
 
 DLLEXPORT struct ContractDescriptor CONTRACT_NAME;
 
