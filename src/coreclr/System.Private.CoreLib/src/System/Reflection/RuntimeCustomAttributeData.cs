@@ -1576,9 +1576,10 @@ namespace System.Reflection
                             RuntimeMethodInfo? setMethod = null;
                             RuntimeMethodInfo? getMethod = null;
                             RuntimePropertyInfo? property = null;
-                            RuntimePropertyInfo? firstNotNullPropInHierarchy = null;
+                            RuntimePropertyInfo? firstPropInHierarchy = null;
                             Type? baseAttributeType = attributeType;
 
+                            // If the method getter is not virtual, the property of the current class (in hierarchy) has hidden its base-property instead of overriding it. So there is no need to continue traversal
                             while (setMethod is null && baseAttributeType is not null
                                 && (property is null || getMethod is null || getMethod.IsVirtual))
                             {
@@ -1588,7 +1589,7 @@ namespace System.Reflection
 
                                 if (property is not null)
                                 {
-                                    firstNotNullPropInHierarchy ??= property;
+                                    firstPropInHierarchy ??= property;
                                     // Public properties may have non-public setter methods
                                     setMethod = property.GetSetMethod(true)!;
                                     getMethod = property.GetGetMethod(true)!;
@@ -1602,7 +1603,7 @@ namespace System.Reflection
                                 baseAttributeType = baseAttributeType.BaseType;
                             }
 
-                            if (firstNotNullPropInHierarchy is null)
+                            if (firstPropInHierarchy is null)
                             {
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }
