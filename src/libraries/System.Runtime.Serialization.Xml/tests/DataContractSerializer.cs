@@ -1517,9 +1517,9 @@ public static partial class DataContractSerializerTests
         // Ensures DateTimeOffset deserialization works correctly when DCS is used
         // within an IXmlSerializable implementation (regression coverage).
         var originalDate = new DateTimeOffset(2025, 4, 17, 22, 45, 0, TimeSpan.FromHours(-4));
-        var container = new SerializationTypes.DateTimeOffsetIXmlSerializableContainer { Date = originalDate };
+        var container = new DateTimeOffsetIXmlSerializableContainer { Date = originalDate };
 
-        var serializer = new DataContractSerializer(typeof(SerializationTypes.DateTimeOffsetIXmlSerializableContainer));
+        var serializer = new DataContractSerializer(typeof(DateTimeOffsetIXmlSerializableContainer));
 
         string serialized;
         using (var ms = new MemoryStream())
@@ -1528,10 +1528,10 @@ public static partial class DataContractSerializerTests
             serialized = Encoding.UTF8.GetString(ms.ToArray());
         }
 
-        SerializationTypes.DateTimeOffsetIXmlSerializableContainer deserialized;
+        DateTimeOffsetIXmlSerializableContainer deserialized;
         using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(serialized)))
         {
-            deserialized = (SerializationTypes.DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
+            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
         }
 
         Assert.Equal(originalDate, deserialized.Date);
