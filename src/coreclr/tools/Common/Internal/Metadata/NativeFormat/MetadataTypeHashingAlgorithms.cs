@@ -58,7 +58,10 @@ namespace Internal.Metadata.NativeFormat
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
             HashCodeBuilder builder = new HashCodeBuilder(""u8);
-            AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader, appendDot: false);
+
+            if (!typeDef.Flags.IsNested())
+                AppendNamespaceHashCode(ref builder, typeDef.NamespaceDefinition, reader, appendDot: false);
+
             int nameHashCode = VersionResilientHashCode.NameHashCode(reader.ReadStringAsBytes(typeDef.Name));
 
             int hashCode = VersionResilientHashCode.NameHashCode(builder.ToHashCode(), nameHashCode);
