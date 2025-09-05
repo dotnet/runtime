@@ -314,9 +314,9 @@
       <Sha>edbd5c769a19798b6955050baccf99e6797d3208</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="8.0.0-rc.1.23406.6">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>edbd5c769a19798b6955050baccf99e6797d3208</Sha>
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="8.0.100-1.23067.1">
+      <Uri>https://github.com/dotnet/linker</Uri>
+      <Sha>c790896f128957acd2999208f44f09ae1e826c8c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ILCompiler" Version="8.0.0-rc.1.23406.6">
       <Uri>https://github.com/dotnet/runtime</Uri>
