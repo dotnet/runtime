@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -288,15 +289,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform26OrLater)
+                    if (OperatingSystem.IsLinux())
                     {
                         Assert.Equal(2, chain.ChainElements.Count);
+                    }
+                    else if (PlatformDetection.IsApplePlatform26OrLater)
+                    {
+                        if (chain.ChainElements.Count != 2)
+                        {
+                            Assert.Fail($"Exected 2, actual {chain.ChainElements.Count}. macOS Build: {GetDetailedOSVersion()}");
+                        }
                     }
                     else if (PlatformDetection.IsApplePlatform)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                     }
                 }
+            }
+
+            static string GetDetailedOSVersion()
+            {
+                ProcessStartInfo startInfo = new ()
+                {
+                    FileName = "sw_vers",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+
+                using Process process = new() { StartInfo = startInfo };
+                process.Start();
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                Assert.Equal(0, process.ExitCode);
+                return stdout;
             }
         }
 
