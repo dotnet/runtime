@@ -2054,7 +2054,9 @@ MAIN_LOOP:
                         int stackOffset = pMethod->allocaSize;
                         callArgsOffset = stackOffset;
 
-                        LOCAL_VAR(stackOffset, void*) = helperArg;
+                        // Pass arguments to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg1;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
 
                         targetMethod = pILTargetMethod;
                         ip += 5;
