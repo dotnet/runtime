@@ -236,8 +236,6 @@ function abort_promises (reason: any) {
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
-        runtimeHelpers.beforePreInit.promise_control.reject(reason);
-        runtimeHelpers.afterPreInit.promise_control.reject(reason);
         runtimeHelpers.afterPreRun.promise_control.reject(reason);
         runtimeHelpers.beforeOnRuntimeInitialized.promise_control.reject(reason);
         runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);
