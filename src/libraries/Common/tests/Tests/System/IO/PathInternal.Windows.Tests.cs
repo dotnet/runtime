@@ -119,7 +119,7 @@ namespace Tests.System.IO
             InlineData(@"    \\", @"    \"),
             InlineData(@"    //", @"    \")
             ]
-        public void NormalizeDirectorySeparatorTests(string path, string expected)
+        public void NormalizeDirectorySeparatorTests(string? path, string? expected)
         {
             string result = PathInternal.NormalizeDirectorySeparators(path);
             Assert.Equal(expected, result);

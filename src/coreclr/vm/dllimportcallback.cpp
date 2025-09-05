@@ -210,6 +210,19 @@ VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 
+#ifdef FEATURE_INTERPRETER
+PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
+
+UMEntryThunkData * GetMostRecentUMEntryThunkData()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UMEntryThunkData * result = t_MostRecentUMEntryThunkData;
+    t_MostRecentUMEntryThunkData = nullptr;
+    return result;
+}
+#endif
+
 PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
@@ -221,6 +234,15 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
     {
         CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
+
+#ifdef FEATURE_INTERPRETER
+    PCODE pInterpreterTarget = pUMEntryThunkData->GetInterpreterTarget();
+    if (pInterpreterTarget != (PCODE)0)
+    {
+        t_MostRecentUMEntryThunkData = pUMEntryThunkData;
+        return pInterpreterTarget;
+    }
+#endif // FEATURE_INTERPRETER
 
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
@@ -259,13 +281,19 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 
     if (pData == NULL)
     {
-        static_assert_no_msg(sizeof(UMEntryThunk) == sizeof(StubPrecode));
+        static_assert(sizeof(UMEntryThunk) == sizeof(StubPrecode));
         LoaderAllocator *pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         AllocMemTracker amTracker;
         AllocMemTracker *pamTracker = &amTracker;
-       
+
         pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
-        UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+        UMEntryThunk* pThunk;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PORTABILITY_ASSERT("WASMTODO: Marshalled delegates are not supported with wasm.");
+        pThunk = NULL;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pThunk, sizeof(UMEntryThunk), PerfMapStubType::IndividualWithinBlock);
 #endif
@@ -338,18 +366,18 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
     STANDARD_VM_CONTRACT;
 
     MethodDesc* pStubMD = NULL;
-    dwStubFlags |= NDIRECTSTUB_FL_REVERSE_INTEROP;  // could be either delegate interop or not--that info is passed in from the caller
+    dwStubFlags |= PINVOKESTUB_FL_REVERSE_INTEROP;  // could be either delegate interop or not--that info is passed in from the caller
 
 #if defined(DEBUGGING_SUPPORTED)
     // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
     CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(pSigInfo->GetModule(), CORJIT_FLAGS());
     if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
     {
-        dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
+        dwStubFlags |= PINVOKESTUB_FL_GENERATEDEBUGGABLEIL;
     }
 #endif // DEBUGGING_SUPPORTED
 
-    pStubMD = NDirect::CreateCLRToNativeILStub(
+    pStubMD = PInvoke::CreateCLRToNativeILStub(
         pSigInfo,
         dwStubFlags,
         pInvokeMD // may be NULL
@@ -413,7 +441,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
     DWORD dwStubFlags = 0;
 
     if (sigInfo.IsDelegateInterop())
-        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+        dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
     PCODE pFinalILStub = JitILStub(pStubMD);

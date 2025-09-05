@@ -32,7 +32,7 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
-BOOL FinalizerThread::IsCurrentThreadFinalizer()
+bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -43,14 +43,129 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifndef TARGET_WASM
     hEventFinalizer->Set();
+#endif // !TARGET_WASM
 }
 
-BOOL FinalizerThread::HaveExtraWorkForFinalizer()
+namespace
+{
+    // This is a linked list of the LCGMethodResolvers that represent DynamicMethodDescs
+    // waiting to be destroyed. The resolvers are used since they can be chained together
+    // to avoid allocations when destroying multiple DynamicMethodDescs.
+    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod = nullptr;
+
+    bool HasDelayedDynamicMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_delayDestroyDynamicMethod != nullptr;
+    }
+
+    void AddDelayedDynamicMethod(DynamicMethodDesc* pDMD)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pDMD != nullptr);
+
+        // Get the LCGMethodResolver from the DynamicMethodDesc.
+        LCGMethodResolver* lcgResolver = pDMD->GetLCGMethodResolver();
+
+        // Append any existing resolvers to form a linked list.
+        if (s_delayDestroyDynamicMethod != nullptr)
+            lcgResolver->SetNextDynamicMethodForDelayCleanup((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
+
+        s_delayDestroyDynamicMethod = lcgResolver;
+    }
+
+    void CleanupDelayedDynamicMethods()
+    {
+        STANDARD_VM_CONTRACT;
+
+        while (s_delayDestroyDynamicMethod != nullptr)
+        {
+            // Get the next method to destroy.
+            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodForDelayCleanup();
+
+            // Destroy the current method.
+            DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod();
+            if (!curr->TryDestroy())
+                return;
+
+            // Update the head of the list.
+            s_delayDestroyDynamicMethod = next == nullptr ? nullptr : next->GetLCGMethodResolver();
+        }
+    }
+}
+
+void FinalizerThread::DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
-    return GetFinalizerThread()->HaveExtraWorkForFinalizer();
+    AddDelayedDynamicMethod(pDMD);
+}
+
+bool FinalizerThread::HaveExtraWorkForFinalizer()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Thread* finalizerThread = GetFinalizerThread();
+    return finalizerThread->RequireSyncBlockCleanup()
+        || SystemDomain::System()->RequireAppDomainCleanup()
+        || (Thread::m_DetachCount > 0)
+        || Thread::CleanupNeededForFinalizedThread()
+        || YieldProcessorNormalization::IsMeasurementScheduled()
+        || HasDelayedDynamicMethod()
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+}
+
+static void DoExtraWorkForFinalizer(Thread* finalizerThread)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(finalizerThread != NULL);
+        PRECONDITION(finalizerThread == FinalizerThread::GetFinalizerThread());
+        PRECONDITION(FinalizerThread::HaveExtraWorkForFinalizer());
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    if (finalizerThread->RequiresCoInitialize())
+    {
+        finalizerThread->SetApartment(Thread::AS_InMTA);
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    if (finalizerThread->RequireSyncBlockCleanup())
+    {
+        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
+    }
+    if (SystemDomain::System()->RequireAppDomainCleanup())
+    {
+        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
+    }
+
+    if (Thread::m_DetachCount > 0
+        || Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupDetachedThreads();
+    }
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        GCX_PREEMP();
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
+    if (HasDelayedDynamicMethod())
+    {
+        GCX_PREEMP();
+        CleanupDelayedDynamicMethods();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -62,6 +177,26 @@ OBJECTREF FinalizerThread::GetNextFinalizableObject()
 Again:
     if (fQuitFinalizer)
         return NULL;
+
+#ifdef _DEBUG
+    if (g_pConfig->GetGCStressLevel() > 1)
+    {
+        // Throttle finalizing to one item per msec, or so, when running GC stress.
+        // This is to prevent cases where finalizers rearm themselves and
+        // do allocations or whatever else that triggers GC under stress.
+        // As a result couple of such things can occupy finalizer loop continuously
+        // while rearming and finalizing the same objects, which adds little
+        // to the coverage, but makes everything else move slower.
+        // NOTE: under GC stress most allocations of finalizable objects
+        //       would trigger a GC, thus 1 item/msec should not be too slow for
+        //       regular not re-arming finalizables.
+        GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
+        GetFinalizerThread()->EnablePreemptiveGC();
+        ClrSleepEx(1, false);
+        GetFinalizerThread()->DisablePreemptiveGC();
+        GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
+    }
+#endif //_DEBUG
 
     OBJECTREF obj = ObjectToOBJECTREF(GCHeapUtilities::GetGCHeap()->GetNextFinalizable());
     if (obj == NULL)
@@ -319,32 +454,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         GetFinalizerThread()->DisablePreemptiveGC();
 
-#ifdef _DEBUG
-        // <TODO> workaround.  make finalization very lazy for gcstress 3 or 4.
-        // only do finalization if the system is quiescent</TODO>
-        if (g_pConfig->GetGCStressLevel() > 1)
-        {
-            size_t last_gc_count;
-            DWORD dwSwitchCount = 0;
-
-            do
-            {
-                last_gc_count = GCHeapUtilities::GetGCHeap()->CollectionCount(0);
-                GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
-                GetFinalizerThread()->EnablePreemptiveGC();
-                __SwitchToThread (0, ++dwSwitchCount);
-                GetFinalizerThread()->DisablePreemptiveGC();
-                // If no GCs happened, then we assume we are quiescent
-                GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
-            } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
-        }
-#endif //_DEBUG
-
         // we might want to do some extra work on the finalizer thread
         // check and do it
-        if (GetFinalizerThread()->HaveExtraWorkForFinalizer())
+        if (HaveExtraWorkForFinalizer())
         {
-            GetFinalizerThread()->DoExtraWorkForFinalizer();
+            DoExtraWorkForFinalizer(GetFinalizerThread());
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 

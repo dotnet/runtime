@@ -216,8 +216,18 @@ namespace System.Security.Cryptography
         ///   A new <see cref="CngAlgorithm"/> object that specifies the Module-Lattice-Based Key-Encapsulation
         ///   Mechanism (ML-KEM).
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithm MLKem => field ??= new CngAlgorithm("ML-KEM"); // BCRYPT_MLKEM_ALGORITHM
+
+        /// <summary>
+        ///   Gets a new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-Based Digital Signature
+        ///   Algorithm (SLH-DSA).
+        /// </summary>
+        /// <value>
+        ///   A new <see cref="CngAlgorithm"/> object that specifies the Stateless Hash-Based Digital Signature
+        ///   Algorithm (SLH-DSA).
+        /// </value>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithm SlhDsa => field ??= new CngAlgorithm("SLH-DSA"); // BCRYPT_SLHDSA_ALGORITHM
 
         private static CngAlgorithm? s_ecdh;
         private static CngAlgorithm? s_ecdhp256;

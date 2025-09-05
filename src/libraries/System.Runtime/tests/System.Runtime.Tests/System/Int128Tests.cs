@@ -562,5 +562,29 @@ namespace System.Tests
             Int128 b = (Int128.MaxValue - 10) * -100;
             Assert.Equal(b, +1100);
         }
+
+        public static IEnumerable<object[]> BigMul_TestData()
+        {
+            yield return new object[] { (Int128)0, (Int128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (Int128)0, (Int128)1, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (Int128)1, (Int128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (Int128)2, (Int128)3, "0000000000000000000000000000000000000000000000000000000000000006" };
+            yield return new object[] { (Int128)3, (Int128)(-2), "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA" };
+            yield return new object[] { (Int128)(-1), (Int128)(-1), "0000000000000000000000000000000000000000000000000000000000000001" };
+            yield return new object[] { (Int128)(-1), Int128.MinValue, "0000000000000000000000000000000080000000000000000000000000000000" };
+            yield return new object[] { (Int128)1, Int128.MinValue, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80000000000000000000000000000000" };
+            yield return new object[] { new Int128(0x7DD8FD06E61C42C7, 0x23B8308969A5D354), new Int128(0x23B8308969A5D354, 0x7DD8FD06E61C42C7), "118F366A0AEB79CDF61A2AD689A481BFBA9B9B874C9A440EB340AA067592EE4C" };
+            yield return new object[] { new Int128(0x6DACB8FC835F41B5, 0xD26F1073812D6446), new Int128(0xD26F1073812D6446, 0x6DACB8FC835F41B5), "EC7A8BB31D6035AD30FC0550485D053B65FB0FB7A7D5A47F27742486E387AB7E" };
+            yield return new object[] { new Int128(0xE990583BA9EAB3D8, 0x13CF93153370AB0B), new Int128(0x13CF93153370AB0B, 0xE990583BA9EAB3D8), "FE43855FCCDA31540755B833730F08FFD0B8FE2FF36A55181A45864AC9B70248" };
+            yield return new object[] { new Int128(0xA85EB0478871B06C, 0xCC423B382BE5BB37), new Int128(0xCC423B382BE5BB37, 0xA85EB0478871B06C), "11B61855830A65CB4078E0668A2FEF9970B49ACA239DE4CFA363C1FE50E7CB34" };
+        }
+
+        [Theory]
+        [MemberData(nameof(BigMul_TestData))]
+        public static void BigMul(Int128 a, Int128 b, string result)
+        {
+            Int128 upper = Int128.BigMul(a, b, out Int128 lower);
+            Assert.Equal(result, $"{upper:X32}{lower:X32}");
+        }
     }
 }

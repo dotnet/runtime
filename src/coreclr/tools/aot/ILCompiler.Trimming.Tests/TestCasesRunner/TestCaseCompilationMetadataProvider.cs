@@ -128,7 +128,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
             string runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
             string ncaVersion = Path.GetFileName(runtimeDir);
             string dotnetDir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(runtimeDir)))!;
-            return Path.Combine(dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+            return Path.Combine(dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TargetFramework);
+        }
+
+        public IEnumerable<NPath> GetCommonSourceFiles()
+        {
+            var dam = _testCase.RootCasesDirectory.Parent
+                .Combine("Mono.Linker.Tests.Cases.Expectations")
+                .Combine("Support")
+                .Combine("DynamicallyAccessedMembersAttribute.cs");
+            yield return dam;
+
+            var sharedDir = _testCase.RootCasesDirectory.Parent.Parent
+                .Combine("src")
+                .Combine("ILLink.Shared");
+            yield return sharedDir.Combine("RequiresDynamicCodeAttribute.cs");
+            yield return sharedDir.Combine("RequiresUnreferencedCodeAttribute.cs");
         }
 
         public virtual IEnumerable<string> GetCommonReferencedAssemblies(NPath workingDirectory)
@@ -222,6 +237,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return _testCaseTypeDefinition.CustomAttributes
                 .Where(attr => attr.AttributeType.Name == nameof(SetupCompileAfterAttribute))
                 .Select(CreateSetupCompileAssemblyInfo);
+        }
+
+        public bool GetGenerateTargetFrameworkAttribute()
+        {
+            return GetOptionAttributeValue(nameof(GetGenerateTargetFrameworkAttribute), true);
         }
 
         private SetupCompileInfo CreateSetupCompileAssemblyInfo(CustomAttribute attribute)

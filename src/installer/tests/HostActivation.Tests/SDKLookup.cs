@@ -632,7 +632,7 @@ namespace HostActivation.Tests
                 yield return new object[] {
                     "{ sdk: { \"version\": \"9999.0.100\" } }",
                     new[] {
-                        "A JSON parsing exception occurred",
+                        "JSON parsing exception:",
                         IgnoringSDKSettings
                     }
                 };

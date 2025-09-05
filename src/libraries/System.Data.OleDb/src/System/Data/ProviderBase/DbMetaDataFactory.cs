@@ -32,6 +32,7 @@ namespace System.Data.ProviderBase
         private const string _sqlCommand = "SQLCommand";
         private const string _prepareCollection = "PrepareCollection";
 
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Members from serialized types may use dynamic code generation.")]
         public DbMetaDataFactory(Stream xmlStream, string serverVersion, string normalizedServerVersion)
         {
             ADP.CheckArgumentNull(xmlStream, "xmlStream");

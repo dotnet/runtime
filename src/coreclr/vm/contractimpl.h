@@ -392,7 +392,7 @@ public:
     SIZE_T To_SIZE_T() const
     {
         WRAPPER_NO_CONTRACT;
-        static_assert_no_msg(sizeof(SIZE_T) == sizeof(UINT_PTR));
+        static_assert(sizeof(SIZE_T) == sizeof(UINT_PTR));
         return (SIZE_T) m_token;
     }
 
@@ -405,7 +405,7 @@ public:
 };  // struct DispatchToken
 
 // DispatchToken.m_token should be the only field of DispatchToken.
-static_assert_no_msg(sizeof(DispatchToken) == sizeof(UINT_PTR));
+static_assert(sizeof(DispatchToken) == sizeof(UINT_PTR));
 
 // ===========================================================================
 class TypeIDProvider
@@ -514,7 +514,7 @@ public:
         : m_lock(CrstTypeIDMap, CrstFlags(CRST_REENTRANCY))
     {
         WRAPPER_NO_CONTRACT;
-        static_assert_no_msg(TypeIDProvider::INVALID_TYPE_ID == static_cast<UINT32>(INVALIDENTRY));
+        static_assert(TypeIDProvider::INVALID_TYPE_ID == static_cast<UINT32>(INVALIDENTRY));
     }
 
     //------------------------------------------------------------------------

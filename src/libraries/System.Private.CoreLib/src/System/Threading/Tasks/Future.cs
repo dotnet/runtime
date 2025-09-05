@@ -61,8 +61,6 @@ namespace System.Threading.Tasks
         /// <summary>A cached task for default(TResult).</summary>
         internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
-        private static TaskFactory<TResult>? s_Factory;
-
         // The value itself, if set.
         internal TResult? m_result;
 
@@ -474,9 +472,7 @@ namespace System.Threading.Tasks
         /// the default constructor on the factory type.
         /// </remarks>
         public static new TaskFactory<TResult> Factory =>
-            Volatile.Read(ref s_Factory) ??
-            Interlocked.CompareExchange(ref s_Factory, new TaskFactory<TResult>(), null) ??
-            s_Factory;
+            field ?? Interlocked.CompareExchange(ref field, new(), null) ?? field;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.

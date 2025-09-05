@@ -632,6 +632,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindBegEpilog();
 
+    genPopCalleeSavedRegisters();
+
     if (jmpEpilog)
     {
         SetHasTailCalls(true);
@@ -644,7 +646,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if !FEATURE_FASTTAILCALL
         noway_assert(jmpNode->OperIs(GT_JMP));
 #else  // FEATURE_FASTTAILCALL
-       // armarch
        // If jmpNode is GT_JMP then gtNext must be null.
        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
         noway_assert(!jmpNode->OperIs(GT_JMP) || (jmpNode->gtNext == nullptr));
@@ -699,28 +700,20 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     NO_WAY("Unsupported JMP indirection");
             }
 
-            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
-             * the same descriptor with some minor adjustments.
-             */
-
-            genPopCalleeSavedRegisters(true);
-
+            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
+            // the same descriptor with some minor adjustments.
             params.isJump = true;
-
             genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else
         {
-            genPopCalleeSavedRegisters(true);
             genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
     else
     {
-        genPopCalleeSavedRegisters(false);
-
         GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_RA, 0);
         compiler->unwindReturn(REG_RA);
     }
@@ -1505,7 +1498,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         ssize_t imm = -16;
 
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        static_assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
         size_t stpCount = amount / (REGSIZE_BYTES * 2);
         if (compiler->info.compInitMem)

@@ -21,7 +21,7 @@
         NESTED_ENTRY \__PInvokeStubFuncName, _TEXT, NoHandler
 
         // get the stub
-        ld  t0, (VASigCookie__pNDirectILStub)(\VASigCookieReg)
+        ld  t0, (VASigCookie__pPInvokeILStub)(\VASigCookieReg)
 
         // if null goto stub generation
         beq  t0, zero, \__PInvokeGenStubFuncName

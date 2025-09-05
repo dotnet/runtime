@@ -1575,7 +1575,7 @@ namespace Mono.Linker.Steps
                 // This can happen when the compiler emits typerefs into IL which aren't strictly necessary per ECMA 335.
                 foreach (TypeReference typeReference in assembly.MainModule.GetTypeReferences())
                 {
-                    if (!Visited!.Add(typeReference))
+                    if (!Visited.Add(typeReference))
                         continue;
                     markingHelpers.MarkForwardedScope(typeReference, new MessageOrigin(assembly));
                 }
@@ -1836,7 +1836,7 @@ namespace Mono.Linker.Steps
                 Context.LogWarning(origin, id, type.GetDisplayName(),
                     ((MemberReference)member).GetDisplayName(), // The cast is valid since it has to be a method or field
                     MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Message),
-                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Url));
+                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute.Url));
             }
 
             bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection(member);
@@ -1933,7 +1933,7 @@ namespace Mono.Linker.Steps
                 return;
 
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
-                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute!, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
+                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
 
             switch (dependencyKind)
             {
@@ -2018,6 +2018,16 @@ namespace Mono.Linker.Steps
             {
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
+
+                // On a reflectable method, perform generic data flow for the return type and all the parameter types
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                var methodOrigin = new MessageOrigin(methodDefinition);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, methodDefinition.ReturnType);
+
+                foreach (var parameter in methodDefinition.GetMetadataParameters())
+                {
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, parameter.ParameterType);
+                }
             }
         }
 
@@ -2038,6 +2048,13 @@ namespace Mono.Linker.Steps
         internal void MarkFieldVisibleToReflection(FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
         {
             MarkField(field, reason, origin);
+            if (Context.Resolve(field) is FieldDefinition fieldDefinition)
+            {
+                // On a reflectable field, perform generic data flow for the field's type
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                var fieldOrigin = new MessageOrigin(fieldDefinition);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in fieldOrigin, this, Context, fieldDefinition.FieldType);
+            }
         }
 
         bool MarkFieldsVisibleToReflection(TypeDefinition type, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
@@ -2164,6 +2181,7 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2174,17 +2192,6 @@ namespace Mono.Linker.Steps
                 MarkType(type.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, type), typeOrigin);
             MarkCustomAttributes(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
             MarkSecurityDeclarations(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
-
-            if (Context.TryResolve(type.BaseType) is TypeDefinition baseType &&
-                !Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(type) &&
-                Annotations.TryGetLinkerAttribute(baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode))
-            {
-
-                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(effectiveRequiresUnreferencedCode.Message);
-                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(effectiveRequiresUnreferencedCode.Url);
-                Context.LogWarning(typeOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName(), type.BaseType.GetDisplayName(), arg1, arg2);
-            }
-
 
             if (type.IsMulticastDelegate())
             {
@@ -2947,17 +2954,6 @@ namespace Mono.Linker.Steps
                 var parameter = parameters?[i];
 
                 var argumentTypeDef = MarkType(argument, new DependencyInfo(DependencyKind.GenericArgumentType, instance), origin);
-
-                if (parameter is not null && Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis(parameter))
-                {
-                    // The only two implementations of IGenericInstance both derive from MemberReference
-                    Debug.Assert(instance is MemberReference);
-
-                    var instanceMemberOrigin = origin.Provider is not null ? origin : new MessageOrigin(((MemberReference)instance).Resolve());
-                    var scanner = new GenericArgumentDataFlow(Context, this, instanceMemberOrigin);
-                    scanner.ProcessGenericArgumentDataFlow(parameter, argument);
-                }
-
                 if (argumentTypeDef == null)
                     continue;
 
@@ -3854,6 +3850,29 @@ namespace Mono.Linker.Steps
                         if (ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(Context, (MethodReference)instruction.Operand))
                             return true;
                         break;
+
+                    case OperandType.InlineType:
+                        if (InstructionRequiresReflectionMethodBodyScannerForTypeAccess(instruction))
+                            return true;
+                        break;
+
+                    case OperandType.InlineTok:
+                        if (instruction.Operand is FieldReference)
+                        {
+                            if (InstructionRequiresReflectionMethodBodyScannerForFieldAccess(instruction))
+                                return true;
+                        }
+                        else if (instruction.Operand is TypeReference)
+                        {
+                            if (InstructionRequiresReflectionMethodBodyScannerForTypeAccess(instruction))
+                                return true;
+                        }
+                        else if (instruction.Operand is MethodReference methodReference)
+                        {
+                            if (ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(Context, methodReference))
+                                return true;
+                        }
+                        break;
                 }
             }
             return false;
@@ -3902,7 +3921,7 @@ namespace Mono.Linker.Steps
 
             PostMarkMethodBody(methodIL.Body);
 
-            Debug.Assert(requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner(methodIL));
+            Debug.Assert(requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner(methodIL), $"Inconsistent result for {nameof(requiresReflectionMethodBodyScanner)} for method {methodIL.Method.GetDisplayName()}");
             return requiresReflectionMethodBodyScanner;
         }
 
@@ -3937,14 +3956,27 @@ namespace Mono.Linker.Steps
                 Code.Stsfld or
                 // Field address loads (as those can be used to store values to annotated field and thus must be checked)
                 Code.Ldflda or
-                Code.Ldsflda
-                    => ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(Context, (FieldReference)instruction.Operand),
-                // For ref fields, ldfld loads an address which can be used to store values to annotated fields
-                Code.Ldfld or Code.Ldsfld when ((FieldReference)instruction.Operand).FieldType.IsByRefOrPointer()
+                Code.Ldsflda or
+                Code.Ldfld or
+                Code.Ldsfld
                     => ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(Context, (FieldReference)instruction.Operand),
                 // Other field operations are not interesting as they don't need to be checked
                 _ => false
             };
+
+        bool InstructionRequiresReflectionMethodBodyScannerForTypeAccess(Instruction instruction)
+        {
+            var ret = instruction.OpCode.Code switch
+            {
+                Code.Mkrefany or
+                Code.Box or
+                Code.Newarr or
+                Code.Ldtoken
+                    => ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(Context, (TypeReference)instruction.Operand),
+                _ => false
+            };
+            return ret;
+        }
 
         protected virtual void MarkInstruction(Instruction instruction, MethodDefinition method, ref bool requiresReflectionMethodBodyScanner, ref MessageOrigin origin)
         {
@@ -3996,14 +4028,19 @@ namespace Mono.Linker.Steps
 
                     if (token is TypeReference typeReference)
                     {
+                        requiresReflectionMethodBodyScanner |= InstructionRequiresReflectionMethodBodyScannerForTypeAccess(instruction);
                         MarkTypeVisibleToReflection(typeReference, reason, origin);
                     }
                     else if (token is MethodReference methodReference)
                     {
+                        requiresReflectionMethodBodyScanner |=
+                            ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(Context, methodReference);
                         MarkMethodVisibleToReflection(methodReference, reason, origin);
                     }
                     else
                     {
+                        requiresReflectionMethodBodyScanner |=
+                            InstructionRequiresReflectionMethodBodyScannerForFieldAccess(instruction);
                         MarkFieldVisibleToReflection((FieldReference)token, reason, origin);
                     }
                     break;
@@ -4011,6 +4048,7 @@ namespace Mono.Linker.Steps
 
                 case OperandType.InlineType:
                     var operand = (TypeReference)instruction.Operand;
+                    requiresReflectionMethodBodyScanner |= InstructionRequiresReflectionMethodBodyScannerForTypeAccess(instruction);
                     switch (instruction.OpCode.Code)
                     {
                         case Code.Newarr:
@@ -4063,6 +4101,7 @@ namespace Mono.Linker.Steps
             if (Annotations.IsMarked(iface))
                 return;
             Annotations.MarkProcessed(iface, reason ?? new DependencyInfo(DependencyKind.InterfaceImplementationOnType, origin.Provider));
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, iface.InterfaceType);
 
             // Blame the type that has the interfaceimpl, expecting the type itself to get marked for other reasons.
             MarkCustomAttributes(iface, new DependencyInfo(DependencyKind.CustomAttribute, iface), origin);
@@ -4096,13 +4135,19 @@ namespace Mono.Linker.Steps
                     {
                         case MethodDefinition nestedFunction:
                             if (nestedFunction.Body is MethodBody nestedBody)
-                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), origin);
+                            {
+                                var nestedOrigin = new MessageOrigin(nestedFunction);
+                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), nestedOrigin);
+                            }
                             break;
                         case TypeDefinition stateMachineType:
                             foreach (var method in stateMachineType.Methods)
                             {
                                 if (method.Body is MethodBody stateMachineBody)
-                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), origin);
+                                {
+                                    var stateMachineOrigin = new MessageOrigin(method);
+                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), stateMachineOrigin);
+                                }
                             }
                             break;
                         default:

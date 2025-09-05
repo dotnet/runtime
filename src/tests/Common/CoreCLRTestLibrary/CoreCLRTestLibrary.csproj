@@ -16,6 +16,7 @@
     <Compile Include="CoreClrConfigurationDetection.cs" />
     <Compile Include="OutOfProcessTest.cs" />
     <Compile Include="PlatformDetection.cs" />
+    <Compile Include="Vectors.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />

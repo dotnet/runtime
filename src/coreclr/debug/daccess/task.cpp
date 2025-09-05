@@ -3573,13 +3573,13 @@ ClrDataMethodDefinition::GetIlMethod(void)
 {
     if (m_methodDesc)
     {
-        if (!m_methodDesc->HasILHeader())
+        if (m_methodDesc->MayHaveILHeader())
         {
-            return NULL;
+            return m_methodDesc->GetILHeader();
         }
         else
         {
-            return m_methodDesc->GetILHeader();
+            return NULL;
         }
     }
     else

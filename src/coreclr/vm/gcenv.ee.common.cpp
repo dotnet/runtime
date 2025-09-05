@@ -110,7 +110,7 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 // there's no context provided by the caller).
 // See code:getMethodSigInternal
 //
-inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
+bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 

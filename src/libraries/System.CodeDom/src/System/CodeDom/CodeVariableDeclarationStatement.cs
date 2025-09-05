@@ -5,9 +5,6 @@ namespace System.CodeDom
 {
     public class CodeVariableDeclarationStatement : CodeStatement
     {
-        private CodeTypeReference _type;
-        private string _name;
-
         public CodeVariableDeclarationStatement() { }
 
         public CodeVariableDeclarationStatement(CodeTypeReference type, string name)
@@ -53,14 +50,14 @@ namespace System.CodeDom
 
         public string Name
         {
-            get => _name ?? string.Empty;
-            set => _name = value;
+            get => field ?? string.Empty;
+            set => field = value;
         }
 
         public CodeTypeReference Type
         {
-            get => _type ??= new CodeTypeReference("");
-            set => _type = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
     }
 }

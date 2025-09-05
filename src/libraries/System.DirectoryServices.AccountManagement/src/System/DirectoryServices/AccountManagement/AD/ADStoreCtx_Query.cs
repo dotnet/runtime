@@ -171,12 +171,12 @@ namespace System.DirectoryServices.AccountManagement
                 // Wrap off the filter
                 //
                 ldapFilter.Append(')');
-            }
 
-            // We don't need any attributes returned, since we're just going to get a DirectoryEntry
-            // for the result.  Per RFC 2251, OID 1.1 == no attributes.
-            //ds.PropertiesToLoad.Add("1.1");
-            BuildPropertySet(qbeFilter.GetType(), ds.PropertiesToLoad);
+                // We don't need any attributes returned, since we're just going to get a DirectoryEntry
+                // for the result.  Per RFC 2251, OID 1.1 == no attributes.
+                //ds.PropertiesToLoad.Add("1.1");
+                BuildPropertySet(qbeFilter.GetType(), ds.PropertiesToLoad);
+            }
 
             ds.Filter = ldapFilter.ToString();
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "PushFilterToNativeSearcher: using LDAP filter {0}", ds.Filter);
