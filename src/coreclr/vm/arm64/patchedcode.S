@@ -20,11 +20,13 @@
 //
 .macro WRITE_BARRIER_ENTRY name
 #if defined(__APPLE__)
-    .text
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
     .p2align        2
     .alt_entry C_FUNC(\name)
     .private_extern C_FUNC(\name)
 C_FUNC(\name):
+    .cfi_startproc
 #else
     LEAF_ENTRY \name, _TEXT
 #endif
@@ -36,9 +38,12 @@ C_FUNC(\name):
 //
 .macro WRITE_BARRIER_END name
 #if defined(__APPLE__)
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
     .alt_entry C_FUNC(\name\()_End)
     .private_extern C_FUNC(\name\()_End)
 C_FUNC(\name\()_End):
+    .cfi_startproc
     // make sure this symbol gets its own address
     nop
 #else
