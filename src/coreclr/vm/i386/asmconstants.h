@@ -310,7 +310,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x08
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT
