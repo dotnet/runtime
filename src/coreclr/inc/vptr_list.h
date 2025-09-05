@@ -39,7 +39,7 @@ VPTR_CLASS(TailCallStubManager)
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
 VPTR_CLASS(CallCountingStubManager)
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
