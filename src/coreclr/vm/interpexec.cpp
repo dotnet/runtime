@@ -137,7 +137,7 @@ void InvokePInvokeCalliStub(PCODE ftn, void *cookie, int8_t *stack, InterpMethod
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(stubHeaderTemplate));
+        PRECONDITION(CheckPointer(cookie));
     }
     CONTRACTL_END
 
