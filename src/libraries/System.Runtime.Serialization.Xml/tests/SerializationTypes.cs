@@ -1688,26 +1688,26 @@ public class XElementArrayWrapper
     public XElement[] xelements;
 }
 
-    // Container used by tests to validate DateTimeOffset round-tripping when
-    // serialized inside an IXmlSerializable type that internally leverages
-    // DataContractSerializer (regression coverage).
-    public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
+// Container used by tests to validate DateTimeOffset round-tripping when
+// serialized inside an IXmlSerializable type that internally leverages
+// DataContractSerializer (regression coverage).
+public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
+{
+    public DateTimeOffset Date { get; set; }
+
+    public XmlSchema GetSchema() => null;
+
+    public void WriteXml(XmlWriter writer)
     {
-        public DateTimeOffset Date { get; set; }
-
-        public XmlSchema GetSchema() => null;
-
-        public void WriteXml(XmlWriter writer)
-        {
-            var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
-            innerSerializer.WriteObject(writer, Date);
-        }
-
-        public void ReadXml(XmlReader reader)
-        {
-            var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
-            reader.ReadStartElement();
-            Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
-            reader.ReadEndElement();
-        }
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        innerSerializer.WriteObject(writer, Date);
     }
+
+    public void ReadXml(XmlReader reader)
+    {
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        reader.ReadStartElement();
+        Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
+        reader.ReadEndElement();
+    }
+}
