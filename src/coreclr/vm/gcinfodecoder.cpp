@@ -789,27 +789,24 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
         //    and nothing should be reported
         //
         int countIntersections = 0;
-        if(m_NumInterruptibleRanges != 0)
+        UINT32 lastNormStop = 0;
+        for(UINT32 i=0; i<m_NumInterruptibleRanges; i++)
         {
-            UINT32 lastNormStop = 0;
-            for(UINT32 i=0; i<m_NumInterruptibleRanges; i++)
-            {
-                UINT32 normStartDelta = (UINT32) m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA1_ENCBASE );
-                UINT32 normStopDelta = (UINT32) m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE ) + 1;
+            UINT32 normStartDelta = (UINT32) m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA1_ENCBASE );
+            UINT32 normStopDelta = (UINT32) m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE ) + 1;
 
-                UINT32 normStart = lastNormStop + normStartDelta;
-                UINT32 normStop = normStart + normStopDelta;
-                if(normBreakOffset >= normStart && normBreakOffset < normStop)
-                {
-                    _ASSERTE(pseudoBreakOffset == 0);
-                    countIntersections++;
-                    pseudoBreakOffset = numInterruptibleLength + normBreakOffset - normStart;
-                }
-                numInterruptibleLength += normStopDelta;
-                lastNormStop = normStop;
+            UINT32 normStart = lastNormStop + normStartDelta;
+            UINT32 normStop = normStart + normStopDelta;
+            if(normBreakOffset >= normStart && normBreakOffset < normStop)
+            {
+                _ASSERTE(pseudoBreakOffset == 0);
+                countIntersections++;
+                pseudoBreakOffset = numInterruptibleLength + normBreakOffset - normStart;
             }
-            _ASSERTE(countIntersections <= 1);
+            numInterruptibleLength += normStopDelta;
+            lastNormStop = normStop;
         }
+        _ASSERTE(countIntersections <= 1);
         if(countIntersections == 0)
         {
             _ASSERTE(executionAborted);
