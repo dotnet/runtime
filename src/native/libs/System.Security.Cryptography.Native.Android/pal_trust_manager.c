@@ -1,11 +1,11 @@
-#include "pal_trust_manager.h"
-#include <stdatomic.h>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-static _Atomic RemoteCertificateValidationCallback verifyRemoteCertificate;
+#include "pal_trust_manager.h"
 
 ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
-    atomic_store(&verifyRemoteCertificate, callback);
+    StoreRemoteVerificationCallback(callback);
 }
 
 ARGS_NON_NULL_ALL jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle)
@@ -28,10 +28,3 @@ cleanup:
     return trustManagers;
 }
 
-ARGS_NON_NULL_ALL jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle)
-{
-    RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);
-    abort_unless(verify, "verifyRemoteCertificate callback has not been registered");
-    return verify((intptr_t)sslStreamProxyHandle);
-}
