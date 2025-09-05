@@ -5487,9 +5487,6 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
 #endif
     *flagsRef = flags;
 }
-#endif // FEATURE_TIERED_COMPILATION
-
-#if defined(FEATURE_TIERED_COMPILATION)
 void ETW::CompilationLog::TieredCompilation::Runtime::SendSettings()
 {
     CONTRACTL {
