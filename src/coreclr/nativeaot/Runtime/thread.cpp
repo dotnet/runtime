@@ -318,8 +318,6 @@ void Thread::Construct()
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
-    ASSERT(m_threadAbortException == NULL);
-
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
@@ -575,10 +573,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
-
-    // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
-    EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1265,23 +1259,6 @@ void Thread::EnsureRuntimeInitialized()
 
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
-
-Object * Thread::GetThreadAbortException()
-{
-    return m_threadAbortException;
-}
-
-void Thread::SetThreadAbortException(Object *exception)
-{
-    m_threadAbortException = exception;
-}
-
-FCIMPL0(Object *, RhpGetThreadAbortException)
-{
-    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
-    return pCurThread->GetThreadAbortException();
-}
-FCIMPLEND
 
 Object** Thread::GetThreadStaticStorage()
 {

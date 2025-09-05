@@ -8,9 +8,16 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 /* debugbreak */
 
+#ifdef _DEBUG
+extern void DBG_PrintInterpreterStack();
+#endif // _DEBUG
+
 extern "C" void
 DBG_DebugBreak()
 {
+#ifdef _DEBUG
+    DBG_PrintInterpreterStack();
+#endif // _DEBUG
     asm volatile ("unreachable");
 }
 
