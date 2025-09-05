@@ -280,7 +280,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">
-      <CustomLinkerArg Condition="'$(_XcodeVersion)' == '15'" Include="-ld_classic" />
+      <CustomLinkerArg Condition="'$(UseLdClassicXCodeLinker)' == 'true' or'$(_XcodeVersion)' == '15'" Include="-ld_classic" />
     </ItemGroup>
 
     <PropertyGroup>
