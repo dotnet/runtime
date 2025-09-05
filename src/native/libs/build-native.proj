@@ -15,9 +15,11 @@
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
+    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
 
     <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_CMakeArgs)</_BuildNativeArgs>
   </PropertyGroup>
@@ -28,6 +30,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
