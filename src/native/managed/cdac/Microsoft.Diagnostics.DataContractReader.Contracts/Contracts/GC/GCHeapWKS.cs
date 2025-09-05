@@ -24,7 +24,7 @@ internal sealed class GCHeapWKS : IGCHeap
 
         OOMData = target.ProcessedData.GetOrAdd<Data.OOMHistory>(target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData));
 
-        InternalRootArray = target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArray);
+        InternalRootArray = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArray));
         InternalRootArrayIndex = target.ReadNUInt(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArrayIndex));
         HeapAnalyzeSuccess = target.Read<int>(target.ReadGlobalPointer(Constants.Globals.GCHeapHeapAnalyzeSuccess)) != 0;
 

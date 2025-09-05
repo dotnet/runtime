@@ -32,7 +32,7 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
 
         OOMData = target.ProcessedData.GetOrAdd<OOMHistory>(address + (ulong)type.Fields[nameof(OOMData)].Offset);
 
-        InternalRootArray = address + (ulong)type.Fields[nameof(InternalRootArray)].Offset;
+        InternalRootArray = target.ReadPointer(address + (ulong)type.Fields[nameof(InternalRootArray)].Offset);
         InternalRootArrayIndex = target.ReadNUInt(address + (ulong)type.Fields[nameof(InternalRootArrayIndex)].Offset);
         HeapAnalyzeSuccess = target.Read<int>(address + (ulong)type.Fields[nameof(HeapAnalyzeSuccess)].Offset) != 0;
 
