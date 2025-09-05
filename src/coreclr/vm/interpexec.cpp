@@ -2043,7 +2043,8 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
 
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
