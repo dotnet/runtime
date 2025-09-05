@@ -35,7 +35,7 @@ namespace ILCompiler
 
             if (method.IsConstructor && method.OwningType is DefType defType)
             {
-                sb.Append(defType.Name);
+                sb.Append(defType.GetName());
             }
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
@@ -234,7 +234,7 @@ namespace ILCompiler
             protected override Unit AppendNameForNamespaceType(StringBuilder sb, DefType type, FormatOptions options)
             {
                 NamespaceQualify(sb, type, options);
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
                 return default;
             }
 
@@ -242,7 +242,7 @@ namespace ILCompiler
             {
                 AppendName(sb, containingType, options);
                 sb.Append('.');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
 
                 return default;
             }
@@ -251,7 +251,7 @@ namespace ILCompiler
             {
                 if ((options & FormatOptions.NamespaceQualify) != 0)
                 {
-                    string ns = type.Namespace;
+                    string ns = type.GetNamespace();
                     if (!string.IsNullOrEmpty(ns))
                     {
                         sb.Append(ns);

@@ -16,7 +16,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers");
+            Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("RuntimeHelpers"u8));
             string methodName = method.Name;
 
             // All the methods handled below are per-instantiation generic methods
@@ -58,8 +58,8 @@ namespace Internal.IL.Stubs
                         if (elementType is MetadataType mdType)
                         {
                             if (mdType.Module == mdType.Context.SystemModule &&
-                                mdType.Namespace == "System.Text" &&
-                                mdType.Name == "Rune")
+                                mdType.U8Namespace.SequenceEqual("System.Text"u8) &&
+                                mdType.U8Name.SequenceEqual("Rune"u8))
                             {
                                 result = true;
                             }

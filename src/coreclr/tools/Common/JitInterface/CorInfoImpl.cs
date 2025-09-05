@@ -2021,8 +2021,8 @@ namespace Internal.JitInterface
             else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(mdType.Namespace));
-                return (byte*)GetPin(StringToUTF8(mdType.Name));
+                    *namespaceName = (byte*)GetPin(SpanToPinnableBytes(mdType.U8Namespace));
+                return (byte*)GetPin(SpanToPinnableBytes(mdType.U8Name));
             }
 
             if (namespaceName != null)
@@ -2503,8 +2503,8 @@ namespace Internal.JitInterface
             // not care about since they are considered primitives by the JIT.
             if (type.IsIntrinsic)
             {
-                string ns = type.Namespace;
-                if (ns == "System.Runtime.Intrinsics" || ns == "System.Numerics")
+                ReadOnlySpan<byte> ns = type.U8Namespace;
+                if (ns.SequenceEqual("System.Runtime.Intrinsics"u8) || ns.SequenceEqual("System.Numerics"u8))
                 {
                     parNode->simdTypeHnd = ObjectToHandle(type);
                     if (parentIndex != uint.MaxValue)
@@ -3174,7 +3174,7 @@ namespace Internal.JitInterface
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
-            else if (owningType.Name == "BitConverter" && owningType.Namespace == "System" &&
+            else if (owningType.U8Name.SequenceEqual("BitConverter"u8) && owningType.U8Namespace.SequenceEqual("System"u8) &&
                 field.Name == "IsLittleEndian")
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
@@ -3391,6 +3391,13 @@ namespace Internal.JitInterface
             return bytes;
         }
 
+        private static byte[] SpanToPinnableBytes(ReadOnlySpan<byte> s)
+        {
+            byte[] bytes = new byte[s.Length + 1];
+            s.CopyTo(bytes);
+            return bytes;
+        }
+
         private nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -3407,8 +3414,8 @@ namespace Internal.JitInterface
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType != null)
             {
-                className = owningType.Name;
-                namespaceName = owningType.Namespace;
+                className = owningType.GetName();
+                namespaceName = owningType.GetNamespace();
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
@@ -3419,8 +3426,8 @@ namespace Internal.JitInterface
                     if (containingType == null)
                         break;
 
-                    enclosingClassName[i] = containingType.Name;
-                    namespaceName = containingType.Namespace;
+                    enclosingClassName[i] = containingType.GetName();
+                    namespaceName = containingType.GetNamespace();
                 }
             }
 

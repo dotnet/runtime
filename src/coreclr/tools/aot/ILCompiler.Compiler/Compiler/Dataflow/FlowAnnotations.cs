@@ -270,16 +270,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             foreach (var intf in type.RuntimeInterfaces)
             {
-                if (intf.Name == "IReflect" && intf.Namespace == "System.Reflection")
+                if (intf.U8Name.SequenceEqual("IReflect"u8) && intf.U8Namespace.SequenceEqual("System.Reflection"u8))
                     return true;
             }
 
-            if (metadataType.Name == "IReflect" && metadataType.Namespace == "System.Reflection")
+            if (metadataType.U8Name.SequenceEqual("IReflect"u8) && metadataType.U8Namespace.SequenceEqual("System.Reflection"u8))
                 return true;
 
             do
             {
-                if (metadataType.Name == "Type" && metadataType.Namespace == "System")
+                if (metadataType.U8Name.SequenceEqual("Type"u8) && metadataType.U8Namespace.SequenceEqual("System"u8))
                     return true;
             } while ((metadataType = metadataType.MetadataBaseType) != null);
 
@@ -642,7 +642,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.GetName()))
                 {
                     return null;
                 }

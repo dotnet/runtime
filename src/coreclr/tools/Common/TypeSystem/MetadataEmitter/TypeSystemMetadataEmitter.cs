@@ -213,8 +213,8 @@ namespace Internal.TypeSystem
             if (type.IsTypeDefinition && type is MetadataType metadataType)
             {
                 // Make a typeref
-                StringHandle typeName = _metadataBuilder.GetOrAddString(metadataType.Name);
-                StringHandle typeNamespace = metadataType.Namespace != null ? _metadataBuilder.GetOrAddString(metadataType.Namespace) : default(StringHandle);
+                StringHandle typeName = _metadataBuilder.GetOrAddString(metadataType.GetName());
+                StringHandle typeNamespace = metadataType.U8Namespace.Length > 0 ? _metadataBuilder.GetOrAddString(metadataType.GetNamespace()) : default(StringHandle);
                 EntityHandle resolutionScope;
 
                 if (metadataType.ContainingType == null)

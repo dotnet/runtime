@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Debug = System.Diagnostics.Debug;
+using System;
 using System.Collections.Generic;
+
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -125,10 +128,10 @@ namespace Internal.TypeSystem
                 if (!data1.Equals(data2))
                     return false;
 
-                if (type1.Name != type2.Name)
+                if (!type1.U8Name.SequenceEqual(type2.U8Name))
                     return false;
 
-                if (type1.Namespace != type2.Namespace)
+                if (!type1.U8Namespace.SequenceEqual(type2.U8Namespace))
                     return false;
 
                 var containingType1 = (MetadataType)type1.ContainingType;

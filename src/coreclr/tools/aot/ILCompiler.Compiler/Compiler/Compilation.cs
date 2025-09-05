@@ -175,9 +175,9 @@ namespace ILCompiler
             if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
                 return intrinsicMethod;
 
-            if (intrinsicOwningType.Name == "Type" && intrinsicOwningType.Namespace == "System")
+            if (intrinsicOwningType.U8Name.SequenceEqual("Type"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetType"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -187,7 +187,7 @@ namespace ILCompiler
                     }
                 }
             }
-            else if (intrinsicOwningType.Name == "Assembly" && intrinsicOwningType.Namespace == "System.Reflection")
+            else if (intrinsicOwningType.U8Name.SequenceEqual("Assembly"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System.Reflection"u8))
             {
                 if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly")
                 {
@@ -199,9 +199,9 @@ namespace ILCompiler
                     }
                 }
             }
-            else if (intrinsicOwningType.Name == "MethodBase" && intrinsicOwningType.Namespace == "System.Reflection")
+            else if (intrinsicOwningType.U8Name.SequenceEqual("MethodBase"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetCurrentMethod")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetCurrentMethod"u8))
                 {
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
@@ -451,11 +451,11 @@ namespace ILCompiler
             if (containingMethod.OwningType is MetadataType owningType)
             {
                 // RawCalliHelper is a way for the class library to opt out of fat calls
-                if (owningType.Name == "RawCalliHelper")
+                if (owningType.U8Name.SequenceEqual("RawCalliHelper"u8))
                     return false;
 
                 // Delegate invocation never needs fat calls
-                if (owningType.IsDelegate && containingMethod.Name == "Invoke")
+                if (owningType.IsDelegate && containingMethod.U8Name.SequenceEqual("Invoke"u8))
                     return false;
             }
 

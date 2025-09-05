@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -1471,7 +1473,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Type" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Type"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1485,7 +1487,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1499,7 +1501,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1513,7 +1515,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
+                    return owningType.U8Name.SequenceEqual("MethodTable"u8) && owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8);
                 }
             }
 
@@ -1527,7 +1529,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
+                    return owningType.U8Name.SequenceEqual("RuntimeHelpers"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
                 }
             }
 
@@ -1541,7 +1543,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name == "MemoryMarshal" && owningType.Namespace == "System.Runtime.InteropServices";
+                    return owningType.U8Name.SequenceEqual("MemoryMarshal"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
                 }
             }
 

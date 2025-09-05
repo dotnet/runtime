@@ -454,7 +454,7 @@ namespace TypeSystemTests
                 MethodDesc resolvedMethod = derivedClass.FindVirtualFunctionTargetMethodOnObjectType(callMethod);
                 this._logger.WriteLine(resolvedMethod.ToString());
 
-                Assert.Equal(typeToConstruct, ((EcmaType)((EcmaMethod)resolvedMethod).OwningType).Name);
+                Assert.Equal(typeToConstruct, ((EcmaType)((EcmaMethod)resolvedMethod).OwningType).GetName());
 
                 baseClass = (MetadataType)baseClass.BaseType;
             }

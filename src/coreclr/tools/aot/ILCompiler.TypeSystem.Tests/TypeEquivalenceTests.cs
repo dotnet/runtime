@@ -231,7 +231,7 @@ namespace TypeSystemTests
         {
             foreach (var typePair in GetTypesWhichClaimMatchingTypeIdentifiersInNamespace("TypesWhichDoNotLoad"))
             {
-                if (((MetadataType)typePair.Item1).Name.EndsWith("IGNORE"))
+                if (((MetadataType)typePair.Item1).U8Name.EndsWith("IGNORE"u8))
                     continue;
 
                 _logger.WriteLine($"Checking load behavior of {typePair.Item1}");

@@ -663,7 +663,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name == name, bindingFlags))
+            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.U8Name.StringEquals(name), bindingFlags))
                 yield return new SystemTypeValue(new TypeProxy(nestedType));
         }
 

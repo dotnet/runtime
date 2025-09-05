@@ -166,8 +166,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public static string GetFullName(this DefType metadataType)
         {
-            string ns = metadataType.Namespace;
-            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+            string ns = metadataType.GetNamespace();
+            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.GetName()) : metadataType.GetName();
         }
 
         /// <summary>

@@ -18,12 +18,16 @@ namespace Internal.TypeSystem
 
         public virtual ReadOnlySpan<byte> U8Namespace => [];
 
+        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(U8Namespace);
+
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
         public virtual string Name => null;
 
         public virtual ReadOnlySpan<byte> U8Name => [];
+
+        public string GetName() => System.Text.Encoding.UTF8.GetString(U8Name);
 
         /// <summary>
         /// Gets the containing type of this type or null if the type is not nested.

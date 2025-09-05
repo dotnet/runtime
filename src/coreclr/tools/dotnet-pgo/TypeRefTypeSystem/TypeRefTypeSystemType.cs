@@ -178,9 +178,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
-        public override string DiagnosticName => Name;
+        public override string DiagnosticName => GetName();
 
-        public override string DiagnosticNamespace => Namespace;
+        public override string DiagnosticNamespace => GetNamespace();
 
         public override TypeSystemContext Context => Module.Context;
 
@@ -188,7 +188,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => throw new NotImplementedException();
         public override ClassLayoutMetadata GetClassLayout() => throw new NotImplementedException();
-        public override int GetHashCode() => (Namespace != null) ? HashCode.Combine(Namespace, Name, Module) : HashCode.Combine(Name, Module);
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.AddBytes(U8Namespace);
+            hash.AddBytes(U8Name);
+            hash.Add(Module);
+            return hash.ToHashCode();
+        }
+
         public override MetadataType GetNestedType(string name)
         {
             TypeRefTypeSystemType type = null;

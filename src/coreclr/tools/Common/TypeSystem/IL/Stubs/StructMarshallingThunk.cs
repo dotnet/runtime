@@ -334,7 +334,7 @@ namespace Internal.IL.Stubs
             }
             catch (NotSupportedException)
             {
-                string message = "Struct '" + ((MetadataType)ManagedType).Name +
+                string message = "Struct '" + ((MetadataType)ManagedType).GetName() +
                     "' requires marshalling that is not yet supported by this compiler.";
                 return MarshalHelpers.EmitExceptionBody(message, this);
             }

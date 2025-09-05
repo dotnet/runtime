@@ -43,7 +43,7 @@ namespace TypeSystemTests
                 sb.Append(data.kind.ToString());
                 sb.Append(data.index);
                 if (data.type != null)
-                    sb.Append(((MetadataType)data.type).Name);
+                    sb.Append(((MetadataType)data.type).GetName());
                 else
                     sb.Append("<null>");
             }

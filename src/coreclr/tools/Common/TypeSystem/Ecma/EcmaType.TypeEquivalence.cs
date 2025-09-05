@@ -41,10 +41,10 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             string scope = (string)guidAttribute.Value.FixedArguments[0].Value;
-            string name = this.Name;
+            string name = this.GetName();
 
-            if (this.Namespace != null)
-                name = this.Namespace + "." + name;
+            if (this.U8Namespace.Length > 0)
+                name = this.GetNamespace() + "." + name;
 
             return new TypeIdentifierData(scope, name);
         }

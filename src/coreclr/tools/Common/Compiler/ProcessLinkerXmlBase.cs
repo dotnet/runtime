@@ -642,20 +642,20 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!string.IsNullOrEmpty(type.Namespace))
+                if (!type.U8Namespace.IsEmpty)
                 {
-                    sb.Append(type.Namespace);
+                    sb.Append(type.GetNamespace());
                     sb.Append('.');
                 }
 
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
             }
 
             protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
                 AppendName(sb, containingType);
                 sb.Append('/');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
             }
 
 #if false

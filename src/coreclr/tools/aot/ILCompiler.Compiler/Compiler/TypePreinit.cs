@@ -1825,8 +1825,8 @@ namespace ILCompiler
             if (type.IsByRefLike
                 && type is MetadataType maybeSpan
                 && maybeSpan.Module == type.Context.SystemModule
-                && ((isReadOnlySpan && maybeSpan.Name == "ReadOnlySpan`1") || (!isReadOnlySpan && maybeSpan.Name == "Span`1"))
-                && maybeSpan.Namespace == "System"
+                && ((isReadOnlySpan && maybeSpan.U8Name.SequenceEqual("ReadOnlySpan`1"u8)) || (!isReadOnlySpan && maybeSpan.U8Name.SequenceEqual("Span`1"u8)))
+                && maybeSpan.U8Namespace.SequenceEqual("System"u8)
                 && maybeSpan.Instantiation[0] is MetadataType readOnlySpanElementType)
             {
                 elementType = readOnlySpanElementType;
@@ -1873,7 +1873,7 @@ namespace ILCompiler
             {
                 case "InitializeArray":
                     if (method.OwningType is MetadataType mdType
-                        && mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices"
+                        && mdType.U8Name.SequenceEqual("RuntimeHelpers"u8) && mdType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && mdType.Module == mdType.Context.SystemModule
                         && parameters[0] is ArrayInstance array
                         && parameters[1] is RuntimeFieldHandleValue fieldHandle
@@ -1886,7 +1886,7 @@ namespace ILCompiler
                     return false;
                 case "CreateSpan":
                     if (method.OwningType is MetadataType createSpanType
-                        && createSpanType.Name == "RuntimeHelpers" && createSpanType.Namespace == "System.Runtime.CompilerServices"
+                        && createSpanType.U8Name.SequenceEqual("RuntimeHelpers"u8) && createSpanType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && createSpanType.Module == createSpanType.Context.SystemModule
                         && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
                         && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
@@ -1926,7 +1926,7 @@ namespace ILCompiler
                 }
                 case "IsReferenceOrContainsReferences" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType isReferenceOrContainsReferencesType
-                        && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers" && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"
+                        && isReferenceOrContainsReferencesType.U8Name.SequenceEqual("RuntimeHelpers"u8) && isReferenceOrContainsReferencesType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
                 {
                     bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
@@ -1935,7 +1935,7 @@ namespace ILCompiler
                 }
                 case "GetArrayDataReference" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType getArrayDataReferenceType
-                        && getArrayDataReferenceType.Name == "MemoryMarshal" && getArrayDataReferenceType.Namespace == "System.Runtime.InteropServices"
+                        && getArrayDataReferenceType.U8Name.SequenceEqual("MemoryMarshal"u8) && getArrayDataReferenceType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
                         && getArrayDataReferenceType.Module == method.Context.SystemModule
                         && parameters[0] is ArrayInstance arrayData
                         && ((ArrayType)arrayData.Type).ElementType == method.Instantiation[0]:
@@ -1947,7 +1947,7 @@ namespace ILCompiler
 
             static bool IsSystemType(TypeDesc type)
                 => type is MetadataType typeType
-                        && typeType.Name == "Type" && typeType.Namespace == "System"
+                        && typeType.U8Name.SequenceEqual("Type"u8) && typeType.U8Namespace.SequenceEqual("System"u8)
                         && typeType.Module == typeType.Context.SystemModule;
 
             return false;
@@ -2422,8 +2422,9 @@ namespace ILCompiler
 
             private static bool IsComInterfaceEntryType(TypeDesc type)
                 => type is MetadataType mdType
-                    && mdType.Name == "ComInterfaceEntry"
-                    && mdType.ContainingType is MetadataType { Name: "ComWrappers", Namespace: "System.Runtime.InteropServices" } comWrappersType
+                    && mdType.U8Name.SequenceEqual("ComInterfaceEntry"u8)
+                    && mdType.ContainingType is MetadataType comWrappersType
+                    && comWrappersType.U8Name.SequenceEqual("ComWrappers"u8) && comWrappersType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
                     && comWrappersType.Module == comWrappersType.Context.SystemModule;
 
             public static bool IsCompatible(TypeDesc type, out TypeDesc entryType)
