@@ -29,7 +29,7 @@ internal readonly struct Thread_1 : IThread
         // first thread from the linked list node contained by the first thread.
         Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
         _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
-        _genericModeBlockSize = 5614; // size of generic mode block for watson buckets data
+        _genericModeBlockSize = 5616; // size of generic mode block for watson buckets data
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -193,6 +193,9 @@ internal readonly struct Thread_1 : IThread
         }
 
         Span<byte> span = stackalloc byte[_genericModeBlockSize];
+        if (readFrom == TargetPointer.Null)
+            return Array.Empty<byte>();
+
         _target.ReadBuffer(readFrom, span);
         return span.ToArray();
     }

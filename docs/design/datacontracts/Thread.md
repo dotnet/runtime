@@ -69,7 +69,10 @@ The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
+| `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
+| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `IdDispenser` | `HighestId` | Highest possible small thread ID |
@@ -77,6 +80,8 @@ The contract additionally depends on these data descriptors
 | `InflightTLSData` | `Next` | Pointer to next in-flight TLS data entry |
 | `InflightTLSData` | `TlsIndex` | TLS index for the in-flight static field |
 | `InflightTLSData` | `TLSData` | Object handle to the TLS data for the static field |
+| `MethodTable` | `BaseSize` | Base size of instance of this class |
+| `Object` | `m_pMethTab` | Pointer to the object's method table |
 | `ObjectHandle` | `Object` | Pointer to the managed object |
 | `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
 | `TLSIndex` | `IndexOffset` | Offset index for thread local storage |
@@ -94,6 +99,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
+| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -112,6 +118,8 @@ enum TLSIndexType
     Collectible = 1,
     DirectOnThreadLocalData = 2,
 };
+
+private readonly int _genericModeBlockSize = 5616;
 
 ThreadStoreData GetThreadStoreData()
 {
@@ -247,23 +255,22 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
     if (exceptionTrackerPtr == TargetPointer.Null)
         return Array.Empty<byte>();
-    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* Exception::ThrownObjectHandle offset */);
-
-    Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionTracker.ThrownObjectHandle);
-    if (throwableObject.Object != TargetPointer.Null)
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+    TargetPointer throwableObjectPtr = target.ReadPointer(thrownObjectHandle);
+    if (throwableObjectPtr != TargetPointer.Null)
     {
         TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
         if (watsonBuckets != TargetPointer.Null)
         {
-            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
-            readFrom = watsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>("ObjectHeaderSize");
+            uint baseSize = target.ReadPointer(target.ReadPointer(watsonBuckets + /* Object::m_pMethTab offset */) + /* MethodTable::BaseSize offset */);
+            readFrom = watsonBuckets + baseSize - _target.ReadGlobal<ulong>("ObjectHeaderSize");
         }
         else
         {
             readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
             if (readFrom == TargetPointer.Null)
             {
-                readFrom = target.ReadPointer(exceptionTrackerPtr + /* Exception::ExceptionWatsonBucketTrackerBuckets offset */);
+                readFrom = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */);
             }
             else
             {
