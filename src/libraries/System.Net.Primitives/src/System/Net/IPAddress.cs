@@ -718,7 +718,7 @@ namespace System.Net
                 // For IPv6 addresses, we also factor in scope ID.
                 if (IsIPv6)
                 {
-                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
                         MemoryMarshal.Read<uint>(numbers),
                         MemoryMarshal.Read<uint>(numbers.Slice(4)),
