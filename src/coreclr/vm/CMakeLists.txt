@@ -637,7 +637,6 @@ if (FEATURE_PORTABLE_HELPERS)
         ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
 elseif(CLR_CMAKE_TARGET_WIN32)
-
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/AllocSlow.asm
