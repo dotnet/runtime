@@ -1,14 +1,17 @@
 trigger: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - name: diagnosticsBranch
+    value: main
+
 resources:
   repositories:
     - repository: diagnostics
       type: github
-      name: dotnet/diagnostics
       endpoint: public
-
-variables:
-  - template: /eng/pipelines/common/variables.yml
+      name: dotnet/diagnostics
+      ref: $(diagnosticsBranch)
 
 schedules:
 - cron: "30 2 * * *"
