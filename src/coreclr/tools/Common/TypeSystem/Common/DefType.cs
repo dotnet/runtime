@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem
 {
@@ -18,7 +20,11 @@ namespace Internal.TypeSystem
 
         public virtual ReadOnlySpan<byte> U8Namespace => [];
 
-        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(U8Namespace);
+        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(U8Namespace
+#if NETSTANDARD
+            .ToArray()
+#endif
+            );
 
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
@@ -27,7 +33,11 @@ namespace Internal.TypeSystem
 
         public virtual ReadOnlySpan<byte> U8Name => [];
 
-        public string GetName() => System.Text.Encoding.UTF8.GetString(U8Name);
+        public string GetName() => System.Text.Encoding.UTF8.GetString(U8Name
+#if NETSTANDARD
+            .ToArray()
+#endif
+            );
 
         /// <summary>
         /// Gets the containing type of this type or null if the type is not nested.
