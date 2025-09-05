@@ -106,57 +106,38 @@ FORCEINLINE ObjHeader::ReleaseHeaderResult ObjHeader::ReleaseHeaderThinLock(DWOR
 
         if (!(syncBlockValue & SBLK_MASK_LOCK_RECLEVEL))
         {
-            while (true)
-            {
-                // We are leaving the lock
-                DWORD newValue = (syncBlockValue & (~SBLK_MASK_LOCK_THREADID));
+            // We are leaving the lock
+            DWORD newValue = (syncBlockValue & (~SBLK_MASK_LOCK_THREADID));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-                if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
+            if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
 #else
-                if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
+            if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
 #endif
-                {
-                    return ReleaseHeaderResult::Success;
-                }
-
-                YieldProcessorNormalized();
-                syncBlockValue = m_SyncBlockValue.LoadWithoutBarrier();
+            {
+                return ReleaseHeaderResult::Success;
             }
+
+            return ReleaseHeaderResult::UseSlowPath;
         }
         else
         {
-            while (true)
-            {
-                // recursion and ThinLock
-                DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
+            // recursion and ThinLock
+            DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-                if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
+            if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
 #else
-                if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
+            if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) == (LONG)syncBlockValue)
 #endif
-                {
-                    return ReleaseHeaderResult::Success;
-                }
-
-                YieldProcessorNormalized();
-                syncBlockValue = m_SyncBlockValue.LoadWithoutBarrier();
+            {
+                return ReleaseHeaderResult::Success;
             }
+
+            return ReleaseHeaderResult::UseSlowPath;
         }
     }
 
-    if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASHCODE)) == 0)
-    {
-        return ReleaseHeaderResult::UseSlowPath;
-    }
-
-    if (syncBlockValue & BIT_SBLK_SPIN_LOCK)
-    {
-        return ReleaseHeaderResult::UseSlowPath;
-    }
-
-    // This thread does not own the lock.
-    return ReleaseHeaderResult::Error;
+    return ReleaseHeaderResult::UseSlowPath;
 }
 
 #endif // _SYNCBLK_INL_
