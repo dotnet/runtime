@@ -440,7 +440,6 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;

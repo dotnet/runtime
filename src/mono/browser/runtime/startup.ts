@@ -9,7 +9,7 @@ import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, cr
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler } from "./profiler";
+import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler, TimeStamp } from "./profiler";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
@@ -64,7 +64,7 @@ export async function configureRuntimeStartup (module: DotnetModuleInternal): Pr
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
 export function configureEmscriptenStartup (module: DotnetModuleInternal): void {
-    const mark = startMeasure();
+    const startMark = startMeasure();
 
     if (!module.locateFile) {
         // this is dummy plug so that wasmBinaryFile doesn't try to use URL class
@@ -92,21 +92,8 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
     // execution order == [4] ==
     module.onRuntimeInitialized = () => onRuntimeInitializedAsync(userOnRuntimeInitialized);
     // execution order == [5] ==
-    module.postRun = [() => postRunAsync(userpostRun)];
+    module.postRun = [() => postRunAsync(userpostRun, startMark)];
     // execution order == [6] ==
-
-    module.ready.then(async () => {
-        // wait for previous stage
-        await runtimeHelpers.afterPostRun.promise;
-        // startup end
-        endMeasure(mark, MeasuredBlock.emscriptenStartup);
-        // - here we resolve the promise returned by createDotnetRuntime export
-        // - any code after createDotnetRuntime is executed now
-        runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
-    }).catch(err => {
-        runtimeHelpers.dotnetReady.promise_control.reject(err);
-    });
-    module.ready = runtimeHelpers.dotnetReady.promise;
 }
 
 function instantiateWasm (
@@ -359,7 +346,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
     runtimeHelpers.afterOnRuntimeInitialized.promise_control.resolve();
 }
 
-async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[]) {
+async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[], startMark:TimeStamp) {
     // wait for previous stage
     try {
         await runtimeHelpers.afterOnRuntimeInitialized.promise;
@@ -373,6 +360,8 @@ async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[])
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn(Module));
         endMeasure(mark, MeasuredBlock.postRun);
+        // startup end
+        endMeasure(startMark, MeasuredBlock.emscriptenStartup);
     } catch (err) {
         mono_log_error("postRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
@@ -380,6 +369,9 @@ async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[])
     }
     // signal next stage
     runtimeHelpers.afterPostRun.promise_control.resolve();
+    // - here we resolve the promise returned by createDotnetRuntime export
+    // - any code after createDotnetRuntime is executed now
+    runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
 }
 
 // runs for each re-detached worker
