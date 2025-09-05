@@ -282,6 +282,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGenerationInternal", GCInterface::GetGenerationInternal)
     FCFuncElement("GetMaxGeneration", GCInterface::GetMaxGeneration)
     FCFuncElement("SuppressFinalizeInternal", GCInterface::SuppressFinalize)
+    FCFuncElement("GetNextFinalizeableObject", GCInterface::GetNextFinalizableObject)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
