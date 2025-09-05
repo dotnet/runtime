@@ -471,11 +471,14 @@ namespace System.Globalization
             // Change span to lower and convert to rune
             if (charsSlice.Length == 2)
             {
-                return new Rune(ToLower(charsSlice[0]), ToLower(charsSlice[1]));
+                Span<char> lowerChars = stackalloc char[2];
+                ChangeCaseToLower(charsSlice, lowerChars);
+                return new Rune(lowerChars[0], lowerChars[1]);
             }
             else
             {
-                return new Rune(ToLower(charsSlice[0]));
+                char lowerChar = ToLower(charsSlice[0]);
+                return new Rune(lowerChar);
             }
         }
         public Rune ToUpper(Rune r)
@@ -488,11 +491,14 @@ namespace System.Globalization
             // Change span to upper and convert to rune
             if (charsSlice.Length == 2)
             {
-                return new Rune(ToUpper(charsSlice[0]), ToUpper(charsSlice[1]));
+                Span<char> upperChars = stackalloc char[2];
+                ChangeCaseToUpper(charsSlice, upperChars);
+                return new Rune(upperChars[0], upperChars[1]);
             }
             else
             {
-                return new Rune(ToUpper(charsSlice[0]));
+                char upperChar = ToUpper(charsSlice[0]);
+                return new Rune(upperChar);
             }
         }
 
