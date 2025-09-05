@@ -2063,7 +2063,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
