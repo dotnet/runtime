@@ -490,7 +490,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [ConditionalTheory(nameof(PlatformSupportsPss))]
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]

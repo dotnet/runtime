@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.Cng.Tests
     public static class RsaCngTests
     {
         [Theory]
-        [InlineData(0)]
         [InlineData(32)]
         [InlineData(64)]
         public static void SignVerifyHashRoundTrip(int saltLength)

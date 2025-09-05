@@ -308,7 +308,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
@@ -317,15 +316,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (RSA rsa = RSA.Create())
             {
                 var requestBuilder = new CertificateRequest("CN=Test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.CreatePss(customSaltLength));
-                var cert = requestBuilder.CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+                X509Certificate2 cert = requestBuilder.CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
 
                 var reader = new AsnReader(cert.RawData, AsnEncodingRules.DER);
-                var sequence = reader.ReadSequence();
-                var tbsCertificate = sequence.ReadEncodedValue();
-                var signatureAlgorithm = sequence.ReadEncodedValue();
-                var signature = sequence.ReadBitString(out var _);
+                AsnReader sequence = reader.ReadSequence();
+                ReadOnlyMemory<byte> tbsCertificate = sequence.ReadEncodedValue();
+                ReadOnlyMemory<byte> signatureAlgorithm = sequence.ReadEncodedValue();
+                byte[] signature = sequence.ReadBitString(out var _);
 
-                var testSaltLength = customSaltLength switch
+                int testSaltLength = customSaltLength switch
                 {
                     RSASignaturePadding.PssSaltLengthMax => 222,
                     RSASignaturePadding.PssSaltLengthIsHashLength => 32,

@@ -24,7 +24,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             RsaPss,
             RsaPssWithCustomSaltLength,
             RsaPssWithMaxSaltLength,
-            RsaPssWithZeroSaltLength,
             SlhDsa,
         }
 
@@ -41,7 +40,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             yield return new object[] { CertKind.RsaPss };
             yield return new object[] { CertKind.RsaPssWithCustomSaltLength };
             yield return new object[] { CertKind.RsaPssWithMaxSaltLength };
-            yield return new object[] { CertKind.RsaPssWithZeroSaltLength };
 
             if (SlhDsa.IsSupported)
             {
@@ -1555,12 +1553,6 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                     key = rsa;
                     req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, RSASignaturePadding.CreatePss(200));
                 }
-                else if (certKind == CertKind.RsaPssWithZeroSaltLength)
-                {
-                    var rsa = RSA.Create();
-                    key = rsa;
-                    req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, RSASignaturePadding.CreatePss(0));
-                }
                 else if (certKind == CertKind.MLDsa)
                 {
                     MLDsa mldsa = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44);
@@ -1719,7 +1711,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             X509Certificate2 cert,
             out IDisposable key)
         {
-            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss || certKind == CertKind.RsaPssWithZeroSaltLength || certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss || certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
             {
                 RSA rsa = cert.GetRSAPrivateKey();
                 key = rsa;
@@ -1758,7 +1750,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
         {
             bool signatureValid;
 
-            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss || certKind == CertKind.RsaPssWithZeroSaltLength || certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss ||certKind == CertKind.RsaPssWithCustomSaltLength || certKind == CertKind.RsaPssWithMaxSaltLength)
             {
                 using RSA rsa = cert.GetRSAPublicKey();
                 signatureValid = rsa.VerifyData(data, signature, hashAlgorithm, GetRsaPadding(certKind));
@@ -1793,7 +1785,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
         {
             return certKind switch
             {
-                CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss or CertKind.RsaPssWithCustomSaltLength or CertKind.RsaPssWithMaxSaltLength or CertKind.RsaPssWithZeroSaltLength => true,
+                CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss or CertKind.RsaPssWithCustomSaltLength or CertKind.RsaPssWithMaxSaltLength => true,
                 CertKind.MLDsa or CertKind.SlhDsa => false,
                 _ => throw new NotSupportedException(certKind.ToString())
             };
@@ -1806,7 +1798,6 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 CertKind.RsaPkcs1 => RSASignaturePadding.Pkcs1,
                 CertKind.RsaPss => RSASignaturePadding.Pss,
                 CertKind.RsaPssWithCustomSaltLength => RSASignaturePadding.CreatePss(200),
-                CertKind.RsaPssWithZeroSaltLength => RSASignaturePadding.CreatePss(0),
                 CertKind.RsaPssWithMaxSaltLength => RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax),
                 _ => null,
             };

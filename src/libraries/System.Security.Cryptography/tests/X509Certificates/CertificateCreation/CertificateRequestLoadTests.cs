@@ -375,10 +375,6 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
         }
 
         [Theory]
-        [InlineData("SHA256", 0)]
-        [InlineData("SHA384", 0)]
-        [InlineData("SHA512", 0)]
-        //[InlineData("SHA1", 0)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
         [InlineData("SHA256", 1)]
         [InlineData("SHA384", 1)]
         [InlineData("SHA512", 1)]
@@ -838,7 +834,6 @@ BgkqhkiG9w0BAQsFAAMBAA==
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(4)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]

@@ -284,6 +284,8 @@ namespace System.Security.Cryptography
 
         internal static void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize, int saltLength)
         {
+            const int MaxStackSaltLength = 128;
+
             int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.1
@@ -325,7 +327,10 @@ namespace System.Security.Cryptography
                 Debug.Assert(hasher.HashLengthInBytes == hLen);
                 // 4. Generate a random salt of length sLen
                 Debug.Assert(hLen is >= 0 and <= 64);
-                Span<byte> salt = stackalloc byte[saltLength];
+
+                Span<byte> salt = saltLength > MaxStackSaltLength
+                    ? new byte[saltLength]
+                    : stackalloc byte[saltLength];
                 RandomNumberGenerator.Fill(salt);
 
                 // 5. Let M' = an octet string of 8 zeros concat mHash concat salt

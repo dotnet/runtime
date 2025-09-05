@@ -234,6 +234,26 @@ namespace System.Security.Cryptography.Tests
             Assert.True(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength).Equals(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength)));
         }
 
+        [Theory]
+        [InlineData(2)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public void RSASignaturePadding_Constructor_ValidParameters(int saltLength)
+        {
+            RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
+            Assert.Equal(RSASignaturePaddingMode.Pss, padding.Mode);
+            Assert.Equal(saltLength, padding.PssSaltLength);
+        }
+
+        [Theory]
+        [InlineData(-3)]
+        [InlineData(0)]
+        public void RSASignaturePadding_Constructor_InvalidParameters(int saltLength)
+        {
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => RSASignaturePadding.CreatePss(saltLength));
+            Assert.Equal("saltLength", exception.ParamName);
+        }
+
         [Fact]
         public static void ExportPem_ExportRSAPublicKey()
         {

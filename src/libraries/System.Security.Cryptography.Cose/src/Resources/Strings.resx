@@ -150,6 +150,9 @@
   <data name="CoseHeaderValueErrorWhileDecoding" xml:space="preserve">
     <value>Error while decoding CBOR-encoded value, see inner exception for details.</value>
   </data>
+  <data name="CoseSignerPssSaltLengthMustBeHashLength" xml:space="preserve">
+    <value>COSE does not support custom salt length for PSS signatures.</value>
+  </data>
   <data name="CoseSignerRSAKeyNeedsPadding" xml:space="preserve">
     <value>RSA key needs a signature padding.</value>
   </data>
@@ -236,8 +239,5 @@
   </data>
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
-  </data>
-  <data name="CoseSignerPssSaltLengthMustBeHashLength" xml:space="preserve">
-    <value>COSE does not support custom salt length for PSS signatures.</value>
   </data>
 </root>

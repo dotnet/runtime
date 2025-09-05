@@ -772,9 +772,10 @@ namespace System.Security.Cryptography
                         CryptoPool.Return(repadRent, requiredBytes);
                         return valid;
                     }
-                    else if (padding == RSASignaturePadding.Pss)
+                    else if (padding.Mode == RSASignaturePaddingMode.Pss)
                     {
-                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize, RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm));
+                        int saltLength = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm);
+                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize, saltLength);
                     }
                     else
                     {

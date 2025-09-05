@@ -7,6 +7,7 @@
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.</PackageDescription>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

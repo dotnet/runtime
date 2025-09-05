@@ -735,7 +735,10 @@ namespace System.Security.Cryptography
             int bytesRequired = Interop.Crypto.GetEvpPKeySizeBytes(key);
             byte[] signature = new byte[bytesRequired];
 
-            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, signature);
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
+            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, pssSaltLength, hashAlgorithm, hash, signature);
 
             if (written != signature.Length)
             {
@@ -766,7 +769,10 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0, hashAlgorithm, hash, destination);
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
+            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, pssSaltLength, hashAlgorithm, hash, destination);
             Debug.Assert(bytesWritten == bytesRequired);
             return true;
         }
@@ -791,10 +797,13 @@ namespace System.Security.Cryptography
 
             SafeEvpPKeyHandle key = GetKey();
 
+            int pssSaltLength = padding.Mode == RSASignaturePaddingMode.Pss
+                ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                : 0;
             return Interop.Crypto.RsaVerifyHash(
                 key,
                 padding.Mode,
-                padding.Mode == RSASignaturePaddingMode.Pss ? RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm) : 0,
+                pssSaltLength,
                 hashAlgorithm,
                 hash,
                 signature);

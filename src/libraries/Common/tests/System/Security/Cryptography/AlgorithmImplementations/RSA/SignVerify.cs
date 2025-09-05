@@ -612,7 +612,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                var signatureIsValid = VerifyData(rsa, data, signature, HashAlgorithmName.SHA256, padding);
+                bool signatureIsValid = VerifyData(rsa, data, signature, HashAlgorithmName.SHA256, padding);
                 if (validateWithCorrectSaltLength)
                 {
                     Assert.True(signatureIsValid);
@@ -1673,7 +1673,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get
             {
-                int?[] saltLengths = [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 0, 1, 4];
+                int?[] saltLengths = [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 1, 4];
                 foreach (var saltLength in saltLengths)
                 {
                     var padding = saltLength is null ? RSASignaturePadding.Pss : RSASignaturePadding.CreatePss(saltLength.Value);

@@ -61,7 +61,8 @@ internal static partial class Interop
             SafeBCryptKeyHandle key,
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
-            string hashAlgorithmName, int saltLength)
+            string hashAlgorithmName,
+            int saltLength)
         {
 
             NTSTATUS status;

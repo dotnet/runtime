@@ -69,13 +69,14 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <remarks>This value is typically used in cryptographic operations where the salt length is required to
         /// be the same as the hash length.</remarks>
-        public const int PssSaltLengthIsHashLength = -1;
+        internal const int PssSaltLengthIsHashLength = -1;
+
         /// <summary>
         /// Represents the maximum allowable length, in bytes, for a PSS (Probabilistic Signature Scheme) salt.
         /// </summary>
         /// <remarks>This constant is used to define the upper limit for the salt length in PSS-based
         /// cryptographic operations. The maximum length is determined by the hash algorithm's output size.</remarks>
-        public const int PssSaltLengthMax = -2;
+        internal const int PssSaltLengthMax = -2;
 
         /// <summary>
         /// Calculates the length of the salt for PSS signatures based on the RSA key size and hash algorithm.
@@ -84,9 +85,9 @@ namespace System.Security.Cryptography
         /// <param name="rsaKeySizeInBits">The key size of the RSA key used.</param>
         /// <param name="hashAlgorithm">The hash algorithm used.</param>
         /// <returns></returns>
-        public static int CalculatePssSaltLength(int pssSaltLength, int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
+        internal static int CalculatePssSaltLength(int pssSaltLength, int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
         {
-            int emLen = (rsaKeySizeInBits + 7) / 8;
+            int emLen = (rsaKeySizeInBits + 7) >>> 3;
             int hLen = HashLength(hashAlgorithm);
             return pssSaltLength switch
             {

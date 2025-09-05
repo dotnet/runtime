@@ -59,7 +59,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
 
         [Theory]
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
