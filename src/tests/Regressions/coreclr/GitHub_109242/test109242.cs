@@ -18,4 +18,3 @@ public class Test109242
         Assembly.Load("System.Runtime");
     }
 }
-

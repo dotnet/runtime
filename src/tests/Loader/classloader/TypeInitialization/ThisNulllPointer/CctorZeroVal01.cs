@@ -68,4 +68,3 @@ public class Test_CctorZeroVal01
 		}
 	}
 }
-

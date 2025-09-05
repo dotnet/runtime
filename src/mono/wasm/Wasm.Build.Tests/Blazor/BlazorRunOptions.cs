@@ -57,4 +57,3 @@ public record BlazorRunOptions : RunOptions
         this.Test = Test;
     }
 }
-

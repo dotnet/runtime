@@ -21,4 +21,3 @@ internal class Camera
         return new Camera(pos, forward, up, right);
     }
 }
-

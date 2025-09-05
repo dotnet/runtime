@@ -73,4 +73,3 @@ public class Test_Transitive_instance01
     }
 
 }
-

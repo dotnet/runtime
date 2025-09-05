@@ -1302,4 +1302,3 @@ public unsafe class B : A
         }
     }
 }
-

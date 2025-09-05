@@ -24,5 +24,3 @@ public class Z : Io<string, string>
         return fromU[0] + fromS[0] - 68;
     }
 }
-
-

@@ -120,4 +120,3 @@ public class Test_struct01_static
     }
 
 }
-

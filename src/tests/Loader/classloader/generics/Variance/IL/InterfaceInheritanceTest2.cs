@@ -132,4 +132,3 @@ public class Test_InterfaceInheritanceTest2
 		}
   	}
 }
-

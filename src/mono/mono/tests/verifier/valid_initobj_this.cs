@@ -19,5 +19,3 @@ class MainClass
 		var f = new Foo<int> (99);
 	}
 }
-
-

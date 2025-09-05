@@ -81,5 +81,3 @@ public class Test_thread02
 		}
 	}
 }		
-
-

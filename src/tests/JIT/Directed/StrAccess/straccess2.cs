@@ -238,7 +238,3 @@ public unsafe class StrAccess2
         }
     }
 }
-
-
-
-

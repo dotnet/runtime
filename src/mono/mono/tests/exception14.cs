@@ -17,5 +17,3 @@ class Class1 {
 		}
 	}
 }
-
-

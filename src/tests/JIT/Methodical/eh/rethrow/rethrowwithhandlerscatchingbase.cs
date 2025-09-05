@@ -80,4 +80,3 @@ namespace hello_rethrowwithhandlerscatchingbase_rethrow_cs
     }
 
 }
-

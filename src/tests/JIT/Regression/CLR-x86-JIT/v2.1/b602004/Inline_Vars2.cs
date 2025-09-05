@@ -3633,5 +3633,3 @@ public class Test_Inline_Vars2
 
 
 }
-
-

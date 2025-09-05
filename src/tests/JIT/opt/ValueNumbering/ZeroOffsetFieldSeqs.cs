@@ -101,4 +101,3 @@ struct UnionPartTwo
     public long UnionTwoFldOne;
     public long UnionTwoFldTwo;
 }
-

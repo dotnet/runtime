@@ -50,4 +50,3 @@ namespace Test
         public DerivedClass(int selector) : base(selector) { }
     }
 }
-

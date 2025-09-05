@@ -72,5 +72,3 @@ public class Test_bug595776
         }
     }
 }
-
-

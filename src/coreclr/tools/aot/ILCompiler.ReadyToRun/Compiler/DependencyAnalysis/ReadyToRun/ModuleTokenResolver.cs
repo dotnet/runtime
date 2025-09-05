@@ -438,4 +438,3 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 }
-

@@ -43,4 +43,3 @@ public unsafe struct ShadowParam
         return r;
     }
 }
-

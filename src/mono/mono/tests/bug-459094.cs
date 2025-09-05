@@ -32,4 +32,3 @@ class Driver
 		return 2;
 	}
 }
-

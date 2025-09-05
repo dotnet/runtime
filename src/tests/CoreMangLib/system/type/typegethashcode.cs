@@ -114,4 +114,3 @@ public class TypeGetHashCode
     #endregion
 
 }
-

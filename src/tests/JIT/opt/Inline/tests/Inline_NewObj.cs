@@ -54,5 +54,3 @@ public class MainApp_Inline
         }
     }
 }
-
-

@@ -567,4 +567,3 @@ namespace ComWrappersTests.Common
         }
     }
 }
-

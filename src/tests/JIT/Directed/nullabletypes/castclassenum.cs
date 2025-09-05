@@ -156,4 +156,3 @@ public class Test_castclassenum
         return 100;
     }
 }
-

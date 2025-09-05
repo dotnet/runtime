@@ -17,5 +17,3 @@ public class OutParm {
 		return 0;
 	}
 }
-
-

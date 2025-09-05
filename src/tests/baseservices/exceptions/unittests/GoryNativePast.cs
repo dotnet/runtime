@@ -89,4 +89,3 @@ class GoryNativePastTest
         return _trace.Match();
     }
 }
-

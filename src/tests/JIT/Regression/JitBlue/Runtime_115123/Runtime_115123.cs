@@ -58,4 +58,3 @@ public class Runtime_115123
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void SideEffect() {}
 }
-

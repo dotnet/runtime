@@ -46,4 +46,3 @@ public class Z
         return (int) s[0] + 32;
     }
 }
-

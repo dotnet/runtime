@@ -535,4 +535,3 @@ public class XUnitLogChecker
         }
     }
 }
-

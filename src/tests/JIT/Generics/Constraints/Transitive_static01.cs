@@ -65,4 +65,3 @@ public class Test_Transitive_static01
     }
 
 }
-

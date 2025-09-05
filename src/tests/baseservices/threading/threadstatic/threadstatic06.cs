@@ -75,7 +75,3 @@ public class Test_threadstatic06
     }
 
 }
-
-
-
-

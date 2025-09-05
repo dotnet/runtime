@@ -198,5 +198,3 @@ public class Test_thread15
 		}
 	}
 }		
-
-

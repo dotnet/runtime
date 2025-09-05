@@ -596,5 +596,3 @@ new TestDescription ("USE20:T,RCIL:T", "DT:T,DA:T,DCIL:T,DTDA:T,HRA:T,HDA:T", "E
 		}
 	}
 }
-
-

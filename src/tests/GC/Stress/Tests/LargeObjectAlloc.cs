@@ -60,4 +60,3 @@ internal class Mainy
         return 100;
     }
 }
-

@@ -31,4 +31,3 @@ public class C : IFoo<A>, IFoo<B>
         System.Console.WriteLine("PASSED");
     }
 }
-

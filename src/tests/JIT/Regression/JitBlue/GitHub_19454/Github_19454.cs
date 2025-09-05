@@ -36,4 +36,3 @@ public class GitHub_19454
         r.ReadBytesInner(0);
     }
 }
-

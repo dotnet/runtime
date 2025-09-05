@@ -178,5 +178,3 @@ internal class ConcurrentRepro
         return 100;
     }
 }
-
-

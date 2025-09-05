@@ -50,5 +50,3 @@ public class C : I {
     public C(string s) { _repr = s; }
     public override string ToString() => _repr;
 }
-
-

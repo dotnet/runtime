@@ -167,6 +167,3 @@ public class TypeTestFolding
         return result;
     }
 }
-
-
-

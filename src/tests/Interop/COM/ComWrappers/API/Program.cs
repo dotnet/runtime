@@ -1278,4 +1278,3 @@ namespace ComWrappersTests
         }
     }
 }
-

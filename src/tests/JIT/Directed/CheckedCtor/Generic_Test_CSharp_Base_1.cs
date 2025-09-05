@@ -37,4 +37,3 @@ namespace Test
         public DerivedClass(int selector) : base((selector < 4) ? "LessThan4" : "AtLeast4") { }
     }
 }
-

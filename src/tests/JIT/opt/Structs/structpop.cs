@@ -80,5 +80,3 @@ public class P
         return v1 + v2;
     }
 }
-
-

@@ -121,5 +121,3 @@ public class X
         return ok ? 100 : -1;
     }
 }
-
-

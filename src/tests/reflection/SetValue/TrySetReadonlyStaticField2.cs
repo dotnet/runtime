@@ -38,5 +38,3 @@ public class TrySetReadonlyStaticField2
         });
     }
 }
-
-

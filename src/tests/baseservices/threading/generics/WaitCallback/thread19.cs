@@ -86,5 +86,3 @@ public class Test_thread19
 		}
 	}
 }		
-
-

@@ -264,5 +264,3 @@ public class Test_thread24
 		}
 	}
 }		
-
-

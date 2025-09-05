@@ -200,4 +200,3 @@ internal sealed class RayTracer
                                                                    Vector.Times(RecenterY(y), camera.Up))));
     }
 }
-

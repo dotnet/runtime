@@ -65,4 +65,3 @@ class T : B {
 		return 0;
 	}
 }
-

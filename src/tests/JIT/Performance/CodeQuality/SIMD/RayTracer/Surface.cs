@@ -22,4 +22,3 @@ internal class Surface
         this.Roughness = Roughness;
     }
 }
-

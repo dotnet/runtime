@@ -72,4 +72,3 @@ public class DevDiv_543057
         return test(5, 6);
     }
 }
-

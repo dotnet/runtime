@@ -47,4 +47,3 @@ public class Program
 		new A<int>.B();
     }
 }
-

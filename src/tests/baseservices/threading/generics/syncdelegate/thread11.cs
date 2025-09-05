@@ -76,5 +76,3 @@ public class Test_thread11
 		}
 	}
 }		
-
-
