@@ -36,14 +36,4 @@ internal readonly struct Exception_1 : IException
             exception.XCode);
     }
 
-    TargetPointer IException.GetWatsonBucketsFromThrowable(TargetPointer exceptionAddr)
-    {
-        Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(exceptionAddr);
-        if (exception.WatsonBuckets != TargetPointer.Null)
-        {
-            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
-            return exception.WatsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>(Constants.Globals.ObjectHeaderSize);
-        }
-        return TargetPointer.Null;
-    }
 }

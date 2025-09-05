@@ -48,9 +48,6 @@ ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
-TargetPointer GetThrowableObject(TargetPointer threadPointer);
-TargetPointer GetUEWatsonBuckets(TargetPointer threadPointer);
-TargetPointer GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -244,30 +241,47 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     return threadLocalStaticBase;
 }
 
-TargetPointer IThread.GetThrowableObject(TargetPointer threadPointer)
+byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 {
-    TargetPointer ExceptionTrackerPtr = target.ReadPointer(threadPointer + /* Thread::ExceptionTracker offset */);
-    if (ExceptionTrackerPtr == TargetPointer.Null)
-        return TargetPointer.Null;
-    TargetPointer throwableHandle = target.ReadPointer(ExceptionTrackerPtr + /* ExceptionInfo::ThrownObject offset */)
-    return target.ReadPointer(throwableHandle);
+    TargetPointer readFrom = TargetPointer.Null;
+    TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return Array.Empty<byte>();
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* Exception::ThrownObjectHandle offset */);
+
+    Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionTracker.ThrownObjectHandle);
+    if (throwableObject.Object != TargetPointer.Null)
+    {
+        TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
+        if (watsonBuckets != TargetPointer.Null)
+        {
+            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
+            readFrom = watsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>("ObjectHeaderSize");
+        }
+        else
+        {
+            readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+            if (readFrom == TargetPointer.Null)
+            {
+                readFrom = target.ReadPointer(exceptionTrackerPtr + /* Exception::ExceptionWatsonBucketTrackerBuckets offset */);
+            }
+            else
+            {
+                return Array.Empty<byte>();
+            }
+        }
+    }
+    else
+    {
+        readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+    }
+
+    Span<byte> span = stackalloc byte[_genericModeBlockSize];
+    if (readFrom == TargetPointer.Null)
+        return Array.Empty<byte>();
+    
+    _target.ReadBuffer(readFrom, span);
+    return span.ToArray();
 }
 
-TargetPointer IThread.GetUEWatsonBuckets(TargetPointer threadPointer)
-{
-    return target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
-}
-
-TargetPointer IThread.GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer)
-{
-    TargetPointer ExceptionTrackerPtr = target.ReadPointer(threadPointer + /* Thread::ExceptionTracker offset */);
-    if (ExceptionTrackerPtr == TargetPointer.Null)
-        return TargetPointer.Null;
-    return target.ReadPointer(ExceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */)
-}
-
-int GetGenericModeBlockSize()
-{
-    return 5614;
-}
 ```

@@ -21,7 +21,6 @@ public interface IException : IContract
 
     TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
     ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
-    TargetPointer GetWatsonBucketsFromThrowable(TargetPointer exceptionAddr) => throw new NotImplementedException();
 }
 
 public readonly struct Exception : IException

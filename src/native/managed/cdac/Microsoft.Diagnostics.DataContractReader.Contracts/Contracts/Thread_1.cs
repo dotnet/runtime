@@ -156,35 +156,44 @@ internal readonly struct Thread_1 : IThread
         }
         return threadLocalStaticBase;
     }
-    TargetPointer IThread.GetThrowableObject(TargetPointer threadPointer)
+
+    byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     {
+        TargetPointer readFrom = TargetPointer.Null;
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
         TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
         if (ExceptionTrackerPtr == TargetPointer.Null)
-            return TargetPointer.Null;
+            return Array.Empty<byte>();
         Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
         Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionTracker.ThrownObjectHandle);
-        return throwableObject.Object;
-    }
+        if (throwableObject.Object != TargetPointer.Null)
+        {
+            Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);
+            if (exception.WatsonBuckets != TargetPointer.Null)
+            {
+                Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
+                readFrom = exception.WatsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>(Constants.Globals.ObjectHeaderSize);
+            }
+            else
+            {
+                readFrom = thread.UEWatsonBucketTrackerBuckets;
+                if (readFrom == TargetPointer.Null)
+                {
+                    readFrom = exceptionTracker.ExceptionWatsonBucketTrackerBuckets;
+                }
+                else
+                {
+                    return Array.Empty<byte>();
+                }
+            }
+        }
+        else
+        {
+            readFrom = thread.UEWatsonBucketTrackerBuckets;
+        }
 
-    TargetPointer IThread.GetUEWatsonBuckets(TargetPointer threadPointer)
-    {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        return thread.UEWatsonBucketTrackerBuckets;
-    }
-
-    TargetPointer IThread.GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer)
-    {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
-        if (ExceptionTrackerPtr == TargetPointer.Null)
-            return TargetPointer.Null;
-        Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
-        return exceptionTracker.ExceptionWatsonBucketTrackerBuckets;
-    }
-
-    int IThread.GetGenericModeBlockSize()
-    {
-        return _genericModeBlockSize;
+        Span<byte> span = stackalloc byte[_genericModeBlockSize];
+        _target.ReadBuffer(readFrom, span);
+        return span.ToArray();
     }
 }

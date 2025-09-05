@@ -51,9 +51,7 @@ public interface IThread : IContract
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
-    TargetPointer GetUEWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
-    TargetPointer GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
-    int GetGenericModeBlockSize() => throw new NotImplementedException();
+    byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread
