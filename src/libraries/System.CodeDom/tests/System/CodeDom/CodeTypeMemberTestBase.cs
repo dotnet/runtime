@@ -28,7 +28,7 @@ namespace System.CodeDom.Tests
         [InlineData("Name")]
         [InlineData("")]
         [InlineData(null)]
-        public void Name_Set_Get_ReturnsExpected(string value)
+        public void Name_Set_Get_ReturnsExpected(string? value)
         {
             CodeTypeMember member = new T() { Name = value };
             Assert.Equal(value ?? string.Empty, member.Name);

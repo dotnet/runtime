@@ -45,9 +45,6 @@ namespace System.Security.Cryptography.Xml
         private const string XmlDsigMoreHMACSHA512Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512";
         private const string XmlDsigMoreHMACRIPEMD160Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
-        // defines the XML encryption processing rules
-        private EncryptedXml? _exml;
-
         //
         // public constant Url identifiers most frequently used within the XML Signature classes
         //
@@ -177,8 +174,8 @@ namespace System.Security.Cryptography.Xml
         {
             [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
             [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
-            get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
-            set => _exml = value;
+            get => field ??= new EncryptedXml(_containingDocument!); // default processing rules
+            set => field = value;
         }
 
         public Signature Signature
@@ -353,10 +350,13 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 // Do the chain verification to make sure the certificate is valid.
-                X509Chain chain = new X509Chain();
-                chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
-                bool chainVerified = chain.Build(certificate);
-                SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
+                bool chainVerified = false;
+                using (X509Chain chain = new X509Chain())
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
+                    chainVerified = chain.Build(certificate);
+                    SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
+                }
 
                 if (!chainVerified)
                 {

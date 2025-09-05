@@ -49,6 +49,93 @@ namespace System.Runtime.Intrinsics
             get => IsHardwareAccelerated;
         }
 
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.E" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.Pi" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.Tau" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.Epsilon" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NaN" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NegativeInfinity" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NegativeZero" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="ISignedNumber{TSelf}.NegativeOne" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
+        }
+
         /// <summary>Computes the absolute value of each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector that will have its absolute value computed.</param>
@@ -177,11 +264,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector128<TFrom>, Vector128<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector128<TFrom>, Vector128<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see langword="Vector128&lt;Byte&gt;" />.</summary>
@@ -1974,11 +2057,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+                return Equals(vector, Vector128<float>.NegativeInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+                return Equals(vector, Vector128<double>.NegativeInfinity.As<double, T>());
             }
             return Vector128<T>.Zero;
         }
@@ -2049,11 +2132,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector128<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector128<double>.PositiveInfinity.As<double, T>());
             }
             return Vector128<T>.Zero;
         }
@@ -2637,7 +2720,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Narrows two vector of <see cref="double"/> instances into one vector of <see cref="float" />.</summary>
+        /// <summary>Narrows two vector of <see cref="double" /> instances into one vector of <see cref="float" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="float" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2647,7 +2730,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<float> Narrow(Vector128<double> lower, Vector128<double> upper)
             => Narrow<double, float>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="short"/> instances into one vector of <see cref="sbyte" />.</summary>
+        /// <summary>Narrows two vector of <see cref="short" /> instances into one vector of <see cref="sbyte" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="sbyte" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2658,7 +2741,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<sbyte> Narrow(Vector128<short> lower, Vector128<short> upper)
             => Narrow<short, sbyte>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="int"/> instances into one vector of <see cref="short" />.</summary>
+        /// <summary>Narrows two vector of <see cref="int" /> instances into one vector of <see cref="short" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="short" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2668,7 +2751,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<short> Narrow(Vector128<int> lower, Vector128<int> upper)
             => Narrow<int, short>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="long"/> instances into one vector of <see cref="int" />.</summary>
+        /// <summary>Narrows two vector of <see cref="long" /> instances into one vector of <see cref="int" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="int" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2678,7 +2761,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<int> Narrow(Vector128<long> lower, Vector128<long> upper)
             => Narrow<long, int>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="byte"/> instances into one vector of <see cref="ushort" />.</summary>
+        /// <summary>Narrows two vector of <see cref="ushort" /> instances into one vector of <see cref="byte" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="byte" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2689,7 +2772,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<byte> Narrow(Vector128<ushort> lower, Vector128<ushort> upper)
             => Narrow<ushort, byte>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="uint"/> instances into one vector of <see cref="ushort" />.</summary>
+        /// <summary>Narrows two vector of <see cref="uint" /> instances into one vector of <see cref="ushort" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="ushort" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2700,7 +2783,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<ushort> Narrow(Vector128<uint> lower, Vector128<uint> upper)
             => Narrow<uint, ushort>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="ulong"/> instances into one vector of <see cref="uint" />.</summary>
+        /// <summary>Narrows two vector of <see cref="ulong" /> instances into one vector of <see cref="uint" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="uint" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2734,7 +2817,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Narrows two vector of <see cref="double"/> instances into one vector of <see cref="float" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="double" /> instances into one vector of <see cref="float" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="float" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2743,7 +2826,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<float> NarrowWithSaturation(Vector128<double> lower, Vector128<double> upper)
             => NarrowWithSaturation<double, float>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="short"/> instances into one vector of <see cref="sbyte" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="short" /> instances into one vector of <see cref="sbyte" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="sbyte" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2753,7 +2836,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<sbyte> NarrowWithSaturation(Vector128<short> lower, Vector128<short> upper)
             => NarrowWithSaturation<short, sbyte>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="int"/> instances into one vector of <see cref="short" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="int" /> instances into one vector of <see cref="short" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="short" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2762,7 +2845,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<short> NarrowWithSaturation(Vector128<int> lower, Vector128<int> upper)
             => NarrowWithSaturation<int, short>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="long"/> instances into one vector of <see cref="int" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="long" /> instances into one vector of <see cref="int" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="int" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2771,7 +2854,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<int> NarrowWithSaturation(Vector128<long> lower, Vector128<long> upper)
             => NarrowWithSaturation<long, int>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="byte"/> instances into one vector of <see cref="ushort" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="ushort" /> instances into one vector of <see cref="byte" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="byte" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2781,7 +2864,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<byte> NarrowWithSaturation(Vector128<ushort> lower, Vector128<ushort> upper)
             => NarrowWithSaturation<ushort, byte>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="uint"/> instances into one vector of <see cref="ushort" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="uint" /> instances into one vector of <see cref="ushort" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="ushort" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>
@@ -2791,7 +2874,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<ushort> NarrowWithSaturation(Vector128<uint> lower, Vector128<uint> upper)
             => NarrowWithSaturation<uint, ushort>(lower, upper);
 
-        /// <summary>Narrows two vector of <see cref="ulong"/> instances into one vector of <see cref="uint" /> using a saturating conversion.</summary>
+        /// <summary>Narrows two vector of <see cref="ulong" /> instances into one vector of <see cref="uint" /> using a saturating conversion.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
         /// <returns>A vector of <see cref="uint" /> containing elements narrowed with saturation from <paramref name="lower" /> and <paramref name="upper" />.</returns>

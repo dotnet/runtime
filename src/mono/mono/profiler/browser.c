@@ -25,6 +25,7 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/jit/jit.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/mini/mini-runtime.h>
 
 struct _MonoProfiler {
 	gboolean verbose;
@@ -47,7 +48,7 @@ typedef struct _ProfilerStackFrame ProfilerStackFrame;
 
 struct _ProfilerStackFrame {
 	MonoMethod *method;
-	gpointer interp_frame;
+	gpointer sp;
 	double start;
 	bool should_record;
 };
@@ -65,10 +66,29 @@ static int sample_skip_counter;
 double mono_wasm_profiler_now ();
 void mono_wasm_profiler_record (MonoMethod *method, double start);
 
+static gpointer get_last_sp ()
+{
+	// TODO add support for AOT. We need some monotonic stack pointer from WASM C/AOT.
+	// maybe MonoProfilerCallContext* could be used for that? 
+
+	MonoLMF *lmf = mono_get_lmf ();
+
+	if(((gsize)lmf->previous_lmf) & 2) {
+		MonoLMFExt *ext = (MonoLMFExt*)lmf;
+		return ext->interp_exit_data;
+	}
+
+	return NULL;
+}
+
 static bool should_record_frame (double now)
 {
 	if (sample_skip_counter < skips_per_period) {
 		return FALSE;
+	}
+
+	if (now == 0.0) {
+		now = mono_wasm_profiler_now ();
 	}
 
 	// timer resolution in non-isolated contexts: 100 microseconds (decimal number)
@@ -95,108 +115,105 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	sample_skip_counter++;
 
 	top_stack_frame_index++;
-	if (top_stack_frame_index < MAX_STACK_DEPTH) {
-		ProfilerStackFrame *newframe = &profiler_stack_frames[top_stack_frame_index];
-		double now = newframe->start = mono_wasm_profiler_now ();
-		newframe->should_record = should_record_frame (now);
-		newframe->method = method;
-		newframe->interp_frame = ctx ? ctx->interp_frame : NULL;
+	g_assertf(top_stack_frame_index < MAX_STACK_DEPTH, "Stack too deep for dev tools profiler \n");
+	ProfilerStackFrame *newframe = &profiler_stack_frames[top_stack_frame_index];
+	double now = newframe->start = mono_wasm_profiler_now ();
+	newframe->should_record = should_record_frame (now);
+	newframe->method = method;
+	newframe->sp = get_last_sp ();
+	g_assertf(newframe->sp != NULL, "method_enter: stack frame is NULL for method %s\n", mono_method_get_full_name (method));
+}
+
+static void
+record_and_mark_parent (ProfilerStackFrame *top_frame, int top_index)
+{
+	if (top_frame->should_record) {
+		if (top_index > 0) {
+			profiler_stack_frames[top_index - 1].should_record = TRUE;
+		}
+		mono_wasm_profiler_record (top_frame->method, top_frame->start);
+	}
+}
+
+static void
+pop_and_record_frames (bool leaving, MonoMethod *method)
+{
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
+	g_assert(top_stack_frame_index >= 0);
+
+	sample_skip_counter++;
+
+	// stack pointers grow down
+	gpointer sp = get_last_sp ();
+	if (sp == NULL) {
+		g_warning ("pop_and_record_frames: stack frame is NULL for method %s\n", mono_method_get_full_name (method));
+		return;
+	}
+
+	ProfilerStackFrame *top_frame;
+	while(true) {
+		g_assertf(top_stack_frame_index >= 0, "pop_and_record_frames: stack underflow\n");
+
+		top_frame = &profiler_stack_frames[top_stack_frame_index];
+		
+		// don't call mono_wasm_profiler_now until we know we need to record
+		top_frame->should_record = top_frame->should_record || should_record_frame (0.0);
+
+		g_assert (top_frame->sp <= sp);
+
+		// events from exception handling are not called for all frames
+		// we are using stack pointer to determine what is the top of the profiler stack
+		if (top_frame->sp < sp) {
+			record_and_mark_parent (top_frame, top_stack_frame_index);
+
+			// pop the top frame
+			top_stack_frame_index--;
+		}
+		else if (top_frame->sp == sp) {
+			if (leaving) {
+				g_assertf(top_frame->method == method, "pop_and_record_frames: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
+
+				record_and_mark_parent (top_frame, top_stack_frame_index);
+
+				// pop the frame we are leaving
+				top_stack_frame_index--;
+			}
+
+			return;
+		}
 	}
 }
 
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
 	g_assert(top_stack_frame_index >= 0);
 
 	sample_skip_counter++;
 
-	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
-	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
-	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
+	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_stack_frame_index];
 
-	if (!is_over) {
-		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
-		g_assertf(!ctx || !top_frame->interp_frame || top_frame->interp_frame == ctx->interp_frame, "method_exc_leave: %d interp_frame mismatch top_frame %p != leave %p\n", top_stack_frame_index, top_frame->interp_frame, ctx->interp_frame);
-	}
-
-	if (!top_frame->should_record)
-	{
-		top_frame->should_record = should_record_frame (mono_wasm_profiler_now ());
-	}
+	top_frame->should_record = top_frame->should_record || should_record_frame (0.0);
 }
 
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(top_stack_frame_index >= 0);
-	
-	sample_skip_counter++;
-
-	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
-	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
-	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
-	
-	if (!is_over) {
-		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
-		g_assertf(!ctx || !top_frame->interp_frame || top_frame->interp_frame == ctx->interp_frame, "method_exc_leave: %d interp_frame mismatch top_frame %p != leave %p\n", top_stack_frame_index, top_frame->interp_frame, ctx->interp_frame);
-	}
-	
-	// pop top frame
-	top_stack_frame_index--;
-
-	if (top_frame->should_record || should_record_frame (mono_wasm_profiler_now ()))
-	{
-		// propagate should_record to parent, if any
-		if(top_index > 0)
-		{
-			profiler_stack_frames[top_index - 1].should_record = TRUE;
-		}
-
-		mono_wasm_profiler_record (method, top_frame->start);
-	}
+	pop_and_record_frames (TRUE, method);
 }
 
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(top_stack_frame_index >= 0);
-	
-	sample_skip_counter++;
-
-	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
-	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
-	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
-	
-	if (top_frame->should_record || should_record_frame (mono_wasm_profiler_now ()))
-	{
-		// propagate should_record to parent, if any
-		if(top_index > 0)
-		{
-			profiler_stack_frames[top_index - 1].should_record = TRUE;
-		}
-
-		mono_wasm_profiler_record (method, top_frame->start);
-	}
-
-	// pop top frame
-	top_stack_frame_index--;
-
-	is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
-	if (!is_over) {
-		top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
-		top_frame = &profiler_stack_frames[top_index];
-		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
-	}
+	pop_and_record_frames (FALSE, method);
 }
 
 static void
 tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 {
-	method_leave (prof, method, NULL);
+	pop_and_record_frames (TRUE, method);
+	// TODO is this event duplicated with method_enter?
+	method_enter (prof, target, NULL);
 }
 
 #endif /* HOST_BROWSER */
@@ -384,7 +401,7 @@ mono_profiler_init_browser_devtools (const char *desc)
 MonoProfilerHandle 
 mono_profiler_init_browser_eventpipe (void)
 {
-	char *desc = g_getenv ("DOTNET_WasmPerfInstrumentation");
+	char *desc = g_getenv ("DOTNET_WasmPerformanceInstrumentation");
 	mono_profiler_init_browser_common (desc);
 	free(desc);
 	return profiler_handle;

@@ -45,18 +45,27 @@ namespace Microsoft.Extensions.Logging.Debug
 
             ArgumentNullException.ThrowIfNull(formatter);
 
-            string message = formatter(state, exception);
+            string formatted = formatter(state, exception);
 
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrEmpty(formatted) && exception == null)
             {
+                // With no formatted message or exception, there's nothing to print.
                 return;
             }
 
-            message = $"{logLevel}: {message}";
-
-            if (exception != null)
+            string message;
+            if (string.IsNullOrEmpty(formatted))
             {
-                message += Environment.NewLine + Environment.NewLine + exception;
+                System.Diagnostics.Debug.Assert(exception != null);
+                message = $"{logLevel}: {exception}";
+            }
+            else if (exception == null)
+            {
+                message = $"{logLevel}: {formatted}";
+            }
+            else
+            {
+                message = $"{logLevel}: {formatted}{Environment.NewLine}{Environment.NewLine}{exception}";
             }
 
             DebugWriteLine(message, _name);

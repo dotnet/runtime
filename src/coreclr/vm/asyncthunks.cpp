@@ -18,7 +18,7 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     _ASSERTE(methodILDecoder != NULL);
     _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
     _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(!HasILHeader());
 
     if (!IsAsyncThunkMethod())
     {
@@ -53,34 +53,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
 
     // Generate all IL associated data for JIT
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-        size_t numEH = sl.GetNumEHClauses();
-        if (numEH > 0)
-        {
-            sl.WriteEHClauses(ilResolver->AllocEHSect(numEH));
-        }
-
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *resolver = (DynamicResolver*)ilResolver;
-        *methodILDecoder = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *methodILDecoder = ilResolver->FinalizeILStub(&sl);
+    *resolver = ilResolver.Extract();
     return true;
 }
 
@@ -474,13 +448,17 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
         pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
         MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(CLASS__TASK_AWAITER_1);
+
         thTaskAwaiter = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskAwaiterOpen->GetModule(), pMTTaskAwaiterOpen->GetCl(), Instantiation(&thLogicalRetType, 1));
+
         mdGetAwaiter = CoreLibBinder::GetMethod(METHOD__TASK_1__GET_AWAITER);
-        mdGetAwaiter = pMTTask->GetParallelMethodDesc(mdGetAwaiter);
+        mdGetAwaiter = MethodDesc::FindOrCreateAssociatedMethodDesc(mdGetAwaiter, pMTTask, FALSE, Instantiation(), FALSE);
+
         mdIsCompleted = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_ISCOMPLETED);
-        mdIsCompleted = thTaskAwaiter.GetMethodTable()->GetParallelMethodDesc(mdIsCompleted);
+        mdIsCompleted = MethodDesc::FindOrCreateAssociatedMethodDesc(mdIsCompleted, thTaskAwaiter.GetMethodTable(), FALSE, Instantiation(), FALSE);
+
         mdGetResult = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_RESULT);
-        mdGetResult = thTaskAwaiter.GetMethodTable()->GetParallelMethodDesc(mdGetResult);
+        mdGetResult = MethodDesc::FindOrCreateAssociatedMethodDesc(mdGetResult, thTaskAwaiter.GetMethodTable(), FALSE, Instantiation(), FALSE);
     }
 
     DWORD localArg = 0;
@@ -564,7 +542,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         getIsCompletedToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, mdIsCompleted);
         getResultToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, mdGetResult);
     }
-    else 
+    else
     {
         getAwaiterToken = pCode->GetToken(mdGetAwaiter);
         getIsCompletedToken = pCode->GetToken(mdIsCompleted);

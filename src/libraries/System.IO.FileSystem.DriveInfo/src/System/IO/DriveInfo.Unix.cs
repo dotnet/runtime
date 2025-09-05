@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.IO
@@ -14,27 +15,22 @@ namespace System.IO
             get
             {
                 DriveType type;
-                int result = Interop.Sys.GetFormatInfoForMountPoint(Name, out type);
-                if (result == 0)
-                {
-                    return type;
-                }
-                else
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                Interop.Error error = Interop.Sys.GetDriveTypeForMountPoint(Name, out type);
 
-                    // This is one of the few properties that doesn't throw on failure,
-                    // instead returning a value from the enum.
-                    switch (errorInfo.Error)
-                    {
-                        case Interop.Error.ELOOP:
-                        case Interop.Error.ENAMETOOLONG:
-                        case Interop.Error.ENOENT:
-                        case Interop.Error.ENOTDIR:
-                            return DriveType.NoRootDirectory;
-                        default:
-                            return DriveType.Unknown;
-                    }
+                // This is one of the few properties that doesn't throw on failure,
+                // instead returning a value from the enum.
+                switch (error)
+                {
+                    case Interop.Error.SUCCESS:
+                        return type;
+
+                    case Interop.Error.ELOOP:
+                    case Interop.Error.ENAMETOOLONG:
+                    case Interop.Error.ENOENT:
+                    case Interop.Error.ENOTDIR:
+                        return DriveType.NoRootDirectory;
+                    default:
+                        return DriveType.Unknown;
                 }
             }
         }
@@ -44,7 +40,7 @@ namespace System.IO
             get
             {
                 string format;
-                CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetFormatInfoForMountPoint(Name, out format));
+                CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetFileSystemTypeNameForMountPoint(Name, out format));
                 return format;
             }
         }
@@ -79,19 +75,31 @@ namespace System.IO
             }
         }
 
+        private void CheckStatfsResultAndThrowIfNecessary(Interop.Error error)
+        {
+            if (error != Interop.Error.SUCCESS)
+            {
+                ThrowForError(error);
+            }
+        }
+
         private void CheckStatfsResultAndThrowIfNecessary(int result)
         {
             if (result != 0)
             {
-                var errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.ENOENT)
-                {
-                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name)); // match Win32
-                }
-                else
-                {
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
-                }
+                ThrowForError(Interop.Sys.GetLastError());
+            }
+        }
+
+        private void ThrowForError(Interop.Error error)
+        {
+            if (error == Interop.Error.ENOENT)
+            {
+                throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name)); // match Win32
+            }
+            else
+            {
+                throw Interop.GetExceptionForIoErrno(error.Info());
             }
         }
 

@@ -13,26 +13,26 @@ using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     // Common test setup to share across test cases.
     public class CertificateSetup : IDisposable
     {
-        public readonly X509Certificate2 serverCert;
-        public readonly X509Certificate2Collection serverChain;
-        public readonly SslStreamCertificateContext serverCertContext;
+        public X509Certificate2 ServerCert => _pkiHolder.EndEntity;
+        public X509Certificate2Collection ServerChain => _pkiHolder.IssuerChain;
+
+        private readonly Configuration.Certificates.PkiHolder _pkiHolder;
 
         public CertificateSetup()
         {
-            (serverCert, serverChain) = System.Net.Test.Common.Configuration.Certificates.GenerateCertificates("localhost", nameof(SmtpClientTlsTest<>));
-            serverCertContext = SslStreamCertificateContext.Create(serverCert, serverChain);
+            _pkiHolder = Configuration.Certificates.GenerateCertificates("localhost", nameof(SmtpClientTlsTest<>), longChain: true);
         }
+
+        public SslStreamCertificateContext CreateSslStreamCertificateContext() => _pkiHolder.CreateSslStreamCertificateContext();
 
         public void Dispose()
         {
-            serverCert.Dispose();
-            foreach (var c in serverChain)
-            {
-                c.Dispose();
-            }
+            _pkiHolder.Dispose();
         }
     }
 
@@ -47,7 +47,7 @@ namespace System.Net.Mail.Tests
             _certificateSetup = certificateSetup;
             Server.SslOptions = new SslServerAuthenticationOptions
             {
-                ServerCertificateContext = _certificateSetup.serverCertContext,
+                ServerCertificateContext = _certificateSetup.CreateSslStreamCertificateContext(),
                 ClientCertificateRequired = false,
             };
 
@@ -107,6 +107,27 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public async Task EnableSsl_NoExtendedHello_NoTls()
+        {
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
+
+            Server.OnCommandReceived = (command, arg) =>
+            {
+                if (string.Equals(command, "EHLO", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "502 Not implemented";
+                }
+
+                return null;
+            };
+
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            await SendMail<SmtpException>(msg);
+        }
+
+        [Fact]
         public async Task DisableSslServerSupport_NoTls()
         {
 
@@ -137,7 +158,7 @@ namespace System.Net.Mail.Tests
         public async Task ClientCertificateRequired_Sent()
         {
             Server.SslOptions.ClientCertificateRequired = true;
-            X509Certificate2 clientCert = _certificateSetup.serverCert; // use the server cert as a client cert for testing
+            X509Certificate2 clientCert = _certificateSetup.ServerCert; // use the server cert as a client cert for testing
             X509Certificate2? receivedClientCert = null;
             Server.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {

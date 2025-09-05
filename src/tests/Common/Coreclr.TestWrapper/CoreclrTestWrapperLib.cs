@@ -293,7 +293,7 @@ namespace CoreclrTestLib
             }
             if (collectedDump)
             {
-                TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+                TryPrintStackTraceFromWindowsDmp(crashDumpPath, outputWriter);
             }
             return collectedDump;
         }
@@ -335,6 +335,28 @@ namespace CoreclrTestLib
                 Console.WriteLine(error);
 
                 TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
+
+                // Ensure the dump is accessible by current user
+                Process chown = new Process();
+                chown.StartInfo.FileName = "sudo";
+                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
+
+                chown.StartInfo.UseShellExecute = false;
+                chown.StartInfo.RedirectStandardOutput = true;
+                chown.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
+                chown.Start();
+                copyOutput = chown.StandardOutput.ReadToEndAsync();
+                copyError = chown.StandardError.ReadToEndAsync();
+
+                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+                Task.WaitAll(copyError, copyOutput);
+                Console.WriteLine("chown stdout:");
+                Console.WriteLine(copyOutput.Result);
+                Console.WriteLine("chown stderr:");
+                Console.WriteLine(copyError.Result);
             }
             else
             {
@@ -642,7 +664,7 @@ namespace CoreclrTestLib
             }
         }
 
-        public static bool TryPrintStackTraceFromDmp(string dmpFile, TextWriter outputWriter)
+        public static bool TryPrintStackTraceFromWindowsDmp(string dmpFile, TextWriter outputWriter)
         {
             string? targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
             if (string.IsNullOrEmpty(targetArchitecture))
@@ -659,9 +681,17 @@ namespace CoreclrTestLib
             }
 
             string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+            
+            string corDllArg = string.Empty;
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            if (coreRoot is not null)
+            {
+                corDllArg = $".cordll -lp \"{coreRoot}\"";
+            }
 
             var cdbScriptPath = Path.GetTempFileName();
             File.WriteAllText(cdbScriptPath, $$"""
+                {{ corDllArg }}
                 .load {{sosPath}}
                 ~*k
                 !clrstack -f -all
@@ -830,7 +860,7 @@ namespace CoreclrTestLib
                                             break;
                                         }
                                         outputWriter.WriteLine($"Processing {dmpFile.FullName}");
-                                        TryPrintStackTraceFromDmp(dmpFile.FullName, outputWriter);
+                                        TryPrintStackTraceFromWindowsDmp(dmpFile.FullName, outputWriter);
                                     }
                                 }
                             }

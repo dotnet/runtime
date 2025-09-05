@@ -148,7 +148,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
     {
         strTokenFormatting.Printf("%d", token);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
@@ -357,9 +357,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARG - (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
+                static_assert(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
+                static_assert(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -373,9 +373,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARGA - (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
+                static_assert(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
+                static_assert(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -2517,7 +2517,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
 
         if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
-            // ndirect native sig never has a 'this' pointer
+            // PInvoke native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 
@@ -2680,7 +2680,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
     STANDARD_VM_CONTRACT;
     // Turn everything into blittable primitives. The reason this method is needed are
     // byrefs which are OK only when they ref stack data or are pinned. This condition
-    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+    // cannot be verified by code:PInvoke.MarshalingRequired so we explicitly get rid
     // of them here.
     bool again;
     BYTE* elementType = pLoc->ElementType;

@@ -27,8 +27,7 @@
     <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
-    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
+    <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
@@ -46,7 +45,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
@@ -81,74 +79,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
-    <PropertyGroup>
-      <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
-      <_WasmTimezonesBundleSourceFile>wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
-      <_WasmTimezonesBundleArchive>$(WasmObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
-      <_WasmTimezonesSourcesRsp>$(WasmObjDir)\wasm-bundled-timezones-sources.rsp</_WasmTimezonesSourcesRsp>
-      <_WasmTimezonesArchiveRsp>$(WasmObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
-    </PropertyGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
-    </ItemGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmTimezonesInternal>
-    </ItemGroup>
-    <!-- TODO make this incremental compilation -->
-    <EmitBundleSourceFiles
-      FilesToBundle="@(_WasmTimezonesInternal)"
-      BundleRegistrationFunctionName="mono_register_timezones_bundle"
-      BundleFile="$(_WasmTimezonesBundleSourceFile)"
-      OutputDirectory="$(WasmObjDir)">
-      <Output TaskParameter="BundledResources" ItemName="BundledWasmTimezones" />
-    </EmitBundleSourceFiles>
 
-    <ItemGroup>
-      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(BundledWasmTimezones.DestinationFile)).Replace('\','/'))" />
-      <_WasmBundleTimezonesSources Include="$(_WasmTimezonesBundleSourceFile)" />
-    </ItemGroup>
-    <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
-      Overwrite="true"
-      Lines="@(_WasmBundleTimezonesSources, ' ')"
-      WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c @$(_WasmTimezonesSourcesRsp)"
-          WorkingDirectory="$(WasmObjDir)"
-          EmSdkPath="$(EMSDK_PATH)"
-          ConsoleToMsBuild="true"
-          IgnoreStandardErrorWarningFormat="true">
-    </RunWithEmSdkEnv>
-    <ItemGroup>
-      <WasmBundleTimezonesObjects Include="%(_WasmBundleTimezonesSources.Filename).o" />
-    </ItemGroup>
-    <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
-      Overwrite="true"
-      Lines="@(WasmBundleTimezonesObjects, ' ')"
-      WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmSdkLLVMAr) cs -r $(_WasmTimezonesBundleArchive) @$(_WasmTimezonesArchiveRsp)"
-          EmSdkPath="$(EMSDK_PATH)"
-          WorkingDirectory="$(WasmObjDir)"
-          ConsoleToMsBuild="true"
-          IgnoreStandardErrorWarningFormat="true">
-    </RunWithEmSdkEnv>
-
-    <ItemGroup>
-      <_WasmArchivedTimezones Include="$(WasmObjDir)\wasm-bundled-timezones.a" />
-    </ItemGroup>
-
-    <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
-    <ItemGroup>
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\$(_WasmTimezonesBundleSourceFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(BundledWasmTimezones.DestinationFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasmObjDir)\%(WasmBundleTimezonesObjects)" />
-    </ItemGroup>
-    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
-  </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
 
@@ -320,6 +251,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <!-- keep in sync with _WasmNativeWorkloadNeeded -->
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -339,9 +271,11 @@
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
-      { "identity": "WasmPerfTracing",              "defaultValueInRuntimePack": "$(WasmPerfTracing)" },
+      { "identity": "EnableDiagnostics",            "defaultValueInRuntimePack": "$(EnableDiagnostics)" },
       { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
-      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
+      { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" },
+      { "identity": "EmccInitialHeapSize",          "defaultValueInRuntimePack": "$(EmccInitialHeapSize)" },
+      { "identity": "RunAOTCompilation",            "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }
@@ -371,7 +305,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;GenerateTimezonesArchive;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -426,8 +360,8 @@
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <_CmakeEnvironmentVariable Include="WASM_PERFTRACING=1" Condition="'$(WasmPerfTracing)' == 'true'" />
-      <_CmakeEnvironmentVariable Include="WASM_PERFTRACING=0" Condition="'$(WasmPerfTracing)' != 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
@@ -472,8 +406,7 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       @(_WasmArchivedTimezones);"
+                       @(ICULibNativeFiles);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -516,7 +449,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

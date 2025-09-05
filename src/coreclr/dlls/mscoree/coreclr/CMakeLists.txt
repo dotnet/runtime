@@ -56,23 +56,30 @@ endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
-add_library_clr(coreclr
-    SHARED
-    ${CLR_SOURCES}
-)
+if (NOT CLR_CMAKE_HOST_ARCH_WASM)
+    add_library_clr(coreclr
+        SHARED
+        ${CLR_SOURCES}
+    )
 
-add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
-add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
+    add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
+    add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
 
-add_dependencies(coreclr coreclr_def)
-add_dependencies(coreclr coreclr_exports)
+    add_dependencies(coreclr coreclr_def)
+    add_dependencies(coreclr coreclr_exports)
 
-set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
-set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+    set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+    set(LIB_CORDBEE cordbee_wks)
+    set(LIB_INTEROP interop)
+    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+    set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
+    set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-if (CLR_CMAKE_HOST_UNIX)
+if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
-endif (CLR_CMAKE_HOST_UNIX)
+endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
@@ -80,7 +87,7 @@ endif (CLR_CMAKE_HOST_UNIX)
 set(CORECLR_LIBRARIES
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    cordbee_wks
+    ${LIB_CORDBEE}
     debug-pal
     ${LIB_UNWINDER}
     v3binder
@@ -95,11 +102,18 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     System.Globalization.Native-Static
-    interop
+    ${LIB_INTEROP}
     coreclrminipal
     gc_pal
-    cdac_contract_descriptor
+    ${LIB_CDAC_CONTRACT_DESCRIPTOR}
+    ${LIB_CDAC_GC_WKS_DESCRIPTOR}
 )
+
+if (FEATURE_SVR_GC)
+    list(APPEND CORECLR_LIBRARIES
+        ${LIB_CDAC_GC_SVR_DESCRIPTOR}
+    )
+endif(FEATURE_SVR_GC)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND CORECLR_LIBRARIES
@@ -168,20 +182,41 @@ if(FEATURE_PERFTRACING)
     endif(CLR_CMAKE_TARGET_LINUX)
 endif(FEATURE_PERFTRACING)
 
-if(FEATURE_MERGE_JIT_AND_ENGINE)
-    set(CLRJIT_STATIC clrjit_static)
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
+if (FEATURE_STATICALLY_LINKED)
+    if (FEATURE_JIT)
+        set(CLRJIT_STATIC clrjit_static gcinfo)
+    endif(FEATURE_JIT)
+    if (FEATURE_INTERPRETER)
+        set(CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
+    endif(FEATURE_INTERPRETER)
+endif(FEATURE_STATICALLY_LINKED)
+
+if(FEATURE_JIT)
+    set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
+endif(FEATURE_JIT)
+
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+    set(CEE_WKS_STATIC cee_wks_mergeable)
+else()
+    set(CEE_WKS_STATIC cee_wks)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 
-target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks_core cee_wks ${FOUNDATION})
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core clrjit_static cee_wks_mergeable ${FOUNDATION})
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+    target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
+endif()
+
+if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     target_link_libraries(coreclr_static
         PUBLIC
         coreclrminipal_objects
@@ -227,10 +262,13 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
-    install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
-endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+    install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
+    install_clr(TARGETS coreclr_static DESTINATIONS . COMPONENT runtime)
+endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

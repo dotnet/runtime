@@ -5,7 +5,8 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS)
+#if defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -70,8 +71,22 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 
     return state.returnOffs;
 }
+#else // USE_GC_INFO_DECODER
 
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+// Find the first interruptible point in the range [offs .. endOffs) (the beginning of the range is inclusive,
+// the end is exclusive). Return -1 if no such point exists.
+unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
+{
+    EECodeInfo *codeInfo = pCF->GetCodeInfo();
+    hdrInfo info = { 0 };
+    PTR_CBYTE table = codeInfo->DecodeGCHdrInfo(&info, offs);
+    // NOTE: We make an assumption that we are not searching for the main function so we can ignore the
+    // prolog/epilog info.
+    return ::FindFirstInterruptiblePoint(&info, table, offs, endOffs);
+}
+
+#endif
+#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
@@ -95,7 +110,7 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 // there's no context provided by the caller).
 // See code:getMethodSigInternal
 //
-inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
+bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -317,37 +332,27 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS)
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
-                GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-                GcInfoDecoder _gcInfoDecoder(
-                                    gcInfoToken,
-                                    DECODE_CODE_LENGTH
-                                    );
+                // We're in a special case of unwinding from a funclet, and resuming execution in
+                // another catch funclet associated with same parent function. We need to report roots.
+                // Reporting at the original throw site gives incorrect liveness information. We choose to
+                // report the liveness information at the first interruptible instruction of the catch funclet
+                // that we are going to execute. We also only report stack slots, since no registers can be
+                // live at the first instruction of a handler, except the catch object, which the VM protects
+                // specially. If the catch funclet has not interruptible point, we fall back and just report
+                // what we used to: at the original throw instruction. This might lead to bad GC behavior
+                // if the liveness is not correct.
+                const EE_ILEXCEPTION_CLAUSE& ehClauseForCatch = pCF->GetEHClauseForCatch();
+                relOffsetOverride = FindFirstInterruptiblePoint(pCF, ehClauseForCatch.HandlerStartPC,
+                                                                ehClauseForCatch.HandlerEndPC);
+                _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
 
-                if(_gcInfoDecoder.WantsReportOnlyLeaf())
-                {
-                    // We're in a special case of unwinding from a funclet, and resuming execution in
-                    // another catch funclet associated with same parent function. We need to report roots.
-                    // Reporting at the original throw site gives incorrect liveness information. We choose to
-                    // report the liveness information at the first interruptible instruction of the catch funclet
-                    // that we are going to execute. We also only report stack slots, since no registers can be
-                    // live at the first instruction of a handler, except the catch object, which the VM protects
-                    // specially. If the catch funclet has not interruptible point, we fall back and just report
-                    // what we used to: at the original throw instruction. This might lead to bad GC behavior
-                    // if the liveness is not correct.
-                    const EE_ILEXCEPTION_CLAUSE& ehClauseForCatch = pCF->GetEHClauseForCatch();
-                    relOffsetOverride = FindFirstInterruptiblePoint(pCF, ehClauseForCatch.HandlerStartPC,
-                                                                    ehClauseForCatch.HandlerEndPC);
-                    _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
-
-                    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
-                        relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
-                }
-
+                STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
+                    relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // FEATURE_EH_FUNCLETS
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),

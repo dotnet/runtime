@@ -26,7 +26,7 @@ const DiagnosticsIpcHeader _ds_ipc_generic_error_header = {
 	(uint16_t)0x0000
 };
 
-static uint8_t _ds_ipc_advertise_cooike_v1 [EP_GUID_SIZE] = { 0 };
+static uint8_t _ds_ipc_advertise_cookie_v1 [EP_GUID_SIZE] = { 0 };
 
 /*
  * Forward declares of all static functions.
@@ -74,13 +74,13 @@ ipc_message_try_parse_string_utf16_t_byte_array (
 uint8_t *
 ds_ipc_advertise_cookie_v1_get (void)
 {
-	return _ds_ipc_advertise_cooike_v1;
+	return _ds_ipc_advertise_cookie_v1;
 }
 
 void
 ds_ipc_advertise_cookie_v1_init (void)
 {
-	ep_thread_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
+	ep_thread_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cookie_v1, EP_GUID_SIZE);
 }
 
 /**
@@ -98,7 +98,7 @@ ds_ipc_advertise_cookie_v1_init (void)
 * 2 bytes  - unused 2 byte field for futureproofing
 */
 bool
-ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream)
+ds_ipc_advertise_v1_send (DiagnosticsIpcStream *stream)
 {
 	uint8_t advertise_buffer [DOTNET_IPC_V1_ADVERTISE_SIZE];
 	uint8_t *cookie = ds_ipc_advertise_cookie_v1_get ();
@@ -426,15 +426,15 @@ ds_ipc_message_try_parse_bool (
 	uint32_t *buffer_len,
 	bool *value)
 {
-    EP_ASSERT (buffer != NULL);
-    EP_ASSERT (buffer_len != NULL);
-    EP_ASSERT (value != NULL);
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (value != NULL);
 
-    uint8_t temp_value;
-    bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)&temp_value, 1);
-    if (result)
-        *value = temp_value == 0 ? false : true;
-    return result;
+	uint8_t temp_value;
+	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)&temp_value, 1);
+	if (result)
+		*value = temp_value == 0 ? false : true;
+	return result;
 }
 
 bool
@@ -451,6 +451,45 @@ ds_ipc_message_try_parse_uint32_t (
 	if (result)
 		*value = ep_rt_val_uint32_t (*value);
 	return result;
+}
+
+bool
+ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	ep_char8_t **string_utf8)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (string_utf8 != NULL);
+
+	bool result = false;
+
+	uint8_t *byte_array = NULL;
+	uint32_t byte_array_len = 0;
+
+	*string_utf8 = NULL;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &byte_array, &byte_array_len));
+
+	if (byte_array) {
+		*string_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)byte_array);
+		ep_raise_error_if_nok (*string_utf8 != NULL);
+
+		ep_rt_byte_array_free (byte_array);
+		byte_array = NULL;
+	}
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	ep_rt_byte_array_free (byte_array);
+	ep_rt_utf8_string_free (*string_utf8);
+	*string_utf8 = NULL;
+	ep_exit_error_handler ();
 }
 
 bool

@@ -247,10 +247,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     cancellationToken).ConfigureAwait(false))
                 throw new InvalidDataException(SR.EOCDNotFound);
 
+            long eocdStart = _archiveStream.Position;
+
             // read the EOCD
             ZipEndOfCentralDirectoryBlock eocd = await ZipEndOfCentralDirectoryBlock.ReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
 
-            ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
+            ReadEndOfCentralDirectoryInnerWork(eocd);
 
             await TryReadZip64EndOfCentralDirectoryAsync(eocd, eocdStart, cancellationToken).ConfigureAwait(false);
 
@@ -283,6 +285,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             eocd.NumberOfEntriesInTheCentralDirectory == ZipHelper.Mask16Bit)
         {
             // Read Zip64 End of Central Directory Locator
+
+            // Check if there's enough space before the EOCD to look for the Zip64 EOCDL
+            if (eocdStart < Zip64EndOfCentralDirectoryLocator.TotalSize)
+            {
+                throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+            }
 
             // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
             _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);

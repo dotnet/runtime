@@ -141,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csSynchProcessLock;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -1298,8 +1298,8 @@ namespace CorUnix
             goto I_exit;
         }
 
-        InternalInitializeCriticalSection(&s_csSynchProcessLock);
-        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
+        minipal_mutex_init(&s_csSynchProcessLock);
+        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
         pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
@@ -1762,9 +1762,9 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
-                        tccMillieSecondsToMicroSeconds;
-                    tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                    tv.tv_usec = (iTimeout % tccSecondsToMilliSeconds) *
+                        tccMilliSecondsToMicroSeconds;
+                    tv.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                     ptv = &tv;
                 }
 
@@ -1793,9 +1793,9 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
-                            tccMillieSecondsToNanoSeconds;
-                        ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                        ts.tv_nsec = (iTimeout % tccSecondsToMilliSeconds) *
+                            tccMilliSecondsToNanoSeconds;
+                        ts.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                         pts = &ts;
                     }
 
@@ -2343,7 +2343,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         fMonitoredProcessesLock = true;
 
@@ -2392,7 +2392,7 @@ namespace CorUnix
         }
 
         // Unlock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -2412,8 +2412,7 @@ namespace CorUnix
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent,
-                                         &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         return palErr;
@@ -2438,7 +2437,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
@@ -2477,7 +2476,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -2536,7 +2535,7 @@ namespace CorUnix
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
@@ -2581,7 +2580,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -2591,7 +2590,7 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_enter(&s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
 
             // Start from the beginning of the exited processes list
@@ -2651,7 +2650,7 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         if (fLocalSynchLock)
@@ -2677,7 +2676,7 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         while (m_pmplnMonitoredProcesses)
         {
@@ -2689,7 +2688,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
     }
 
     /*++
@@ -3579,8 +3578,8 @@ namespace CorUnix
 #endif
         if (0 == iRet)
         {
-            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
-            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMillieSeconds) * tccMillieSecondsToNanoSeconds;
+            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;
+            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
             while (ptsAbsTmo->tv_nsec >= tccSecondsToNanoSeconds)
             {
                 ptsAbsTmo->tv_sec  += 1;

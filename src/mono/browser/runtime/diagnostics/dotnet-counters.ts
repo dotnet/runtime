@@ -9,7 +9,7 @@ import { Module } from "./globals";
 import { serverSession, setupJsClient } from "./diagnostics-js";
 import { loaderHelpers } from "./globals";
 
-export function collectPerfCounters (options?:DiagnosticCommandOptions):Promise<Uint8Array[]> {
+export function collectMetrics (options?:DiagnosticCommandOptions):Promise<Uint8Array[]> {
     if (!options) options = {};
     if (!serverSession) {
         throw new Error("No active JS diagnostic session");

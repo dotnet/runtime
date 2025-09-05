@@ -3538,23 +3538,30 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
-        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
+        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            ISymbolNode entryPoint;
-            if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+            // We never return a method handle from the managed implementation of this method today
+            if (pMethod != null)
+                *pMethod = null;
+
+            if (pNativeEntrypoint != null)
             {
-                entryPoint = GetHelperFtnUncached(ftnNum);
-                _helperCache.Add(ftnNum, entryPoint);
-            }
-            if (entryPoint.RepresentsIndirectionCell)
-            {
-                ppIndirection = (void*)ObjectToHandle(entryPoint);
-                return null;
-            }
-            else
-            {
-                ppIndirection = null;
-                return (void*)ObjectToHandle(entryPoint);
+                ISymbolNode entryPoint;
+                if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+                {
+                    entryPoint = GetHelperFtnUncached(ftnNum);
+                    _helperCache.Add(ftnNum, entryPoint);
+                }
+                if (entryPoint.RepresentsIndirectionCell)
+                {
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->accessType = InfoAccessType.IAT_PVALUE;
+                }
+                else
+                {
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->accessType = InfoAccessType.IAT_VALUE;
+                }
             }
         }
 
@@ -3627,8 +3634,17 @@ namespace Internal.JitInterface
             }
         }
 
+        private void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+        { throw new NotImplementedException("GetCookieForInterpreterCalliSig"); }
+
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
-        { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
+        {
+#if READYTORUN
+            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(GetCookieForPInvokeCalliSig)}");
+#else
+            throw new NotImplementedException(nameof(GetCookieForPInvokeCalliSig));
+#endif
+        }
 #pragma warning disable CA1822 // Mark members as static
         private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
 #pragma warning restore CA1822 // Mark members as static
@@ -3658,10 +3674,8 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
+        private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
-        private bool canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-        { throw new NotImplementedException("canGetVarArgsHandle"); }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
         {
@@ -4222,8 +4236,8 @@ namespace Internal.JitInterface
             {
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_X86Base));
                     break;
 
                 case TargetArchitecture.ARM64:

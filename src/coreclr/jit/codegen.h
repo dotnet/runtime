@@ -47,25 +47,25 @@ public:
 
 private:
 #if defined(TARGET_XARCH)
-    // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
-    void genSSE2BitwiseOp(GenTree* treeNode);
+    // Generates intrinsic code for the given tree as "Operand BitWiseOp BitMask"
+    void genIntrinsicBitwiseOp(GenTree* treeNode);
 
-    // Generates SSE41 code for the given tree as a round operation
-    void genSSE41RoundOp(GenTreeOp* treeNode);
+    // Generates intrinsic code for the given tree as a round operation
+    void genIntrinsicRoundOp(GenTreeOp* treeNode);
 
     instruction simdAlignedMovIns()
     {
         // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
+        return compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
     instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
         // but vmovdqu has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqu : INS_movups;
+        return compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
 #endif // defined(TARGET_XARCH)
 
@@ -515,8 +515,12 @@ protected:
 #if defined(TARGET_XARCH)
 
     // Save/Restore callee saved float regs to stack
-    void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
-    void genRestoreCalleeSavedFltRegs(unsigned lclFrameSize);
+    void genPreserveCalleeSavedFltRegs();
+    void genRestoreCalleeSavedFltRegs();
+
+    // Generate vzeroupper instruction to clear AVX state if necessary
+    void genClearAvxStateInProlog();
+    void genClearAvxStateInEpilog();
 
 #endif // TARGET_XARCH
 
@@ -556,6 +560,10 @@ protected:
 
 #if defined(TARGET_XARCH)
     unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+#ifdef TARGET_AMD64
+    void     genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs);
+    unsigned genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs);
+#endif // TARGET_AMD64
 #endif // !defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
@@ -734,6 +742,7 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
+    bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);
@@ -868,9 +877,6 @@ protected:
     void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
-#if FEATURE_ARG_SPLIT
-    void genPutArgSplit(GenTreePutArgSplit* treeNode);
-#endif // FEATURE_ARG_SPLIT
 
 #if defined(TARGET_XARCH)
     unsigned getBaseVarForPutArgStk(GenTree* treeNode);
@@ -936,16 +942,9 @@ protected:
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
-    void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
     void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
 
@@ -1093,10 +1092,6 @@ protected:
                                    regNumber         dstReg,
                                    regNumber         srcReg,
                                    regNumber         sizeReg);
-#if FEATURE_ARG_SPLIT
-    void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
-#endif // FEATURE_ARG_SPLIT
-
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -1343,7 +1338,7 @@ public:
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif
 
-    void inst_SET(emitJumpKind condition, regNumber reg);
+    void inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
 
@@ -1595,6 +1590,10 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
+#if defined(TARGET_AMD64)
+    void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);
+#endif // defined(TARGET_AMD64)
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);

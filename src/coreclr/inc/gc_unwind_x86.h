@@ -409,4 +409,9 @@ bool IsInNoGCRegion(hdrInfo   * infoPtr,
                     PTR_CBYTE   table,
                     unsigned    curOffset);
 
+unsigned FindFirstInterruptiblePoint(hdrInfo   * infoPtr,
+                                     PTR_CBYTE   table,
+                                     unsigned    offs,
+                                     unsigned    endOffs);
+
 #endif // _UNWIND_X86_H

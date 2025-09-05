@@ -1420,39 +1420,43 @@ namespace System
             }
             else if (typeof(TOther) == typeof(uint))
             {
+#if MONO
                 uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
                                     (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+#else
+                uint actualResult = (uint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
+#if MONO
                 ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
                                      (value <= ulong.MinValue) ? ulong.MinValue :
                                      IsNaN(value) ? 0 : (ulong)value;
+#else
+                ulong actualResult = (ulong)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualResult = (value >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
-                                       (value <= 0.0) ? UInt128.MinValue : (UInt128)value;
+                UInt128 actualResult = (UInt128)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-#if TARGET_64BIT
-                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
-                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
-                result = (TOther)(object)actualResult;
-                return true;
+#if MONO
+                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value <= nuint.MinValue) ? nuint.MinValue : (nuint)value;
 #else
-                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
-                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+                nuint actualResult = (nuint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
-#endif
             }
             else
             {

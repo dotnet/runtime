@@ -44,9 +44,6 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
 char *mono_method_full_name (MonoMethod *method, int32_t signature);
 
-#ifndef INVARIANT_TIMEZONE
-extern void mono_register_timezones_bundle (void);
-#endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
@@ -192,12 +189,6 @@ mono_wasm_load_runtime (int debug_level, int propertyCount, const char **propert
 #endif
 
 	monovm_initialize (propertyCount, propertyKeys, propertyValues);
-
-#ifndef INVARIANT_TIMEZONE
-	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
-	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
-		mono_register_timezones_bundle ();
-#endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
@@ -521,9 +512,12 @@ EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
 	MONO_ENTER_GC_UNSAFE;
 	const char *method_name = mono_method_get_name (method);
 	// starts with .ctor or .cctor
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+	if (!method_name) {
+		res = strdup ("<unknown>");
+	} else if (method_name && mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (method_name) < 7) {
 		res = (char *) malloc (128);
 		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
+		res[127] = '\0';
 	} else {
 		res = strdup (method_name);
 	}

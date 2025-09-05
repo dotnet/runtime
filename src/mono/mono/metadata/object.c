@@ -906,9 +906,13 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 			guint32 field_iter = 1;
 			guint32 field_instance_offset = field_offset;
+			int field_size = 0;
 			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
-			if (m_class_is_inlinearray (p))
+			if (m_class_is_inlinearray (p)) {
+				int align;
 				field_iter = mono_class_get_inlinearray_value (p);
+				field_size = mono_type_size (field->type, &align);
+			}
 
 			if (field_iter > 500)
 				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
@@ -973,7 +977,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					break;
 				}
 
-				field_instance_offset += field_offset;
+				field_instance_offset += field_size;
 				field_iter--;
 			}
 		}
@@ -1307,7 +1311,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
  *   The IMT slot is embedded into AOTed code, so this must return the same value
  * for the same method across all executions. This means:
  * - pointers shouldn't be used as hash values.
- * - mono_metadata_str_hash () should be used for hashing strings.
  */
 guint32
 mono_method_get_imt_slot (MonoMethod *method)
@@ -1344,8 +1347,8 @@ mono_method_get_imt_slot (MonoMethod *method)
 
 	/* Initialize hashes */
 	hashes [0] = m_class_get_name_hash (method->klass);
-	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
-	hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [1] = g_str_hash (m_class_get_name_space (method->klass));
+	hashes [2] = g_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
 		hashes [4 + i] = mono_metadata_type_hash (sig->params [i]);

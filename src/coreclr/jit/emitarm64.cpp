@@ -2459,6 +2459,13 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return (imm >= -256) && (imm <= 255);
 }
 
+// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm)
+{
+    // TODO-SVE: This assumes 128bit SVE.
+    return ((imm % 16) == 0 && (imm / 16) <= 255 && (imm / 16) >= -256);
+}
+
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
 {
@@ -14507,7 +14514,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         int   offset = 0;
         DWORD lsl    = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)

@@ -1,14 +1,15 @@
 <Project>
   <PropertyGroup>
-    <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
-    <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(OS)' == 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(OS)' != 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
     <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' == 'true'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'android' and '$(OS)' != 'Windows_NT'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'android' and '$(OS)' == 'Windows_NT'">AndroidRunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT'">WasiRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' == 'Windows_NT'">WasiRunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
@@ -172,7 +173,8 @@ TEST_ARCH=$(_AndroidArchitecture)
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
       <RunTestsCommand>"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS) $(TestProjectName)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsAppleMobile)' == 'true'">$(RunTestsCommand) $(Configuration) $(AdditionalXHarnessArguments)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'android'">$(RunTestsCommand) $(AdditionalXHarnessArguments)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'android' and '$(OS)' != 'Windows_NT'">$(RunTestsCommand) $(AdditionalXHarnessArguments)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'android' and '$(OS)' == 'Windows_NT'">$(RunTestsCommand) $(RepoRoot) $(AdditionalXHarnessArguments)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetOS)' == 'browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 

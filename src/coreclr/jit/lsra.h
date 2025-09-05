@@ -589,7 +589,7 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
 
 inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1)
 {
-    if (leaf->OperGet() != GT_ADD)
+    if (!leaf->OperIs(GT_ADD))
     {
         return false;
     }
@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1142,7 +1142,8 @@ private:
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
@@ -1935,6 +1936,7 @@ private:
     // 'tgtPrefUse' to that RefPosition.
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
+    RefPosition* tgtPrefUse3 = nullptr;
 
 public:
     // The following keep track of information about internal (temporary register) intervals
@@ -1957,6 +1959,7 @@ private:
     {
         tgtPrefUse               = nullptr;
         tgtPrefUse2              = nullptr;
+        tgtPrefUse3              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
@@ -1973,9 +1976,12 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
-                                                        SingleTypeRegSet candidates = RBM_NONE,
-                                                        bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApx(GenTree*         tree,
+                                              SingleTypeRegSet candidates = RBM_NONE,
+                                              bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                      SingleTypeRegSet candidates = RBM_NONE,
+                                                      bool             UseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -2081,9 +2087,6 @@ private:
 #endif // DEBUG
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
-#if FEATURE_ARG_SPLIT
-    int BuildPutArgSplit(GenTreePutArgSplit* tree);
-#endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
@@ -2092,7 +2095,7 @@ private:
     regMaskTP rbmAllInt;
     regMaskTP rbmIntCalleeTrash;
     regNumber regIntLast;
-    bool      isApxSupported;
+    bool      apxIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2114,9 +2117,9 @@ private:
     {
         return this->regIntLast;
     }
-    FORCEINLINE bool getIsApxSupported() const
+    FORCEINLINE bool getApxIsSupported() const
     {
-        return this->isApxSupported;
+        return this->apxIsSupported;
     }
 #else
     FORCEINLINE regNumber get_REG_INT_LAST() const
@@ -2129,6 +2132,7 @@ private:
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
     SingleTypeRegSet lowGprRegs;
+    bool             evexIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
@@ -2137,6 +2141,10 @@ private:
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
+    }
+    FORCEINLINE bool getEvexIsSupported() const
+    {
+        return this->evexIsSupported;
     }
 #endif // TARGET_XARCH
 

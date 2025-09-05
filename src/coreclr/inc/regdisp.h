@@ -132,7 +132,11 @@ inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    return &display->pCurrentContext->Ebp;
+#else
     return (LPVOID)display->GetEbpLocation();
+#endif
 }
 
 inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
@@ -467,7 +471,9 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
-#else // TARGET_RISCV64
+#elif defined(TARGET_WASM)
+    // Wasm doesn't have registers
+#else // TARGET_WASM
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }

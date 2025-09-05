@@ -295,7 +295,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr pUnk)
         {
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
         }
 
         [SupportedOSPlatform("windows")]

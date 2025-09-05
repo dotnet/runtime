@@ -1426,7 +1426,6 @@ export function generateWasmBody (
                 break;
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
-                append_profiler_event(builder, ip, opcode);
                 ip = abort;
                 break;
 

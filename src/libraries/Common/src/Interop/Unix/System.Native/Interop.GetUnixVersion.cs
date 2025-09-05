@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 internal static partial class Interop
@@ -41,7 +42,7 @@ internal static partial class Interop
             {
                 fixed (byte* ptr = version)
                 {
-                    return new string((sbyte*)ptr);
+                    return Utf8StringMarshaller.ConvertToManaged(ptr)!;
                 }
             }
         }

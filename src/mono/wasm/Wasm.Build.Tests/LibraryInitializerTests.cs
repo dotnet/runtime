@@ -24,7 +24,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     {
     }
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task LoadLibraryInitializer()
     {
         Configuration config = Configuration.Debug;
@@ -40,7 +40,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [GeneratedRegex("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.[a-z0-9]+.lib.module.js': Error: Error thrown from library initializer")]
     private static partial Regex AbortStartupOnErrorRegex();
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task AbortStartupOnError()
     {
         Configuration config = Configuration.Debug;

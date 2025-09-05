@@ -19,26 +19,36 @@ public enum DataType
     nuint,
     pointer,
 
+    /* VM Data Types */
+
     GCHandle,
     CodePointer,
     Thread,
     ThreadStore,
+    ThreadLocalData,
+    ThreadStaticsInfo,
+    InFlightTLSData,
+    TLSIndex,
     GCAllocContext,
     EEAllocContext,
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
+    IdDispenser,
     Module,
     ModuleLookupMap,
     AppDomain,
+    SystemDomain,
     Assembly,
     LoaderAllocator,
     PEAssembly,
+    AssemblyBinder,
     PEImage,
     PEImageLayout,
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,
+    DynamicStaticsInfo,
     EEClass,
     ArrayClass,
     MethodTableAuxiliaryData,
@@ -88,6 +98,7 @@ public enum DataType
     ProfControlBlock,
     ILCodeVersionNode,
     ReadyToRunInfo,
+    ReadyToRunHeader,
     ImageDataDirectory,
     RuntimeFunction,
     HashMap,
@@ -99,9 +110,14 @@ public enum DataType
     GCCoverageInfo,
     ArrayListBase,
     ArrayListBlock,
+    EETypeHashTable,
+    InstMethodHashTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
+    ArgumentRegisters,
     CalleeSavedRegisters,
     HijackArgs,
 
@@ -113,4 +129,13 @@ public enum DataType
     ResumableFrame,
     FaultingExceptionFrame,
     HijackFrame,
+    TailCallFrame,
+    StubDispatchFrame,
+
+
+    /* GC Data Types */
+
+    GCHeap,
+    Generation,
+    CFinalize,
 }

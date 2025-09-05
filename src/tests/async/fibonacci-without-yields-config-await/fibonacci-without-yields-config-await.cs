@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 #pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
 
 public class Async2FibonacciWithYields

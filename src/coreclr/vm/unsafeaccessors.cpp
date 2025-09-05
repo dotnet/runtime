@@ -1007,27 +1007,8 @@ namespace
         pReturnCode->EmitRET();
 
         // Generate all IL associated data for JIT
-        {
-            UINT maxStack;
-            size_t cbCode = sl.Link(&maxStack);
-            DWORD cbSig = sl.GetLocalSigSize();
-
-            COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-            BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-            BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-            _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-            sl.GenerateCode(pbBuffer, cbCode);
-            sl.GetLocalSig(pbLocalSig, cbSig);
-
-            // Store the token lookup map
-            ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-            ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-            *resolver = (DynamicResolver*)ilResolver;
-            *methodILDecoder = pILHeader;
-        }
-
-        ilResolver.SuppressRelease();
+        *methodILDecoder = ilResolver->FinalizeILStub(&sl);
+        *resolver = ilResolver.Extract();
     }
 }
 
@@ -1038,7 +1019,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     _ASSERTE(methodILDecoder != NULL);
     _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
     _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(!HasILHeader());
 
     // The UnsafeAccessorAttribute is applied to methods with an
     // RVA of 0 (for example, C#'s extern keyword).

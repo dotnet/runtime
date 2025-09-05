@@ -40,13 +40,158 @@
 //
 //========================================================================
 
-inline ee_alloc_context* GetThreadEEAllocContext()
+EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
     assert(GCHeapUtilities::UseThreadAllocationContexts());
 
     return &t_runtime_thread_locals.alloc_context;
+}
+
+// Allocate an object on the GC heap.
+//  pEEType         -  type of the object
+//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
+//  numElements     -  number of array elements
+//  pTransitionBlock-  transition frame to make stack crawlable
+// Returns a pointer to the object allocated or NULL on failure.
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+{
+    OBJECTREF newobj = NULL;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    if (pMT->HasComponentSize())
+    {
+        if (pMT == g_pStringClass)
+        {
+            newobj = AllocateString((DWORD)numElements);
+        }
+        else
+        {
+            _ASSERTE(pMT->IsFullyLoaded());
+            _ASSERTE(pMT->IsArray());
+            _ASSERTE(!pMT->IsMultiDimArray());
+
+            if (numElements < 0)
+                COMPlusThrow(kOverflowException);
+
+    #ifdef HOST_64BIT
+            // Even though ECMA allows using a native int as the argument to newarr instruction
+            // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+            // platforms we can't create an array whose size exceeds 32 bits.
+            if (numElements > INT_MAX)
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+    #endif
+
+            newobj = AllocateSzArray(pMT, (INT32)numElements, uFlags);
+        }
+    }
+    else
+    {
+        newobj = AllocateObject(pMT, uFlags);
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    return OBJECTREFToObject(newobj);
+}
+
+EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+{
+    OBJECTREF newobj = NULL;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    if (pMT->HasComponentSize())
+    {
+        _ASSERTE(pMT->IsFullyLoaded());
+        _ASSERTE(pMT->IsArray());
+        _ASSERTE(!pMT->IsMultiDimArray());
+
+        if (numElements < 0)
+            COMPlusThrow(kOverflowException);
+
+#ifdef HOST_64BIT
+        // Even though ECMA allows using a native int as the argument to newarr instruction
+        // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+        // platforms we can't create an array whose size exceeds 32 bits.
+        if (numElements > INT_MAX)
+            EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+#endif
+
+        newobj = TryAllocateFrozenSzArray(pMT, (INT32)numElements);
+        if (newobj == NULL)
+            newobj = AllocateSzArray(pMT, (INT32)numElements);
+    }
+    else
+    {
+        newobj = TryAllocateFrozenObject(pMT);
+        if (newobj == NULL)
+            newobj = AllocateObject(pMT);
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    return OBJECTREFToObject(newobj);
+}
+
+EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock)
+{
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    if (isOverflow)
+    {
+        COMPlusThrow(kOverflowException);
+    }
+    COMPlusThrow(kOutOfMemoryException);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    pFrame->Pop(CURRENT_THREAD);
 }
 
 // When not using per-thread allocation contexts, we (the EE) need to take care that
@@ -202,7 +347,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
         }
     }
     EX_CATCH{}
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     // end of duplication
 
     if (typeId != nullptr)
@@ -510,15 +655,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     size_t totalSize = safeTotalSize.Value();
 #endif
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
-#endif
-
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
@@ -533,12 +669,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
-        {
-            flags |= GC_ALLOC_ALIGN8;
-        }
-#endif
 #ifdef FEATURE_64BIT_ALIGNMENT
         MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
         if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
@@ -771,15 +901,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         ThrowOutOfMemoryDimensionsExceeded();
 
     size_t totalSize = safeTotalSize.Value();
-#endif
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
 #endif
 
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
@@ -1335,8 +1456,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
-
     VolatileStore(dst, ref);
 
     // if the dst is outside of the heap (unboxed value classes) then we
@@ -1402,7 +1521,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
     IncUncheckedBarrierCount();
 #endif
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
 
     VolatileStore(dst, ref);
 
@@ -1460,8 +1578,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, 
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
-
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
 
     // not a release store because NonHeap.
     *dst = ref;

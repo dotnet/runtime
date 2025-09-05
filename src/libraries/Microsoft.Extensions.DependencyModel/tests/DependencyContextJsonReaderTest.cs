@@ -835,5 +835,123 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 }
 "));
         }
+
+        [Fact]
+        public void ReadsRuntimeFilesWithLocalPath()
+        {
+            var context = Read(
+@"{
+    ""targets"": {
+        "".NETCoreApp,Version=v5.0"": {
+            ""System.Banana/1.0.0"": {
+                ""runtime"": {
+                    ""lib/System.Banana.dll"": {
+                        ""assemblyVersion"": ""1.2.3"",
+                        ""fileVersion"": ""4.5.6"",
+                        ""localPath"": ""local/path/System.Banana.dll""
+                    }
+                }
+            }
+        }
+    },
+    ""libraries"": {
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        }
+    }
+}");
+
+            var runtimeLibrary = context.RuntimeLibraries.Should().ContainSingle().Subject;
+            var runtimeFile = runtimeLibrary.RuntimeAssemblyGroups.GetDefaultRuntimeFileAssets().Single();
+
+            Assert.Equal("lib/System.Banana.dll", runtimeFile.Path);
+            Assert.Equal("1.2.3", runtimeFile.AssemblyVersion);
+            Assert.Equal("4.5.6", runtimeFile.FileVersion);
+            Assert.Equal("local/path/System.Banana.dll", runtimeFile.LocalPath);
+        }
+
+        [Fact]
+        public void ReadsRuntimeTargetsWithLocalPath()
+        {
+            var context = Read(
+@"{
+    ""targets"": {
+        "".NETCoreApp,Version=v5.0/unix"": {
+            ""System.Banana/1.0.0"": {
+                ""runtimeTargets"": {
+                    ""runtimes/unix/lib/System.Banana.dll"": {
+                        ""rid"": ""unix"",
+                        ""assetType"": ""runtime"",
+                        ""assemblyVersion"": ""1.2.3"",
+                        ""fileVersion"": ""4.5.6"",
+                        ""localPath"": ""unix/custom/System.Banana.dll""
+                    },
+                    ""runtimes/linux-x64/native/native.so"": {
+                        ""rid"": ""linux-x64"",
+                        ""assetType"": ""native"",
+                        ""assemblyVersion"": ""1.2.3"",
+                        ""fileVersion"": ""4.5.6"",
+                        ""localPath"": ""local/path/linux-x64/native.so""
+                    }
+                }
+            }
+        }
+    },
+    ""libraries"": {
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        }
+    }
+}");
+
+            var runtimeLibrary = context.RuntimeLibraries.Should().ContainSingle().Subject;
+            var runtimeFile = runtimeLibrary.RuntimeAssemblyGroups.GetRuntimeFileAssets("unix").Single();
+            Assert.Equal("runtimes/unix/lib/System.Banana.dll", runtimeFile.Path);
+            Assert.Equal("1.2.3", runtimeFile.AssemblyVersion);
+            Assert.Equal("4.5.6", runtimeFile.FileVersion);
+            Assert.Equal("unix/custom/System.Banana.dll", runtimeFile.LocalPath);
+
+            runtimeFile = runtimeLibrary.NativeLibraryGroups.GetRuntimeFileAssets("linux-x64").Single();
+            Assert.Equal("runtimes/linux-x64/native/native.so", runtimeFile.Path);
+            Assert.Equal("local/path/linux-x64/native.so", runtimeFile.LocalPath);
+        }
+
+        [Fact]
+        public void ReadsResourceAssembliesWithLocalPath()
+        {
+            var context = Read(
+@"{
+    ""targets"": {
+        "".NETCoreApp,Version=v5.0"": {
+            ""System.Banana/1.0.0"": {
+                ""resources"": {
+                    ""fr/System.Banana.resources.dll"": {
+                        ""locale"": ""fr"",
+                        ""localPath"": ""local/path/fr/System.Banana.resources.dll""
+                    }
+                }
+            }
+        }
+    },
+    ""libraries"": {
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        }
+    }
+}");
+
+            var runtimeLibrary = context.RuntimeLibraries.Should().ContainSingle().Subject;
+            var resourceAssembly = runtimeLibrary.ResourceAssemblies.Single();
+
+            Assert.Equal("fr/System.Banana.resources.dll", resourceAssembly.Path);
+            Assert.Equal("fr", resourceAssembly.Locale);
+            Assert.Equal("local/path/fr/System.Banana.resources.dll", resourceAssembly.LocalPath);
+        }
     }
 }

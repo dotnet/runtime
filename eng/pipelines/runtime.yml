@@ -91,21 +91,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - osx_arm64
-          jobParameters:
-            nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          platforms:
           - linux_arm64
           - linux_musl_x64
           jobParameters:
@@ -123,6 +108,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - browser_wasm
+          - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr.runtime+libs -rc Release -c Release -lc $(_BuildConfig)
@@ -201,6 +187,36 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR and Libraries
+      # For running installer tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          jobParameters:
+            nameSuffix: CoreCLR_Libraries
+            buildArgs: -s clr+libs -c $(_BuildConfig)
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -482,7 +498,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --outputrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --targetrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -530,7 +546,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -613,7 +629,7 @@ extends:
             value: 180
           jobParameters:
             testGroup: innerloop
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -884,13 +900,15 @@ extends:
 
       # WASI/WASM
 
-      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
           platforms:
             - wasi_wasm
             - wasi_wasm_win
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          alwaysRun: ${{ variables.isRollingBuild }}
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          publishArtifactsForWorkload: false
+          publishWBT: false
 
       #
       # Android devices
@@ -915,7 +933,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true
-            timeoutInMinutes: 480
+            timeoutInMinutes: 120
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -956,8 +974,8 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs++libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:TestAssemblies=false
-            timeoutInMinutes: 480
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true
+            timeoutInMinutes: 180
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1001,7 +1019,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
-            timeoutInMinutes: 480
+            timeoutInMinutes: 120
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1260,6 +1278,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - windows_x86
+            - osx_arm64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
@@ -1768,12 +1787,10 @@ extends:
           parameters:
             platforms:
               - name: CentOS9
-                baseRID: linux-x64
                 targetRID: centos.9-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
-                baseRID: linux-x64
                 targetRID: banana.24-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64

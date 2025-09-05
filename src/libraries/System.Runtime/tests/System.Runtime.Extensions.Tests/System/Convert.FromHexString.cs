@@ -35,21 +35,52 @@ namespace System.Tests
 
         private static void TestSequence(byte[] expected, string actual)
         {
-            byte[] fromResult = Convert.FromHexString(actual);
-            Assert.Equal(expected, fromResult);
+            TestSequenceString(expected, actual);
+            TestSequenceUtf16(expected, actual);
+            TestSequenceUtf8(expected, Encoding.UTF8.GetBytes(actual));
 
-            Span<byte> tryResult = new byte[actual.Length / 2];
-            Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
-            Assert.Equal(fromResult.Length, written);
-            Assert.Equal(actual.Length, consumed);
-            AssertExtensions.SequenceEqual(expected.AsSpan(), tryResult);
+            static void TestSequenceString(byte[] expected, string actual)
+            {
+                byte[] fromResult = Convert.FromHexString(actual);
+                Assert.Equal(expected, fromResult);
+
+                Span<byte> tryResult = new byte[actual.Length / 2];
+                Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
+                Assert.Equal(fromResult.Length, written);
+                Assert.Equal(actual.Length, consumed);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), tryResult);
+            }
+
+            static void TestSequenceUtf16(byte[] expected, ReadOnlySpan<char> actual)
+            {
+                byte[] fromResult = Convert.FromHexString(actual);
+                Assert.Equal(expected, fromResult);
+
+                Span<byte> tryResult = new byte[actual.Length / 2];
+                Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
+                Assert.Equal(fromResult.Length, written);
+                Assert.Equal(actual.Length, consumed);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), tryResult);
+            }
+
+            static void TestSequenceUtf8(byte[] expected, ReadOnlySpan<byte> actual)
+            {
+                byte[] fromResult = Convert.FromHexString(actual);
+                Assert.Equal(expected, fromResult);
+
+                Span<byte> tryResult = new byte[actual.Length / 2];
+                Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
+                Assert.Equal(fromResult.Length, written);
+                Assert.Equal(actual.Length, consumed);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), tryResult);
+            }
         }
 
         [Fact]
         public static void InvalidInputString_Null()
         {
-            AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString(null));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => Convert.FromHexString(null, default, out _, out _));
+            AssertExtensions.Throws<ArgumentNullException>("s", () => Convert.FromHexString((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Convert.FromHexString((string)null, default, out _, out _));
         }
 
         [Theory]
@@ -67,14 +98,29 @@ namespace System.Tests
 
             Span<byte> buffer = stackalloc byte[invalidInput.Length / 2];
             Assert.Equal(OperationStatus.InvalidData, Convert.FromHexString(invalidInput.AsSpan(), buffer, out _, out _));
+            Assert.Equal(OperationStatus.InvalidData, Convert.FromHexString(Encoding.UTF8.GetBytes(invalidInput), buffer, out _, out _));
         }
 
         [Fact]
         public static void ZeroLength()
         {
             Assert.Same(Array.Empty<byte>(), Convert.FromHexString(string.Empty));
+            Assert.Same(Array.Empty<byte>(), Convert.FromHexString(ReadOnlySpan<char>.Empty));
+            Assert.Same(Array.Empty<byte>(), Convert.FromHexString(ReadOnlySpan<byte>.Empty));
 
             OperationStatus convertResult = Convert.FromHexString(string.Empty, Span<byte>.Empty, out int consumed, out int written);
+
+            Assert.Equal(OperationStatus.Done, convertResult);
+            Assert.Equal(0, written);
+            Assert.Equal(0, consumed);
+
+            convertResult = Convert.FromHexString(ReadOnlySpan<char>.Empty, Span<byte>.Empty, out consumed, out written);
+
+            Assert.Equal(OperationStatus.Done, convertResult);
+            Assert.Equal(0, written);
+            Assert.Equal(0, consumed);
+
+            convertResult = Convert.FromHexString(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, out consumed, out written);
 
             Assert.Equal(OperationStatus.Done, convertResult);
             Assert.Equal(0, written);
@@ -85,12 +131,22 @@ namespace System.Tests
         public static void ToHexFromHexRoundtrip()
         {
             const int loopCount = 50;
+
             Span<char> buffer = stackalloc char[loopCount * 2];
             Span<char> bufferLower = stackalloc char[loopCount * 2];
+
+            Span<byte> bufferUtf8 = stackalloc byte[loopCount * 2];
+            Span<byte> bufferUtf8Lower = stackalloc byte[loopCount * 2];
+
             for (int i = 1; i < loopCount; i++)
             {
                 byte[] data = Security.Cryptography.RandomNumberGenerator.GetBytes(i);
+
                 string hex = Convert.ToHexString(data);
+                string hexLower = hex.ToLowerInvariant();
+
+                byte[] hexUtf8 = Encoding.UTF8.GetBytes(hex);
+                byte[] hexLowerUtf8 = Encoding.UTF8.GetBytes(hexLower);
 
                 Span<char> currentBuffer = buffer.Slice(0, i * 2);
                 bool tryHex = Convert.TryToHexString(data, currentBuffer, out int written);
@@ -101,8 +157,20 @@ namespace System.Tests
                 Span<char> currentBufferLower = bufferLower.Slice(0, i * 2);
                 tryHex = Convert.TryToHexStringLower(data, currentBufferLower, out written);
                 Assert.True(tryHex);
-                AssertExtensions.SequenceEqual(hex.ToLowerInvariant().AsSpan(), currentBufferLower);
-                Assert.Equal(hex.Length, written);
+                AssertExtensions.SequenceEqual(hexLower.AsSpan(), currentBufferLower);
+                Assert.Equal(hexLower.Length, written);
+
+                Span<byte> currentBufferUtf8 = bufferUtf8.Slice(0, i * 2);
+                tryHex = Convert.TryToHexString(data, currentBufferUtf8, out written);
+                Assert.True(tryHex);
+                AssertExtensions.SequenceEqual(hexUtf8.AsSpan(), currentBufferUtf8);
+                Assert.Equal(hexUtf8.Length, written);
+
+                Span<byte> currentBufferLowerUtf8 = bufferUtf8Lower.Slice(0, i * 2);
+                tryHex = Convert.TryToHexStringLower(data, currentBufferLowerUtf8, out written);
+                Assert.True(tryHex);
+                AssertExtensions.SequenceEqual(hexLowerUtf8.AsSpan(), currentBufferLowerUtf8);
+                Assert.Equal(hexLowerUtf8.Length, written);
 
                 TestSequence(data, hex);
                 TestSequence(data, hex.ToLowerInvariant());
@@ -134,6 +202,18 @@ namespace System.Tests
             Assert.Equal(OperationStatus.DestinationTooSmall, result);
             Assert.Equal(destinationSize * 2, charsConsumed);
             Assert.Equal(destinationSize, bytesWritten);
+
+            result = Convert.FromHexString(hex.AsSpan(), destination, out charsConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, result);
+            Assert.Equal(destinationSize * 2, charsConsumed);
+            Assert.Equal(destinationSize, bytesWritten);
+
+            result = Convert.FromHexString(Encoding.UTF8.GetBytes(hex), destination, out int bytesConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, result);
+            Assert.Equal(destinationSize * 2, bytesConsumed);
+            Assert.Equal(destinationSize, bytesWritten);
         }
 
         [Fact]
@@ -141,10 +221,22 @@ namespace System.Tests
         {
             string hex = Convert.ToHexString([255, 255, 255]);
             byte[] buffer = new byte[100];
-            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+            OperationStatus status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
 
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(hex.AsSpan(), buffer, out charsConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(Encoding.UTF8.GetBytes(hex), buffer, out int bytesConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(hex.Length, bytesConsumed);
             Assert.Equal(hex.Length / 2, bytesWritten);
         }
 
@@ -153,22 +245,46 @@ namespace System.Tests
         {
             string hex = "ffffff";
             byte[] buffer = new byte[3];
-            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+            OperationStatus status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
 
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(hex.AsSpan(), buffer, out charsConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(Encoding.UTF8.GetBytes(hex), buffer, out int bytesConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(hex.Length, bytesConsumed);
             Assert.Equal(hex.Length / 2, bytesWritten);
         }
 
         [Fact]
         public static void ExactDestination_TrailingCharacter()
         {
-            string hex = "fffff"; 
+            string hex = "fffff";
             byte[] buffer = new byte[2];
-            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+            OperationStatus status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
 
             Assert.Equal(OperationStatus.NeedMoreData, status);
             Assert.Equal(hex.Length - 1, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(hex.AsSpan(), buffer, out charsConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(hex.Length - 1, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+
+            status = Convert.FromHexString(Encoding.UTF8.GetBytes(hex), buffer, out int bytesConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(hex.Length - 1, bytesConsumed);
             Assert.Equal(hex.Length / 2, bytesWritten);
         }
 

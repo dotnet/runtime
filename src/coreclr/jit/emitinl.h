@@ -13,7 +13,7 @@ inline bool emitter::instrIs3opImul(instruction ins)
 #ifdef TARGET_X86
     return ((ins >= INS_imul_AX) && (ins <= INS_imul_DI));
 #else // TARGET_AMD64
-    return ((ins >= INS_imul_AX) && (ins <= INS_imul_15));
+    return ((ins >= INS_imul_AX) && (ins <= INS_imul_31));
 #endif
 }
 
@@ -23,7 +23,7 @@ inline bool emitter::instrIsExtendedReg3opImul(instruction ins)
 #ifdef TARGET_X86
     return false;
 #else // TARGET_AMD64
-    return ((ins >= INS_imul_08) && (ins <= INS_imul_15));
+    return ((ins >= INS_imul_08) && (ins <= INS_imul_31));
 #endif
 }
 
@@ -55,6 +55,22 @@ inline void emitter::check3opImulValues()
     assert(INS_imul_13 - INS_imul_AX == REG_R13);
     assert(INS_imul_14 - INS_imul_AX == REG_R14);
     assert(INS_imul_15 - INS_imul_AX == REG_R15);
+    assert(INS_imul_16 - INS_imul_AX == REG_R16);
+    assert(INS_imul_17 - INS_imul_AX == REG_R17);
+    assert(INS_imul_18 - INS_imul_AX == REG_R18);
+    assert(INS_imul_19 - INS_imul_AX == REG_R19);
+    assert(INS_imul_20 - INS_imul_AX == REG_R20);
+    assert(INS_imul_21 - INS_imul_AX == REG_R21);
+    assert(INS_imul_22 - INS_imul_AX == REG_R22);
+    assert(INS_imul_23 - INS_imul_AX == REG_R23);
+    assert(INS_imul_24 - INS_imul_AX == REG_R24);
+    assert(INS_imul_25 - INS_imul_AX == REG_R25);
+    assert(INS_imul_26 - INS_imul_AX == REG_R26);
+    assert(INS_imul_27 - INS_imul_AX == REG_R27);
+    assert(INS_imul_28 - INS_imul_AX == REG_R28);
+    assert(INS_imul_29 - INS_imul_AX == REG_R29);
+    assert(INS_imul_30 - INS_imul_AX == REG_R30);
+    assert(INS_imul_31 - INS_imul_AX == REG_R31);
 #endif
 }
 
@@ -103,7 +119,7 @@ inline regNumber emitter::inst3opImulReg(instruction ins)
 
 #ifdef TARGET_XARCH
 
-inline ssize_t emitter::emitGetInsAmd(instrDesc* id)
+inline ssize_t emitter::emitGetInsAmd(instrDesc* id) const
 {
     return id->idIsLargeDsp() ? ((instrDescAmd*)id)->idaAmdVal : id->idAddr()->iiaAddrMode.amDisp;
 }
@@ -585,15 +601,15 @@ inline bool insIsCMOV(instruction ins)
  *  false. Returns the final result of the callback.
  */
 template <typename Callback>
-bool emitter::emitGenNoGCLst(Callback& cb, bool skipAllPrologsAndEpilogs /* = false */)
+bool emitter::emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs /* = false */)
 {
     for (insGroup* ig = emitIGlist; ig; ig = ig->igNext)
     {
-        if (skipAllPrologsAndEpilogs)
+        if (skipMainPrologsAndEpilogs)
         {
             if (ig == emitPrologIG)
                 continue;
-            if (ig->igFlags & (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG))
+            if (ig->igFlags & IGF_EPILOG)
                 continue;
         }
         if ((ig->igFlags & IGF_NOGCINTERRUPT) && ig->igSize > 0)

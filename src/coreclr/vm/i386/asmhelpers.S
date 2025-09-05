@@ -178,9 +178,9 @@ LOCAL_LABEL(donestack):
 LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
 #ifdef _DEBUG
-    nop     // This is a tag that we use in an assert.  Fcalls expect to
-            // be called from Jitted code or from certain blessed call sites like
-            // this one.  (See HelperMethodFrame::EnsureInit)
+    nop     // Debug-only tag used in asserts.
+            // FCalls expect to be called from Jitted code or specific approved call sites,
+            // like this one.
 #endif
 
     // Save FP return value if necessary
@@ -220,83 +220,6 @@ PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
     .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
 
 NESTED_END CallDescrWorkerInternal, _TEXT
-
-#ifdef _DEBUG
-// int __fastcall HelperMethodFrameRestoreState(HelperMethodFrame*, struct MachState *)
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-    mov         eax, edx        // eax = MachState*
-#else // _DEBUG
-// int __fastcall HelperMethodFrameRestoreState(struct MachState *)
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-    mov         eax, ecx        // eax = MachState*
-#endif // _DEBUG
-    // restore the registers from the m_MachState structure.  Note that
-    // we only do this for register that where not saved on the stack
-    // at the time the machine state snapshot was taken.
-
-    cmp         dword ptr [eax+MachState__pRetAddr], 0
-
-#ifdef _DEBUG
-    jnz         LOCAL_LABEL(noConfirm)
-
-    mov         eax, ebp
-
-    // Create a minimal EBP-frame (for clean stack trace under debugger)
-    PROLOG_BEG
-    PROLOG_END
-
-    // Call HelperMethodFrameConfirmState (with stack alignment padding)
-    #define STACK_ALIGN_PADDING 4
-    sub         esp, STACK_ALIGN_PADDING
-    push        eax     // eax = ebp
-    push        ebx
-    push        edi
-    push        esi
-    push        ecx     // HelperFrame*
-    CHECK_STACK_ALIGNMENT
-    call        C_FUNC(HelperMethodFrameConfirmState)
-    add         esp, STACK_ALIGN_PADDING
-    #undef STACK_ALIGN_PADDING
-
-    // Restore EBP
-    EPILOG_BEG
-    EPILOG_END
-
-    // on return, eax = MachState*
-    cmp         DWORD PTR [eax + MachState__pRetAddr], 0
-LOCAL_LABEL(noConfirm):
-#endif // _DEBUG
-
-    jz          LOCAL_LABEL(doRet)
-
-    lea         edx, [eax + MachState__esi]     // Did we have to spill ESI
-    cmp         [eax + MachState__pEsi], edx
-    jnz         LOCAL_LABEL(SkipESI)
-    mov         esi, [edx]                      // Then restore it
-
-LOCAL_LABEL(SkipESI):
-    lea         edx, [eax + MachState__edi]     // Did we have to spill EDI
-    cmp         [eax + MachState__pEdi], edx
-    jnz         LOCAL_LABEL(SkipEDI)
-    mov         edi, [edx]                      // Then restore it
-
-LOCAL_LABEL(SkipEDI):
-    lea         edx, [eax + MachState__ebx]     // Did we have to spill EBX
-    cmp         [eax + MachState__pEbx], edx
-    jnz         LOCAL_LABEL(SkipEBX)
-    mov         ebx, [edx]                      // Then restore it
-
-LOCAL_LABEL(SkipEBX):
-    lea         edx, [eax + MachState__ebp]     // Did we have to spill EBP
-    cmp         [eax + MachState__pEbp], edx
-    jnz         LOCAL_LABEL(SkipEBP)
-    mov         ebp, [edx]                      // Then restore it
-
-LOCAL_LABEL(SkipEBP):
-LOCAL_LABEL(doRet):
-    xor         eax, eax
-    ret
-LEAF_END HelperMethodFrameRestoreState, _TEXT
 
 #ifdef FEATURE_HIJACK
 
@@ -376,8 +299,8 @@ NESTED_END OnHijackFPTripThread, _TEXT
 
 // ==========================================================================
 //  This function is reached only via the embedded ImportThunkGlue code inside
-//  an NDirectMethodDesc. It's purpose is to load the DLL associated with an
-//  N/Direct method, then backpatch the DLL target into the methoddesc.
+//  an PInvokeMethodDesc. It's purpose is to load the DLL associated with an
+//  PInvoke method, then backpatch the DLL target into the methoddesc.
 //
 //  Initial state:
 //
@@ -395,24 +318,24 @@ NESTED_END OnHijackFPTripThread, _TEXT
 //
 //
 // ==========================================================================
-LEAF_ENTRY NDirectImportThunk, _TEXT
+LEAF_ENTRY PInvokeImportThunk, _TEXT
     // Preserve argument registers
     push    ecx
     push    edx
 
     // Invoke the function that does the real work.
     push    eax
-    call    C_FUNC(NDirectImportWorker)
+    call    C_FUNC(PInvokeImportWorker)
 
     // Restore argument registers
     pop     edx
     pop     ecx
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked and "eax" contains the DLL target. Proceed to execute the
     // original DLL call.
     jmp     eax     // Jump to DLL target
-LEAF_END NDirectImportThunk, _TEXT
+LEAF_END PInvokeImportThunk, _TEXT
 
 //
 // Used to get the current instruction pointer value
@@ -433,7 +356,7 @@ LEAF_END GetCurrentSP, _TEXT
 // ==========================================================================
 // Invoked for vararg forward P/Invoke calls as a stub.
 // Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
-// EAX       - the NDirectMethodDesc
+// EAX       - the PInvokeMethodDesc
 // ECX       - may be return buffer address
 // [ESP + 4] - the VASigCookie
 //

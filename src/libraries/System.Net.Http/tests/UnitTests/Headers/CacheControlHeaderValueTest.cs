@@ -643,7 +643,7 @@ namespace System.Net.Http.Tests
         [InlineData(",")]
         [InlineData(",,")]
         [InlineData(" , , ")]
-        public void CacheControlHeaderValue_EmptyValue_Parsed(string value)
+        public void CacheControlHeaderValue_EmptyValue_Parsed(string? value)
         {
             Assert.NotNull(CacheControlHeaderValue.Parse(value));
 

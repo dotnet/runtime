@@ -56,6 +56,11 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \Reg, 0
 .endm
 
+.macro PROLOG_ALLOC Size
+        sub esp, \Size
+        .cfi_adjust_cfa_offset \Size
+.endm
+
 .macro PROLOG_END
         .cfi_def_cfa_register ebp
         .cfi_def_cfa_offset 8
@@ -67,6 +72,11 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_POP Reg
         pop \Reg
         .cfi_restore \Reg
+.endm
+
+.macro EPILOG_FREE Size
+        add esp, \Size
+        .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro EPILOG_END
@@ -81,8 +91,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro ESP_PROLOG_ALLOC Size
-        sub esp, \Size
-        .cfi_adjust_cfa_offset \Size
+        PROLOG_ALLOC \Size
 .endm
 
 .macro ESP_PROLOG_END
@@ -97,8 +106,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro ESP_EPILOG_FREE Size
-        add esp, \Size
-        .cfi_adjust_cfa_offset -\Size
+        EPILOG_FREE \Size
 .endm
 
 .macro ESP_EPILOG_END
@@ -113,6 +121,49 @@ C_FUNC(\Name\()_End):
     addl  $_GLOBAL_OFFSET_TABLE_ + (1b - 0b), %\Reg
     movl  C_FUNC(\Name)@GOT(%\Reg), %\Reg
 .intel_syntax noprefix
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME Target
+    // push ebp-frame
+    PROLOG_BEG
+
+    // save CalleeSavedRegisters
+    PROLOG_PUSH ebx
+    PROLOG_PUSH esi
+    PROLOG_PUSH edi
+
+    // make space for ArgumentRegisters (8) + alignment (4)
+    PROLOG_ALLOC 12
+
+    // set frame pointer
+    PROLOG_END
+
+    lea \Target, [esp + 4]
+.endm
+
+// Inlined version of GetThreadEEAllocContext.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+    push  ecx
+    push  eax
+    call  C_FUNC(GetThreadEEAllocContext)
+    pop   eax
+    pop   ecx
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    // restore stack pointer
+    EPILOG_BEG
+
+    // skip over alignment (4) + ArgumentRegisters (8)
+    EPILOG_FREE 12
+
+    // pop CalleeSavedRegisters
+    EPILOG_POP edi
+    EPILOG_POP esi
+    EPILOG_POP ebx
+
+    // pop ebp-frame
+    EPILOG_END
 .endm
 
 .macro CHECK_STACK_ALIGNMENT

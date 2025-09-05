@@ -17,7 +17,6 @@ Abstract:
 --*/
 
 #include "listedobject.hpp"
-#include "pal/cs.hpp"
 #include "pal/dbgmsg.h"
 
 #include <stddef.h>
@@ -158,7 +157,7 @@ CListedObject::AcquireObjectDestructionLock(
         pthr
         );
 
-    InternalEnterCriticalSection(pthr, m_pcsObjListLock);
+    minipal_mutex_enter(m_pcsObjListLock);
 
     LOGEXIT("CListedObject::AcquireObjectDestructionLock\n");
 }
@@ -196,7 +195,7 @@ CListedObject::ReleaseObjectDestructionLock(
         RemoveEntryList(&m_le);
     }
 
-    InternalLeaveCriticalSection(pthr, m_pcsObjListLock);
+    minipal_mutex_leave(m_pcsObjListLock);
 }
 
 /*++

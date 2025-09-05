@@ -128,7 +128,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 IStackWalk sw = _target.Contracts.StackWalk;
                 IStackDataFrameHandle frameData = _dataFrames.Current;
                 TargetPointer frameAddr = sw.GetFrameAddress(frameData);
-                *(ulong*)outBuffer = frameAddr.Value;
+                *(ulong*)outBuffer = frameAddr.ToClrDataAddress(_target);
                 hr = HResults.S_OK;
                 break;
             default:

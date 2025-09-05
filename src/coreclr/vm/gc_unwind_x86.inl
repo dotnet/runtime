@@ -7,21 +7,10 @@
 
 #define RETURN_ADDR_OFFS        1       // in DWORDS
 
-#define X86_INSTR_TEST_ESP_SIB          0x24
-#define X86_INSTR_PUSH_0                0x6A    // push 00, entire instruction is 0x6A00
-#define X86_INSTR_PUSH_IMM              0x68    // push NNNN,
-#define X86_INSTR_W_PUSH_IND_IMM        0x35FF  // push [NNNN]
 #define X86_INSTR_CALL_REL32            0xE8    // call rel32
 #define X86_INSTR_W_CALL_IND_IMM        0x15FF  // call [addr32]
 #define X86_INSTR_NOP                   0x90    // nop
-#define X86_INSTR_NOP2                  0x9090  // 2-byte nop
-#define X86_INSTR_NOP3_1                0x9090  // 1st word of 3-byte nop
-#define X86_INSTR_NOP3_3                0x90    // 3rd byte of 3-byte nop
-#define X86_INSTR_NOP4                  0x90909090 // 4-byte nop
-#define X86_INSTR_NOP5_1                0x90909090 // 1st dword of 5-byte nop
-#define X86_INSTR_NOP5_5                0x90    // 5th byte of 5-byte nop
 #define X86_INSTR_INT3                  0xCC    // int3
-#define X86_INSTR_HLT                   0xF4    // hlt
 #define X86_INSTR_PUSH_EAX              0x50    // push eax
 #define X86_INSTR_PUSH_EBP              0x55    // push ebp
 #define X86_INSTR_W_MOV_EBP_ESP         0xEC8B  // mov ebp, esp
@@ -189,7 +178,12 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.syncEndOffset = decodeUnsigned(table);
 
         _ASSERTE(header.syncStartOffset != INVALID_SYNC_OFFSET && header.syncEndOffset != INVALID_SYNC_OFFSET);
+#ifdef FEATURE_EH_FUNCLETS
+        _ASSERTE(header.syncStartOffset == 1);
+        _ASSERTE(header.syncEndOffset == 1);
+#else
         _ASSERTE(header.syncStartOffset < header.syncEndOffset);
+#endif
     }
 
     if (header.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
@@ -378,6 +372,9 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
+#ifdef FEATURE_EH_FUNCLETS
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+#endif
                         1;
     return position * sizeof(TADDR);
 }
@@ -389,12 +386,20 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
+#ifdef FEATURE_EH_FUNCLETS
+    unsigned position = info->savedRegsCountExclFP +
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+                        info->localloc +
+                        1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#else
     unsigned position = info->savedRegsCountExclFP +
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#endif
     return position * sizeof(TADDR);
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -437,6 +442,7 @@ inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNesti
     return GetStartShadowSPSlotsOffset(info) +
            (numberOfShadowSPSlots * sizeof(TADDR));
 }
+#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *    returns the base frame pointer corresponding to the target nesting level.
@@ -536,7 +542,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             _ASSERTE(condition);                        \
         }
 
-    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     TADDR  baseSP            = GetOutermostBaseFP(frameEBP, info);
     bool    nonLocalHandlers = false; // Are the funclets invoked by EE (instead of managed code itself)
     bool    hasInnerFilter   = false;
@@ -551,6 +556,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // expected to be in decreasing order.
     size_t lvl = 0;
 #ifndef FEATURE_EH_FUNCLETS
+    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     PTR_TADDR pSlot;
     for(lvl = 0, pSlot = pFirstBaseSPslot;
         *pSlot && lvl < unwindLevel;
@@ -665,6 +671,15 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    _ASSERTE(info->ebpFrame);
+    unsigned position = info->savedRegsCountExclFP +
+                        info->localloc +
+                        info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) // Is this method synchronized
+                        + 1; // for ebpFrame
+    return position * sizeof(TADDR);
+#else
     // See comment above Compiler::lvaAssignFrameOffsets() in src\jit\il\lclVars.cpp
     // for frame layout
 
@@ -676,6 +691,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     // to get the total size of the header.
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
+#endif // FEATURE_EH_FUNCLETS
 }
 #endif // FEATURE_NATIVEAOT
 
@@ -708,6 +724,51 @@ bool IsInNoGCRegion(hdrInfo   * infoPtr,
     }
 
     return false;
+}
+
+/*****************************************************************************/
+unsigned FindFirstInterruptiblePoint(hdrInfo   * infoPtr,
+                                     PTR_CBYTE   table,
+                                     unsigned    offs,
+                                     unsigned    endOffs)
+{
+    if (!infoPtr->interruptible)
+        return -1;
+
+    _ASSERTE(offs < endOffs);
+
+    // NOTE: We do not check for prologs and epilogs of the main function body. Only
+    // explicit no-GC regions are considered.
+
+    if (infoPtr->noGCRegionCnt == 0)
+        return offs;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned count = infoPtr->noGCRegionCnt;
+    while (count-- > 0) {
+        unsigned regionOffset = fastDecodeUnsigned(table);
+        if (offs < regionOffset)
+        {
+            // Offset is lower than the region start. Since the regions come in
+            // order we can assume that the offset is in GC safe region.
+            return offs;
+        }
+
+        unsigned regionSize = fastDecodeUnsigned(table);
+        if (offs - regionOffset < regionSize)
+        {
+            // Offset is inside the no-GC region, so move it past the region and
+            // check if we still can match something in next iteration.
+            offs = regionOffset + regionSize;
+            if (offs >= endOffs)
+                return -1;
+        }
+    }
+
+    return offs;
 }
 
 /*****************************************************************************/
@@ -2698,14 +2759,12 @@ void UnwindEspFrameProlog(
 
     unsigned offset = 0;
 
-#ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
     if (methodStart[0] == X86_INSTR_NOP && methodStart[1] == X86_INSTR_INT3)
     {
         offset += 2;
     }
-#endif
 
     const DWORD curOffs = info->prologOffs;
     unsigned ESP = pContext->SP;
@@ -2861,14 +2920,12 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     DWORD offset = 0;
 
-#ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
     if (methodStart[0] == X86_INSTR_NOP && methodStart[1] == X86_INSTR_INT3)
     {
         offset += 2;
     }
-#endif
 
     /* Check for the case where EBP has not been updated yet. */
 
@@ -3649,7 +3706,15 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
-    if (!isFilterFunclet)
+    if (isFilterFunclet)
+    {
+        count = info.untrackedCnt;
+        while (count-- > 0)
+        {
+            fastSkipSigned(table);
+        }
+    }
+    else
 #endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
@@ -3707,7 +3772,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                                               info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
                                               true)));
         }
-
     }
 
 #if VERIFY_GC_TABLES
@@ -3829,18 +3893,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 #if VERIFY_GC_TABLES
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBABE);
 #endif
-
-#ifdef FEATURE_EH_FUNCLETS   // funclets
-    //
-    // If we're in a funclet, we do not want to report the incoming varargs.  This is
-    // taken care of by the parent method and the funclet should access those arguments
-    // by way of the parent method's stack frame.
-    //
-    if (isFunclet)
-    {
-        return true;
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     /* Are we a varargs function, if so we have to report all args
        except 'this' (note that the GC tables created by the x86 jit

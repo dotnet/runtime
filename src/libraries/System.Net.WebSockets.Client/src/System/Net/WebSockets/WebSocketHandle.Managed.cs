@@ -77,8 +77,8 @@ namespace System.Net.WebSockets
                     try
                     {
                         HttpRequestMessage request;
-                        if (!tryDowngrade && options.HttpVersion >= HttpVersion.Version20
-                            || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && uri.Scheme == UriScheme.Wss))
+                        if (!tryDowngrade && (options.HttpVersion >= HttpVersion.Version20
+                            || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && uri.Scheme == UriScheme.Wss)))
                         {
                             if (options.HttpVersion > HttpVersion.Version20 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                             {

@@ -12,9 +12,6 @@ namespace System.Runtime.InteropServices
 {
     internal static partial class TrackerObjectManager
     {
-        [FixedAddressValueType]
-        internal static readonly unsafe IntPtr s_findReferencesTargetCallback = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
-
         internal static volatile IntPtr s_trackerManager;
         internal static volatile bool s_hasTrackingStarted;
         internal static volatile bool s_isGlobalPeggingOn = true;
@@ -163,14 +160,13 @@ namespace System.Runtime.InteropServices
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper.ProxyHandle;
-                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)Unsafe.AsPointer(in s_findReferencesTargetCallback)) != HResults.S_OK)
+                    FindReferenceTargetsCallback.Instance callback = new(nativeObjectWrapper.ProxyHandle);
+                    int hr = IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)(void*)&callback);
+                    if (hr < 0)
                     {
                         walkFailed = true;
-                        FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
                         break;
                     }
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
                 }
             }
 
@@ -202,7 +198,20 @@ namespace System.Runtime.InteropServices
     // Callback implementation of IFindReferenceTargetsCallback
     internal static unsafe class FindReferenceTargetsCallback
     {
-        internal static GCHandle s_currentRootObjectHandle;
+        // Define an on-stack compatible COM instance to avoid allocating
+        // a temporary instance.
+        [StructLayout(LayoutKind.Sequential)]
+        internal ref struct Instance
+        {
+            private readonly IntPtr _vtable; // First field is IUnknown based vtable.
+            public GCHandle RootObject;
+
+            public Instance(GCHandle handle)
+            {
+                _vtable = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
+                RootObject = handle;
+            }
+        }
 
 #pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -227,16 +236,23 @@ namespace System.Runtime.InteropServices
         {
             if (referenceTrackerTarget == IntPtr.Zero)
             {
-                return HResults.E_INVALIDARG;
+                return HResults.E_POINTER;
             }
 
-            if (TryGetObject(referenceTrackerTarget, out object? foundObject))
+            object sourceObject = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.Target!;
+
+            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
-                // Notify the runtime a reference path was found.
-                return TrackerObjectManager.AddReferencePath(s_currentRootObjectHandle.Target, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+                return HResults.S_FALSE;
             }
 
-            return HResults.S_OK;
+            if (sourceObject == targetObject)
+            {
+                return HResults.S_FALSE;
+            }
+
+            // Notify the runtime a reference path was found.
+            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl

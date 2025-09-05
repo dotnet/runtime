@@ -762,24 +762,29 @@ public:
 #endif
     }
 
-    static PTR_Object GetThisPtr(T_CONTEXT * pContext)
+    static TADDR GetFirstArg(T_CONTEXT * pContext)
     {
 #if defined(TARGET_X86)
-        return dac_cast<PTR_Object>(pContext->Ecx);
+        return (TADDR)pContext->Ecx;
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
-        return dac_cast<PTR_Object>(pContext->Rdi);
+        return (TADDR)pContext->Rdi;
 #else
-        return dac_cast<PTR_Object>(pContext->Rcx);
+        return (TADDR)pContext->Rcx;
 #endif
 #elif defined(TARGET_ARM)
-        return dac_cast<PTR_Object>((TADDR)pContext->R0);
+        return (TADDR)pContext->R0;
 #elif defined(TARGET_ARM64)
-        return dac_cast<PTR_Object>(pContext->X0);
+        return (TADDR)pContext->X0;
 #else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetThisPtr");
-        return NULL;
+        PORTABILITY_ASSERT("StubManagerHelpers::GetFirstArg");
+        return (TADDR)0;
 #endif
+    }
+
+    static PTR_Object GetThisPtr(T_CONTEXT * pContext)
+    {
+        return dac_cast<PTR_Object>(GetFirstArg(pContext));
     }
 
     static PCODE GetTailCallTarget(T_CONTEXT * pContext)

@@ -411,8 +411,9 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             EX_CATCH
                             {
                                 pADThrowable = GET_THROWABLE();
+                                RethrowTerminalExceptions();
                             }
-                            EX_END_CATCH(RethrowTerminalExceptions);
+                            EX_END_CATCH
                         }
 
                         if (pADThrowable != NULL)
@@ -442,8 +443,9 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             {
                                 fNonTransientExceptionThrown = !GET_EXCEPTION()->IsTransient();
                                 pADThrowable = GET_THROWABLE();
+                                RethrowTerminalExceptions();
                             }
-                            EX_END_CATCH(RethrowTerminalExceptions);
+                            EX_END_CATCH
 
                             if (pADThrowable != NULL)
                             {
@@ -465,7 +467,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                 // AppDomain then can't use the stub and must report an error.
                 pStub = NULL;
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             if (pThrowable != NULL)
             {
@@ -624,7 +626,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
             }
             EX_CATCH
             { }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 
         if (g_pConfig->ShouldLogCCWRefCountChange(pszClassName, pszNamespace))
@@ -639,7 +641,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
             }
             EX_CATCH
             { }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     }
 }
@@ -664,7 +666,7 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
         }
         EX_CATCH
         { }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         LogCCWRefCountChange_BREAKPOINT(pWrap);
     }
@@ -1054,19 +1056,13 @@ ConnectionPoint *SimpleComCallWrapper::TryCreateConnectionPoint(ComCallWrapper *
     }
     CONTRACT_END;
 
-    ConnectionPoint *pCP = NULL;
-
     EX_TRY
     {
-        pCP = CreateConnectionPoint(pWrap, pEventMT);
+        RETURN CreateConnectionPoint(pWrap, pEventMT);
     }
-    EX_CATCH
-    {
-        pCP = NULL;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_SWALLOW_NONTERMINAL
 
-    RETURN pCP;
+    RETURN nullptr;
 }
 
 ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
@@ -3862,7 +3858,7 @@ void ComCallWrapperTemplate::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY | CRST_HOST_BREAKABLE));
+    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY));
 }
 
 ComCallWrapperTemplate::ComCallWrapperTemplate()
@@ -4070,7 +4066,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
     {
         isSafe = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (isSafe)
     {

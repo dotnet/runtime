@@ -47,7 +47,7 @@ public:
     VPTR_VTABLE_CLASS(CodeRangeMapRangeList, RangeList)
 
 #if defined(DACCESS_COMPILE) || !defined(TARGET_WINDOWS)
-    CodeRangeMapRangeList() : 
+    CodeRangeMapRangeList() :
         _RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT),
         _rangeListType(STUB_CODE_BLOCK_UNKNOWN),
         _id(NULL),
@@ -55,7 +55,7 @@ public:
     {}
 #endif
 
-    CodeRangeMapRangeList(StubCodeBlockKind rangeListType, bool collectible) : 
+    CodeRangeMapRangeList(StubCodeBlockKind rangeListType, bool collectible) :
         _RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT),
         _rangeListType(rangeListType),
         _id(NULL),
@@ -85,7 +85,7 @@ private:
 
         _ASSERTE(id == _id || _id == NULL);
         _id = id;
-        // Grow the array first, so that a failure cannot break the 
+        // Grow the array first, so that a failure cannot break the
 
         RangeSection::RangeSectionFlags flags = RangeSection::RANGE_SECTION_RANGELIST;
         if (_collectible)
@@ -93,7 +93,7 @@ private:
             _starts.Preallocate(_starts.GetCount() + 1);
             flags = (RangeSection::RangeSectionFlags)(flags | RangeSection::RANGE_SECTION_COLLECTIBLE);
         }
-        
+
         ExecutionManager::AddCodeRange(start, end, ExecutionManager::GetEEJitManager(), flags, this);
 
         if (_collectible)
@@ -125,7 +125,7 @@ protected:
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         return result;
 #else
@@ -168,7 +168,7 @@ protected:
             return FALSE;
         if ((pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST) == 0)
             return FALSE;
-        
+
         return (pRS->_pRangeList == this);
     }
 
@@ -232,6 +232,14 @@ public:
         m_pValue = value;
     };
     VOID Init();
+    bool HasAttachedDynamicAssemblies()
+    {
+        if (m_type == LAT_Assembly && m_pDomainAssembly != NULL)
+        {
+            return true;
+        }
+        return false;
+    }
     LoaderAllocatorType GetType();
     VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
     DomainAssemblyIterator GetDomainAssemblyIterator();
@@ -262,7 +270,7 @@ class SegmentedHandleIndexStack
 public:
 
     ~SegmentedHandleIndexStack();
-    
+
     // Push the value to the stack. If the push cannot be done due to OOM, return false;
     inline bool Push(DWORD value);
 
@@ -302,8 +310,12 @@ protected:
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+#ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -322,8 +334,15 @@ protected:
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
+
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap      m_pFixupPrecodeHeap;
+#endif // HAS_FIXUP_PRECODE
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap      m_pNewStubPrecodeHeap;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -618,14 +637,16 @@ public:
         return m_pStubHeap;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PTR_InterleavedLoaderHeap GetNewStubPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
-    PTR_LoaderHeap GetDynamicHelpersStubHeap()
+    PTR_InterleavedLoaderHeap GetDynamicHelpersStubHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDynamicHelpersStubHeap;
@@ -640,11 +661,13 @@ public:
         return m_pExecutableHeap;
     }
 
+#ifdef HAS_FIXUP_PRECODE
     PTR_InterleavedLoaderHeap GetFixupPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pFixupPrecodeHeap;
     }
+#endif // HAS_FIXUP_PRECODE
 
     PTR_CodeFragmentHeap GetDynamicHelpersHeap();
 
@@ -751,7 +774,7 @@ public:
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
-    virtual void ReleaseManagedAssemblyLoadContext() {}
+    virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
 
@@ -885,6 +908,9 @@ template<>
 struct cdac_data<LoaderAllocator>
 {
     static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
+    static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
+    static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
+    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -958,7 +984,7 @@ public:
     }
     virtual ~AssemblyLoaderAllocator();
     void RegisterBinder(CustomAssemblyBinder* binderToRelease);
-    virtual void ReleaseManagedAssemblyLoadContext();
+    virtual void ReleaseAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE)
 
 private:
