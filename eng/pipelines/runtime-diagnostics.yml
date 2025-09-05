@@ -12,7 +12,7 @@ resources:
       type: github
       endpoint: public
       name: dotnet/diagnostics
-      ref: $(diagnosticsBranch)
+      ref:  ${{ parameters.diagnosticsBranch }}
 
 variables:
   - template: /eng/pipelines/common/variables.yml
