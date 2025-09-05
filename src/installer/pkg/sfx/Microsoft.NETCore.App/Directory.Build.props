@@ -83,7 +83,7 @@
     <PlatformManifestFileEntry Include="libSystem.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.Disabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.Invariant.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.so" IsNative="true" />

@@ -366,7 +366,7 @@
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Disabled.a" Condition="'$(InvariantTimezone)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
     </ItemGroup>
 

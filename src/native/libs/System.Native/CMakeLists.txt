@@ -165,6 +165,6 @@ if (CLR_CMAKE_TARGET_ARCH_WASM AND DEFINED CMAKE_TZD_DIR)
     install(TARGETS System.Native.TimeZoneData DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
     # Also add a stub to support InvariantTimezone.
-    add_library(System.Native.TimeZoneData.Disabled STATIC pal_datetime_time_zone_data.c)
-    install(TARGETS System.Native.TimeZoneData.Disabled DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    add_library(System.Native.TimeZoneData.Invariant STATIC pal_datetime_time_zone_data.c)
+    install(TARGETS System.Native.TimeZoneData.Invariant DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 endif ()
