@@ -48,50 +48,6 @@ unsafe class Program
         bool? ExpectedSse2 = true;
 
 #if BASELINE_INTRINSICS
-        bool? ExpectedSse3 = null;
-        bool? ExpectedSsse3 = null;
-        bool? ExpectedSse41 = null;
-        bool? ExpectedSse42 = null;
-        bool? ExpectedPopcnt = null;
-        bool? ExpectedAes = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedGfni = null;
-        bool? ExpectedSha = null;
-        bool? ExpectedWaitPkg = null;
-        bool? ExpectedX86Serialize = null;
-
-        bool? ExpectedAvx = false;
-        bool? ExpectedAvx2 = false;
-        bool? ExpectedBmi1 = false;
-        bool? ExpectedBmi2 = false;
-        bool? ExpectedF16c = false;
-        bool? ExpectedFma = false;
-        bool? ExpectedLzcnt = false;
-        bool? ExpectedAvx512F = false;
-        bool? ExpectedAvx512BW = false;
-        bool? ExpectedAvx512CD = false;
-        bool? ExpectedAvx512DQ = false;
-        bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedAvx512Bitalg = false;
-        bool? ExpectedAvx512Vbmi2 = false;
-        bool? ExpectedAvx512Vpopcntdq = false;
-        bool? ExpectedAvx512Bf16 = false;
-        bool? ExpectedAvx512Fp16 = false;
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
-        bool? ExpectedAvx10v2 = false;
-        bool? ExpectedAvx512Vp2intersect = false;
-        bool? ExpectedAvxIfma = false;
-        bool? ExpectedAvxVnni = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedGfniV256 = false;
-        bool? ExpectedGfniV512 = false;
-        bool? ExpectedAesV256 = false;
-        bool? ExpectedAesV512 = false;
-        bool? ExpectedPclmulqdqV256 = false;
-        bool? ExpectedPclmulqdqV512 = false;
-#elif SSE42_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
         bool? ExpectedSse41 = true;

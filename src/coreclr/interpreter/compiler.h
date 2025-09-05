@@ -24,6 +24,7 @@ struct InterpException
     const CorJitResult m_result;
 };
 
+class InterpreterStackMap;
 class InterpCompiler;
 
 class InterpDataItemIndexMap
@@ -500,6 +501,9 @@ private:
     }
     void PrintNameInPointerMap(void* ptr);
 #endif // DEBUG
+
+    dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
+    InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 

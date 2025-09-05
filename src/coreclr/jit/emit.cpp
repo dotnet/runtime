@@ -8292,12 +8292,8 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
     {
-        if (((cnsSize == 16) && emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42)) ||
-            emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-        {
-            dataSize = 8;
-            ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
-        }
+        dataSize = 8;
+        ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
     }
 
     // `vbroadcastss` fills the full SIMD register, so we can't do this last step if the

@@ -1535,7 +1535,7 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
     if (pMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    if (pMD->MethodDesc::IsVarArg())
+    if (pMD->IsVarArg())
         COMPlusThrow(kNotSupportedException, IDS_EE_VARARG_NOT_SUPPORTED);
 }
 
