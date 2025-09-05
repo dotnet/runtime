@@ -30,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
             IEnumerable<AdditionalText>? additionalFiles = null)
-            => CreateCompilation(CSharpSyntaxTree.ParseText(src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             SyntaxTree src,
@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
             };
 
-            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), path: p)));
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), new CSharpParseOptions(languageVersion: LanguageVersion.Preview), path: p)));
             var comp = CSharpCompilation.Create(
                 assemblyName: "test",
                 syntaxTrees: sources,
