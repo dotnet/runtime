@@ -395,15 +395,6 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OKCANCEL             0x00000001L
-#define MB_ABORTRETRYIGNORE     0x00000002L
-
-#define MB_ICONEXCLAMATION      0x00000030L
-
-#define MB_TASKMODAL            0x00002000L
-
-#define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
