@@ -218,3 +218,14 @@ if(CLR_CMAKE_TARGET_WIN32)
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
     endif()
 endif()
+
+if((CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI) AND DEFINED CMAKE_ICU_DIR)
+    file(TO_CMAKE_PATH "${CMAKE_ICU_DIR}" CMAKE_ICU_DIR)
+    file(GLOB ICU_DATA_AND_LIB_FILES "${CMAKE_ICU_DIR}/lib/*.dat")
+    list(APPEND ICU_DATA_AND_LIB_FILES
+        "${CMAKE_ICU_DIR}/lib/libicuuc.a"
+        "${CMAKE_ICU_DIR}/lib/libicui18n.a"
+        "${CMAKE_ICU_DIR}/lib/libicudata.a"
+    )
+    install(FILES ${ICU_DATA_AND_LIB_FILES} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+endif()
