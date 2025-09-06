@@ -22,6 +22,7 @@
     <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
     <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs" Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs" Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />

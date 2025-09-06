@@ -50,6 +50,8 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public async ValueTask<PipeReadBufferState> ReadAsync(PipeReader utf8Json, CancellationToken cancellationToken, bool fillBuffer = true)
         {
             Debug.Assert(_sequence.Equals(ReadOnlySequence<byte>.Empty), "ReadAsync should only be called when the buffer is empty.");

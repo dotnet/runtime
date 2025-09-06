@@ -247,6 +247,8 @@ namespace System.Xml.Linq
             }
         }
 
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public async Task WriteElementAsync(XElement e, CancellationToken cancellationToken)
         {
             PushAncestors(e);
@@ -347,6 +349,8 @@ namespace System.Xml.Linq
             _resolver.PopScope();
         }
 
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         private async Task WriteEndElementAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -360,6 +364,8 @@ namespace System.Xml.Linq
             _resolver.PopScope();
         }
 
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         private async Task WriteFullEndElementAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -386,6 +392,8 @@ namespace System.Xml.Linq
             }
         }
 
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         private async Task WriteStartElementAsync(XElement e, CancellationToken cancellationToken)
         {
             PushElement(e);

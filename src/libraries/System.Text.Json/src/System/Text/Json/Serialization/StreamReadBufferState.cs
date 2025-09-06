@@ -60,6 +60,8 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public readonly async ValueTask<StreamReadBufferState> ReadAsync(Stream stream,
             CancellationToken cancellationToken,
             bool fillBuffer = true)
