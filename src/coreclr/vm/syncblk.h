@@ -600,6 +600,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (int)offsetof(AwareLock, m_HoldingOSThreadId);
     }
+
+    friend struct ::cdac_data<AwareLock>;
+};
+
+template<>
+struct cdac_data<AwareLock>
+{
+    static constexpr size_t LockState = offsetof(AwareLock, m_lockState);
+    static constexpr size_t RecursionLevel = offsetof(AwareLock, m_Recursion);
+    static constexpr size_t HoldingThreadId = offsetof(AwareLock, m_HoldingThreadId);
 };
 
 class UMEntryThunkData;
@@ -830,6 +840,9 @@ template<>
 struct cdac_data<InteropSyncBlockInfo>
 {
 #ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+    static constexpr size_t ClassFactory = offsetof(InteropSyncBlockInfo, m_pCCF);
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
 #endif // FEATURE_COMINTEROP
@@ -1132,7 +1145,10 @@ class SyncBlock
 template<>
 struct cdac_data<SyncBlock>
 {
+    static constexpr size_t Monitor = offsetof(SyncBlock, m_Monitor);
     static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
+    static constexpr size_t Link = offsetof(SyncBlock, m_Link);
+
 };
 
 class SyncTableEntry
@@ -1291,6 +1307,14 @@ class SyncBlockCache
 #ifdef VERIFY_HEAP
     void    VerifySyncTableEntry();
 #endif
+
+    friend struct ::cdac_data<SyncBlockCache>;
+};
+
+template<>
+struct cdac_data<SyncBlockCache>
+{
+    static constexpr size_t FreeSyncTableIndex = offsetof(SyncBlockCache, m_FreeSyncTableIndex);
 };
 
 // See code:#SyncBlockOverView for more

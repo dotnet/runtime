@@ -12,6 +12,9 @@ internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InteropSyncBlockInfo);
 
+        ClassFactory = type.Fields.TryGetValue(nameof(ClassFactory), out Target.FieldInfo classFactoryField)
+            ? target.ReadPointer(address + (ulong)classFactoryField.Offset)
+            : TargetPointer.Null;
         RCW = type.Fields.TryGetValue(nameof(RCW), out Target.FieldInfo rcwField)
             ? target.ReadPointer(address + (ulong)rcwField.Offset)
             : TargetPointer.Null;
@@ -20,6 +23,7 @@ internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
             : TargetPointer.Null;
     }
 
-    public TargetPointer RCW { get; init; }
-    public TargetPointer CCW { get; init; }
+    public TargetPointer ClassFactory { get; }
+    public TargetPointer RCW { get; }
+    public TargetPointer CCW { get; }
 }

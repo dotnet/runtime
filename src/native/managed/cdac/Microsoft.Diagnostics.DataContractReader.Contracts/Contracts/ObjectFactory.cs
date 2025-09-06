@@ -13,11 +13,9 @@ public sealed class ObjectFactory : IContractFactory<IObject>
         byte objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
         TargetPointer stringMethodTable = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
-        TargetPointer syncTableEntries = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
         return version switch
         {
-            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask, stringMethodTable, syncTableEntries),
+            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask, stringMethodTable),
             _ => default(Object),
         };
     }

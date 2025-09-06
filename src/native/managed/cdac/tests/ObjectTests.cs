@@ -25,7 +25,8 @@ public unsafe class ObjectTests
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, objectBuilder.Types, objectBuilder.Globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Object == ((IContractFactory<IObject>)new ObjectFactory()).CreateContract(target, 1)
-                && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
+                && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
+                && c.SyncBlock == ((IContractFactory<ISyncBlock>)new SyncBlockFactory()).CreateContract(target, 1)));
 
         testCase(target);
     }
