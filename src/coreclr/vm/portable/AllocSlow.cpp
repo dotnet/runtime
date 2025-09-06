@@ -4,15 +4,15 @@
 
 #include <fcall.h>
 
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not yet implemented");
-    return nullptr;
-}
-
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
 {
     PORTABILITY_ASSERT("RhpNew is not yet implemented");
+    return nullptr;
+}
+
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not yet implemented");
     return nullptr;
 }
 

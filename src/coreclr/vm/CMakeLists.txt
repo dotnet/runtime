@@ -630,10 +630,11 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if (FEATURE_PORTABLE_HELPERS)
     set(PORTABLE_SOURCES_DIR "${RUNTIME_DIR}/portable/")
+    set(PORTABLE_VM_SOURCES_DIR "./portable/")
 
     list(APPEND VM_SOURCES_WKS
         ${PORTABLE_SOURCES_DIR}/AllocFast.cpp
-        ${PORTABLE_SOURCES_DIR}/AllocSlow.cpp
+        ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
         ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
 elseif(CLR_CMAKE_TARGET_WIN32)

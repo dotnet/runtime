@@ -4,21 +4,6 @@
 
 #include <fcall.h>
 
-EXTERN_C FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_WriteBarrier is not yet implemented");
-}
-
-EXTERN_C FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_CheckedWriteBarrier is not yet implemented");
-}
-
-EXTERN_C void STDCALL JIT_ByRefWriteBarrier()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier is not yet implemented");
-}
-
 EXTERN_C FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref)
 {
     PORTABILITY_ASSERT("RhpAssignRef is not yet implemented");
