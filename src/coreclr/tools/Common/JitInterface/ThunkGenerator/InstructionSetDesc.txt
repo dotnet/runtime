@@ -256,9 +256,11 @@ definearch         ,RiscV64 ,64Bit     ,RiscV64, RiscV64
 instructionset     ,RiscV64 ,RiscV64Base         ,        ,56 ,RiscV64Base         ,base
 instructionset     ,RiscV64 ,Zba                 ,        ,57 ,Zba                 ,zba
 instructionset     ,RiscV64 ,Zbb                 ,        ,58 ,Zbb                 ,zbb
+instructionset     ,RiscV64 ,Zbs                 ,        ,84 ,Zbs                 ,zbs
 
 implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
+implication        ,RiscV64 ,Zbs                 ,RiscV64Base
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,base
