@@ -694,24 +694,28 @@ namespace Mono.Linker.Dataflow
 
                     case Code.Ret:
                     {
-
-                        bool hasReturnValue = !methodBody.Method.ReturnsVoid();
-
-                        if (currentStack.Count != (hasReturnValue ? 1 : 0))
+                        // TODO: (async) handle non-generic Task returns.
+                        if (currentStack.Count != 0)
                         {
-                            WarnAboutInvalidILInMethod(methodIL, operation.Offset);
+                            bool hasReturnValue = !methodBody.Method.ReturnsVoid();
+
+                            if (currentStack.Count != (hasReturnValue ? 1 : 0))
+                            {
+                                WarnAboutInvalidILInMethod(methodIL, operation.Offset);
+                            }
+                            if (hasReturnValue)
+                            {
+                                StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+                                // If the return value is a reference, treat it as the value itself for now
+                                // We can handle ref return values better later
+                                MultiValue retValue = DereferenceValue(retStackSlot.Value, locals, ref interproceduralState);
+                                var methodReturnValue = GetReturnValue(methodIL);
+                                HandleReturnValue(methodIL, methodReturnValue, operation, retValue);
+                                ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
+                            }
+                            ClearStack(ref currentStack);
                         }
-                        if (hasReturnValue)
-                        {
-                            StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, operation.Offset);
-                            // If the return value is a reference, treat it as the value itself for now
-                            // We can handle ref return values better later
-                            MultiValue retValue = DereferenceValue(retStackSlot.Value, locals, ref interproceduralState);
-                            var methodReturnValue = GetReturnValue(methodIL);
-                            HandleReturnValue(methodIL, methodReturnValue, operation, retValue);
-                            ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
-                        }
-                        ClearStack(ref currentStack);
+
                         break;
                     }
 
