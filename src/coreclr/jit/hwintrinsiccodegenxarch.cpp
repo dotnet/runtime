@@ -998,10 +998,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case InstructionSet_WAITPKG:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
+        case InstructionSet_X86Serialize:
         {
-            genX86BaseIntrinsic(node, instOptions);
+            genHWIntrinsicSpecial(node, instOptions);
             break;
         }
 
@@ -1015,14 +1017,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVXVNNIINT_V512:
         {
             genAvxFamilyIntrinsic(node, instOptions);
-            break;
-        }
-
-        case InstructionSet_X86Serialize:
-        case InstructionSet_X86Serialize_X64:
-        {
-            assert(instOptions == INS_OPTS_NONE);
-            genX86SerializeIntrinsic(node);
             break;
         }
 
@@ -2378,12 +2372,12 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
-// genX86BaseIntrinsic: Generates the code for an X86 base hardware intrinsic node
+// genHWIntrinsicSpecial: Generates the code for an special hardware intrinsic node
 //
 // Arguments:
 //    node - The hardware intrinsic node
 //
-void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
+void CodeGen::genHWIntrinsicSpecial(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
@@ -2466,6 +2460,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_Prefetch1:
         case NI_X86Base_Prefetch2:
         case NI_X86Base_PrefetchNonTemporal:
+        case NI_WAITPKG_SetUpUserLevelMonitor:
         {
             assert(baseType == TYP_UBYTE);
             assert(instOptions == INS_OPTS_NONE);
@@ -2531,6 +2526,14 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
             GenTreeStoreInd store = storeIndirForm(node->TypeGet(), node->Op(1), node->Op(2));
             emit->emitInsStoreInd(ins, emitTypeSize(baseType), &store);
+            break;
+        }
+
+        case NI_X86Serialize_Serialize:
+        {
+            assert(instOptions == INS_OPTS_NONE);
+            assert(node->GetSimdBaseType() == TYP_UNKNOWN);
+            GetEmitter()->emitIns(INS_serialize);
             break;
         }
 
@@ -2649,6 +2652,42 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_X64_PopCount:
         {
             genXCNTIntrinsic(node, INS_popcnt);
+            break;
+        }
+
+        case NI_WAITPKG_TimedPause:
+        case NI_WAITPKG_WaitForUserLevelMonitor:
+        {
+            assert(node->GetSimdBaseType() == TYP_INT);
+
+            assert(node->GetOperandCount() == 3);
+            assert(instOptions == INS_OPTS_NONE);
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, TYP_INT, compiler);
+
+            regNumber op1Reg = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            regNumber op3Reg = op3->GetRegNum();
+
+            emitAttr attr = emitTypeSize(TYP_INT);
+
+            // op1: free, op2: EDX, op3: EAX
+
+            assert(op1Reg != REG_EDX);
+            assert(op1Reg != REG_EAX);
+
+            assert(op2Reg != REG_EAX);
+            assert(op3Reg != REG_EDX);
+
+            emit->emitIns_Mov(INS_mov, attr, REG_EDX, op2Reg, /* canSkip */ true);
+            emit->emitIns_Mov(INS_mov, attr, REG_EAX, op3Reg, /* canSkip */ true);
+
+            // emit the TPAUSE/UMWAIT instruction
+            emit->emitIns_R(ins, attr, op1Reg);
             break;
         }
 
@@ -3900,35 +3939,6 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
         GetEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     }
     genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, op1, INS_OPTS_NONE);
-}
-
-//------------------------------------------------------------------------
-// genX86SerializeIntrinsic: Generates the code for an X86 serialize hardware intrinsic node
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//
-void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_X86Serialize_Serialize:
-        {
-            assert(node->GetSimdBaseType() == TYP_UNKNOWN);
-            GetEmitter()->emitIns(INS_serialize);
-            break;
-        }
-
-        default:
-            unreached();
-            break;
-    }
-
-    genProduceReg(node);
 }
 
 #endif // FEATURE_HW_INTRINSICS
