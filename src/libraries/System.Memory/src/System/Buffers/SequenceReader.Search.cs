@@ -240,14 +240,11 @@ namespace System.Buffers
                 {
                     AdvanceCurrentSpan(index + 1);
                     remaining = UnreadSpan;
-                    bool matchingDelimiter = true;
                     int matchedCharactersCount = 1;
-                    for (int i = 1; i < delimiter.Length && _moreData && matchingDelimiter; i++)
+                    for (int i = 1; i < delimiter.Length && _moreData; i++)
                     {
                         if (!delimiter[i].Equals(remaining[0]))
                         {
-                            //index = -1;
-                            matchingDelimiter = false;
                             break;
                         }
                         else
@@ -259,7 +256,7 @@ namespace System.Buffers
                         remaining = UnreadSpan;
                     }
 
-                    if (matchingDelimiter)
+                    if (matchedCharactersCount == delimiter.Length)
                     {
                         if (!advancePastDelimiter)
                         {
