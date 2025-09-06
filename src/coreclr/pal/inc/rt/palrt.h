@@ -643,17 +643,6 @@ inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const cha
 
 /******************* misc ***************************************/
 
-#ifdef __cplusplus
-namespace std
-{
-    typedef decltype(nullptr) nullptr_t;
-}
-
-extern "C++"
-template< class T >
-typename std::remove_reference<T>::type&& move( T&& t );
-#endif // __cplusplus
-
 #define __RPC__out
 #define __RPC__in
 #define __RPC__deref_out_opt

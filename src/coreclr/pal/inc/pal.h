@@ -407,8 +407,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
 
-#define _SH_DENYWR      0x20    /* deny write mode */
-
 #define FILE_READ_DATA            ( 0x0001 )    // file & pipe
 #define FILE_APPEND_DATA          ( 0x0004 )    // file
 
