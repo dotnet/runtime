@@ -153,6 +153,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.TypeDefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
+            new(nameof(Data.Module.DynamicILBlobTable), DataType.pointer),
         ]
     };
 

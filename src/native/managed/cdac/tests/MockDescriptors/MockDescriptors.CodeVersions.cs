@@ -59,6 +59,7 @@ internal partial class MockDescriptors
                 new(nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
                 new(nameof(Data.ILCodeVersionNode.Next), DataType.pointer),
                 new(nameof(Data.ILCodeVersionNode.RejitState), DataType.uint32),
+                new(nameof(Data.ILCodeVersionNode.ILAddress), DataType.pointer),
             ]
         };
 

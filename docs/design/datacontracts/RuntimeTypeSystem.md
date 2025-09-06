@@ -180,6 +180,9 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
+    // Returns whether you may be able to get an IL address from a method desc
+    public virtual bool MayHaveILHeader(MethodDescHandle methodDesc);
 }
 ```
 
@@ -790,6 +793,7 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
+| `AsyncMethodData` | `Kind` | Kind enum of async method |
 
 
 The contract depends on the following other contracts
@@ -872,6 +876,12 @@ And the following enumeration definitions
         IsInitError = 0x0100,
     }
 
+    internal enum AsyncMethodKind
+    {
+        RuntimeAsync = 2,
+        AsyncVariantThunk = 4,
+    }
+
 ```
 
 Internal to the contract in order to answer queries about method descriptors,
@@ -918,6 +928,16 @@ internal struct MethodDesc
             ulong extra = IsLoaderModuleAttachedToChunk ? (ulong)_target.PointerSize : 0;
             return typeSize + chunkSize + extra;
         }
+    }
+
+    internal bool IsAsyncThunkMethod()
+    {
+        if (!HasFlags(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
+            return false;
+
+        TargetPointer asyncMethodDataPtr = Address + Size;
+        AsyncMethodKind asyncMethodKind = (AsyncMethodKind)_target.Read<uint>(asyncMethodDataPtr + /* AsyncMethodData::Kind offset */);
+        return asyncMethodKind == AsyncMethodKind.AsyncVariantThunk || asyncMethodKind == AsyncMethodKind.RuntimeAsync;
     }
 
     public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
@@ -1122,6 +1142,12 @@ And the various apis are implemented with the following algorithms
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;
+
+    bool MayHaveILHeader(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && !methodDesc.IsAsyncThunkMethod();
+    }
 ```
 
 Determining if a method is in a collectible module:

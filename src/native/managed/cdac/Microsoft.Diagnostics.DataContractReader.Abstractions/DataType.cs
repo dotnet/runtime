@@ -70,6 +70,7 @@ public enum DataType
     MethodDesc,
     MethodDescChunk,
     MethodDescCodeData,
+    AsyncMethodData,
     PlatformMetadata,
     PrecodeMachineDescriptor,
     StubPrecodeData,
@@ -112,6 +113,7 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
 

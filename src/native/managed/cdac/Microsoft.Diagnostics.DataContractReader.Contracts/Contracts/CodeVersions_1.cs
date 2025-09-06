@@ -387,4 +387,33 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
         return ilCodeVersionNode.VersionId;
     }
+
+    TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+
+        TargetPointer ilAddress = default;
+        if (ilCodeVersionHandle.IsExplicit)
+        {
+            ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
+            ilAddress = ilCodeVersionNode.ILAddress;
+        }
+
+        if (ilAddress == TargetPointer.Null)
+        {
+            // Synthetic ILCodeVersion, get the IL from the method desc
+            ILoader loader = _target.Contracts.Loader;
+            ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+            TargetPointer methodDefToDescTable = loader.GetLookupTables(moduleHandle).MethodDefToDesc;
+            TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(methodDefToDescTable, ilCodeVersionHandle.MethodDefinition, out _);
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle md = rts.GetMethodDescHandle(methodDescPtr);
+            if (methodDescPtr != TargetPointer.Null && rts.MayHaveILHeader(md))
+            {
+                ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
+            }
+        }
+
+        return ilAddress;
+    }
 }
