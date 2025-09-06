@@ -807,9 +807,8 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             lastNormStop = normStop;
         }
         _ASSERTE(countIntersections <= 1);
-        if(countIntersections == 0)
+        if(countIntersections == 0 && executionAborted)
         {
-            _ASSERTE(executionAborted);
             LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it is aborted and not fully interruptible.\n"));
             goto ExitSuccess;
         }
