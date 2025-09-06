@@ -2854,6 +2854,21 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
+{
+    AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
+    m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
+    bool suppressGCTransition = false;
+    m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
+    bool isPInvoke = (callSiteSig->callConv != CORINFO_CALLCONV_DEFAULT && callSiteSig->callConv != CORINFO_CALLCONV_VARARG);
+    bool isPInvokeMarshalled = isPInvoke && m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig);
+    m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
+                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0) |
+                             (isPInvokeMarshalled ? (int32_t)CalliFlags::PInvokeMarshalled : 0);
+    m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -3259,9 +3274,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
             }
             else
             {
@@ -3318,9 +3331,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-            m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-            m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
+            EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
@@ -3353,9 +3364,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
+                EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
             else
             {

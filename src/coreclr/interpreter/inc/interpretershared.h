@@ -171,4 +171,12 @@ enum class PInvokeCallFlags : int32_t
     SuppressGCTransition = 1 << 1, // The pinvoke is marked by the SuppressGCTransition attribute
 };
 
+enum class CalliFlags : int32_t
+{
+    None = 0,
+    SuppressGCTransition = 1 << 1, // The call is marked by the SuppressGCTransition attribute
+    PInvoke = 1 << 2, // The call is a PInvoke call
+    PInvokeMarshalled = 1 << 3, // The call is a PInvoke call with marshaling
+};
+
 #endif
