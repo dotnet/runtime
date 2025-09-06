@@ -252,6 +252,15 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
+FCFuncStart(gObjectHeaderFuncs)
+    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
+    FCFuncElement("Release", ObjHeader_ReleaseThinLock)
+FCFuncEnd()
+
+FCFuncStart(gMonitorFuncs)
+    FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
+FCFuncEnd()
+
 FCFuncStart(gCastHelpers)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
@@ -323,14 +332,6 @@ FCFuncStart(gJitInfoFuncs)
     FCFuncElement("GetCompilationTimeInTicks", GetCompilationTimeInTicks)
 FCFuncEnd()
 
-FCFuncStart(gMonitorFuncs)
-    FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
-
-    FCFuncElement("TryEnter_FastPath", ObjectNative::Monitor_TryEnter_FastPath)
-    FCFuncElement("TryEnter_FastPath_WithTimeout", ObjectNative::Monitor_TryEnter_FastPath_WithTimeout)
-    FCFuncElement("Exit_FastPath", ObjectNative::Monitor_Exit_FastPath)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
@@ -400,6 +401,8 @@ FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 
+FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
+
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
@@ -409,6 +412,7 @@ FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
+
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 
 #undef FCFuncElement

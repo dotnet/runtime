@@ -25,12 +25,6 @@ namespace System.Threading
         /// </summary>
         public Lock() => _spinCount = SpinCountNotInitialized;
 
-#pragma warning disable CA1822 // can be marked as static - varies between runtimes
-        internal ulong OwningOSThreadId => 0;
-#pragma warning restore CA1822
-
-        internal int OwningManagedThreadId => (int)_owningThreadId;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterOneShot(int currentManagedThreadId)
         {
@@ -72,31 +66,6 @@ namespace System.Threading
             bool isHeld = _owningThreadId == (uint)currentManagedThreadId;
             Debug.Assert(!isHeld || new State(this).IsLocked);
             return isHeld;
-        }
-
-        internal uint ExitAll()
-        {
-            Debug.Assert(IsHeldByCurrentThread);
-
-            uint recursionCount = _recursionCount;
-            _owningThreadId = 0;
-            _recursionCount = 0;
-
-            State state = State.Unlock(this);
-            if (state.HasAnyWaiters)
-            {
-                SignalWaiterIfNecessary(state);
-            }
-
-            return recursionCount;
-        }
-
-        internal void Reenter(uint previousRecursionCount)
-        {
-            Debug.Assert(!IsHeldByCurrentThread);
-
-            Enter();
-            _recursionCount = previousRecursionCount;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
