@@ -135,12 +135,6 @@ typedef enum tagEFaultRepRetVal
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
 
-#if defined(HOST_64BIT)
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
-#else
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
-#endif
-
 #define DECLARE_HANDLE(name) struct name##__ { int unused; }; typedef struct name##__ *name
 
 #ifndef COM_NO_WINDOWS_H
@@ -315,11 +309,6 @@ typedef struct tagDEC {
 #define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
 
 #define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
-
-typedef struct tagBLOB {
-    ULONG cbSize;
-    BYTE *pBlobData;
-} BLOB, *LPBLOB;
 
 interface IStream;
 interface IRecordInfo;
@@ -1021,8 +1010,6 @@ typedef struct _EXCEPTION_REGISTRATION_RECORD EXCEPTION_REGISTRATION_RECORD;
 typedef EXCEPTION_REGISTRATION_RECORD *PEXCEPTION_REGISTRATION_RECORD;
 
 typedef LPVOID HKEY;
-typedef LPVOID PACL;
-typedef LPVOID LPBC;
 typedef LPVOID PSECURITY_DESCRIPTOR;
 
 typedef struct _EXCEPTION_RECORD64 {
