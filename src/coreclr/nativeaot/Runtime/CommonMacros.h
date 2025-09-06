@@ -37,9 +37,7 @@
 
 #endif // _MSC_VER
 
-#ifndef offsetof
-#define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
-#endif // offsetof
+#include <stddef.h>
 
 #ifndef __GCENV_BASE_INCLUDED__
 

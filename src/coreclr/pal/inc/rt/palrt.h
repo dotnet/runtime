@@ -129,10 +129,6 @@ typedef enum tagEFaultRepRetVal
 
 #define _WINNT_
 
-#ifndef offsetof
-#define offsetof(type, field) __builtin_offsetof(type, field)
-#endif
-
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
