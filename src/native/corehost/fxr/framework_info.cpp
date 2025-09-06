@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include "framework_info.h"
+#include "fx_resolver.h"
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
@@ -41,8 +42,9 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
     std::vector<pal::string_t> hive_dir;
     get_framework_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
 
-    int32_t hive_depth = 0;
+    std::vector<pal::string_t> disabled_versions = fx_resolver_t::get_disabled_versions();
 
+    int32_t hive_depth = 0;
     for (const pal::string_t& dir : hive_dir)
     {
         auto fx_shared_dir = dir;
@@ -89,6 +91,12 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                 if (!file_exists_in_dir(fx_version_dir, deps_file_name.c_str(), nullptr))
                 {
                     trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), ver.c_str());
+                    continue;
+                }
+
+                if (std::find(disabled_versions.begin(), disabled_versions.end(), ver) != disabled_versions.end())
+                {
+                    trace::verbose(_X("Ignoring disabled version [%s]"), ver.c_str());
                     continue;
                 }
 

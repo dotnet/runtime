@@ -188,7 +188,8 @@ namespace
         const fx_reference_t & fx_ref,
         const pal::string_t & oldest_requested_version,
         const pal::string_t & dotnet_dir,
-        const bool disable_multilevel_lookup)
+        const bool disable_multilevel_lookup,
+        const std::vector<pal::string_t>& disabled_versions)
     {
 #if defined(DEBUG)
         assert(!fx_ref.get_fx_name().empty());
@@ -236,6 +237,12 @@ namespace
                 append_path(&fx_dir, fx_ref.get_fx_version().c_str());
                 if (file_exists_in_dir(fx_dir, deps_file_name.c_str(), nullptr))
                 {
+                    if (std::find(disabled_versions.begin(), disabled_versions.end(), fx_ref.get_fx_version()) != disabled_versions.end())
+                    {
+                        trace::verbose(_X("Ignoring disabled version [%s]"), fx_ref.get_fx_version().c_str());
+                        continue;
+                    }
+
                     selected_fx_dir = fx_dir;
                     selected_fx_version = fx_ref.get_fx_version();
                     break;
@@ -252,6 +259,12 @@ namespace
                     fx_ver_t ver;
                     if (fx_ver_t::parse(version, &ver, false))
                     {
+                        if (std::find(disabled_versions.begin(), disabled_versions.end(), version) != disabled_versions.end())
+                        {
+                            trace::verbose(_X("Ignoring disabled version [%s]"), version.c_str());
+                            continue;
+                        }
+
                         version_list.push_back(ver);
                     }
                 }
@@ -306,6 +319,40 @@ namespace
         return std::unique_ptr<fx_definition_t>(new fx_definition_t(fx_ref.get_fx_name(), selected_fx_dir, oldest_requested_version, selected_fx_version));
     }
 }
+
+// static
+std::vector<pal::string_t> fx_resolver_t::get_disabled_versions()
+{
+    pal::string_t env_var;
+    if (!pal::getenv(_X("DOTNET_DISABLE_RUNTIME_VERSIONS"), &env_var) || env_var.empty())
+        return {};
+
+    std::vector<pal::string_t> disabled_versions;
+    size_t start = 0;
+    size_t pos = 0;
+    while ((pos = env_var.find(_X(';'), start)) != pal::string_t::npos)
+    {
+        if (pos > start)
+        {
+            disabled_versions.emplace_back(env_var, start, pos - start);
+        }
+        start = pos + 1;
+    }
+
+    // Add the last version (after the last semicolon or the only version if no semicolons)
+    if (start < env_var.size())
+    {
+        disabled_versions.emplace_back(env_var, start, env_var.size() - start);
+    }
+
+    return disabled_versions;
+}
+
+fx_resolver_t::fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
+    : m_disable_multilevel_lookup{disable_multilevel_lookup}
+    , m_override_settings{override_settings}
+    , m_disabled_versions{get_disabled_versions()}
+{ }
 
 // Reconciles two framework references into a new effective framework reference
 // This process is sometimes also called "soft roll forward" (soft as in no IO)
@@ -438,7 +485,7 @@ StatusCode fx_resolver_t::read_framework(
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
             // Resolve the effective framework reference against the existing physical framework folders
-            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), dotnet_root, m_disable_multilevel_lookup);
+            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), dotnet_root, m_disable_multilevel_lookup, m_disabled_versions);
             if (fx == nullptr)
             {
                 resolution_failure.missing = std::move(new_effective_fx_ref);
