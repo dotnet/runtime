@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- disable building for configurations that do not yet support runtime async. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' or '$(TestBuildMode)' == 'nativeaot' or '$(TargetArchitecture)' == 'wasm'">true</DisableProjectBuild>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>
