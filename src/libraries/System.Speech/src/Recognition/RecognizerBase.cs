@@ -531,10 +531,10 @@ ISpGrammarResourceLoader
 
                 // The call to RecognizeAsync may happen before the event for the start stream arrives so remove the assert.
                 //Debug.Assert (_detectingInitialSilenceTimeout == false);
-                Debug.Assert(_detectingBabbleTimeout == false);
-                Debug.Assert(_initialSilenceTimeoutReached == false);
-                Debug.Assert(_babbleTimeoutReached == false);
-                Debug.Assert(_isRecognizeCancelled == false);
+                Debug.Assert(!_detectingBabbleTimeout);
+                Debug.Assert(!_initialSilenceTimeoutReached);
+                Debug.Assert(!_babbleTimeoutReached);
+                Debug.Assert(!_isRecognizeCancelled);
                 Debug.Assert(_lastResult == null);
                 Debug.Assert(_lastException == null);
             } // Not recognizing so no events firing - can unlock now
@@ -2089,7 +2089,7 @@ ISpGrammarResourceLoader
         // This method will be called asynchronously
         private void SignalHandlerThread(object ignored)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _handlerWaitHandle.Set();
             }

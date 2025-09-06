@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");
         }
 
-        internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexTree tree, RegexInterpreterCode code, TimeSpan matchTimeout)
+        internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexTree tree, TimeSpan matchTimeout)
         {
             // Store arguments into the base type's fields
             _options = options;
@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
             TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, isSealed: false, typeof(Regex));
             ConstructorBuilder defaultCtorBuilder = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
             _ilg = defaultCtorBuilder.GetILGenerator();
-            GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, tree, code, matchTimeout);
+            GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, tree, matchTimeout);
             if (matchTimeout != Regex.InfiniteMatchTimeout)
             {
                 // We only generate a constructor with a timeout parameter if the regex information supplied has a non-infinite timeout.
@@ -83,7 +83,7 @@ namespace System.Text.RegularExpressions
                 // due to the fact that we now special-case an infinite timeout in the code generator to avoid spitting unnecessary code
                 // and paying for the checks at run time.
                 _ilg = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(TimeSpan) }).GetILGenerator();
-                GenerateRegexTimeoutCtor(defaultCtorBuilder, regexTypeBuilder);
+                GenerateRegexTimeoutCtor(defaultCtorBuilder);
             }
             regexTypeBuilder.CreateType();
         }
@@ -101,7 +101,6 @@ namespace System.Text.RegularExpressions
             RegexOptions options,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type regexRunnerFactoryType,
             RegexTree tree,
-            RegexInterpreterCode code,
             TimeSpan matchTimeout)
         {
             // Call the base ctor and store pattern, options, and factory.
@@ -174,7 +173,7 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        private void GenerateRegexTimeoutCtor(ConstructorBuilder defaultCtorBuilder, TypeBuilder regexTypeBuilder)
+        private void GenerateRegexTimeoutCtor(ConstructorBuilder defaultCtorBuilder)
         {
             // base.ctor();
             // ValidateMatchTimeout(timeSpan);

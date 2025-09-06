@@ -495,7 +495,7 @@ namespace System.DirectoryServices.AccountManagement
                 Initialize();
 
                 // Unless we're not initialized, connectedServer should not be null
-                Debug.Assert(_connectedServer != null || _initialized == false);
+                Debug.Assert(_connectedServer != null || !_initialized);
 
                 // connectedServer should never be an empty string
                 Debug.Assert(_connectedServer == null || _connectedServer.Length != 0);

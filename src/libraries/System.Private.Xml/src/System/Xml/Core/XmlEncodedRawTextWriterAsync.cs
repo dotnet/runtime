@@ -337,7 +337,7 @@ namespace System.Xml
 
             _inAttributeValue = true;
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
         }
 
         internal override Task WriteEndNamespaceDeclarationAsync()
@@ -510,7 +510,7 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             if (_inAttributeValue)
             {
@@ -549,7 +549,7 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             if (_inAttributeValue)
             {
