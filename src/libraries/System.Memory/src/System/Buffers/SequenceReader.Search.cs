@@ -227,6 +227,60 @@ namespace System.Buffers
             return false;
         }
 
+        private bool TryReadToInternal(scoped ReadOnlySpan<T> delimiter, bool advancePastDelimiter)
+        {
+            SequenceReader<T> copy = this;
+            ReadOnlySpan<T> remaining = UnreadSpan;
+
+            while (_moreData)
+            {
+                int index = remaining.IndexOf(delimiter[0]);
+
+                if (index != -1)
+                {
+                    AdvanceCurrentSpan(index + 1);
+                    remaining = UnreadSpan;
+                    bool matchingDelimiter = true;
+                    int matchedCharactersCount = 1;
+                    for (int i = 1; i < delimiter.Length && _moreData && matchingDelimiter; i++)
+                    {
+                        if (!delimiter[i].Equals(remaining[0]))
+                        {
+                            //index = -1;
+                            matchingDelimiter = false;
+                            break;
+                        }
+                        else
+                        {
+                            matchedCharactersCount++;
+                        }
+
+                        AdvanceCurrentSpan(1);
+                        remaining = UnreadSpan;
+                    }
+
+                    if (matchingDelimiter)
+                    {
+                        Rewind(matchedCharactersCount);
+                        return true;
+                    }
+                    else if (matchedCharactersCount > 1)
+                    {
+                        Rewind(matchedCharactersCount - 1);
+                        remaining = UnreadSpan;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Didn't find anything, reset our original state.
+            this = copy;
+            return false;
+        }
+
         /// <summary>
         /// Try to read everything up to the given <paramref name="delimiter"/>, ignoring delimiters that are
         /// preceded by <paramref name="delimiterEscape"/>.
@@ -545,6 +599,25 @@ namespace System.Buffers
             }
 
             return TryReadToInternal(out _, delimiter, advancePastDelimiter);
+        }
+
+        /// <summary>
+        /// Advance until the given <paramref name="delimiter"/>, if found.
+        /// </summary>
+        /// <param name="delimiter">The delimiter to search for.</param>
+        /// <param name="advancePastDelimiter">True to move past the <paramref name="delimiter"/> if found.</param>
+        /// <returns>True if the given <paramref name="delimiter"/> was found.</returns>
+        public bool TryAdvanceTo(scoped ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true)
+        {
+            ReadOnlySpan<T> remaining = UnreadSpan;
+            int index = remaining.IndexOf(delimiter);
+            if (index != -1)
+            {
+                AdvanceCurrentSpan(index + (advancePastDelimiter ? delimiter.Length : 0));
+                return true;
+            }
+
+            return TryReadToInternal(delimiter, advancePastDelimiter);
         }
 
         /// <summary>

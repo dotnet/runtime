@@ -53,6 +53,41 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Equal(4, value);
         }
 
+        [Theory, InlineData(true), InlineData(false)]
+        public void TryAdvanceToWithSpanDelimiter(bool singleSegment)
+        {
+            byte[] buffer = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
+            ReadOnlySequence<byte> bytes = singleSegment
+                ? new ReadOnlySequence<byte>(buffer)
+                : SequenceFactory.CreateSplit(buffer, 2, 4);
+
+            // read inside sequence
+            SequenceReader<byte> skipReader = new SequenceReader<byte>(bytes);
+            Assert.False(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([10, 11]), false));
+            Assert.False(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([6, 8]), false));
+            Assert.True(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([2, 3]), false));
+            Assert.True(skipReader.TryRead(out byte value));
+            Assert.Equal(2, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(3, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
+            skipReader.Rewind(skipReader.Consumed);
+            Assert.True(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([2, 3]), true));
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
+            skipReader.Rewind(skipReader.Consumed);
+
+            // read at the edge of two sequences
+            Assert.True(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([3, 4]), false));
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(3, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(5, value);
+        }
+
         [Fact]
         public void PastEmptySegments()
         {
