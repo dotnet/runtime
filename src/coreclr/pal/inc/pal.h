@@ -409,15 +409,6 @@ PAL_PerfJitDump_Finish();
 #define IDABORT                 3
 #define IDRETRY                 4
 
-// From win32.h
-#ifndef _CRTIMP
-#ifdef __GNUC__
-#define _CRTIMP
-#else // __GNUC__
-#define _CRTIMP __declspec(dllimport)
-#endif // __GNUC__
-#endif // _CRTIMP
-
 /******************* winbase.h Entrypoints and defines ************************/
 typedef struct _SECURITY_ATTRIBUTES {
             DWORD nLength;
