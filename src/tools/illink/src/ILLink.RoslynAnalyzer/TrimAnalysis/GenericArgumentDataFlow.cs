@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
     internal readonly struct GenericArgumentDataFlow
     {
-        private readonly DataFlowAnalyzerContext _context;
+        private readonly RequiresAnalyzerBase? _analyzer;
         private readonly FeatureContext _featureContext;
         private readonly TypeNameResolver _typeNameResolver;
         private readonly ISymbol _owningSymbol;
@@ -23,14 +23,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         private readonly Action<Diagnostic>? _reportDiagnostic;
 
         public GenericArgumentDataFlow(
-            DataFlowAnalyzerContext context,
+            RequiresAnalyzerBase? analyzer,
             FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
             ISymbol owningSymbol,
             Location location,
             Action<Diagnostic>? reportDiagnostic)
         {
-            _context = context;
+            _analyzer = analyzer;
             _featureContext = featureContext;
             _typeNameResolver = typeNameResolver;
             _owningSymbol = owningSymbol;
@@ -68,48 +68,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ImmutableArray<ITypeSymbol> typeArguments,
             ImmutableArray<ITypeParameterSymbol> typeParameters)
         {
-            var diagnosticContext = new DiagnosticContext(_location, _reportDiagnostic);
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 var typeArgument = typeArguments[i];
                 var typeParameter = typeParameters[i];
 
-                // Process new() constraint: if present, check Requires* on the public parameterless constructor
-                // And that also takes care of any DynamicallyAccessedMembers.PublicParameterlessConstructor.
-                if (typeParameter.HasConstructorConstraint && typeArgument is INamedTypeSymbol namedTypeArg && namedTypeArg.InstanceConstructors.Length > 0)
-                {
-                    var paramlessPublicCtor = namedTypeArg.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty && ctor.DeclaredAccessibility == Accessibility.Public);
-                    if (paramlessPublicCtor is not null)
-                    {
-                        foreach (var analyzer in _context.EnabledRequiresAnalyzers)
-                        {
-                            var attrName = analyzer.RequiresAttributeFullyQualifiedName;
-
-                            if (_featureContext.IsEnabled(attrName))
-                                continue;
-
-                            analyzer.CheckAndCreateRequiresDiagnostic(paramlessPublicCtor, _owningSymbol, incompatibleMembers: ImmutableArray<ISymbol>.Empty, diagnosticContext);
-                        }
-                    }
-                }
-
-                var parameterRequirements = typeParameter.GetDynamicallyAccessedMemberTypes();
-                // Avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor
-                if (typeParameter.HasConstructorConstraint)
-                    parameterRequirements &= ~DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
-
-                // Apply annotations to the generic argument
-                var genericParameterValue = new GenericParameterValue(typeParameter, parameterRequirements);
-                if (_context.EnableTrimAnalyzer &&
-                    !_owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
-                    !_featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&
-                    genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
-                {
-                    SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol(typeArgument)!;
-                    var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(_reportDiagnostic, _typeNameResolver, typeHierarchyType: null);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_context, _featureContext, _typeNameResolver, _location, _reportDiagnostic, reflectionAccessAnalyzer, _owningSymbol);
-                    requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
-                }
+                _analyzer?.ProcessGenericInstantiation(
+                    typeArgument,
+                    typeParameter,
+                    _featureContext,
+                    _typeNameResolver,
+                    _owningSymbol,
+                    _location,
+                    _reportDiagnostic);
 
                 // Recursively process generic argument data flow on the generic argument if it itself is generic
                 if (typeArgument is INamedTypeSymbol namedTypeArgument && namedTypeArgument.IsGenericType)

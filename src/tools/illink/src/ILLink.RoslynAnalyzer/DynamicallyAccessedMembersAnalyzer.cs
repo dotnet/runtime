@@ -127,7 +127,7 @@ namespace ILLink.RoslynAnalyzer
                 });
 
                 // Remaining actions are only for DynamicallyAccessedMembers analysis.
-                if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+                if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
                 // Examine generic instantiations in base types and interface list
@@ -143,12 +143,6 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
-                    if (type.BaseType is INamedTypeSymbol baseType)
-                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
-
-                    foreach (var interfaceType in type.Interfaces)
-                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);

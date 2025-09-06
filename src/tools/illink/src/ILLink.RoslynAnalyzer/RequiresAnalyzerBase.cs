@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
@@ -33,6 +34,34 @@ namespace ILLink.RoslynAnalyzer
         private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
         private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
         private protected abstract DiagnosticDescriptor RequiresOnEntryPoint { get; }
+
+        internal virtual void ProcessGenericInstantiation(
+            ITypeSymbol typeArgument,
+            ITypeParameterSymbol typeParameter,
+            FeatureContext featureContext,
+            TypeNameResolver typeNameResolver,
+            ISymbol owningSymbol,
+            Location location,
+            Action<Diagnostic>? reportDiagnostic)
+        {
+            // Check constructor constraint (new())
+            if (typeParameter.HasConstructorConstraint)
+            {
+                // Check if this type has a public parameterless constructor
+                var namedTypeSymbol = typeArgument as INamedTypeSymbol;
+                var publicParameterlessConstructor = namedTypeSymbol?.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public);
+
+                if (publicParameterlessConstructor != null)
+                {
+                    var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+                    CheckAndCreateRequiresDiagnostic(
+                        publicParameterlessConstructor,
+                        owningSymbol,
+                        ImmutableArray<ISymbol>.Empty,
+                        diagnosticContext);
+                }
+            }
+        }
 
         private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
         private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
@@ -73,7 +102,6 @@ namespace ILLink.RoslynAnalyzer
                     var typeSymbol = (INamedTypeSymbol)symbolAnalysisContext.Symbol;
                     CheckMatchingAttributesInInterfaces(symbolAnalysisContext, typeSymbol);
                 }, SymbolKind.NamedType);
-
 
                 foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
                     context.RegisterSyntaxNodeAction(extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
@@ -175,6 +203,15 @@ namespace ILLink.RoslynAnalyzer
                 implicitCtor,
                 ImmutableArray<ISymbol>.Empty,
                 diagnosticContext);
+
+            var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create(context.Options, context.Compilation, ImmutableArray.Create(this));
+            var typeNameResolver = new TypeNameResolver(context.Compilation);
+            var genericArgumentDataFlow = new GenericArgumentDataFlow(this, FeatureContext.None, typeNameResolver, implicitCtor, typeSymbol.Locations[0], context.ReportDiagnostic);
+            if (typeSymbol.BaseType is INamedTypeSymbol baseType)
+                genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
+
+            foreach (var interfaceType in typeSymbol.Interfaces)
+                genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
         }
 
         [Flags]

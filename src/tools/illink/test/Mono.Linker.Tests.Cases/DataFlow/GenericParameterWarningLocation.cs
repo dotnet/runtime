@@ -62,7 +62,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 : BaseWithPublicMethods<TAllMethods>
             { }
 
-            [ExpectedWarning("IL2091")]
             class DerivedWithNoAnnotations<TUnknown>
                 : BaseWithPublicMethods<TUnknown>
             {
