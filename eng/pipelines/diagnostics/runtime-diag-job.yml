@@ -37,11 +37,12 @@ parameters:
   templateContext: ''
   disableComponentGovernance: ''
   liveRuntimeDir: ''
+  useCdac: false
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
-    name: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    name: ${{ parameters.name }}_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -86,6 +87,7 @@ jobs:
 
       - _TestArgs: '-test'
       - _Cross: ''
+      - _CdacArgs: ''
 
       - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
@@ -97,6 +99,9 @@ jobs:
 
       - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
         - _TestArgs: ''
+
+      - ${{ if eq(parameters.useCdac, 'true') }}:
+        - _CdacArgs: '-useCdac'
 
       # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
       - _InternalInstallArgs: ''
@@ -209,7 +214,7 @@ jobs:
           -configuration ${{ parameters.buildConfig }}
           -architecture ${{ parameters.archType }}
           -privatebuild
-          -useCdac
+          $(_CdacArgs)
           -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
           $(_TestArgs)
           $(_Cross)

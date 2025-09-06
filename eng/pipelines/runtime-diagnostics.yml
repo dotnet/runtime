@@ -66,7 +66,42 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            name: Windows
+            name: cDAC
+            useCdac: true
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+            timeoutInMinutes: 360
+            dependsOn:
+            - build_windows_x64_release_AllSubsets_CoreCLR
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+                  displayName: 'Runtime Build Artifacts'
+            postBuildSteps:
+            - task: PublishTestResults@2
+              inputs:
+                testResultsFormat: xUnit
+                testResultsFiles: '**/*.xml'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                testRunTitle: 'Tests $(_PhaseName)'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                mergeTestResults: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            name: DAC
+            useCdac: false
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
