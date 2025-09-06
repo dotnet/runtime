@@ -10,6 +10,7 @@
 #define _FIELD_H_
 
 #include "excep.h"
+#include "cdacdata.h"
 
 // Temporary values stored in FieldDesc m_dwOffset during loading
 // The high 5 bits must be zero (because in field.h we steal them for other uses), so we must choose values > 0
@@ -36,6 +37,7 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
+    friend struct ::cdac_data<FieldDesc>;
 
   protected:
     PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
@@ -742,6 +744,14 @@ public:
 #ifndef DACCESS_COMPILE
     REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
+};
+
+template<>
+struct cdac_data<FieldDesc>
+{
+    static constexpr size_t DWord1 = offsetof(FieldDesc, m_pMTOfEnclosingClass) + sizeof(PTR_MethodTable);
+    static constexpr size_t DWord2 = DWord1 + 4;
+    static constexpr size_t MTOfEnclosingClass = offsetof(FieldDesc, m_pMTOfEnclosingClass);
 };
 
 #endif // _FIELD_H_
