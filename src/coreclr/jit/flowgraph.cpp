@@ -1283,25 +1283,24 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
 //
 bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow /* false */)
 {
-    if (varTypeIsFloating(fromType))
+    if (varTypeIsFloating(fromType) && overflow)
     {
-        return (varTypeIsIntegral(toType) && overflow)
-#if defined(TARGET_X86)
-               || (varTypeIsLong(toType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
-#elif !defined(TARGET_64BIT)
-               || varTypeIsLong(toType)
-#endif
-            ;
+        assert(varTypeIsIntegral(toType));
+        return true;
     }
 
 #if !defined(TARGET_64BIT)
-    if (varTypeIsFloating(toType))
+    if ((varTypeIsFloating(fromType) && varTypeIsLong(toType)) ||
+        (varTypeIsLong(fromType) && varTypeIsFloating(toType)))
     {
-        return varTypeIsLong(fromType)
 #if defined(TARGET_X86)
-               && !compOpportunisticallyDependsOn(InstructionSet_AVX512)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            return false;
+        }
 #endif // TARGET_X86
-            ;
+
+        return true;
     }
 #endif // !TARGET_64BIT
 
