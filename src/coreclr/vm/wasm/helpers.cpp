@@ -215,21 +215,6 @@ EXTERN_C FCDECL0(void, JIT_PollGC)
     PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
 }
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_WriteBarrier is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_CheckedWriteBarrier is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_ByRefWriteBarrier()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier is not implemented on wasm");
-}
-
 void InitJITHelpers1()
 {
     /* no-op WASM-TODO do we need to do anything for the interpreter? */
@@ -292,21 +277,6 @@ extern "C" void ThisPtrRetBufPrecodeWorker()
     PORTABILITY_ASSERT("ThisPtrRetBufPrecodeWorker is not implemented on wasm");
 }
 
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpAssignRef is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpCheckedAssignRef is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpByRefAssignRef is not implemented on wasm");
-}
-
 extern "C" void RhpInterfaceDispatchAVLocation1()
 {
     PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation1 is not implemented on wasm");
@@ -345,72 +315,6 @@ extern "C" void RhpInterfaceDispatchAVLocation64()
 extern "C" void RhpVTableOffsetDispatchAVLocation()
 {
     PORTABILITY_ASSERT("RhpVTableOffsetDispatchAVLocation is not implemented on wasm");
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewVariableSizeObject is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewPtrArrayFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayFastAlign8 is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFastAlign8 is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFastMisalign is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNew is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength)
-{
-    PORTABILITY_ASSERT("RhNewString is not implemented on wasm");
-    return nullptr;
 }
 
 extern "C" void STDCALL ThePreStubPatchLabel(void)

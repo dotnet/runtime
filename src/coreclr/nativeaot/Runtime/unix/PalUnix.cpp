@@ -507,12 +507,12 @@ bool InitializeSignalHandling();
 // initialization and false on failure.
 bool PalInit()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
     ConfigureSignals();
 
@@ -610,7 +610,7 @@ void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
@@ -671,7 +671,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -766,7 +766,7 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
-    
+
     size_t stacksize = GetDefaultStackSizeSetting();
     if (stacksize != 0)
     {
