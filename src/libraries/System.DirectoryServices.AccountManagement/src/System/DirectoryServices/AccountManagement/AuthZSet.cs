@@ -673,10 +673,10 @@ namespace System.DirectoryServices.AccountManagement
                                 SidListEntry entry = new SidListEntry();
 
                                 Debug.Assert(name.name.length % 2 == 0);
-                                entry.name = Marshal.PtrToStringUni(name.name.buffer, name.name.length/2);
+                                entry.name = new string((char*)name.name.buffer, 0, name.name.length/2);
 
                                 Debug.Assert(domain.name.length % 2 == 0);
-                                entry.sidIssuerName = Marshal.PtrToStringUni(domain.name.buffer, domain.name.length/2);
+                                entry.sidIssuerName = new string((char*)domain.name.buffer, 0, domain.name.length/2);
 
                                 entry.pSid = groupSidAndAttrs[i].pSid;
 
