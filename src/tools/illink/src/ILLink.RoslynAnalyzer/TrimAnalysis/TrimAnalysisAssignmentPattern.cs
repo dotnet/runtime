@@ -70,7 +70,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
                         var typeNameResolver = new TypeNameResolver(context.Compilation);
                         var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
-                        var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer);
+                        var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(context, FeatureContext, typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer, OwningSymbol);
                         requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
                     }
                 }
