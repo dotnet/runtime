@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <NoWarn>NU1511</NoWarn>
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
