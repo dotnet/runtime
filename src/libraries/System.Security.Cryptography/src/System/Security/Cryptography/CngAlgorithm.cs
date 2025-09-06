@@ -205,7 +205,6 @@ namespace System.Security.Cryptography
         ///   A new <see cref="CngAlgorithm"/> object that specifies the Module-Lattice-Based Digital Signature
         ///   Algorithm (ML-DSA).
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithm MLDsa => field ??= new CngAlgorithm("ML-DSA"); // BCRYPT_MLDSA_ALGORITHM
 
         /// <summary>
