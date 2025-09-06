@@ -187,23 +187,6 @@ internal sealed class FrameIterator
         };
     }
 
-    private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
-    {
-        if (target.PointerSize == 4)
-        {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
-        }
-        else
-        {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
-        }
-    }
-
-    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
-    {
-        return frame.CallerReturnAddress != TargetPointer.Null;
-    }
-
     public static TargetPointer GetMethodDescPtr(TargetPointer framePtr, Target target)
     {
         Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
@@ -246,5 +229,22 @@ internal sealed class FrameIterator
             default:
                 return TargetPointer.Null;
         }
+    }
+
+    private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
+    {
+        if (target.PointerSize == 4)
+        {
+            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
+        }
+        else
+        {
+            return ((long)frame.Datum.Value & ~0xffff) != 0;
+        }
+    }
+
+    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
+    {
+        return frame.CallerReturnAddress != TargetPointer.Null;
     }
 }
