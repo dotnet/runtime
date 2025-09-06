@@ -44,7 +44,7 @@ struct CallDescrData
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
 #ifdef TARGET_ARM64
     // Use NEON128 to ensure proper alignment for vectors.
-    DECLSPEC_ALIGN(16) NEON128 returnValue[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(NEON128)];
+    alignas(16) NEON128 returnValue[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(NEON128)];
 #else
     // Use UINT64 to ensure proper alignment
     UINT64 returnValue[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(UINT64)];

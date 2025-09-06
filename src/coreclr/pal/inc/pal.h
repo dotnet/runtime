@@ -1190,17 +1190,17 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
                             (UI64(1) << (XSTATE_AVX512_ZMM)))
 #define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
 
-typedef struct DECLSPEC_ALIGN(16) _M128A {
+typedef struct alignas(16) _M128A {
     ULONGLONG Low;
     LONGLONG High;
 } M128A, *PM128A;
 
-typedef struct DECLSPEC_ALIGN(16) _M256 {
+typedef struct alignas(16) _M256 {
     M128A Low;
     M128A High;
 } M256, *PM256;
 
-typedef struct DECLSPEC_ALIGN(16) _M512 {
+typedef struct alignas(16) _M512 {
     M256 Low;
     M256 High;
 } M512, *PM512;
@@ -1224,7 +1224,7 @@ typedef struct _XMM_SAVE_AREA32 {
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+typedef struct alignas(16) _CONTEXT {
 
     _CONTEXT() = default;
     _CONTEXT(const _CONTEXT& ctx)
@@ -1542,7 +1542,7 @@ typedef struct _NEON128 {
     LONGLONG High;
 } NEON128, *PNEON128;
 
-typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+typedef struct alignas(8) _CONTEXT {
 
     //
     // Control flags.
@@ -1704,7 +1704,7 @@ typedef struct _NEON128 {
     LONGLONG High;
 } NEON128, *PNEON128;
 
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+typedef struct alignas(16) _CONTEXT {
 
     //
     // Control flags.
@@ -1886,7 +1886,7 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 #define LOONGARCH64_MAX_BREAKPOINTS     8
 #define LOONGARCH64_MAX_WATCHPOINTS     2
 
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+typedef struct alignas(16) _CONTEXT {
 
     //
     // Control flags.
@@ -2006,7 +2006,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define RISCV64_MAX_BREAKPOINTS     8
 #define RISCV64_MAX_WATCHPOINTS     2
 
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+typedef struct alignas(16) _CONTEXT {
 
     //
     // Control flags.
@@ -2114,7 +2114,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
-typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
+typedef struct alignas(8) _CONTEXT {
 
     //
     // Control flags.
@@ -2220,7 +2220,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+typedef struct alignas(16) _CONTEXT {
 
     //
     // Control flags.

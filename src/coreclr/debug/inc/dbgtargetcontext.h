@@ -212,7 +212,7 @@ typedef struct  {
     BYTE  Reserved4[96];
 } DT_XMM_SAVE_AREA32;
 
-typedef struct DECLSPEC_ALIGN(16) {
+typedef struct alignas(16) {
 
     DWORD64 P1Home;
     DWORD64 P2Home;
@@ -319,7 +319,7 @@ typedef struct {
     LONGLONG High;
 } DT_NEON128;
 
-typedef DECLSPEC_ALIGN(8) struct {
+typedef alignas(8) struct {
 
     //
     // Control flags.
@@ -401,7 +401,7 @@ typedef struct {
     LONGLONG High;
 } DT_NEON128;
 
-typedef DECLSPEC_ALIGN(16) struct {
+typedef alignas(16) struct {
     //
     // Control flags.
     //
@@ -494,7 +494,7 @@ static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equ
 #define DT_LOONGARCH64_MAX_BREAKPOINTS     8
 #define DT_LOONGARCH64_MAX_WATCHPOINTS     2
 
-typedef struct DECLSPEC_ALIGN(16) {
+typedef struct alignas(16) {
     //
     // Control flags.
     //
@@ -563,7 +563,7 @@ static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equ
 #define DT_RISCV64_MAX_BREAKPOINTS     8
 #define DT_RISCV64_MAX_WATCHPOINTS     2
 
-typedef struct DECLSPEC_ALIGN(16) {
+typedef struct alignas(16) {
     //
     // Control flags.
     //

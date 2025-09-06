@@ -66,7 +66,7 @@ typedef struct _NEON128 {
 } NEON128, *PNEON128;
 #endif // !defined(HOST_ARM64)
 
-typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
+typedef struct alignas(8) _T_CONTEXT {
     //
     // Control flags.
     //
@@ -223,7 +223,7 @@ typedef union _NEON128 {
     BYTE  B[16];
 } NEON128, *PNEON128;
 
-typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
+typedef struct alignas(16) _T_CONTEXT {
 
     //
     // Control flags.
@@ -415,7 +415,7 @@ enum
 
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 
-typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
+typedef struct alignas(16) _T_CONTEXT {
 
     //
     // Control flags.
@@ -548,7 +548,7 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
 
-typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
+typedef struct alignas(16) _T_CONTEXT {
 
     //
     // Control flags.

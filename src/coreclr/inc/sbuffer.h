@@ -534,8 +534,8 @@ class EMPTY_BASES_DECL InlineSBuffer : public SBuffer
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4200) // zero sized array
-#pragma warning(disable:4324) // don't complain if DECLSPEC_ALIGN actually pads
-    DECLSPEC_ALIGN(BUFFER_ALIGNMENT) BYTE m_prealloc[size];
+#pragma warning(disable:4324) // don't complain if alignas actually pads
+    alignas(BUFFER_ALIGNMENT) BYTE m_prealloc[size];
 #pragma warning(pop)
 #else
      // use UINT64 to get maximum alignment of the memory

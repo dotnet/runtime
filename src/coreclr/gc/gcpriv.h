@@ -6140,7 +6140,7 @@ struct gap_reloc_pair
 
 #define min_pre_pin_obj_size (sizeof (gap_reloc_pair) + min_obj_size)
 
-struct DECLSPEC_ALIGN(8) aligned_plug_and_gap
+struct alignas(8) aligned_plug_and_gap
 {
     size_t       additional_pad;
     plug_and_gap plugandgap;

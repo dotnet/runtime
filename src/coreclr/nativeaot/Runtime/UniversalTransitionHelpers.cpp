@@ -35,7 +35,7 @@
 #define TRASH_VALUE_ALIGNMENT 16
 
 EXTERN_C
-DECLSPEC_ALIGN(TRASH_VALUE_ALIGNMENT)
+alignas(TRASH_VALUE_ALIGNMENT)
 const uint32_t RhpIntegerTrashValues[] = {
  // Lo32         Hi32               Lo32       Hi32        Hi32:Lo32
  // -----------  -----------        ---------  ---------   ------------------
@@ -50,7 +50,7 @@ const uint32_t RhpIntegerTrashValues[] = {
 };
 
 EXTERN_C
-DECLSPEC_ALIGN(TRASH_VALUE_ALIGNMENT)
+alignas(TRASH_VALUE_ALIGNMENT)
 const uint32_t RhpFpTrashValues[] = {
  // Lo32         Hi32               Lo32                 Hi32                  Hi32:Lo32
  // -----------  -----------        -------------------  -------------------   -------------------

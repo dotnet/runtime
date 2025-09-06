@@ -93,7 +93,7 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
 FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
-DECLSPEC_ALIGN(16)
+alignas(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 CrstStatic          SystemDomain::m_SystemDomainCrst;
