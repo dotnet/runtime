@@ -34,10 +34,12 @@ static void DbgPrintf(const LPCSTR szFormat, ...)
     }
 }
 
+#ifndef HOST_UNIX
 typedef int (*MessageBoxWFnPtr)(HWND hWnd,
                                 LPCWSTR lpText,
                                 LPCWSTR lpCaption,
                                 UINT uType);
+#endif // !HOST_UNIX
 
 static int MessageBoxImpl(
                   LPCWSTR title,        // Dialog box title

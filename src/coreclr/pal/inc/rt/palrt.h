@@ -665,8 +665,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
 
-typedef HANDLE HWND;
-
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
    struct _LIST_ENTRY *Blink;

@@ -258,7 +258,6 @@ typedef CONST TCHAR *LPCTSTR;
 #define HIBYTE(w)           ((BYTE)((DWORD_PTR)(w) >> 8))
 
 typedef VOID *HANDLE;
-typedef HANDLE HWND;
 typedef struct __PAL_RemoteHandle__ { HANDLE h; } *RHANDLE;
 typedef HANDLE *PHANDLE;
 typedef HANDLE *LPHANDLE;
