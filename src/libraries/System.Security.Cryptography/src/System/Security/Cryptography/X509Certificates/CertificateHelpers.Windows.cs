@@ -166,5 +166,33 @@ namespace System.Security.Cryptography.X509Certificates
             keySpec = 0;
             return false;
         }
+
+        private static partial SafeCertContextHandle DuplicateCertificateHandle(CertificatePal certificate)
+        {
+            SafeCertContextHandle? handle = certificate.SafeHandle;
+            bool addedRef = false;
+
+            try
+            {
+                if (handle is not null)
+                {
+                    handle.DangerousAddRef(ref addedRef);
+                    return Interop.Crypt32.CertDuplicateCertificateContext(handle.DangerousGetHandle());
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Let this go to the invalid handle throw.
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    handle!.DangerousRelease();
+                }
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHandle, nameof(handle)));
+        }
     }
 }

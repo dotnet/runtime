@@ -731,9 +731,38 @@ private:
         else if (tree->OperIs(GT_JTRUE))
         {
             // See if this jtrue is now foldable.
-            BasicBlock* block    = m_compiler->compCurBB;
-            GenTree*    condTree = tree->AsOp()->gtOp1;
+            BasicBlock* block        = m_compiler->compCurBB;
+            GenTree*    condTree     = tree->AsOp()->gtOp1;
+            bool        modifiedTree = false;
             assert(tree == block->lastStmt()->GetRootNode());
+
+            while (condTree->OperIs(GT_COMMA))
+            {
+                // Tree is a root node, and condTree its only child.
+                // Move comma effects to a prior statement.
+                //
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(condTree->gtGetOp1(), &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    m_compiler->fgNewStmtNearEnd(block, sideEffects);
+                }
+
+                // Splice out the comma with its value
+                //
+                GenTree* const valueTree = condTree->gtGetOp2();
+                condTree                 = valueTree;
+                tree->AsOp()->gtOp1      = valueTree;
+                modifiedTree             = true;
+            }
+
+            if (modifiedTree)
+            {
+                m_compiler->gtUpdateNodeSideEffects(tree);
+            }
+
+            assert(condTree->OperIs(GT_CNS_INT) || condTree->OperIsCompare());
 
             if (condTree->OperIs(GT_CNS_INT))
             {
