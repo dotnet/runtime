@@ -55,9 +55,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     {
         private readonly X509SignatureGenerator _realRsaGenerator;
 
-        internal RSASha1PssSignatureGenerator(RSA rsa)
+        internal RSASha1PssSignatureGenerator(RSA rsa, RSASignaturePadding signaturePadding)
         {
-            _realRsaGenerator = CreateForRSA(rsa, RSASignaturePadding.Pss);
+            _realRsaGenerator = CreateForRSA(rsa, signaturePadding);
         }
 
         protected override PublicKey BuildPublicKey() => _realRsaGenerator.PublicKey;
