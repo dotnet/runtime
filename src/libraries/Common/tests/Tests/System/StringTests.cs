@@ -7721,8 +7721,8 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
-            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+            // Some platforms' ICUs do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsWasi && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
 
             if (supportsKCKD)
             {
