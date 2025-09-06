@@ -693,21 +693,21 @@ enum gc_join_flavor
 
 #define first_thread_arrived 2
 #pragma warning(push)
-#pragma warning(disable:4324) // don't complain if alignas actually pads
-struct alignas(HS_CACHE_LINE_SIZE) join_structure
+#pragma warning(disable:4324) // don't complain if DECLSPEC_ALIGN actually pads
+struct DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE) join_structure
 {
     // Shared non volatile keep on separate line to prevent eviction
     int n_threads;
 
     // Keep polling/wait structures on separate line write once per join
-    alignas(HS_CACHE_LINE_SIZE)
+    DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE)
     GCEvent joined_event[3]; // the last event in the array is only used for first_thread_arrived.
     Volatile<int> lock_color;
     VOLATILE(BOOL) wait_done;
     VOLATILE(BOOL) joined_p;
 
     // Keep volatile counted locks on separate cache line write many per join
-    alignas(HS_CACHE_LINE_SIZE)
+    DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE)
     VOLATILE(int) join_lock;
     VOLATILE(int) r_join_lock;
 

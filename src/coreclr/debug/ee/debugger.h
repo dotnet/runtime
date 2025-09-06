@@ -1136,7 +1136,7 @@ struct DebuggerHeapExecutableMemoryPage;
 // for the page, and the remaining ones are DataChunks and are handed out
 // by the allocator when it allocates memory.
 // ------------------------------------------------------------------------ */
-union alignas(EXPECTED_CHUNKSIZE) DebuggerHeapExecutableMemoryChunk {
+union DECLSPEC_ALIGN(EXPECTED_CHUNKSIZE) DebuggerHeapExecutableMemoryChunk {
 
     struct DataChunk
     {
@@ -1172,7 +1172,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == EXPECTED_CHUNKSIZE, "
 // about which of the other chunks are used/free as well as a pointer to
 // the next page.
 // ------------------------------------------------------------------------ */
-struct alignas(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
+struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 {
     inline DebuggerHeapExecutableMemoryPage* GetNextPage()
     {

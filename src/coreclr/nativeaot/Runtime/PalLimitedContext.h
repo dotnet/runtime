@@ -9,7 +9,7 @@
 #include <minipal/utils.h>
 
 #ifdef HOST_AMD64
-#define AMD64_ALIGN_16 alignas(16)
+#define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)
 #else // HOST_AMD64
 #define AMD64_ALIGN_16
 #endif // HOST_AMD64
