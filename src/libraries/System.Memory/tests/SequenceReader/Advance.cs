@@ -76,6 +76,8 @@ namespace System.Memory.Tests.SequenceReader
             Assert.True(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([2, 3]), true));
             Assert.True(skipReader.TryRead(out value));
             Assert.Equal(4, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(5, value);
             skipReader.Rewind(skipReader.Consumed);
 
             // read at the edge of two sequences
@@ -84,6 +86,10 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Equal(3, value);
             Assert.True(skipReader.TryRead(out value));
             Assert.Equal(4, value);
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(5, value);
+            skipReader.Rewind(skipReader.Consumed);
+            Assert.True(skipReader.TryAdvanceTo(new ReadOnlySpan<byte>([3, 4]), true));
             Assert.True(skipReader.TryRead(out value));
             Assert.Equal(5, value);
         }

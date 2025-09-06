@@ -261,7 +261,11 @@ namespace System.Buffers
 
                     if (matchingDelimiter)
                     {
-                        Rewind(matchedCharactersCount);
+                        if (!advancePastDelimiter)
+                        {
+                            Rewind(matchedCharactersCount);
+                        }
+
                         return true;
                     }
                     else if (matchedCharactersCount > 1)
