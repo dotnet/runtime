@@ -4496,7 +4496,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -5363,7 +5363,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
-		if (strcmp (method->name, "Finalize") == 0) {
+		if (strcmp (method->name, "GuardedFinalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method_checked (invoke, error);
 			mono_error_assert_ok (error);

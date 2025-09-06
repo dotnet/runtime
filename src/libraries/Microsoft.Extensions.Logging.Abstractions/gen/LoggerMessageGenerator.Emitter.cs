@@ -177,7 +177,7 @@ namespace {lc.Namespace}
                 string formatMethodBegin =
                     !lm.Message.Contains('{') ? "" :
                     _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
-                    "global::System.Diagnostics.CodeAnalysis.FormattableString.Invariant(";
+                    "global::System.FormattableString.Invariant(";
                 string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
 
                 _builder.Append($@"

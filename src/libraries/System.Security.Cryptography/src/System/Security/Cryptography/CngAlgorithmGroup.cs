@@ -144,9 +144,19 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the ML-KEM family of algorithms.
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLKem =>
             field ??= new CngAlgorithmGroup("MLKEM"); // NCRYPT_MLKEM_ALGORITHM_GROUP
+
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Stateless Hash-Based Digital Signature
+        ///   Algorithm (SLH-DSA) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the SLH-DSA family of algorithms.
+        /// </value>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CngAlgorithmGroup SlhDsa =>
+            field ??= new CngAlgorithmGroup("SLHDSA"); // NCRYPT_SLHDSA_ALGORITHM_GROUP
 
         private static CngAlgorithmGroup? s_dh;
         private static CngAlgorithmGroup? s_dsa;

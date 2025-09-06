@@ -42,11 +42,13 @@ jobs:
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - AzureLinux.3.Amd64.Open
-      - Ubuntu.2204.Amd64.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - osx.13.Arm64.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
+        - OSX.26.Arm64.Open
+      - ${{ if ne(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
+        - osx.13.Arm64.Open
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:

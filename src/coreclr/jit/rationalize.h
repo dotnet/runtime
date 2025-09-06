@@ -63,6 +63,8 @@ private:
 
     bool ShouldRewriteToNonMaskHWIntrinsic(GenTree* node);
 #endif // TARGET_XARCH
+
+    void RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64

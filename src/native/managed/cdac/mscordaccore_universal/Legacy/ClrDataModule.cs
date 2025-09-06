@@ -107,8 +107,11 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
-        => _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method)
+    {
+        method = default;
+        return _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, out method) : HResults.E_NOTIMPL;
+    }
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
 
@@ -129,16 +132,16 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(_address);
             string result = string.Empty;
             try
             {
                 result = contract.GetPath(handle);
             }
-            catch (InvalidOperationException)
+            catch (VirtualReadException)
             {
                 // The memory for the path may not be enumerated - for example, in triage dumps
-                // In this case, GetPath will throw InvalidOperationException
+                // In this case, GetPath will throw VirtualReadException
             }
 
             if (string.IsNullOrEmpty(result))
@@ -180,7 +183,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(_address);
 
             ModuleFlags moduleFlags = contract.GetFlags(handle);
             if ((moduleFlags & ModuleFlags.ReflectionEmit) != 0)
@@ -222,7 +225,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             if (!_extentsSet)
             {
                 Contracts.ILoader contract = _target.Contracts.Loader;
-                Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+                Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
 
                 TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
                 if (peAssembly == 0)
@@ -268,7 +271,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
 
             if (!_extentsSet)
             {
@@ -344,7 +347,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         Unsafe.InitBlock(getModuleData, 0, (uint)sizeof(DacpGetModuleData));
 
         Contracts.ILoader contract = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+        Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
         TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
 
         bool isReflectionEmit = (contract.GetFlags(moduleHandle) & ModuleFlags.ReflectionEmit) != 0;

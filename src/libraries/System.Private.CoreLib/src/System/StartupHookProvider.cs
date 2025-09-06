@@ -161,7 +161,7 @@ namespace System
             catch (Exception assemblyLoadException)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName!.ToString()),
+                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName.ToString()),
                     assemblyLoadException);
             }
 
@@ -172,7 +172,7 @@ namespace System
             MethodInfo? initializeMethod = type.GetMethod(InitializeMethodName,
                                                          BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                                                          null, // use default binder
-                                                         Type.EmptyTypes, // parameters
+                                                         [], // parameters
                                                          null); // no parameter modifiers
             if (initializeMethod == null)
             {

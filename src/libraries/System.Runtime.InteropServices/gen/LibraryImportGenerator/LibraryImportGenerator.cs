@@ -533,7 +533,7 @@ namespace Microsoft.Interop
             {
                 return MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(typeof(T).FullName),
+                    AliasQualifiedName("global", IdentifierName(typeof(T).FullName)),
                     IdentifierName(value.ToString()));
             }
         }

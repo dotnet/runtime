@@ -141,10 +141,18 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 
 emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
 {
-    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
-    code_t opcode = (code >> 2) & 0b11111;
-    assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
-    return (MajorOpcode)opcode;
+    if (Is32BitInstruction((WORD)code))
+    {
+        code_t opcode = (code >> 2) & 0b11111;
+        return (MajorOpcode)opcode;
+    }
+    else
+    {
+        code_t op     = code & 0b11;
+        code_t funct3 = (code >> 13) & 0b111;
+        code_t idx    = 32 + (op << 3) + funct3;
+        return (MajorOpcode)idx;
+    }
 }
 
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
@@ -591,7 +599,7 @@ void emitter::emitIns_Mov(
         {
             assert(isGeneralRegisterOrR0(srcReg));
             assert(isGeneralRegisterOrR0(dstReg));
-            emitIns_R_R_I(INS_addiw, attr, dstReg, srcReg, 0);
+            emitIns_R_R(INS_sext_w, attr, dstReg, srcReg);
         }
         else if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
         {
@@ -607,7 +615,7 @@ void emitter::emitIns_Mov(
         {
             assert(isGeneralRegisterOrR0(srcReg));
             assert(isGeneralRegisterOrR0(dstReg));
-            emitIns_R_R_I(INS_addi, attr, dstReg, srcReg, 0);
+            emitIns_R_R(INS_mov, attr, dstReg, srcReg);
         }
     }
 }
@@ -619,7 +627,7 @@ void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, boo
         assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
         if (isGeneralRegisterOrR0(dstReg) && isGeneralRegisterOrR0(srcReg))
         {
-            emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, dstReg, srcReg, 0);
+            emitIns_R_R(attr == EA_4BYTE ? INS_sext_w : INS_mov, attr, dstReg, srcReg);
         }
         else if (isGeneralRegisterOrR0(dstReg) && genIsValidFloatReg(srcReg))
         {
@@ -650,7 +658,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_rev8))
+    if (INS_mov == ins || INS_sext_w == ins || INS_not == ins || (INS_clz <= ins && ins <= INS_rev8))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -755,6 +763,7 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
         // TODO-RISCV64: Move jump logic to emitIns_J
+        // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
         id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
@@ -821,6 +830,11 @@ void emitter::emitIns_R_I_I(
 void emitter::emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt) /* = INS_OPTS_NONE */
 {
+    if (tryEmitCompressedIns_R_R_R(ins, attr, reg1, reg2, reg3, opt))
+    {
+        return;
+    }
+
     code_t code = emitInsCode(ins);
 
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
@@ -975,6 +989,173 @@ void emitter::emitIns_R_R_R(
     id->idCodeSize(4);
 
     appendToCurIG(id);
+}
+
+bool emitter::tryEmitCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
+{
+    // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
+    if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
+    {
+        return false;
+    }
+
+    instruction compressedIns = tryGetCompressedIns_R_R_R(ins, attr, rd, rs1, rs2, opt);
+    if (compressedIns == INS_none)
+    {
+        return false;
+    }
+
+    code_t code;
+    switch (compressedIns)
+    {
+        case INS_c_mv:
+            code = insEncodeCRTypeInstr(compressedIns, rd, rs2);
+            break;
+        case INS_c_add:
+            code = insEncodeCRTypeInstr(compressedIns, rd, rs2);
+            break;
+        case INS_c_and:
+        case INS_c_or:
+        case INS_c_xor:
+        case INS_c_sub:
+        case INS_c_addw:
+        case INS_c_subw:
+        {
+            unsigned rdRvc  = tryGetRvcRegisterNumber(rd);
+            unsigned rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            assert((rdRvc != -1) && (rs2Rvc != -1));
+            code = insEncodeCATypeInstr(compressedIns, rdRvc, rs2Rvc);
+            break;
+        }
+        default:
+            return false;
+    };
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(rd);
+    id->idReg2(rs1);
+    id->idReg3(rs2);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(2);
+
+    appendToCurIG(id);
+
+    return true;
+}
+
+instruction emitter::tryGetCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
+{
+    switch (ins)
+    {
+        case INS_add:
+        {
+            if ((rs1 == REG_R0) && (rd != REG_R0) && (rs2 != REG_R0))
+            {
+                return INS_c_mv;
+            }
+            else if ((rd == rs1) && (rd != REG_R0) && (rs2 != REG_R0))
+            {
+                return INS_c_add;
+            }
+            break;
+        }
+        case INS_and:
+        case INS_or:
+        case INS_xor:
+        case INS_sub:
+        case INS_addw:
+        case INS_subw:
+        {
+            unsigned rdRvc  = tryGetRvcRegisterNumber(rd);
+            unsigned rs2Rvc = tryGetRvcRegisterNumber(rs2);
+            if ((rd == rs1) && (rdRvc != -1) && (rs2Rvc != -1))
+            {
+                return getCompressedArithmeticIns(ins);
+            }
+            break;
+        }
+        default:
+            break;
+    };
+    return INS_none;
+}
+
+unsigned emitter::tryGetRvcRegisterNumber(regNumber reg)
+{
+    switch (reg)
+    {
+        case REG_FP:
+            return 0;
+        case REG_S1:
+            return 1;
+        case REG_A0:
+            return 2;
+        case REG_A1:
+            return 3;
+        case REG_A2:
+            return 4;
+        case REG_A3:
+            return 5;
+        case REG_A4:
+            return 6;
+        case REG_A5:
+            return 7;
+        default:
+            return -1;
+    }
+}
+
+regNumber emitter::getRegNumberFromRvcReg(unsigned rvcReg)
+{
+    assert((rvcReg >> 3) == 0);
+    switch (rvcReg)
+    {
+        case 0:
+            return REG_FP;
+        case 1:
+            return REG_S1;
+        case 2:
+            return REG_A0;
+        case 3:
+            return REG_A1;
+        case 4:
+            return REG_A2;
+        case 5:
+            return REG_A3;
+        case 6:
+            return REG_A4;
+        case 7:
+            return REG_A5;
+        default:
+            unreached();
+    }
+}
+
+instruction emitter::getCompressedArithmeticIns(instruction ins)
+{
+    assert((ins == INS_and) || (ins == INS_or) || (ins == INS_xor) || (ins == INS_sub) || (ins == INS_addw) ||
+           (ins == INS_subw));
+    switch (ins)
+    {
+        case INS_and:
+            return INS_c_and;
+        case INS_or:
+            return INS_c_or;
+        case INS_xor:
+            return INS_c_xor;
+        case INS_sub:
+            return INS_c_sub;
+        case INS_addw:
+            return INS_c_addw;
+        case INS_subw:
+            return INS_c_subw;
+        default:
+            unreached();
+    }
 }
 
 /*****************************************************************************
@@ -1696,28 +1877,15 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
 
     /* Set the instruction - special case jumping a function */
-    instruction ins;
-
-    ins = INS_jalr; // jalr
-    id->idIns(ins);
+    id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
-    // TODO-RISCV64: maybe optimize.
-
-    // INS_OPTS_C: placeholders.  1/2/4-ins:
+    // INS_OPTS_C: placeholders.  1/2-ins:
     //   if (callType == EC_INDIR_R)
-    //      jalr REG_R0/REG_RA, ireg, offset   <---- 1-ins
+    //      jalr zero/ra, ireg, offset
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //     if reloc:
-    //             //pc + offset_38bits       # only when reloc.
-    //      auipc t2, addr-hi20
-    //      jalr r0/1, t2, addr-lo12
-    //
-    //     else:
-    //      lui  t2, dst_offset_lo32-hi
-    //      ori  t2, t2, dst_offset_lo32-lo
-    //      lui  t2, dst_offset_hi32-lo
-    //      jalr REG_R0/REG_RA, t2, 0
+    //      auipc t2/ra, offset-hi20
+    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
     if (params.callType == EC_INDIR_R)
@@ -1750,16 +1918,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (emitComp->opts.compReloc)
-        {
-            id->idSetIsDspReloc();
-            id->idCodeSize(8);
-        }
-        else
-        {
-            id->idCodeSize(32);
-        }
+        id->idCodeSize(2 * sizeof(code_t));
+        id->idSetIsDspReloc();
     }
 
 #ifdef DEBUG
@@ -1794,11 +1954,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
  *  Output a call instruction.
  */
 
-unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
+unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
 {
-    unsigned char callInstrSize = sizeof(code_t); // 4 bytes
-    regMaskTP     gcrefRegs;
-    regMaskTP     byrefRegs;
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 
@@ -1837,130 +1996,29 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
 #endif // DEBUG
 
     assert(id->idIns() == INS_jalr);
+    BYTE* origDst = dst;
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
         ssize_t offset = id->idSmallCns();
-        assert(isValidSimm12(offset));
-        code = emitInsCode(id->idIns());
-        code |= (code_t)id->idReg4() << 7;
-        code |= (code_t)id->idReg3() << 15;
-        code |= (code_t)offset << 20;
-        emitOutput_Instr(dst, code);
-    }
-    else if (id->idIsReloc())
-    {
-        // pc + offset_32bits
-        //
-        //   auipc t2, addr-hi20
-        //   jalr r0/1,t2,addr-lo12
-
-        emitOutput_Instr(dst, 0x00000397);
-
-        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
-
-        int reg2 = (int)(addr & 1);
-        addr -= reg2;
-
-        if (!emitComp->opts.compReloc)
-        {
-            assert(isValidSimm32(addr - (ssize_t)dst));
-        }
-
-        assert((addr & 1) == 0);
-
-        dst += 4;
-        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
-
-#ifdef DEBUG
-        code = emitInsCode(INS_auipc);
-        assert((code | (REG_DEFAULT_HELPER_CALL_TARGET << 7)) == 0x00000397);
-        assert((int)REG_DEFAULT_HELPER_CALL_TARGET == 7);
-        code = emitInsCode(INS_jalr);
-        assert(code == 0x00000067);
-#endif
-        emitOutput_Instr(dst, 0x00000067 | (REG_DEFAULT_HELPER_CALL_TARGET << 15) | reg2 << 7);
-
-        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg4(), id->idReg3(), TrimSignedToImm12(offset));
     }
     else
     {
-        // lui  t2, dst_offset_hi32-hi
-        // addi t2, t2, dst_offset_hi32-lo
-        // slli t2, t2, 11
-        // addi t2, t2, dst_offset_low32-hi
-        // slli t2, t2, 11
-        // addi t2, t2, dst_offset_low32-md
-        // slli t2, t2, 10
-        // jalr t2
+        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
-        ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((uint64_t)(imm >> 32) <= 0x7fff); // RISC-V Linux Kernel SV48
+        regNumber linkReg = (regNumber)(addr & 1);
+        assert(linkReg == REG_ZERO || linkReg == REG_RA);
+        addr -= linkReg;
+        assert((addr & 1) == 0);
+        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
 
-        int reg2 = (int)(imm & 1);
-        imm -= reg2;
+        dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, 0);
+        emitGCregDeadUpd(tempReg, dst);
+        dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
-        UINT32 high = imm >> 32;
-        code        = emitInsCode(INS_lui);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(high & 0xfff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(11 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        UINT32 low = imm & 0xffffffff;
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= ((low >> 21) & 0x7ff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(11 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_addi);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= ((low >> 10) & 0x7ff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_slli);
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (code_t)(10 << 20);
-        emitOutput_Instr(dst, code);
-        dst += 4;
-
-        code = emitInsCode(INS_jalr);
-        code |= (code_t)reg2 << 7;
-        code |= (code_t)REG_DEFAULT_HELPER_CALL_TARGET << 15;
-        code |= (low & 0x3ff) << 20;
-        // the offset default is 0;
-        emitOutput_Instr(dst, code);
+        assert(id->idIsDspReloc());
+        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
     }
-
-    dst += 4;
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
@@ -2008,25 +2066,19 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         // So we're not really doing a "stack pop" here (note that "args" is 0), but we use this mechanism
         // to record the call for GC info purposes.  (It might be best to use an alternate call,
         // and protect "emitStackPop" under the EMIT_TRACK_STACK_DEPTH preprocessor variable.)
-        emitStackPop(dst, /*isCall*/ true, callInstrSize, /*args*/ 0);
+        emitStackPop(dst, /*isCall*/ true, sizeof(code_t), /*args*/ 0);
 
         // Do we need to record a call location for GC purposes?
         //
         if (!emitFullGCinfo)
         {
-            emitRecordGCcall(dst, callInstrSize);
+            emitRecordGCcall(dst, sizeof(code_t));
         }
     }
-    if (id->idIsCallRegPtr())
-    {
-        callInstrSize = 1 << 2;
-    }
-    else
-    {
-        callInstrSize = id->idIsReloc() ? (2 << 2) : (8 << 2); // INS_OPTS_C: 2/9-ins.
-    }
 
-    return callInstrSize;
+    assert(dst > origDst);
+    assert((dst - origDst) <= UINT_MAX);
+    return (unsigned)(dst - origDst);
 }
 
 void emitter::emitJumpDistBind()
@@ -2284,7 +2336,7 @@ AGAIN:
 #endif // DEBUG_EMIT
 
         assert(jmpDist >= 0);
-        assert(!(jmpDist & 0x3));
+        assert(!(jmpDist & 0x1));
 
         if (!(isLinkingEnd & 0x2) && (extra > 0) &&
             (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
@@ -2371,15 +2423,17 @@ AGAIN:
 
 /*****************************************************************************
  *
- *  Emit a 32-bit RISCV64 instruction
+ *  Emit a 16/32-bit RISCV64 instruction
  */
 
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
     static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
-    memcpy(dst + writeableOffset, &code, sizeof(code));
-    return sizeof(code_t);
+    unsigned codeSize = Is32BitInstruction((WORD)code) ? 4 : 2;
+    assert((codeSize == 4) || ((code >> 16) == 0));
+    memcpy(dst + writeableOffset, &code, codeSize);
+    return codeSize;
 }
 
 static inline void assertCodeLength(size_t code, uint8_t size)
@@ -2553,6 +2607,52 @@ static inline void assertCodeLength(size_t code, uint8_t size)
 
     return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
            (imm20HiBit << 31);
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 16-bit RISCV64C CR-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter "Compressed Instruction Formats"
+ *  CR Format:
+ *  15-------------12-11-----------------7-6------------------2-1-----0
+ *  |     funct4     |       rd/rs1       |        rs2         |  op  |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeCRTypeInstr(instruction ins, unsigned rdRs1, unsigned rs2)
+{
+    assert((INS_c_mv <= ins) && (ins <= INS_c_add));
+    code_t insCode = emitInsCode(ins);
+
+    assertCodeLength(insCode, 16);
+    assertCodeLength(rdRs1, 5);
+    assertCodeLength(rs2, 5);
+
+    return insCode | (rs2 << 2) | (rdRs1 << 7);
+}
+
+/*****************************************************************************
+ *
+ *  Emit a 16-bit RISCV64C CA-Type instruction
+ *
+ *  Note: Instruction types as per RISC-V Spec, Chapter "Compressed Instruction Formats"
+ *  CA Format:
+ *  15-----------------------10-9----------7-6------5-4---------2-1---0
+ *  |          funct6          |  rd'/rs1' | funct2 |    rs2'   | op |
+ *  -------------------------------------------------------------------
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeCATypeInstr(instruction ins, unsigned rdRs1Rvc, unsigned rs2Rvc)
+{
+    assert((INS_c_and <= ins) && (ins <= INS_c_subw));
+    code_t insCode = emitInsCode(ins);
+
+    assertCodeLength(insCode, 16);
+    assertCodeLength(rdRs1Rvc, 3);
+    assertCodeLength(rs2Rvc, 3);
+
+    return insCode | (rs2Rvc << 2) | (rdRs1Rvc << 7);
 }
 
 static constexpr unsigned kInstructionOpcodeMask = 0x7f;
@@ -3131,14 +3231,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
     const int offset = id->idAddr()->iiaGetJitDataOffset();
     assert(offset >= 0);
-    assert(offset < emitDataSize());
+    assert((UNATIVE_OFFSET)offset < emitDataSize());
 
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
     assert(reg1 != REG_ZERO);
     assert(id->idCodeSize() == 2 * sizeof(code_t));
     const ssize_t immediate = (emitConsBlock - dst) + offset;
-    assert((immediate > 0) && ((immediate & 0x03) == 0));
+    assert((immediate > 0) && ((immediate & 0x01) == 0));
     assert(isValidSimm32(immediate));
 
     const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
@@ -3158,7 +3258,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     *ins = INS_auipc;
 
     const ssize_t immediate = (emitCodeBlock - dst) + igOffs;
-    assert((immediate & 0x03) == 0);
+    assert((immediate & 0x01) == 0);
     assert(isValidSimm32(immediate));
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
@@ -3168,7 +3268,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
 BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
     const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
-    assert((immediate & 0x03) == 0);
+    assert((immediate & 0x01) == 0);
 
     *ins = jmp->idIns();
     if (jmp->idInsIs(INS_jal, INS_j)) // far jump
@@ -3211,7 +3311,7 @@ BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGrou
 BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
     const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-    assert((immediate & 0x03) == 0);
+    assert((immediate & 0x01) == 0);
 
     *ins = id->idIns();
 
@@ -3257,7 +3357,7 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
         assert(!id->idIsLargeCns());
         *size = sizeof(instrDesc);
     }
-    dst += emitOutputCall(ig, dst, id, 0);
+    dst += emitOutputCall(ig, dst, id);
     return dst;
 }
 
@@ -3613,7 +3713,10 @@ void emitter::emitDispInsName(
     emitDispInsOffs(insOffset, doffs);
 
     if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
-        printf("  %08X    ", code);
+    {
+        int nNibbles = Is32BitInstruction((WORD)code) ? 8 : 4;
+        printf("  %-8.*X    ", nNibbles, code);
+    }
 
     printf("      ");
 
@@ -4723,6 +4826,80 @@ void emitter::emitDispInsName(
             }
             return;
         }
+        case MajorOpcode::JrJalrMvAdd:
+        {
+            unsigned funct4 = (code >> 12) & 0xf;
+            unsigned rdRs1  = (code >> 7) & 0x1f;
+            unsigned rs2    = (code >> 2) & 0x1f;
+            if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
+            {
+                if (emitComp->opts.disCodeBytes)
+                {
+                    printf("c.add          %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+                }
+                else
+                {
+                    printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                }
+            }
+            else if (funct4 == 0b1000 && rdRs1 != REG_R0 && rs2 != REG_R0)
+            {
+                const char* name = emitComp->opts.disCodeBytes ? "c.mv" : "mv  ";
+                printf("%s           %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
+            }
+            else
+            {
+                return emitDispIllegalInstruction(code);
+            }
+            return;
+        }
+        case MajorOpcode::MiscAlu:
+        {
+            unsigned funct6 = (code >> 10) & 0x3f;
+            unsigned funct2 = (code >> 5) & 0x3;
+            unsigned rdRs1  = getRegNumberFromRvcReg(((code >> 7) & 0x7));
+            unsigned rs2    = getRegNumberFromRvcReg(((code >> 2) & 0x7));
+
+            const char* name = nullptr;
+            if (funct6 == 0b100011 && funct2 == 0b00)
+            {
+                name = "sub ";
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b01)
+            {
+                name = "xor ";
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b10)
+            {
+                name = "or  ";
+            }
+            else if (funct6 == 0b100011 && funct2 == 0b11)
+            {
+                name = "and ";
+            }
+            else if (funct6 == 0b100111 && funct2 == 0b00)
+            {
+                name = "subw";
+            }
+            else if (funct6 == 0b100111 && funct2 == 0b01)
+            {
+                name = "addw";
+            }
+            else
+            {
+                emitDispIllegalInstruction(code);
+            }
+
+            if (emitComp->opts.disCodeBytes)
+            {
+                printf("c.%s         %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
+            }
+            else
+            {
+                printf("%s           %s, %s, %s\n", name, RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+            }
+            return;
+        }
         default:
             NO_WAY("illegal ins within emitDisInsName!");
     }
@@ -4754,10 +4931,16 @@ void emitter::emitDispIns(
     unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
-        // TODO-RISCV64: support different size instructions
-        instrSize = sizeof(code_t);
-        code_t instruction;
-        memcpy(&instruction, instr, instrSize);
+        WORD word;
+        memcpy(&word, instr, sizeof(word));
+        code_t instruction = word;
+        instrSize          = sizeof(word);
+        if (Is32BitInstruction(word))
+        {
+            memcpy(&word, instr + sizeof(word), sizeof(word));
+            instruction |= word << 16;
+            instrSize = 4;
+        }
 #ifdef DEBUG
         if (emitComp->verbose && i != 0)
         {
@@ -5470,7 +5653,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
 
     unsigned codeSize = id->idCodeSize();
-    assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+    assert((codeSize >= 2) && ((codeSize % 2) == 0));
 
     // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
     // etc) for building immediates, assume cost of one each.
@@ -5499,6 +5682,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case MajorOpcode::Op:
         case MajorOpcode::Op32:
+        case MajorOpcode::JrJalrMvAdd:
+        case MajorOpcode::MiscAlu:
             if (id->idInsIs(INS_mul, INS_mulh, INS_mulhu, INS_mulhsu, INS_mulw))
             {
                 result.insLatency = PERFSCORE_LATENCY_3C;

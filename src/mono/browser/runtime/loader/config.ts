@@ -56,11 +56,17 @@ function deep_merge_resources (target: Assets, source: Assets): Assets {
     if (target === source) return target;
 
     const providedResources: Assets = { ...source };
+    if (providedResources.coreAssembly !== undefined) {
+        providedResources.coreAssembly = [...(target.coreAssembly || []), ...(providedResources.coreAssembly || [])];
+    }
     if (providedResources.assembly !== undefined) {
         providedResources.assembly = [...(target.assembly || []), ...(providedResources.assembly || [])];
     }
     if (providedResources.lazyAssembly !== undefined) {
         providedResources.lazyAssembly = [...(target.lazyAssembly || []), ...(providedResources.lazyAssembly || [])];
+    }
+    if (providedResources.corePdb !== undefined) {
+        providedResources.corePdb = [...(target.corePdb || []), ...(providedResources.corePdb || [])];
     }
     if (providedResources.pdb !== undefined) {
         providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];
@@ -214,15 +220,6 @@ export function normalizeConfig () {
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
-    }
-
-    if (config.debugLevel !== 0 && globalThis.window?.document?.querySelector("script[src*='aspnetcore-browser-refresh']")) {
-        if (!config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
-            config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-        }
-        if (!config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
-            config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
-        }
     }
 
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
