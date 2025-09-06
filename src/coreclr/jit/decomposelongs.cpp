@@ -139,10 +139,9 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
     // On x86, long->floating casts are implemented in DecomposeCast.
-    bool isLongToFloatingCast =
-        (tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree));
-
-    if (!tree->TypeIs(TYP_LONG) && !isLongToFloatingCast)
+    // Those nodes, plus any nodes that produce a long, will be examined.
+    if (!tree->TypeIs(TYP_LONG) &&
+        !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
 #else
     if (!tree->TypeIs(TYP_LONG))
 #endif // FEATURE_HW_INTRINSICS && TARGET_X86
