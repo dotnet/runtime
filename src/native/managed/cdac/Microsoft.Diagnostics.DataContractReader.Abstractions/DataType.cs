@@ -138,4 +138,6 @@ public enum DataType
     GCHeap,
     Generation,
     CFinalize,
+    HeapSegment,
+    OOMHistory,
 }

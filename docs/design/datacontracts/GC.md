@@ -39,6 +39,7 @@ public readonly struct GCGenerationData
     // "workstation" or "server"
     // "segments" or "regions"
     // "background"
+    // "dynamic_heap"
     string[] GetGCIdentifiers();
 
     // Return the number of GC heaps
@@ -51,6 +52,8 @@ public readonly struct GCGenerationData
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr);
     // Gets the current GC state enum value
     uint GetCurrentGCState();
+    // Gets the current GC heap dynamic adaptation mode. -1 if not enabled.
+    int GetDynamicAdaptationMode();
     // Returns pointers to all GC heaps.
     IEnumerable<TargetPointer> GetGCHeaps();
 
@@ -105,6 +108,8 @@ Global variables used:
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
 | `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
 | `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
+| `CurrentGCState` | uint | GC | `c_gc_state` enum value. Only available when `GCIdentifiers` contains `background`. |
+| `DynamicAdaptationMode | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
 
@@ -123,7 +128,8 @@ Constants used:
 GCHeapType IGC.GetGCIdentifiers()
 {
     string gcIdentifiers = target.ReadGlobalString("GCIdentifiers");
-    return gcIdentifiers.Split(", ");
+    return gcIdentifiers.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 }
 
 uint IGC.GetGCHeapCount()
@@ -164,12 +170,23 @@ void IGC.GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr)
 uint IGC.GetCurrentGCState()
 {
     string[] gcIdentifiers = GetGCIdentifiers();
-    if (gcType.Contains("background"))
+    if (gcIdentifiers.Contains("background"))
     {
         return target.Read<uint>(target.ReadGlobalPointer("CurrentGCState"));
     }
 
     return 0;
+}
+
+int IGC.GetDynamicAdaptationMode()
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (gcIdentifiers.Contains("dynamic_heap))
+    {
+        return target.read<int>(target.ReadGlobalPointer("DynamicAdaptationMode"));
+    }
+
+    return -1;
 }
 
 IEnumerable<TargetPointer> IGC.GetGCHeaps()
