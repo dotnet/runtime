@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
@@ -27,8 +31,10 @@ namespace ILLink.RoslynAnalyzer
 
         private static readonly DiagnosticDescriptor s_referenceNotMarkedIsTrimmableRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsTrimmable);
 
+        private static readonly DiagnosticDescriptor s_dynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameterRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter);
+
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule);
+            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule, s_dynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameterRule);
 
         private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -93,5 +99,33 @@ namespace ILLink.RoslynAnalyzer
 
         protected override string GetMessageFromAttribute(AttributeData? requiresAttribute) =>
             RequiresUnreferencedCodeUtils.GetMessageFromAttribute(requiresAttribute);
+
+        internal override void ProcessGenericInstantiation(
+            ITypeSymbol typeArgument,
+            ITypeParameterSymbol typeParameter,
+            FeatureContext featureContext,
+            TypeNameResolver typeNameResolver,
+            ISymbol owningSymbol,
+            Location location,
+            Action<Diagnostic>? reportDiagnostic)
+        {
+            base.ProcessGenericInstantiation(typeArgument, typeParameter, featureContext, typeNameResolver, owningSymbol, location, reportDiagnostic);
+
+            var parameterRequirements = typeParameter.GetDynamicallyAccessedMemberTypes();
+            // Avoid duplicate warnings for new() and DAMT.PublicParameterlessConstructor
+            if (typeParameter.HasConstructorConstraint)
+                parameterRequirements &= ~DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
+            var genericParameterValue = new GenericParameterValue(typeParameter, parameterRequirements);
+            if (!owningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+                !featureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute) &&
+                genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+            {
+                SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol(typeArgument)!;
+                var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
+                var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(this, featureContext, typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer, owningSymbol);
+                requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
+            }
+        }
     }
 }

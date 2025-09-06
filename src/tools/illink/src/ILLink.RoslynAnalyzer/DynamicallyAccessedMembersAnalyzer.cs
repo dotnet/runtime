@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -126,7 +127,7 @@ namespace ILLink.RoslynAnalyzer
                 });
 
                 // Remaining actions are only for DynamicallyAccessedMembers analysis.
-                if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+                if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
                 // Examine generic instantiations in base types and interface list
@@ -142,11 +143,6 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    if (type.BaseType is INamedTypeSymbol baseType)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, baseType, context.ReportDiagnostic);
-
-                    foreach (var interfaceType in type.Interfaces)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, interfaceType, context.ReportDiagnostic);
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);
