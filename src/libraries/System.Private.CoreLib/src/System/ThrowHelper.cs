@@ -255,6 +255,77 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeNonZero<T>(T value, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeNonZero(paramName, value);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeNonNegative<T>(T value, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeNonNegative(paramName, value);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeNonNegativeNonZero<T>(T value, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeNonNegativeNonZero(paramName, value);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeLessOrEqual<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeLessOrEqual(paramName, value, other);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeLess<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeLess(paramName, value, other);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeGreaterOrEqual<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeGreaterOrEqual(paramName, value, other);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeGreater<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeGreater(paramName, value, other);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeNotEqual<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeNotEqual(paramName, value, other);
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Generic_MustBeEqual<T>(T value, T other, string? paramName) =>
+            throw GetArgumentOutOfRange_Generic_MustBeEqual(paramName, value, other);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeNonZero(string? paramName, object? value) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeNonZero, value, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeNonNegative(string? paramName, object? value) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, value, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeNonNegativeNonZero(string? paramName, object? value) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, value, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeLessOrEqual(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, value, other, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeLess(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeLess, value, other, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeGreaterOrEqual(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, value, other, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeGreater(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeGreater, value, other, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeNotEqual(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeNotEqual, value, other, paramName);
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRange_Generic_MustBeEqual(string? paramName, object? value, object? other) =>
+            GetArgumentOutOfRangeException(SR.ArgumentOutOfRange_Generic_MustBeEqual, value, other, paramName);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(string resourceFormat, object? value, string? paramName) =>
+            new ArgumentOutOfRangeException(paramName, value, string.Format(resourceFormat, paramName, value));
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(string resourceFormat, object? value, object? other, string? paramName) =>
+            new ArgumentOutOfRangeException(paramName, value, string.Format(resourceFormat, paramName, value ?? "null", other ?? "null"));
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException()
         {
             throw new OverflowException();
