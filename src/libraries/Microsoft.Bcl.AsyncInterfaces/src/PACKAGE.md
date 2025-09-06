@@ -1,6 +1,37 @@
 ## About
 
-As of C# 8, the C# language has support for producing and consuming asynchronous iterators. The library types in support of those features are available in .NET Core 3.0 and newer as well as in .NET Standard 2.1. This library provides the necessary definitions of those types to support these language features on .NET Framework and on .NET Standard 2.0. This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
+As of C# 8, the C# language has support for producing and consuming asynchronous iterators. The library types in support of those features are available in .NET Core 3.0 and newer as well as in .NET Standard 2.1. This library provides the necessary definitions of those types to support these language features on .NET Framework and on .NET Standard 2.0. This library is not necessary nor recommended when *only* targeting versions of .NET that include the relevant support. When
+multi-targeting to versions that lack support for the types provided by this package, this package should be referenced for
+**all** target frameworks. This ensures consistent behavior and prevents issues with transitive dependencies by consuming apps.
+
+In some cases, you may need to add a direct reference to this package to resolve issues with transitive dependencies
+that expect these types to be available. This typically occurs when a dependency library multi-targets but does not
+include this package for all target frameworks. In such cases, adding a top-level reference to Microsoft.Bcl.AsyncInterfaces
+can resolve missing type issues and ensure proper type forwarding.
+
+## Target Framework Support
+
+The types provided by this package have native support in the following target frameworks:
+
+* **IAsyncEnumerable\<T\>, IAsyncEnumerator\<T\>, IAsyncDisposable**: .NET Core 3.0+, .NET 5+, and .NET Standard 2.1+
+
+## When You May Still Need This Package
+
+Even when targeting supported frameworks, you may still need to reference this package in these scenarios:
+
+### Multi-targeting scenarios
+
+When multi-targeting and any target framework lacks native support for these types, reference this package for **all** target frameworks, including those with native support. This prevents type identity mismatches and ensures consistent behavior across all targets.
+
+### Transitive dependency issues
+
+If you encounter missing type errors when consuming libraries that use async interfaces, you may need to add a direct reference to this package. This can happen when:
+
+* A dependency library multi-targets but inconsistently references this package across target frameworks
+* The dependency resolution selects a target framework that doesn't include the package reference
+* Type forwarding is needed to unify types from different assemblies
+
+Adding a top-level package reference resolves these issues by ensuring the types are available and properly forwarded across all scenarios.
 
 ## Key Features
 

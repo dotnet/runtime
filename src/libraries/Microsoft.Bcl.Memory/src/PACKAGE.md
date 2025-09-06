@@ -1,18 +1,51 @@
 ## About
 
 Provides `Index` and `Range` types to simplify slicing operations on collections for .NET Framework and .NET Standard 2.0.
-Provides `Base64Url` for encoding data in a URL-safe manner on older .NET platforms.
-Provides `Utf8` for converting chunked data between UTF-8 and UTF-16 encodings on .NET Framework and .NET Standard 2.0.
+Provides `Utf8` for converting chunked data between UTF-8 and UTF-16 encodings on .NET Framework, .NET Standard 2.0, and versions earlier than .NET 5.
+Provides `Base64Url` for encoding data in a URL-safe manner on versions earlier than .NET 9.
 
-This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
+This library is not necessary nor recommended when *only* targeting versions of .NET that include the relevant support. When
+multi-targeting to versions that lack support for the types provided by this package, this package should be referenced for
+**all** target frameworks. This ensures consistent behavior and prevents issues with transitive dependencies by consuming apps.
+
+In some cases, you may need to add a direct reference to this package to resolve issues with transitive dependencies
+that expect these types to be available. This typically occurs when a dependency library multi-targets but does not
+include this package for all target frameworks. In such cases, adding a top-level reference to Microsoft.Bcl.Memory
+can resolve missing type issues and ensure proper type forwarding.
+
+## Target Framework Support
+
+The types provided by this package have native support in the following target frameworks:
+
+* **Index and Range**: .NET Core 3.0+, .NET 5+, and .NET Standard 2.1+
+* **System.Text.Unicode.Utf8**: .NET 5+
+* **System.Buffers.Text.Base64Url**: .NET 9+
+
+## When You May Still Need This Package
+
+Even when targeting supported frameworks, you may still need to reference this package in these scenarios:
+
+### Multi-targeting scenarios
+
+When multi-targeting and any target framework lacks native support for these types, reference this package for **all** target frameworks, including those with native support. This prevents type identity mismatches and ensures consistent behavior across all targets.
+
+### Transitive dependency issues
+
+If you encounter missing type errors when consuming libraries that use these types, you may need to add a direct reference to this package. This can happen when:
+
+* A dependency library multi-targets but inconsistently references this package across target frameworks
+* The dependency resolution selects a target framework that doesn't include the package reference
+* Type forwarding is needed to unify types from different assemblies
+
+Adding a top-level package reference resolves these issues by ensuring the types are available and properly forwarded across all scenarios.
 
 ## Key Features
 
 <!-- The key features of this package -->
 
 * Enables the use of `Index` and `Range` types on .NET Framework and .NET Standard 2.0.
-* Provides `Base64Url` encoding, decoding, and validation for URL-safe data processing on older .NET platforms.
-* Provides `Utf8` encoding, decoding, and validation for chunked data between UTF-8 and UTF-16 on .NET Framework and .NET Standard 2.0.
+* Provides `Utf8` encoding, decoding, and validation for chunked data between UTF-8 and UTF-16 on .NET Framework, .NET Standard 2.0, and versions earlier than .NET 5.
+* Provides `Base64Url` encoding, decoding, and validation for URL-safe data processing on versions earlier than .NET 9.
 
 ## How to Use
 
