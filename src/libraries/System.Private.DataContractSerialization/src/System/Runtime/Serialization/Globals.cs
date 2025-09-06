@@ -34,6 +34,8 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfVoid => field ??= typeof(void);
         internal static Type TypeOfByteArray => field ??= typeof(byte[]);
         internal static Type TypeOfTimeSpan => field ??= typeof(TimeSpan);
+        internal static Type TypeOfDateOnly => field ??= typeof(DateOnly);
+        internal static Type TypeOfTimeOnly => field ??= typeof(TimeOnly);
         internal static Type TypeOfGuid => field ??= typeof(Guid);
         internal static Type TypeOfDateTimeOffset => field ??= typeof(DateTimeOffset);
         internal static Type TypeOfDateTimeOffsetAdapter => field ??= typeof(DateTimeOffsetAdapter);

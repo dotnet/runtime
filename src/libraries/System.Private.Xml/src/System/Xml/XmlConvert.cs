@@ -1285,6 +1285,30 @@ namespace System.Xml
             return exception;
         }
 
+        public static string ToString(DateOnly value)
+        {
+            return value.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        public static DateOnly ToDateOnly(string s)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            return DateOnly.ParseExact(s, "O", CultureInfo.InvariantCulture, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
+        public static string ToString(TimeOnly value)
+        {
+            return value.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        public static TimeOnly ToTimeOnly(string s)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            return TimeOnly.ParseExact(s, "O", CultureInfo.InvariantCulture, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
         private static DateTime SwitchToLocalTime(DateTime value) =>
             value.Kind switch
             {
@@ -1802,6 +1826,16 @@ namespace System.Xml
         internal static bool TryFormat(Guid value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten);
+        }
+
+        internal static bool TryFormat(DateOnly value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, "O", CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(TimeOnly value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, "O", CultureInfo.InvariantCulture);
         }
     }
 }
