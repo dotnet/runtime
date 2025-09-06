@@ -433,6 +433,14 @@ struct LeavesTableEntry
     InterpBasicBlock *pFinallyCallIslandBB;
 };
 
+enum class InterpreterRetryFlags
+{
+    support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
+
+    None = 0,
+    RetryWithSavedThisPointer = 1,
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
@@ -508,6 +516,9 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
+    InterpreterRetryFlags m_originalRetryFlags;
+    InterpreterRetryFlags *m_pRetryFlags;
+
     uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
@@ -543,7 +554,7 @@ private:
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
-    void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    bool GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -765,7 +776,7 @@ private:
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryFlags *pRetryFlags);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
