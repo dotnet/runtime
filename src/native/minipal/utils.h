@@ -38,6 +38,50 @@
 #  define FALLTHROUGH
 #endif
 
+#ifdef _MSC_VER
+#define __UNREACHABLE() __assume(0)
+#else
+#define __UNREACHABLE() __builtin_unreachable()
+#endif
+
+#if defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#define FORCEINLINE __forceinline
+#else
+#define NOINLINE __attribute__((noinline))
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+#if defined(_MSC_VER)
+
+// MSVC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#define I64_HELPER(x) x ## i64
+#define I64(x)        I64_HELPER(x)
+
+#define UI64_HELPER(x) x ## ui64
+#define UI64(x)        UI64_HELPER(x)
+
+#else
+
+// GCC's way of declaring large integer constants
+// If you define these in one step, without the _HELPER macros, you
+// get extra whitespace when composing these with other concatenating macros.
+#define I64_HELPER(x) x ## LL
+#define I64(x)        I64_HELPER(x)
+
+#define UI64_HELPER(x) x ## ULL
+#define UI64(x)        UI64_HELPER(x)
+
+#endif
+
+#ifdef _MSC_VER
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
+#endif
+
 #if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else

@@ -219,7 +219,7 @@ function_name() to call the system's implementation
 #define INFTIM  -1
 #endif // !HAVE_INFTIM
 
-#define OffsetOf(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
+#include <stddef.h>
 
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
