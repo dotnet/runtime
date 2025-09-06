@@ -118,7 +118,12 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                             if (setMethod is not null)
                             {
-                                propertyInfo.SetValue(newAttribute, argumentValue);
+                                // Public properties may have non-public setter methods
+                                if (setMethod.IsPublic)
+                                {
+                                    propertyInfo.SetValue(newAttribute, argumentValue);
+                                }
+
                                 break;
                             }
                         }

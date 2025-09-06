@@ -1575,24 +1575,29 @@ namespace System.Reflection
 
                             RuntimeMethodInfo? setMethod = null;
                             RuntimeMethodInfo? getMethod = null;
-                            RuntimePropertyInfo? property = null;
-                            RuntimePropertyInfo? firstPropInHierarchy = null;
-                            Type? baseAttributeType = attributeType;
+                            Type baseAttributeType = attributeType;
 
-                            // If the method getter is not virtual, the property of the current class (in hierarchy) has hidden its base-property instead of overriding it. So there is no need to continue traversal
-                            while (setMethod is null && baseAttributeType is not null
-                                && (property is null || getMethod is null || getMethod.IsVirtual))
+                            for (; ; )
                             {
-                                property = (RuntimePropertyInfo?)(type is null ?
+                                RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                     baseAttributeType.GetProperty(name) :
                                     baseAttributeType.GetProperty(name, type, []));
 
                                 if (property is not null)
                                 {
-                                    firstPropInHierarchy ??= property;
-                                    // Public properties may have non-public setter methods
-                                    setMethod = property.GetSetMethod(true)!;
-                                    getMethod = property.GetGetMethod(true)!;
+                                    setMethod = property.GetSetMethod(true);
+                                    getMethod = property.GetGetMethod(true);
+
+                                    if (setMethod is not null)
+                                    {
+                                        // Public properties may have non-public setter methods
+                                        if (setMethod.IsPublic)
+                                        {
+                                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
+                                        }
+
+                                        break;
+                                    }
                                 }
                                 else
                                 {
@@ -1600,20 +1605,10 @@ namespace System.Reflection
                                     getMethod = null;
                                 }
 
-                                baseAttributeType = baseAttributeType.BaseType;
+                                baseAttributeType = baseAttributeType.BaseType is null || (getMethod is not null && !getMethod.IsVirtual)
+                                    ? throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name))
+                                    : baseAttributeType.BaseType;
                             }
-
-                            if (firstPropInHierarchy is null)
-                            {
-                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                            }
-
-                            if (setMethod is null || !setMethod.IsPublic)
-                            {
-                                continue;
-                            }
-
-                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
                         }
                         else
                         {
