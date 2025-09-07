@@ -1581,7 +1581,7 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
 
     GCX_COOP();
 
-    MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
+    MethodDesc *pMeth = NonVirtualEntry2MethodDesc((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
@@ -1874,20 +1874,13 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // Next, check for an open delegate
         PCODE code = thisDel->GetMethodPtrAux();
 
-        if (code != (PCODE)NULL)
+        if (code == (PCODE)NULL)
         {
-            // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
-            pMethodHandle = MethodTable::GetMethodDescForSlotAddress(code);
-        }
-        else
-        {
-            MethodTable * pMT = NULL;
-
             // Must be a normal delegate
             code = thisDel->GetMethodPtr();
-
-            pMethodHandle = NonVirtualEntry2MethodDesc(code);
         }
+
+        pMethodHandle = NonVirtualEntry2MethodDesc(code);
     }
 
     _ASSERTE(pMethodHandle);

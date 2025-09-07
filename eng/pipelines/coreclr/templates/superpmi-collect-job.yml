@@ -59,6 +59,16 @@ jobs:
         artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
         displayName: 'Runtime build artifacts'
 
+    # Download release runtime artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)'
+        artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+        displayName: 'Release runtime build artifacts'
+        cleanUnpackFolder: false
+        overwriteExistingFiles: true
+
     # Unzip individual test projects
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
@@ -88,3 +98,9 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
       condition: succeeded()
+
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Release Core_Root
+      condition: succeeded()
+

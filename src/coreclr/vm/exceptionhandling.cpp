@@ -308,7 +308,8 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
     // ProcessCLRException leaves us with the original exception context. Thus we
     // rely solely on our frames and managed code unwinding. This also means that
     // if we pass through InlinedCallFrame we end up with empty context pointers.
-#if defined(TARGET_UNIX) || defined(TARGET_X86)
+    // With the interpreter enabled, we may also get NULL context pointers.
+#if defined(TARGET_UNIX) || defined(TARGET_X86) || defined(FEATURE_INTERPRETER)
 #define HANDLE_NULL_CONTEXT_POINTER
 #else // TARGET_UNIX || TARGET_X86
 #define HANDLE_NULL_CONTEXT_POINTER _ASSERTE(false)

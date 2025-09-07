@@ -43,7 +43,9 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifndef TARGET_WASM
     hEventFinalizer->Set();
+#endif // !TARGET_WASM
 }
 
 namespace
@@ -175,6 +177,26 @@ OBJECTREF FinalizerThread::GetNextFinalizableObject()
 Again:
     if (fQuitFinalizer)
         return NULL;
+
+#ifdef _DEBUG
+    if (g_pConfig->GetGCStressLevel() > 1)
+    {
+        // Throttle finalizing to one item per msec, or so, when running GC stress.
+        // This is to prevent cases where finalizers rearm themselves and
+        // do allocations or whatever else that triggers GC under stress.
+        // As a result couple of such things can occupy finalizer loop continuously
+        // while rearming and finalizing the same objects, which adds little
+        // to the coverage, but makes everything else move slower.
+        // NOTE: under GC stress most allocations of finalizable objects
+        //       would trigger a GC, thus 1 item/msec should not be too slow for
+        //       regular not re-arming finalizables.
+        GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
+        GetFinalizerThread()->EnablePreemptiveGC();
+        ClrSleepEx(1, false);
+        GetFinalizerThread()->DisablePreemptiveGC();
+        GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
+    }
+#endif //_DEBUG
 
     OBJECTREF obj = ObjectToOBJECTREF(GCHeapUtilities::GetGCHeap()->GetNextFinalizable());
     if (obj == NULL)
@@ -431,27 +453,6 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         JitHost::Reclaim();
 
         GetFinalizerThread()->DisablePreemptiveGC();
-
-#ifdef _DEBUG
-        // <TODO> workaround.  make finalization very lazy for gcstress 3 or 4.
-        // only do finalization if the system is quiescent</TODO>
-        if (g_pConfig->GetGCStressLevel() > 1)
-        {
-            size_t last_gc_count;
-            DWORD dwSwitchCount = 0;
-
-            do
-            {
-                last_gc_count = GCHeapUtilities::GetGCHeap()->CollectionCount(0);
-                GetFinalizerThread()->m_GCOnTransitionsOK = FALSE;
-                GetFinalizerThread()->EnablePreemptiveGC();
-                __SwitchToThread (0, ++dwSwitchCount);
-                GetFinalizerThread()->DisablePreemptiveGC();
-                // If no GCs happened, then we assume we are quiescent
-                GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
-            } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
-        }
-#endif //_DEBUG
 
         // we might want to do some extra work on the finalizer thread
         // check and do it
