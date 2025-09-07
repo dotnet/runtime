@@ -72,7 +72,7 @@ namespace Internal.TypeSystem
             {
                 // Require System.Object to be present as a minimal sanity check.
                 // The set of required well-known types is not strictly defined since different .NET profiles implement different subsets.
-                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex], throwIfNotFound: typeIndex == (int)WellKnownType.Object);
+                MetadataType type = systemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(s_wellKnownTypeNames[typeIndex]), throwIfNotFound: typeIndex == (int)WellKnownType.Object);
                 if (type != null)
                 {
                     type.SetWellKnownType((WellKnownType)(typeIndex + 1));

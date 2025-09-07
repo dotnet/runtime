@@ -166,7 +166,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"u8));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -533,7 +533,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"u8));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -603,7 +603,7 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray"u8);
+                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers"u8, "GetEmptyObjectArray"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
                 codeStream.EmitStLoc(argsLocal);
             }
@@ -619,7 +619,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
 
-            MetadataType funcType = Context.SystemModule.GetKnownType("System", "Func`2");
+            MetadataType funcType = Context.SystemModule.GetKnownType("System"u8, "Func`2"u8);
             TypeDesc instantiatedFunc = funcType.MakeInstantiatedType(objectArrayType, objectType);
 
             codeStream.Emit(ILOpcode.castclass, emitter.NewToken(instantiatedFunc));

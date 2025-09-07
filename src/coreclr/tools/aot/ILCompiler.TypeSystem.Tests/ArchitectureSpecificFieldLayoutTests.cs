@@ -65,9 +65,9 @@ namespace TypeSystemTests
         [Fact]
         public void TestInstanceLayoutDoubleBool()
         {
-            MetadataType tX64 = _testModuleX64.GetType("Sequential", "ClassDoubleBool");
-            MetadataType tX86 = _testModuleX86.GetType("Sequential", "ClassDoubleBool");
-            MetadataType tARM = _testModuleARM.GetType("Sequential", "ClassDoubleBool");
+            MetadataType tX64 = _testModuleX64.GetType("Sequential"u8, "ClassDoubleBool"u8);
+            MetadataType tX86 = _testModuleX86.GetType("Sequential"u8, "ClassDoubleBool"u8);
+            MetadataType tARM = _testModuleARM.GetType("Sequential"u8, "ClassDoubleBool"u8);
 
             Assert.Equal(0x8, tX64.InstanceByteAlignment.AsInt);
             Assert.Equal(0x8, tARM.InstanceByteAlignment.AsInt);
@@ -85,9 +85,9 @@ namespace TypeSystemTests
         [Fact]
         public void TestInstanceLayoutBoolDoubleBool()
         {
-            MetadataType tX64 = _testModuleX64.GetType("Sequential", "ClassBoolDoubleBool");
-            MetadataType tX86 = _testModuleX86.GetType("Sequential", "ClassBoolDoubleBool");
-            MetadataType tARM = _testModuleARM.GetType("Sequential", "ClassBoolDoubleBool");
+            MetadataType tX64 = _testModuleX64.GetType("Sequential"u8, "ClassBoolDoubleBool"u8);
+            MetadataType tX86 = _testModuleX86.GetType("Sequential"u8, "ClassBoolDoubleBool"u8);
+            MetadataType tARM = _testModuleARM.GetType("Sequential"u8, "ClassBoolDoubleBool"u8);
 
             Assert.Equal(0x8, tX64.InstanceByteAlignment.AsInt);
             Assert.Equal(0x8, tARM.InstanceByteAlignment.AsInt);
@@ -105,8 +105,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_LongIntEnumStruct()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "LongIntEnumStruct";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "LongIntEnumStruct"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -148,9 +148,9 @@ namespace TypeSystemTests
             Assert.Equal(0x18, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0x18, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "LongIntEnumStructFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "LongIntEnumStructFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "LongIntEnumStructFieldStruct"u8);
 
             Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x8, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -160,8 +160,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_IntShortEnumStruct()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "IntShortEnumStruct";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "IntShortEnumStruct"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -203,9 +203,9 @@ namespace TypeSystemTests
             Assert.Equal(0xC, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0xC, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "IntShortEnumStructFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "IntShortEnumStructFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "IntShortEnumStructFieldStruct"u8);
 
             Assert.Equal(0x4, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -216,8 +216,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_ShortByteEnumStruct()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "ShortByteEnumStruct";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "ShortByteEnumStruct"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -259,9 +259,9 @@ namespace TypeSystemTests
             Assert.Equal(0x6, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0x6, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "ShortByteEnumStructFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "ShortByteEnumStructFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "ShortByteEnumStructFieldStruct"u8);
 
             Assert.Equal(0x2, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x2, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -271,8 +271,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_LongIntEnumStructAuto()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "LongIntEnumStructAuto";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "LongIntEnumStructAuto"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -314,9 +314,9 @@ namespace TypeSystemTests
             Assert.Equal(0x14, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0x14, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "LongIntEnumStructAutoFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "LongIntEnumStructAutoFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "LongIntEnumStructAutoFieldStruct"u8);
 
             Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -326,8 +326,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_IntShortEnumStructAuto()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "IntShortEnumStructAuto";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "IntShortEnumStructAuto"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -369,9 +369,9 @@ namespace TypeSystemTests
             Assert.Equal(0xA, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0xA, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "IntShortEnumStructAutoFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "IntShortEnumStructAutoFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "IntShortEnumStructAutoFieldStruct"u8);
 
             Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -382,8 +382,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_ShortByteEnumStructAuto()
         {
-            string _namespace = "EnumAlignment";
-            string _type = "ShortByteEnumStructAuto";
+            ReadOnlySpan<byte> _namespace = "EnumAlignment"u8;
+            ReadOnlySpan<byte> _type = "ShortByteEnumStructAuto"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -425,9 +425,9 @@ namespace TypeSystemTests
             Assert.Equal(0x5, tARM.GetField("_4"u8).Offset.AsInt);
             Assert.Equal(0x5, tX86.GetField("_4"u8).Offset.AsInt);
 
-            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
-            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
+            MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, "ShortByteEnumStructAutoFieldStruct"u8);
+            MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, "ShortByteEnumStructAutoFieldStruct"u8);
+            MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, "ShortByteEnumStructAutoFieldStruct"u8);
 
             Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
             Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
@@ -437,8 +437,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestAlignmentBehavior_StructStructByte_StructByteAuto()
         {
-            string _namespace = "Sequential";
-            string _type = "StructStructByte_StructByteAuto";
+            ReadOnlySpan<byte> _namespace = "Sequential"u8;
+            ReadOnlySpan<byte> _type = "StructStructByte_StructByteAuto"u8;
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -471,8 +471,8 @@ namespace TypeSystemTests
         [InlineData("StructStructByte_Struct9BytesAuto", new int[] { 8, 4, 4 }, new int[] { 24, 16, 16 })]
         public void TestAlignmentBehavior_AutoAlignmentRules(string wrapperType, int[] alignment, int[] size)
         {
-            string _namespace = "Sequential";
-            string _type = wrapperType;
+            ReadOnlySpan<byte> _namespace = "Sequential"u8;
+            ReadOnlySpan<byte> _type = System.Text.Encoding.UTF8.GetBytes(wrapperType);
 
             MetadataType tX64 = _testModuleX64.GetType(_namespace, _type);
             MetadataType tX86 = _testModuleX86.GetType(_namespace, _type);
@@ -534,8 +534,8 @@ namespace TypeSystemTests
                     throw new Exception();
             }
 
-            string _namespace = "Sequential";
-            string _type = wrapperType;
+            ReadOnlySpan<byte> _namespace = "Sequential"u8;
+            ReadOnlySpan<byte> _type = System.Text.Encoding.UTF8.GetBytes(wrapperType);
 
             MetadataType type = testModule.GetType(_namespace, _type);
 

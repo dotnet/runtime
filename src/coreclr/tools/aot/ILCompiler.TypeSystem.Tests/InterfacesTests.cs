@@ -38,7 +38,7 @@ namespace TypeSystemTests
         public void TestSingleDimensionalArrays()
         {
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
-            MetadataType systemIListOfTType = _testModule.GetType("System.Collections.Generic", "IList`1");
+            MetadataType systemIListOfTType = _testModule.GetType("System.Collections.Generic"u8, "IList`1"u8);
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
@@ -58,7 +58,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestNoInterface()
         {
-            MetadataType noInterfacesType = _testModule.GetType("InterfaceArrangements", "NoInterfaces");
+            MetadataType noInterfacesType = _testModule.GetType("InterfaceArrangements"u8, "NoInterfaces"u8);
             Assert.Empty(noInterfacesType.RuntimeInterfaces);
         }
 
@@ -66,8 +66,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestOneInterface()
         {
-            MetadataType oneInterfacesType = _testModule.GetType("InterfaceArrangements", "OneInterface");
-            MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
+            MetadataType oneInterfacesType = _testModule.GetType("InterfaceArrangements"u8, "OneInterface"u8);
+            MetadataType i1Type = _testModule.GetType("InterfaceArrangements"u8, "I1"u8);
 
             Assert.Equal(new DefType[] { i1Type }, oneInterfacesType.RuntimeInterfaces);
         }
@@ -77,11 +77,11 @@ namespace TypeSystemTests
         {
             // This test tests that an explicit interface implementation on a type does not cause the
             // set of runtime interfaces to get extra duplication
-            MetadataType derivedFromMidType = _testModule.GetType("InterfaceArrangements", "DerivedFromMid");
-            MetadataType igen1Type = _testModule.GetType("InterfaceArrangements", "IGen1`1");
+            MetadataType derivedFromMidType = _testModule.GetType("InterfaceArrangements"u8, "DerivedFromMid"u8);
+            MetadataType igen1Type = _testModule.GetType("InterfaceArrangements"u8, "IGen1`1"u8);
             TypeDesc stringType = _testModule.Context.GetWellKnownType(WellKnownType.String);
             DefType igen1OfString = igen1Type.MakeInstantiatedType(stringType);
-            MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
+            MetadataType i1Type = _testModule.GetType("InterfaceArrangements"u8, "I1"u8);
 
             Assert.Equal(new DefType[] { igen1OfString, i1Type, igen1OfString }, derivedFromMidType.RuntimeInterfaces);
         }
@@ -91,13 +91,13 @@ namespace TypeSystemTests
         {
             // This test tests that the set of interfaces implemented on a generic type definition
             // has the same arrangement regardless of instantiation
-            MetadataType midType = _testModule.GetType("InterfaceArrangements", "Mid`2");
-            MetadataType igen1Type = _testModule.GetType("InterfaceArrangements", "IGen1`1");
+            MetadataType midType = _testModule.GetType("InterfaceArrangements"u8, "Mid`2"u8);
+            MetadataType igen1Type = _testModule.GetType("InterfaceArrangements"u8, "IGen1`1"u8);
             TypeDesc stringType = _testModule.Context.GetWellKnownType(WellKnownType.String);
             TypeDesc objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
             DefType igen1OfString = igen1Type.MakeInstantiatedType(stringType);
             DefType igen1OfObject = igen1Type.MakeInstantiatedType(objectType);
-            MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
+            MetadataType i1Type = _testModule.GetType("InterfaceArrangements"u8, "I1"u8);
 
             TypeDesc mid_string_string = midType.MakeInstantiatedType(stringType, stringType);
             TypeDesc mid_string_object = midType.MakeInstantiatedType(stringType, objectType);
@@ -113,8 +113,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestInterfaceRequiresImplementation()
         {
-            MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
-            MetadataType i2Type = _testModule.GetType("InterfaceArrangements", "I2");
+            MetadataType i1Type = _testModule.GetType("InterfaceArrangements"u8, "I1"u8);
+            MetadataType i2Type = _testModule.GetType("InterfaceArrangements"u8, "I2"u8);
 
             Assert.Empty(i1Type.RuntimeInterfaces);
             Assert.Equal(i1Type.ExplicitlyImplementedInterfaces, i1Type.RuntimeInterfaces);
@@ -126,7 +126,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestPointerArrayInterfaces()
         {
-            MetadataType systemArrayType = _testModule.GetType("System", "Array");
+            MetadataType systemArrayType = _testModule.GetType("System"u8, "Array"u8);
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
             TypeDesc intPointerType = _context.GetPointerType(intType);
 
@@ -139,12 +139,12 @@ namespace TypeSystemTests
         [Fact]
         public void TestInterafaceMethodResolution()
         {
-            MetadataType fooType = _testModule.GetType("InterfaceArrangements", "Foo");
-            MetadataType derivedType = _testModule.GetType("InterfaceArrangements", "DerivedFromFoo");
-            MetadataType superDerivedType = _testModule.GetType("InterfaceArrangements", "SuperDerivedFromFoo");
+            MetadataType fooType = _testModule.GetType("InterfaceArrangements"u8, "Foo"u8);
+            MetadataType derivedType = _testModule.GetType("InterfaceArrangements"u8, "DerivedFromFoo"u8);
+            MetadataType superDerivedType = _testModule.GetType("InterfaceArrangements"u8, "SuperDerivedFromFoo"u8);
 
-            MetadataType ifooOfInt = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-            MetadataType ifooOfString = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.String));
+            MetadataType ifooOfInt = _testModule.GetType("InterfaceArrangements"u8, "IFoo`1"u8).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MetadataType ifooOfString = _testModule.GetType("InterfaceArrangements"u8, "IFoo`1"u8).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.String));
 
             MethodDesc ifooOfIntMethod = ifooOfInt.GetMethods().Where(m => m.GetName() == "IMethod").Single();
             MethodDesc ifooOfStringMethod = ifooOfString.GetMethods().Where(m => m.GetName() == "IMethod").Single();

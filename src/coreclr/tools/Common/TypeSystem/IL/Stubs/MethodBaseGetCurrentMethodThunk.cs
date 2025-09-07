@@ -21,7 +21,7 @@ namespace Internal.IL.Stubs
 
             Method = method;
             Signature = new MethodSignature(MethodSignatureFlags.Static, 0,
-                Context.SystemModule.GetKnownType("System.Reflection", "MethodBase"), TypeDesc.EmptyTypes);
+                Context.SystemModule.GetKnownType("System.Reflection"u8, "MethodBase"u8), TypeDesc.EmptyTypes);
         }
 
         public override TypeSystemContext Context
@@ -90,7 +90,7 @@ namespace Internal.IL.Stubs
             else
                 helperName = "GetCurrentMethodNonGeneric"u8;
 
-            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", helperName);
+            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers"u8, helperName);
 
             codeStream.Emit(ILOpcode.call, emit.NewToken(classlibHelper));
             codeStream.Emit(ILOpcode.ret);

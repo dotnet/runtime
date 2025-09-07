@@ -94,7 +94,7 @@ namespace Internal.IL.Stubs
                 if (_method.Kind == ArrayMethodKind.Set)
                 {
                     MethodDesc checkArrayStore =
-                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore"u8, null);
+                        context.SystemModule.GetKnownType("System.Runtime"u8, "RuntimeImports"u8).GetKnownMethod("RhCheckArrayStore"u8, null);
 
                     codeStream.EmitLdArg(0);
                     codeStream.EmitLdArg(_rank + argStartOffset);
@@ -104,7 +104,7 @@ namespace Internal.IL.Stubs
                 else if (_method.Kind == ArrayMethodKind.AddressWithHiddenArg)
                 {
                     TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-                    TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
+                    TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
 
@@ -143,7 +143,7 @@ namespace Internal.IL.Stubs
             if (_rank == 1)
             {
                 TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-                TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
+                TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);
 
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType"u8)));
@@ -238,13 +238,13 @@ namespace Internal.IL.Stubs
             codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException"u8);
+            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowIndexOutOfRangeException"u8);
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
             if (typeMismatchExceptionLabel != null)
             {
                 codeStream.EmitLabel(typeMismatchExceptionLabel);
-                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers", "ThrowArrayTypeMismatchException"u8));
+                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowArrayTypeMismatchException"u8));
             }
         }
     }

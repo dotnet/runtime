@@ -261,7 +261,7 @@ namespace Internal.IL
                                 static MethodDesc GetMethodToCall(TypeDesc elementType)
                                 {
                                     TypeSystemContext context = elementType.Context;
-                                    MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport", "EqualityComparerHelpers");
+                                    MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport"u8, "EqualityComparerHelpers"u8);
 
                                     if (elementType.IsEnum)
                                         return helperType.GetKnownMethod("EnumOnlyEquals"u8, null)

@@ -349,7 +349,7 @@ namespace ILCompiler
                 // assume invalid code is present. Scanner may not detect all invalid code that RyuJIT detect.
                 // If they disagree, we won't know how the vtable of InvalidProgramException should look like
                 // and that would be a compiler crash.
-                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException"u8);
+                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
                 compilationRoots.Add(
                     new GenericRootProvider<MethodDesc>(throwInvalidProgramMethod,
                     (MethodDesc method, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(method, "Invalid IL insurance")));

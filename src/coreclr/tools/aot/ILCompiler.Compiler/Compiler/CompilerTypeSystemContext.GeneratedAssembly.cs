@@ -60,7 +60,7 @@ namespace ILCompiler
                 return new AssemblyNameInfo("System.Private.CompilerGenerated");
             }
 
-            public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+            public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
             {
                 Debug.Fail("Resolving a TypeRef in the compiler generated assembly?");
                 throw new NotImplementedException();

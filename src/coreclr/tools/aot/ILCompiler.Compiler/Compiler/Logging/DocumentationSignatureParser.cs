@@ -544,7 +544,7 @@ namespace ILCompiler.Logging
                     namepart = name;
                 }
 
-                var type = module.GetType(namespacepart, namepart, throwIfNotFound: false);
+                var type = module.GetType(Encoding.UTF8.GetBytes(namespacepart), Encoding.UTF8.GetBytes(namepart), throwIfNotFound: false);
                 if (type != null)
                 {
                     results.Add(type);

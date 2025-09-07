@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             if (resourceName != resourceName1 && resourceName != resourceName2)
                 return false;
 
-            MetadataType srType = module.GetType(ResourceAccessorTypeNamespace, ResourceAccessorTypeName, throwIfNotFound: false);
+            MetadataType srType = module.GetType(U8ResourceAccessorTypeNamespace, U8ResourceAccessorTypeName, throwIfNotFound: false);
             if (srType == null)
                 return false;
 

@@ -27,7 +27,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestInstantiation()
         {
-            MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1");
+            MetadataType t = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
 
             // Verify that we get just type definitions.
             Assert.NotNull(t);
@@ -68,8 +68,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestMethodAttributes()
         {
-            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
-            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            MetadataType tGen = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes"u8, "DerivedGenericClass`1"u8);
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Foo");
@@ -95,8 +95,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestFinalize()
         {
-            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
-            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            MetadataType tGen = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes"u8, "DerivedGenericClass`1"u8);
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Finalize");
@@ -111,7 +111,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestMethodLookup()
         {
-            MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MetadataType t = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
 
             MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, _context.GetSignatureVariable(0, false), System.Array.Empty<TypeDesc>());
             MethodDesc fooMethod = t.GetMethod("Foo"u8, sig);
@@ -126,7 +126,7 @@ namespace TypeSystemTests
             TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes"u8, "TwoParamGenericClass`2"u8);
 
             InstantiatedType genericOfCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
             InstantiatedType genericOfCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
@@ -219,8 +219,8 @@ namespace TypeSystemTests
             TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
-            MetadataType nonGenericType = _testModule.GetType("GenericTypes", "NonGenericClass");
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes"u8, "TwoParamGenericClass`2"u8);
+            MetadataType nonGenericType = _testModule.GetType("GenericTypes"u8, "NonGenericClass"u8);
 
             MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction"u8, null);
 

@@ -1553,7 +1553,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc elementType = HandleToObject(elemType);
-            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System"u8, "SZGenericArrayEnumerator`1"u8, throwIfNotFound: false);
             if (placeholderType == null)
             {
                 return null;
@@ -2803,7 +2803,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType"));
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "RuntimeType"u8));
 
                 default:
                     throw new NotImplementedException();

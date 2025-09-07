@@ -112,7 +112,7 @@ namespace ILCompiler.Metadata
 
             switch (typeCode)
             {
-                case Ecma.SerializationTypeCode.Type: return module.Context.SystemModule.GetType("System", "Type");
+                case Ecma.SerializationTypeCode.Type: return module.Context.SystemModule.GetType("System"u8, "Type"u8);
                 case Ecma.SerializationTypeCode.SZArray: return module.Context.GetArrayType(SerializationTypeToType(module, ref valueReader));
                 case Ecma.SerializationTypeCode.Enum: return Cts.CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(module, valueReader.ReadSerializedString());
                 case Ecma.SerializationTypeCode.String: return module.Context.GetWellKnownType(Cts.WellKnownType.String);

@@ -54,15 +54,15 @@ namespace TypeSystemTests
             _testModule1 = (EcmaModule)_context.CreateModuleForSimpleName("TypeEquivalenceAssembly1");
             _testModule2 = (EcmaModule)_context.CreateModuleForSimpleName("TypeEquivalenceAssembly2");
 
-            _referenceType = systemModule.GetType("Canonicalization", "ReferenceType");
-            _otherReferenceType = systemModule.GetType("Canonicalization", "OtherReferenceType");
-            _structType = systemModule.GetType("Canonicalization", "StructType");
-            _otherStructType = systemModule.GetType("Canonicalization", "OtherStructType");
-            _genericReferenceType = systemModule.GetType("Canonicalization", "GenericReferenceType`1");
-            _genericStructType = systemModule.GetType("Canonicalization", "GenericStructType`1");
-            _genericReferenceTypeWithThreeParams = systemModule.GetType("Canonicalization", "GenericReferenceTypeWithThreeParams`3");
-            _genericStructTypeWithThreeParams = systemModule.GetType("Canonicalization", "GenericStructTypeWithThreeParams`3");
-            _interfaceGenericType = systemModule.GetType("Canonicalization", "InterfaceGenericType`1");
+            _referenceType = systemModule.GetType("Canonicalization"u8, "ReferenceType"u8);
+            _otherReferenceType = systemModule.GetType("Canonicalization"u8, "OtherReferenceType"u8);
+            _structType = systemModule.GetType("Canonicalization"u8, "StructType"u8);
+            _otherStructType = systemModule.GetType("Canonicalization"u8, "OtherStructType"u8);
+            _genericReferenceType = systemModule.GetType("Canonicalization"u8, "GenericReferenceType`1"u8);
+            _genericStructType = systemModule.GetType("Canonicalization"u8, "GenericStructType`1"u8);
+            _genericReferenceTypeWithThreeParams = systemModule.GetType("Canonicalization"u8, "GenericReferenceTypeWithThreeParams`3"u8);
+            _genericStructTypeWithThreeParams = systemModule.GetType("Canonicalization"u8, "GenericStructTypeWithThreeParams`3"u8);
+            _interfaceGenericType = systemModule.GetType("Canonicalization"u8, "InterfaceGenericType`1"u8);
         }
 
         private IEnumerable<TypeDefinitionHandle> GetAllNestedTypes(MetadataReader metadataReader, TypeDefinition typeDef)

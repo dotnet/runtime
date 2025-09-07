@@ -35,7 +35,7 @@ namespace TypeSystemTests
             // EqualsAndGetHashCodeProvidingAlgorithm.
             //
 
-            MetadataType t = _testModule.GetType("SyntheticVirtualOverride", "StructWithNoEqualsAndGetHashCode");
+            MetadataType t = _testModule.GetType("SyntheticVirtualOverride"u8, "StructWithNoEqualsAndGetHashCode"u8);
 
             Assert.DoesNotContain(t.GetMethods(), m => m.GetName() == "Equals");
             Assert.DoesNotContain(t.GetMethods(), m => m.GetName() == "GetHashCode");
@@ -66,8 +66,8 @@ namespace TypeSystemTests
             // derived classes.
             //
 
-            MetadataType baseType = _testModule.GetType("SyntheticVirtualOverride", "ClassWithInjectedEqualsAndGetHashCode");
-            MetadataType t = _testModule.GetType("SyntheticVirtualOverride", "ClassNotOverridingEqualsAndGetHashCode");
+            MetadataType baseType = _testModule.GetType("SyntheticVirtualOverride"u8, "ClassWithInjectedEqualsAndGetHashCode"u8);
+            MetadataType t = _testModule.GetType("SyntheticVirtualOverride"u8, "ClassNotOverridingEqualsAndGetHashCode"u8);
 
             List<MethodDesc> virtualSlots = new List<MethodDesc>(t.EnumAllVirtualSlots());
             Assert.All(virtualSlots, s => { Assert.True(s.OwningType.IsObject); });
@@ -89,8 +89,8 @@ namespace TypeSystemTests
             // derived classes.
             //
 
-            MetadataType baseType = _testModule.GetType("SyntheticVirtualOverride", "ClassWithInjectedEqualsAndGetHashCode");
-            MetadataType t = _testModule.GetType("SyntheticVirtualOverride", "ClassOverridingEqualsAndGetHashCode");
+            MetadataType baseType = _testModule.GetType("SyntheticVirtualOverride"u8, "ClassWithInjectedEqualsAndGetHashCode"u8);
+            MetadataType t = _testModule.GetType("SyntheticVirtualOverride"u8, "ClassOverridingEqualsAndGetHashCode"u8);
 
             List<MethodDesc> virtualSlots = new List<MethodDesc>(t.EnumAllVirtualSlots());
             Assert.All(virtualSlots, s => { Assert.True(s.OwningType.IsObject); });

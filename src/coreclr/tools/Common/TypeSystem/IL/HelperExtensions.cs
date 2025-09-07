@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.IL.Stubs;
@@ -12,34 +13,34 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
-        private const string HelperTypesNamespace = "Internal.Runtime.CompilerHelpers";
+        private static ReadOnlySpan<byte> HelperTypesNamespace => "Internal.Runtime.CompilerHelpers"u8;
 
-        public static MetadataType GetHelperType(this TypeSystemContext context, string name)
+        public static MetadataType GetHelperType(this TypeSystemContext context, ReadOnlySpan<byte> name)
         {
             MetadataType helperType = context.SystemModule.GetKnownType(HelperTypesNamespace, name);
             return helperType;
         }
 
-        public static MetadataType GetOptionalHelperType(this TypeSystemContext context, string name)
+        public static MetadataType GetOptionalHelperType(this TypeSystemContext context, ReadOnlySpan<byte> name)
         {
             MetadataType helperType = context.SystemModule.GetType(HelperTypesNamespace, name, throwIfNotFound: false);
             return helperType;
         }
 
-        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeName, ReadOnlySpan<byte> methodName)
+        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, ReadOnlySpan<byte> typeName, ReadOnlySpan<byte> methodName)
         {
             MetadataType helperType = context.GetHelperType(typeName);
             MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
             return helperMethod;
         }
 
-        public static MethodDesc GetCoreLibEntryPoint(this TypeSystemContext context, string namespaceName, string typeName, ReadOnlySpan<byte> methodName, MethodSignature signature)
+        public static MethodDesc GetCoreLibEntryPoint(this TypeSystemContext context, ReadOnlySpan<byte> namespaceName, ReadOnlySpan<byte> typeName, ReadOnlySpan<byte> methodName, MethodSignature signature)
         {
             MetadataType owningType = context.SystemModule.GetKnownType(namespaceName, typeName);
             return owningType.GetKnownMethod(methodName, signature);
         }
 
-        public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, ReadOnlySpan<byte> methodName)
+        public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, ReadOnlySpan<byte> typeName, ReadOnlySpan<byte> methodName)
         {
             MetadataType helperType = context.GetOptionalHelperType(typeName);
             MethodDesc helperMethod = helperType?.GetMethod(methodName, null);
@@ -115,14 +116,14 @@ namespace Internal.IL
         /// Retrieves a namespace type in <paramref name= "module" /> that is well known to the compiler.
         /// Throws an exception if the type doesn't exist.
         /// </summary>
-        public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name)
+        public static MetadataType GetKnownType(this ModuleDesc module, ReadOnlySpan<byte> @namespace, ReadOnlySpan<byte> name)
         {
             MetadataType type = module.GetType(@namespace, name, throwIfNotFound: false);
             if (type == null)
             {
                 throw new InvalidOperationException(
                     string.Format("Expected type '{0}' not found in module '{1}'",
-                    @namespace.Length > 0 ? string.Concat(@namespace, ".", name) : name,
+                    @namespace.Length > 0 ? string.Concat(Encoding.UTF8.GetString(@namespace), ".", Encoding.UTF8.GetString(name)) : Encoding.UTF8.GetString(name),
                     module));
             }
 

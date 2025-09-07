@@ -112,7 +112,7 @@ namespace ILCompiler
         public bool IsAsyncStateMachineType(MetadataType type)
         {
             Debug.Assert(type.IsValueType);
-            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices"u8, "IAsyncStateMachine"u8, throwIfNotFound: false);
             return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
                 && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }

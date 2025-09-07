@@ -63,7 +63,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Context.GetHelperType("InteropHelpers").GetNestedType("MethodFixupCell");
+                return Context.GetHelperType("InteropHelpers"u8).GetNestedType("MethodFixupCell");
             }
         }
 

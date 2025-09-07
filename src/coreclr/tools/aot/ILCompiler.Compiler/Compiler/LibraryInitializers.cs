@@ -15,8 +15,8 @@ namespace ILCompiler
     /// </summary>
     public sealed class LibraryInitializers
     {
-        private const string LibraryInitializerContainerNamespaceName = "Internal.Runtime.CompilerHelpers";
-        private const string LibraryInitializerContainerTypeName = "LibraryInitializer";
+        private static ReadOnlySpan<byte> LibraryInitializerContainerNamespaceName => "Internal.Runtime.CompilerHelpers"u8;
+        private static ReadOnlySpan<byte> LibraryInitializerContainerTypeName => "LibraryInitializer"u8;
         private static ReadOnlySpan<byte> LibraryInitializerMethodName => "InitializeLibrary"u8;
 
         private List<MethodDesc> _libraryInitializerMethods;

@@ -173,7 +173,7 @@ namespace Internal.IL.Stubs
                     MethodSignatureFlags.Static, 0, _marshallers[0].ManagedParameterType, parameters);
 
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(
-                    delegateMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod(
+                    delegateMethod.Context.GetHelperType("InteropHelpers"u8).GetKnownMethod(
                         "GetCurrentCalleeOpenStaticDelegateFunctionPointer"u8, null)));
 
                 ILLocalVariable vDelegateStub = emitter.NewLocal(
@@ -191,7 +191,7 @@ namespace Internal.IL.Stubs
                 // which returns the delegate. Do a CallVirt on the invoke method.
                 //
                 MethodDesc instantiatedHelper = delegateMethod.Context.GetInstantiatedMethod(
-                    delegateMethod.Context.GetHelperType("InteropHelpers")
+                    delegateMethod.Context.GetHelperType("InteropHelpers"u8)
                     .GetKnownMethod("GetCurrentCalleeDelegate"u8, null),
                         new Instantiation((delegateMethod.DelegateType)));
 
@@ -304,7 +304,7 @@ namespace Internal.IL.Stubs
                     MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
                     _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
 
-                MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
+                MetadataType lazyHelperType = context.GetHelperType("InteropHelpers"u8);
                 FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod, nativeSig);
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
@@ -348,7 +348,7 @@ namespace Internal.IL.Stubs
 
             if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _pInvokeMetadata))
             {
-                MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCMarshal");
+                MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC"u8, "ObjectiveCMarshal"u8);
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
                     .GetKnownMethod("ThrowPendingExceptionObject"u8, null)));
             }

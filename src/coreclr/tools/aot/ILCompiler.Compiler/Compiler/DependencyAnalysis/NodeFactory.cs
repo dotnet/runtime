@@ -1292,8 +1292,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var entry = s_helperEntrypointNames[index];
 
-                var type = _context.SystemModule.GetKnownType(entry[0], entry[1]);
-                var method = type.GetKnownMethod(System.Text.Encoding.UTF8.GetBytes(entry[2]), null);
+                var type = _context.SystemModule.GetKnownType(Encoding.UTF8.GetBytes(entry[0]), Encoding.UTF8.GetBytes(entry[1]));
+                var method = type.GetKnownMethod(Encoding.UTF8.GetBytes(entry[2]), null);
 
                 symbol = MethodEntrypoint(method);
 
@@ -1307,7 +1307,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System"u8, "Array`1"u8);
             }
         }
 
@@ -1318,7 +1318,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved"u8);
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers"u8, "ThrowInstanceBodyRemoved"u8);
             }
         }
 

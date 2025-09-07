@@ -73,12 +73,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return type;
         }
 
-        public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+        public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
         {
-            MetadataType type = GetTypeInternal(nameSpace, name);
+            string strns = Encoding.UTF8.GetString(nameSpace);
+            string strname = Encoding.UTF8.GetString(name);
+            MetadataType type = GetTypeInternal(strns, strname);
             if ((type == null) && notFoundBehavior != NotFoundBehavior.ReturnNull)
             {
-                ResolutionFailure failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, this);
+                ResolutionFailure failure = ResolutionFailure.GetTypeLoadResolutionFailure(strns, strname, this);
                 if (notFoundBehavior == NotFoundBehavior.Throw)
                     failure.Throw();
                 return failure;

@@ -185,7 +185,7 @@ namespace Internal.IL.Stubs
                 else
                     helperName = "GetType"u8;
 
-                MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers", helperName);
+                MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers"u8, helperName);
 
                 return new TypeGetTypeMethodThunk(_parent._owningTypeForThunks, signature, helper, key.DefaultAssemblyName);
             }

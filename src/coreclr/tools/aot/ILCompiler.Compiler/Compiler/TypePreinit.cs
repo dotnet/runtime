@@ -2862,7 +2862,7 @@ namespace ILCompiler
             public TypeDesc TypeRepresented { get; }
 
             public RuntimeTypeValue(TypeDesc type)
-                : base(type.Context.SystemModule.GetKnownType("System", "RuntimeType"))
+                : base(type.Context.SystemModule.GetKnownType("System"u8, "RuntimeType"u8))
             {
                 TypeRepresented = type;
             }

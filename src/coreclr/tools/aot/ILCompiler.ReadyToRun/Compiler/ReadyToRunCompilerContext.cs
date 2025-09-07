@@ -67,13 +67,13 @@ namespace ILCompiler
             // Only the Arm64 JIT respects the OS rules for vector type abi currently
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
 
-            string matchingVectorType = "Unknown";
+            ReadOnlySpan<byte> matchingVectorType = "Unknown"u8;
             if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
-                matchingVectorType = "Vector128`1";
+                matchingVectorType = "Vector128`1"u8;
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
-                matchingVectorType = "Vector256`1";
+                matchingVectorType = "Vector256`1"u8;
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
-                matchingVectorType = "Vector512`1";
+                matchingVectorType = "Vector512`1"u8;
 
             // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
@@ -179,7 +179,7 @@ namespace ILCompiler
             {
                 if (_asyncStateMachineBox == null)
                 {
-                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices", "AsyncTaskMethodBuilder`1").GetNestedType("AsyncStateMachineBox`1");
+                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1");
                     if (_asyncStateMachineBox == null)
                         throw new Exception();
                 }
@@ -196,15 +196,15 @@ namespace ILCompiler
     {
         private FieldLayoutAlgorithm _fallbackAlgorithm;
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
-        private string _similarVectorName;
+        private byte[] _similarVectorName;
         private DefType _similarVectorOpenType;
         private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable = true)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, ReadOnlySpan<byte> similarVector, bool vectorAbiIsStable = true)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
-            _similarVectorName = similarVector;
+            _similarVectorName = similarVector.ToArray();
             _vectorAbiIsStable = vectorAbiIsStable;
         }
 
@@ -212,10 +212,10 @@ namespace ILCompiler
         {
             if (_similarVectorOpenType == null)
             {
-                if (_similarVectorName == "Unknown")
+                if (_similarVectorName.SequenceEqual("Unknown"u8))
                     return null;
 
-                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics", _similarVectorName);
+                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics"u8, _similarVectorName);
             }
 
             return ((MetadataType)_similarVectorOpenType).MakeInstantiatedType(vectorOfTType.Instantiation);

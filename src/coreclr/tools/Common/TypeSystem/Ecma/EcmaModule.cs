@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -317,13 +318,13 @@ namespace Internal.TypeSystem.Ecma
             return _nameLookupCache = result;
         }
 
-        public sealed override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+        public sealed override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
         {
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                if ((currentModule._nameLookupCache ?? currentModule.CreateNameLookupCache()).TryGetValue((name, nameSpace), out EntityHandle foundHandle))
+                if ((currentModule._nameLookupCache ?? currentModule.CreateNameLookupCache()).TryGetValue((System.Text.Encoding.UTF8.GetString(name.ToArray()), System.Text.Encoding.UTF8.GetString(nameSpace.ToArray())), out EntityHandle foundHandle))
                 {
                     if (foundHandle.Kind == HandleKind.TypeDefinition)
                         return currentModule.GetType((TypeDefinitionHandle)foundHandle);
@@ -366,7 +367,7 @@ namespace Internal.TypeSystem.Ecma
 
             if (notFoundBehavior != NotFoundBehavior.ReturnNull)
             {
-                var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, this);
+                var failure = ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(nameSpace.ToArray()), Encoding.UTF8.GetString(name.ToArray()), this);
                 if (notFoundBehavior == NotFoundBehavior.Throw)
                     failure.Throw();
 
@@ -594,7 +595,7 @@ namespace Internal.TypeSystem.Ecma
 
             if (resolutionScope is ModuleDesc)
             {
-                return ((ModuleDesc)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name), NotFoundBehavior.ReturnResolutionFailure);
+                return ((ModuleDesc)(resolutionScope)).GetType(_metadataReader.GetStringBytes(typeReference.Namespace), _metadataReader.GetStringBytes(typeReference.Name), NotFoundBehavior.ReturnResolutionFailure);
             }
             else
             if (resolutionScope is MetadataType)
@@ -640,8 +641,8 @@ namespace Internal.TypeSystem.Ecma
             var implementation = GetObject(exportedType.Implementation, NotFoundBehavior.ReturnResolutionFailure);
             if (implementation is ModuleDesc module)
             {
-                string nameSpace = _metadataReader.GetString(exportedType.Namespace);
-                string name = _metadataReader.GetString(exportedType.Name);
+                ReadOnlySpan<byte> nameSpace = _metadataReader.GetStringBytes(exportedType.Namespace);
+                ReadOnlySpan<byte> name = _metadataReader.GetStringBytes(exportedType.Name);
                 return module.GetType(nameSpace, name, NotFoundBehavior.ReturnResolutionFailure);
             }
             else

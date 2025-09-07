@@ -53,7 +53,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSignatureMatches2ModOptsAtStartOfSig()
         {
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodSignature methodWith2ModOptsAtStartOfSig = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method")).Signature;
 
             // All modopts that are at the very beginning of the signature are given index 0.1.1.1
@@ -67,7 +67,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSignatureMatchesModOptAtStartOfSigAndAfterByRef()
         {
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodSignature methodWithModOptAtStartOfSigAndAfterByRef = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method2")).Signature;
 
             // A modopts after an E_T_BYREF will look like 0.1.1.2.1.1
@@ -80,7 +80,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSignatureMatchesModoptOnPointerOrRefModifiedType()
         {
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method3")).Signature;
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(0), methodWithModOpt.GetEmbeddedSignatureData()[0].index);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(1), methodWithModOpt.GetEmbeddedSignatureData()[1].index);
@@ -90,7 +90,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSignatureMatchesForArrayShapeDetails()
         {
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method4")).Signature;
 
             _output.WriteLine($"Found ModOptData '{GetModOptMethodSignatureInfo(methodWithModOpt)}'");
@@ -106,7 +106,7 @@ namespace TypeSystemTests
         {
             // Test that ensure the typical case (where the loBounds is 0, and the hibounds is unspecified) doesn't produce an
             // EmbeddedSignatureData, but that other cases do. This isn't a complete test as ilasm won't actually properly generate the metadata for many of these cases
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method5")).Signature;
 
             _output.WriteLine($"Found ModOptData '{GetModOptMethodSignatureInfo(methodWithModOpt)}'");
@@ -119,12 +119,12 @@ namespace TypeSystemTests
         [Fact]
         public void TestSignatureMatches()
         {
-            MetadataType atomType = _testModule.GetType("", "Atom");
-            MetadataType aType = _testModule.GetType("", "A`1");
+            MetadataType atomType = _testModule.GetType(""u8, "Atom"u8);
+            MetadataType aType = _testModule.GetType(""u8, "A`1"u8);
             MetadataType aOfAtomType = aType.MakeInstantiatedType(new Instantiation(atomType));
 
 
-            MetadataType baseClassType = _testModule.GetType("", "BaseClass`2");
+            MetadataType baseClassType = _testModule.GetType(""u8, "BaseClass`2"u8);
             MethodDesc baseClassMethod = baseClassType.GetMethods().Single(m => string.Equals(m.GetName(), "Method"));
             MethodSignature baseClassMethodSignature = baseClassMethod.Signature;
             MethodSignatureBuilder matchingSignatureBuilder = new MethodSignatureBuilder(baseClassMethodSignature);
@@ -132,7 +132,7 @@ namespace TypeSystemTests
             matchingSignatureBuilder[1] = atomType;
             MethodSignature matchingSignature = matchingSignatureBuilder.ToSignature();
 
-            MetadataType derivedClassType = _testModule.GetType("", "DerivedClass");
+            MetadataType derivedClassType = _testModule.GetType(""u8, "DerivedClass"u8);
             IEnumerable<MethodDesc> derivedClassMethods = derivedClassType.GetMethods().Where(m => string.Equals(m.GetName(), "Method"));
             IEnumerable<bool> matches = derivedClassMethods.Select(m => matchingSignature.Equals(m.Signature));
             int matchCount = matches.Select(b => b ? 1 : 0).Sum();
@@ -142,7 +142,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSerializedSignatureWithArrayShapes()
         {
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             MethodDesc methodWithInterestingShapes = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "Method4"));
 
             // Create assembly with reference to interesting method
@@ -199,7 +199,7 @@ namespace TypeSystemTests
         public void TestSerializedSignatureWithReferenceToFieldWithModOpt()
         {
 
-            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
             FieldDesc fieldWithModOpt = modOptTester.GetFields().Single(m => string.Equals(m.GetName(), "fieldWithModOpt"));
 
             // Create assembly with reference to interesting method
@@ -227,7 +227,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestMDArrayFunctionReading()
         {
-            MetadataType mdArrayFunctionResolutionType = _testModule.GetType("", "MDArrayFunctionResolution");
+            MetadataType mdArrayFunctionResolutionType = _testModule.GetType(""u8, "MDArrayFunctionResolution"u8);
             MethodDesc methodWithMDArrayUsage = mdArrayFunctionResolutionType.GetMethods().Single(m => string.Equals(m.GetName(), "MethodWithUseOfMDArrayFunctions"));
             MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)methodWithMDArrayUsage);
             ILReader ilReader = new ILReader(methodIL.GetILBytes());

@@ -24,7 +24,7 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc GetSystemType()
         {
-            MetadataType systemType = _module.Context.SystemModule.GetType("System", "Type");
+            MetadataType systemType = _module.Context.SystemModule.GetType("System"u8, "Type"u8);
             return systemType;
         }
 

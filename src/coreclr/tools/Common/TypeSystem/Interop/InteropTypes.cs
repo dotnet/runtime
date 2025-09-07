@@ -11,62 +11,62 @@ namespace Internal.TypeSystem.Interop
     {
         public static MetadataType GetGC(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System", "GC");
+            return context.SystemModule.GetKnownType("System"u8, "GC"u8);
         }
 
         public static MetadataType GetType(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System", "Type");
+            return context.SystemModule.GetKnownType("System"u8, "Type"u8);
         }
 
         public static MetadataType GetSafeHandle(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "SafeHandle"u8);
         }
 
         public static MetadataType GetCriticalHandle(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "CriticalHandle");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "CriticalHandle"u8);
         }
 
         public static MetadataType GetHandleRef(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "HandleRef");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "HandleRef"u8);
         }
 
         public static MetadataType GetPInvokeMarshal(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "PInvokeMarshal"u8);
         }
 
         public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
         }
 
         public static MetadataType GetMarshal(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Marshal");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "Marshal"u8);
         }
 
         public static MetadataType GetMemoryMarshal(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "MemoryMarshal"u8);
         }
 
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "NativeFunctionPointerWrapper"u8);
         }
 
         public static MetadataType GetMarshalDirectiveException(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MarshalDirectiveException");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices"u8, "MarshalDirectiveException"u8);
         }
 
         public static MetadataType GetVariant(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling", "ComVariant");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling"u8, "ComVariant"u8);
         }
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)

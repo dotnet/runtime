@@ -22,7 +22,7 @@ namespace Internal.IL.Stubs
                 // BeginInvoke and EndInvoke are not supported on .NET Core
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException"u8);
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
@@ -37,7 +37,7 @@ namespace Internal.IL.Stubs
                 // but it remains to be proven that this is an actual customer scenario.
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException"u8);
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }

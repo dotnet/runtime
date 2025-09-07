@@ -232,8 +232,8 @@ namespace ILCompiler
                 ILCodeStream codeStream = emit.NewCodeStream();
 
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
-                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetOrdinalInterface"u8);
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetCurrentSharedThunkContext"u8);
+                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
+                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 

@@ -51,7 +51,7 @@ namespace Internal.IL.Stubs
                 {
                     TypeSystemContext context = _owningType.Context;
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
-                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
+                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8).MakePointerType();
 
                     _signature = new MethodSignature(0, 0, int32Type, [ int32Type, eeTypePtrType.MakeByRefType() ]);
                 }
@@ -80,7 +80,7 @@ namespace Internal.IL.Stubs
             if (_owningType.IsInlineArray)
             {
                 var stream = emitter.NewCodeStream();
-                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode"u8);
+                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedInlineArrayEqualsGetHashCode"u8);
                 stream.EmitCallThrowHelper(emitter, thrower);
                 return emitter.Link(this);
             }
@@ -93,13 +93,13 @@ namespace Internal.IL.Stubs
                 return emitter.Link(this);
             }
 
-            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
+            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of"u8, null);
 
             var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"u8));
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetKnownField("Data"u8));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();

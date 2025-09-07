@@ -47,7 +47,7 @@ namespace ILCompiler.Compiler.Tests
             var testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
 
             bool foundSomethingToCheck = false;
-            foreach (var type in testModule.GetType("ILCompiler.Compiler.Tests.Assets", "DependencyGraph").GetNestedTypes())
+            foreach (var type in testModule.GetType("ILCompiler.Compiler.Tests.Assets"u8, "DependencyGraph"u8).GetNestedTypes())
             {
                 foundSomethingToCheck = true;
                 yield return new object[] { type.GetMethod("Entrypoint"u8, null) };

@@ -29,14 +29,14 @@ namespace TypeSystemTests
 
             _testModule = systemModule;
 
-            _referenceType = _testModule.GetType("Canonicalization", "ReferenceType");
-            _otherReferenceType = _testModule.GetType("Canonicalization", "OtherReferenceType");
-            _structType = _testModule.GetType("Canonicalization", "StructType");
-            _otherStructType = _testModule.GetType("Canonicalization", "OtherStructType");
-            _genericReferenceType = _testModule.GetType("Canonicalization", "GenericReferenceType`1");
-            _genericStructType = _testModule.GetType("Canonicalization", "GenericStructType`1");
-            _genericReferenceTypeWithThreeParams = _testModule.GetType("Canonicalization", "GenericReferenceTypeWithThreeParams`3");
-            _genericStructTypeWithThreeParams = _testModule.GetType("Canonicalization", "GenericStructTypeWithThreeParams`3");
+            _referenceType = _testModule.GetType("Canonicalization"u8, "ReferenceType"u8);
+            _otherReferenceType = _testModule.GetType("Canonicalization"u8, "OtherReferenceType"u8);
+            _structType = _testModule.GetType("Canonicalization"u8, "StructType"u8);
+            _otherStructType = _testModule.GetType("Canonicalization"u8, "OtherStructType"u8);
+            _genericReferenceType = _testModule.GetType("Canonicalization"u8, "GenericReferenceType`1"u8);
+            _genericStructType = _testModule.GetType("Canonicalization"u8, "GenericStructType`1"u8);
+            _genericReferenceTypeWithThreeParams = _testModule.GetType("Canonicalization"u8, "GenericReferenceTypeWithThreeParams`3"u8);
+            _genericStructTypeWithThreeParams = _testModule.GetType("Canonicalization"u8, "GenericStructTypeWithThreeParams`3"u8);
         }
 
         [Theory]

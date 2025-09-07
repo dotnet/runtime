@@ -21,7 +21,7 @@ namespace Internal.IL.Stubs
             TypeSystemContext context = owningType.Context;
 
             Signature = new MethodSignature(MethodSignatureFlags.Static, 0,
-                context.SystemModule.GetKnownType("System.Reflection", "Assembly"), TypeDesc.EmptyTypes);
+                context.SystemModule.GetKnownType("System.Reflection"u8, "Assembly"u8), TypeDesc.EmptyTypes);
         }
 
         public override TypeSystemContext Context
@@ -76,7 +76,7 @@ namespace Internal.IL.Stubs
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", "GetExecutingAssembly"u8);
+            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers"u8, "GetExecutingAssembly"u8);
 
             // Use the global module type as "a type from the assembly that has metadata"
             // Our reflection policy always makes sure this has metadata.

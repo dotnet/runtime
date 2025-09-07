@@ -1534,7 +1534,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                var helper = Context.GetHelperEntryPoint("InteropHelpers", "StringToUnicodeBuffer"u8);
+                var helper = Context.GetHelperEntryPoint("InteropHelpers"u8, "StringToUnicodeBuffer"u8);
                 LoadManagedValue(codeStream);
 
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
@@ -1602,7 +1602,7 @@ namespace Internal.TypeSystem.Interop
             // ANSI marshalling. Allocate a byte array, copy characters
             //
             LoadManagedValue(codeStream);
-            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiString"u8);
+            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers"u8, "StringToAnsiString"u8);
 
             codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
             codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
@@ -1615,7 +1615,7 @@ namespace Internal.TypeSystem.Interop
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToString"u8);
+            var ansiToString = Context.GetHelperEntryPoint("InteropHelpers"u8, "AnsiStringToString"u8);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
             StoreManagedValue(codeStream);
@@ -1644,7 +1644,7 @@ namespace Internal.TypeSystem.Interop
 
         private ILLocalVariable? _marshallerInstance;
 
-        private MetadataType Marshaller => Context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling", "Utf8StringMarshaller");
+        private MetadataType Marshaller => Context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling"u8, "Utf8StringMarshaller"u8);
 
         private MetadataType MarshallerIn => Marshaller.GetNestedType("ManagedToUnmanagedIn");
 
@@ -1685,7 +1685,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitLdLoc(vBuffer);
                 codeStream.EmitLdc(LocalBufferLength);
 
-                var spanOfByte = Context.SystemModule.GetKnownType("System", "Span`1").MakeInstantiatedType(
+                var spanOfByte = Context.SystemModule.GetKnownType("System"u8, "Span`1"u8).MakeInstantiatedType(
                     new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Byte) });
 
                 codeStream.Emit(ILOpcode.newobj, emitter.NewToken(spanOfByte.GetKnownMethod(".ctor"u8,

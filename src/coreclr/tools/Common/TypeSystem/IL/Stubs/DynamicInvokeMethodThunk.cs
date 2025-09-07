@@ -145,7 +145,7 @@ namespace Internal.IL.Stubs
             if (_targetSignature.Length != 0)
             {
                 var fieldByReferenceValueToken = emitter.NewToken(
-                    Context.SystemModule.GetKnownType("System", "ByReference").GetKnownField("Value"u8));
+                    Context.SystemModule.GetKnownType("System"u8, "ByReference"u8).GetKnownField("Value"u8));
                 for (int i = 0; i < _targetSignature.Length; i++)
                 {
                     codeStream.EmitLdArg(3);

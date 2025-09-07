@@ -78,7 +78,7 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
-            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
+            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers"u8);
 
             // Run module initializers
             MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers"u8, null);

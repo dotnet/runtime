@@ -771,7 +771,7 @@ namespace ILCompiler
             string @namespace, name;
             SplitFullName(fullName, out @namespace, out name);
 
-            return assembly.GetType(@namespace, name, throwIfNotFound: false);
+            return assembly.GetType(Encoding.UTF8.GetBytes(@namespace), Encoding.UTF8.GetBytes(name), throwIfNotFound: false);
         }
 
         private static MetadataType? GetNestedType(ModuleDesc assembly, string fullName)

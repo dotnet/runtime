@@ -29,7 +29,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestNoPointers()
         {
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "NoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "NoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -60,7 +60,7 @@ namespace TypeSystemTests
             // Test that static offsets ignore instance fields preceding them
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "StillNoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "StillNoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -85,7 +85,7 @@ namespace TypeSystemTests
             // Ensure classes behave the same as structs when containing statics
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "ClassNoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "ClassNoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -116,7 +116,7 @@ namespace TypeSystemTests
             // Test a struct containing static types with pointers
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "HasPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "HasPointers"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -144,7 +144,7 @@ namespace TypeSystemTests
             // Test that static fields with GC pointers get separate offsets from non-GC fields
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "MixPointersAndNonPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "MixPointersAndNonPointers"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -182,7 +182,7 @@ namespace TypeSystemTests
             // are again offset from 0
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "EnsureInheritanceResetsStaticOffsets");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "EnsureInheritanceResetsStaticOffsets"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -210,7 +210,7 @@ namespace TypeSystemTests
             // Test that literal fields are not laid out.
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "LiteralFieldsDontAffectLayout");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "LiteralFieldsDontAffectLayout"u8);
 
             Assert.Equal(4, t.GetFields().Count());
 
@@ -246,7 +246,7 @@ namespace TypeSystemTests
             // going into an infinite loop
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "StaticSelfRef");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "StaticSelfRef"u8);
 
             foreach (var field in t.GetFields())
             {
@@ -272,7 +272,7 @@ namespace TypeSystemTests
             //
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            var t = ilModule.GetType("StaticFieldLayout", "RvaStatics");
+            var t = ilModule.GetType("StaticFieldLayout"u8, "RvaStatics"u8);
             var field = t.GetField("StaticInitedInt"u8);
 
             Assert.True(field.HasRva);
@@ -294,7 +294,7 @@ namespace TypeSystemTests
             //
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
+            var t = ilModule.GetType("StaticFieldLayout"u8, "FunctionPointerType"u8);
             var field = t.GetField("StaticMethodField"u8);
 
             Assert.Equal(8, field.Offset.AsInt);

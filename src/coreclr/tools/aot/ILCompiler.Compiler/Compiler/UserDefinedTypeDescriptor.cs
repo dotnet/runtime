@@ -796,7 +796,7 @@ namespace ILCompiler
                         Is64Bit = Is64Bit ? 1 : 0,
                         IsConst = 0,
                         IsReference = 0,
-                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", "TypeManagerSlot"), true)
+                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers"u8, "TypeManagerSlot"u8), true)
                     };
 
                     var helperFields = new DataFieldDescriptor[] {

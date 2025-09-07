@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection.Metadata;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -636,19 +637,19 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+                public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
-                    if (context.SupportsCanon && (nameSpace == context.CanonType.GetNamespace()) && (name == context.CanonType.GetName()))
+                    if (context.SupportsCanon && nameSpace.SequenceEqual(context.CanonType.U8Namespace) && name.SequenceEqual(context.CanonType.U8Name))
                         return Context.CanonType;
-                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.GetNamespace()) && (name == context.UniversalCanonType.GetName()))
+                    if (context.SupportsUniversalCanon && nameSpace.SequenceEqual(context.UniversalCanonType.U8Namespace) && name.SequenceEqual(context.UniversalCanonType.U8Name))
                         return Context.UniversalCanonType;
                     else
                     {
                         if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(nameSpace), Encoding.UTF8.GetString(name), "System.Private.Canon");
                             if (notFoundBehavior == NotFoundBehavior.Throw)
                                 failure.Throw();
 

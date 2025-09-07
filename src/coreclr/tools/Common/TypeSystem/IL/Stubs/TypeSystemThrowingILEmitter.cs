@@ -29,24 +29,24 @@ namespace Internal.IL.Stubs
                 // There are two ThrowTypeLoadException helpers. Find the one which matches the number of
                 // arguments "exception" was initialized with.
                 //
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowTypeLoadException"u8);
 
                 if (helper.Signature.Length != exception.Arguments.Count + 1)
                 {
-                    helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadExceptionWithArgument"u8);
+                    helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowTypeLoadExceptionWithArgument"u8);
                 }
             }
             else if (exceptionType == typeof(TypeSystemException.MissingFieldException))
             {
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingFieldException"u8);
             }
             else if (exceptionType == typeof(TypeSystemException.MissingMethodException))
             {
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingMethodException"u8);
             }
             else if (exceptionType == typeof(TypeSystemException.FileNotFoundException))
             {
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowFileNotFoundException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowFileNotFoundException"u8);
             }
             else if (exceptionType == typeof(TypeSystemException.InvalidProgramException))
             {
@@ -55,20 +55,20 @@ namespace Internal.IL.Stubs
                 // arguments "exception" was initialized with.
                 //
 
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
 
                 if (helper.Signature.Length != exception.Arguments.Count + 1)
                 {
-                    helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramExceptionWithArgument"u8);
+                    helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramExceptionWithArgument"u8);
                 }
             }
             else if (exceptionType == typeof(TypeSystemException.BadImageFormatException))
             {
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowBadImageFormatException"u8);
             }
             else if (exceptionType == typeof(TypeSystemException.MarshalDirectiveException))
             {
-                helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowMarshalDirectiveException"u8);
+                helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMarshalDirectiveException"u8);
             }
             else
             {

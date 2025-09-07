@@ -451,7 +451,7 @@ namespace ILCompiler
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data"u8)));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
 
                 if (isX86)
                 {
@@ -552,7 +552,7 @@ namespace ILCompiler
 
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data"u8)));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)

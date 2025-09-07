@@ -86,7 +86,7 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
-            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
+            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers"u8);
 
             // Initialize command line args if the class library supports this
             ReadOnlySpan<byte> initArgsName  = (Context.Target.OperatingSystem == TargetOS.Windows)
