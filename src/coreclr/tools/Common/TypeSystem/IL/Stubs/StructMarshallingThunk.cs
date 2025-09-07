@@ -102,26 +102,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private string NamePrefix
-        {
-            get
-            {
-                switch (ThunkType)
-                {
-                    case StructMarshallingThunkType.ManagedToNative:
-                        return "ManagedToNative";
-                    case StructMarshallingThunkType.NativeToManaged:
-                        return "NativeToManaged";
-                    case StructMarshallingThunkType.Cleanup:
-                        return "Cleanup";
-                    default:
-                        Debug.Fail("Unexpected Struct marshalling thunk type");
-                        return string.Empty;
-                }
-            }
-        }
-
-        private ReadOnlySpan<byte> U8NamePrefix
+        private ReadOnlySpan<byte> NamePrefix
         {
             get
             {
@@ -144,7 +125,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return U8NamePrefix.Append("__"u8, ManagedType.Name);
+                return NamePrefix.Append("__"u8, ManagedType.Name);
             }
         }
 
@@ -152,7 +133,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix + "__" + ManagedType.DiagnosticName;
+                return GetName();
             }
         }
 

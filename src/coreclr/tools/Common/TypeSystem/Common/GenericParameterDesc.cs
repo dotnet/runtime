@@ -77,14 +77,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return System.Text.Encoding.UTF8.GetBytes(Name);
-            }
-        }
-
         /// <summary>
         /// Gets a value indicating whether this is a type or method generic parameter.
         /// </summary>

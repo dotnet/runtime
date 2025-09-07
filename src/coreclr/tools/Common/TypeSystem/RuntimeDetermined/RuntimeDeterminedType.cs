@@ -102,7 +102,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _runtimeDeterminedDetailsType.U8Name.Append("_"u8, _rawCanonType.Namespace);
+                return System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name)
+                    .Append("_"u8, _rawCanonType.Namespace);
             }
         }
 

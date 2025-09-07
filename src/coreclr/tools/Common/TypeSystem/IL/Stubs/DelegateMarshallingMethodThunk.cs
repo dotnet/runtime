@@ -218,26 +218,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private string NamePrefix
-        {
-            get
-            {
-                switch (Kind)
-                {
-                    case DelegateMarshallingMethodThunkKind.ReverseOpenStatic:
-                        return "ReverseOpenStaticDelegateStub";
-                    case DelegateMarshallingMethodThunkKind.ReverseClosed:
-                        return "ReverseDelegateStub";
-                    case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
-                        return "ForwardNativeFunctionWrapper";
-                    default:
-                        Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
-                        return string.Empty;
-                }
-            }
-        }
-
-        private ReadOnlySpan<byte> U8NamePrefix
+        private ReadOnlySpan<byte> NamePrefix
         {
             get
             {
@@ -260,7 +241,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return U8NamePrefix.Append("__"u8, DelegateType.Name);
+                return NamePrefix.Append("__"u8, DelegateType.Name);
             }
         }
 
@@ -268,7 +249,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix + "__" + DelegateType.DiagnosticName;
+                return GetName();
             }
         }
 

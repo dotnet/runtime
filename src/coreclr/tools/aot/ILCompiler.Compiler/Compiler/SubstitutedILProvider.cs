@@ -414,8 +414,8 @@ namespace ILCompiler
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.Name.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeName)
-                            && calleeType.Namespace.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeNamespace)
+                            && calleeType.Name.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeName)
+                            && calleeType.Namespace.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeNamespace)
                             && callee.Signature is { Length: 0, IsStatic: true }
                             && callee.Name.StartsWith("get_"u8))
                         {

@@ -19,12 +19,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaModule _module;
 
-        public const string ResourceAccessorTypeName = "SR";
-        public static ReadOnlySpan<byte> U8ResourceAccessorTypeName => "SR"u8;
-        public const string ResourceAccessorTypeNamespace = "System";
-        public static ReadOnlySpan<byte> U8ResourceAccessorTypeNamespace => "System"u8;
-        public const string ResourceAccessorGetStringMethodName = "GetResourceString";
-        public static ReadOnlySpan<byte> U8ResourceAccessorGetStringMethodName => "GetResourceString"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorTypeName => "SR"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorTypeNamespace => "System"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorGetStringMethodName => "GetResourceString"u8;
 
         public InlineableStringsResourceNode(EcmaModule module)
         {
@@ -54,17 +51,17 @@ namespace ILCompiler.DependencyAnalysis
             if (resourceName != resourceName1 && resourceName != resourceName2)
                 return false;
 
-            MetadataType srType = module.GetType(U8ResourceAccessorTypeNamespace, U8ResourceAccessorTypeName, throwIfNotFound: false);
+            MetadataType srType = module.GetType(ResourceAccessorTypeNamespace, ResourceAccessorTypeName, throwIfNotFound: false);
             if (srType == null)
                 return false;
 
-            return srType.GetMethod(U8ResourceAccessorGetStringMethodName, null) != null;
+            return srType.GetMethod(ResourceAccessorGetStringMethodName, null) != null;
         }
 
         public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.Name.SequenceEqual(U8ResourceAccessorGetStringMethodName) && method.OwningType is MetadataType mdType
-                && mdType.Name.SequenceEqual(U8ResourceAccessorTypeName) && mdType.Namespace.SequenceEqual(U8ResourceAccessorTypeNamespace))
+            if (method.Name.SequenceEqual(ResourceAccessorGetStringMethodName) && method.OwningType is MetadataType mdType
+                && mdType.Name.SequenceEqual(ResourceAccessorTypeName) && mdType.Namespace.SequenceEqual(ResourceAccessorTypeNamespace))
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");

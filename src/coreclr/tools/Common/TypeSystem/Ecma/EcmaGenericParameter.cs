@@ -62,15 +62,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                MetadataReader reader = _module.MetadataReader;
-                return reader.GetStringBytes(reader.GetGenericParameter(_handle).Name);
-            }
-        }
-
         public override GenericParameterKind Kind
         {
             get

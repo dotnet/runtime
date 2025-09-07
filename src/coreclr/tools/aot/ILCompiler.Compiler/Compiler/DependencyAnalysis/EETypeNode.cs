@@ -1000,7 +1000,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (isAsyncStateMachineValueType)
                 {
                     if ((declType.IsObject && (declMethod.Name.SequenceEqual("Equals"u8) || declMethod.Name.SequenceEqual("GetHashCode"u8)) && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
-                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name.SequenceEqual(ValueTypeGetFieldHelperMethodOverride.U8MetadataName)))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name.SequenceEqual(ValueTypeGetFieldHelperMethodOverride.MetadataName)))
                     {
                         shouldEmitImpl = false;
                     }

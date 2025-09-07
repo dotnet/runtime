@@ -215,13 +215,13 @@ namespace Internal.IL.Stubs
             }
         }
 
-        internal static ReadOnlySpan<byte> U8MetadataName => "__GetFieldHelper"u8;
+        internal static ReadOnlySpan<byte> MetadataName => "__GetFieldHelper"u8;
 
         public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return U8MetadataName;
+                return MetadataName;
             }
         }
 
