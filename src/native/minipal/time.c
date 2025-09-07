@@ -76,7 +76,7 @@ int64_t minipal_hires_tick_frequency(void)
 int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
-    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+    return (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -94,7 +94,7 @@ int64_t minipal_hires_ticks(void)
 int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
-    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    return  (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW_APPROX) / (int64_t)(tccMilliSecondsToNanoSeconds);
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
 
