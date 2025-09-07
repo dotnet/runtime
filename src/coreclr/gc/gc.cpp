@@ -29,6 +29,13 @@
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
 
+// If FEATURE_INTERPRETER is set, always enable the GC side of FEATURE_CONSERVATIVE_GC
+#ifdef FEATURE_INTERPRETER
+#ifndef FEATURE_CONSERVATIVE_GC
+#define FEATURE_CONSERVATIVE_GC
+#endif
+#endif // FEATURE_INTERPRETER
+
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
 
