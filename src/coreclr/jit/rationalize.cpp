@@ -421,14 +421,9 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #if defined(TARGET_XARCH)
         case NI_Vector128_ExtractMostSignificantBits:
         {
+            // We want to keep this as is, because we'll rewrite it in post-order
             assert(varTypeIsShort(simdBaseType));
-
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-            {
-                // We want to keep this as is, because we'll rewrite it in post-order
-                return;
-            }
-            break;
+            return;
         }
 #endif // TARGET_XARCH
 
@@ -698,7 +693,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
     }
     else
     {
-        intrinsic = NI_SSE42_BlendVariable;
+        intrinsic = NI_X86Base_BlendVariable;
     }
 
     if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
@@ -917,10 +912,6 @@ void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeS
                             intrinsic = NI_AVX_CompareEqual;
                         }
                     }
-                    else if (varTypeIsLong(simdBaseType))
-                    {
-                        intrinsic = NI_SSE42_CompareEqual;
-                    }
                     else
                     {
                         intrinsic = NI_X86Base_CompareEqual;
@@ -940,10 +931,6 @@ void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeS
                         {
                             intrinsic = NI_AVX_CompareGreaterThan;
                         }
-                    }
-                    else if (varTypeIsLong(simdBaseType))
-                    {
-                        intrinsic = NI_SSE42_CompareGreaterThan;
                     }
                     else
                     {
@@ -977,10 +964,6 @@ void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeS
                         {
                             intrinsic = NI_AVX_CompareLessThan;
                         }
-                    }
-                    else if (varTypeIsLong(simdBaseType))
-                    {
-                        intrinsic = NI_SSE42_CompareLessThan;
                     }
                     else
                     {
@@ -1539,9 +1522,6 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         parents.Push(castNode);
     }
 #elif defined(TARGET_XARCH)
-    NamedIntrinsic moveMaskIntrinsic = NI_Illegal;
-    NamedIntrinsic shuffleIntrinsic  = NI_Illegal;
-
     simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
     // We want to tightly pack the most significant byte of each short/ushort
@@ -1554,6 +1534,8 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     simdVal.u64[0] = 0x0F0D0B0907050301;
     simdVal.u64[1] = 0x8080808080808080;
 
+    NamedIntrinsic shuffleIntrinsic = NI_Illegal;
+
     if (simdSize == 32)
     {
         // Vector256 works on 2x128-bit lanes, so repeat the same indices for the upper lane
@@ -1561,15 +1543,11 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         simdVal.u64[2] = 0x0F0D0B0907050301;
         simdVal.u64[3] = 0x8080808080808080;
 
-        shuffleIntrinsic  = NI_AVX2_Shuffle;
-        moveMaskIntrinsic = NI_X86Base_MoveMask;
+        shuffleIntrinsic = NI_AVX2_Shuffle;
     }
     else
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE42));
-
-        shuffleIntrinsic  = NI_SSE42_Shuffle;
-        moveMaskIntrinsic = NI_X86Base_MoveMask;
+        shuffleIntrinsic = NI_X86Base_Shuffle;
     }
 
     GenTree* op2 = comp->gtNewVconNode(simdType);
@@ -1606,7 +1584,7 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         simdSize = 16;
     }
 
-    node->ChangeHWIntrinsicId(moveMaskIntrinsic);
+    node->ChangeHWIntrinsicId(NI_X86Base_MoveMask);
     node->SetSimdSize(simdSize);
     node->SetSimdBaseJitType(simdBaseJitType);
     node->Op(1) = op1;

@@ -1545,7 +1545,7 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		table_size = table [0];
 		table ++;
 
-		hash = mono_metadata_str_hash (symbol) % table_size;
+		hash = g_str_hash (symbol) % table_size;
 
 		entry = &table [hash * 2];
 
@@ -2716,9 +2716,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	}
 #ifdef DEBUG_AOT_NAME_TABLE
 	debug_full_name = g_strdup (full_name);
-	debug_hash = mono_metadata_str_hash (full_name) % table_size;
+	debug_hash = g_str_hash (full_name) % table_size;
 #endif
-	hash = mono_metadata_str_hash (full_name) % table_size;
+	hash = g_str_hash (full_name) % table_size;
 	if (full_name != full_name_buf)
 		g_free (full_name);
 

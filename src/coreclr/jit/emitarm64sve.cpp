@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #include "instr.h"
+#include "codegen.h"
 
 /*****************************************************************************/
 
@@ -2645,9 +2646,9 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isValidRot(emitDecodeRotationImm90_or_270(imm)));
 
             // Convert rot to bitwise representation: 0 if 90, 1 if 270
-            imm = emitEncodeRotationImm90_or_270(imm); // r
             fmt = IF_SVE_FV_2A;
             break;
 
@@ -2667,8 +2668,24 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_IE_2A;
@@ -2686,8 +2703,24 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_JH_2A;
@@ -4574,14 +4607,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
         case INS_sve_sqrdcmlah:
             assert(insScalableOptsNone(sopt));
             assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg1));                        // ddddd
-            assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isVectorRegister(reg3));                        // mmmmm
-            assert(isValidRot(imm));                               // rr
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isVectorRegister(reg1));                         // ddddd
+            assert(isVectorRegister(reg2));                         // nnnnn
+            assert(isVectorRegister(reg3));                         // mmmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm))); // rr
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));  // xx
 
             // Convert rot to bitwise representation
-            imm = emitEncodeRotationImm0_to_270(imm);
             fmt = IF_SVE_EK_3A;
             break;
 
@@ -5785,12 +5817,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_cmla:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
             // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
@@ -5807,13 +5839,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_sqrdcmlah:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
 
+            imm = (imm1 << 2) | imm2;
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert(isValidUimm<2>(imm1));                 // ii

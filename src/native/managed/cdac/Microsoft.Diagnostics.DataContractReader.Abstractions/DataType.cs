@@ -19,10 +19,16 @@ public enum DataType
     nuint,
     pointer,
 
+    /* VM Data Types */
+
     GCHandle,
     CodePointer,
     Thread,
     ThreadStore,
+    ThreadLocalData,
+    ThreadStaticsInfo,
+    InFlightTLSData,
+    TLSIndex,
     GCAllocContext,
     EEAllocContext,
     Exception,
@@ -42,6 +48,7 @@ public enum DataType
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,
+    DynamicStaticsInfo,
     EEClass,
     ArrayClass,
     MethodTableAuxiliaryData,
@@ -103,6 +110,10 @@ public enum DataType
     GCCoverageInfo,
     ArrayListBase,
     ArrayListBlock,
+    EETypeHashTable,
+    InstMethodHashTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
@@ -119,4 +130,12 @@ public enum DataType
     FaultingExceptionFrame,
     HijackFrame,
     TailCallFrame,
+    StubDispatchFrame,
+
+
+    /* GC Data Types */
+
+    GCHeap,
+    Generation,
+    CFinalize,
 }
