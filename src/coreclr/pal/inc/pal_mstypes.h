@@ -132,11 +132,9 @@ typedef unsigned short USHORT;
 typedef USHORT *PUSHORT;
 typedef unsigned char UCHAR;
 typedef UCHAR *PUCHAR;
-typedef char *PSZ;
 typedef ULONGLONG DWORDLONG;
 
 typedef unsigned int DWORD; // NOTE: diff from  windows.h, for LP64 compat
-typedef unsigned int DWORD32, *PDWORD32;
 
 typedef int BOOL;
 typedef unsigned char BYTE;
@@ -218,10 +216,6 @@ typedef LONG_PTR LPARAM;
 typedef char16_t WCHAR;
 
 typedef DWORD LCID;
-typedef PDWORD PLCID;
-typedef WORD LANGID;
-
-typedef DWORD LCTYPE;
 
 typedef WCHAR *PWCHAR;
 typedef WCHAR *LPWCH, *PWCH;
@@ -258,7 +252,6 @@ typedef CONST TCHAR *LPCTSTR;
 #define HIBYTE(w)           ((BYTE)((DWORD_PTR)(w) >> 8))
 
 typedef VOID *HANDLE;
-typedef struct __PAL_RemoteHandle__ { HANDLE h; } *RHANDLE;
 typedef HANDLE *PHANDLE;
 typedef HANDLE *LPHANDLE;
 #define INVALID_HANDLE_VALUE ((VOID *)(-1))
