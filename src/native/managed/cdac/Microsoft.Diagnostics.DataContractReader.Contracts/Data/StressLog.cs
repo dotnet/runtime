@@ -23,6 +23,9 @@ internal sealed class StressLog : IData<StressLog>
         StartTimestamp = target.Read<ulong>(address + (ulong)type.Fields[nameof(StartTimestamp)].Offset);
         ModuleOffset = target.ReadNUInt(address + (ulong)type.Fields[nameof(ModuleOffset)].Offset);
 
+        if (type.Fields.ContainsKey(nameof(Modules)))
+            Modules = target.ReadPointer(address + (ulong)type.Fields[nameof(Modules)].Offset);
+
         Logs = target.ReadPointer(address + (ulong)type.Fields[nameof(Logs)].Offset);
     }
 
@@ -41,6 +44,8 @@ internal sealed class StressLog : IData<StressLog>
     public ulong StartTimestamp { get; init; }
 
     public TargetNUInt ModuleOffset { get; init; }
+
+    public TargetPointer? Modules { get; init; }
 
     public TargetPointer Logs { get; init; }
 }

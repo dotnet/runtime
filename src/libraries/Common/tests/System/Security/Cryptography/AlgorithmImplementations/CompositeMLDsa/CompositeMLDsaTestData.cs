@@ -46,6 +46,11 @@ namespace System.Security.Cryptography.Tests
         public static IEnumerable<object[]>SupportedAlgorithmIetfVectorsTestData =>
             SupportedAlgorithmIetfVectors.Select(v => new object[] { v });
 
+        public static IEnumerable<object[]> SupportedECDsaAlgorithmIetfVectorsTestData =>
+            SupportedAlgorithmIetfVectors
+                .Where(vector => CompositeMLDsa.IsAlgorithmSupported(vector.Algorithm) && CompositeMLDsaTestHelpers.IsECDsa(vector.Algorithm))
+                .Select(v => new object[] { v });
+
         internal static CompositeMLDsaAlgorithm[] AllAlgorithms => field ??=
         [
             CompositeMLDsaAlgorithm.MLDsa44WithRSA2048Pss,

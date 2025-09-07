@@ -306,7 +306,7 @@ namespace System.Diagnostics.Tests
         [InlineData("Open", true)]
         [InlineData("invalid", false)]
         [PlatformSpecific(TestPlatforms.Linux)] // s_allowedProgramsToRun is Linux specific
-        public void ProcessStart_UseShellExecute_OnUnix_ValidVerbs(string verb, bool isValid)
+        public void ProcessStart_UseShellExecute_OnUnix_ValidVerbs(string? verb, bool isValid)
         {
             // Create a script that we'll use to 'open' the file by putting it on PATH
             // with the appropriate name.

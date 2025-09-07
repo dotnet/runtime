@@ -66,6 +66,7 @@
     KYWD( "auto",           AUTO_,              NO_VALUE )
     KYWD( "sequential",     SEQUENTIAL_,        NO_VALUE )
     KYWD( "explicit",       EXPLICIT_,          NO_VALUE )
+    KYWD( "extended",       EXTENDED_,          NO_VALUE )
     KYWD( "ansi",           ANSI_,              NO_VALUE )
     KYWD( "unicode",        UNICODE_,           NO_VALUE )
     KYWD( "autochar",       AUTOCHAR_,          NO_VALUE )

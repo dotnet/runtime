@@ -218,7 +218,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
             PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
             if (tempEntryPoint != (PCODE)NULL)
             {
-                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromPrecode(tempEntryPoint, TRUE);
 
                 if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
                 {
@@ -270,6 +270,10 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
     else if (IsMiNative(dwType))
     {
         *pJITType = TYPE_PJIT;
+    }
+    else if (IsMiOPTIL(dwType))
+    {
+        *pJITType = TYPE_INTERPRETER;
     }
     else
     {
@@ -1343,7 +1347,7 @@ ClrDataAccess::GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *
     if (!codeInfo.IsValid())
     {
         // We may be able to walk stubs to find a method desc if it's not a jitted method.
-        MethodDesc *methodDescI = MethodTable::GetMethodDescForSlotAddress(TO_TADDR(ip));
+        MethodDesc *methodDescI = NonVirtualEntry2MethodDesc(TO_TADDR(ip));
         if (methodDescI == NULL)
         {
             hr = E_INVALIDARG;
@@ -3158,11 +3162,11 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     if (data == NULL)
         return E_INVALIDARG;
 
-    static_assert_no_msg(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
-    static_assert_no_msg(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
-    static_assert_no_msg(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
-    static_assert_no_msg(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
-    static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
+    static_assert(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
+    static_assert(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
+    static_assert(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
+    static_assert(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
+    static_assert(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
     *data = {};
@@ -3811,7 +3815,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
-                        pLink = pBlock->m_Link.m_pNext;
+                        pLink = pLink->m_pNext;
                     }
                     while ((pLink != NULL) &&
                         (pSyncBlockData->AdditionalThreadCount < 1000));
@@ -5024,15 +5028,15 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
     PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
-    INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
+    INT_PTR AssemblyLoadContextHandle = pBinder->GetAssemblyLoadContext();
 
-    TADDR managedAssemblyLoadContextAddr = 0;
-    if (managedAssemblyLoadContextHandle != 0)
+    TADDR AssemblyLoadContextAddr = 0;
+    if (AssemblyLoadContextHandle != 0)
     {
-        DacReadAll(managedAssemblyLoadContextHandle,&managedAssemblyLoadContextAddr,sizeof(TADDR),true);
+        DacReadAll(AssemblyLoadContextHandle,&AssemblyLoadContextAddr,sizeof(TADDR),true);
     }
 
-    *assemblyLoadContext = TO_CDADDR(managedAssemblyLoadContextAddr);
+    *assemblyLoadContext = TO_CDADDR(AssemblyLoadContextAddr);
 
     SOSDacLeave();
     return hr;

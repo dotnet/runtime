@@ -17,6 +17,22 @@ namespace System.Security.Cryptography
             return ((int)errorCode).ToCryptographicException();
         }
 
+        internal static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)
+        {
+            ErrorCode errorCode = Interop.NCrypt.NCryptOpenStorageProvider(
+                out SafeNCryptProviderHandle providerHandle,
+                provider.Provider,
+                0);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                providerHandle.Dispose();
+                throw errorCode.ToCryptographicException();
+            }
+
+            return providerHandle;
+        }
+
         internal static void SetExportPolicy(this SafeNCryptKeyHandle keyHandle, CngExportPolicies exportPolicy)
         {
             unsafe
@@ -122,6 +138,40 @@ namespace System.Security.Cryptography
                     string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue)!;
                     return valueAsString;
                 }
+            }
+        }
+
+        internal delegate void ExportKeyBlobCallback(ReadOnlySpan<byte> blob);
+
+        internal static void ExportKeyBlob(
+            this SafeNCryptKeyHandle handle,
+            string blobType,
+            ExportKeyBlobCallback callback)
+        {
+            int numBytesNeeded;
+            ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(handle, IntPtr.Zero, blobType, IntPtr.Zero, null, 0, out numBytesNeeded, 0);
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+                throw errorCode.ToCryptographicException();
+
+            byte[] buffer = CryptoPool.Rent(numBytesNeeded);
+
+            try
+            {
+                using (PinAndClear.Track(buffer))
+                {
+                    errorCode = Interop.NCrypt.NCryptExportKey(handle, IntPtr.Zero, blobType, IntPtr.Zero, buffer, buffer.Length, out numBytesNeeded, 0);
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                        throw errorCode.ToCryptographicException();
+
+                    // The second call to NCryptExportKey should always return the same number of bytes as the first call,
+                    // but we will slice the buffer just in case.
+                    callback(buffer.AsSpan(0, numBytesNeeded));
+                }
+            }
+            finally
+            {
+                // Already cleared by PinAndClear.Track above
+                CryptoPool.Return(buffer, clearSize: 0);
             }
         }
 

@@ -391,6 +391,8 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -587,6 +589,8 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -731,7 +735,7 @@ HRESULT EEClass::AddMethodDesc(
                                 dwImplFlags,
                                 dwMemberAttrs,
                                 TRUE,   // fEnC
-                                0,      // RVA - non-zero only for NDirect
+                                0,      // RVA - non-zero only for PInvoke
                                 pImport,
                                 NULL,
                                 Signature(),
@@ -1132,6 +1136,22 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
+    }
+
+    if (pMT->GetClass()->HasRVAStaticFields())
+    {
+        ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::STATIC_FIELDS);
+        FieldDesc* pFD = NULL;
+        while ((pFD = fdIterator.Next()) != NULL)
+        {
+            if (pFD->IsByValue() && pFD->IsRVA())
+            {
+                if (pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetClass()->HasFieldsWhichMustBeInited())
+                {
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
     }
 
     LoadExactParentAndInterfacesTransitively(pMT);
@@ -1842,6 +1862,29 @@ EEClass::CheckForHFA()
 #else
                     fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
+                }
+
+                int requiredAlignment;
+                switch (fieldHFAType)
+                {
+                case CORINFO_HFA_ELEM_FLOAT:
+                    requiredAlignment = 4;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR64:
+                case CORINFO_HFA_ELEM_DOUBLE:
+                    requiredAlignment = 8;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR128:
+                    requiredAlignment = 16;
+                    break;
+                default:
+                    // VT without a valid HFA type inside of this struct means this struct is not an HFA
+                    return false;
+                }
+
+                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0)) // HFAs don't have unaligned fields.
+                {
+                    return false;
                 }
             }
             break;

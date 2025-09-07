@@ -331,11 +331,11 @@ namespace System.Reflection
                     {
                         Debug.Assert(copyOfParameters[i] != null);
                         Debug.Assert(((RuntimeType)copyOfParameters[i]!.GetType()).IsNullableOfT);
-                        dest![i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
+                        dest[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                     }
                     else
                     {
-                        dest![i] = copyOfParameters[i];
+                        dest[i] = copyOfParameters[i];
                     }
                 }
             }
@@ -357,7 +357,7 @@ namespace System.Reflection
                 RuntimeType sigType = _argTypes[i];
 
                 // Convert a Type.Missing to the default value.
-                if (ReferenceEquals(arg, Type.Missing))
+                if (ReferenceEquals(arg, Missing.Value))
                 {
                     arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
                     shouldCopyBack[i] = true;
