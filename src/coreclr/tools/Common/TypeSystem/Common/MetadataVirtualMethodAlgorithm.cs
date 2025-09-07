@@ -280,7 +280,7 @@ namespace Internal.TypeSystem
             if (decl.OwningType.IsInterface)
                 return FindInterfaceImplFromDeclFromMethodImpls(type, decl);
 
-            MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.U8Name);
+            MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.Name);
 
             if (foundMethodImpls == null)
                 return null;
@@ -307,7 +307,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(decl.OwningType.IsInterface);
 
-            MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.U8Name);
+            MethodImplRecord[] foundMethodImpls = type.FindMethodsImplWithMatchingDeclName(decl.Name);
 
             if (foundMethodImpls == null)
                 return null;
@@ -333,7 +333,7 @@ namespace Internal.TypeSystem
             {
                 MetadataType typeDefinition = (MetadataType)type.GetTypeDefinition();
                 DefType[] interfacesOnDefinition = typeDefinition.RuntimeInterfaces;
-                MethodImplRecord[] foundMethodImplsOnDefinition = typeDefinition.FindMethodsImplWithMatchingDeclName(decl.U8Name);
+                MethodImplRecord[] foundMethodImplsOnDefinition = typeDefinition.FindMethodsImplWithMatchingDeclName(decl.Name);
                 Debug.Assert(foundMethodImplsOnDefinition.Length == foundMethodImpls.Length);
 
                 int bestInterfaceIndex = int.MaxValue;
@@ -377,14 +377,14 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            ReadOnlySpan<byte> name = targetMethod.U8Name;
+            ReadOnlySpan<byte> name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
             MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (candidate.U8Name.SequenceEqual(name))
+                if (candidate.Name.SequenceEqual(name))
                 {
                     if (candidate.Signature.EquivalentTo(sig))
                     {
@@ -881,7 +881,7 @@ namespace Internal.TypeSystem
                 else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
                 {
                     // This interface might provide a default implementation
-                    MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.U8Name);
+                    MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
                     if (possibleImpls != null)
                     {
                         foreach (MethodImplRecord implRecord in possibleImpls)
@@ -1078,7 +1078,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(interfaceMethod.Signature.IsStatic);
 
-            MethodImplRecord[] possibleImpls = constrainedType.FindMethodsImplWithMatchingDeclName(interfaceMethod.U8Name);
+            MethodImplRecord[] possibleImpls = constrainedType.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
             if (possibleImpls == null)
                 return null;
 

@@ -25,8 +25,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             _embeddedSignatureData = embeddedSigData;
         }
 
-        public override string Name => System.Text.Encoding.UTF8.GetString(U8Name);
-        public override ReadOnlySpan<byte> U8Name => _name;
+        public override ReadOnlySpan<byte> Name => _name;
         public override DefType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;

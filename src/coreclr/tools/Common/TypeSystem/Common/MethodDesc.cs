@@ -496,7 +496,7 @@ namespace Internal.TypeSystem
         /// </summary>
         protected virtual int ComputeHashCode()
         {
-            return OwningType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(U8Name);
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(Name);
         }
 
         public override bool Equals(object o)
@@ -557,7 +557,7 @@ namespace Internal.TypeSystem
             {
                 // TODO: Precise check
                 // TODO: Cache?
-                return this.U8Name.SequenceEqual(".ctor"u8);
+                return this.Name.SequenceEqual(".ctor"u8);
             }
         }
 
@@ -587,15 +587,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the method as specified in the metadata.
         /// </summary>
-        public virtual string Name
-        {
-            get
-            {
-                return null;
-            }
-        }
-
-        public virtual ReadOnlySpan<byte> U8Name
+        public virtual ReadOnlySpan<byte> Name
         {
             get
             {
@@ -605,7 +597,7 @@ namespace Internal.TypeSystem
 
         public string GetName()
         {
-            return System.Text.Encoding.UTF8.GetString(U8Name
+            return System.Text.Encoding.UTF8.GetString(Name
 #if NETSTANDARD
                 .ToArray()
 #endif
@@ -727,7 +719,7 @@ namespace Internal.TypeSystem
             get
             {
                 TypeDesc owningType = OwningType;
-                return (owningType.IsObject && U8Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
+                return (owningType.IsObject && Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

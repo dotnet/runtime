@@ -404,19 +404,11 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
-            {
-                get
-                {
-                    return _targetMethod.U8Name.Append("_Unbox"u8);
+                    return _targetMethod.Name.Append("_Unbox"u8);
                 }
             }
 
@@ -509,19 +501,11 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
-            {
-                get
-                {
-                    return _targetMethod.U8Name.Append("_Unbox"u8);
+                    return _targetMethod.Name.Append("_Unbox"u8);
                 }
             }
 
@@ -619,9 +603,7 @@ namespace ILCompiler
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
-            public override string Name => _methodRepresented.Name;
-
-            public override ReadOnlySpan<byte> U8Name => _methodRepresented.U8Name;
+            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

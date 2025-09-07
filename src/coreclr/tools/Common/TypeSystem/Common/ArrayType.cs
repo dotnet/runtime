@@ -299,26 +299,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                switch (_kind)
-                {
-                    case ArrayMethodKind.Get:
-                        return "Get";
-                    case ArrayMethodKind.Set:
-                        return "Set";
-                    case ArrayMethodKind.Address:
-                    case ArrayMethodKind.AddressWithHiddenArg:
-                        return "Address";
-                    default:
-                        return ".ctor";
-                }
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

@@ -140,15 +140,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return NamePrefix + "__" + ((MetadataType)ManagedType).Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

@@ -34,19 +34,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return $"{_helperMethod.Name}_{Signature.Length}_{DefaultAssemblyName}";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return System.Text.Encoding.UTF8.GetBytes(Name);
+                return System.Text.Encoding.UTF8.GetBytes($"{_helperMethod.GetName()}_{Signature.Length}_{DefaultAssemblyName}");
             }
         }
 

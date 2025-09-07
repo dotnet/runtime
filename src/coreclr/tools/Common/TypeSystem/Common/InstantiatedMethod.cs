@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
 
         protected override int ComputeHashCode()
         {
-            return OwningType.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(U8Name), Instantiation);
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(Name), Instantiation);
         }
 
         public override TypeSystemContext Context
@@ -157,19 +157,11 @@ namespace Internal.TypeSystem
             return _methodDef.GetTypicalMethodDefinition();
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
                 return _methodDef.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return _methodDef.U8Name;
             }
         }
     }

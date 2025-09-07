@@ -89,15 +89,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return NameAndSignature.GetName();
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

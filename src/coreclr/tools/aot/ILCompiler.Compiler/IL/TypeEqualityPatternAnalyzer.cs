@@ -147,22 +147,22 @@ namespace ILCompiler
 
             static bool IsTypeGetTypeFromHandle(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.U8Name.SequenceEqual("GetTypeFromHandle"u8)
+                && method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8)
                 && IsSystemType(method.OwningType);
 
             static bool IsTypeEquals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.U8Name.SequenceEqual("op_Equality"u8)
+                && method.IsIntrinsic && method.Name.SequenceEqual("op_Equality"u8)
                 && IsSystemType(method.OwningType);
 
             static bool IsTypeInequals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.U8Name.SequenceEqual("op_Inequality"u8)
+                && method.IsIntrinsic && method.Name.SequenceEqual("op_Inequality"u8)
                 && IsSystemType(method.OwningType);
 
             static bool IsObjectGetType(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode is ILOpcode.call or ILOpcode.callvirt && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.U8Name.SequenceEqual("GetType"u8) && method.OwningType.IsObject;
+                && method.IsIntrinsic && method.Name.SequenceEqual("GetType"u8) && method.OwningType.IsObject;
 
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)
                 => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3);

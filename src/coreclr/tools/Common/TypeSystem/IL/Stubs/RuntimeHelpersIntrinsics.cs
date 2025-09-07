@@ -29,7 +29,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (method.U8Name.SequenceEqual("IsBitwiseEquatable"u8))
+            if (method.Name.SequenceEqual("IsBitwiseEquatable"u8))
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
                 // (i.e., its operator == could be implemented via memcmp). But for now we'll

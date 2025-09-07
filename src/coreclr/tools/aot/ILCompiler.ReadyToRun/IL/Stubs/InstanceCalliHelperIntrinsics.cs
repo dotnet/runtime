@@ -14,7 +14,7 @@ namespace Internal.IL
         {
             MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)method);
 
-            if (method.U8Name.StartsWith("Invoke"u8))
+            if (method.Name.StartsWith("Invoke"u8))
             {
                 methodIL = new ExplicitThisCall(methodIL);
             }

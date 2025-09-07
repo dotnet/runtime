@@ -360,7 +360,7 @@ namespace Internal.TypeSystem
                 _methodDef = methodDef;
                 _instantiation = instantiation;
                 _hashcode = methodDef.OwningType.GetHashCode()
-                    ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(methodDef.U8Name), instantiation);
+                    ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(methodDef.Name), instantiation);
             }
 
             public MethodDesc MethodDef
@@ -459,7 +459,7 @@ namespace Internal.TypeSystem
             {
                 _typicalMethodDef = typicalMethodDef;
                 _instantiatedType = instantiatedType;
-                _hashcode = instantiatedType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(typicalMethodDef.U8Name);
+                _hashcode = instantiatedType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(typicalMethodDef.Name);
             }
 
             public MethodDesc TypicalMethodDef

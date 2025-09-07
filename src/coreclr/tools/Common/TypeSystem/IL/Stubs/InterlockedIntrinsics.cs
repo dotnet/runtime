@@ -23,7 +23,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("Interlocked"u8));
             Debug.Assert(!method.IsGenericMethodDefinition);
 
-            if (method.HasInstantiation && method.U8Name.SequenceEqual("CompareExchange"u8))
+            if (method.HasInstantiation && method.Name.SequenceEqual("CompareExchange"u8))
             {
 #if READYTORUN
                 // Check to see if the tokens needed to describe the CompareExchange are naturally present within

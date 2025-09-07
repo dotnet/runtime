@@ -585,7 +585,7 @@ namespace ILCompiler.Logging
             foreach (var method in type.GetMethods())
             {
                 index = startIndex;
-                if (!method.U8Name.StringEquals(memberName))
+                if (!method.Name.StringEquals(memberName))
                     continue;
 
                 var methodArity = method.Instantiation.Length;
@@ -682,7 +682,7 @@ namespace ILCompiler.Logging
                 return;
             foreach (var field in type.GetFields())
             {
-                if (!field.U8Name.StringEquals(memberName))
+                if (!field.Name.StringEquals(memberName))
                     continue;
                 results.Add(field);
             }

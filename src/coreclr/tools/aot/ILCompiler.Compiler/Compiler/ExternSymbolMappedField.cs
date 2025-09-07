@@ -20,9 +20,7 @@ namespace ILCompiler
             _symbolName = symbolName;
         }
 
-        public override string Name => _symbolName;
-
-        public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
+        public override ReadOnlySpan<byte> Name => System.Text.Encoding.UTF8.GetBytes(_symbolName);
 
         public string SymbolName => _symbolName;
 

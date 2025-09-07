@@ -536,7 +536,7 @@ namespace Internal.TypeSystem
         {
             foreach (var method in GetMethods())
             {
-                if (method.U8Name.SequenceEqual(name))
+                if (method.Name.SequenceEqual(name))
                 {
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
@@ -549,7 +549,7 @@ namespace Internal.TypeSystem
         {
             foreach (var method in GetMethods())
             {
-                if (method.U8Name.SequenceEqual(name))
+                if (method.Name.SequenceEqual(name))
                 {
                     if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
                         return method;
@@ -593,7 +593,7 @@ namespace Internal.TypeSystem
         {
             foreach (var field in GetFields())
             {
-                if (field.U8Name.SequenceEqual(name))
+                if (field.Name.SequenceEqual(name))
                     return field;
             }
             return null;

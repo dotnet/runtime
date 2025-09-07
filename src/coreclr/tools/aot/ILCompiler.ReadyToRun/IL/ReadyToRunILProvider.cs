@@ -50,7 +50,7 @@ namespace Internal.IL
         {
             if (method.Instantiation.Length == 1
                 && method.Signature.Length == 0
-                && method.U8Name.SequenceEqual("CreateInstance"u8))
+                && method.Name.SequenceEqual("CreateInstance"u8))
             {
                 TypeDesc type = method.Instantiation[0];
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)

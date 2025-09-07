@@ -27,15 +27,7 @@ namespace Internal.TypeSystem
             return ReferenceEquals(this, o);
         }
 
-        public virtual string Name
-        {
-            get
-            {
-                return null;
-            }
-        }
-
-        public virtual ReadOnlySpan<byte> U8Name
+        public virtual ReadOnlySpan<byte> Name
         {
             get
             {
@@ -46,7 +38,7 @@ namespace Internal.TypeSystem
         public string GetName()
         {
             return System.Text.Encoding.UTF8.GetString(
-                U8Name
+                Name
 #if NETSTANDARD
                 .ToArray()
 #endif

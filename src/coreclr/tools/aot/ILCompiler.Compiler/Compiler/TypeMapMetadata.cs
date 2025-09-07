@@ -22,18 +22,18 @@ namespace ILCompiler
             private sealed class ThrowingMethodStub : ILStubMethod
             {
                 private readonly TypeDesc _typeMapGroup;
+                private readonly byte[] _name;
 
                 public ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex)
                 {
                     OwningType = owningType;
                     _typeMapGroup = typeMapGroup;
-                    Name = $"InvalidTypeMapStub_{_typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
+                    _name = System.Text.Encoding.UTF8.GetBytes($"InvalidTypeMapStub_{_typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}");
                     Exception = ex;
                 }
 
                 public TypeSystemException Exception { get; }
-                public override string Name { get; }
-                public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
+                public override ReadOnlySpan<byte> Name => _name;
                 public override MethodIL EmitIL()
                 {
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
@@ -41,7 +41,7 @@ namespace ILCompiler
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
                 {
-                    return U8Name.SequenceCompareTo(other.U8Name);
+                    return Name.SequenceCompareTo(other.Name);
                 }
 
                 public override bool IsPInvoke => false;

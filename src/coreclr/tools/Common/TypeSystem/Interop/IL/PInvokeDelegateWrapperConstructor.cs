@@ -22,15 +22,7 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
-        {
-            get
-            {
-                return ".ctor";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

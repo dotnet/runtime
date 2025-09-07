@@ -177,7 +177,7 @@ namespace ILCompiler
 
             if (intrinsicOwningType.U8Name.SequenceEqual("Type"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetType"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetType"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -189,7 +189,7 @@ namespace ILCompiler
             }
             else if (intrinsicOwningType.U8Name.SequenceEqual("Assembly"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetExecutingAssembly"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetExecutingAssembly"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -201,7 +201,7 @@ namespace ILCompiler
             }
             else if (intrinsicOwningType.U8Name.SequenceEqual("MethodBase"u8) && intrinsicOwningType.U8Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.U8Name.SequenceEqual("GetCurrentMethod"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetCurrentMethod"u8))
                 {
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
@@ -455,7 +455,7 @@ namespace ILCompiler
                     return false;
 
                 // Delegate invocation never needs fat calls
-                if (owningType.IsDelegate && containingMethod.U8Name.SequenceEqual("Invoke"u8))
+                if (owningType.IsDelegate && containingMethod.Name.SequenceEqual("Invoke"u8))
                     return false;
             }
 

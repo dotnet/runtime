@@ -17,7 +17,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(method.OwningType.IsTypeDefinition);
             Debug.Assert(method.IsRuntimeImplemented);
 
-            if (method.U8Name.SequenceEqual("BeginInvoke"u8) || method.U8Name.SequenceEqual("EndInvoke"u8))
+            if (method.Name.SequenceEqual("BeginInvoke"u8) || method.Name.SequenceEqual("EndInvoke"u8))
             {
                 // BeginInvoke and EndInvoke are not supported on .NET Core
                 ILEmitter emit = new ILEmitter();
@@ -27,7 +27,7 @@ namespace Internal.IL.Stubs
                 return emit.Link(method);
             }
 
-            if (method.U8Name.SequenceEqual(".ctor"u8))
+            if (method.Name.SequenceEqual(".ctor"u8))
             {
                 // We only support delegate creation if the IL follows the delegate creation verifiability requirements
                 // described in ECMA-335 III.4.21 (newobj - create a new object). The codegen is expected to
@@ -42,7 +42,7 @@ namespace Internal.IL.Stubs
                 return emit.Link(method);
             }
 
-            if (method.U8Name.SequenceEqual("Invoke"u8))
+            if (method.Name.SequenceEqual("Invoke"u8))
             {
                 TypeSystemContext context = method.Context;
 

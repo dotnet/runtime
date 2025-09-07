@@ -657,7 +657,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.U8Name.StringEquals(name), bindingFlags))
+            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name.StringEquals(name), bindingFlags))
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 
@@ -712,7 +712,7 @@ namespace ILLink.Shared.TrimAnalysis
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);
 
         private partial void MarkFieldsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
-            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.U8Name.StringEquals(name), _reason, bindingFlags);
+            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name.StringEquals(name), _reason, bindingFlags);
 
         private partial void MarkPropertiesOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, p => p.Name == name, _reason, bindingFlags);

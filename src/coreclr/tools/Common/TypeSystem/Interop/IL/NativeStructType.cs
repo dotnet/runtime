@@ -417,19 +417,11 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
                     return _managedField.Name;
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
-            {
-                get
-                {
-                    return _managedField.U8Name;
                 }
             }
 

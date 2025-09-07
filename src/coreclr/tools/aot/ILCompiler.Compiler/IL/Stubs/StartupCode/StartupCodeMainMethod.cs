@@ -45,15 +45,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "StartupCodeMain";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -238,15 +230,7 @@ namespace Internal.IL.Stubs.StartupCode
                 get;
             }
 
-            public override string Name
-            {
-                get
-                {
-                    return "MainMethodWrapper";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {

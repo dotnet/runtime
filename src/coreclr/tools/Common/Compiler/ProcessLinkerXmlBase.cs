@@ -301,7 +301,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.U8Name.StringEquals(name))
+                    if (field.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessField(type, field, nav);
@@ -367,7 +367,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    if (method.U8Name.StringEquals(name))
+                    if (method.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessMethod(type, method, nav, customData);

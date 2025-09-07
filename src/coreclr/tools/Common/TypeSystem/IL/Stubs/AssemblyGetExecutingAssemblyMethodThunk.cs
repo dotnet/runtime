@@ -37,15 +37,7 @@ namespace Internal.IL.Stubs
             get;
         }
 
-        public override string Name
-        {
-            get
-            {
-                return $"GetExecutingAssembly_{ExecutingAssembly.GetName().Name}";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

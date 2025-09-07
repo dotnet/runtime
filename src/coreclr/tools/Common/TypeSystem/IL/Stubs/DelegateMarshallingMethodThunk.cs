@@ -256,15 +256,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return NamePrefix + "__" + DelegateType.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

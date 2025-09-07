@@ -215,18 +215,9 @@ namespace Internal.IL.Stubs
             }
         }
 
-        internal const string MetadataName = "__GetFieldHelper";
         internal static ReadOnlySpan<byte> U8MetadataName => "__GetFieldHelper"u8;
 
-        public override string Name
-        {
-            get
-            {
-                return MetadataName;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -238,7 +229,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return MetadataName;
+                return "__GetFieldHelper";
             }
         }
     }

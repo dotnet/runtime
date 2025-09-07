@@ -145,19 +145,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
                 return _typicalMethodDef.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return _typicalMethodDef.U8Name;
             }
         }
     }

@@ -54,19 +54,19 @@ namespace Internal.IL
                     break;
                 case "Debug":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.Diagnostics"u8) && method.U8Name.SequenceEqual("DebugBreak"u8))
+                        if (owningType.U8Namespace.SequenceEqual("System.Diagnostics"u8) && method.Name.SequenceEqual("DebugBreak"u8))
                             return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                     }
                     break;
                 case "RuntimeAugments":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.U8Name.SequenceEqual("GetCanonType"u8))
+                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.Name.SequenceEqual("GetCanonType"u8))
                             return GetCanonTypeIntrinsic.EmitIL(method);
                     }
                     break;
                 case "MethodTable":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8) && method.U8Name.SequenceEqual("get_SupportsRelativePointers"u8))
+                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8) && method.Name.SequenceEqual("get_SupportsRelativePointers"u8))
                         {
                             ILOpcode value = method.Context.Target.SupportsRelativePointers ?
                                 ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;

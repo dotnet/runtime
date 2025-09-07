@@ -57,15 +57,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "GetHashCode";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -156,15 +148,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "Equals";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

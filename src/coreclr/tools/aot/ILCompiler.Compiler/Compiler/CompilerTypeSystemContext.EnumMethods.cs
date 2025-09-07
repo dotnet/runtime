@@ -57,9 +57,9 @@ namespace ILCompiler
             EnumInfo info = _enumInfoHashtable.GetOrCreateValue(enumTypeDefinition);
 
             MethodDesc resolvedMethod;
-            if (virtualMethod.U8Name.SequenceEqual("Equals"u8))
+            if (virtualMethod.Name.SequenceEqual("Equals"u8))
                 resolvedMethod = info.EqualsMethod;
-            else if (virtualMethod.U8Name.SequenceEqual("GetHashCode"u8))
+            else if (virtualMethod.Name.SequenceEqual("GetHashCode"u8))
                 resolvedMethod = info.GetHashCodeMethod;
             else
                 return null;

@@ -40,15 +40,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "NativeLibraryStartup";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

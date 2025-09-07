@@ -37,19 +37,11 @@ namespace Internal.IL.Stubs
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
                 return Method.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return Method.U8Name;
             }
         }
 

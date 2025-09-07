@@ -128,15 +128,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeOpenStaticThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -229,15 +221,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeOpenInstanceThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -297,15 +281,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeClosedStaticThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -440,15 +416,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeMulticastThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -496,15 +464,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeInstanceClosedOverGenericMethodThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -681,15 +641,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "InvokeObjectArrayThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -806,15 +758,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "GetThunk";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

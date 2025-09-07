@@ -529,9 +529,9 @@ namespace Internal.JitInterface
             }
             if (methodNeedingCode.OwningType.IsDelegate && (
                 methodNeedingCode.IsConstructor ||
-                methodNeedingCode.U8Name.SequenceEqual("BeginInvoke"u8) ||
-                methodNeedingCode.U8Name.SequenceEqual("Invoke"u8) ||
-                methodNeedingCode.U8Name.SequenceEqual("EndInvoke"u8)))
+                methodNeedingCode.Name.SequenceEqual("BeginInvoke"u8) ||
+                methodNeedingCode.Name.SequenceEqual("Invoke"u8) ||
+                methodNeedingCode.Name.SequenceEqual("EndInvoke"u8)))
             {
                 // Special methods on delegate types
                 return true;
@@ -1917,7 +1917,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                if (constrainedType.IsEnum && originalMethod.U8Name.SequenceEqual("GetHashCode"u8))
+                if (constrainedType.IsEnum && originalMethod.Name.SequenceEqual("GetHashCode"u8))
                 {
                     MethodDesc methodOnUnderlyingType = constrainedType.UnderlyingType.FindVirtualFunctionTargetMethodOnObjectType(originalMethod);
                     Debug.Assert(methodOnUnderlyingType != null);
@@ -2070,8 +2070,8 @@ namespace Internal.JitInterface
                     //  2) Delegate.Invoke() - since a Delegate is a sealed class as per ECMA spec
                     //  3) JIT intrinsics - since they have pre-defined behavior
                     devirt = targetMethod.OwningType.IsValueType ||
-                        (targetMethod.OwningType.IsDelegate && targetMethod.U8Name.SequenceEqual("Invoke"u8)) ||
-                        (targetMethod.OwningType.IsObject && targetMethod.U8Name.SequenceEqual("GetType"u8));
+                        (targetMethod.OwningType.IsDelegate && targetMethod.Name.SequenceEqual("Invoke"u8)) ||
+                        (targetMethod.OwningType.IsObject && targetMethod.Name.SequenceEqual("GetType"u8));
 
                     callVirtCrossingVersionBubble = true;
                 }

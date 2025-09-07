@@ -28,9 +28,7 @@ namespace Internal.TypeSystem
         public override bool IsDefaultConstructor => _wrappedMethod.IsDefaultConstructor;
         public override bool IsStaticConstructor => _wrappedMethod.IsStaticConstructor;
 
-        public override string Name => _wrappedMethod.Name;
-
-        public override ReadOnlySpan<byte> U8Name => _wrappedMethod.U8Name;
+        public override ReadOnlySpan<byte> Name => _wrappedMethod.Name;
 
         public override bool IsVirtual => _wrappedMethod.IsVirtual;
 

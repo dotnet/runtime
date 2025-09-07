@@ -39,18 +39,12 @@ namespace Internal.TypeSystem.Ecma
         // Cached values
         private ThreadSafeFlags _methodFlags;
         private MethodSignature _signature;
-        private string _name;
         private TypeDesc[] _genericParameters; // TODO: Optional field?
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-#endif
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -349,7 +343,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && U8Name.SequenceEqual(".ctor"u8)
+                    && Name.SequenceEqual(".ctor"u8)
                     && !_type.IsAbstract;
             }
         }
@@ -366,7 +360,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && U8Name.SequenceEqual(".cctor"u8);
+                return Attributes.IsRuntimeSpecialName() && Name.SequenceEqual(".cctor"u8);
             }
         }
 
@@ -386,24 +380,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private string InitializeName()
-        {
-            var metadataReader = MetadataReader;
-            var name = metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).Name);
-            return (_name = name);
-        }
-
-        public override string Name
-        {
-            get
-            {
-                if (_name == null)
-                    return InitializeName();
-                return _name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

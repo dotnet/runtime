@@ -240,8 +240,7 @@ namespace ILCompiler
 
             public override TypeSystemContext Context => _context;
             public override TypeDesc OwningType => _context.GeneratedAssembly.GetGlobalModuleType();
-            public override string Name => "InitializeReachabilityInfo";
-            public override ReadOnlySpan<byte> U8Name => "InitializeReachabilityInfo"u8;
+            public override ReadOnlySpan<byte> Name => "InitializeReachabilityInfo"u8;
             public override string DiagnosticName => "InitializeReachabilityInfo";
 
             public override MethodIL EmitIL()

@@ -381,7 +381,7 @@ namespace Internal.IL
                 }
             }
 
-            if (method.OwningType.IsDelegate && method.U8Name.SequenceEqual("Invoke"u8) &&
+            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8) &&
                 opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
             {
                 // This call is expanded as an intrinsic; it's not an actual function call.
@@ -997,7 +997,7 @@ namespace Internal.IL
                 {
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     {
-                        Debug.Assert(_methodIL.OwningMethod.U8Name.SequenceEqual("GetCanonType"u8));
+                        Debug.Assert(_methodIL.OwningMethod.Name.SequenceEqual("GetCanonType"u8));
                         helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                     }
 
@@ -1468,7 +1468,7 @@ namespace Internal.IL
 
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("GetTypeFromHandle"u8))
+            if (method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8))
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
@@ -1482,7 +1482,7 @@ namespace Internal.IL
 
         private static bool IsActivatorDefaultConstructorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("DefaultConstructorOf"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name.SequenceEqual("DefaultConstructorOf"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
@@ -1496,7 +1496,7 @@ namespace Internal.IL
 
         private static bool IsActivatorAllocatorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("AllocatorOf"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name.SequenceEqual("AllocatorOf"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
@@ -1510,7 +1510,7 @@ namespace Internal.IL
 
         private static bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("Of"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name.SequenceEqual("Of"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
@@ -1524,7 +1524,7 @@ namespace Internal.IL
 
         private static bool IsRuntimeHelpersIsReferenceOrContainsReferences(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("IsReferenceOrContainsReferences"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name.SequenceEqual("IsReferenceOrContainsReferences"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
@@ -1538,7 +1538,7 @@ namespace Internal.IL
 
         private static bool IsMemoryMarshalGetArrayDataReference(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.U8Name.SequenceEqual("GetArrayDataReference"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name.SequenceEqual("GetArrayDataReference"u8) && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)

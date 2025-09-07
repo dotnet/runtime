@@ -335,22 +335,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override string Name
-            {
-                get
-                {
-                    if (_kind == InlineArrayMethodKind.Getter)
-                    {
-                        return "get_Item";
-                    }
-                    else
-                    {
-                        return "set_Item";
-                    }
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
@@ -520,15 +505,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override string Name
-            {
-                get
-                {
-                    return "InlineArrayField";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {

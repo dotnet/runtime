@@ -124,19 +124,11 @@ namespace Internal.IL.Stubs
             return false;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
                 return _targetMethod.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return _targetMethod.U8Name;
             }
         }
     }

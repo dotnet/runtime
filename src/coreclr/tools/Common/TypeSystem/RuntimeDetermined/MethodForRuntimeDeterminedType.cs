@@ -36,8 +36,7 @@ namespace Internal.TypeSystem
         public override bool IsAbstract => _typicalMethodDef.IsAbstract;
         public override bool IsFinal => _typicalMethodDef.IsFinal;
         public override bool IsDefaultConstructor => _typicalMethodDef.IsDefaultConstructor;
-        public override string Name => _typicalMethodDef.Name;
-        public override ReadOnlySpan<byte> U8Name => _typicalMethodDef.U8Name;
+        public override ReadOnlySpan<byte> Name => _typicalMethodDef.Name;
         public override MethodDesc GetTypicalMethodDefinition() => _typicalMethodDef;
         public override Instantiation Instantiation => _typicalMethodDef.Instantiation;
 

@@ -120,9 +120,7 @@ namespace Internal.IL.Stubs
             return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
         }
 
-        public override string Name => "DynamicInvoke";
-
-        public override ReadOnlySpan<byte> U8Name => "DynamicInvoke"u8;
+        public override ReadOnlySpan<byte> Name => "DynamicInvoke"u8;
 
         public override string DiagnosticName => "DynamicInvoke";
 

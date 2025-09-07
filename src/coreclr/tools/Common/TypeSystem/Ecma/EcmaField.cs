@@ -33,17 +33,11 @@ namespace Internal.TypeSystem.Ecma
         // Cached values
         private ThreadSafeFlags _fieldFlags;
         private TypeDesc _fieldType;
-        private string _name;
 
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-#endif
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -261,24 +255,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private string InitializeName()
-        {
-            var metadataReader = MetadataReader;
-            var name = metadataReader.GetString(metadataReader.GetFieldDefinition(_handle).Name);
-            return (_name = name);
-        }
-
-        public override string Name
-        {
-            get
-            {
-                if (_name == null)
-                    return InitializeName();
-                return _name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

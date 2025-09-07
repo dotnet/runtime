@@ -108,7 +108,7 @@ namespace ILCompiler
             if (string.IsNullOrEmpty(name))
                 return;
 
-            var field = type.GetFields().FirstOrDefault(f => f.U8Name.StringEquals(name));
+            var field = type.GetFields().FirstOrDefault(f => f.Name.StringEquals(name));
             if (field == null)
             {
 #if !READYTORUN

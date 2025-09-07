@@ -16,7 +16,7 @@ namespace ILCompiler
     {
         public static bool IsIsSupportedMethod(MethodDesc method)
         {
-            return method.U8Name.SequenceEqual("get_IsSupported"u8);
+            return method.Name.SequenceEqual("get_IsSupported"u8);
         }
 
         /// <summary>

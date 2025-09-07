@@ -2524,14 +2524,14 @@ namespace ILCompiler
                     if (field.OwningType != _parent._entryType)
                         return false;
 
-                    if (field.U8Name.SequenceEqual("IID"u8)
+                    if (field.Name.SequenceEqual("IID"u8)
                         && value is ValueTypeValue guidValue
                         && guidValue.Size == _parent._guidBytes[_index].Length)
                     {
                         Array.Copy(guidValue.InstanceBytes, _parent._guidBytes[_index], _parent._guidBytes[_index].Length);
                         return true;
                     }
-                    else if (field.U8Name.SequenceEqual("Vtable"u8)
+                    else if (field.Name.SequenceEqual("Vtable"u8)
                         && value is ByRefValueBase byrefValue
                         && byrefValue.BackingField != null)
                     {
@@ -2970,7 +2970,7 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         return false;
 
-                    if (field.U8Name.SequenceEqual("_length"u8))
+                    if (field.Name.SequenceEqual("_length"u8))
                     {
                         _value._length = value.AsInt32() * _value._elementType.InstanceFieldSize.AsInt;
                         return true;
@@ -2978,7 +2978,7 @@ namespace ILCompiler
 
                     if (value is ByRefValue byref)
                     {
-                        Debug.Assert(field.U8Name.SequenceEqual("_reference"u8));
+                        Debug.Assert(field.Name.SequenceEqual("_reference"u8));
                         _value._bytes = byref.PointedToBytes;
                         _value._index = byref.PointedToOffset;
                         return true;
@@ -2997,10 +2997,10 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         ThrowHelper.ThrowInvalidProgramException();
 
-                    if (field.U8Name.SequenceEqual("_length"u8))
+                    if (field.Name.SequenceEqual("_length"u8))
                         return ValueTypeValue.FromInt32(_value._length / elementType.InstanceFieldSize.AsInt);
 
-                    Debug.Assert(field.U8Name.SequenceEqual("_reference"u8));
+                    Debug.Assert(field.Name.SequenceEqual("_reference"u8));
                     return new ByRefValue(_value._bytes, _value._index);
                 }
 
@@ -3260,7 +3260,7 @@ namespace ILCompiler
 
                 if (_methodPointed.Signature.IsStatic)
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.U8Name.SequenceEqual("InitializeOpenStaticThunk"u8));
+                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeOpenStaticThunk"u8));
 
                     // _firstParameter
                     builder.EmitPointerReloc(thisNode);
@@ -3277,7 +3277,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.U8Name.SequenceEqual("InitializeClosedInstance"u8));
+                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeClosedInstance"u8));
 
                     // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);

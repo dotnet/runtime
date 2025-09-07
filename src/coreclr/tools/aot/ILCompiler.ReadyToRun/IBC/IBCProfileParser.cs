@@ -410,7 +410,7 @@ namespace ILCompiler.IBC
 
             foreach (MethodDesc method in ecmaType.GetMethods())
             {
-                if (method.U8Name.SequenceEqual(methodName))
+                if (method.Name.SequenceEqual(methodName))
                 {
                     EcmaMethod ecmaCandidateMethod = method as EcmaMethod;
                     if (ecmaCandidateMethod == null)

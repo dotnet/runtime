@@ -1127,7 +1127,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (method.OwningType.IsDelegate && method.U8Name.SequenceEqual("Invoke"u8))
+            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8))
             {
                 // This is now used to emit efficient invoke code for any delegate invoke,
                 // including multicast.
@@ -1724,7 +1724,7 @@ namespace Internal.JitInterface
                     Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
-                        (owningMethod.U8Name.SequenceEqual("CreateDefaultInstance"u8) && methodContext.U8Name.SequenceEqual("CreateInstance"u8)));
+                        (owningMethod.Name.SequenceEqual("CreateDefaultInstance"u8) && methodContext.Name.SequenceEqual("CreateInstance"u8)));
                     Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
@@ -3166,16 +3166,16 @@ namespace Internal.JitInterface
             var owningType = field.OwningType;
             if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
                     owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                        field.U8Name.SequenceEqual("Zero"u8))
+                        field.Name.SequenceEqual("Zero"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
             }
-            else if (owningType.IsString && field.U8Name.SequenceEqual("Empty"u8))
+            else if (owningType.IsString && field.Name.SequenceEqual("Empty"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
             else if (owningType.U8Name.SequenceEqual("BitConverter"u8) && owningType.U8Namespace.SequenceEqual("System"u8) &&
-                field.U8Name.SequenceEqual("IsLittleEndian"u8))
+                field.Name.SequenceEqual("IsLittleEndian"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
             }

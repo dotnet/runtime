@@ -34,19 +34,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
                 return _fieldDef.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return _fieldDef.U8Name;
             }
         }
 

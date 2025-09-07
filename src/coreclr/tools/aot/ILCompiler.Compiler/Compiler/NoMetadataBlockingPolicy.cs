@@ -54,7 +54,7 @@ namespace ILCompiler
                     return true;
 
                 // Also don't expose the ValueType.__GetFieldOverride method.
-                if (ecmaMethod.U8Name.SequenceEqual(Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.U8MetadataName)
+                if (ecmaMethod.Name.SequenceEqual(Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.U8MetadataName)
                     && ecmaMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
                     return true;
 
