@@ -229,6 +229,11 @@ namespace System.Buffers
 
         private bool TryReadToInternal(scoped ReadOnlySpan<T> delimiter, bool advancePastDelimiter)
         {
+            if (delimiter.IsEmpty)
+            {
+                return false;
+            }
+
             SequenceReader<T> copy = this;
             ReadOnlySpan<T> remaining = UnreadSpan;
 
@@ -236,7 +241,7 @@ namespace System.Buffers
             {
                 int index = remaining.IndexOf(delimiter[0]);
 
-                if (index != -1)
+                if (index >= 0)
                 {
                     AdvanceCurrentSpan(index + 1);
                     remaining = UnreadSpan;
@@ -612,7 +617,7 @@ namespace System.Buffers
         {
             ReadOnlySpan<T> remaining = UnreadSpan;
             int index = remaining.IndexOf(delimiter);
-            if (index != -1)
+            if (index >= 0)
             {
                 AdvanceCurrentSpan(index + (advancePastDelimiter ? delimiter.Length : 0));
                 return true;
