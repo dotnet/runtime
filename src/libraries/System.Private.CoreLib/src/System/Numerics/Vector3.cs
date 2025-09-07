@@ -465,11 +465,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Cross(Vector3 vector1, Vector3 vector2)
         {
-            return Create(
-                (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
-                (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
-                (vector1.X * vector2.Y) - (vector1.Y * vector2.X)
-            );
+            // This implementation is based on the DirectX Math Library XMVector3Cross method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector128<float> v1 = vector1.AsVector128Unsafe();
+            Vector128<float> v2 = vector2.AsVector128Unsafe();
+
+            Vector128<float> temp = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 0)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 0));
+
+            return Vector128.Add(Vector128.Multiply(
+                -Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 0)),
+                 Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 0))),
+                 temp
+            ).AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
