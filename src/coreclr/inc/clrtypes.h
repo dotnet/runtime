@@ -34,7 +34,7 @@
         #define UINT8_MIN       ((UINT8)0U)
         #define UINT16_MIN      ((UINT16)0U)
         #define UINT32_MIN      ((UINT32)0U)
-        #define UINT64_MIN      ((UINT64) UI64(0))
+        #define UINT64_MIN      ((UINT64)0ULL)
     #endif
 #endif
 
@@ -216,7 +216,7 @@ static_assert(sizeof(CLR_BOOL) == 1);
 #define CLR_BOOL_MIN    BOOL_MIN
 
 #define CLR_NAN_32 0xFFC00000
-#define CLR_NAN_64 I64(0xFFF8000000000000)
+#define CLR_NAN_64 0xFFF8000000000000LL
 
 // ================================================================================
 // Simple utility functions
