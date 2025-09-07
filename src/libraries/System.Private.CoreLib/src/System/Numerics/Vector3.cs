@@ -471,13 +471,10 @@ namespace System.Numerics
             Vector128<float> v1 = vector1.AsVector128Unsafe();
             Vector128<float> v2 = vector2.AsVector128Unsafe();
 
-            Vector128<float> temp = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 0)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 0));
+            Vector128<float> temp1 = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 0)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 0));
+            Vector128<float> temp2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 0)) * Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 0));
 
-            return Vector128.Add(Vector128.Multiply(
-                -Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 0)),
-                 Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 0))),
-                 temp
-            ).AsVector3();
+            return (temp1 - temp2).AsVector3();
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
