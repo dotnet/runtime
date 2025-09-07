@@ -230,8 +230,8 @@ namespace TypeSystemTests
                 referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_otherReferenceType).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             Assert.NotSame(
-                referenceOverReference.GetMethod("GenericMethodu8"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverOtherReference.GetMethod("GenericMethodu8"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
                 referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
                 referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));

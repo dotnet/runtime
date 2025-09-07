@@ -682,7 +682,7 @@ namespace ILCompiler.Logging
                 return;
             foreach (var field in type.GetFields())
             {
-                if (field.U8Name.StringEquals(memberName))
+                if (!field.U8Name.StringEquals(memberName))
                     continue;
                 results.Add(field);
             }
