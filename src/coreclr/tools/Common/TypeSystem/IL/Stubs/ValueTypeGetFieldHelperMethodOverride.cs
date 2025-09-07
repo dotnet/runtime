@@ -80,12 +80,12 @@ namespace Internal.IL.Stubs
             if (_owningType.IsInlineArray)
             {
                 var stream = emitter.NewCodeStream();
-                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode"u8);
                 stream.EmitCallThrowHelper(emitter, thrower);
                 return emitter.Link(this);
             }
 
-            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null), out int lastFieldEndOffset))
+            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null), out int lastFieldEndOffset))
             {
                 var stream = emitter.NewCodeStream();
                 stream.EmitLdc(-lastFieldEndOffset);
@@ -94,12 +94,12 @@ namespace Internal.IL.Stubs
             }
 
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
-            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
+            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of"u8, null);
 
             var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"u8));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();

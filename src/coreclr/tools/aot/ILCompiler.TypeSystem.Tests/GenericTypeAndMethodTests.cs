@@ -114,7 +114,7 @@ namespace TypeSystemTests
             MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
 
             MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, _context.GetSignatureVariable(0, false), System.Array.Empty<TypeDesc>());
-            MethodDesc fooMethod = t.GetMethod("Foo", sig);
+            MethodDesc fooMethod = t.GetMethod("Foo"u8, sig);
             Assert.NotNull(fooMethod);
         }
 
@@ -222,19 +222,19 @@ namespace TypeSystemTests
             MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
             MetadataType nonGenericType = _testModule.GetType("GenericTypes", "NonGenericClass");
 
-            MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction", null);
+            MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction"u8, null);
 
             InstantiatedType genericIntString = genericOpenType.MakeInstantiatedType(intType, stringType);
             InstantiatedType genericCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
             InstantiatedType genericCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
 
-            MethodDesc nonGenericOnGenericIntString = genericIntString.GetMethod("NonGenericFunction", null);
-            MethodDesc nonGenericOnGenericCharString = genericCharString.GetMethod("NonGenericFunction", null);
-            MethodDesc nonGenericOnGenericCharObject = genericCharObject.GetMethod("NonGenericFunction", null);
+            MethodDesc nonGenericOnGenericIntString = genericIntString.GetMethod("NonGenericFunction"u8, null);
+            MethodDesc nonGenericOnGenericCharString = genericCharString.GetMethod("NonGenericFunction"u8, null);
+            MethodDesc nonGenericOnGenericCharObject = genericCharObject.GetMethod("NonGenericFunction"u8, null);
 
-            MethodDesc genericIntStringOnGenericIntString = genericIntString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(intType, stringType);
-            MethodDesc genericCharStringOnGenericCharString = genericCharString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, stringType);
-            MethodDesc genericCharObjectOnGenericCharObject = genericCharObject.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, objectType);
+            MethodDesc genericIntStringOnGenericIntString = genericIntString.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(intType, stringType);
+            MethodDesc genericCharStringOnGenericCharString = genericCharString.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(charType, stringType);
+            MethodDesc genericCharObjectOnGenericCharObject = genericCharObject.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(charType, objectType);
 
             MethodDesc genericIntStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(intType, stringType);
             MethodDesc genericCharStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(charType, stringType);

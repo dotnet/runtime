@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             if (srType == null)
                 return false;
 
-            return srType.GetMethod(ResourceAccessorGetStringMethodName, null) != null;
+            return srType.GetMethod(U8ResourceAccessorGetStringMethodName, null) != null;
         }
 
         public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)

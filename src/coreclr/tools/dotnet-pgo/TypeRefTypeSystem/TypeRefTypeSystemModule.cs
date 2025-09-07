@@ -28,7 +28,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             TypeRefTypeSystemType type = GetTypeInternal(nameSpace, name);
             if (type == null)
             {
-                type = new TypeRefTypeSystemType(nameSpace, name, this);
+                type = new TypeRefTypeSystemType(nameSpace == null ? null : System.Text.Encoding.UTF8.GetBytes(nameSpace), name == null ? null : System.Text.Encoding.UTF8.GetBytes(name), this);
 
                 Dictionary<string, TypeRefTypeSystemType> nameToTypeDictionary = _nonNamespacedTypes;
                 if (!String.IsNullOrEmpty(nameSpace))

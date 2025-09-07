@@ -88,13 +88,4 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => -944318825;
     }
-
-    file static class MetadataReaderExtensions
-    {
-        public static unsafe ReadOnlySpan<byte> GetStringBytes(this MetadataReader reader, StringHandle handle)
-        {
-            BlobReader blob = reader.GetBlobReader(handle);
-            return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
-        }
-    }
 }

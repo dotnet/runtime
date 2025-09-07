@@ -332,7 +332,7 @@ namespace ILCompiler
                 return flags;
             }
 
-            public override FieldDesc GetField(string name)
+            public override FieldDesc GetField(ReadOnlySpan<byte> name)
             {
                 return null;
             }
@@ -447,11 +447,11 @@ namespace ILCompiler
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data"u8)));
 
                 if (isX86)
                 {
@@ -552,7 +552,7 @@ namespace ILCompiler
 
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data"u8)));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)

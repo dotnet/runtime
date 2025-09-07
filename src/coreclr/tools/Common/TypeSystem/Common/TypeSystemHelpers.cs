@@ -89,7 +89,7 @@ namespace Internal.TypeSystem
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
             var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
-            return type.GetMethod(".ctor", sig);
+            return type.GetMethod(".ctor"u8, sig);
         }
 
         public static bool HasExplicitOrImplicitDefaultConstructor(this TypeDesc type)

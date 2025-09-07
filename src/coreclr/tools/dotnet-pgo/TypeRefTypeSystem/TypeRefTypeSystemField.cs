@@ -13,20 +13,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
     class TypeRefTypeSystemField : FieldDesc
     {
         TypeRefTypeSystemType _type;
-        string _name;
+        byte[] _name;
         TypeDesc _fieldType;
         EmbeddedSignatureData[] _embeddedSignatureData;
 
-        public TypeRefTypeSystemField(TypeRefTypeSystemType type, string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
+        public TypeRefTypeSystemField(TypeRefTypeSystemType type, ReadOnlySpan<byte> name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             _type = type;
-            _name = name;
+            _name = name.ToArray();
             _fieldType = fieldType;
             _embeddedSignatureData = embeddedSigData;
         }
 
-        public override string Name => _name;
-        public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(_name);
+        public override string Name => System.Text.Encoding.UTF8.GetString(U8Name);
+        public override ReadOnlySpan<byte> U8Name => _name;
         public override DefType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;

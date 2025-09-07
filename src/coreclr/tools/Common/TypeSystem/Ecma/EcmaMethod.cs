@@ -403,13 +403,12 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override unsafe ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> U8Name
         {
             get
             {
                 var metadataReader = MetadataReader;
-                var blob = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Name);
-                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+                return metadataReader.GetStringBytes(metadataReader.GetMethodDefinition(_handle).Name);
             }
         }
 

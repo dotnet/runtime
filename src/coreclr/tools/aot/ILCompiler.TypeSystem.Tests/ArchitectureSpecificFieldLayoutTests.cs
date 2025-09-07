@@ -132,29 +132,29 @@ namespace TypeSystemTests
             Assert.Equal(0x20, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x20, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x8, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x8, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x8, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x8, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x8, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x10, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x10, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x10, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x10, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x10, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x10, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0x18, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x18, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x18, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0x18, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x18, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x18, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x8, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x8, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x8, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
         }
 
         [Fact]
@@ -187,29 +187,29 @@ namespace TypeSystemTests
             Assert.Equal(0x10, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x10, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x4, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x4, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x4, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x4, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x8, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x8, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x8, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x8, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x8, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0xC, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0xC, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0xC, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0xC, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0xC, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0xC, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x4, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x4, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
 
         }
 
@@ -243,29 +243,29 @@ namespace TypeSystemTests
             Assert.Equal(0x8, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x8, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x2, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x2, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x2, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x2, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x2, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x2, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x4, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x4, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x4, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x4, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0x6, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x6, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x6, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0x6, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x6, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x6, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x2, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x2, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x2, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x2, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x2, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x2, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
         }
 
         [Fact]
@@ -298,29 +298,29 @@ namespace TypeSystemTests
             Assert.Equal(0x18, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x18, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x10, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x10, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x10, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x10, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x10, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x10, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x8, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x8, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x8, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x8, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x8, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0x14, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x14, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x14, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0x14, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x14, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x14, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x8, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
         }
 
         [Fact]
@@ -353,29 +353,29 @@ namespace TypeSystemTests
             Assert.Equal(0xC, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0xC, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x8, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x8, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x8, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x8, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x8, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x8, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x4, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x4, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x4, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x4, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0xA, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0xA, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0xA, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0xA, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0xA, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0xA, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
 
         }
 
@@ -409,29 +409,29 @@ namespace TypeSystemTests
             Assert.Equal(0x8, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x8, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("_1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("_1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("_1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("_1"u8).Offset.AsInt);
 
-            Assert.Equal(0x4, tX64.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x4, tARM.GetField("_2").Offset.AsInt);
-            Assert.Equal(0x4, tX86.GetField("_2").Offset.AsInt);
+            Assert.Equal(0x4, tX64.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARM.GetField("_2"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86.GetField("_2"u8).Offset.AsInt);
 
-            Assert.Equal(0x2, tX64.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x2, tARM.GetField("_3").Offset.AsInt);
-            Assert.Equal(0x2, tX86.GetField("_3").Offset.AsInt);
+            Assert.Equal(0x2, tX64.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x2, tARM.GetField("_3"u8).Offset.AsInt);
+            Assert.Equal(0x2, tX86.GetField("_3"u8).Offset.AsInt);
 
-            Assert.Equal(0x5, tX64.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x5, tARM.GetField("_4").Offset.AsInt);
-            Assert.Equal(0x5, tX86.GetField("_4").Offset.AsInt);
+            Assert.Equal(0x5, tX64.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x5, tARM.GetField("_4"u8).Offset.AsInt);
+            Assert.Equal(0x5, tX86.GetField("_4"u8).Offset.AsInt);
 
             MetadataType tX64FieldStruct = _testModuleX64.GetType(_namespace, _type + "FieldStruct");
             MetadataType tX86FieldStruct = _testModuleX86.GetType(_namespace, _type + "FieldStruct");
             MetadataType tARMFieldStruct = _testModuleARM.GetType(_namespace, _type + "FieldStruct");
 
-            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct").Offset.AsInt);
-            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct").Offset.AsInt);
+            Assert.Equal(0x8, tX64FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tX86FieldStruct.GetField("_struct"u8).Offset.AsInt);
+            Assert.Equal(0x4, tARMFieldStruct.GetField("_struct"u8).Offset.AsInt);
         }
 
         [Fact]
@@ -452,13 +452,13 @@ namespace TypeSystemTests
             Assert.Equal(0x2, tARM.InstanceFieldSize.AsInt);
             Assert.Equal(0x2, tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("fld1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1"u8).Offset.AsInt);
 
-            Assert.Equal(0x1, tX64.GetField("fld2").Offset.AsInt);
-            Assert.Equal(0x1, tARM.GetField("fld2").Offset.AsInt);
-            Assert.Equal(0x1, tX86.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x1, tX64.GetField("fld2"u8).Offset.AsInt);
+            Assert.Equal(0x1, tARM.GetField("fld2"u8).Offset.AsInt);
+            Assert.Equal(0x1, tX86.GetField("fld2"u8).Offset.AsInt);
         }
 
         [Theory]
@@ -486,13 +486,13 @@ namespace TypeSystemTests
             Assert.Equal(size[1], tARM.InstanceFieldSize.AsInt);
             Assert.Equal(size[2], tX86.InstanceFieldSize.AsInt);
 
-            Assert.Equal(0x0, tX64.GetField("fld1").Offset.AsInt);
-            Assert.Equal(0x0, tARM.GetField("fld1").Offset.AsInt);
-            Assert.Equal(0x0, tX86.GetField("fld1").Offset.AsInt);
+            Assert.Equal(0x0, tX64.GetField("fld1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tARM.GetField("fld1"u8).Offset.AsInt);
+            Assert.Equal(0x0, tX86.GetField("fld1"u8).Offset.AsInt);
 
-            Assert.Equal(alignment[0], tX64.GetField("fld2").Offset.AsInt);
-            Assert.Equal(alignment[1], tARM.GetField("fld2").Offset.AsInt);
-            Assert.Equal(alignment[2], tX86.GetField("fld2").Offset.AsInt);
+            Assert.Equal(alignment[0], tX64.GetField("fld2"u8).Offset.AsInt);
+            Assert.Equal(alignment[1], tARM.GetField("fld2"u8).Offset.AsInt);
+            Assert.Equal(alignment[2], tX86.GetField("fld2"u8).Offset.AsInt);
         }
 
         [Theory]
@@ -541,8 +541,8 @@ namespace TypeSystemTests
 
             Assert.Equal(alignment, type.InstanceFieldAlignment.AsInt);
             Assert.Equal(size, type.InstanceFieldSize.AsInt);
-            Assert.Equal(0x0, type.GetField("fld1").Offset.AsInt);
-            Assert.Equal(alignment, type.GetField("fld2").Offset.AsInt);
+            Assert.Equal(0x0, type.GetField("fld1"u8).Offset.AsInt);
+            Assert.Equal(alignment, type.GetField("fld2"u8).Offset.AsInt);
         }
     }
 }

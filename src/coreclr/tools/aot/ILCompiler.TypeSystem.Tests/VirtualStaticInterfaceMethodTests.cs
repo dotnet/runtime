@@ -30,32 +30,32 @@ namespace TypeSystemTests
             MetadataType genericVariantWithHiddenBase = testModule.GetType("VirtualStaticInterfaceMethods", "GenericVariantWithHiddenBase");
             MetadataType genericVariantWithHiddenDerived = testModule.GetType("VirtualStaticInterfaceMethods", "GenericVariantWithHiddenDerived`1");
 
-            MethodDesc iSimpleMethod = iSimple.GetMethod("WhichMethod", null);
-            MethodDesc iVariantBaseMethod = iVariant.MakeInstantiatedType(@base).GetMethod("WhichMethod", null);
-            MethodDesc iVariantMidMethod = iVariant.MakeInstantiatedType(mid).GetMethod("WhichMethod", null);
-            MethodDesc iVariantDerivedMethod = iVariant.MakeInstantiatedType(derived).GetMethod("WhichMethod", null);
+            MethodDesc iSimpleMethod = iSimple.GetMethod("WhichMethod"u8, null);
+            MethodDesc iVariantBaseMethod = iVariant.MakeInstantiatedType(@base).GetMethod("WhichMethod"u8, null);
+            MethodDesc iVariantMidMethod = iVariant.MakeInstantiatedType(mid).GetMethod("WhichMethod"u8, null);
+            MethodDesc iVariantDerivedMethod = iVariant.MakeInstantiatedType(derived).GetMethod("WhichMethod"u8, null);
 
-            yield return new object[] { simple, iSimpleMethod, simple.GetMethod("WhichMethod", null) };
+            yield return new object[] { simple, iSimpleMethod, simple.GetMethod("WhichMethod"u8, null) };
 
-            yield return new object[] { simpleVariant, iVariantBaseMethod, simpleVariant.GetMethod("WhichMethod", null) };
-            yield return new object[] { simpleVariant, iVariantDerivedMethod, simpleVariant.GetMethod("WhichMethod", null) };
+            yield return new object[] { simpleVariant, iVariantBaseMethod, simpleVariant.GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { simpleVariant, iVariantDerivedMethod, simpleVariant.GetMethod("WhichMethod"u8, null) };
 
-            yield return new object[] { simpleVariantTwice, iVariantBaseMethod, simpleVariantTwice.GetMethod("WhichMethod", new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { @base })) };
-            yield return new object[] { simpleVariantTwice, iVariantMidMethod, simpleVariantTwice.GetMethod("WhichMethod", new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { mid })) };
-            yield return new object[] { simpleVariantTwice, iVariantDerivedMethod, simpleVariantTwice.GetMethod("WhichMethod", new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { @base })) };
+            yield return new object[] { simpleVariantTwice, iVariantBaseMethod, simpleVariantTwice.GetMethod("WhichMethod"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { @base })) };
+            yield return new object[] { simpleVariantTwice, iVariantMidMethod, simpleVariantTwice.GetMethod("WhichMethod"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { mid })) };
+            yield return new object[] { simpleVariantTwice, iVariantDerivedMethod, simpleVariantTwice.GetMethod("WhichMethod"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.String), new TypeDesc[] { @base })) };
 
-            yield return new object[] { variantWithInheritanceDerived, iVariantBaseMethod, variantWithInheritanceDerived.GetMethod("WhichMethod", null) };
-            yield return new object[] { variantWithInheritanceDerived, iVariantMidMethod, variantWithInheritanceDerived.GetMethod("WhichMethod", null) };
-            yield return new object[] { variantWithInheritanceDerived, iVariantDerivedMethod, variantWithInheritanceDerived.GetMethod("WhichMethod", null) };
+            yield return new object[] { variantWithInheritanceDerived, iVariantBaseMethod, variantWithInheritanceDerived.GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { variantWithInheritanceDerived, iVariantMidMethod, variantWithInheritanceDerived.GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { variantWithInheritanceDerived, iVariantDerivedMethod, variantWithInheritanceDerived.GetMethod("WhichMethod"u8, null) };
 
-            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(@base), iVariantBaseMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod", null) };
-            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(@base), iVariantMidMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod", null) };
-            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(mid), iVariantMidMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(mid).GetMethod("WhichMethod", null) };
+            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(@base), iVariantBaseMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(@base), iVariantMidMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { genericVariantWithInheritanceDerived.MakeInstantiatedType(mid), iVariantMidMethod, genericVariantWithInheritanceDerived.MakeInstantiatedType(mid).GetMethod("WhichMethod"u8, null) };
 
-            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(@base), iVariantBaseMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod", null) };
-            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(@base), iVariantMidMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod", null) };
-            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(mid), iVariantMidMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(mid).GetMethod("WhichMethod", null) };
-            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(derived), iVariantMidMethod, genericVariantWithHiddenBase.GetMethod("WhichMethod", null) };
+            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(@base), iVariantBaseMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(@base), iVariantMidMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(@base).GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(mid), iVariantMidMethod, genericVariantWithHiddenDerived.MakeInstantiatedType(mid).GetMethod("WhichMethod"u8, null) };
+            yield return new object[] { genericVariantWithHiddenDerived.MakeInstantiatedType(derived), iVariantMidMethod, genericVariantWithHiddenBase.GetMethod("WhichMethod"u8, null) };
         }
 
         [Theory]

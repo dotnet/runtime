@@ -506,7 +506,7 @@ namespace Internal.TypeSystem.Ecma
 
                 EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
-                string name = _metadataReader.GetString(memberReference.Name);
+                ReadOnlySpan<byte> name = _metadataReader.GetStringBytes(memberReference.Name);
 
                 if (parser.IsFieldSignature)
                 {
@@ -514,7 +514,7 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    return ResolutionFailure.GetMissingFieldFailure(parentTypeDesc, name);
+                    return ResolutionFailure.GetMissingFieldFailure(parentTypeDesc, System.Text.Encoding.UTF8.GetString(name.ToArray()));
                 }
                 else
                 {
@@ -566,7 +566,7 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = baseType;
                     } while (typeDescToInspect != null);
 
-                    return ResolutionFailure.GetMissingMethodFailure(parentTypeDesc, name, sig);
+                    return ResolutionFailure.GetMissingMethodFailure(parentTypeDesc, System.Text.Encoding.UTF8.GetString(name.ToArray()), sig);
                 }
             }
             else if (parent is MethodDesc)

@@ -76,7 +76,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdArg(0);
             codeStream.EmitLdArg(1);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                InteropTypes.GetNativeFunctionPointerWrapper(Context).GetMethod(".ctor", Signature)));
+                InteropTypes.GetNativeFunctionPointerWrapper(Context).GetMethod(".ctor"u8, Signature)));
             codeStream.Emit(ILOpcode.ret);
             return emitter.Link(this);
         }

@@ -81,14 +81,14 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ldtoken, emit.NewToken(Method));
 
-            string helperName;
+            ReadOnlySpan<byte> helperName;
             if (Method.OwningType.HasInstantiation)
             {
                 codeStream.Emit(ILOpcode.ldtoken, emit.NewToken(Method.OwningType));
-                helperName = "GetCurrentMethodGeneric";
+                helperName = "GetCurrentMethodGeneric"u8;
             }
             else
-                helperName = "GetCurrentMethodNonGeneric";
+                helperName = "GetCurrentMethodNonGeneric"u8;
 
             MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", helperName);
 

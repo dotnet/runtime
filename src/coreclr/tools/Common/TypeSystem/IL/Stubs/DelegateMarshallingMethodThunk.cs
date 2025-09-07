@@ -64,7 +64,7 @@ namespace Internal.IL.Stubs
         {
             _owningType = owningType;
             _delegateType = delegateType;
-            _invokeMethod = delegateType.GetMethod("Invoke", null);
+            _invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             _interopStateManager = interopStateManager;
             Kind = kind;
         }

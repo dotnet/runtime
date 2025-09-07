@@ -2465,10 +2465,10 @@ namespace ILCompiler
             {
                 for (int i = 0; i < _targetFields.Length; i++)
                 {
-                    Debug.Assert(_entryType.GetField("IID").Offset.AsInt == 0);
+                    Debug.Assert(_entryType.GetField("IID"u8).Offset.AsInt == 0);
                     builder.EmitBytes(_guidBytes[i]);
 
-                    Debug.Assert(_entryType.GetField("Vtable").Offset.AsInt == _guidBytes[i].Length);
+                    Debug.Assert(_entryType.GetField("Vtable"u8).Offset.AsInt == _guidBytes[i].Length);
                     if (_targetFields[i] is not FieldDesc targetField)
                     {
                         builder.EmitZeroPointer();
@@ -3431,7 +3431,7 @@ namespace ILCompiler
             {
                 get
                 {
-                    FieldDesc firstCharField = Type.GetField("_firstChar");
+                    FieldDesc firstCharField = Type.GetField("_firstChar"u8);
                     int startOffset = firstCharField.Offset.AsInt;
                     int length = _value.Length - startOffset - sizeof(char) /* terminating null */;
                     return new string(MemoryMarshal.Cast<byte, char>(
@@ -3453,13 +3453,13 @@ namespace ILCompiler
                     + (value.Length * sizeof(char)) /* bytes */
                     + sizeof(char) /* null terminator */];
 
-                FieldDesc lengthField = stringType.GetField("_stringLength");
+                FieldDesc lengthField = stringType.GetField("_stringLength"u8);
                 Debug.Assert(lengthField.FieldType.IsWellKnownType(WellKnownType.Int32)
                     && lengthField.Offset.AsInt == pointerSize);
                 bool success = new FieldAccessor(bytes).TrySetField(lengthField, ValueTypeValue.FromInt32(value.Length));
                 Debug.Assert(success);
 
-                FieldDesc firstCharField = stringType.GetField("_firstChar");
+                FieldDesc firstCharField = stringType.GetField("_firstChar"u8);
                 Debug.Assert(firstCharField.FieldType.IsWellKnownType(WellKnownType.Char)
                     && firstCharField.Offset.AsInt == pointerSize + sizeof(int) /* length */);
 

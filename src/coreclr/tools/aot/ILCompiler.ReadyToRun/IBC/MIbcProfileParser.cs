@@ -184,7 +184,7 @@ namespace ILCompiler.IBC
 
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
-            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary"u8, null);
             IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
 
             EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
@@ -266,7 +266,7 @@ namespace ILCompiler.IBC
         public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
         {
             EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
-            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("MibcConfig"u8, null);
 
             if (mibcConfigMth == null)
                 return null;

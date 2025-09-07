@@ -22,7 +22,7 @@ namespace Internal.IL.Stubs
                 // BeginInvoke and EndInvoke are not supported on .NET Core
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
@@ -37,7 +37,7 @@ namespace Internal.IL.Stubs
                 // but it remains to be proven that this is an actual customer scenario.
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
@@ -48,8 +48,8 @@ namespace Internal.IL.Stubs
 
                 ILEmitter emit = new ILEmitter();
                 TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
-                FieldDesc firstParameterField = delegateType.GetKnownField("_firstParameter");
-                FieldDesc functionPointerField = delegateType.GetKnownField("_functionPointer");
+                FieldDesc firstParameterField = delegateType.GetKnownField("_firstParameter"u8);
+                FieldDesc functionPointerField = delegateType.GetKnownField("_functionPointer"u8);
                 ILCodeStream codeStream = emit.NewCodeStream();
 
                 // Store the function pointer into local variable to avoid unnecessary register usage by JIT

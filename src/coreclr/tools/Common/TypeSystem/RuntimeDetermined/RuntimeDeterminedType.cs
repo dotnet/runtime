@@ -138,7 +138,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethod(name, signature, substitution);
             if (method == null)
@@ -146,7 +146,7 @@ namespace Internal.TypeSystem
             return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (method == null)

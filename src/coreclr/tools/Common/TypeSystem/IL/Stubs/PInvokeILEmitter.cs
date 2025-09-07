@@ -174,7 +174,7 @@ namespace Internal.IL.Stubs
 
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(
                     delegateMethod.Context.GetHelperType("InteropHelpers").GetKnownMethod(
-                        "GetCurrentCalleeOpenStaticDelegateFunctionPointer", null)));
+                        "GetCurrentCalleeOpenStaticDelegateFunctionPointer"u8, null)));
 
                 ILLocalVariable vDelegateStub = emitter.NewLocal(
                     delegateMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
@@ -192,7 +192,7 @@ namespace Internal.IL.Stubs
                 //
                 MethodDesc instantiatedHelper = delegateMethod.Context.GetInstantiatedMethod(
                     delegateMethod.Context.GetHelperType("InteropHelpers")
-                    .GetKnownMethod("GetCurrentCalleeDelegate", null),
+                    .GetKnownMethod("GetCurrentCalleeDelegate"u8, null),
                         new Instantiation((delegateMethod.DelegateType)));
 
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(instantiatedHelper));
@@ -200,7 +200,7 @@ namespace Internal.IL.Stubs
                 ILLocalVariable vDelegateStub = emitter.NewLocal(delegateMethod.DelegateType);
                 fnptrLoadStream.EmitStLoc(vDelegateStub);
                 marshallingCodeStream.EmitLdLoc(vDelegateStub);
-                MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke", null);
+                MethodDesc invokeMethod = delegateMethod.DelegateType.GetKnownMethod("Invoke"u8, null);
                 callsiteSetupCodeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
             }
             else if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper)
@@ -209,7 +209,7 @@ namespace Internal.IL.Stubs
                 if (_flags.SetLastError)
                 {
                     callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastError", null)));
+                                InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastError"u8, null)));
                 }
 
                 //
@@ -218,7 +218,7 @@ namespace Internal.IL.Stubs
                 fnptrLoadStream.EmitLdArg(0);
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(InteropTypes
                     .GetNativeFunctionPointerWrapper(context)
-                    .GetMethod("get_NativeFunctionPointer", null)));
+                    .GetMethod("get_NativeFunctionPointer"u8, null)));
 
                 var fnPtr = emitter.NewLocal(
                     context.GetWellKnownType(WellKnownType.IntPtr));
@@ -249,7 +249,7 @@ namespace Internal.IL.Stubs
                 {
                     callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 InteropTypes.GetPInvokeMarshal(context)
-                                .GetKnownMethod("SaveLastError", null)));
+                                .GetKnownMethod("SaveLastError"u8, null)));
                 }
             }
             else
@@ -280,7 +280,7 @@ namespace Internal.IL.Stubs
                     throw new NotSupportedException();
                 }
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastError", null)));
+                            InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastError"u8, null)));
             }
 
             for (int i = 1; i < _marshallers.Length; i++)
@@ -309,7 +309,7 @@ namespace Internal.IL.Stubs
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
-                    .GetKnownMethod("ResolvePInvoke", null)));
+                    .GetKnownMethod("ResolvePInvoke"u8, null)));
 
                 ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(context
                     .GetWellKnownType(WellKnownType.IntPtr));
@@ -334,7 +334,7 @@ namespace Internal.IL.Stubs
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                     InteropTypes.GetMarshal(context)
-                    .GetKnownMethod("ThrowExceptionForHR", null)));
+                    .GetKnownMethod("ThrowExceptionForHR"u8, null)));
             }
 
             // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastError
@@ -343,14 +343,14 @@ namespace Internal.IL.Stubs
             {
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             InteropTypes.GetPInvokeMarshal(context)
-                            .GetKnownMethod("SaveLastError", null)));
+                            .GetKnownMethod("SaveLastError"u8, null)));
             }
 
             if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _pInvokeMetadata))
             {
                 MetadataType lazyHelperType = context.SystemModule.GetKnownType("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCMarshal");
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
-                    .GetKnownMethod("ThrowPendingExceptionObject", null)));
+                    .GetKnownMethod("ThrowPendingExceptionObject"u8, null)));
             }
         }
 

@@ -1293,7 +1293,7 @@ namespace ILCompiler.DependencyAnalysis
                 var entry = s_helperEntrypointNames[index];
 
                 var type = _context.SystemModule.GetKnownType(entry[0], entry[1]);
-                var method = type.GetKnownMethod(entry[2], null);
+                var method = type.GetKnownMethod(System.Text.Encoding.UTF8.GetBytes(entry[2]), null);
 
                 symbol = MethodEntrypoint(method);
 
@@ -1318,7 +1318,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved"u8);
             }
         }
 

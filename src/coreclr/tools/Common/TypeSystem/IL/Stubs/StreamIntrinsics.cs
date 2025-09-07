@@ -23,8 +23,8 @@ namespace Internal.IL.Stubs
                 return null;
 
             TypeDesc streamClass = method.OwningType;
-            MethodDesc beginMethod = streamClass.GetMethod(isRead ? "BeginRead" : "BeginWrite", null);
-            MethodDesc endMethod = streamClass.GetMethod(isRead ? "EndRead" : "EndWrite", null);
+            MethodDesc beginMethod = streamClass.GetMethod(isRead ? "BeginRead"u8 : "BeginWrite"u8, null);
+            MethodDesc endMethod = streamClass.GetMethod(isRead ? "EndRead"u8 : "EndWrite"u8, null);
 
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codestream = emitter.NewCodeStream();

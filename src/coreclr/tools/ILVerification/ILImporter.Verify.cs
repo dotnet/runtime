@@ -1123,7 +1123,7 @@ namespace Internal.IL
 
         bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
         {
-            var invokeMethod = delegateType.GetMethod("Invoke", null);
+            var invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             if (invokeMethod == null)
                 return false;
 

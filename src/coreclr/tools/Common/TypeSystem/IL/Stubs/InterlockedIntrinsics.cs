@@ -56,7 +56,7 @@ namespace Internal.IL.Stubs
 
                     if (ceArgType is not null)
                     {
-                        MethodDesc compareExchangeNonGeneric = method.OwningType.GetKnownMethod("CompareExchange",
+                        MethodDesc compareExchangeNonGeneric = method.OwningType.GetKnownMethod("CompareExchange"u8,
                             new MethodSignature(
                                 MethodSignatureFlags.Static,
                                 genericParameterCount: 0,

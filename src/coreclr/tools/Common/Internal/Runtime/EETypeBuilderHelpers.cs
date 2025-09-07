@@ -244,7 +244,7 @@ namespace Internal.Runtime
 
             if (type.IsNullable)
             {
-                FieldDesc field = type.GetField("value");
+                FieldDesc field = type.GetField("value"u8);
 
                 int nullableValueOffset = field.Offset.AsInt;
 

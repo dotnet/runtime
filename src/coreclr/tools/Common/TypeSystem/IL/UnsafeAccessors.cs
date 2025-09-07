@@ -812,20 +812,20 @@ namespace Internal.IL
             if (result is SetTargetResult.Ambiguous)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.AmbiguousMatchUnsafeAccessor);
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException"u8);
             }
             else if (result is SetTargetResult.Invalid)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.InvalidProgramDefault);
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException"u8);
             }
             else if (result is SetTargetResult.NotSupported)
             {
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"u8);
             }
             else if (result is SetTargetResult.MissingType)
             {
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType"u8);
             }
             else
             {
@@ -834,12 +834,12 @@ namespace Internal.IL
                 if (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
                 {
                     id = ExceptionStringID.MissingField;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException"u8);
                 }
                 else
                 {
                     id = ExceptionStringID.MissingMethod;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException"u8);
                 }
 
                 codeStream.EmitLdc((int)id);
@@ -860,7 +860,7 @@ namespace Internal.IL
             ILCodeLabel label = emit.NewCodeLabel();
             codeStream.EmitLabel(label);
             codeStream.EmitLdc((int)ExceptionStringID.BadImageFormatGeneric);
-            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException"u8);
             codeStream.Emit(ILOpcode.call, emit.NewToken(thrower));
             codeStream.Emit(ILOpcode.br, label);
 

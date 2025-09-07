@@ -76,7 +76,7 @@ namespace Internal.IL.Stubs
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", "GetExecutingAssembly");
+            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", "GetExecutingAssembly"u8);
 
             // Use the global module type as "a type from the assembly that has metadata"
             // Our reflection policy always makes sure this has metadata.

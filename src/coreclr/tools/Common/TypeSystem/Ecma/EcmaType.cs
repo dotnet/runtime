@@ -284,12 +284,11 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override unsafe ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> U8Name
         {
             get
             {
-                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Name);
-                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+                return MetadataReader.GetStringBytes(_typeDefinition.Name);
             }
         }
 
@@ -310,12 +309,11 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override unsafe ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> U8Namespace
         {
             get
             {
-                BlobReader blob = MetadataReader.GetBlobReader(_typeDefinition.Namespace);
-                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+                return MetadataReader.GetStringBytes(_typeDefinition.Namespace);
             }
         }
 
@@ -338,14 +336,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     var method = _module.GetMethod(handle, this);
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
@@ -356,14 +353,13 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     var method = _module.GetMethod(handle, this);
                     if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
@@ -433,7 +429,7 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc decl = objectType.GetMethod("Finalize", null);
+            MethodDesc decl = objectType.GetMethod("Finalize"u8, null);
 
             if (decl != null)
             {
@@ -483,14 +479,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override FieldDesc GetField(string name)
+        public override FieldDesc GetField(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetFields())
             {
-                if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetFieldDefinition(handle).Name, name))
                 {
                     var field = _module.GetField(handle, this);
                     return field;

@@ -31,7 +31,7 @@ namespace Internal.IL.Stubs
 
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer.
-            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
+            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8));
         }
 
         private void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
@@ -94,7 +94,7 @@ namespace Internal.IL.Stubs
                 if (_method.Kind == ArrayMethodKind.Set)
                 {
                     MethodDesc checkArrayStore =
-                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore", null);
+                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore"u8, null);
 
                     codeStream.EmitLdArg(0);
                     codeStream.EmitLdArg(_rank + argStartOffset);
@@ -119,14 +119,14 @@ namespace Internal.IL.Stubs
 
                     // MethodTable* actualElementType = this.m_pEEType->RelatedParameterType; // ArrayElementType
                     codeStream.EmitLdArg(0);
-                    codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType")));
+                    codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType"u8)));
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType"u8, null)));
 
                     // MethodTable* expectedElementType = hiddenArg->RelatedParameterType; // ArrayElementType
                     codeStream.EmitLdArg(hiddenArg);
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType"u8, null)));
 
                     // if (expectedElementType != actualElementType)
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
@@ -146,9 +146,9 @@ namespace Internal.IL.Stubs
                 TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
 
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType")));
+                codeStream.Emit(ILOpcode.ldfld, _emitter.NewToken(objectType.GetKnownField("m_pEEType"u8)));
                 codeStream.Emit(ILOpcode.call,
-                    _emitter.NewToken(eetypeType.GetKnownMethod("get_IsSzArray", null)));
+                    _emitter.NewToken(eetypeType.GetKnownMethod("get_IsSzArray"u8, null)));
 
                 ILCodeLabel notSzArrayLabel = _emitter.NewCodeLabel();
                 codeStream.Emit(ILOpcode.brfalse, notSzArrayLabel);
@@ -238,13 +238,13 @@ namespace Internal.IL.Stubs
             codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
+            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException"u8);
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
             if (typeMismatchExceptionLabel != null)
             {
                 codeStream.EmitLabel(typeMismatchExceptionLabel);
-                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers", "ThrowArrayTypeMismatchException"));
+                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers", "ThrowArrayTypeMismatchException"u8));
             }
         }
     }

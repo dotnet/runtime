@@ -72,8 +72,8 @@ namespace TypeSystemTests
             _multipleConstraintsType = _testModule.GetType("GenericConstraints", "MultipleConstraints`2");
 
             _genericMethodsType = _testModule.GetType("GenericConstraints", "GenericMethods");
-            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod", null);
-            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod", null);
+            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod"u8, null);
+            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod"u8, null);
         }
 
         [Fact]

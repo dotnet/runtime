@@ -119,7 +119,7 @@ namespace Internal.IL.Stubs
                 .GetPInvokeDelegateWrapperMethod(PInvokeDelegateWrapperMethodKind.Invoke)));
 
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
-                _delegateType.GetMethod(".ctor",
+                _delegateType.GetMethod(".ctor"u8,
                 new MethodSignature(MethodSignatureFlags.None,
                     genericParameterCount: 0,
                     returnType: Context.GetWellKnownType(WellKnownType.Void),

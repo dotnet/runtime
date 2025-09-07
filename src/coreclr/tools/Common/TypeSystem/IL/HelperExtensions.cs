@@ -26,20 +26,20 @@ namespace Internal.IL
             return helperType;
         }
 
-        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
+        public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeName, ReadOnlySpan<byte> methodName)
         {
             MetadataType helperType = context.GetHelperType(typeName);
             MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
             return helperMethod;
         }
 
-        public static MethodDesc GetCoreLibEntryPoint(this TypeSystemContext context, string namespaceName, string typeName, string methodName, MethodSignature signature)
+        public static MethodDesc GetCoreLibEntryPoint(this TypeSystemContext context, string namespaceName, string typeName, ReadOnlySpan<byte> methodName, MethodSignature signature)
         {
             MetadataType owningType = context.SystemModule.GetKnownType(namespaceName, typeName);
             return owningType.GetKnownMethod(methodName, signature);
         }
 
-        public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
+        public static MethodDesc GetOptionalHelperEntryPoint(this TypeSystemContext context, string typeName, ReadOnlySpan<byte> methodName)
         {
             MetadataType helperType = context.GetOptionalHelperType(typeName);
             MethodDesc helperMethod = helperType?.GetMethod(methodName, null);
@@ -70,12 +70,12 @@ namespace Internal.IL
         /// Retrieves a method on <paramref name="type"/> that is well known to the compiler.
         /// Throws an exception if the method doesn't exist.
         /// </summary>
-        public static MethodDesc GetKnownMethod(this TypeDesc type, string name, MethodSignature signature)
+        public static MethodDesc GetKnownMethod(this TypeDesc type, ReadOnlySpan<byte> name, MethodSignature signature)
         {
             MethodDesc method = type.GetMethod(name, signature);
             if (method == null)
             {
-                throw new InvalidOperationException(string.Format("Expected method '{0}' not found on type '{1}'", name, type));
+                throw new InvalidOperationException(string.Format("Expected method '{0}' not found on type '{1}'", System.Text.Encoding.UTF8.GetString(name), type));
             }
 
             return method;
@@ -85,12 +85,12 @@ namespace Internal.IL
         /// Retrieves a field on <paramref name="type"/> that is well known to the compiler.
         /// Throws an exception if the field doesn't exist.
         /// </summary>
-        public static FieldDesc GetKnownField(this TypeDesc type, string name)
+        public static FieldDesc GetKnownField(this TypeDesc type, ReadOnlySpan<byte> name)
         {
             FieldDesc field = type.GetField(name);
             if (field == null)
             {
-                throw new InvalidOperationException(string.Format("Expected field '{0}' not found on type '{1}'", name, type));
+                throw new InvalidOperationException(string.Format("Expected field '{0}' not found on type '{1}'", System.Text.Encoding.UTF8.GetString(name), type));
             }
 
             return field;

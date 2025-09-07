@@ -176,7 +176,7 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature, substitution);
             if (typicalMethodDef == null)
@@ -184,7 +184,7 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc typicalMethodDef = _typeDef.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (typicalMethodDef == null)
@@ -246,7 +246,7 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override FieldDesc GetField(string name)
+        public override FieldDesc GetField(ReadOnlySpan<byte> name)
         {
             FieldDesc fieldDef = _typeDef.GetField(name);
             if (fieldDef == null)

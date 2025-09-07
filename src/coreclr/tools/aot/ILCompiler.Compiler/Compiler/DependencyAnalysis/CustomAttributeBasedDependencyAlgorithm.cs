@@ -23,11 +23,11 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal static class CustomAttributeBasedDependencyAlgorithm
     {
-        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, string entityName, string propertyName)
+        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, string entityName, ReadOnlySpan<byte> propertyName)
             => factory.MethodEntrypoint(factory.TypeSystemContext.SystemModule.GetType("Internal.Metadata.NativeFormat", entityName).GetMethod(propertyName, null));
 
         private static IMethodNode GetMetadataApiDependency(NodeFactory factory, string entityName)
-            => GetMetadataApiDependency(factory, entityName, "get_CustomAttributes");
+            => GetMetadataApiDependency(factory, entityName, "get_CustomAttributes"u8);
 
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
             AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition"), factory, assembly, asmDef.GetCustomAttributes(), assembly);
 
             ModuleDefinition moduleDef = assembly.MetadataReader.GetModuleDefinition();
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition", "get_ModuleCustomAttributes"), factory, assembly, moduleDef.GetCustomAttributes(), assembly);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition", "get_ModuleCustomAttributes"u8), factory, assembly, moduleDef.GetCustomAttributes(), assembly);
         }
 
         private static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, object condition, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection attributeHandles, TypeSystemEntity parent)
@@ -213,7 +213,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static bool AddDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
-            FieldDesc field = attributeType.GetField(fieldName);
+            FieldDesc field = attributeType.GetField(System.Text.Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)
             {
                 if (factory.MetadataManager.IsReflectionBlocked(field))

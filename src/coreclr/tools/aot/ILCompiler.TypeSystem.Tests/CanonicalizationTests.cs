@@ -205,47 +205,47 @@ namespace TypeSystemTests
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
             var referenceOverOtherReference = _genericReferenceType.MakeInstantiatedType(_otherReferenceType);
             Assert.NotSame(
-                referenceOverReference.GetMethod("Method", null),
-                referenceOverOtherReference.GetMethod("Method", null));
+                referenceOverReference.GetMethod("Method"u8, null),
+                referenceOverOtherReference.GetMethod("Method"u8, null));
             Assert.Same(
-                referenceOverReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverOtherReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverOtherReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                referenceOverReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                referenceOverOtherReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                referenceOverReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                referenceOverOtherReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             var referenceOverStruct = _genericReferenceType.MakeInstantiatedType(_structType);
             Assert.NotSame(
-                referenceOverReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverStruct.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverStruct.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                referenceOverReference.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                referenceOverStruct.GetMethod("Method", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                referenceOverReference.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                referenceOverStruct.GetMethod("Method"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             Assert.Same(
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_otherReferenceType).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_otherReferenceType).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_otherReferenceType).GetCanonMethodTarget(CanonicalFormKind.Universal));
-
-            Assert.NotSame(
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
-            Assert.Same(
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_otherReferenceType).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             Assert.NotSame(
-                referenceOverStruct.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverReference.GetMethod("GenericMethodu8"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverOtherReference.GetMethod("GenericMethodu8"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                referenceOverStruct.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             Assert.NotSame(
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType),
-                referenceOverReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                referenceOverStruct.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
+            Assert.Same(
+                referenceOverStruct.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_referenceType).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                referenceOverOtherReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));
+
+            Assert.NotSame(
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType),
+                referenceOverReference.GetMethod("GenericMethod"u8, null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
         [Theory]
@@ -259,20 +259,20 @@ namespace TypeSystemTests
             var arrayOfOtherReferenceType = _otherReferenceType.MakeArrayType(1);
 
             Assert.Same(
-                arrayOfReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                arrayOfOtherReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                arrayOfReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                arrayOfOtherReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                arrayOfReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                arrayOfOtherReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                arrayOfReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                arrayOfOtherReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal));
 
             var arrayOfStruct = _structType.MakeArrayType(1);
 
             Assert.NotSame(
-                arrayOfReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Specific),
-                arrayOfStruct.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Specific));
+                arrayOfReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific),
+                arrayOfStruct.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Specific));
             Assert.Same(
-                arrayOfReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal),
-                arrayOfStruct.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
+                arrayOfReferenceType.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal),
+                arrayOfStruct.GetMethod("Set"u8, null).GetCanonMethodTarget(CanonicalFormKind.Universal));
         }
 
         [Theory]

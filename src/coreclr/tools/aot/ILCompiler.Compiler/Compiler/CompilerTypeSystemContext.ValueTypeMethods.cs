@@ -79,7 +79,7 @@ namespace ILCompiler
 
         private bool RequiresValueTypeGetFieldHelperMethod(MetadataType valueType)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)
@@ -119,7 +119,7 @@ namespace ILCompiler
 
         private bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)

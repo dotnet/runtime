@@ -254,7 +254,7 @@ namespace ILCompiler
                 codeStream.Emit(ILOpcode.ldsflda, dataFieldToken);
                 codeStream.Emit(ILOpcode.ldind_i4);
 
-                MethodDesc registerMethod = Context.GetHelperEntryPoint("ReachabilityInstrumentationSupport", "Register");
+                MethodDesc registerMethod = Context.GetHelperEntryPoint("ReachabilityInstrumentationSupport", "Register"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(registerMethod));
 
                 codeStream.Emit(ILOpcode.ret);

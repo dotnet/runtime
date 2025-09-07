@@ -30,31 +30,31 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Overflow:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowOverflowException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowOverflowException"u8);
                     break;
                 case ReadyToRunHelper.RngChkFail:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException"u8);
                     break;
                 case ReadyToRunHelper.FailFast:
                     mangledName = "RhpFallbackFailFast"; // TODO: Report stack buffer overrun
                     break;
                 case ReadyToRunHelper.ThrowNullRef:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException"u8);
                     break;
                 case ReadyToRunHelper.ThrowDivZero:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException"u8);
                     break;
                 case ReadyToRunHelper.ThrowArgumentOutOfRange:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentOutOfRangeException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentOutOfRangeException"u8);
                     break;
                 case ReadyToRunHelper.ThrowArgument:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentException"u8);
                     break;
                 case ReadyToRunHelper.ThrowPlatformNotSupported:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException"u8);
                     break;
                 case ReadyToRunHelper.ThrowNotImplemented:
-                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotImplementedException");
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotImplementedException"u8);
                     break;
 
                 case ReadyToRunHelper.DebugBreak:
@@ -74,7 +74,7 @@ namespace ILCompiler
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
-                    methodDesc = context.GetCoreLibEntryPoint("System", "Buffer", "BulkMoveWithWriteBarrier", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System", "Buffer", "BulkMoveWithWriteBarrier"u8, null);
                     break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
@@ -117,23 +117,23 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhBox", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhBox"u8, null);
                     break;
                 case ReadyToRunHelper.Unbox:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnbox2", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnbox2"u8, null);
                     break;
                 case ReadyToRunHelper.Unbox_Nullable:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnboxNullable", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnboxNullable"u8, null);
                     break;
                 case ReadyToRunHelper.Unbox_TypeTest:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnboxTypeTest", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "RuntimeExports", "RhUnboxTypeTest"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
+                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray"u8);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArrayRare");
+                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArrayRare"u8);
                     break;
 
                 case ReadyToRunHelper.NewArray:
@@ -144,36 +144,36 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Stelem_Ref:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "StelemRef", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "StelemRef"u8, null);
                     break;
                 case ReadyToRunHelper.Ldelema_Ref:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "LdelemaRef", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "LdelemaRef"u8, null);
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "Memmove", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "Memmove"u8, null);
                     break;
                 case ReadyToRunHelper.MemSet:
-                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "Fill", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "Fill"u8, null);
                     break;
                 case ReadyToRunHelper.MemZero:
-                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "ClearWithoutReferences", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System", "SpanHelpers", "ClearWithoutReferences"u8, null);
                     break;
                 case ReadyToRunHelper.NativeMemSet:
                     mangledName = "memset";
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle"u8);
                     break;
                 case ReadyToRunHelper.GetRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeType");
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeType"u8);
                     break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeMethodHandle");
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeMethodHandle"u8);
                     break;
                 case ReadyToRunHelper.GetRuntimeFieldHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle"u8);
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
@@ -197,16 +197,16 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt32Checked", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt32Checked"u8, null);
                     break;
                 case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt32Checked", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt32Checked"u8, null);
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt64Checked", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt64Checked"u8, null);
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt64Checked", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt64Checked"u8, null);
                     break;
 
                 case ReadyToRunHelper.DblRem:
@@ -222,42 +222,42 @@ namespace ILCompiler
                 case ReadyToRunHelper.LMulOfv:
                     {
                         TypeDesc t = context.GetWellKnownType(WellKnownType.Int64);
-                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked",
+                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked"u8,
                             new MethodSignature(MethodSignatureFlags.Static, 0, t, [t, t]));
                     }
                     break;
                 case ReadyToRunHelper.ULMulOvf:
                     {
                         TypeDesc t = context.GetWellKnownType(WellKnownType.UInt64);
-                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked",
+                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked"u8,
                             new MethodSignature(MethodSignatureFlags.Static, 0, t, [t, t]));
                     }
                     break;
 
                 case ReadyToRunHelper.Div:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt32", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt32"u8, null);
                     break;
                 case ReadyToRunHelper.UDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt32", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt32"u8, null);
                     break;
                 case ReadyToRunHelper.LDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt64", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivInt64"u8, null);
                     break;
                 case ReadyToRunHelper.ULDiv:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt64", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("DivUInt64"u8, null);
                     break;
 
                 case ReadyToRunHelper.Mod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt32", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt32"u8, null);
                     break;
                 case ReadyToRunHelper.UMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt32", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt32"u8, null);
                     break;
                 case ReadyToRunHelper.LMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt64", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt64"u8, null);
                     break;
                 case ReadyToRunHelper.ULMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt64", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt64"u8, null);
                     break;
 
                 case ReadyToRunHelper.LRsz:
@@ -285,54 +285,54 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastAny", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastAny"u8, null);
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastInterface", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastInterface"u8, null);
                     break;
                 case ReadyToRunHelper.CheckCastClass:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastClass", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastClass"u8, null);
                     break;
                 case ReadyToRunHelper.CheckCastClassSpecial:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastClassSpecial", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "CheckCastClassSpecial"u8, null);
                     break;
 
                 case ReadyToRunHelper.CheckInstanceAny:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfAny", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfAny"u8, null);
                     break;
                 case ReadyToRunHelper.CheckInstanceInterface:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfInterface", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfInterface"u8, null);
                     break;
                 case ReadyToRunHelper.CheckInstanceClass:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfClass", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfClass"u8, null);
                     break;
                 case ReadyToRunHelper.IsInstanceOfException:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfException", null);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime", "TypeCast", "IsInstanceOfException"u8, null);
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnter");
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnter"u8);
                     break;
                 case ReadyToRunHelper.MonitorExit:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExit");
+                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExit"u8);
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:
-                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot"u8, null);
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeMaybeNull");
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeMaybeNull"u8);
                     break;
                 case ReadyToRunHelper.GetRefAny:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "GetRefAny");
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "GetRefAny"u8);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeHandleMaybeNull");
+                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeHandleMaybeNull"u8);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Environment").GetKnownMethod("get_CurrentManagedThreadId", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Environment").GetKnownMethod("get_CurrentManagedThreadId"u8, null);
                     break;
 
                 default:

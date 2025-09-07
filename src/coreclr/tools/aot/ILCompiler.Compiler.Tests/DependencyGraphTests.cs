@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using ILCompiler.Dataflow;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -49,7 +50,7 @@ namespace ILCompiler.Compiler.Tests
             foreach (var type in testModule.GetType("ILCompiler.Compiler.Tests.Assets", "DependencyGraph").GetNestedTypes())
             {
                 foundSomethingToCheck = true;
-                yield return new object[] { type.GetMethod("Entrypoint", null) };
+                yield return new object[] { type.GetMethod("Entrypoint"u8, null) };
             }
 
             Assert.True(foundSomethingToCheck, "No methods to check?");
@@ -130,7 +131,7 @@ namespace ILCompiler.Compiler.Tests
             if (attr.NamedArguments.Length > 0)
                 throw new NotImplementedException(); // TODO: parse sig and instantiation
 
-            return ((TypeDesc)attr.FixedArguments[0].Value).GetMethod((string)attr.FixedArguments[1].Value, null);
+            return ((TypeDesc)attr.FixedArguments[0].Value).GetMethod(Encoding.UTF8.GetBytes((string)attr.FixedArguments[1].Value), null);
         }
     }
 }

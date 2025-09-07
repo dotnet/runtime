@@ -69,7 +69,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("_extraFunctionPointerOrData");
+                return SystemDelegateType.GetKnownField("_extraFunctionPointerOrData"u8);
             }
         }
 
@@ -77,7 +77,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("_helperObject");
+                return SystemDelegateType.GetKnownField("_helperObject"u8);
             }
         }
 
@@ -166,7 +166,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -220,7 +220,7 @@ namespace Internal.IL.Stubs
                 }
             }
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer"u8, null)));
 
             MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
@@ -390,7 +390,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
             codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(delegateWrapperType));
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value")));
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value"u8)));
 
             // Call the delegate
             // delegateArrayLocal[iteratorLocal].Value(...)
@@ -533,7 +533,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -603,7 +603,7 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray");
+                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
                 codeStream.EmitStLoc(argsLocal);
             }
@@ -626,7 +626,7 @@ namespace Internal.IL.Stubs
 
             codeStream.EmitLdLoc(argsLocal);
 
-            MethodDesc invokeMethod = instantiatedFunc.GetKnownMethod("Invoke", null);
+            MethodDesc invokeMethod = instantiatedFunc.GetKnownMethod("Invoke"u8, null);
             codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
 
             ILLocalVariable retLocal = (ILLocalVariable)(-1);

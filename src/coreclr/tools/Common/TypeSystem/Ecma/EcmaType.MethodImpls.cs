@@ -40,13 +40,7 @@ namespace Internal.TypeSystem.Ecma
                     _ => default
                 };
 
-                BlobReader foundDeclNameReader = metadataReader.GetBlobReader(foundDeclNameHandle);
-                ReadOnlySpan<byte> foundDeclName;
-                unsafe
-                {
-                    foundDeclName = new ReadOnlySpan<byte>(foundDeclNameReader.StartPointer, foundDeclNameReader.Length);
-                }
-
+                ReadOnlySpan<byte> foundDeclName = metadataReader.GetStringBytes(foundDeclNameHandle);
                 if (declName.SequenceEqual(foundDeclName))
                 {
                     MethodImplRecord newRecord = new MethodImplRecord(

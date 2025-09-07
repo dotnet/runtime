@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual ISymbolNode GetTarget(NodeFactory factory)
         {
             // If the class library doesn't provide this helper, the optimization is disabled.
-            MethodDesc helper = factory.TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowBodyRemoved");
+            MethodDesc helper = factory.TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowBodyRemoved"u8);
             return helper == null ? RealBody : factory.MethodEntrypoint(helper);
         }
 

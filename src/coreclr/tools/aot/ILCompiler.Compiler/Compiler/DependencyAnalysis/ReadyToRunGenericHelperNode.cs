@@ -190,7 +190,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static IMethodNode GetBadSlotHelper(NodeFactory factory)
         {
-            return factory.MethodEntrypoint(factory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType"));
+            return factory.MethodEntrypoint(factory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType"u8));
         }
 
         protected void AppendLookupSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

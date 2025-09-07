@@ -89,9 +89,9 @@ namespace Internal.IL.Stubs.StartupCode
             MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
 
             // Initialize command line args if the class library supports this
-            string initArgsName = (Context.Target.OperatingSystem == TargetOS.Windows)
-                                ? "InitializeCommandLineArgsW"
-                                : "InitializeCommandLineArgs";
+            ReadOnlySpan<byte> initArgsName  = (Context.Target.OperatingSystem == TargetOS.Windows)
+                                ? "InitializeCommandLineArgsW"u8
+                                : "InitializeCommandLineArgs"u8;
             MethodDesc initArgs = startup?.GetMethod(initArgsName, null);
             if (initArgs != null)
             {
@@ -101,7 +101,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
 
             // Initialize the entrypoint assembly if the class library supports this
-            MethodDesc initEntryAssembly = startup?.GetMethod("InitializeEntryAssembly", null);
+            MethodDesc initEntryAssembly = startup?.GetMethod("InitializeEntryAssembly"u8, null);
             if (initEntryAssembly != null)
             {
                 ModuleDesc entrypointModule = ((MetadataType)_mainMethod.WrappedMethod.OwningType).Module;
@@ -110,7 +110,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
 
             // Initialize COM apartment
-            MethodDesc initApartmentState = startup?.GetMethod("InitializeApartmentState", null);
+            MethodDesc initApartmentState = startup?.GetMethod("InitializeApartmentState"u8, null);
             if (initApartmentState != null)
             {
                 if (_mainMethod.WrappedMethod.HasCustomAttribute("System", "STAThreadAttribute"))
@@ -127,7 +127,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
 
             // Run module initializers
-            MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers", null);
+            MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers"u8, null);
             if (_generateLibraryAndModuleInitializers && runModuleInitializers != null)
             {
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(runModuleInitializers));
@@ -140,15 +140,15 @@ namespace Internal.IL.Stubs.StartupCode
                 if (initArgs == null)
                     throw new Exception("Main() has parameters, but the class library doesn't support them");
 
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("GetMainMethodArguments", null)));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("GetMainMethodArguments"u8, null)));
             }
 
             if (Context.Target.IsWindows)
                 codeStream.MarkDebuggerStepInPoint();
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_mainMethod));
 
-            MethodDesc setLatchedExitCode = startup?.GetMethod("SetLatchedExitCode", null);
-            MethodDesc shutdown = startup?.GetMethod("Shutdown", null);
+            MethodDesc setLatchedExitCode = startup?.GetMethod("SetLatchedExitCode"u8, null);
+            MethodDesc shutdown = startup?.GetMethod("Shutdown"u8, null);
 
             // The class library either supports "advanced shutdown", or doesn't. No half-implementations allowed.
             Debug.Assert((setLatchedExitCode != null) == (shutdown != null));

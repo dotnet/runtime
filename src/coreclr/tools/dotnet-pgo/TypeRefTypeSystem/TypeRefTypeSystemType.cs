@@ -23,17 +23,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         Dictionary<string, TypeRefTypeSystemType> _nestedType;
         TypeRefTypeSystemType _containingType;
 
-        public TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemModule module)
+        public TypeRefTypeSystemType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, TypeRefTypeSystemModule module)
         {
-            _namespace = string.IsNullOrEmpty(nameSpace) ? [] : Encoding.UTF8.GetBytes(nameSpace);
-            _name = string.IsNullOrEmpty(name) ? [] : Encoding.UTF8.GetBytes(name);
+            _namespace = nameSpace.ToArray();
+            _name = name.ToArray();
             _module = module;
         }
 
-        private TypeRefTypeSystemType(string nameSpace, string name, TypeRefTypeSystemType containingType, TypeRefTypeSystemModule module)
+        private TypeRefTypeSystemType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, TypeRefTypeSystemType containingType, TypeRefTypeSystemModule module)
         {
-            _namespace = string.IsNullOrEmpty(nameSpace) ? [] : Encoding.UTF8.GetBytes(nameSpace);
-            _name = string.IsNullOrEmpty(name) ? [] : Encoding.UTF8.GetBytes(name);
+            _namespace = nameSpace.ToArray();
+            _name = name.ToArray();
             _module = module;
             _containingType = containingType;
         }
@@ -99,14 +99,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
             if (!_nestedType.TryGetValue(name, out TypeRefTypeSystemType type))
             {
-                type = new TypeRefTypeSystemType(null, name, this, _module);
+                type = new TypeRefTypeSystemType(null, System.Text.Encoding.UTF8.GetBytes(name), this, _module);
                 _nestedType.Add(name, type);
             }
 
             return type;
         }
 
-        public MethodDesc GetOrAddMethod(string name, MethodSignature signature)
+        public MethodDesc GetOrAddMethod(ReadOnlySpan<byte> name, MethodSignature signature)
         {
             MethodDesc method = GetMethod(name, signature);
 
@@ -120,7 +120,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return method;
         }
 
-        public FieldDesc GetOrAddField(string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
+        public FieldDesc GetOrAddField(ReadOnlySpan<byte> name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             FieldDesc fld = GetField(name);
             if (fld == null)

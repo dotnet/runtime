@@ -69,7 +69,7 @@ namespace ILCompiler.Dataflow
             {
                 if (namedArgument.Kind == CustomAttributeNamedArgumentKind.Field)
                 {
-                    FieldDesc field = attributeType.GetField(namedArgument.Name);
+                    FieldDesc field = attributeType.GetField(System.Text.Encoding.UTF8.GetBytes(namedArgument.Name!));
                     if (field != null)
                     {
                         ReflectionMethodBodyScanner.CheckAndReportAllRequires(_diagnosticContext, field);

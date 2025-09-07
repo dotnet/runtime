@@ -163,7 +163,7 @@ namespace Internal.IL
 
                             TypeDesc underlyingType = elementType.UnderlyingType;
                             TypeDesc returnType = method.Context.GetWellKnownType(WellKnownType.Int32);
-                            MethodDesc underlyingCompareToMethod = underlyingType.GetKnownMethod("CompareTo",
+                            MethodDesc underlyingCompareToMethod = underlyingType.GetKnownMethod("CompareTo"u8,
                                 new MethodSignature(
                                     MethodSignatureFlags.None,
                                     genericParameterCount: 0,
@@ -264,14 +264,14 @@ namespace Internal.IL
                                     MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport", "EqualityComparerHelpers");
 
                                     if (elementType.IsEnum)
-                                        return helperType.GetKnownMethod("EnumOnlyEquals", null)
+                                        return helperType.GetKnownMethod("EnumOnlyEquals"u8, null)
                                             .MakeInstantiatedMethod(elementType);
 
                                     if (elementType.IsNullable)
                                     {
                                         bool? nullableOfEquatable = ComparerIntrinsics.ImplementsIEquatable(elementType.Instantiation[0]);
                                         if (nullableOfEquatable.HasValue && nullableOfEquatable.Value)
-                                            return helperType.GetKnownMethod("StructOnlyEqualsNullable", null)
+                                            return helperType.GetKnownMethod("StructOnlyEqualsNullable"u8, null)
                                                 .MakeInstantiatedMethod(elementType.Instantiation[0]);
                                         return null; // Fallback to default implementation based on EqualityComparer
                                     }
@@ -279,7 +279,7 @@ namespace Internal.IL
                                     bool? equatable = ComparerIntrinsics.ImplementsIEquatable(elementType);
                                     if (!equatable.HasValue)
                                         return null;
-                                    return helperType.GetKnownMethod(equatable.Value ? "StructOnlyEqualsIEquatable" : "StructOnlyNormalEquals", null)
+                                    return helperType.GetKnownMethod(equatable.Value ? "StructOnlyEqualsIEquatable"u8 : "StructOnlyNormalEquals"u8, null)
                                         .MakeInstantiatedMethod(elementType);
                                 }
                             }

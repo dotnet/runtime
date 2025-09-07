@@ -178,12 +178,12 @@ namespace Internal.IL.Stubs
 
                 // We only need 2 helpers to support this. Use the second parameter to pick the right one.
 
-                string helperName;
+                ReadOnlySpan<byte> helperName;
                 MethodSignature signature = key.GetTypeOverload.Signature;
                 if (signature.Length > 1 && signature[1].HasInstantiation)
-                    helperName = "ExtensibleGetType";
+                    helperName = "ExtensibleGetType"u8;
                 else
-                    helperName = "GetType";
+                    helperName = "GetType"u8;
 
                 MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers", helperName);
 

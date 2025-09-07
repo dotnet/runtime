@@ -273,7 +273,7 @@ namespace TypeSystemTests
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
             var t = ilModule.GetType("StaticFieldLayout", "RvaStatics");
-            var field = t.GetField("StaticInitedInt");
+            var field = t.GetField("StaticInitedInt"u8);
 
             Assert.True(field.HasRva);
 
@@ -295,7 +295,7 @@ namespace TypeSystemTests
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
             var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
-            var field = t.GetField("StaticMethodField");
+            var field = t.GetField("StaticMethodField"u8);
 
             Assert.Equal(8, field.Offset.AsInt);
             Assert.False(field.HasGCStaticBase);

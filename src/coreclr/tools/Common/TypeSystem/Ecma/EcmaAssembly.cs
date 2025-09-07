@@ -62,12 +62,11 @@ namespace Internal.TypeSystem.Ecma
             return _assemblyName;
         }
 
-        public unsafe ReadOnlySpan<byte> Name
+        public ReadOnlySpan<byte> Name
         {
             get
             {
-                BlobReader blob = MetadataReader.GetBlobReader(_assemblyDefinition.Name);
-                return new ReadOnlySpan<byte>(blob.StartPointer, blob.Length);
+                return MetadataReader.GetStringBytes(_assemblyDefinition.Name);
             }
         }
 
