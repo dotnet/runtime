@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -18,6 +19,135 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         _target = target;
     }
 
+    internal struct DacpTieredVersionData
+    {
+        public enum OptimizationTierEnum
+        {
+            OptimizationTier_Unknown,
+            OptimizationTier_MinOptJitted,
+            OptimizationTier_Optimized,
+            OptimizationTier_QuickJitted,
+            OptimizationTier_OptimizedTier1,
+            OptimizationTier_ReadyToRun,
+            OptimizationTier_OptimizedTier1OSR,
+            OptimizationTier_QuickJittedInstrumented,
+            OptimizationTier_OptimizedTier1Instrumented,
+        };
+        public TargetPointer NativeCodeAddr;
+        public OptimizationTierEnum OptimizationTier;
+        public TargetPointer NativeCodeVersionNodePtr;
+    };
+
+    private IEnumerable<NativeCodeVersionNode> GetNativeCodeVersionNodes(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        if (!ilCodeVersionHandle.IsValid)
+            yield break;
+
+        // Iterate through versioning state nodes and return the active one, matching any IL code version
+        Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+        TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
+
+        // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
+        TargetPointer versioningStateAddr = rts.GetMethodDescVersioningState(md);
+        if (versioningStateAddr == TargetPointer.Null)
+            yield break;
+
+        Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
+
+        // LinkedList stage of NativeCodeVersion::Next, heavily inlined
+        TargetPointer currentAddress = versioningState.NativeCodeVersionNode;
+        while (currentAddress != TargetPointer.Null)
+        {
+            Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
+            if (current.ILVersionId == ilVersionId)
+            {
+                yield return current;
+            }
+            currentAddress = current.Next;
+        }
+        yield break;
+    }
+    int ICodeVersions.GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs, out Span<byte> nativeCodeAddrs, out int pcNativeCodeAddrs)
+    {
+        pcNativeCodeAddrs = 0;
+        DacpTieredVersionData[] dacpTieredVersionDataArray = new DacpTieredVersionData[cNativeCodeAddrs];
+        Contracts.ICodeVersions codeVersionsContract = this;
+        Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
+
+        // r2r stuff todo
+        ILCodeVersionHandle ilCodeVersion = codeVersionsContract.GetILCodeVersions(methodDesc)
+            .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
+                ILCodeVersionHandle.Invalid);
+
+        if (!ilCodeVersion.IsValid)
+            throw new ArgumentException();
+        // Iterate through versioning state nodes and return the active one, matching any IL code version
+        Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        Contracts.ILoader loader = _target.Contracts.Loader;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+        TargetPointer methodTable = rts.GetMethodTable(mdh);
+        TypeHandle mtTypeHandle = rts.GetTypeHandle(methodTable);
+        TargetPointer modulePtr = rts.GetModule(mtTypeHandle);
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+        bool isReadyToRun = loader.GetReadyToRunInfo(moduleHandle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
+        int count = 0;
+        foreach (NativeCodeVersionNode nativeCodeVersionNode in GetNativeCodeVersionNodes(methodDesc, ilCodeVersion))
+        {
+            if (r2rImageBase <= nativeCodeVersionNode.NativeCode && nativeCodeVersionNode.NativeCode < r2rImageEnd)
+            {
+                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_ReadyToRun;
+            }
+
+            else if (rts.IsEligibleForTieredCompilation(mdh))
+            {
+                uint optimizationTier = nativeCodeVersionNode.OptimizationTier;
+                switch (optimizationTier)
+                {
+                    case 0:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJitted;
+                        break;
+                    case 1:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1;
+                        break;
+                    case 2:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1OSR;
+                        break;
+                    case 3:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
+                        break;
+                    case 4:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJittedInstrumented;
+                        break;
+                    case 5:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1Instrumented;
+                        break;
+                    default:
+                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Unknown;
+                        break;
+                }
+            }
+            else if (2 == modulePtr)
+            {
+                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
+            }
+            else
+            {
+                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
+            }
+            count++;
+
+            if (count >= cNativeCodeAddrs)
+            {
+                nativeCodeAddrs = MemoryMarshal.AsBytes(dacpTieredVersionDataArray.AsSpan());
+                return 1;
+            }
+        }
+        pcNativeCodeAddrs = count;
+        nativeCodeAddrs = MemoryMarshal.AsBytes(dacpTieredVersionDataArray.AsSpan());
+        return 0;
+    }
     ILCodeVersionHandle ICodeVersions.GetActiveILCodeVersion(TargetPointer methodDesc)
     {
         // CodeVersionManager::GetActiveILCodeVersion

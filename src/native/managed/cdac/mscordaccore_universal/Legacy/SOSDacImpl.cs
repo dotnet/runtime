@@ -2980,8 +2980,27 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
-    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
-        => _legacyImpl5 is not null ? _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs) : HResults.E_NOTIMPL;
+    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, DacpTieredVersionData* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == null)
+                throw new ArgumentException();
+
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            hr = _target.Contracts.CodeVersions.GetTieredVersions(methodDescPtr, rejitId, cNativeCodeAddrs, out Span<byte> nativeCodeData, out int nativeCodeCount);
+            *pcNativeCodeAddrs = nativeCodeCount;
+            Span<byte> dest = new Span<byte>(nativeCodeAddrs, nativeCodeData.Length);
+            nativeCodeData.CopyTo(dest);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if 
+    }
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6

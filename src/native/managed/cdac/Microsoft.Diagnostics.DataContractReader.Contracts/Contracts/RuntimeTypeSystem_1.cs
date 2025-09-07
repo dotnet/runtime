@@ -1030,6 +1030,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
+    bool IRuntimeTypeSystem.IsEligibleForTieredCompilation(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        return md.IsEligibleForTieredCompilation;
+    }
+
     TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];

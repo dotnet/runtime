@@ -667,6 +667,7 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
