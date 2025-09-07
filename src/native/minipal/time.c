@@ -79,10 +79,22 @@ int64_t minipal_hires_ticks(void)
     return (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    // emscripten only fully implements CLOCK_MONOTONIC
+#if defined(CLOCK_BOOTTIME) && !defined(__EMSCRIPTEN__)
+    const clockid_t clockType = CLOCK_BOOTTIME;
+#else
+    const clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    int result = clock_gettime(clockType, &ts);
     if (result != 0)
     {
+#if defined(CLOCK_BOOTTIME) && !defined(__EMSCRIPTEN__)
+        assert(!"clock_gettime(CLOCK_BOOTTIME) failed");
+#else
         assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
+#endif
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
@@ -98,13 +110,9 @@ int64_t minipal_lowres_ticks(void)
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
 
-    // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
-#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
-    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
-    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
-    // overall higher throughput. See dotnet/coreclr#2257 for more details.
-
-    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
+    // emscripten only fully implements CLOCK_MONOTONIC
+#if defined(CLOCK_BOOTTIME) && !defined(__EMSCRIPTEN__)
+    const clockid_t clockType = CLOCK_BOOTTIME;
 #else
     const clockid_t clockType = CLOCK_MONOTONIC;
 #endif
@@ -112,8 +120,8 @@ int64_t minipal_lowres_ticks(void)
     int result = clock_gettime(clockType, &ts);
     if (result != 0)
     {
-#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
-        assert(!"clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+#if defined(CLOCK_BOOTTIME) && !defined(__EMSCRIPTEN__)
+        assert(!"clock_gettime(CLOCK_BOOTTIME) failed");
 #else
         assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
 #endif
