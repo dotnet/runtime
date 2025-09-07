@@ -119,7 +119,7 @@ namespace ILCompiler
         {
             return new StringBuilder(field.OwningType.GetDisplayName())
                 .Append('.')
-                .Append(field.Name).ToString();
+                .Append(field.GetName()).ToString();
         }
 
 #if !READYTORUN

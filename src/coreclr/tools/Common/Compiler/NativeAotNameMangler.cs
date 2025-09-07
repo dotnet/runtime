@@ -517,7 +517,7 @@ namespace ILCompiler
                     {
                         foreach (var f in field.OwningType.GetFields())
                         {
-                            string name = SanitizeName(f.Name);
+                            string name = SanitizeName(f.GetName());
 
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
@@ -533,7 +533,7 @@ namespace ILCompiler
             }
 
 
-            string mangledName = SanitizeName(field.Name);
+            string mangledName = SanitizeName(field.GetName());
 
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;

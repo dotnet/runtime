@@ -40,13 +40,13 @@ namespace TypeSystemTests
                 if (field.IsStatic)
                     continue;
 
-                if (field.Name == "Bar")
+                if (field.GetName() == "Bar")
                 {
                     // Bar has explicit offset 4 and is in a class (with S.O size overhead of <pointer size>)
                     // Therefore it should have offset 4 + 8 = 12
                   Assert.Equal(12, field.Offset.AsInt);
                 }
-                else if (field.Name == "Baz")
+                else if (field.GetName() == "Baz")
                 {
                     // Baz has explicit offset 10. 10 + 8 = 18
                     Assert.Equal(18, field.Offset.AsInt);
@@ -93,13 +93,13 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                if (f.Name == "Lol")
+                if (f.GetName() == "Lol")
                 {
                     // First field after base class, with offset 0 so it should lie on the byte count of
                     // the base class = 20
                     Assert.Equal(20, f.Offset.AsInt);
                 }
-                else if (f.Name == "Omg")
+                else if (f.GetName() == "Omg")
                 {
                     // Offset 20 from base class byte count = 40
                     Assert.Equal(40, f.Offset.AsInt);
@@ -147,7 +147,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyInt":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -191,7 +191,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyInt2":
                         Assert.Equal(0x28, f.Offset.AsInt);
@@ -223,7 +223,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "b1":
                         Assert.Equal(0x0, f.Offset.AsInt);
@@ -266,7 +266,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyStruct0":
                         Assert.Equal(0x0, f.Offset.AsInt);
@@ -291,7 +291,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector16Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -313,7 +313,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector32Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -335,7 +335,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector64Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -364,7 +364,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyStructInt":
                         Assert.Equal(0x00, f.Offset.AsInt);
@@ -407,7 +407,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyByteArray":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -470,7 +470,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyByteArray1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -512,7 +512,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyLong1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -546,7 +546,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyString1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -584,7 +584,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -630,7 +630,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool1":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -689,7 +689,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool1":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -739,7 +739,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptInt":
                         Assert.Equal(0x14, f.Offset.AsInt);
@@ -779,7 +779,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "NoOptString":
                         Assert.Equal(0x18, f.Offset.AsInt);
@@ -814,7 +814,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "NoOptChar":
                         Assert.Equal(0x16, f.Offset.AsInt);
@@ -858,7 +858,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector16Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -880,7 +880,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector32Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -902,7 +902,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector64Align":
                         Assert.Equal(0x8, f.Offset.AsInt);

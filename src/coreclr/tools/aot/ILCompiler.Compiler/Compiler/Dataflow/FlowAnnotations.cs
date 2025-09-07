@@ -994,7 +994,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal SingleValue GetFieldValue(FieldDesc field)
-            => field.Name switch
+            => field.GetName() switch
             {
                 "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type) => ArrayValue.Create(0, field.OwningType),
                 "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String) => new KnownStringValue(string.Empty),

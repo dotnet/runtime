@@ -141,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // Validate that all fields on the type are both loadable
                     if (!await ValidateTypeWorkerHelper(field.FieldType))
                     {
-                        AddTypeValidationError(type, $"Field {field.Name}'s type failed validation");
+                        AddTypeValidationError(type, $"Field {field.GetName()}'s type failed validation");
                         return false;
                     }
 

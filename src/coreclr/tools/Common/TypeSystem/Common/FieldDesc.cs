@@ -43,6 +43,16 @@ namespace Internal.TypeSystem
             }
         }
 
+        public string GetName()
+        {
+            return System.Text.Encoding.UTF8.GetString(
+                U8Name
+#if NETSTANDARD
+                .ToArray()
+#endif
+                );
+        }
+
         public abstract DefType OwningType
         {
             get;

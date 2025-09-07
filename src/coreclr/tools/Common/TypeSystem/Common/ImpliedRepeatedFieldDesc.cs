@@ -42,7 +42,7 @@ namespace Internal.TypeSystem
 
         public override MarshalAsDescriptor GetMarshalAsDescriptor() => _underlyingFieldDesc.GetMarshalAsDescriptor();
 
-        public override string Name => $"{_underlyingFieldDesc.Name}[{FieldIndex}]";
+        public override string Name => $"{_underlyingFieldDesc.GetName()}[{FieldIndex}]";
 
         public override ReadOnlySpan<byte> U8Name => System.Text.Encoding.UTF8.GetBytes(Name);
     }

@@ -36,7 +36,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int1":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -48,7 +48,7 @@ namespace TypeSystemTests
                         Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -67,13 +67,13 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "bool1":
                         Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -92,7 +92,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int1":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -104,7 +104,7 @@ namespace TypeSystemTests
                         Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -123,7 +123,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "string1":
                         Assert.Equal(8, field.Offset.AsInt);
@@ -132,7 +132,7 @@ namespace TypeSystemTests
                         Assert.Equal(16, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -151,7 +151,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "string1":
                         Assert.Equal(8, field.Offset.AsInt);
@@ -169,7 +169,7 @@ namespace TypeSystemTests
                         Assert.Equal(24, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -189,7 +189,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int3":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -198,7 +198,7 @@ namespace TypeSystemTests
                         Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -219,7 +219,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "IntConstant":
                     case "StringConstant":
@@ -233,7 +233,7 @@ namespace TypeSystemTests
                         Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -253,13 +253,13 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "selfRef1":
                         Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }

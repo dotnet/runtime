@@ -497,7 +497,7 @@ namespace Internal.IL
                 }
 
                 // Validate the name and target type match.
-                if (fd.Name.Equals(name)
+                if (fd.GetName().Equals(name)
                     && fieldType == fd.FieldType)
                 {
                     context.TargetField = fd;

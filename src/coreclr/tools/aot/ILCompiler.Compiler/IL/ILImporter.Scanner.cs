@@ -1064,7 +1064,7 @@ namespace Internal.IL
             var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
             if (field.IsLiteral)
-                ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
+                ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
@@ -1100,7 +1100,7 @@ namespace Internal.IL
                 // References to literal fields from IL body should never resolve.
                 // The CLR would throw a MissingFieldException while jitting and so should we.
                 if (field.IsLiteral)
-                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
+                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
                 ReadyToRunHelperId helperId;
                 if (field.HasRva)

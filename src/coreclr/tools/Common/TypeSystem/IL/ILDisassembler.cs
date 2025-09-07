@@ -141,7 +141,7 @@ namespace Internal.IL
             sb.Append(' ');
             AppendOwningType(sb, field.OwningType);
             sb.Append("::");
-            sb.Append(field.Name);
+            sb.Append(field.GetName());
         }
 
         private static void AppendStringLiteral(StringBuilder sb, string s)

@@ -200,7 +200,7 @@ namespace TypeSystemTests
         {
 
             MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
-            FieldDesc fieldWithModOpt = modOptTester.GetFields().Single(m => string.Equals(m.Name, "fieldWithModOpt"));
+            FieldDesc fieldWithModOpt = modOptTester.GetFields().Single(m => string.Equals(m.GetName(), "fieldWithModOpt"));
 
             // Create assembly with reference to interesting method
             TypeSystemMetadataEmitter metadataEmitter = new TypeSystemMetadataEmitter(new AssemblyNameInfo("Lookup"), _context);
@@ -221,7 +221,7 @@ namespace TypeSystemTests
             var ilLookupModule = (EcmaModule)lookupContext.GetModuleForSimpleName("Lookup");
             FieldDesc fieldFound = ilLookupModule.GetField(token);
 
-            Assert.Equal("fieldWithModOpt", fieldFound.Name);
+            Assert.Equal("fieldWithModOpt", fieldFound.GetName());
         }
 
         [Fact]

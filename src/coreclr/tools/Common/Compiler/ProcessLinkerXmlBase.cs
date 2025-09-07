@@ -301,7 +301,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.Name == name)
+                    if (field.U8Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessField(type, field, nav);
@@ -325,7 +325,7 @@ namespace ILCompiler
             {
                 sb.Clear();
                 CecilTypeNameFormatter.Instance.AppendName(sb, field.FieldType);
-                if (signature == sb.ToString() + " " + field.Name)
+                if (signature == sb.ToString() + " " + field.GetName())
                     return field;
             }
 

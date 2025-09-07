@@ -337,7 +337,7 @@ namespace Internal.TypeSystem
             EntityHandle fieldHandle;
 
             EntityHandle typeHandle = GetTypeRef((MetadataType)field.OwningType);
-            StringHandle fieldName = _metadataBuilder.GetOrAddString(field.Name);
+            StringHandle fieldName = _metadataBuilder.GetOrAddString(field.GetName());
 
             var sigBlob = GetFieldSignatureBlobHandle(field.GetTypicalFieldDefinition());
             fieldHandle = _metadataBuilder.AddMemberReference(typeHandle, fieldName, sigBlob);

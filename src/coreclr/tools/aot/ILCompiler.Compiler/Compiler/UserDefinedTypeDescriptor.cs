@@ -78,7 +78,7 @@ namespace ILCompiler
                         // The set of fields we're going to touch is tagged as "parsed by the expression evaluator"
                         // in the Roslyn codebase, so it's somewhat safe to do this.
                         // https://github.com/dotnet/roslyn/blob/afd10305a37c0ffb2cfb2c2d8446154c68cfa87a/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNameKind.cs#L15-L22
-                        string fieldNameEmit = fieldDesc.Name;
+                        string fieldNameEmit = fieldDesc.GetName();
                         if (fieldNameEmit.Length > 0 && fieldNameEmit[0] == '<')
                         {
                             if (TryGetGeneratedNameKind(fieldNameEmit, out char kind))
@@ -420,7 +420,7 @@ namespace ILCompiler
                 FieldDesc field = fieldsDescriptors[i];
                 EnumRecordTypeDescriptor recordTypeDescriptor;
                 recordTypeDescriptor.Value = GetEnumRecordValue(field);
-                recordTypeDescriptor.Name = field.Name;
+                recordTypeDescriptor.Name = field.GetName();
                 typeRecords[i] = recordTypeDescriptor;
             }
             uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
@@ -665,7 +665,7 @@ namespace ILCompiler
                 {
                     FieldTypeIndex = fieldTypeIndex,
                     Offset = (ulong)fieldOffsetEmit,
-                    Name = fieldDesc.Name
+                    Name = fieldDesc.GetName()
                 };
 
                 if (fieldDesc.IsStatic)

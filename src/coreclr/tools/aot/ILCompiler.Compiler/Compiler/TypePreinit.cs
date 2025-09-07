@@ -2524,14 +2524,14 @@ namespace ILCompiler
                     if (field.OwningType != _parent._entryType)
                         return false;
 
-                    if (field.Name == "IID"
+                    if (field.U8Name.SequenceEqual("IID"u8)
                         && value is ValueTypeValue guidValue
                         && guidValue.Size == _parent._guidBytes[_index].Length)
                     {
                         Array.Copy(guidValue.InstanceBytes, _parent._guidBytes[_index], _parent._guidBytes[_index].Length);
                         return true;
                     }
-                    else if (field.Name == "Vtable"
+                    else if (field.U8Name.SequenceEqual("Vtable"u8)
                         && value is ByRefValueBase byrefValue
                         && byrefValue.BackingField != null)
                     {
@@ -2970,7 +2970,7 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         return false;
 
-                    if (field.Name == "_length")
+                    if (field.U8Name.SequenceEqual("_length"u8))
                     {
                         _value._length = value.AsInt32() * _value._elementType.InstanceFieldSize.AsInt;
                         return true;
@@ -2978,7 +2978,7 @@ namespace ILCompiler
 
                     if (value is ByRefValue byref)
                     {
-                        Debug.Assert(field.Name == "_reference");
+                        Debug.Assert(field.U8Name.SequenceEqual("_reference"u8));
                         _value._bytes = byref.PointedToBytes;
                         _value._index = byref.PointedToOffset;
                         return true;
@@ -2997,10 +2997,10 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         ThrowHelper.ThrowInvalidProgramException();
 
-                    if (field.Name == "_length")
+                    if (field.U8Name.SequenceEqual("_length"u8))
                         return ValueTypeValue.FromInt32(_value._length / elementType.InstanceFieldSize.AsInt);
 
-                    Debug.Assert(field.Name == "_reference");
+                    Debug.Assert(field.U8Name.SequenceEqual("_reference"u8));
                     return new ByRefValue(_value._bytes, _value._index);
                 }
 

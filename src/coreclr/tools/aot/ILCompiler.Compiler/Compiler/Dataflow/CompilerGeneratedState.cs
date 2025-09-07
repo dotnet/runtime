@@ -586,7 +586,7 @@ namespace ILCompiler.Dataflow
             {
                 // Don't track the "current" field which is used for state machine return values,
                 // because this can be expensive to track.
-                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.Name);
+                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.GetName());
             }
 
             return false;

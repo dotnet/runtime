@@ -593,7 +593,7 @@ namespace Internal.TypeSystem
         {
             foreach (var field in GetFields())
             {
-                if (field.Name == name)
+                if (field.GetName() == name)
                     return field;
             }
             return null;

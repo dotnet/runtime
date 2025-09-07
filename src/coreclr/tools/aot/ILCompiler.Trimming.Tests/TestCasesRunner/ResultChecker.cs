@@ -519,7 +519,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 DefType defType => defType.GetName(),
                 MethodDesc method => method.GetName(),
-                FieldDesc field => field.Name,
+                FieldDesc field => field.GetName(),
                 _ => null
             };
 
