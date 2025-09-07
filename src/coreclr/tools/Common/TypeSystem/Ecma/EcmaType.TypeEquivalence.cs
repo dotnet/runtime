@@ -43,7 +43,7 @@ namespace Internal.TypeSystem.Ecma
             string scope = (string)guidAttribute.Value.FixedArguments[0].Value;
             string name = this.GetName();
 
-            if (this.U8Namespace.Length > 0)
+            if (this.Namespace.Length > 0)
                 name = this.GetNamespace() + "." + name;
 
             return new TypeIdentifierData(scope, name);

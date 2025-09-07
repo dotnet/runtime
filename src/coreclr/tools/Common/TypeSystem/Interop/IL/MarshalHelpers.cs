@@ -202,8 +202,8 @@ namespace Internal.TypeSystem.Interop
                 if (customModifierType == null)
                     continue;
 
-                if ((customModifierType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && customModifierType.U8Name.SequenceEqual("IsCopyConstructed"u8)) ||
-                    (customModifierType.U8Namespace.SequenceEqual("Microsoft.VisualC"u8) && customModifierType.U8Name.SequenceEqual("NeedsCopyConstructorModifier"u8)))
+                if ((customModifierType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && customModifierType.Name.SequenceEqual("IsCopyConstructed"u8)) ||
+                    (customModifierType.Namespace.SequenceEqual("Microsoft.VisualC"u8) && customModifierType.Name.SequenceEqual("NeedsCopyConstructorModifier"u8)))
                 {
                     return true;
                 }

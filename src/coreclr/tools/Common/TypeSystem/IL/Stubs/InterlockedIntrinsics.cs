@@ -20,7 +20,7 @@ namespace Internal.IL.Stubs
 #endif // READYTORUN
             MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("Interlocked"u8));
+            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Interlocked"u8));
             Debug.Assert(!method.IsGenericMethodDefinition);
 
             if (method.HasInstantiation && method.Name.SequenceEqual("CompareExchange"u8))

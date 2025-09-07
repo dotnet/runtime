@@ -683,7 +683,7 @@ namespace ILCompiler
                     // but not scanned, it's usually fine. If it wasn't fine, we would probably crash before getting here.
                     return method.OwningType is MetadataType mdType
                         && mdType.Module == method.Context.SystemModule
-                        && (mdType.U8Name.EndsWith("Exception"u8) || mdType.U8Namespace.StartsWith("Internal.Runtime"u8));
+                        && (mdType.Name.EndsWith("Exception"u8) || mdType.Namespace.StartsWith("Internal.Runtime"u8));
                 }
 
                 // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.

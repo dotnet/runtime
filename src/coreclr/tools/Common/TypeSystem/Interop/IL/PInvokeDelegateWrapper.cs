@@ -26,19 +26,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "PInvokeDelegateWrapper__" + DelegateType.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return "PInvokeDelegateWrapper__"u8.Append(DelegateType.U8Name);
+                return "PInvokeDelegateWrapper__"u8.Append(DelegateType.Name);
             }
         }
 
@@ -50,15 +42,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override string Namespace
-        {
-            get
-            {
-                return "Internal.CompilerGenerated";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
@@ -207,7 +191,7 @@ namespace Internal.TypeSystem.Interop
 
         private int InitializeHashCode()
         {
-            return _hashCode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+            return _hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
         }
 
         public override int GetHashCode()

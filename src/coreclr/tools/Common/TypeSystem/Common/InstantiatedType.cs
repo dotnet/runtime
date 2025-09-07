@@ -127,7 +127,7 @@ namespace Internal.TypeSystem
             return flags;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -135,27 +135,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return _typeDef.U8Name;
-            }
-        }
-
-        public override string Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
                 return _typeDef.Namespace;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
-        {
-            get
-            {
-                return _typeDef.U8Namespace;
             }
         }
 

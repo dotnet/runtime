@@ -16,7 +16,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).U8Name.SequenceEqual("Unsafe"u8));
+            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Unsafe"u8));
 
             switch (method.GetName())
             {

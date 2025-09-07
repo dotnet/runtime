@@ -214,7 +214,7 @@ namespace Internal.TypeSystem
             {
                 // Make a typeref
                 StringHandle typeName = _metadataBuilder.GetOrAddString(metadataType.GetName());
-                StringHandle typeNamespace = metadataType.U8Namespace.Length > 0 ? _metadataBuilder.GetOrAddString(metadataType.GetNamespace()) : default(StringHandle);
+                StringHandle typeNamespace = metadataType.Namespace.Length > 0 ? _metadataBuilder.GetOrAddString(metadataType.GetNamespace()) : default(StringHandle);
                 EntityHandle resolutionScope;
 
                 if (metadataType.ContainingType == null)

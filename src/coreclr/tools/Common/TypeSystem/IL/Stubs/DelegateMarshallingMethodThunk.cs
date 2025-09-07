@@ -260,7 +260,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return U8NamePrefix.Append("__"u8, DelegateType.U8Name);
+                return U8NamePrefix.Append("__"u8, DelegateType.Name);
             }
         }
 

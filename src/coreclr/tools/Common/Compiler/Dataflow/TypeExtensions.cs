@@ -16,7 +16,7 @@ namespace ILCompiler.Dataflow
     {
         public static bool IsTypeOf(this TypeDesc type, string ns, string name)
         {
-            return type is MetadataType mdType && mdType.U8Name.StringEquals(name) && mdType.U8Namespace.StringEquals(ns);
+            return type is MetadataType mdType && mdType.Name.StringEquals(name) && mdType.Namespace.StringEquals(ns);
         }
 
         public static bool IsTypeOf(this TypeDesc type, string fullTypeName)

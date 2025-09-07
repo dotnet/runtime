@@ -48,25 +48,25 @@ namespace Internal.IL
             {
                 case "Unsafe":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+                        if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;
                 case "Debug":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.Diagnostics"u8) && method.Name.SequenceEqual("DebugBreak"u8))
+                        if (owningType.Namespace.SequenceEqual("System.Diagnostics"u8) && method.Name.SequenceEqual("DebugBreak"u8))
                             return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                     }
                     break;
                 case "RuntimeAugments":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.Name.SequenceEqual("GetCanonType"u8))
+                        if (owningType.Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.Name.SequenceEqual("GetCanonType"u8))
                             return GetCanonTypeIntrinsic.EmitIL(method);
                     }
                     break;
                 case "MethodTable":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8) && method.Name.SequenceEqual("get_SupportsRelativePointers"u8))
+                        if (owningType.Namespace.SequenceEqual("Internal.Runtime"u8) && method.Name.SequenceEqual("get_SupportsRelativePointers"u8))
                         {
                             ILOpcode value = method.Context.Target.SupportsRelativePointers ?
                                 ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
@@ -76,7 +76,7 @@ namespace Internal.IL
                     break;
                 case "Stream":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.IO"u8))
+                        if (owningType.Namespace.SequenceEqual("System.IO"u8))
                             return StreamIntrinsics.EmitIL(method);
                     }
                     break;
@@ -104,7 +104,7 @@ namespace Internal.IL
             {
                 case "Interlocked":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.Threading"u8))
+                        if (owningType.Namespace.SequenceEqual("System.Threading"u8))
                             return InterlockedIntrinsics.EmitIL(method);
                     }
                     break;
@@ -132,25 +132,25 @@ namespace Internal.IL
                     break;
                 case "RuntimeHelpers":
                     {
-                        if (owningType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+                        if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                             return RuntimeHelpersIntrinsics.EmitIL(method);
                     }
                     break;
                 case "Comparer`1":
                     {
-                        if (methodName == "Create" && owningType.U8Namespace.SequenceEqual("System.Collections.Generic"u8))
+                        if (methodName == "Create" && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             return ComparerIntrinsics.EmitComparerCreate(method);
                     }
                     break;
                 case "EqualityComparer`1":
                     {
-                        if (methodName == "Create" && owningType.U8Namespace.SequenceEqual("System.Collections.Generic"u8))
+                        if (methodName == "Create" && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             return ComparerIntrinsics.EmitEqualityComparerCreate(method);
                     }
                     break;
                 case "ComparerHelpers":
                     {
-                        if (!owningType.U8Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
+                        if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
                             return null;
 
                         if (methodName == "EnumOnlyCompare")
@@ -184,7 +184,7 @@ namespace Internal.IL
                     break;
                 case "EqualityComparerHelpers":
                     {
-                        if (!owningType.U8Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
+                        if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
                             return null;
 
                         if (methodName == "EnumOnlyEquals")

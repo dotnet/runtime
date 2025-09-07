@@ -92,13 +92,9 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask) => MetadataType.GetTypeFlags(mask);
 
-        public override string Namespace => MetadataType.Namespace;
+        public override ReadOnlySpan<byte> Namespace => MetadataType.Namespace;
 
-        public override ReadOnlySpan<byte> U8Namespace => MetadataType.U8Namespace;
-
-        public override string Name => MetadataType.Name;
-
-        public override ReadOnlySpan<byte> U8Name => MetadataType.U8Name;
+        public override ReadOnlySpan<byte> Name => MetadataType.Name;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

@@ -75,17 +75,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.U8Name.SequenceEqual("RuntimeHelpers"u8) && mdType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.U8Name.SequenceEqual("Unsafe"u8) && mdType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name.SequenceEqual("Unsafe"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.U8Name.SequenceEqual("InstanceCalliHelper"u8) && mdType.U8Namespace.SequenceEqual("System.Reflection"u8))
+            if (mdType.Name.SequenceEqual("InstanceCalliHelper"u8) && mdType.Namespace.SequenceEqual("System.Reflection"u8))
             {
                 return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
@@ -104,17 +104,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.U8Name.SequenceEqual("RuntimeHelpers"u8) && mdType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.U8Name.SequenceEqual("Activator"u8) && mdType.U8Namespace.SequenceEqual("System"u8))
+            if (mdType.Name.SequenceEqual("Activator"u8) && mdType.Namespace.SequenceEqual("System"u8))
             {
                 return TryGetIntrinsicMethodILForActivator(method);
             }
 
-            if (mdType.U8Name.SequenceEqual("Interlocked"u8) && mdType.U8Namespace.SequenceEqual("System.Threading"u8))
+            if (mdType.Name.SequenceEqual("Interlocked"u8) && mdType.Namespace.SequenceEqual("System.Threading"u8))
             {
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }

@@ -61,15 +61,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override string Namespace
-        {
-            get
-            {
-                return "System";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
@@ -77,15 +69,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "__Canon";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -147,7 +131,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+                _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             return _hashcode;
@@ -161,15 +145,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override string Namespace
-        {
-            get
-            {
-                return "System";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
@@ -177,15 +153,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return "__UniversalCanon";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -245,7 +213,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+                _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             return _hashcode;

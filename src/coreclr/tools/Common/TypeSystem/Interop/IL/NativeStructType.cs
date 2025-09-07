@@ -21,19 +21,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "__NativeType__" + ManagedStructType.Name;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
-        {
-            get
-            {
-                return "__NativeType__"u8.Append(ManagedStructType.U8Name);
+                return "__NativeType__"u8.Append(ManagedStructType.Name);
             }
         }
 
@@ -45,15 +37,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override string Namespace
-        {
-            get
-            {
-                return "Internal.CompilerGenerated";
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
@@ -297,7 +281,7 @@ namespace Internal.TypeSystem.Interop
 
         private int InitializeHashCode()
         {
-            return _hashCode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+            return _hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
         }
 
         public override int GetHashCode()

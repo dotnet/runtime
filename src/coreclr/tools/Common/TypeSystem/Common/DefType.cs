@@ -16,11 +16,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the namespace of the type.
         /// </summary>
-        public virtual string Namespace => null;
+        public virtual ReadOnlySpan<byte> Namespace => [];
 
-        public virtual ReadOnlySpan<byte> U8Namespace => [];
-
-        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(U8Namespace
+        public string GetNamespace() => System.Text.Encoding.UTF8.GetString(Namespace
 #if NETSTANDARD
             .ToArray()
 #endif
@@ -29,11 +27,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
-        public virtual string Name => null;
+        public virtual ReadOnlySpan<byte> Name => [];
 
-        public virtual ReadOnlySpan<byte> U8Name => [];
-
-        public string GetName() => System.Text.Encoding.UTF8.GetString(U8Name
+        public string GetName() => System.Text.Encoding.UTF8.GetString(Name
 #if NETSTANDARD
             .ToArray()
 #endif

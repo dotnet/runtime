@@ -90,7 +90,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -98,27 +98,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
-                return _rawCanonType.U8Name;
-            }
-        }
-
-        public override string Namespace
-        {
-            get
-            {
-                return string.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
-        {
-            get
-            {
-                return _runtimeDeterminedDetailsType.U8Name.Append("_"u8, _rawCanonType.U8Namespace);
+                return _runtimeDeterminedDetailsType.U8Name.Append("_"u8, _rawCanonType.Namespace);
             }
         }
 

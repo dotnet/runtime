@@ -73,7 +73,7 @@ namespace ILCompiler
                 if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
                     continue;
 
-                if (featureType.U8Namespace.SequenceEqual("System.Diagnostics.CodeAnalysis"u8))
+                if (featureType.Namespace.SequenceEqual("System.Diagnostics.CodeAnalysis"u8))
                 {
                     switch (featureType.GetName())
                     {

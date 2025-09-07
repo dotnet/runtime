@@ -143,7 +143,7 @@ namespace ILCompiler
             }
 
             static bool IsSystemType(TypeDesc t)
-                => t is MetadataType mdType && mdType.U8Name.SequenceEqual("Type"u8) && mdType.U8Namespace.SequenceEqual("System"u8);
+                => t is MetadataType mdType && mdType.Name.SequenceEqual("Type"u8) && mdType.Namespace.SequenceEqual("System"u8);
 
             static bool IsTypeGetTypeFromHandle(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method

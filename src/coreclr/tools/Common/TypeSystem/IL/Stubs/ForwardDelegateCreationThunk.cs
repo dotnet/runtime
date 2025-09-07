@@ -66,7 +66,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "ForwardDelegateCreationStub__"u8.Append(DelegateType.U8Name);
+                return "ForwardDelegateCreationStub__"u8.Append(DelegateType.Name);
             }
         }
 

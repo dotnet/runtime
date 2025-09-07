@@ -128,10 +128,10 @@ namespace Internal.TypeSystem
                 if (!data1.Equals(data2))
                     return false;
 
-                if (!type1.U8Name.SequenceEqual(type2.U8Name))
+                if (!type1.Name.SequenceEqual(type2.Name))
                     return false;
 
-                if (!type1.U8Namespace.SequenceEqual(type2.U8Namespace))
+                if (!type1.Namespace.SequenceEqual(type2.Namespace))
                     return false;
 
                 var containingType1 = (MetadataType)type1.ContainingType;

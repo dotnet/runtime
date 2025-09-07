@@ -464,5 +464,20 @@ namespace Internal.TypeSystem
 
             return buffer;
         }
+
+        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3, uint i)
+        {
+            Span<byte> s4 = stackalloc byte[16];
+            System.Buffers.Text.Utf8Formatter.TryFormat(i, s4, out int s4length);
+
+            Span<byte> buffer = new byte[s1.Length + s2.Length + s3.Length + s4length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+            s4.Slice(0, s4length).CopyTo(buffer.Slice(s1.Length + s2.Length + s3.Length));
+
+            return buffer;
+        }
     }
 }

@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (attributeType == null)
                 return false;
 
-            if (!attributeType.U8Namespace.SequenceEqual("Mono.Linker.Tests.Cases.Expectations.Assertions"u8))
+            if (!attributeType.Namespace.SequenceEqual("Mono.Linker.Tests.Cases.Expectations.Assertions"u8))
                 return false;
 
             MetadataType t = attributeType;

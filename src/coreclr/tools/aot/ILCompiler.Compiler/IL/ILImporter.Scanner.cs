@@ -1473,7 +1473,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("Type"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
+                    return owningType.Name.SequenceEqual("Type"u8) && owningType.Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1487,7 +1487,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
+                    return owningType.Name.SequenceEqual("Activator"u8) && owningType.Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1501,7 +1501,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("Activator"u8) && owningType.U8Namespace.SequenceEqual("System"u8);
+                    return owningType.Name.SequenceEqual("Activator"u8) && owningType.Namespace.SequenceEqual("System"u8);
                 }
             }
 
@@ -1515,7 +1515,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("MethodTable"u8) && owningType.U8Namespace.SequenceEqual("Internal.Runtime"u8);
+                    return owningType.Name.SequenceEqual("MethodTable"u8) && owningType.Namespace.SequenceEqual("Internal.Runtime"u8);
                 }
             }
 
@@ -1529,7 +1529,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("RuntimeHelpers"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
+                    return owningType.Name.SequenceEqual("RuntimeHelpers"u8) && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
                 }
             }
 
@@ -1543,7 +1543,7 @@ namespace Internal.IL
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.U8Name.SequenceEqual("MemoryMarshal"u8) && owningType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
+                    return owningType.Name.SequenceEqual("MemoryMarshal"u8) && owningType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
                 }
             }
 

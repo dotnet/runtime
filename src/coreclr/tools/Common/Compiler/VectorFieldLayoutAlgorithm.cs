@@ -29,11 +29,11 @@ namespace ILCompiler
 
             LayoutInt alignment;
 
-            if (defType.U8Name.SequenceEqual("Vector64`1"u8))
+            if (defType.Name.SequenceEqual("Vector64`1"u8))
             {
                 alignment = new LayoutInt(8);
             }
-            else if (defType.U8Name.SequenceEqual("Vector128`1"u8))
+            else if (defType.Name.SequenceEqual("Vector128`1"u8))
             {
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -45,7 +45,7 @@ namespace ILCompiler
                     alignment = new LayoutInt(16);
                 }
             }
-            else if (defType.U8Name.SequenceEqual("Vector256`1"u8))
+            else if (defType.Name.SequenceEqual("Vector256`1"u8))
             {
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -78,7 +78,7 @@ namespace ILCompiler
             }
             else
             {
-                Debug.Assert(defType.U8Name.SequenceEqual("Vector512`1"u8));
+                Debug.Assert(defType.Name.SequenceEqual("Vector512`1"u8));
 
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -166,11 +166,11 @@ namespace ILCompiler
         public static bool IsVectorType(DefType type)
         {
             return type.IsIntrinsic &&
-                type.U8Namespace.SequenceEqual("System.Runtime.Intrinsics"u8) &&
-                (type.U8Name.SequenceEqual("Vector64`1"u8) ||
-                 type.U8Name.SequenceEqual("Vector128`1"u8) ||
-                 type.U8Name.SequenceEqual("Vector256`1"u8) ||
-                 type.U8Name.SequenceEqual("Vector512`1"u8));
+                type.Namespace.SequenceEqual("System.Runtime.Intrinsics"u8) &&
+                (type.Name.SequenceEqual("Vector64`1"u8) ||
+                 type.Name.SequenceEqual("Vector128`1"u8) ||
+                 type.Name.SequenceEqual("Vector256`1"u8) ||
+                 type.Name.SequenceEqual("Vector512`1"u8));
         }
     }
 }

@@ -77,7 +77,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (DefType type in assembly.GetAllTypes())
                 {
-                    if (!type.U8Namespace.StringEquals(fullname))
+                    if (!type.Namespace.StringEquals(fullname))
                         continue;
 
                     foundMatch = true;

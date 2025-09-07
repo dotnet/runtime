@@ -414,8 +414,8 @@ namespace ILCompiler
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.U8Name.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeName)
-                            && calleeType.U8Namespace.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeNamespace)
+                            && calleeType.Name.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeName)
+                            && calleeType.Namespace.SequenceEqual(InlineableStringsResourceNode.U8ResourceAccessorTypeNamespace)
                             && callee.Signature is { Length: 0, IsStatic: true }
                             && callee.Name.StartsWith("get_"u8))
                         {
@@ -824,7 +824,7 @@ namespace ILCompiler
                         }
                         else if (method.IsIntrinsic && (method.Name.SequenceEqual("get_IsValueType"u8) || method.Name.SequenceEqual("get_IsEnum"u8))
                             && method.OwningType is MetadataType mdt
-                            && mdt.U8Name.SequenceEqual("Type"u8) && mdt.U8Namespace.SequenceEqual("System"u8) && mdt.Module == mdt.Context.SystemModule
+                            && mdt.Name.SequenceEqual("Type"u8) && mdt.Namespace.SequenceEqual("System"u8) && mdt.Module == mdt.Context.SystemModule
                             && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.GetName(), out constant))
                         {
                             return true;

@@ -294,7 +294,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             return false;
                     }
 
-                    if (metadataType.U8Namespace.StartsWith("Internal"u8))
+                    if (metadataType.Namespace.StartsWith("Internal"u8))
                         return false;
 
                     if (metadataType.Module.Assembly is EcmaAssembly asm && asm.Assembly.GetName().Name == "System.Private.CoreLib")

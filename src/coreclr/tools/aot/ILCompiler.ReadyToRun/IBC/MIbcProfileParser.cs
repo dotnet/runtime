@@ -641,9 +641,9 @@ namespace ILCompiler.IBC
                 {
                     TypeSystemContext context = Context;
 
-                    if (context.SupportsCanon && nameSpace.SequenceEqual(context.CanonType.U8Namespace) && name.SequenceEqual(context.CanonType.U8Name))
+                    if (context.SupportsCanon && nameSpace.SequenceEqual(context.CanonType.Namespace) && name.SequenceEqual(context.CanonType.Name))
                         return Context.CanonType;
-                    if (context.SupportsUniversalCanon && nameSpace.SequenceEqual(context.UniversalCanonType.U8Namespace) && name.SequenceEqual(context.UniversalCanonType.U8Name))
+                    if (context.SupportsUniversalCanon && nameSpace.SequenceEqual(context.UniversalCanonType.Namespace) && name.SequenceEqual(context.UniversalCanonType.Name))
                         return Context.UniversalCanonType;
                     else
                     {

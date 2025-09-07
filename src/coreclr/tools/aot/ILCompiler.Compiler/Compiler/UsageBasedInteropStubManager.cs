@@ -60,7 +60,7 @@ namespace ILCompiler
             MetadataType metadataType = owningType as MetadataType;
             if (metadataType != null && metadataType.Module == factory.TypeSystemContext.SystemModule)
             {
-                if (metadataType.U8Name.SequenceEqual("Marshal"u8) && metadataType.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
+                if (metadataType.Name.SequenceEqual("Marshal"u8) && metadataType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
                 {
                     string methodName = method.GetName();
                     if (methodName == "GetFunctionPointerForDelegate" ||

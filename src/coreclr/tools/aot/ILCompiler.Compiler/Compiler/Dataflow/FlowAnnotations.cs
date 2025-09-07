@@ -270,16 +270,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             foreach (var intf in type.RuntimeInterfaces)
             {
-                if (intf.U8Name.SequenceEqual("IReflect"u8) && intf.U8Namespace.SequenceEqual("System.Reflection"u8))
+                if (intf.Name.SequenceEqual("IReflect"u8) && intf.Namespace.SequenceEqual("System.Reflection"u8))
                     return true;
             }
 
-            if (metadataType.U8Name.SequenceEqual("IReflect"u8) && metadataType.U8Namespace.SequenceEqual("System.Reflection"u8))
+            if (metadataType.Name.SequenceEqual("IReflect"u8) && metadataType.Namespace.SequenceEqual("System.Reflection"u8))
                 return true;
 
             do
             {
-                if (metadataType.U8Name.SequenceEqual("Type"u8) && metadataType.U8Namespace.SequenceEqual("System"u8))
+                if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
             } while ((metadataType = metadataType.MetadataBaseType) != null);
 

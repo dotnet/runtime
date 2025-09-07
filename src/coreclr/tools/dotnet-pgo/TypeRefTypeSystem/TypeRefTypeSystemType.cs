@@ -140,13 +140,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override PInvokeStringFormat PInvokeStringFormat => throw new NotImplementedException();
 
-        public override string Name => Encoding.UTF8.GetString(_name);
+        public override ReadOnlySpan<byte> Name => _name;
 
-        public override ReadOnlySpan<byte> U8Name => _name;
-
-        public override string Namespace => Encoding.UTF8.GetString(_namespace);
-
-        public override ReadOnlySpan<byte> U8Namespace => _namespace;
+        public override ReadOnlySpan<byte> Namespace => _namespace;
 
         public override bool IsExplicitLayout => throw new NotImplementedException();
 
@@ -191,8 +187,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         public override int GetHashCode()
         {
             var hash = new HashCode();
-            hash.AddBytes(U8Namespace);
-            hash.AddBytes(U8Name);
+            hash.AddBytes(Namespace);
+            hash.AddBytes(Name);
             hash.Add(Module);
             return hash.ToHashCode();
         }

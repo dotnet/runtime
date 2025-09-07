@@ -168,7 +168,7 @@ namespace ILCompiler
                     string fullname = GetFullName(namespaceNav);
                     foreach (DefType type in assembly.GetAllTypes())
                     {
-                        if (!type.U8Namespace.StringEquals(fullname))
+                        if (!type.Namespace.StringEquals(fullname))
                             continue;
 
                         ProcessType(type, nav);

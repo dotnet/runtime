@@ -557,8 +557,8 @@ namespace ILCompiler.Logging
 
             foreach (var nestedType in mdDeclaringType.GetNestedTypes())
             {
-                Debug.Assert(nestedType.U8Namespace.IsEmpty);
-                if (!nestedType.U8Name.StringEquals(name))
+                Debug.Assert(nestedType.Namespace.IsEmpty);
+                if (!nestedType.Name.StringEquals(name))
                     continue;
 
                 // Compute arity counting only the newly-introduced generic parameters

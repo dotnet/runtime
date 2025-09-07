@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.Name.SequenceEqual(U8ResourceAccessorGetStringMethodName) && method.OwningType is MetadataType mdType
-                && mdType.U8Name.SequenceEqual(U8ResourceAccessorTypeName) && mdType.U8Namespace.SequenceEqual(U8ResourceAccessorTypeNamespace))
+                && mdType.Name.SequenceEqual(U8ResourceAccessorTypeName) && mdType.Namespace.SequenceEqual(U8ResourceAccessorTypeNamespace))
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");

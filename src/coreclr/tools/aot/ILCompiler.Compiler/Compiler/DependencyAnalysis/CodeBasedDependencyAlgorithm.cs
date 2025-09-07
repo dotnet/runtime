@@ -36,16 +36,16 @@ namespace ILCompiler.DependencyAnalysis
                         case "Create":
                             if (method.IsSharedByGenericInstantiations
                                 && owningType.Module == factory.TypeSystemContext.SystemModule
-                                && owningType.U8Namespace.SequenceEqual("System.Collections.Generic"u8))
+                                && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             {
                                 TypeDesc[] templateDependencies = null;
 
-                                if (owningType.U8Name.SequenceEqual("Comparer`1"u8))
+                                if (owningType.Name.SequenceEqual("Comparer`1"u8))
                                 {
                                     templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialComparersForType(
                                         owningType.Instantiation[0]);
                                 }
-                                else if (owningType.U8Name.SequenceEqual("EqualityComparer`1"u8))
+                                else if (owningType.Name.SequenceEqual("EqualityComparer`1"u8))
                                 {
                                     templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialEqualityComparersForType(
                                         owningType.Instantiation[0]);

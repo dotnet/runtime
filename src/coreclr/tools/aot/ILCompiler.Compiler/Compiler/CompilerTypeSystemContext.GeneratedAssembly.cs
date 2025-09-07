@@ -88,15 +88,7 @@ namespace ILCompiler
                 }
             }
 
-            public override string Name
-            {
-                get
-                {
-                    return "<Module>";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
@@ -112,15 +104,7 @@ namespace ILCompiler
                 }
             }
 
-            public override string Namespace
-            {
-                get
-                {
-                    return "Internal.CompilerGenerated";
-                }
-            }
-
-            public override ReadOnlySpan<byte> U8Namespace
+            public override ReadOnlySpan<byte> Namespace
             {
                 get
                 {
@@ -145,7 +129,7 @@ namespace ILCompiler
 
             private int InitializeHashCode()
             {
-                return _hashcode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+                return _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             public override bool IsCanonicalSubtype(CanonicalFormKind policy)

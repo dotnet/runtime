@@ -24,8 +24,6 @@ namespace Internal.TypeSystem.Ecma
         private TypeDefinition _typeDefinition;
 
         // Cached values
-        private string _typeName;
-        private string _typeNamespace;
         private TypeDesc[] _genericParameters;
         private MetadataType _baseType;
         private int _hashcode;
@@ -38,12 +36,6 @@ namespace Internal.TypeSystem.Ecma
             _typeDefinition = module.MetadataReader.GetTypeDefinition(handle);
 
             _baseType = this; // Not yet initialized flag
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-            InitializeNamespace();
-#endif
         }
 
         public override int GetHashCode()
@@ -55,7 +47,7 @@ namespace Internal.TypeSystem.Ecma
 
         private int InitializeHashCode()
         {
-            int hashCode = VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+            int hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
 
             DefType containingType = ContainingType;
             if (containingType != null)
@@ -267,24 +259,7 @@ namespace Internal.TypeSystem.Ecma
             return flags;
         }
 
-        private string InitializeName()
-        {
-            var metadataReader = this.MetadataReader;
-            _typeName = metadataReader.GetString(_typeDefinition.Name);
-            return _typeName;
-        }
-
-        public override string Name
-        {
-            get
-            {
-                if (_typeName == null)
-                    return InitializeName();
-                return _typeName;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -292,24 +267,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private string InitializeNamespace()
-        {
-            var metadataReader = this.MetadataReader;
-            _typeNamespace = metadataReader.GetString(_typeDefinition.Namespace);
-            return _typeNamespace;
-        }
-
-        public override string Namespace
-        {
-            get
-            {
-                if (_typeNamespace == null)
-                    return InitializeNamespace();
-                return _typeNamespace;
-            }
-        }
-
-        public override ReadOnlySpan<byte> U8Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {

@@ -189,7 +189,7 @@ namespace Internal.TypeSystem
 
         private static UnmanagedCallingConventions AccumulateCallingConventions(UnmanagedCallingConventions existing, MetadataType newConvention)
         {
-            if (!newConvention.U8Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
             UnmanagedCallingConventions? addedCallConv = newConvention.GetName() switch

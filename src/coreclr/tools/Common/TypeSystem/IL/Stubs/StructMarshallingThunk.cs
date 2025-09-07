@@ -144,7 +144,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return U8NamePrefix.Append("__"u8, ManagedType.U8Name);
+                return U8NamePrefix.Append("__"u8, ManagedType.Name);
             }
         }
 

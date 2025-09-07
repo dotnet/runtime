@@ -256,11 +256,8 @@ namespace ILCompiler
 
             public override ModuleDesc Module { get; }
 
-            public override string Name => "Boxed_" + ValueTypeRepresented.Name;
-            public override ReadOnlySpan<byte> U8Name => "Boxed_"u8.Append(ValueTypeRepresented.U8Name);
-
-            public override string Namespace => ValueTypeRepresented.Namespace;
-            public override ReadOnlySpan<byte> U8Namespace => ValueTypeRepresented.U8Namespace;
+            public override ReadOnlySpan<byte> Name => "Boxed_"u8.Append(ValueTypeRepresented.Name);
+            public override ReadOnlySpan<byte> Namespace => ValueTypeRepresented.Namespace;
             public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
@@ -310,7 +307,7 @@ namespace ILCompiler
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
             public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 
-            public override int GetHashCode() => VersionResilientHashCode.NameHashCode(U8Namespace, U8Name);
+            public override int GetHashCode() => VersionResilientHashCode.NameHashCode(Namespace, Name);
 
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
             {

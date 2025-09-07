@@ -642,7 +642,7 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!type.U8Namespace.IsEmpty)
+                if (!type.Namespace.IsEmpty)
                 {
                     sb.Append(type.GetNamespace());
                     sb.Append('.');

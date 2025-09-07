@@ -33,13 +33,13 @@ namespace ILCompiler
         public static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
         {
             var typeDef = attrType.GetTypeDefinition() as MetadataType;
-            if (typeDef != null && typeDef.U8Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
+            if (typeDef != null && typeDef.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
             {
-                if (typeDef.U8Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
+                if (typeDef.Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
                     return TypeMapAttributeKind.TypeMapAssemblyTarget;
-                else if (typeDef.U8Name.SequenceEqual("TypeMapAttribute`1"u8))
+                else if (typeDef.Name.SequenceEqual("TypeMapAttribute`1"u8))
                     return TypeMapAttributeKind.TypeMap;
-                else if (typeDef.U8Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
+                else if (typeDef.Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
                     return TypeMapAttributeKind.TypeMapAssociation;
             }
             return TypeMapAttributeKind.None;

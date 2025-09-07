@@ -84,8 +84,8 @@ namespace ILCompiler
         public static bool IsIntegerType(DefType type)
         {
             return type.IsIntrinsic
-                && type.U8Namespace.SequenceEqual("System"u8)
-                && (type.U8Name.SequenceEqual("Int128"u8) || type.U8Name.SequenceEqual("UInt128"u8));
+                && type.Namespace.SequenceEqual("System"u8)
+                && (type.Name.SequenceEqual("Int128"u8) || type.Name.SequenceEqual("UInt128"u8));
         }
     }
 }

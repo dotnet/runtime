@@ -143,8 +143,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.U8Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
-                    || mdType.U8Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
+                if (mdType.Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
+                    || mdType.Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
@@ -158,8 +158,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.U8Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
-                    || mdType.U8Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
+                if (mdType.Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
+                    || mdType.Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
