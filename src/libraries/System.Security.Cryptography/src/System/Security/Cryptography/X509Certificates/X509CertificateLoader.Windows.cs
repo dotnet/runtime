@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert((keyStorageFlags & KeyStorageFlagsAll) == keyStorageFlags);
 
-            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = Interop.Crypt32.PfxCertStoreFlags.PKCS12_PREFER_CNG_KSP;
+            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = 0;
 
             if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)
                 pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_KEYSET;
@@ -299,7 +299,6 @@ namespace System.Security.Cryptography.X509Certificates
             // complexity of pointer interpretation.
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
             {
-                pfxCertStoreFlags &= ~Interop.Crypt32.PfxCertStoreFlags.PKCS12_PREFER_CNG_KSP;
                 pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
             }
 

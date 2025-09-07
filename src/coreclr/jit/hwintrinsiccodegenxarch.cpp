@@ -2003,6 +2003,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(genStackLevel == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+            assert(op2->TypeIs(TYP_I_IMPL));
+
             regNumber indexReg = op2->GetRegNum();
             regNumber valueReg = op3->GetRegNum(); // New element value to be stored
 
@@ -2036,6 +2038,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // op1 of TYP_SIMD12 should be considered as TYP_SIMD16
                 simdType = TYP_SIMD16;
             }
+
+            assert(op2->TypeIs(TYP_I_IMPL));
 
             // Optimize the case of op1 is in memory and trying to access i'th element.
             if (!op1->isUsedFromReg())
