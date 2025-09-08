@@ -2985,8 +2985,48 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6
-    int ISOSDacInterface6.GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data)
-        => _legacyImpl6 is not null ? _legacyImpl6.GetMethodTableCollectibleData(mt, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface6.GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (mt == 0 || data == null)
+                throw new ArgumentException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            ILoader loaderContract = _target.Contracts.Loader;
+            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
+
+            int collectible = rtsContract.Collectible(typeHandle);
+            if (collectible != 0)
+            {
+                TargetPointer modulePtr = rtsContract.GetLoaderModule(typeHandle);
+                Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+                TargetPointer loaderAllocator = loaderContract.GetLoaderAllocator(moduleHandle);
+                TargetPointer loaderAllocatorHandle = loaderContract.GetObjectHandle(loaderAllocator);
+                data->LoaderAllocatorObjectHandle = loaderAllocatorHandle.ToClrDataAddress(_target);
+            }
+            data->bCollectible = collectible;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl6 is not null)
+        {
+            DacpMethodTableCollectibleData dataLocal;
+            int hrLocal = _legacyImpl6.GetMethodTableCollectibleData(mt, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->bCollectible == dataLocal.bCollectible, $"cDAC: {data->bCollectible}, DAC: {dataLocal.bCollectible}");
+                Debug.Assert(data->LoaderAllocatorObjectHandle == dataLocal.LoaderAllocatorObjectHandle, $"cDAC: {data->LoaderAllocatorObjectHandle:x}, DAC: {dataLocal.LoaderAllocatorObjectHandle:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface6
 
     #region ISOSDacInterface7

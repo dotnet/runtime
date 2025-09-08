@@ -39,7 +39,7 @@ internal readonly struct Loader_1 : ILoader
 
     private enum PEImageFlags : uint
     {
-        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+        FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
     private readonly Target _target;
 
@@ -518,5 +518,11 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.ObjectHandle.Handle;
     }
 }

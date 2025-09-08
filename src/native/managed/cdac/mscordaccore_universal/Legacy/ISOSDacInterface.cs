@@ -278,6 +278,12 @@ internal struct DacpMethodTableTransparencyData
     public int bIsTreatAsSafe;
 }
 
+internal struct DacpMethodTableCollectibleData
+{
+    public ClrDataAddress LoaderAllocatorObjectHandle;
+    public int bCollectible;
+}
+
 internal static class GCConstants
 {
     public const int DAC_NUMBERGENERATIONS = 4;
@@ -647,7 +653,7 @@ internal unsafe partial interface ISOSDacInterface5
 internal unsafe partial interface ISOSDacInterface6
 {
     [PreserveSig]
-    int GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data);
+    int GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data);
 };
 
 [GeneratedComInterface]
