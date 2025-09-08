@@ -62,12 +62,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task NewConstraintOnClass()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task OverrideWithAnotherVirtualMethodOfSameNameWithDifferentParameterType()
         {
             return RunTest(allowMissingWarnings: true);
