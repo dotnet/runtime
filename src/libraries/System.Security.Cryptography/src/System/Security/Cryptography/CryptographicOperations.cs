@@ -47,14 +47,13 @@ namespace System.Security.Cryptography
             }
 
             int length = left.Length;
-            int accum = 0;
-
+            int diff = 0;
             for (int i = 0; i < length; i++)
             {
-                accum |= left[i] - right[i];
+                diff |= left[i] ^ right[i];
             }
 
-            return accum == 0;
+            return diff == 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
