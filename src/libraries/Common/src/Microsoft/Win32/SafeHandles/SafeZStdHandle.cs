@@ -31,4 +31,30 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
+
+    internal sealed class SafeZStdCDictHandle : SafeHandle
+    {
+        public SafeZStdCDictHandle() : base(IntPtr.Zero, true) { }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Zstd.ZSTD_freeCDict(handle);
+            return true;
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+    }
+
+    internal sealed class SafeZStdDDictHandle : SafeHandle
+    {
+        public SafeZStdDDictHandle() : base(IntPtr.Zero, true) { }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Zstd.ZSTD_freeDDict(handle);
+            return true;
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+    }
 }
