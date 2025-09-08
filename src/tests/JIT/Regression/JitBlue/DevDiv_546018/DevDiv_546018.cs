@@ -46,3 +46,4 @@ public class Test
         return new Vector<float> ((float)(random.NextDouble () + 1.0));
     }
 }
+

@@ -37,3 +37,4 @@ public class Test100536
         GC.Collect();
     }
 }
+

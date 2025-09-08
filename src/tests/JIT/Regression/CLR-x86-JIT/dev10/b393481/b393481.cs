@@ -108,3 +108,4 @@ namespace TestAnonymousTypes
         }
     }
 }
+

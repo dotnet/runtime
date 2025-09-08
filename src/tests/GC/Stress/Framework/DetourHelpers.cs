@@ -54,3 +54,4 @@ public class DetourHelpers
     [DllImport("RFDetours")]
     private static extern IntPtr GetThreadTest();
 }
+

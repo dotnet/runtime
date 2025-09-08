@@ -874,3 +874,4 @@ public class NeuralJagged : NNetStruct
     }
     */
 }
+

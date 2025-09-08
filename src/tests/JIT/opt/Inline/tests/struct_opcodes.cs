@@ -79,3 +79,4 @@ public class TestStruct
         dMethod_Inline();
     }
 }
+

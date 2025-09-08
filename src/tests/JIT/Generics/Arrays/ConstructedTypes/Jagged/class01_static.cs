@@ -120,3 +120,4 @@ public class Test_class01_static
     }
 
 }
+

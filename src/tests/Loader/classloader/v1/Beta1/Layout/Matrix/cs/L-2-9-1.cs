@@ -63,3 +63,7 @@ struct B : A
         return mi_RetCode;
     }
 }
+
+
+
+

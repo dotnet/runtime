@@ -82,3 +82,4 @@ struct B{
 		return mi_RetCode;
 	}
 }
+

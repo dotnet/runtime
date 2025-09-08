@@ -9,3 +9,4 @@ internal struct Ray
 
     public Ray(Vector start, Vector dir) { Start = start; Dir = dir; }
 }
+

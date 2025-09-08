@@ -121,3 +121,4 @@ namespace CollectibleThreadStaticShutdownRace
         }
     }
 }
+

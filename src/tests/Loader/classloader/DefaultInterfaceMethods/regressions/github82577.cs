@@ -36,3 +36,5 @@ public class TestClass : ITestInterface
     protected int PublicInterfaceProtectedClass()=> 2;
     public int PublicInterfacePublicClass()=> 100;
 }
+
+

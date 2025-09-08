@@ -16,3 +16,4 @@ public class Program
         GC.KeepAlive(matrix);
     }
 }
+

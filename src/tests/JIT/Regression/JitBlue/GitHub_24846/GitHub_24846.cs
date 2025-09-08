@@ -58,3 +58,4 @@ unsafe public class GitHub_24846
         return returnVal;
     }
 }
+

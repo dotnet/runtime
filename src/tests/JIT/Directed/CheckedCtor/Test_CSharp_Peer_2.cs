@@ -40,3 +40,4 @@ namespace Test
         private DerivedClass(string arg, int marker) : base(arg) { }
     }
 }
+

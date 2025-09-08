@@ -27,3 +27,4 @@ public class Test_MaxGeneration {
 		}
 
 	}
+

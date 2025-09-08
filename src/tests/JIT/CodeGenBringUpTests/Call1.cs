@@ -14,3 +14,4 @@ public class BringUpTest_Call1
     [Fact]
     public static void Call1() => M();
 }
+

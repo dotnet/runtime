@@ -117,3 +117,4 @@ public class Test_struc01
     }
 
 }
+

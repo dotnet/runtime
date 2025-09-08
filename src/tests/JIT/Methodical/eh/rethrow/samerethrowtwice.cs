@@ -100,3 +100,4 @@ namespace hello_samerethrowtwice_rethrow_cs
         }
     }
 }
+

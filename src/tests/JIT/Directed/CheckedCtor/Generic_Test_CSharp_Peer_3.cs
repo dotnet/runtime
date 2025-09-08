@@ -39,3 +39,4 @@ namespace Test
         private DerivedClass(Func<int> arg) : base(arg) { }
     }
 }
+

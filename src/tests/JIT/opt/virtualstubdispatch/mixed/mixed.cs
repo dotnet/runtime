@@ -223,3 +223,11 @@ public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDeri
         return 100;
     }
 }
+
+
+
+
+
+
+
+

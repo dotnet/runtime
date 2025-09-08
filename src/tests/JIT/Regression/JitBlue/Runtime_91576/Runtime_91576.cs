@@ -48,3 +48,4 @@ public class Runtime_91576
         s_result = b ? 101 : 100;
     }
 }
+

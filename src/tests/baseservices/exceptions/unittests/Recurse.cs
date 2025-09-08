@@ -80,3 +80,4 @@ class RecurseTest
         return _trace.Match();
     }
 }
+

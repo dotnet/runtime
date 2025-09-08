@@ -9,3 +9,4 @@ public interface A{
   // Instance Methods
 int MethPubInst();
 }
+

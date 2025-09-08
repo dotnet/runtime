@@ -122,3 +122,4 @@ public class Test_Struct01_instance
     }
 
 }
+

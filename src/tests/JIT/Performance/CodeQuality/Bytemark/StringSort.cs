@@ -340,3 +340,4 @@ public class StringSort : StringSortStruct
         return;
     }
 }
+

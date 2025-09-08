@@ -54,3 +54,4 @@ internal class bar<B> where B : System.IComparable
         return 100;
     }
 }
+

@@ -44,3 +44,4 @@ namespace JitInliningTest
         }
     }
 }
+

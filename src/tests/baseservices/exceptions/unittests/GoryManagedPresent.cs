@@ -98,3 +98,4 @@ class GoryManagedPresentTest
         return _trace.Match();
     }
 }
+

@@ -98,3 +98,5 @@ public class ThrowInFinallyNestedInTryTest
         return _trace.Match();
     }
 }
+
+

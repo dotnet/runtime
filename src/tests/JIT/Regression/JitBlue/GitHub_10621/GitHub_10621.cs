@@ -79,3 +79,4 @@ public class GitHub_10621
         return x - 1;
     }
 }
+

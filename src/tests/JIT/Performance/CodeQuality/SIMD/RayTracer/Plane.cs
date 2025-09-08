@@ -21,3 +21,4 @@ internal class Plane : SceneObject
         return Norm;
     }
 }
+

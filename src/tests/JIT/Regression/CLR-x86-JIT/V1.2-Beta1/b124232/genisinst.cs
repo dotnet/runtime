@@ -36,3 +36,5 @@ public class Test_genisinst
         return C2.GetMemberList<int>(ref o);
     }
 }
+
+

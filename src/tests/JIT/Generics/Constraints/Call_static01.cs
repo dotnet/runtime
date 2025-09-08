@@ -77,3 +77,4 @@ public class Test_Call_static01
     }
 
 }
+

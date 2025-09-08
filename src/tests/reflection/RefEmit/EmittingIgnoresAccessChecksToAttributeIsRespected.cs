@@ -127,3 +127,5 @@ public class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
         return attributeTypeBuilder.CreateTypeInfo().DeclaredConstructors.Single();
     }
 }
+
+

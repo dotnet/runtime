@@ -71,3 +71,4 @@ public class Test_MultipleInterface08
 	}
 		
 }
+

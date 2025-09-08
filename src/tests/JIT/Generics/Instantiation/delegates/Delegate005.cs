@@ -36,3 +36,4 @@ public class Test_Delegate005
         return 100;
     }
 }
+

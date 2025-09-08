@@ -105,3 +105,6 @@ public class Child2<T> : IParent2<int,double,String, Object, char, uint, Guid, b
 						IParent<uint>, IParent<Guid>,IParent<bool>,IParent<IParent<int>>,IParent<IParent<double>>,IParent<IParent<String>>,IParent<IParent<Object>>,
 						IParent<IParent<char>>,IParent<IParent<uint>>,IParent<IParent<Guid>>,IParent<IParent<bool>>,IParent<char>,IParent<int>>.Method1<Sa>()  {}
 }
+
+
+

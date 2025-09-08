@@ -1432,3 +1432,4 @@ class StackOverflowInLeafFunction
         return _trace.Match();
     }
 }
+

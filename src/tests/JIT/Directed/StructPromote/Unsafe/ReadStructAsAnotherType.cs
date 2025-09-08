@@ -76,3 +76,4 @@ public class TestAssignFieldsBetweenPromotedNotPromotedStructs
         Debug.Assert(c.anotherOverlappingStruct.b == 0x5);
     }
 }
+

@@ -17,3 +17,4 @@ public class Runtime_66269
         return arg1;
     }
 }
+

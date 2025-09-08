@@ -8,3 +8,4 @@ int MethPubInst();
 public interface B : A{
 int MethPubInstB();
 }
+

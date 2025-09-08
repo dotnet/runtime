@@ -75,3 +75,4 @@ namespace ComWrappersTests.GlobalInstance
         }
     }
 }
+

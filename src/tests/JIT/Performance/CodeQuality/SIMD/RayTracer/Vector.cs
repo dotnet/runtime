@@ -73,3 +73,4 @@ internal struct Vector
 
     public static Vector Null { get { Vector result; result._simdVector = Vector3.Zero; return result; } }
 }
+

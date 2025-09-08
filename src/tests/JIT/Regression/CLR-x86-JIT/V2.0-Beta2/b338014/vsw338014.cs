@@ -38,3 +38,4 @@ public class My
         foo(o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, bar(o), o);
     }
 }
+

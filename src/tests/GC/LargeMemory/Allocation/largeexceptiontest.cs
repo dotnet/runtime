@@ -50,3 +50,4 @@ public sealed class LargeExceptionTest {
         return 0;
     }
 }
+

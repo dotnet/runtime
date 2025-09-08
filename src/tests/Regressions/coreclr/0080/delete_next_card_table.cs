@@ -59,3 +59,4 @@ public class delete_next_card_table
         }
     }
 }
+

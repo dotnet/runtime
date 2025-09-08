@@ -9,3 +9,4 @@ internal class Light
 
     public Light(Vector pos, Color color) { Pos = pos; Color = color; }
 }
+
