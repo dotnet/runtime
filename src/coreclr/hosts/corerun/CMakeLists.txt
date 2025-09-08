@@ -11,10 +11,6 @@ endif(CLR_CMAKE_HOST_WIN32)
 #Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
-if (DEFINED CLR_CMAKE_ICU_DIR)
-  link_directories(${CLR_CMAKE_ICU_DIR}/lib)
-endif(DEFINED CLR_CMAKE_ICU_DIR)
-
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
@@ -50,10 +46,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if (CLR_CMAKE_TARGET_ARCH_WASM)
         target_link_libraries(corerun PRIVATE
         coreclr_static
-        clrinterpreter
-        icuuc
-        icui18n
-        icudata)
+        clrinterpreter)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
