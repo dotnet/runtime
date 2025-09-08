@@ -10787,9 +10787,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         // the code address by PortableEntryPoint in all other cases.
         if (helperMD == NULL)
         {
-            AllocMemHolder<PortableEntryPoint> portableEntryPoint{ SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }) };
-            portableEntryPoint->Init((void*)pfnHelper);
-            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], (PCODE)(PortableEntryPoint*)portableEntryPoint, (PCODE)NULL) == (PCODE)NULL)
+            AllocMemHolder<PortableEntryPoint> portableEntryPoint;
+            pfnHelper = PortableEntryPoint::CreateFromNativeEntryPoint(pfnHelper, &portableEntryPoint);
+            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], pfnHelper, (PCODE)NULL) == (PCODE)NULL)
                 portableEntryPoint.SuppressRelease();
             pfnHelper = hlpFuncEntryPoints[ftnNum];
         }

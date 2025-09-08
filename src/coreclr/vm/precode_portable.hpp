@@ -12,10 +12,13 @@
 class PortableEntryPoint final
 {
 public: // static
+    static PCODE CreateFromNativeEntryPoint(PCODE nativeEntryPoint, AllocMemHolder<PortableEntryPoint>* pEntryPointHolder);
+
     static bool HasNativeEntryPoint(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
     static MethodDesc* GetMethodDesc(PCODE addr);
+    static bool TryGetMethodDesc(PCODE addr, MethodDesc** ppMD);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 

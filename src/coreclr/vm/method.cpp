@@ -2797,8 +2797,9 @@ PCODE MethodDesc::GetPortableEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
 
-    // The portable entry point is currently the same as the
-    // temporary entry point.
+    if (HasStableEntryPoint())
+        return GetStableEntryPoint();
+
     return GetTemporaryEntryPoint();
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
@@ -3145,6 +3146,9 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != (PCODE)NULL);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    SetStableEntryPointInterlocked(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchEntryPointSlots(entryPoint);
@@ -3169,6 +3173,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     {
         SetStableEntryPointInterlocked(entryPoint);
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 void MethodDesc::ResetCodeEntryPoint()
@@ -3287,7 +3292,10 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;
 }
