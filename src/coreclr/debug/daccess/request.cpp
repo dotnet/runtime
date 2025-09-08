@@ -3815,7 +3815,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
-                        pLink = pBlock->m_Link.m_pNext;
+                        pLink = pLink->m_pNext;
                     }
                     while ((pLink != NULL) &&
                         (pSyncBlockData->AdditionalThreadCount < 1000));

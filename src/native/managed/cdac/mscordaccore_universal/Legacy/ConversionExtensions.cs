@@ -27,6 +27,21 @@ internal static class ConversionExtensions
     }
 
     /// <summary>
+    /// Converts a TargetCodePointer to a ClrDataAddress using sign extension if required.
+    /// </summary>
+    public static ClrDataAddress ToClrDataAddress(this TargetCodePointer address, Target target)
+    {
+        if (target.PointerSize == sizeof(ulong))
+        {
+            return address.Value;
+        }
+        else
+        {
+            return (ulong)(int)address.Value;
+        }
+    }
+
+    /// <summary>
     /// Converts a ClrDataAddress to a TargetPointer, ensuring the address is within the valid range for the target platform.
     /// When overrideCheck is true, this will not check the range and will allow any address. This is used on legacy endpoints which
     /// may pass in invalid ClrDataAddress values.

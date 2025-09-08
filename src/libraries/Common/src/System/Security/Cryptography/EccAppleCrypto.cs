@@ -10,13 +10,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal sealed partial class EccSecurityTransforms : IDisposable
+    internal sealed partial class EccAppleCrypto : IDisposable
     {
         private SecKeyPair? _keys;
         private bool _disposed;
         private readonly Type _disposedType;
 
-        internal EccSecurityTransforms(Type disposedType)
+        internal EccAppleCrypto(Type disposedType)
         {
             Debug.Assert(disposedType != null);
             _disposedType = disposedType;
