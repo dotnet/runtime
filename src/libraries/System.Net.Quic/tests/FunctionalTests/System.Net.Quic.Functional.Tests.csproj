@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <DefineConstants>$(DefineConstants);NETWORKING_TESTS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
