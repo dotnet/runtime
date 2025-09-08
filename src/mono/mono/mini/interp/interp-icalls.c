@@ -7,7 +7,7 @@ typedef gpointer I8;
 
 gboolean is_scalar_vtype(MonoType* tp);
 
-static gboolean
+gboolean
 interp_type_as_ptr4 (MonoType *tp)
 {
 	if(sizeof(gpointer) == 4)
@@ -30,7 +30,7 @@ interp_type_as_ptr4 (MonoType *tp)
 	return FALSE;
 }
 
-static gboolean
+gboolean
 interp_type_as_ptr8 (MonoType *tp)
 {
 	if(sizeof(gpointer) != 8)
@@ -219,53 +219,7 @@ static char * log_sig(MonoMethodSignature* sig)
 }
 static void log_op(MintICallSig op)
 {
-	switch(op) {
-	case MINT_ICALLSIG_V_V:
-		MH_LOG("MINT_ICALLSIG_V_V");
-		break;
-	case MINT_ICALLSIG_V_P:
-		MH_LOG("MINT_ICALLSIG_V_P");
-		break;
-	case MINT_ICALLSIG_P_V:
-		MH_LOG("MINT_ICALLSIG_P_V");
-		break;
-	case MINT_ICALLSIG_P_P:
-		MH_LOG("MINT_ICALLSIG_P_P");
-		break;
-	case MINT_ICALLSIG_PP_V:
-		MH_LOG("MINT_ICALLSIG_PP_V");
-		break;
-	case MINT_ICALLSIG_PP_P:
-		MH_LOG("MINT_ICALLSIG_PP_P");
-		break;
-	case MINT_ICALLSIG_PPP_V:
-		MH_LOG("MINT_ICALLSIG_PPP_V");
-		break;
-	case MINT_ICALLSIG_PPP_P:
-		MH_LOG("MINT_ICALLSIG_PPP_P");
-		break;
-	case MINT_ICALLSIG_PPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPP_P");
-		break;
-	case MINT_ICALLSIG_PPPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPPP_P");
-		break;
-	case MINT_ICALLSIG_PPPPPP_V:
-		MH_LOG("MINT_ICALLSIG_PPPPPP_V");
-		break;
-	case MINT_ICALLSIG_PPPPPP_P:
-		MH_LOG("MINT_ICALLSIG_PPPPPP_P");
-		break;
-	default:
-		MH_LOG("Unknown MintICallSig: %d", op);
-		break;
-	}
+	MH_LOGV(MH_LVL_TRACE, "MintIcallSig logging not implemented\n");	
 }
 void
 do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
@@ -274,1968 +228,2314 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	MH_LOG("Sig: %p op: %d ret_sp: %p sp: %p ptr: %p, save_last: %s", (void*)sig, op, (void*)ret_sp, (void*)sp, (void*)ptr, save_last_error ? "T" : "F");
 	
 	if (save_last_error)
-		mono_marshal_clear_last_error ();
-	log_op(op);
-	// FIXME: this string/cookie comparison is rubbish - use an enum
-	char* sigTest = log_sig(sig); // currently must be called to get the cookie!
-	MH_LOG("Got signature cookie %s", sigTest);
-	if (!sigTest)
-	{
-		// can't do this. need to handle no sig
-		memset(&ret_sp->data, 0, sizeof(stackval));
+		mono_marshal_clear_last_error();
+	MH_LOG("About to execute function, sig enum value is : %d", op);
+	switch (op) {
+	case MINT_ICALLSIG_V_V: {
+		typedef void (*T)(void);
+		T func = (T)ptr;
+		func();
+		break;
 	}
-	else
-	{	
-		switch (op) {
-		case MINT_ICALLSIG_V_V:
-		case MINT_ICALLSIG_V_P: {
-			if (!strcmp(sigTest,"V_V")) {
-				typedef void (*T)(void);
-				T func = (T)ptr;
-				func();
-			};
-			if (!strcmp(sigTest,"V_4")) {
-				typedef I4 (*T)(void);
-				T func = (T)ptr;
-				ret_sp->data.i = func();
-			};
-			if (!strcmp(sigTest,"V_8")) {
-				typedef I8 (*T)(void);
-				T func = (T)ptr;
-				ret_sp->data.p = func();
-			};
+	case MINT_ICALLSIG_V_4: {
+		typedef I4(*T)(void);
+		T func = (T)ptr;
+		ret_sp->data.i = func();
 		break;
-		}
-		case MINT_ICALLSIG_P_V:
-		case MINT_ICALLSIG_P_P: {
-			if (!strcmp(sigTest,"4_V")) {
-				typedef void (*T)(I4);
-				T func = (T)ptr;
-				func(sp[0].data.i);
-			};
-			if (!strcmp(sigTest,"8_V")) {
-				typedef void (*T)(I8);
-				T func = (T)ptr;
-				func(sp[0].data.p);
-			};
-			if (!strcmp(sigTest,"4_4")) {
-				typedef I4 (*T)(I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i);
-			};
-			if (!strcmp(sigTest,"8_4")) {
-				typedef I4 (*T)(I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p);
-			};
-			if (!strcmp(sigTest,"4_8")) {
-				typedef I8 (*T)(I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i);
-			};
-			if (!strcmp(sigTest,"8_8")) {
-				typedef I8 (*T)(I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p);
-			};
-		break;
-		}
-		case MINT_ICALLSIG_PP_V:
-		case MINT_ICALLSIG_PP_P: {
-			if (!strcmp(sigTest,"44_V")) {
-				typedef void (*T)(I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"48_V")) {
-				typedef void (*T)(I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p);
-			};
-			if (!strcmp(sigTest,"84_V")) {
-				typedef void (*T)(I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"88_V")) {
-				typedef void (*T)(I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p);
-			};
-			if (!strcmp(sigTest,"44_4")) {
-				typedef I4 (*T)(I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"48_4")) {
-				typedef I4 (*T)(I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p);
-			};
-			if (!strcmp(sigTest,"84_4")) {
-				typedef I4 (*T)(I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"88_4")) {
-				typedef I4 (*T)(I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p);
-			};
-			if (!strcmp(sigTest,"44_8")) {
-				typedef I8 (*T)(I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"48_8")) {
-				typedef I8 (*T)(I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p);
-			};
-			if (!strcmp(sigTest,"84_8")) {
-				typedef I8 (*T)(I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i);
-			};
-			if (!strcmp(sigTest,"88_8")) {
-				typedef I8 (*T)(I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p);
-			};
-		break;
-		}
-		case MINT_ICALLSIG_PPP_V:
-		case MINT_ICALLSIG_PPP_P: {
-			if (!strcmp(sigTest,"444_V")) {
-				typedef void (*T)(I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"448_V")) {
-				typedef void (*T)(I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"484_V")) {
-				typedef void (*T)(I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"488_V")) {
-				typedef void (*T)(I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"844_V")) {
-				typedef void (*T)(I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"848_V")) {
-				typedef void (*T)(I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"884_V")) {
-				typedef void (*T)(I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"888_V")) {
-				typedef void (*T)(I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"444_4")) {
-				typedef I4 (*T)(I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"448_4")) {
-				typedef I4 (*T)(I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"484_4")) {
-				typedef I4 (*T)(I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"488_4")) {
-				typedef I4 (*T)(I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"844_4")) {
-				typedef I4 (*T)(I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"848_4")) {
-				typedef I4 (*T)(I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"884_4")) {
-				typedef I4 (*T)(I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"888_4")) {
-				typedef I4 (*T)(I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"444_8")) {
-				typedef I8 (*T)(I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"448_8")) {
-				typedef I8 (*T)(I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"484_8")) {
-				typedef I8 (*T)(I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"488_8")) {
-				typedef I8 (*T)(I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"844_8")) {
-				typedef I8 (*T)(I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"848_8")) {
-				typedef I8 (*T)(I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p);
-			};
-			if (!strcmp(sigTest,"884_8")) {
-				typedef I8 (*T)(I8,I8,I4);
-				T func = (T)ptr;
-				MH_LOG("Calling 884_8 func with: %p %p %d", (void*)sp[0].data.p, (void*)sp[1].data.p, sp[2].data.i);
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i);
-			};
-			if (!strcmp(sigTest,"888_8")) {
-				typedef I8 (*T)(I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p);
-			};
-		break;
-		}
-		case MINT_ICALLSIG_PPPP_V:
-		case MINT_ICALLSIG_PPPP_P: {
-			if (!strcmp(sigTest,"4444_V")) {
-				typedef void (*T)(I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4448_V")) {
-				typedef void (*T)(I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4484_V")) {
-				typedef void (*T)(I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4488_V")) {
-				typedef void (*T)(I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4844_V")) {
-				typedef void (*T)(I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4848_V")) {
-				typedef void (*T)(I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4884_V")) {
-				typedef void (*T)(I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4888_V")) {
-				typedef void (*T)(I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8444_V")) {
-				typedef void (*T)(I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8448_V")) {
-				typedef void (*T)(I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8484_V")) {
-				typedef void (*T)(I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8488_V")) {
-				typedef void (*T)(I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8844_V")) {
-				typedef void (*T)(I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8848_V")) {
-				typedef void (*T)(I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8884_V")) {
-				typedef void (*T)(I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8888_V")) {
-				typedef void (*T)(I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4444_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4448_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4484_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4488_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4844_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4848_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4884_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4888_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8444_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8448_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8484_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8488_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8844_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8848_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8884_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8888_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4444_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4448_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4484_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4488_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4844_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4848_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"4884_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"4888_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8444_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8448_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8484_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8488_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8844_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8848_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p);
-			};
-			if (!strcmp(sigTest,"8884_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i);
-			};
-			if (!strcmp(sigTest,"8888_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p);
-			};
-		break;
-		}
-		case MINT_ICALLSIG_PPPPP_V:
-		case MINT_ICALLSIG_PPPPP_P: {
-			//log_sig(sig);  // just here for a breakpoint
-			if (!strcmp(sigTest,"44444_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44448_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44484_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44488_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44844_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44848_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44884_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44888_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48444_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48448_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48484_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48488_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48844_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48848_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48884_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48888_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84444_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84448_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84484_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84488_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84844_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84848_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84884_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84888_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88444_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88448_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88484_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88488_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88844_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88848_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88884_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88888_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44444_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44448_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44484_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44488_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44844_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44848_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44884_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44888_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48444_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48448_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48484_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48488_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48844_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48848_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48884_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48888_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84444_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84448_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84484_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84488_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84844_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84848_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84884_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84888_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88444_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88448_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88484_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88488_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88844_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88848_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88884_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88888_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44444_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44448_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44484_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44488_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44844_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44848_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"44884_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"44888_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48444_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48448_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48484_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48488_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48844_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48848_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"48884_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"48888_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84444_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84448_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84484_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84488_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84844_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84848_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"84884_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"84888_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88444_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88448_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88484_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88488_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88844_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88848_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p);
-			};
-			if (!strcmp(sigTest,"88884_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i);
-			};
-			if (!strcmp(sigTest,"88888_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p);
-			};
-		break;
-		}
-		case MINT_ICALLSIG_PPPPPP_V:
-		case MINT_ICALLSIG_PPPPPP_P: {
-			//log_sig(sig);  // just here for a breakpoint
-			if (!strcmp(sigTest,"444444_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444448_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444484_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444488_V")) {
-				typedef void (*T)(I4,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444844_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444848_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444884_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444888_V")) {
-				typedef void (*T)(I4,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448444_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448448_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448484_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448488_V")) {
-				typedef void (*T)(I4,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448844_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448848_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448884_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448888_V")) {
-				typedef void (*T)(I4,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484444_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484448_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484484_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484488_V")) {
-				typedef void (*T)(I4,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484844_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484848_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484884_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484888_V")) {
-				typedef void (*T)(I4,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488444_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488448_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488484_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488488_V")) {
-				typedef void (*T)(I4,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488844_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488848_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488884_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488888_V")) {
-				typedef void (*T)(I4,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844444_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844448_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844484_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844488_V")) {
-				typedef void (*T)(I8,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844844_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844848_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844884_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844888_V")) {
-				typedef void (*T)(I8,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848444_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848448_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848484_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848488_V")) {
-				typedef void (*T)(I8,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848844_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848848_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848884_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848888_V")) {
-				typedef void (*T)(I8,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884444_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884448_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884484_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884488_V")) {
-				typedef void (*T)(I8,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884844_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884848_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884884_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884888_V")) {
-				typedef void (*T)(I8,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888444_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888448_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888484_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888488_V")) {
-				typedef void (*T)(I8,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888844_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888848_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888884_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888888_V")) {
-				typedef void (*T)(I8,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444444_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444448_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444484_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444488_4")) {
-				typedef I4 (*T)(I4,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444844_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444848_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444884_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444888_4")) {
-				typedef I4 (*T)(I4,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448444_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448448_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448484_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448488_4")) {
-				typedef I4 (*T)(I4,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448844_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448848_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448884_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448888_4")) {
-				typedef I4 (*T)(I4,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484444_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484448_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484484_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484488_4")) {
-				typedef I4 (*T)(I4,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484844_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484848_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484884_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484888_4")) {
-				typedef I4 (*T)(I4,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488444_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488448_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488484_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488488_4")) {
-				typedef I4 (*T)(I4,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488844_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488848_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488884_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488888_4")) {
-				typedef I4 (*T)(I4,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844444_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844448_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844484_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844488_4")) {
-				typedef I4 (*T)(I8,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844844_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844848_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844884_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844888_4")) {
-				typedef I4 (*T)(I8,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848444_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848448_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848484_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848488_4")) {
-				typedef I4 (*T)(I8,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848844_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848848_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848884_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848888_4")) {
-				typedef I4 (*T)(I8,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884444_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884448_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884484_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884488_4")) {
-				typedef I4 (*T)(I8,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884844_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884848_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884884_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884888_4")) {
-				typedef I4 (*T)(I8,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888444_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888448_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888484_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888488_4")) {
-				typedef I4 (*T)(I8,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888844_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888848_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888884_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888888_4")) {
-				typedef I4 (*T)(I8,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.i = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444444_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444448_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444484_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444488_8")) {
-				typedef I8 (*T)(I4,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444844_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444848_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"444884_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"444888_8")) {
-				typedef I8 (*T)(I4,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448444_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448448_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448484_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448488_8")) {
-				typedef I8 (*T)(I4,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448844_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448848_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"448884_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"448888_8")) {
-				typedef I8 (*T)(I4,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484444_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484448_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484484_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484488_8")) {
-				typedef I8 (*T)(I4,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484844_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484848_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"484884_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"484888_8")) {
-				typedef I8 (*T)(I4,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488444_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488448_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488484_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488488_8")) {
-				typedef I8 (*T)(I4,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488844_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488848_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"488884_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"488888_8")) {
-				typedef I8 (*T)(I4,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.i,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844444_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844448_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844484_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844488_8")) {
-				typedef I8 (*T)(I8,I4,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844844_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844848_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"844884_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"844888_8")) {
-				typedef I8 (*T)(I8,I4,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848444_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848448_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848484_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848488_8")) {
-				typedef I8 (*T)(I8,I4,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848844_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848848_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"848884_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"848888_8")) {
-				typedef I8 (*T)(I8,I4,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.i,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884444_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884448_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884484_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884488_8")) {
-				typedef I8 (*T)(I8,I8,I4,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884844_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884848_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"884884_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"884888_8")) {
-				typedef I8 (*T)(I8,I8,I4,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.i,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888444_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888448_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888484_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888488_8")) {
-				typedef I8 (*T)(I8,I8,I8,I4,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.i,sp[4].data.p,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888844_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I4,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888848_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I4,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.i,sp[5].data.p);
-			};
-			if (!strcmp(sigTest,"888884_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I8,I4);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.i);
-			};
-			if (!strcmp(sigTest,"888888_8")) {
-				typedef I8 (*T)(I8,I8,I8,I8,I8,I8);
-				T func = (T)ptr;
-				ret_sp->data.p = func(sp[0].data.p,sp[1].data.p,sp[2].data.p,sp[3].data.p,sp[4].data.p,sp[5].data.p);
-			};
-		break;
-		}
-		default:
-		    g_assert_not_reached();
-		}
 	}
-	if (save_last_error)
-		mono_marshal_set_last_error ();
+	case MINT_ICALLSIG_V_8: {
+		typedef I8(*T)(void);
+		T func = (T)ptr;
+		ret_sp->data.p = func();
+		break;
+	}
+	case MINT_ICALLSIG_4_V: {
+		typedef void (*T)(I4);
+		T func = (T)ptr;
+		func(sp[0].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8_V: {
+		typedef void (*T)(I8);
+		T func = (T)ptr;
+		func(sp[0].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4_4: {
+		typedef I4(*T)(I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8_4: {
+		typedef I4(*T)(I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4_8: {
+		typedef I8(*T)(I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8_8: {
+		typedef I8(*T)(I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44_V: {
+		typedef void (*T)(I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48_V: {
+		typedef void (*T)(I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84_V: {
+		typedef void (*T)(I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88_V: {
+		typedef void (*T)(I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44_4: {
+		typedef I4(*T)(I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48_4: {
+		typedef I4(*T)(I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84_4: {
+		typedef I4(*T)(I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88_4: {
+		typedef I4(*T)(I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44_8: {
+		typedef I8(*T)(I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48_8: {
+		typedef I8(*T)(I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84_8: {
+		typedef I8(*T)(I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88_8: {
+		typedef I8(*T)(I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444_V: {
+		typedef void (*T)(I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448_V: {
+		typedef void (*T)(I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484_V: {
+		typedef void (*T)(I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488_V: {
+		typedef void (*T)(I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844_V: {
+		typedef void (*T)(I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848_V: {
+		typedef void (*T)(I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884_V: {
+		typedef void (*T)(I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888_V: {
+		typedef void (*T)(I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444_4: {
+		typedef I4(*T)(I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448_4: {
+		typedef I4(*T)(I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484_4: {
+		typedef I4(*T)(I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488_4: {
+		typedef I4(*T)(I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844_4: {
+		typedef I4(*T)(I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848_4: {
+		typedef I4(*T)(I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884_4: {
+		typedef I4(*T)(I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888_4: {
+		typedef I4(*T)(I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444_8: {
+		typedef I8(*T)(I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448_8: {
+		typedef I8(*T)(I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484_8: {
+		typedef I8(*T)(I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488_8: {
+		typedef I8(*T)(I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844_8: {
+		typedef I8(*T)(I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848_8: {
+		typedef I8(*T)(I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884_8: {
+		typedef I8(*T)(I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888_8: {
+		typedef I8(*T)(I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4444_V: {
+		typedef void (*T)(I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4448_V: {
+		typedef void (*T)(I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4484_V: {
+		typedef void (*T)(I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4488_V: {
+		typedef void (*T)(I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4844_V: {
+		typedef void (*T)(I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4848_V: {
+		typedef void (*T)(I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4884_V: {
+		typedef void (*T)(I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4888_V: {
+		typedef void (*T)(I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8444_V: {
+		typedef void (*T)(I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8448_V: {
+		typedef void (*T)(I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8484_V: {
+		typedef void (*T)(I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8488_V: {
+		typedef void (*T)(I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8844_V: {
+		typedef void (*T)(I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8848_V: {
+		typedef void (*T)(I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8884_V: {
+		typedef void (*T)(I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8888_V: {
+		typedef void (*T)(I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4444_4: {
+		typedef I4(*T)(I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4448_4: {
+		typedef I4(*T)(I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4484_4: {
+		typedef I4(*T)(I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4488_4: {
+		typedef I4(*T)(I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4844_4: {
+		typedef I4(*T)(I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4848_4: {
+		typedef I4(*T)(I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4884_4: {
+		typedef I4(*T)(I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4888_4: {
+		typedef I4(*T)(I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8444_4: {
+		typedef I4(*T)(I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8448_4: {
+		typedef I4(*T)(I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8484_4: {
+		typedef I4(*T)(I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8488_4: {
+		typedef I4(*T)(I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8844_4: {
+		typedef I4(*T)(I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8848_4: {
+		typedef I4(*T)(I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8884_4: {
+		typedef I4(*T)(I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8888_4: {
+		typedef I4(*T)(I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4444_8: {
+		typedef I8(*T)(I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4448_8: {
+		typedef I8(*T)(I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4484_8: {
+		typedef I8(*T)(I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4488_8: {
+		typedef I8(*T)(I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4844_8: {
+		typedef I8(*T)(I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4848_8: {
+		typedef I8(*T)(I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_4884_8: {
+		typedef I8(*T)(I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_4888_8: {
+		typedef I8(*T)(I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8444_8: {
+		typedef I8(*T)(I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8448_8: {
+		typedef I8(*T)(I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8484_8: {
+		typedef I8(*T)(I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8488_8: {
+		typedef I8(*T)(I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8844_8: {
+		typedef I8(*T)(I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8848_8: {
+		typedef I8(*T)(I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_8884_8: {
+		typedef I8(*T)(I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_8888_8: {
+		typedef I8(*T)(I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44444_V: {
+		typedef void (*T)(I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44448_V: {
+		typedef void (*T)(I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44484_V: {
+		typedef void (*T)(I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44488_V: {
+		typedef void (*T)(I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44844_V: {
+		typedef void (*T)(I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44848_V: {
+		typedef void (*T)(I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44884_V: {
+		typedef void (*T)(I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44888_V: {
+		typedef void (*T)(I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48444_V: {
+		typedef void (*T)(I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48448_V: {
+		typedef void (*T)(I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48484_V: {
+		typedef void (*T)(I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48488_V: {
+		typedef void (*T)(I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48844_V: {
+		typedef void (*T)(I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48848_V: {
+		typedef void (*T)(I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48884_V: {
+		typedef void (*T)(I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48888_V: {
+		typedef void (*T)(I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84444_V: {
+		typedef void (*T)(I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84448_V: {
+		typedef void (*T)(I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84484_V: {
+		typedef void (*T)(I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84488_V: {
+		typedef void (*T)(I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84844_V: {
+		typedef void (*T)(I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84848_V: {
+		typedef void (*T)(I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84884_V: {
+		typedef void (*T)(I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84888_V: {
+		typedef void (*T)(I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88444_V: {
+		typedef void (*T)(I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88448_V: {
+		typedef void (*T)(I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88484_V: {
+		typedef void (*T)(I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88488_V: {
+		typedef void (*T)(I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88844_V: {
+		typedef void (*T)(I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88848_V: {
+		typedef void (*T)(I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88884_V: {
+		typedef void (*T)(I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88888_V: {
+		typedef void (*T)(I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44444_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44448_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44484_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44488_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44844_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44848_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44884_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44888_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48444_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48448_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48484_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48488_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48844_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48848_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48884_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48888_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84444_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84448_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84484_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84488_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84844_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84848_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84884_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84888_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88444_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88448_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88484_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88488_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88844_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88848_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88884_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88888_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44444_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44448_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44484_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44488_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44844_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44848_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_44884_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_44888_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48444_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48448_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48484_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48488_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48844_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48848_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_48884_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_48888_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84444_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84448_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84484_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84488_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84844_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84848_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_84884_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_84888_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88444_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88448_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88484_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88488_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88844_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88848_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_88884_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_88888_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444444_V: {
+		typedef void (*T)(I4, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444448_V: {
+		typedef void (*T)(I4, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444484_V: {
+		typedef void (*T)(I4, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444488_V: {
+		typedef void (*T)(I4, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444844_V: {
+		typedef void (*T)(I4, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444848_V: {
+		typedef void (*T)(I4, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444884_V: {
+		typedef void (*T)(I4, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444888_V: {
+		typedef void (*T)(I4, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448444_V: {
+		typedef void (*T)(I4, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448448_V: {
+		typedef void (*T)(I4, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448484_V: {
+		typedef void (*T)(I4, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448488_V: {
+		typedef void (*T)(I4, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448844_V: {
+		typedef void (*T)(I4, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448848_V: {
+		typedef void (*T)(I4, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448884_V: {
+		typedef void (*T)(I4, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448888_V: {
+		typedef void (*T)(I4, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484444_V: {
+		typedef void (*T)(I4, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484448_V: {
+		typedef void (*T)(I4, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484484_V: {
+		typedef void (*T)(I4, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484488_V: {
+		typedef void (*T)(I4, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484844_V: {
+		typedef void (*T)(I4, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484848_V: {
+		typedef void (*T)(I4, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484884_V: {
+		typedef void (*T)(I4, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484888_V: {
+		typedef void (*T)(I4, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488444_V: {
+		typedef void (*T)(I4, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488448_V: {
+		typedef void (*T)(I4, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488484_V: {
+		typedef void (*T)(I4, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488488_V: {
+		typedef void (*T)(I4, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488844_V: {
+		typedef void (*T)(I4, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488848_V: {
+		typedef void (*T)(I4, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488884_V: {
+		typedef void (*T)(I4, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488888_V: {
+		typedef void (*T)(I4, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844444_V: {
+		typedef void (*T)(I8, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844448_V: {
+		typedef void (*T)(I8, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844484_V: {
+		typedef void (*T)(I8, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844488_V: {
+		typedef void (*T)(I8, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844844_V: {
+		typedef void (*T)(I8, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844848_V: {
+		typedef void (*T)(I8, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844884_V: {
+		typedef void (*T)(I8, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844888_V: {
+		typedef void (*T)(I8, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848444_V: {
+		typedef void (*T)(I8, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848448_V: {
+		typedef void (*T)(I8, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848484_V: {
+		typedef void (*T)(I8, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848488_V: {
+		typedef void (*T)(I8, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848844_V: {
+		typedef void (*T)(I8, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848848_V: {
+		typedef void (*T)(I8, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848884_V: {
+		typedef void (*T)(I8, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848888_V: {
+		typedef void (*T)(I8, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884444_V: {
+		typedef void (*T)(I8, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884448_V: {
+		typedef void (*T)(I8, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884484_V: {
+		typedef void (*T)(I8, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884488_V: {
+		typedef void (*T)(I8, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884844_V: {
+		typedef void (*T)(I8, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884848_V: {
+		typedef void (*T)(I8, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884884_V: {
+		typedef void (*T)(I8, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884888_V: {
+		typedef void (*T)(I8, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888444_V: {
+		typedef void (*T)(I8, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888448_V: {
+		typedef void (*T)(I8, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888484_V: {
+		typedef void (*T)(I8, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888488_V: {
+		typedef void (*T)(I8, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888844_V: {
+		typedef void (*T)(I8, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888848_V: {
+		typedef void (*T)(I8, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888884_V: {
+		typedef void (*T)(I8, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888888_V: {
+		typedef void (*T)(I8, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444444_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444448_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444484_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444488_4: {
+		typedef I4(*T)(I4, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444844_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444848_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444884_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444888_4: {
+		typedef I4(*T)(I4, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448444_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448448_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448484_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448488_4: {
+		typedef I4(*T)(I4, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448844_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448848_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448884_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448888_4: {
+		typedef I4(*T)(I4, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484444_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484448_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484484_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484488_4: {
+		typedef I4(*T)(I4, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484844_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484848_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484884_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484888_4: {
+		typedef I4(*T)(I4, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488444_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488448_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488484_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488488_4: {
+		typedef I4(*T)(I4, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488844_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488848_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488884_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488888_4: {
+		typedef I4(*T)(I4, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844444_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844448_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844484_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844488_4: {
+		typedef I4(*T)(I8, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844844_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844848_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844884_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844888_4: {
+		typedef I4(*T)(I8, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848444_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848448_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848484_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848488_4: {
+		typedef I4(*T)(I8, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848844_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848848_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848884_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848888_4: {
+		typedef I4(*T)(I8, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884444_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884448_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884484_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884488_4: {
+		typedef I4(*T)(I8, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884844_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884848_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884884_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884888_4: {
+		typedef I4(*T)(I8, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888444_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888448_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888484_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888488_4: {
+		typedef I4(*T)(I8, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888844_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888848_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888884_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888888_4: {
+		typedef I4(*T)(I8, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.i = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444444_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444448_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444484_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444488_8: {
+		typedef I8(*T)(I4, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444844_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444848_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_444884_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_444888_8: {
+		typedef I8(*T)(I4, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448444_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448448_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448484_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448488_8: {
+		typedef I8(*T)(I4, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448844_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448848_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_448884_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_448888_8: {
+		typedef I8(*T)(I4, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484444_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484448_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484484_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484488_8: {
+		typedef I8(*T)(I4, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484844_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484848_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_484884_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_484888_8: {
+		typedef I8(*T)(I4, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488444_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488448_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488484_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488488_8: {
+		typedef I8(*T)(I4, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488844_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488848_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_488884_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_488888_8: {
+		typedef I8(*T)(I4, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.i, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844444_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844448_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844484_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844488_8: {
+		typedef I8(*T)(I8, I4, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844844_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844848_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_844884_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_844888_8: {
+		typedef I8(*T)(I8, I4, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848444_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848448_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848484_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848488_8: {
+		typedef I8(*T)(I8, I4, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848844_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848848_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_848884_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_848888_8: {
+		typedef I8(*T)(I8, I4, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.i, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884444_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884448_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884484_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884488_8: {
+		typedef I8(*T)(I8, I8, I4, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884844_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884848_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_884884_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_884888_8: {
+		typedef I8(*T)(I8, I8, I4, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.i, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888444_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888448_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888484_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888488_8: {
+		typedef I8(*T)(I8, I8, I8, I4, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.i, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888844_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I4, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888848_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I4, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.i, sp[5].data.p);
+		break;
+	}
+	case MINT_ICALLSIG_888884_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I8, I4);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.i);
+		break;
+	}
+	case MINT_ICALLSIG_888888_8: {
+		typedef I8(*T)(I8, I8, I8, I8, I8, I8);
+		T func = (T)ptr;
+		ret_sp->data.p = func(sp[0].data.p, sp[1].data.p, sp[2].data.p, sp[3].data.p, sp[4].data.p, sp[5].data.p);
+		break;
+	}
+	default:
+		g_assert_not_reached();
+	}
 
+	if (save_last_error)
+	{
+		MH_LOG("Setting last error");
+		mono_marshal_set_last_error();
+	}
 	/* convert the native representation to the stackval representation */
 	if (sig)
-		stackval_from_data (sig->ret, ret_sp, (char*) &ret_sp->data.p, sig->pinvoke && !sig->marshalling_disabled);
-	if(sigTest)
-		free(sigTest);
+	{
+		MH_LOG("Setting stackval from data");
+		stackval_from_data(sig->ret, ret_sp, (char*)&ret_sp->data.p, sig->pinvoke && !sig->marshalling_disabled);
+		MH_LOG("Set stackval from data");
+	}
+	else
+		MH_LOG("Not trying to set stackval from data - no sig");
+
 	MH_LOG("Returning from do_icall with ret_sp: %p", ret_sp->data.p);
-	MH_LOG_UNINDENT();
 }
 

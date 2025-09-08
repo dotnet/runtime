@@ -32,6 +32,7 @@
 #include "mintops.h"
 #include "interp-internals.h"
 #include "interp.h"
+#include "interp-icalls.h"
 #include "transform.h"
 #include "tiering.h"
 #include "interp-pgo.h"
@@ -2817,104 +2818,118 @@ interp_type_as_ptr (MonoType *tp)
 	return FALSE;
 }
 
+static int 
+interp_ptr_size (MonoType *tp)
+{
+	if ((tp)->type == MONO_TYPE_BOOLEAN)
+		return 4;
+	if ((tp)->type == MONO_TYPE_CHAR) 
+		return SIZEOF_VOID_P;
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))		
+		return 4;
+	if ((tp)->type == MONO_TYPE_I4)
+		return 4;
+	if (MONO_TYPE_IS_POINTER (tp))
+		return SIZEOF_VOID_P;
+	if (MONO_TYPE_IS_REFERENCE (tp))
+		return SIZEOF_VOID_P;	
+#if SIZEOF_VOID_P == 8
+	if ((tp)->type == MONO_TYPE_I8 || (tp)->type == MONO_TYPE_U8)
+		return 8;
+#endif
+	
+	if (is_scalar_vtype (tp))
+		return SIZEOF_VOID_P; 
+	MH_LOGV(MH_LVL_INFO, "Don't know what to do with type %s",mono_type_get_name (tp));
+	g_assert_not_reached ();
+}
+
 #define INTERP_TYPE_AS_PTR(tp) interp_type_as_ptr (tp)
+#define DEBUG_ENCODE_SIGNATURE 1
+#define ENCODE_4BYTE 0b01
+#define ENCODE_8BYTE 0b10
+
+/* encode with first parameter always shifted left 12 bits */
+static uint16_t encode_signature(const int* params, int param_count, int return_type) {
+    uint16_t encoded = 0;
+    // parameters must be either 4 or 8. No params implcitly encodes V 
+    for (int i = 0; i < param_count && i < MAX_SIG_PARAMS; ++i) {
+	
+        uint16_t code = (params[i] == SIG_PARAM_4B) ? ENCODE_4BYTE : ENCODE_8BYTE;
+        encoded |= (code << (2 * (MAX_SIG_PARAMS - i)));
+    }    
+
+    // Encode return type in the last 2 bits
+    uint16_t ret_code = (return_type == SIG_PARAM_4B) ? ENCODE_4BYTE : (return_type == SIG_PARAM_8B) ? ENCODE_8BYTE : SIG_PARAM_VOID;
+    encoded |= ret_code;
+    #ifdef DEBUG_ENCODE_SIGNATURE
+    {
+	    // 1 elements per param + 2 for _return type + 1 for null terminator
+	    char buff[MAX_SIG_PARAMS + 3] = {};
+	    int offset =0;
+	    for (int i = 0; i < param_count; i++)    
+		    sprintf(buff + i, "%d", params[i]);    
+	    if (!param_count)
+		    offset = sprintf(buff, "V");
+
+	    if( return_type)
+		sprintf(buff + param_count + offset, "_%d", return_type);
+	    else 
+		sprintf(buff + param_count + offset, "_V");
+    
+	    MH_LOGV(MH_LVL_TRACE, "Encoded signature %s as %d", buff, encoded);
+    }
+    #endif
+    return encoded;
+}
+static 
+void decode_signature(uint16_t encoded, int* params_out, int* param_count_out, int* return_type_out) {
+    int count = 0;
+
+    for (int i = 0; i < MAX_SIG_PARAMS; ++i) {
+        uint16_t code = (encoded >> (2 * (MAX_SIG_PARAMS - i))) & 0b11;
+        if (code == ENCODE_4BYTE) {
+            params_out[count++] = 4;
+        }
+        else if (code == ENCODE_8BYTE) {
+            params_out[count++] = 8;
+        }
+        else {
+            break; // Stop at first unused param
+        }
+    }
+
+    *param_count_out = count;
+
+    uint16_t ret_code = encoded & 0b11;
+    if (ret_code == ENCODE_4BYTE) {
+        *return_type_out = 4;
+    }
+    else if (ret_code == ENCODE_8BYTE) {
+        *return_type_out = 8;
+    }
+    else {
+        *return_type_out = 0;
+    }
+}
+
+#define GET_PARAM_SIZE(tp)  (interp_type_as_ptr8(tp) ? SIG_PARAM_8B : interp_type_as_ptr4(tp) ? SIG_PARAM_4B : SIG_PARAM_VOID)
 
 static MintICallSig
 interp_get_icall_sig (MonoMethodSignature *sig)
 {
 	MintICallSig op = MINT_ICALLSIG_MAX;
-	switch (sig->param_count) {
-	case 0:
-		if (MONO_TYPE_IS_VOID (sig->ret))
-			op = MINT_ICALLSIG_V_V;
-		else if (INTERP_TYPE_AS_PTR (sig->ret))
-			op = MINT_ICALLSIG_V_P;
-		break;
-	case 1:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MINT_ICALLSIG_P_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]))
-				op = MINT_ICALLSIG_P_P;
-		}
-		break;
-	case 2:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MINT_ICALLSIG_PP_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]))
-				op = MINT_ICALLSIG_PP_P;
-		}
-		break;
-	case 3:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MINT_ICALLSIG_PPP_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]))
-				op = MINT_ICALLSIG_PPP_P;
-		}
-		break;
-	case 4:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MINT_ICALLSIG_PPPP_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]))
-				op = MINT_ICALLSIG_PPPP_P;
-		}
-		break;
-	case 5:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]) &&
-					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MINT_ICALLSIG_PPPPP_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]) &&
-					INTERP_TYPE_AS_PTR (sig->params [4]))
-				op = MINT_ICALLSIG_PPPPP_P;
-		}
-		break;
-	case 6:
-		if (MONO_TYPE_IS_VOID (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]) &&
-					INTERP_TYPE_AS_PTR (sig->params [4]) &&
-					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MINT_ICALLSIG_PPPPPP_V;
-		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
-			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
-					INTERP_TYPE_AS_PTR (sig->params [1]) &&
-					INTERP_TYPE_AS_PTR (sig->params [2]) &&
-					INTERP_TYPE_AS_PTR (sig->params [3]) &&
-					INTERP_TYPE_AS_PTR (sig->params [4]) &&
-					INTERP_TYPE_AS_PTR (sig->params [5]))
-				op = MINT_ICALLSIG_PPPPPP_P;
-		}
-		break;
+	int params[MAX_SIG_PARAMS];
+	MH_LOGV(MH_LVL_TRACE, "Getting icall sig for method with %d params", sig->param_count);
+	for (int i = 0; i < sig->param_count && i < MAX_SIG_PARAMS; ++i) {
+		MonoType *tp = sig->params[i];
+		params[i] =  GET_PARAM_SIZE(tp);
+		MH_LOGV(MH_LVL_TRACE, "Type %s encoded as %d", mono_type_get_name(tp), params[i]);
 	}
+	// returnType of 0 == void
+	int returnType = GET_PARAM_SIZE(sig->ret);
+	MH_LOGV(MH_LVL_TRACE, "return type %s encoded as %d", mono_type_get_name(sig->ret), returnType);
+	op = encode_signature(params, sig->param_count, returnType);
 	return op;
 }
 

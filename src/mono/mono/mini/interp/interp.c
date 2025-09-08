@@ -3532,7 +3532,7 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 */
 	//MH_LOG_INDENT();
 	//MH_LOG("Calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
-	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
+	do_icall_wrapper (&frame, NULL, SIZEOF_VOID_P == 4 ? MINT_ICALLSIG_V_4 : MINT_ICALLSIG_V_8, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 	//MH_LOG("..Finished calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
 	//MH_LOG_UNINDENT();
 	return (MonoException*)tmp_sp.data.p;
@@ -7619,7 +7619,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			(*(guint64*)(locals + (ip[1]))) = (*(guint64*)(locals + (ip[2])));
 			{
 				intptr_t result = (*(guint64*)(locals + (ip[1])));
-				MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
+				MH_LOGV(MH_LVL_CRIPPLE, "MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
 			}
 			ip += 3;; 
 		MINT_IN_BREAK;
