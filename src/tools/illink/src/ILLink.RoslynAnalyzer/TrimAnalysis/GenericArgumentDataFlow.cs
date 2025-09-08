@@ -140,8 +140,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             foreach (var typeParameter in typeParameters)
             {
+                if (typeParameter.HasConstructorConstraint)
+                    return true;
+
                 var genericParameterValue = new GenericParameterValue(typeParameter);
-                if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None || typeParameter.HasConstructorConstraint)
+                if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                     return true;
             }
 
