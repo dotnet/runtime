@@ -8,6 +8,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="CompressionStreamUnitTests.ZStandard.cs" />
     <Compile Include="ZStandardDictionaryTests.cs" />
+    <Compile Include="ZStandardDecoderTests.cs" />
     <Compile Include="ZStandardEncoderTests.cs" />
     <Compile Include="ZStandardTestUtils.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs"

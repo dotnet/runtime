@@ -48,6 +48,14 @@ namespace System.IO.Compression
                 throw new IOException(SR.ZStandardEncoder_Create);
 
             SetWindow(window);
+
+            // Attach the dictionary to the compression context
+            nuint result = Interop.Zstd.ZSTD_CCtx_refCDict(_state, dictionary.CompressionDictionary);
+            if (Interop.Zstd.ZSTD_isError(result) != 0)
+            {
+                _state.Dispose();
+                throw new IOException(SR.ZStandardEncoder_DictionaryAttachFailed);
+            }
         }
 
         /// <summary>
