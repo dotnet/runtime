@@ -164,6 +164,7 @@ extends:
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
             $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+            & $env:DOCKER_COMPOSE_CMD down
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -177,6 +178,7 @@ extends:
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
             $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+            & $env:DOCKER_COMPOSE_CMD down
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
