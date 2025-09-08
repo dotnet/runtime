@@ -385,16 +385,6 @@ extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLeng
     return -1;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
-{
-    PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
-}
-
-void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
-{
-    PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
-}
-
 void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
@@ -520,6 +510,7 @@ namespace
         BYTE callConv = sig.GetCallingConvention();
         switch (callConv)
         {
+            case IMAGE_CEE_CS_CALLCONV_DEFAULT:
             case IMAGE_CEE_CS_CALLCONV_C:
             case IMAGE_CEE_CS_CALLCONV_STDCALL:
             case IMAGE_CEE_CS_CALLCONV_FASTCALL:
@@ -573,4 +564,20 @@ LPVOID GetCookieForCalliSig(MetaSig metaSig)
     }
 
     return thunk;
+}
+
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+{
+    MetaSig sig(pMD);
+    void* cookie = GetCookieForCalliSig(sig);
+
+    _ASSERTE(cookie != NULL);
+    _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(target));
+
+    InvokeCalliStub((PCODE)PortableEntryPoint::GetActualCode(target), cookie, pArgs, pRet);
+}
+
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+{
+    PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }
