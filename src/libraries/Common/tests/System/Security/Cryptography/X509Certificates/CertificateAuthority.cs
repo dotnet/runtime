@@ -48,6 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
         private static readonly KeyFactory[] s_variantKeyFactories = KeyFactory.BuildVariantFactories();
+        private static readonly KeyFactory[] s_tlsVariantKeyFactories = KeyFactory.BuildTlsVariantFactories();
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -106,14 +107,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         // All keys created in this method are smaller than recommended,
         // but they only live for a few seconds (at most),
         // and never communicate out of process.
-        // Use different key sizes for crypto tests vs networking tests.
-        // Networking tests require larger RSA keys as some TLS implementations don't work with weaker keys.
-        // Crypto tests prefer smaller keys for speed.
-#if NETWORKING_TESTS
-        const int DefaultKeySize = 2048;
-#else
         const int DefaultKeySize = 1024;
-#endif
 
         internal CertificateAuthority(
             X509Certificate2 cert,
@@ -811,6 +805,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
@@ -849,9 +844,10 @@ SingleResponse ::= SEQUENCE {
                     int written = hasher.GetCurrentHash(hash);
                     Debug.Assert(written == hash.Length);
 
-                    // Using mod here will create an imbalance any time s_variantKeyFactories isn't a power of 2,
+                    // Using mod here will create an imbalance any time the key factories array isn't a power of 2,
                     // but that's OK.
-                    keyFactory = s_variantKeyFactories[hash[0] % s_variantKeyFactories.Length];
+                    KeyFactory[] keyFactories = forTls ? s_tlsVariantKeyFactories : s_variantKeyFactories;
+                    keyFactory = keyFactories[hash[0] % keyFactories.Length];
                 }
             }
 
@@ -953,6 +949,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             BuildPrivatePki(
@@ -967,6 +964,7 @@ SingleResponse ::= SEQUENCE {
                 pkiOptionsInSubject: pkiOptionsInSubject,
                 subjectName: subjectName,
                 keyFactory: keyFactory,
+                forTls: forTls,
                 extensions: extensions);
 
             intermediateAuthority = intermediateAuthorities.Single();
@@ -1055,6 +1053,26 @@ SingleResponse ::= SEQUENCE {
                 if (Cryptography.SlhDsa.IsSupported)
                 {
                     factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
+            }
+
+            internal static KeyFactory[] BuildTlsVariantFactories()
+            {
+                List<KeyFactory> factories = [RSASize(2048), ECDsa];
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if (Cryptography.MLDsa.IsSupported)
+                    {
+                        factories.Add(MLDsa);
+                    }
+
+                    if (Cryptography.SlhDsa.IsSupported)
+                    {
+                        factories.Add(SlhDsa);
+                    }
                 }
 
                 return factories.ToArray();

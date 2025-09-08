@@ -181,6 +181,7 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
+                    forTls: true,
                     extensions: extensions);
 
                 if (!ephemeralKey && PlatformDetection.IsWindows)
