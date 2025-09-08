@@ -998,7 +998,7 @@ class InterpGcSlotAllocator
             }
             else
             {
-                assert(endOffset > startOther);
+                assert(endOffset >= startOther);
             }
             endOffset = endOffset > endOther ? endOffset : endOther;
             startOffset = startOffset < startOther ? startOffset : startOther;
@@ -1206,6 +1206,24 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
 
     INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
+
+    // We have 2 different types of slots that we allocate. We allocate all global vars as untracked
+    // (otherwise known as always live throughout the function) and temporaries are allocated as tracked
+    // locals. The untracked locals, we report with precise GC information about what they are.
+    // The tracked locals are reported with conservative GC information and a slightly expanded lifetime(hence
+    // why they are reported conservatively). See comment in ReportConservativeRangesToGCEncoder for the details.
+    //
+    // For catch/finally/fault funclets, since the GC reporting only uses the leaf funclet, and funclets actually
+    // share the exact same portion of the data stack, there is no additional complexity for funclets.
+    //
+    // For filter funclets the correctness of this algorithm is much more nuanced. Filter funclets do NOT share
+    // the same data stack frame, and would require additional handling to ensure correct GC reporting, EXCEPT
+    // for the fact that the compiler computes the offsets of temporary vars used in the filter funclet as if they
+    // were shared with the parent function stack AND the start of every filter funclet begins by setting the entire
+    // possible utilized memory space of that frame with zeros. This results in the filter funclet attempting to report all
+    // of the local variables of the parent frame, which would normally be a problem, but since the frame is physically
+    // separate it will not cause double reporting faults, and because the frame is zero'd it won't generate unsafe
+    // memory access.
 
     for (int i = 0; i < m_varsSize; i++)
     {
