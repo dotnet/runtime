@@ -642,6 +642,95 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 //
 bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
 {
+    assert(pRange != nullptr);
+    assert(pRange->LowerLimit().IsUnknown());
+    assert(pRange->UpperLimit().IsUnknown());
+
+    // First, let's see if we can tighten the range based on VN information.
+    //
+    int cns;
+    if (comp->vnStore->IsVNIntegralConstant(num, &cns))
+    {
+        // If it's a constant, it's already as tight as it can get.
+        pRange->lLimit = Limit(Limit::keConstant, cns);
+        pRange->uLimit = Limit(Limit::keConstant, cns);
+        return true;
+    }
+
+    VNFuncApp funcApp;
+    if (comp->vnStore->GetVNFunc(num, &funcApp))
+    {
+        switch (funcApp.m_func)
+        {
+            case VNF_Cast:
+                if (varTypeIsIntegral(comp->vnStore->TypeOfVN(num)))
+                {
+                    var_types castToType;
+                    bool      srcIsUnsigned;
+                    comp->vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+                    switch (castToType)
+                    {
+                        case TYP_UBYTE:
+                            pRange->lLimit = Limit(Limit::keConstant, UINT8_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, UINT8_MAX);
+                            break;
+
+                        case TYP_BYTE:
+                            pRange->lLimit = Limit(Limit::keConstant, INT8_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, INT8_MAX);
+                            break;
+
+                        case TYP_USHORT:
+                            pRange->lLimit = Limit(Limit::keConstant, UINT16_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, UINT16_MAX);
+                            break;
+
+                        case TYP_SHORT:
+                            pRange->lLimit = Limit(Limit::keConstant, INT16_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, INT16_MAX);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                break;
+
+            case VNF_ARR_LENGTH:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                break;
+
+#ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_XARCH
+            case VNF_HWI_X86Base_PopCount:
+            case VNF_HWI_AVX2_LeadingZeroCount:
+            case VNF_HWI_AVX2_TrailingZeroCount:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, 32);
+                break;
+            case VNF_HWI_X86Base_X64_PopCount:
+            case VNF_HWI_AVX2_X64_LeadingZeroCount:
+            case VNF_HWI_AVX2_X64_TrailingZeroCount:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, 64);
+                break;
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_ArmBase_LeadingZeroCount:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, 32);
+                break;
+            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, 64);
+                break;
+#endif
+#endif
+            default:
+                break;
+        }
+    }
+
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
     assert(pRange->IsValid());
     return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
