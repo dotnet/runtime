@@ -10,6 +10,30 @@ EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd
     return nullptr;
 }
 
+static Object* _RhpNewArrayFastCore(CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+{
+    FCALL_CONTRACT;
+
+    MethodTable* pMT = (MethodTable*)typeHnd_;
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize() + ((size_t)size * (size_t)pMT->RawGetComponentSize());
+    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    ASSERT(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + sizeInBytes);
+        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        pObject->SetMethodTableAndNumComponents(pMT, (INT32)size);
+        return pObject;
+    }
+
+    return OBJECTREFToObject(AllocateSzArray(pMT, (INT32)size));
+}
+
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
     FCALL_CONTRACT;
@@ -28,23 +52,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PT
     }
 #endif // !HOST_64BIT
 
-    Thread* thread = GetThread();
-    ee_alloc_context* cxt = thread->GetEEAllocContext();
-
-    size_t sizeInBytes = (size_t)pMT->GetBaseSize() + ((size_t)size * (size_t)pMT->RawGetComponentSize());
-    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
-
-    uint8_t* alloc_ptr = cxt->getAllocPtr();
-    ASSERT(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
-    {
-        cxt->setAllocPtr(alloc_ptr + sizeInBytes);
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
-        pObject->SetMethodTableAndNumComponents(pMT, (INT32)size);
-        return pObject;
-    }
-
-    return OBJECTREFToObject(AllocateSzArray(pMT, (INT32)size));
+    return _RhpNewArrayFastCore(typeHnd_, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
@@ -77,8 +85,25 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_)
     return nullptr;
 }
 
+void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
+{
+    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
+}
+
+#define MAX_STRING_LENGTH 0x3FFFFFDF
+
 EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength)
 {
-    PORTABILITY_ASSERT("RhNewString is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(typeHnd_ != NULL);
+
+    MethodTable* pMT = (MethodTable*)typeHnd_;
+
+    if (stringLength > MAX_STRING_LENGTH)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, false);
+        return NULL;
+    }
+
+    return _RhpNewArrayFastCore(typeHnd_, stringLength);
 }
