@@ -287,7 +287,13 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
         AllocMemTracker *pamTracker = &amTracker;
 
         pData = (UMEntryThunkData *)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
-        UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+        UMEntryThunk* pThunk;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PORTABILITY_ASSERT("WASMTODO: Marshalled delegates are not supported with wasm.");
+        pThunk = NULL;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pThunk, sizeof(UMEntryThunk), PerfMapStubType::IndividualWithinBlock);
 #endif

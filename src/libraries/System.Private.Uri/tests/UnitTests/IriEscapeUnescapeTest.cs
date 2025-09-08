@@ -158,52 +158,17 @@ namespace System.Net.Test.Uri.IriTest
 
         private void EscapeUnescapeAllUriComponentsInDifferentCultures(string uriInput)
         {
-            UriComponents[] components = new UriComponents[]
-            {
-                UriComponents.AbsoluteUri,
-                UriComponents.Fragment,
-                UriComponents.Host,
-                UriComponents.HostAndPort,
-                UriComponents.HttpRequestUrl,
-                UriComponents.KeepDelimiter,
-                UriComponents.NormalizedHost,
-                UriComponents.Path,
-                UriComponents.PathAndQuery,
-                UriComponents.Port,
-                UriComponents.Query,
-                UriComponents.Scheme,
-                UriComponents.SchemeAndServer,
-                UriComponents.SerializationInfoString,
-                UriComponents.StrongAuthority,
-                UriComponents.StrongPort,
-                UriComponents.UserInfo,
-            };
-
-            string[] results_en = new string[components.Length];
-            string[] results_zh = new string[components.Length];
-
-            for (int i = 0; i < components.Length; i++)
-            {
-                results_en[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
-            }
+            string result_en_query = EscapeUnescapeTestComponent(uriInput, true);
+            string result_en_nonQuery = EscapeUnescapeTestComponent(uriInput, false);
 
             using (new ThreadCultureChange("zh-cn"))
             {
-                for (int i = 0; i < components.Length; i++)
-                {
-                    results_zh[i] = EscapeUnescapeTestComponent(uriInput, components[i]);
-                }
-
-                for (int i = 0; i < components.Length; i++)
-                {
-                    Assert.True(
-                        0 == string.CompareOrdinal(results_en[i], results_zh[i]),
-                        "Detected locale differences when processing UriComponents." + components[i]);
-                }
+                Assert.Equal(result_en_query, EscapeUnescapeTestComponent(uriInput, true));
+                Assert.Equal(result_en_nonQuery, EscapeUnescapeTestComponent(uriInput, false));
             }
         }
 
-        private string EscapeUnescapeTestComponent(string uriInput, UriComponents component)
+        private string EscapeUnescapeTestComponent(string uriInput, bool isQuery)
         {
             string? ret = null;
             HeapCheck hc = new HeapCheck(uriInput);
@@ -212,7 +177,7 @@ namespace System.Net.Test.Uri.IriTest
             {
                 fixed (char* pInput = hc.Buffer)
                 {
-                    ret = IriHelper.EscapeUnescapeIri(pInput + HeapCheck.PaddingLength, 0, uriInput.Length, component);
+                    ret = IriHelper.EscapeUnescapeIri(pInput + HeapCheck.PaddingLength, 0, uriInput.Length, isQuery);
                 }
             }
 

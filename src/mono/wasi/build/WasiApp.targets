@@ -253,7 +253,6 @@
       <_WasmCommonCFlags Condition="'$(_DriverGenCNeeded)' == 'true'"      Include="-DDRIVER_GEN=1" />
       <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'"   Include="-DWASM_SINGLE_FILE=1" />
       <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
-      <_WasmCommonCFlags Condition="'$(InvariantTimezone)' == 'true'"      Include="-DINVARIANT_TIMEZONE=1" />
       <_WasmCommonCFlags Condition="'$(WasmLinkIcalls)' == 'true'"         Include="-DLINK_ICALLS=1" />
       <_WasmCommonCFlags Condition="'$(_IsLibraryMode)' == 'true'"          Include="-DWASM_LIBRARY_MODE=1" />
       <_WasiClangCFlags Include="@(_WasmCommonCFlags)" />
@@ -365,9 +364,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(EnableDiagnostics)' != 'true'" />
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -407,9 +407,7 @@
       <_WasiLinkStepArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
-      <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
       <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0

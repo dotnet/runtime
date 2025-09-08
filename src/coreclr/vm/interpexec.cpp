@@ -13,13 +13,14 @@
 
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
-void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget);
-void InvokeCalliStub(PCODE ftn, void* stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet);
+void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
     InlinedCallFrame inlinedCallFrame;
     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
@@ -32,9 +33,35 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     {
         GCX_PREEMP();
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+        InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget);
     }
 
+    inlinedCallFrame.Pop();
+}
+
+NOINLINE
+void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(cookie));
+    }
+    CONTRACTL_END
+
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+    {
+        GCX_PREEMP();
+        InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+    }
     inlinedCallFrame.Pop();
 }
 
@@ -96,9 +123,9 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
-void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    InvokeManagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget);
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
@@ -126,6 +153,29 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(target); // The method to call
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+}
+
+void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(cookie));
+    }
+    CONTRACTL_END
+
+    // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
+    // copied to a local buffer before we can actually set their target address.
+    CallStubHeader* stubHeaderTemplate = (CallStubHeader*)cookie;
+    size_t templateSize = stubHeaderTemplate->GetSize();
+    uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
+    memcpy(actualCallStub, stubHeaderTemplate, templateSize);
+    CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
+    pHeader->SetTarget(ftn); // The method to call
+
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
@@ -2043,9 +2093,27 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        int stackOffset = pMethod->allocaSize;
+                        callArgsOffset = stackOffset;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg1;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2099,15 +2167,31 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
+                    int32_t flags = ip[5];
 
                     void* cookie = pMethod->pDataItems[calliCookie];
-                    ip += 5;
+                    ip += 6;
 
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
                     // Interpreter-FIXME: isTailcall
-                    InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                    if (flags & (int32_t)CalliFlags::PInvoke)
+                    {
+                        if (flags & (int32_t)CalliFlags::SuppressGCTransition)
+                        {
+                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                        }
+                        else
+                        {
+                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
+                        }
+                    }
+                    else
+                    {
+                        InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                    }
+
                     break;
                 }
 
@@ -2134,11 +2218,11 @@ MAIN_LOOP:
 
                     if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        InvokeUnmanagedMethod(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                        InvokeUnmanagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
                     else
                     {
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsOffset, returnOffset, callTarget);
+                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
 
                     break;

@@ -3424,7 +3424,7 @@ namespace System
                     origIdx = index == -1 ? _originalUnicodeString.Length : (index + origIdx);
                 }
 
-                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
+                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: false);
 
                 length = _string.Length;
                 // We need to be sure that there isn't a '?' separated from the path by spaces.
@@ -3554,7 +3554,7 @@ namespace System
                         origIdx = _originalUnicodeString.Length;
                     }
 
-                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: true);
 
                     length = _string.Length;
                     // We need to be sure that there isn't a '#' separated from the query by spaces.
@@ -3605,7 +3605,7 @@ namespace System
                 {
                     origIdx = _originalUnicodeString.Length;
 
-                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: false);
 
                     length = _string.Length;
                     // we don't need to check _originalUnicodeString == _string because # is last part
@@ -3876,7 +3876,7 @@ namespace System
                         if (hasUnicode)
                         {
                             // Normalize user info
-                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
+                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, isQuery: false);
                         }
                         ++start;
                         ch = pString[start];
