@@ -253,9 +253,10 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         return true;
     }
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+    {
+        m_SizeOfStackOutgoingAndScratchArea = GcInfoEncoding::DENORMALIZE_SIZE_OF_STACK_AREA((UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE));
+    }
 
     return false;
 }
@@ -344,9 +345,10 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
 
         m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-        m_SizeOfStackOutgoingAndScratchArea = 0;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+        if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+        {
+            m_SizeOfStackOutgoingAndScratchArea = 0;
+        }
 
         remainingFlags &= ~(DECODE_CODE_LENGTH
                             | DECODE_PROLOG_LENGTH
@@ -717,16 +719,10 @@ template <typename GcInfoEncoding> size_t TGcInfoDecoder<GcInfoEncoding>::GetNum
     return (m_Reader.GetCurrentPos() + 7) / 8;
 }
 
-
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 template <typename GcInfoEncoding> UINT32 TGcInfoDecoder<GcInfoEncoding>::GetSizeOfStackParameterArea()
 {
     return m_SizeOfStackOutgoingAndScratchArea;
 }
-
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::EnumerateLiveSlots(
                 PREGDISPLAY         pRD,
@@ -1475,6 +1471,23 @@ template <typename GcInfoEncoding> const GcSlotDesc* GcSlotDecoder<GcInfoEncodin
     return m_pLastSlot;
 }
 
+template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
+{
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+    {
+        _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
+
+        TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
+        _ASSERTE(pSlot >= pRD->SP);
+
+        return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
+    }
+    else
+    {
+        return false;
+    }
+}
+
 
 //-----------------------------------------------------------------------------
 // Platform-specific methods
@@ -1540,21 +1553,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
         | (1 << 15); // r15
 
     return !(PreservedRegMask & (1 << regNum));
-}
-
-
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
-
-    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE(pSlot >= pRD->SP);
-
-    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
-#else
-    return FALSE;
-#endif
 }
 
 
@@ -1687,21 +1685,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
 }
 
 
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
-
-    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE(pSlot >= pRD->SP);
-
-    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
-#else
-    return FALSE;
-#endif
-}
-
-
 template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC(  // ARM
                                 int             regNum,
                                 unsigned        gcFlags,
@@ -1782,21 +1765,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
     _ASSERTE(regNum != 18);
 
     return regNum <= 17 || regNum >= 29; // R12 and R14/LR are both scratch registers
-}
-
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
-
-    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE(pSlot >= pRD->SP);
-
-    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
-#else
-    return FALSE;
-#endif
-
 }
 
 template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC( // ARM64
@@ -1939,20 +1907,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
     return (regNum <= 21 && ((regNum >= 4) || (regNum == 1)));
 }
 
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
-
-    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE(pSlot >= pRD->SP);
-
-    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
-#else
-    return FALSE;
-#endif
-}
-
 template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC(
                                 int             regNum,
                                 unsigned        gcFlags,
@@ -2077,20 +2031,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratc
     return (regNum >= 5 && regNum <= 7) || (regNum >= 10 and regNum <= 17) || regNum >= 28 || regNum == 1;
 }
 
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
-
-    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE(pSlot >= pRD->SP);
-
-    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
-#else
-    return FALSE;
-#endif
-}
-
 template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRegisterToGC(
                                 int             regNum,
                                 unsigned        gcFlags,
@@ -2163,12 +2103,6 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
     PORTABILITY_ASSERT("GcInfoDecoder::IsScratchRegister");
-    return false;
-}
-
-template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
-{
-    _ASSERTE( !"NYI" );
     return false;
 }
 

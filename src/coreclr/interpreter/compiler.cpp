@@ -1202,7 +1202,6 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
-    gcInfoEncoder->SetSizeOfStackOutgoingAndScratchArea(0);
     gcInfoEncoder->SetStackBaseRegister(0);
     gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
 
