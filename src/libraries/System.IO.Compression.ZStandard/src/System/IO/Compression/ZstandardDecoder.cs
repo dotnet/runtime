@@ -10,7 +10,7 @@ namespace System.IO.Compression
     /// <summary>Provides methods and properties to decompress data using ZStandard decompression.</summary>
     public struct ZStandardDecoder : IDisposable
     {
-        private readonly SafeZStdDecompressHandle _context;
+        private SafeZStdDecompressHandle? _context;
         private bool _disposed;
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardDecoder"/> struct with the specified dictionary.</summary>
@@ -22,8 +22,30 @@ namespace System.IO.Compression
 
             _disposed = false;
             _context = Interop.Zstd.ZSTD_createDCtx();
+            if (_context.IsInvalid)
+                throw new IOException(SR.ZStandardDecoder_Create);
 
-            throw new NotImplementedException();
+            // Attach the dictionary to the decompression context
+            nuint result = Interop.Zstd.ZSTD_DCtx_refDDict(_context, dictionary.DecompressionDictionary);
+            if (Interop.Zstd.ZSTD_isError(result) != 0)
+            {
+                _context.Dispose();
+                throw new IOException(SR.ZStandardDecoder_DictionaryAttachFailed);
+            }
+        }
+
+        internal void InitializeDecoder()
+        {
+            _context = Interop.Zstd.ZSTD_createDCtx();
+            if (_context.IsInvalid)
+                throw new IOException(SR.ZStandardDecoder_Create);
+        }
+
+        internal void EnsureInitialized()
+        {
+            EnsureNotDisposed();
+            if (_context == null)
+                InitializeDecoder();
         }
 
         /// <summary>Decompresses the specified data.</summary>
@@ -33,7 +55,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
-        public readonly OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
+        public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             ThrowIfDisposed();
 
@@ -43,7 +65,43 @@ namespace System.IO.Compression
             if (source.IsEmpty)
                 return OperationStatus.Done;
 
-            throw new NotImplementedException();
+            EnsureInitialized();
+
+            unsafe
+            {
+                fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
+                fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
+                {
+                    var input = new Interop.ZStdInBuffer
+                    {
+                        src = (IntPtr)sourcePtr,
+                        size = (nuint)source.Length,
+                        pos = 0
+                    };
+
+                    var output = new Interop.ZStdOutBuffer
+                    {
+                        dst = (IntPtr)destPtr,
+                        size = (nuint)destination.Length,
+                        pos = 0
+                    };
+
+                    nuint result = Interop.Zstd.ZSTD_decompressStream(_context!, ref output, ref input);
+
+                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                        return OperationStatus.InvalidData;
+
+                    bytesConsumed = (int)input.pos;
+                    bytesWritten = (int)output.pos;
+
+                    if (result == 0)
+                        return OperationStatus.Done;
+                    else if (output.pos == output.size)
+                        return OperationStatus.DestinationTooSmall;
+                    else
+                        return OperationStatus.NeedMoreData;
+                }
+            }
         }
 
         /// <summary>Gets the maximum decompressed length for the specified compressed data.</summary>
@@ -54,7 +112,20 @@ namespace System.IO.Compression
             if (data.IsEmpty)
                 return 0;
 
-            throw new NotImplementedException();
+            unsafe
+            {
+                fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
+                {
+                    ulong frameContentSize = Interop.Zstd.ZSTD_getFrameContentSize((IntPtr)dataPtr, (nuint)data.Length);
+
+                    // ZSTD_CONTENTSIZE_UNKNOWN = (0ULL - 1)
+                    // ZSTD_CONTENTSIZE_ERROR = (0ULL - 2)
+                    if (frameContentSize == ulong.MaxValue || frameContentSize == (ulong.MaxValue - 1))
+                        return -1;
+
+                    return frameContentSize > int.MaxValue ? int.MaxValue : (int)frameContentSize;
+                }
+            }
         }
 
         /// <summary>Attempts to decompress the specified data.</summary>
@@ -69,7 +140,22 @@ namespace System.IO.Compression
             if (source.IsEmpty)
                 return true;
 
-            throw new NotImplementedException();
+            unsafe
+            {
+                fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
+                fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
+                {
+                    nuint result = Interop.Zstd.ZSTD_decompress(
+                        (IntPtr)destPtr, (nuint)destination.Length,
+                        (IntPtr)sourcePtr, (nuint)source.Length);
+
+                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                        return false;
+
+                    bytesWritten = (int)result;
+                    return true;
+                }
+            }
         }
 
         /// <summary>Attempts to decompress the specified data using the specified dictionary.</summary>
@@ -88,19 +174,44 @@ namespace System.IO.Compression
             if (source.IsEmpty)
                 return true;
 
-            throw new NotImplementedException();
+            using var dctx = Interop.Zstd.ZSTD_createDCtx();
+            if (dctx.IsInvalid)
+                return false;
+
+            unsafe
+            {
+                fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
+                fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
+                {
+                    nuint result = Interop.Zstd.ZSTD_decompress_usingDDict(
+                        dctx, (IntPtr)destPtr, (nuint)destination.Length,
+                        (IntPtr)sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
+
+                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                        return false;
+
+                    bytesWritten = (int)result;
+                    return true;
+                }
+            }
         }
 
         /// <summary>Releases all resources used by the <see cref="ZStandardDecoder"/>.</summary>
         public void Dispose()
         {
             _disposed = true;
-            _context.Dispose();
+            _context?.Dispose();
+        }
+
+        private readonly void EnsureNotDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private readonly void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, nameof(ZStandardDecoder));
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(ZStandardDecoder), SR.ZStandardDecoder_Disposed);
         }
     }
 }
