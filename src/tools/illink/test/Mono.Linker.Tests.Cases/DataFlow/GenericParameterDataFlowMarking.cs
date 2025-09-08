@@ -325,7 +325,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 public static void Test()
                 {
-                    IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>> i = new DerivedWithTarget();
+                    object o = new DerivedWithTarget();
+                    var i = typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>);
                 }
             }
 
