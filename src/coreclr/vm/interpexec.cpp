@@ -2043,9 +2043,27 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_PA:
                 {
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3]);
-                    void* helperArg = pMethod->pDataItems[ip[4]];
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg, LOCAL_VAR_ADDR(ip[2], void*));
+                    void* helperArg1 = pMethod->pDataItems[ip[4]];
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        int stackOffset = pMethod->allocaSize;
+                        callArgsOffset = stackOffset;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(stackOffset, void*) = helperArg1;
+                        LOCAL_VAR(stackOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
