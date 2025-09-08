@@ -77,23 +77,6 @@ namespace System.Threading
             return (int*)(ppObjectData - sizeof(void*) - sizeof(int));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasSyncEntryIndex(int header)
-        {
-            return (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
-        }
-
-        /// <summary>
-        /// Extracts the sync entry index or the hash code from the header value.  Returns true
-        /// if the header value stores the sync entry index.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GetSyncEntryIndex(int header, out int index)
-        {
-            index = header & MASK_HASHCODE_INDEX;
-            return HasSyncEntryIndex(header);
-        }
-
         //
         // A few words about spinning choices:
         //
@@ -225,13 +208,9 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsAcquired(object obj)
+        public static unsafe AcquireHeaderResult IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            // transform uninitialized ID into -1, so it will not match any possible lock owner
-            currentThreadID |= (currentThreadID - 1) >> 31;
 
             fixed (byte* pObjectData = &obj.GetRawData())
             {
@@ -243,19 +222,18 @@ namespace System.Threading
                 int oldBits = *pHeader;
 
                 // if we own the lock
-                if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
-                   (oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
+                if ((oldBits & SBLK_MASK_LOCK_THREADID) == (int)Lock.ThreadId.Current_NoInitialize.Id)
                 {
-                    return true;
+                    return AcquireHeaderResult.Success;
                 }
 
-                if (HasSyncEntryIndex(oldBits))
+                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
-                    return Monitor.GetLockObject(obj).IsHeldByCurrentThread;
+                    return AcquireHeaderResult.UseSlowPath;
                 }
 
                 // someone else owns or noone.
-                return false;
+                return AcquireHeaderResult.Contention;
             }
         }
     }

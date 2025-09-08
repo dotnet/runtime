@@ -160,7 +160,14 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
-            return ObjectHeader.IsAcquired(obj);
+            ObjectHeader.AcquireHeaderResult result = ObjectHeader.IsAcquired(obj);
+            if (result == ObjectHeader.AcquireHeaderResult.Success)
+                return true;
+
+            if (result == ObjectHeader.AcquireHeaderResult.Contention)
+                return false;
+
+            return GetLockObject(obj).IsHeldByCurrentThread;
         }
 
         #endregion
