@@ -39,4 +39,25 @@
   <data name="Stream_FalseCanWrite" xml:space="preserve">
     <value>The base stream is not writable.</value>
   </data>
+  <data name="ZStandardEncoder_Create" xml:space="preserve">
+    <value>Failed to create the ZStandard encoder instance.</value>
+  </data>
+  <data name="ZStandardEncoder_Disposed" xml:space="preserve">
+    <value>The encoder has been disposed.</value>
+  </data>
+  <data name="ZStandardEncoder_InvalidQuality" xml:space="preserve">
+    <value>The quality must be between {0} and {1}.</value>
+  </data>
+  <data name="ZStandardEncoder_InvalidWindow" xml:space="preserve">
+    <value>The window size must be between {0} and {1}.</value>
+  </data>
+  <data name="ZStandardEncoder_InvalidDictionary" xml:space="preserve">
+    <value>The provided dictionary wasn't created for encoding data.</value>
+  </data>
+  <data name="ZStandardEncoder_CompressError" xml:space="preserve">
+    <value>An error occurred during compression.</value>
+  </data>
+  <data name="ZStandardEncoder_FlushError" xml:space="preserve">
+    <value>An error occurred during flush operation.</value>
+  </data>
 </root>

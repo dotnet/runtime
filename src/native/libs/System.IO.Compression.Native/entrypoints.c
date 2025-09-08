@@ -47,6 +47,18 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_freeCDict)
     DllImportEntry(ZSTD_createDDict)
     DllImportEntry(ZSTD_freeDDict)
+    DllImportEntry(ZSTD_compressBound)
+    DllImportEntry(ZSTD_compress)
+    DllImportEntry(ZSTD_compressCCtx)
+    DllImportEntry(ZSTD_compress_usingCDict)
+    DllImportEntry(ZSTD_compressStream2)
+    DllImportEntry(ZSTD_CCtx_setParameter)
+    DllImportEntry(ZSTD_CCtx_reset)
+    DllImportEntry(ZSTD_minCLevel)
+    DllImportEntry(ZSTD_maxCLevel)
+    DllImportEntry(ZSTD_defaultCLevel)
+    DllImportEntry(ZSTD_isError)
+    DllImportEntry(ZSTD_getErrorName)
 #endif // !TARGET_WASM
 };
 
