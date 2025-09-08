@@ -21,16 +21,17 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(dictionary);
 
             _disposed = false;
-            _context = Interop.Zstd.ZSTD_createDCtx();
-            if (_context.IsInvalid)
-                throw new IOException(SR.ZStandardDecoder_Create);
 
-            // Attach the dictionary to the decompression context
-            nuint result = Interop.Zstd.ZSTD_DCtx_refDDict(_context, dictionary.DecompressionDictionary);
-            if (Interop.Zstd.ZSTD_isError(result) != 0)
+            InitializeDecoder();
+
+            try
             {
-                _context.Dispose();
-                throw new IOException(SR.ZStandardDecoder_DictionaryAttachFailed);
+                _context!.SetDictionary(dictionary.DecompressionDictionary);
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
             }
         }
 
@@ -38,7 +39,7 @@ namespace System.IO.Compression
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
-                throw new IOException(SR.ZStandardDecoder_Create);
+                throw new Interop.Zstd.ZstdNativeException(SR.ZStandardDecoder_Create);
         }
 
         internal void EnsureInitialized()
@@ -65,21 +66,21 @@ namespace System.IO.Compression
             if (source.IsEmpty)
                 return OperationStatus.Done;
 
-            EnsureInitialized();
+            InitializeDecoder();
 
             unsafe
             {
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
                 fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
                 {
-                    var input = new Interop.ZStdInBuffer
+                    var input = new Interop.Zstd.ZStdInBuffer
                     {
                         src = (IntPtr)sourcePtr,
                         size = (nuint)source.Length,
                         pos = 0
                     };
 
-                    var output = new Interop.ZStdOutBuffer
+                    var output = new Interop.Zstd.ZStdOutBuffer
                     {
                         dst = (IntPtr)destPtr,
                         size = (nuint)destination.Length,

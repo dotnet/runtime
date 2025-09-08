@@ -55,7 +55,7 @@
     <value>The provided dictionary wasn't created for encoding data.</value>
   </data>
   <data name="ZStandardEncoder_CompressError" xml:space="preserve">
-    <value>An error occurred during compression.</value>
+    <value>An error occurred during compression: '{0}'.</value>
   </data>
   <data name="ZStandardEncoder_FlushError" xml:space="preserve">
     <value>An error occurred during flush operation.</value>
@@ -70,7 +70,7 @@
     <value>The decoder has been disposed.</value>
   </data>
   <data name="ZStandardDecoder_DecompressError" xml:space="preserve">
-    <value>An error occurred during decompression.</value>
+    <value>An error occurred during decompression: '{0}'.</value>
   </data>
   <data name="ZStandardDecoder_DictionaryAttachFailed" xml:space="preserve">
     <value>Failed to attach dictionary to ZStandard decoder context.</value>
