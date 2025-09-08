@@ -2862,10 +2862,12 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     bool suppressGCTransition = false;
     m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
     bool isPInvoke = (callSiteSig->callConv != CORINFO_CALLCONV_DEFAULT && callSiteSig->callConv != CORINFO_CALLCONV_VARARG);
-    bool isPInvokeMarshalled = isPInvoke && m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig);
+    if (isPInvoke && m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
+    {
+        BADCODE("PInvoke marshalling is not supported in interpreted code");
+    }
     m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
-                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0) |
-                             (isPInvokeMarshalled ? (int32_t)CalliFlags::PInvokeMarshalled : 0);
+                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0);
     m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
 }
 
