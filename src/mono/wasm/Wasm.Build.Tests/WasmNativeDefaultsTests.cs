@@ -123,15 +123,15 @@ namespace Wasm.Build.Tests
             {Configuration.Debug, "<WasmNativeStrip>true</WasmNativeStrip>",    /*wasmBuildNative*/ false,   /*wasmNativeStrip*/ true },
             {Configuration.Release, "<WasmNativeStrip>true</WasmNativeStrip>",  /*wasmBuildNative*/ publish, /*wasmNativeStrip*/ true },
             {Configuration.Debug, "<WasmNativeStrip>false</WasmNativeStrip>",   /*wasmBuildNative*/ true,    /*wasmNativeStrip*/ false },
-            {Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip>", /*wasmBuildNative*/ true,    /*wasmNativeStrip*/ false }
+            {Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip>", /*wasmBuildNative*/ false,    /*wasmNativeStrip*/ false }
         };
 
         public static TheoryData<Configuration, string, bool, bool> SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData() => new()
         {
             { Configuration.Debug,   "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },
-            { Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },
+            { Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", false, false },
             { Configuration.Debug,   "<WasmNativeStrip>true</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, true },
-            { Configuration.Release, "<WasmNativeStrip>true</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, true }
+            { Configuration.Release, "<WasmNativeStrip>true</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", false, true }
         };
 
         [Theory]
