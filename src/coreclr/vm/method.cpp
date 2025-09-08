@@ -2216,7 +2216,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     CONTRACTL_END
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(entryPoint));
+    return PortableEntryPoint::GetMethodDesc(entryPoint);
 
 #else // FEATURE_PORTABLE_ENTRYPOINTS
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
@@ -2648,7 +2648,7 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
     MethodDesc* pMD = NULL;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    pMD = PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(addr));
+    pMD = PortableEntryPoint::GetMethodDesc(addr);
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
@@ -2897,7 +2897,7 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
     _ASSERTE(tempEntry != (PCODE)NULL);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    _ASSERTE(PortableEntryPoint::GetMethodDesc(PCODEToPINSTR(tempEntry)) == this);
+    _ASSERTE(PortableEntryPoint::GetMethodDesc(tempEntry) == this);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
