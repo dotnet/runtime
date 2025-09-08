@@ -114,9 +114,6 @@ namespace System.Threading
             if (result == ObjectHeader.AcquireHeaderResult.Success)
                 return true;
 
-            if (result == ObjectHeader.AcquireHeaderResult.Contention)
-                return false;
-
             return GetLockObject(obj).TryEnter(millisecondsTimeout);
         }
 
