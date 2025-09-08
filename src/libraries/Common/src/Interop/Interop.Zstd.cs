@@ -22,5 +22,18 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_freeDCtx(IntPtr dctx);
+
+        // Dictionary management
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial SafeZStdCDictHandle ZSTD_createCDict(IntPtr dictBuffer, nuint dictSize, int compressionLevel);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZSTD_freeCDict(IntPtr cdict);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial SafeZStdDDictHandle ZSTD_createDDict(IntPtr dictBuffer, nuint dictSize);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZSTD_freeDDict(IntPtr ddict);
     }
 }

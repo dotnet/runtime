@@ -18,7 +18,6 @@ namespace System.IO.Compression
         private byte[] _buffer;
         private readonly bool _leaveOpen;
         private readonly CompressionMode _mode;
-        // private readonly ZStandardCompressionOptions? _options;
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
