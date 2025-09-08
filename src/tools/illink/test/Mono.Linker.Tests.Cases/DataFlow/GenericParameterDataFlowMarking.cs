@@ -272,6 +272,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class BaseTypeGenericNesting
             {
                 [Kept]
+                [KeptMember(".ctor()")]
                 class Base<T>
                 {
                 }
@@ -285,6 +286,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 [Kept]
+                [KeptMember(".ctor()")]
                 [KeptBaseTypeAttribute(typeof(Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
                 class DerivedWithTarget
                     : Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
@@ -293,8 +295,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithTarget);
+                    new DerivedWithTarget();
                 }
             }
 
@@ -302,7 +303,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class InterfaceGenericNesting
             {
                 [Kept]
-                class IBase<T>
+                interface IBase<T>
                 {
                 }
 
@@ -315,7 +316,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 [Kept]
-                [KeptBaseTypeAttribute(typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
+                [KeptMember(".ctor()")]
+                [KeptInterfaceAttribute(typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
                 class DerivedWithTarget
                     : IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
                 { }
@@ -323,8 +325,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithTarget);
+                    IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>> i = new DerivedWithTarget();
                 }
             }
 

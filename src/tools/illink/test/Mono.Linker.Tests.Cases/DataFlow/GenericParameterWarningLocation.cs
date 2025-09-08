@@ -69,12 +69,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 public DerivedWithNoAnnotations() { }
             }
 
-            [ExpectedWarning("IL2091")]
+            [ExpectedWarning("IL2091", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithMismatchAnnotation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
                 : BaseWithPublicMethods<TPublicFields>
             { }
 
-            [ExpectedWarning("IL2091", nameof(DynamicallyAccessedMemberTypes.PublicMethods))]
+            [ExpectedWarning("IL2091", nameof(DynamicallyAccessedMemberTypes.PublicMethods), Tool.Analyzer, "")]
+            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithOneMismatch<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
                 : BaseWithTwo<TPublicFields, TPublicFields>
             { }
@@ -85,7 +87,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 : BaseWithTwo<TPublicMethods, TPublicFields>
             { }
 
-            [ExpectedWarning("IL2091")]
+            [ExpectedWarning("IL2091", Tool.Analyzer, "Analyzer sees declarations")]
             class DerivedWithOnlyStaticMethodReference<TUnknown> : BaseWithPublicMethods<TUnknown>
             {
                 // The method body in this case looks like:
@@ -112,7 +114,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 t = typeof(DerivedWithMatchingAnnotation<>);
                 t = typeof(DerivedWithNoAnnotations<>);
                 t = typeof(DerivedWithMismatchAnnotation<>);
+                new DerivedWithMismatchAnnotation<int>();
                 t = typeof(DerivedWithOneMismatch<>);
+                new DerivedWithOneMismatch<int>();
                 t = typeof(DerivedWithTwoMatching<,>);
 
                 // Also try exact instantiations
@@ -1549,7 +1553,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : Base<RequiresMethods<RequiresNothing<TUnknown>>>
                 { }
 
-                [ExpectedWarning("IL2091", "TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields))]
+                [ExpectedWarning("IL2091", ["TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields)], Tool.Analyzer, "")]
+                [ExpectedWarning("IL2091", ["TUnknown", "RequiresFields", nameof(DynamicallyAccessedMemberTypes.PublicFields)], Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
                 class DerivedWithFields<TUnknown>
                     : Base<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>
                 {
@@ -1558,17 +1563,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     }
                 }
 
-                [ExpectedWarning("IL2026", "--RUCMethod--")]
+                [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
                 class DerivedWithRUC
                     : Base<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>
                 { }
 
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithNothing<TestType>);
-                    a = typeof(DerivedWithFields<TestType>);
-                    a = typeof(DerivedWithRUC);
+                    new DerivedWithNothing<TestType>();
+                    new DerivedWithFields<TestType>();
+                    new DerivedWithRUC();
                 }
             }
 

@@ -2158,7 +2158,6 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
