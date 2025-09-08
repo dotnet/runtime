@@ -117,6 +117,8 @@ namespace ILCompiler.Dataflow
                 if (flowAnnotations.HasGenericParameterAnnotation(method))
                     return true;
 
+                // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
+
                 foreach (TypeDesc typeParameter in method.Instantiation)
                 {
                     if (RequiresGenericArgumentDataFlow(flowAnnotations, typeParameter))
@@ -141,6 +143,8 @@ namespace ILCompiler.Dataflow
         {
             if (flowAnnotations.HasGenericParameterAnnotation(type))
                 return true;
+
+            // No need to check for new constraint, because we handle that as DAMT.PublicParameterlessConstructor.
 
             if (type.HasInstantiation)
             {
