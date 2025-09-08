@@ -2818,32 +2818,6 @@ interp_type_as_ptr (MonoType *tp)
 	return FALSE;
 }
 
-static int 
-interp_ptr_size (MonoType *tp)
-{
-	if ((tp)->type == MONO_TYPE_BOOLEAN)
-		return 4;
-	if ((tp)->type == MONO_TYPE_CHAR) 
-		return SIZEOF_VOID_P;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))		
-		return 4;
-	if ((tp)->type == MONO_TYPE_I4)
-		return 4;
-	if (MONO_TYPE_IS_POINTER (tp))
-		return SIZEOF_VOID_P;
-	if (MONO_TYPE_IS_REFERENCE (tp))
-		return SIZEOF_VOID_P;	
-#if SIZEOF_VOID_P == 8
-	if ((tp)->type == MONO_TYPE_I8 || (tp)->type == MONO_TYPE_U8)
-		return 8;
-#endif
-	
-	if (is_scalar_vtype (tp))
-		return SIZEOF_VOID_P; 
-	MH_LOGV(MH_LVL_INFO, "Don't know what to do with type %s",mono_type_get_name (tp));
-	g_assert_not_reached ();
-}
-
 #define INTERP_TYPE_AS_PTR(tp) interp_type_as_ptr (tp)
 #define DEBUG_ENCODE_SIGNATURE 1
 #define ENCODE_4BYTE 0b01
