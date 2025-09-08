@@ -14,3 +14,4 @@ class Class1
 		}
 	}
 }
+

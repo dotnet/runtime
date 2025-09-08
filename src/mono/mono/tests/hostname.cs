@@ -18,3 +18,4 @@ typeof(A).FullName);
   a.test();
  }
 }
+

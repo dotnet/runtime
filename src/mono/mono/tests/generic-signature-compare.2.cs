@@ -15,3 +15,4 @@ class C
     return Foo<int, int> ();
   }
 }
+

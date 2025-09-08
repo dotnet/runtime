@@ -24,3 +24,4 @@ public class MultiThreadExceptionTest {
 		t2.Start();
 	}
 }
+

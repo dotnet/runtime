@@ -22,3 +22,4 @@ class T {
 		GC.Collect ();
 	}
 }
+

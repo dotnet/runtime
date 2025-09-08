@@ -296,3 +296,4 @@ public class Tests {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 }
+

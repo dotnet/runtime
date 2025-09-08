@@ -29,3 +29,4 @@ class T {
 		return 1;
 	}
 }
+

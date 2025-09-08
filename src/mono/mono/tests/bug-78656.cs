@@ -37,3 +37,4 @@ class BasicValueTypesTest
 		return result;
 	}
 }
+

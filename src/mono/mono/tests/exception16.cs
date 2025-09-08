@@ -41,3 +41,4 @@ public class TestTryFinally
 		return 0;
 	}
 }
+

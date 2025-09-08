@@ -78,3 +78,4 @@ class C
 		return 0;
 	}
 }
+

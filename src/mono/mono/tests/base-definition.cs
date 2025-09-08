@@ -60,3 +60,5 @@ class SubTestClass : TestClass
 		get { return ""; }
 	}
 }
+
+

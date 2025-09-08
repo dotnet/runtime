@@ -399,3 +399,4 @@ public class Test_double {
 		return 0;
 	} // end Main
 } // end class Test_double
+

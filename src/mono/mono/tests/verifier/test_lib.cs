@@ -23,3 +23,5 @@ public class ClassC {
 	internal static int sfld;
 	internal void Test() {}
 }
+
+

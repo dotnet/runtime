@@ -76,3 +76,4 @@ class C
 		return Test (d);
 	}
 }
+

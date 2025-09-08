@@ -25,3 +25,4 @@ public class foo {
 		Environment.ExitCode = 0;
 	}
 }
+

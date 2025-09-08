@@ -18,3 +18,4 @@ class Test {
 		Environment.Exit (1);
 	}
 }
+

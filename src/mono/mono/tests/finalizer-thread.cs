@@ -38,3 +38,4 @@ public class foo  {
 		return 1;
 	} 
 } 
+

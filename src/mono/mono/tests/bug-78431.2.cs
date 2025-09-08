@@ -28,3 +28,5 @@ class M {
     int x = (new RList<object>.Nil()).Length;
   }
 }
+
+

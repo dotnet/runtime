@@ -40,3 +40,4 @@ class T {
 		test (arr);
 	}
 }
+

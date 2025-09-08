@@ -19,3 +19,4 @@ public class foo {
 		Environment.Exit(0);
 	}
 }
+
