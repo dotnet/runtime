@@ -315,7 +315,7 @@ int main(const int argc, const pal::char_t* argv[])
 // Disable Swift backtrace on macOS to avoid conflicts with the host's signal handlers.
 // see https://github.com/dotnet/runtime/issues/118823
 #if defined(TARGET_OSX)
-    ::setenv("SWIFT_BACKTRACE", "enable=no", 1);
+    ::setenv("SWIFT_BACKTRACE", "enable=no", 0);
 #endif
 
     trace::setup();
