@@ -2707,13 +2707,23 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(ppBlockingObjectEnum, ICorDebugBlockingObjectEnum **);
 
-    // We don't have any blocking objects to enumerate from the native side,
-    // so we create an empty enumerator.
-    CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
-        GetProcess(),
-        new CorDebugBlockingObject[0],
-        0);
-    return objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
+    HRESULT hr = S_OK;
+    *ppBlockingObjectEnum = NULL;
+
+    EX_TRY
+    {
+        // We don't have any blocking objects to enumerate from the native side,
+        // so we create an empty enumerator.
+        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
+            GetProcess(),
+            new CorDebugBlockingObject[0],
+            0);
+        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
+        hr = objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
 }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
