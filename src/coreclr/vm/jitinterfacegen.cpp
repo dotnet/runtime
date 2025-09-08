@@ -38,15 +38,7 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
 #endif
 
-            PCODE pfnHelper = GetEEFuncEntryPoint(RhNewString);
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            AllocMemHolder<PortableEntryPoint> portableEntryPoint;
-            pfnHelper = PortableEntryPoint::CreateFromNativeEntryPoint(pfnHelper, &portableEntryPoint);
-            portableEntryPoint.SuppressRelease();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-            ECall::DynamicallyAssignFCallImpl(pfnHelper, ECall::FastAllocateString);
+            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
         }
         else
         {

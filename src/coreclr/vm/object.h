@@ -534,7 +534,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -556,10 +555,9 @@ private:
 
 public:
 #ifndef DACCESS_COMPILE
-    void SetMethodTableAndNumComponents(MethodTable *pMT, INT32 length)
+    void SetNumComponents(INT32 length)
     {
         LIMITED_METHOD_CONTRACT;
-        SetMethodTable(pMT);
         m_NumComponents = length;
     }
 #endif // !DACCESS_COMPILE
@@ -699,7 +697,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 

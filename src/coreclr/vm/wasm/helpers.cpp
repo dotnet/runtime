@@ -572,9 +572,8 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     void* cookie = GetCookieForCalliSig(sig);
 
     _ASSERTE(cookie != NULL);
-    _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(target));
 
-    InvokeCalliStub((PCODE)PortableEntryPoint::GetActualCode(target), cookie, pArgs, pRet);
+    InvokeCalliStub(target, cookie, pArgs, pRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int32_t callArgsOffset, int32_t returnOffset, PCODE callTarget)

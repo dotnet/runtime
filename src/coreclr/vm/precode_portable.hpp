@@ -17,8 +17,8 @@ public: // static
     static bool HasNativeEntryPoint(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
+    static void SetActualCode(PCODE addr, PCODE actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
-    static bool TryGetMethodDesc(PCODE addr, MethodDesc** ppMD);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 

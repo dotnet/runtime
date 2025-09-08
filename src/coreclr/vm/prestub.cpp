@@ -2307,12 +2307,18 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsFCall())
     {
         // Get the fcall implementation
-        pCode = ECall::GetFCallImpl(this);
+        bool hasManagedImpl = false;
+        pCode = ECall::GetFCallImpl(this, true /* throwForInvalidFCall */, &hasManagedImpl);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        MethodDesc* helperMD;
-        if (PortableEntryPoint::TryGetMethodDesc(pCode, &helperMD))
+        if (!hasManagedImpl)
         {
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetActualCode(entryPoint, pCode);
+        }
+        else
+        {
+            MethodDesc* helperMD = PortableEntryPoint::GetMethodDesc(pCode);
             // If the FCall has a MethodDesc, then we need to potentially set up the interpreter code for it as well.
             // This is because the FCall may have been compiled to an IL stub that needs to be interpreted.
             if (helperMD->IsPointingToPrestub())

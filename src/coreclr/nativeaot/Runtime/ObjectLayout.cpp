@@ -17,7 +17,7 @@
 #include "MethodTable.inl"
 
 #ifndef DACCESS_COMPILE
-void Object::InitEEType(MethodTable * pEEType)
+void Object::InitMethodTable(MethodTable * pEEType)
 {
     ASSERT(NULL == m_pEEType);
     m_pEEType = pEEType;
@@ -37,7 +37,7 @@ void* Array::GetArrayData()
 }
 
 #ifndef DACCESS_COMPILE
-void Array::InitArrayLength(uint32_t length)
+void Array::SetNumComponents(uint32_t length)
 {
     m_Length = length;
 }

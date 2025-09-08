@@ -13,6 +13,8 @@ EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd
 static Object* _RhpNewArrayFastCore(CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
     FCALL_CONTRACT;
+    _ASSERTE(typeHnd_ != NULL);
+    _ASSERTE(size < INT32_MAX);
 
     MethodTable* pMT = (MethodTable*)typeHnd_;
     Thread* thread = GetThread();
@@ -27,18 +29,18 @@ static Object* _RhpNewArrayFastCore(CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
         PtrArray* pObject = (PtrArray *)alloc_ptr;
-        pObject->SetMethodTableAndNumComponents(pMT, (INT32)size);
+        pObject->SetMethodTable(pMT);
+        pObject->SetNumComponents((INT32)size);
         return pObject;
     }
 
-    return OBJECTREFToObject(AllocateSzArray(pMT, (INT32)size));
+    return RhpNewVariableSizeObject(typeHnd_, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(typeHnd_ != NULL);
-    _ASSERTE(size < INT32_MAX);
 
     MethodTable* pMT = (MethodTable*)typeHnd_;
 

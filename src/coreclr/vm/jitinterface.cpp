@@ -10776,7 +10776,16 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
     accessType = IAT_VALUE;
     targetAddr = (LPVOID)VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
-    if (targetAddr == NULL)
+    if (targetAddr != NULL)
+    {
+        if (helperDef.IsDynamicHelper(&dynamicFtnNum))
+        {
+            (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+            _ASSERTE(PortableEntryPoint::HasNativeEntryPoint((PCODE)targetAddr)
+                || PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+        }
+    }
+    else
     {
         if (helperDef.IsDynamicHelper(&dynamicFtnNum))
         {

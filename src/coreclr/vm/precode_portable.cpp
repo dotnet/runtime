@@ -40,6 +40,18 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     return portableEntryPoint->_pActualCode;
 }
 
+void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
+{
+    STANDARD_VM_CONTRACT;
+
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    _ASSERTE(actualCode != (PCODE)NULL);
+
+    // This is a lock free write. It can either be NULL or was already set to the same value.
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
+    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+}
+
 MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
 {
     STANDARD_VM_CONTRACT;
@@ -47,16 +59,6 @@ MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE(portableEntryPoint->_pMD != nullptr);
     return portableEntryPoint->_pMD;
-}
-
-bool PortableEntryPoint::TryGetMethodDesc(PCODE addr, MethodDesc** ppMD)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(ppMD != nullptr);
-
-    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    *ppMD = portableEntryPoint->_pMD;
-    return *ppMD != nullptr;
 }
 
 void* PortableEntryPoint::GetInterpreterData(PCODE addr)
