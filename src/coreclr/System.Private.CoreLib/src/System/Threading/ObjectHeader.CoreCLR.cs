@@ -49,26 +49,18 @@ namespace System.Threading
         private const int SBLK_LOCK_RECLEVEL_INC = 0x00010000;    // each level is this much higher than the previous one
 
         // These must match the values in syncblk.h
-        public enum AcquireHeaderResult
+        public enum HeaderLockResult
         {
             Success = 0,
-            Contention = 1,
+            Failure = 1,
             UseSlowPath = 2
         };
 
-        // These must match the values in syncblk.h
-        public enum ReleaseHeaderResult
-        {
-            Success = 0,
-            UseSlowPath = 1,
-            Error = 2
-        };
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern HeaderLockResult AcquireInternal(object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern AcquireHeaderResult AcquireInternal(object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern ReleaseHeaderResult Release(object obj);
+        public static extern HeaderLockResult Release(object obj);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
@@ -108,25 +100,25 @@ namespace System.Threading
         //
 
         // Try acquiring the thin-lock
-        public static unsafe AcquireHeaderResult TryAcquireThinLock(object obj)
+        public static unsafe HeaderLockResult TryAcquireThinLock(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            AcquireHeaderResult result = AcquireInternal(obj);
-            if (result == AcquireHeaderResult.Contention)
+            HeaderLockResult result = AcquireInternal(obj);
+            if (result == HeaderLockResult.Failure)
             {
                 return TryAcquireThinLockSpin(obj);
             }
             return result;
         }
 
-        private static unsafe AcquireHeaderResult TryAcquireThinLockSpin(object obj)
+        private static unsafe HeaderLockResult TryAcquireThinLockSpin(object obj)
         {
             int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
 
             // does thread ID fit?
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
-                return AcquireHeaderResult.UseSlowPath;
+                return HeaderLockResult.UseSlowPath;
 
             int retries = Lock.IsSingleProcessor ? 0 : 16;
 
@@ -149,7 +141,7 @@ namespace System.Threading
                         if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
                         {
                             // Need to use a thick-lock.
-                            return AcquireHeaderResult.UseSlowPath;
+                            return HeaderLockResult.UseSlowPath;
                         }
                         // If we already own the lock, try incrementing recursion level.
                         else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
@@ -160,7 +152,7 @@ namespace System.Threading
                             {
                                 if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
                                 {
-                                    return AcquireHeaderResult.Success;
+                                    return HeaderLockResult.Success;
                                 }
 
                                 // rare contention on owned lock,
@@ -171,7 +163,7 @@ namespace System.Threading
                             else
                             {
                                 // overflow, need to transition to a fat Lock
-                                return AcquireHeaderResult.UseSlowPath;
+                                return HeaderLockResult.UseSlowPath;
                             }
                         }
                         // If no one owns the lock, try acquiring it.
@@ -180,7 +172,7 @@ namespace System.Threading
                             int newBits = oldBits | currentThreadID;
                             if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
                             {
-                                return AcquireHeaderResult.Success;
+                                return HeaderLockResult.Success;
                             }
 
                             // rare contention on lock.
@@ -204,11 +196,11 @@ namespace System.Threading
             }
 
             // owned by somebody else
-            return AcquireHeaderResult.Contention;
+            return HeaderLockResult.Failure;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe AcquireHeaderResult IsAcquired(object obj)
+        public static unsafe HeaderLockResult IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
@@ -225,17 +217,17 @@ namespace System.Threading
                 // use the slow path.
                 if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                 {
-                    return AcquireHeaderResult.UseSlowPath;
+                    return HeaderLockResult.UseSlowPath;
                 }
 
                 // if we own the lock
                 if ((oldBits & SBLK_MASK_LOCK_THREADID) == (int)Lock.ThreadId.Current_NoInitialize.Id)
                 {
-                    return AcquireHeaderResult.Success;
+                    return HeaderLockResult.Success;
                 }
 
                 // someone else owns or no one.
-                return AcquireHeaderResult.Contention;
+                return HeaderLockResult.Failure;
             }
         }
     }

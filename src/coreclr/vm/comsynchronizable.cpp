@@ -930,7 +930,7 @@ extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnSta
     END_QCALL;
 }
 
-FCIMPL1(ObjHeader::AcquireHeaderResult, ObjHeader_AcquireThinLock, Object* obj)
+FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -938,7 +938,7 @@ FCIMPL1(ObjHeader::AcquireHeaderResult, ObjHeader_AcquireThinLock, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL1(ObjHeader::ReleaseHeaderResult, ObjHeader_ReleaseThinLock, Object* obj)
+FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 

@@ -76,7 +76,7 @@ extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnSta
 
 FCDECL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* obj);
 
-FCDECL1(ObjHeader::AcquireHeaderResult, ObjHeader_AcquireThinLock, Object* obj);
-FCDECL1(ObjHeader::ReleaseHeaderResult, ObjHeader_ReleaseThinLock, Object* obj);
+FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj);
+FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj);
 #endif // _COMSYNCHRONIZABLE_H
 

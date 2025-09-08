@@ -68,8 +68,8 @@ namespace System.Threading
         #region Public Enter/Exit methods
         public static void Enter(object obj)
         {
-            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
-            if (result == ObjectHeader.AcquireHeaderResult.Success)
+            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.HeaderLockResult.Success)
                 return;
 
             GetLockObject(obj).Enter();
@@ -87,11 +87,11 @@ namespace System.Threading
 
         public static bool TryEnter(object obj)
         {
-            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
-            if (result == ObjectHeader.AcquireHeaderResult.Success)
+            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
-            if (result == ObjectHeader.AcquireHeaderResult.Contention)
+            if (result == ObjectHeader.HeaderLockResult.Failure)
                 return false;
 
             return GetLockObject(obj).TryEnter();
@@ -110,8 +110,8 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            ObjectHeader.AcquireHeaderResult result = ObjectHeader.TryAcquireThinLock(obj);
-            if (result == ObjectHeader.AcquireHeaderResult.Success)
+            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
             return GetLockObject(obj).TryEnter(millisecondsTimeout);
@@ -139,14 +139,14 @@ namespace System.Threading
         public static void Exit(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            ObjectHeader.ReleaseHeaderResult result = ObjectHeader.Release(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Release(obj);
 
-            if (result == ObjectHeader.ReleaseHeaderResult.Success)
+            if (result == ObjectHeader.HeaderLockResult.Success)
             {
                 return;
             }
 
-            if (result == ObjectHeader.ReleaseHeaderResult.Error)
+            if (result == ObjectHeader.HeaderLockResult.Failure)
             {
                 throw new SynchronizationLockException();
             }
@@ -157,11 +157,11 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
-            ObjectHeader.AcquireHeaderResult result = ObjectHeader.IsAcquired(obj);
-            if (result == ObjectHeader.AcquireHeaderResult.Success)
+            ObjectHeader.HeaderLockResult result = ObjectHeader.IsAcquired(obj);
+            if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
-            if (result == ObjectHeader.AcquireHeaderResult.Contention)
+            if (result == ObjectHeader.HeaderLockResult.Failure)
                 return false;
 
             return GetLockObject(obj).IsHeldByCurrentThread;
