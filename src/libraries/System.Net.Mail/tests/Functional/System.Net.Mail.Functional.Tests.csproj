@@ -5,7 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
