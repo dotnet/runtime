@@ -217,9 +217,16 @@ namespace System.Threading
                 int* pHeader = GetHeaderPtr(pObjectData);
 
                 // Ignore the spinlock here.
-                // Either we'll read the thin-lock data in the header or read from the syncblock.
+                // Either we'll read the thin-lock data in the header or we'll have a sync block.
                 // In either case, the two will be consistent.
                 int oldBits = *pHeader;
+
+                // If has a hash code or syncblock, we cannot determine the lock state from the header
+                // use the slow path.
+                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                {
+                    return AcquireHeaderResult.UseSlowPath;
+                }
 
                 // if we own the lock
                 if ((oldBits & SBLK_MASK_LOCK_THREADID) == (int)Lock.ThreadId.Current_NoInitialize.Id)
@@ -227,12 +234,7 @@ namespace System.Threading
                     return AcquireHeaderResult.Success;
                 }
 
-                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
-                {
-                    return AcquireHeaderResult.UseSlowPath;
-                }
-
-                // someone else owns or noone.
+                // someone else owns or no one.
                 return AcquireHeaderResult.Contention;
             }
         }
