@@ -2864,7 +2864,7 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     bool isPInvoke = (callSiteSig->callConv != CORINFO_CALLCONV_DEFAULT && callSiteSig->callConv != CORINFO_CALLCONV_VARARG);
     if (isPInvoke && m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
     {
-        BADCODE("PInvoke marshalling is not supported in interpreted code");
+        BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
     }
     m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
                              (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0);
