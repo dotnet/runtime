@@ -555,12 +555,14 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
+#ifndef DACCESS_COMPILE
     void SetMethodTableAndNumComponents(MethodTable *pMT, INT32 length)
     {
         LIMITED_METHOD_CONTRACT;
         SetMethodTable(pMT);
         m_NumComponents = length;
     }
+#endif // !DACCESS_COMPILE
 
     // Get the element type for the array, this works whether the element
     // type is stored in the array or not
