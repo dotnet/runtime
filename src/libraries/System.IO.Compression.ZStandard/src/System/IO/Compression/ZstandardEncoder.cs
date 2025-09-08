@@ -10,7 +10,7 @@ namespace System.IO.Compression
     /// <summary>Provides methods and properties to compress data using ZStandard compression.</summary>
     public struct ZStandardEncoder : IDisposable
     {
-        internal SafeZStdCompressHandle? _state;
+        internal SafeZStdCompressHandle? _context;
         private bool _disposed;
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardEncoder"/> struct with the specified quality and window size.</summary>
@@ -21,12 +21,18 @@ namespace System.IO.Compression
         public ZStandardEncoder(int quality, int window)
         {
             _disposed = false;
-            _state = Interop.Zstd.ZSTD_createCCtx();
-            if (_state.IsInvalid)
-                throw new IOException(SR.ZStandardEncoder_Create);
+            InitializeEncoder();
 
-            SetQuality(quality);
-            SetWindow(window);
+            try
+            {
+                SetQuality(quality);
+                SetWindow(window);
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardEncoder"/> struct with the specified dictionary and window size.</summary>
@@ -34,7 +40,6 @@ namespace System.IO.Compression
         /// <param name="window">The window size for compression.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="window"/> is not between the minimum and maximum allowed values.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="ZStandardEncoder"/> instance.</exception>
         public ZStandardEncoder(ZStandardDictionary dictionary, int window)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -43,18 +48,17 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.ZStandardEncoder_InvalidDictionary);
 
             _disposed = false;
-            _state = Interop.Zstd.ZSTD_createCCtx();
-            if (_state.IsInvalid)
-                throw new IOException(SR.ZStandardEncoder_Create);
+            InitializeEncoder();
 
-            SetWindow(window);
-
-            // Attach the dictionary to the compression context
-            nuint result = Interop.Zstd.ZSTD_CCtx_refCDict(_state, dictionary.CompressionDictionary);
-            if (Interop.Zstd.ZSTD_isError(result) != 0)
+            try
             {
-                _state.Dispose();
-                throw new IOException(SR.ZStandardEncoder_DictionaryAttachFailed);
+                SetWindow(window);
+                _context!.SetDictionary(dictionary.CompressionDictionary);
+            }
+            catch
+            {
+                _context!.DangerousRelease();
+                throw;
             }
         }
 
@@ -64,15 +68,16 @@ namespace System.IO.Compression
         internal void InitializeEncoder()
         {
             EnsureNotDisposed();
-            _state = Interop.Zstd.ZSTD_createCCtx();
-            if (_state.IsInvalid)
-                throw new IOException(SR.ZStandardEncoder_Create);
+
+            _context = Interop.Zstd.ZSTD_createCCtx();
+            if (_context.IsInvalid)
+                throw new Interop.Zstd.ZstdNativeException(SR.ZStandardEncoder_Create);
         }
 
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
-            if (_state == null)
+            if (_context == null)
             {
                 InitializeEncoder();
             }
@@ -97,7 +102,7 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
 
             return CompressCore(source, destination, out bytesConsumed, out bytesWritten,
-                isFinalBlock ? Interop.ZStdEndDirective.ZSTD_e_end : Interop.ZStdEndDirective.ZSTD_e_continue);
+                isFinalBlock ? Interop.Zstd.ZStdEndDirective.ZSTD_e_end : Interop.Zstd.ZStdEndDirective.ZSTD_e_continue);
         }
 
         /// <summary>Flushes any remaining data to the destination buffer.</summary>
@@ -110,11 +115,11 @@ namespace System.IO.Compression
             EnsureInitialized();
 
             return CompressCore(ReadOnlySpan<byte>.Empty, destination, out _, out bytesWritten,
-                Interop.ZStdEndDirective.ZSTD_e_flush);
+                Interop.Zstd.ZStdEndDirective.ZSTD_e_flush);
         }
 
         private readonly OperationStatus CompressCore(ReadOnlySpan<byte> source, Span<byte> destination,
-            out int bytesConsumed, out int bytesWritten, Interop.ZStdEndDirective endDirective)
+            out int bytesConsumed, out int bytesWritten, Interop.Zstd.ZStdEndDirective endDirective)
         {
             bytesConsumed = 0;
             bytesWritten = 0;
@@ -124,26 +129,22 @@ namespace System.IO.Compression
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
-                    var input = new Interop.ZStdInBuffer
+                    var input = new Interop.Zstd.ZStdInBuffer
                     {
                         src = (IntPtr)inBytes,
                         size = (nuint)source.Length,
                         pos = 0
                     };
 
-                    var output = new Interop.ZStdOutBuffer
+                    var output = new Interop.Zstd.ZStdOutBuffer
                     {
                         dst = (IntPtr)outBytes,
                         size = (nuint)destination.Length,
                         pos = 0
                     };
 
-                    nuint result = Interop.Zstd.ZSTD_compressStream2(_state!, ref output, ref input, endDirective);
-
-                    if (ZStandardUtils.IsError(result))
-                    {
-                        throw new IOException(string.Format(SR.ZStandardEncoder_CompressError, ZStandardUtils.GetErrorMessage(result)));
-                    }
+                    nuint result = Interop.Zstd.ZSTD_compressStream2(_context!, ref output, ref input, endDirective);
+                    Interop.Zstd.ZstdNativeException.ThrowIfError(result, SR.ZStandardEncoder_CompressError);
 
                     bytesConsumed = (int)input.pos;
                     bytesWritten = (int)output.pos;
@@ -254,7 +255,7 @@ namespace System.IO.Compression
         public void Dispose()
         {
             _disposed = true;
-            _state?.Dispose();
+            _context?.Dispose();
         }
 
         private readonly void EnsureNotDisposed()
@@ -269,11 +270,11 @@ namespace System.IO.Compression
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), string.Format(SR.ZStandardEncoder_InvalidQuality, ZStandardUtils.Quality_Min, ZStandardUtils.Quality_Max));
             }
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_context == null || _context.IsInvalid || _context.IsClosed)
             {
                 InitializeEncoder();
             }
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_state!, Interop.ZStdCParameter.ZSTD_c_compressionLevel, quality);
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, Interop.Zstd.ZStdCParameter.ZSTD_c_compressionLevel, quality);
             if (ZStandardUtils.IsError(result))
             {
                 throw new IOException(string.Format(SR.ZStandardEncoder_CompressError, ZStandardUtils.GetErrorMessage(result)));
@@ -287,11 +288,11 @@ namespace System.IO.Compression
             {
                 throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.ZStandardEncoder_InvalidWindow, ZStandardUtils.WindowBits_Min, ZStandardUtils.WindowBits_Max));
             }
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_context == null || _context.IsInvalid || _context.IsClosed)
             {
                 InitializeEncoder();
             }
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_state!, Interop.ZStdCParameter.ZSTD_c_windowLog, window);
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, Interop.Zstd.ZStdCParameter.ZSTD_c_windowLog, window);
             if (ZStandardUtils.IsError(result))
             {
                 throw new IOException(string.Format(SR.ZStandardEncoder_CompressError, ZStandardUtils.GetErrorMessage(result)));

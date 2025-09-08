@@ -102,48 +102,61 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_CCtx_refCDict(SafeZStdCompressHandle cctx, SafeZStdCDictHandle cdict);
-    }
 
-    // Enums and structures for streaming
-    internal enum ZStdEndDirective
-    {
-        ZSTD_e_continue = 0,
-        ZSTD_e_flush = 1,
-        ZSTD_e_end = 2
-    }
+        // Enums and structures for streaming
+        internal enum ZStdEndDirective
+        {
+            ZSTD_e_continue = 0,
+            ZSTD_e_flush = 1,
+            ZSTD_e_end = 2
+        }
 
-    internal enum ZStdCParameter
-    {
-        ZSTD_c_compressionLevel = 100,
-        ZSTD_c_windowLog = 101,
-        ZSTD_c_hashLog = 102,
-        ZSTD_c_chainLog = 103,
-        ZSTD_c_searchLog = 104,
-        ZSTD_c_minMatch = 105,
-        ZSTD_c_targetLength = 106,
-        ZSTD_c_strategy = 107
-    }
+        internal enum ZStdCParameter
+        {
+            ZSTD_c_compressionLevel = 100,
+            ZSTD_c_windowLog = 101,
+            ZSTD_c_hashLog = 102,
+            ZSTD_c_chainLog = 103,
+            ZSTD_c_searchLog = 104,
+            ZSTD_c_minMatch = 105,
+            ZSTD_c_targetLength = 106,
+            ZSTD_c_strategy = 107
+        }
 
-    internal enum ZStdResetDirective
-    {
-        ZSTD_reset_session_only = 1,
-        ZSTD_reset_parameters = 2,
-        ZSTD_reset_session_and_parameters = 3
-    }
+        internal enum ZStdResetDirective
+        {
+            ZSTD_reset_session_only = 1,
+            ZSTD_reset_parameters = 2,
+            ZSTD_reset_session_and_parameters = 3
+        }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ZStdInBuffer
-    {
-        internal IntPtr src;
-        internal nuint size;
-        internal nuint pos;
-    }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ZStdInBuffer
+        {
+            internal IntPtr src;
+            internal nuint size;
+            internal nuint pos;
+        }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ZStdOutBuffer
-    {
-        internal IntPtr dst;
-        internal nuint size;
-        internal nuint pos;
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ZStdOutBuffer
+        {
+            internal IntPtr dst;
+            internal nuint size;
+            internal nuint pos;
+        }
+
+        internal sealed class ZstdNativeException : Exception
+        {
+            public ZstdNativeException(string message) : base(message) { }
+
+            public static void ThrowIfError(nuint result, string message)
+            {
+                if (ZStandardUtils.IsError(result))
+                {
+                    throw new ZstdNativeException(SR.Format(message, ZStandardUtils.GetErrorMessage(result)));
+                }
+            }
+        }
     }
 }
