@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Compression
@@ -91,6 +92,84 @@ namespace System.IO.Compression
             Assert.Equal(OperationStatus.Done, result);
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
+        }
+
+        public static IEnumerable<object[]> GetRoundTripTestData()
+        {
+            foreach (int quality in new[] { 1, 2, 3 })
+            {
+                foreach (bool useDictionary in new[] { true, false })
+                {
+                    foreach (bool staticEncode in new[] { true, false })
+                    {
+                        foreach (bool staticDecode in new[] { true, false })
+                        {
+                            yield return new object[] { quality, useDictionary, staticEncode, staticDecode };
+                        }
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetRoundTripTestData))]
+        public void RoundTrip_SuccessfullyCompressesAndDecompresses(int quality, bool useDictionary, bool staticEncode, bool staticDecode)
+        {
+            byte[] originalData = "Hello, World! This is a test string for ZStandard compression and decompression."u8.ToArray();
+            byte[] compressedBuffer = new byte[ZStandardEncoder.GetMaxCompressedLength(originalData.Length)];
+            byte[] decompressedBuffer = new byte[originalData.Length * 2];
+
+            using ZStandardDictionary dictionary = ZStandardDictionary.Create(CreateSampleDictionary(), quality);
+
+            int window = 10;
+
+            int bytesWritten;
+            int bytesConsumed;
+
+            // Compress
+            if (staticEncode)
+            {
+                bool result =
+                    useDictionary
+                    ? ZStandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, dictionary, window)
+                    : ZStandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, quality, window);
+                bytesConsumed = originalData.Length;
+
+                Assert.True(result);
+            }
+            else
+            {
+                using var encoder = useDictionary ? new ZStandardEncoder(dictionary, window) : new ZStandardEncoder(quality, window);
+                OperationStatus compressResult = encoder.Compress(originalData, compressedBuffer, out bytesConsumed, out bytesWritten, true);
+                Assert.Equal(OperationStatus.Done, compressResult);
+            }
+
+            Assert.Equal(originalData.Length, bytesConsumed);
+            Assert.True(bytesWritten > 0);
+            int compressedLength = bytesWritten;
+
+            // Decompress
+            if (staticDecode)
+            {
+                bool result =
+                    useDictionary
+                    ? ZStandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), dictionary, decompressedBuffer, out bytesWritten)
+                    : ZStandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), decompressedBuffer, out bytesWritten);
+                bytesConsumed = compressedLength;
+
+                Assert.True(result);
+            }
+            else
+            {
+                using var decoder = useDictionary ? new ZStandardDecoder(dictionary) : new ZStandardDecoder();
+                OperationStatus decompressResult = decoder.Decompress(compressedBuffer.AsSpan(0, compressedLength), decompressedBuffer, out bytesConsumed, out bytesWritten);
+
+                Assert.Equal(OperationStatus.Done, decompressResult);
+            }
+
+            Assert.Equal(compressedLength, bytesConsumed);
+            Assert.Equal(originalData.Length, bytesWritten);
+            Assert.Equal(originalData, decompressedBuffer.AsSpan(0, bytesWritten));
         }
 
         private static byte[] CreateSampleDictionary() => ZStandardTestUtils.CreateSampleDictionary();
