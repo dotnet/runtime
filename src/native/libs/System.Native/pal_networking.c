@@ -1186,27 +1186,6 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
-#if HAVE_IP_MULTICAST_IFINDEX
-static int32_t SetIPv4MulticastInterfaceByIndexOrIPAddress(int fd, IPv4MulticastOption* option)
-{
-    if (option->InterfaceIndex != 0)
-    {
-        // Use IP_MULTICAST_IFINDEX when interface index is specified
-        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
-        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
-        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-    else
-    {
-        struct ip_mreq opt;
-        memset(&opt, 0, sizeof(struct ip_mreq));
-        opt.imr_multiaddr.s_addr = option->MulticastAddress;
-        opt.imr_interface.s_addr = option->LocalAddress;
-        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &opt, sizeof(opt));
-        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-}
-#endif
 
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
@@ -1224,9 +1203,12 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     }
 
 #if HAVE_IP_MULTICAST_IFINDEX
-    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    // Use IP_MULTICAST_IFINDEX when available for interface index specification
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF && option->InterfaceIndex != 0)
     {
-        return SetIPv4MulticastInterfaceByIndexOrIPAddress(fd, option);
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
     }
 #endif
 
