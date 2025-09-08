@@ -2860,11 +2860,15 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
     // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
     bool suppressGCTransition = false;
-    m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
-    bool isPInvoke = (callSiteSig->callConv != CORINFO_CALLCONV_DEFAULT && callSiteSig->callConv != CORINFO_CALLCONV_VARARG);
-    if (isPInvoke && m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
+    CorInfoCallConv callConv = (CorInfoCallConv)(callSiteSig->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+    bool isPInvoke = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+    if (isPInvoke)
     {
-        BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
+        if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
+        {
+            BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
+        }
+        m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
     }
     m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
                              (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0);
