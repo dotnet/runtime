@@ -440,8 +440,7 @@ namespace System
                                 next += 2;
                                 continue;
                             }
-                            else if (iriParsing && ((ch <= '\x9F' && IsNotSafeForUnescape(ch)) ||
-                                                    (ch > '\x9F' && !IriHelper.CheckIriUnicodeRange(ch, isQuery))))
+                            else if (iriParsing && (ch <= '\x9F' ? IsNotSafeForUnescape(ch) : !IriHelper.CheckIriUnicodeRange(ch, isQuery)))
                             {
                                 // check if unenscaping gives a char outside iri range
                                 // if it does then keep it escaped
@@ -547,38 +546,29 @@ namespace System
             return (char)((a << 4) | b);
         }
 
-        internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
-        private const string AdditionalUnsafeToUnescape = @"%\#"; // While not specified as reserved, these are still unsafe to unescape.
-
         // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:
+        // reserved    = gen-delims / sub-delims
         // gen-delims  = ":" / "/" / "?" / "#" / "[" / "]" / "@"
         // sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
         //             / "*" / "+" / "," / ";" / "="
         //
         // In addition, do not unescape the following unsafe characters:
         // excluded    = "%" / "\"
-        //
-        // This implementation used to use the following variant of the RFC 2396 reserved set.
-        // That behavior is now disabled by default, and is controlled by a UriSyntax property.
-        // reserved    = ";" | "/" | "?" | "@" | "&" | "=" | "+" | "$" | ","
-        // excluded    = control | "#" | "%" | "\"
-        internal static bool IsNotSafeForUnescape(char ch)
-        {
-            if (ch <= '\x1F' || (ch >= '\x7F' && ch <= '\x9F'))
-            {
-                return true;
-            }
+        internal static bool IsNotSafeForUnescape(char ch) =>
+            s_notSafeForUnescapeChars.Contains(ch);
 
-            const string NotSafeForUnescape = RFC3986ReservedMarks + AdditionalUnsafeToUnescape;
+        private static readonly SearchValues<char> s_notSafeForUnescapeChars = SearchValues.Create(
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
+            "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
+            ";/?:@&=+$,#[]!'()*" + "%\\" + "\u007F" +
+            "\u0080\u0081\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008D\u008E\u008F" +
+            "\u0090\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009D\u009E\u009F");
 
-            return NotSafeForUnescape.Contains(ch);
-        }
-
-        // true for all ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'
+        /// <summary>All ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'.</summary>
         public static readonly SearchValues<char> Unreserved =
             SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
 
-        // true for all ASCII letters and digits, as well as the RFC3986 reserved characters, unreserved characters, and hash
+        /// <summary>All ASCII letters and digits, as well as the RFC3986 reserved and unreserved marks.</summary>
         public static readonly SearchValues<char> UnreservedReserved =
             SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
@@ -587,14 +577,6 @@ namespace System
 
         public static readonly SearchValues<char> UnreservedReservedExceptQuestionMarkHash =
             SearchValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
-
-        //
-        // Is this a gen delim char from RFC 3986
-        //
-        internal static bool IsGenDelim(char ch)
-        {
-            return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
-        }
 
         internal static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };
 
