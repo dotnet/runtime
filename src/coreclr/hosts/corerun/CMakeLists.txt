@@ -50,7 +50,17 @@ else(CLR_CMAKE_HOST_WIN32)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
-            target_link_options(corerun PRIVATE -fwasm-exceptions -sEXPORTED_RUNTIME_METHODS=FS -sEXIT_RUNTIME=1 -sINITIAL_MEMORY=134217728 -sSTACK_SIZE=5MB -lnoderawfs.js -lnodefs.js --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js -Wl,-error-limit=0)
+            target_link_options(corerun PRIVATE
+                -fwasm-exceptions
+                -sEXPORTED_RUNTIME_METHODS=FS
+                -sEXIT_RUNTIME=1
+                -sWASM_BIGINT=1
+                -sINITIAL_MEMORY=134217728
+                -sSTACK_SIZE=5MB
+                -lnoderawfs.js
+                -lnodefs.js
+                --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js
+                -Wl,-error-limit=0)
         endif()
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
