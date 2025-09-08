@@ -7,13 +7,13 @@ namespace System.IO.Compression
     public sealed class ZStandardCompressionOptions
     {
         /// <summary>The default compression quality level.</summary>
-        public static int DefaultQuality => 3;
+        public static int DefaultQuality => ZStandardUtils.Quality_Default;
 
         /// <summary>The minimum compression quality level.</summary>
-        public static int MinQuality => -131072;
+        public static int MinQuality => ZStandardUtils.Quality_Min;
 
         /// <summary>The maximum compression quality level.</summary>
-        public static int MaxQuality => 22;
+        public static int MaxQuality => ZStandardUtils.Quality_Max;
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardCompressionOptions"/> class.</summary>
         public ZStandardCompressionOptions()
