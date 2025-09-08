@@ -214,9 +214,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<TestType>();
         }
 
+        [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>, IGenericInterfaceTypeWithRequirements<T>
         {
-            [ExpectedWarning("IL2091", nameof(DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>))]
+            [ExpectedWarning("IL2091", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
             [ExpectedWarning("IL2026", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
             public DerivedTypeWithOpenGenericOnBaseWithRUCOnBase() { }
         }
@@ -231,6 +232,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType>();
         }
 
+        [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         [RequiresUnreferencedCode("RUC")]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>, IGenericInterfaceTypeWithRequirements<T>
         {

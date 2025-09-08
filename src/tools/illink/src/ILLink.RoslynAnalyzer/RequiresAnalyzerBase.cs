@@ -209,9 +209,6 @@ namespace ILLink.RoslynAnalyzer
             var genericArgumentDataFlow = new GenericArgumentDataFlow(this, FeatureContext.None, typeNameResolver, implicitCtor, typeSymbol.Locations[0], context.ReportDiagnostic);
             if (typeSymbol.BaseType is INamedTypeSymbol baseType)
                 genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
-
-            foreach (var interfaceType in typeSymbol.Interfaces)
-                genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
         }
 
         [Flags]
