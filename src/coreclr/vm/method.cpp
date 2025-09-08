@@ -56,14 +56,14 @@ bool FixupSignatureContainingInternalTypes(
 // Verify that the structure sizes of our MethodDescs support proper
 // aligning for atomic stub replacement.
 //
-static_assert_no_msg((sizeof(MethodDescChunk)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(MethodDesc)            & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(PInvokeMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(MethodDescChunk)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(MethodDesc)            & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(PInvokeMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
@@ -896,7 +896,7 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_wFlags) == 2);
+        static_assert(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
 
@@ -926,7 +926,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_wFlags3AndTokenRemainder) == 2);
+        static_assert(sizeof(m_wFlags3AndTokenRemainder) == 2);
         dwMask <<= 16;
     }
 
@@ -999,7 +999,7 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #else // !BIGENDIAN
     if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) != 0) {
 #endif // !BIGENDIAN
-        static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
+        static_assert(sizeof(m_flagsAndTokenRange) == 2);
         dwMask <<= 16;
     }
 
@@ -2107,6 +2107,10 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    return GetPortableEntryPoint();
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())
         GetOrCreatePrecode();
 
@@ -2168,6 +2172,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         //
         return GetTemporaryEntryPoint();
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 //*******************************************************************************
@@ -2202,13 +2207,18 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    return PortableEntryPoint::GetMethodDesc(entryPoint);
+
+#else // FEATURE_PORTABLE_ENTRYPOINTS
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
@@ -2242,6 +2252,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     // We should never get here
     _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 #ifndef DACCESS_COMPILE
@@ -2636,12 +2647,16 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
 
     MethodDesc* pMD = NULL;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    pMD = PortableEntryPoint::GetMethodDesc(addr);
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
     _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
-    {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
-    }
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     RETURN(pMD);
 }
@@ -2735,12 +2750,24 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
         PTR_PCODE pSlot = GetAddrOfSlot();
 
         AllocMemTracker amt;
-        AllocMemTracker *pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+        AllocMemTracker* pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+
+        PCODE entryPoint;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
+            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
+        portableEntryPoint->Init(this);
+        entryPoint = (PCODE)portableEntryPoint;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), pamTrackerPrecode);
+        entryPoint = pPrecode->GetEntryPoint();
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         IfFailThrow(EnsureCodeDataExists(pamTracker));
 
-        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
+        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, entryPoint, (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
 
         PCODE tempEntryPoint = m_codeData->TemporaryEntryPoint;
@@ -2753,6 +2780,28 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
         InterlockedUpdateFlags4(enum_flag4_TemporaryEntryPointAssigned, TRUE);
     }
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+void MethodDesc::EnsurePortableEntryPoint()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    EnsureTemporaryEntryPoint();
+
+    SetStableEntryPointInterlocked(GetPortableEntryPoint());
+}
+
+PCODE MethodDesc::GetPortableEntryPoint()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    return GetTemporaryEntryPoint();
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 //*******************************************************************************
 void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
@@ -2827,12 +2876,14 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
 #ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
+    _ASSERTE(*pSlot != (PCODE)NULL);
+    _ASSERTE(*pSlot == tempEntry);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-    _ASSERTE(*pSlot != (PCODE)NULL);
-    _ASSERTE(*pSlot == tempEntry);
-#endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
 
     // Set the flags atomically
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
@@ -2845,10 +2896,14 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
 #if _DEBUG
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
     _ASSERTE(tempEntry != (PCODE)NULL);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE(PortableEntryPoint::GetMethodDesc(tempEntry) == this);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
     _ASSERTE(!HasPrecode());
     _ASSERTE(RequiresStableEntryPoint());
 

@@ -43,7 +43,9 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifndef TARGET_WASM
     hEventFinalizer->Set();
+#endif // !TARGET_WASM
 }
 
 namespace

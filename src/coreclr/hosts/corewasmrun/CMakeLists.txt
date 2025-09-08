@@ -20,7 +20,6 @@ target_link_options(corewasmrun PRIVATE -fwasm-exceptions -sEXIT_RUNTIME=1 -sINI
 
 target_link_libraries(corewasmrun PRIVATE
   coreclr_static
-  clrinterpreter
   icuuc
   icui18n
   icudata)

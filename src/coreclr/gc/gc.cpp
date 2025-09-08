@@ -24753,7 +24753,7 @@ void gc_heap::garbage_collect (int n)
                 }
             }
 #else
-            do_concurrent_p = (!!bgc_thread && commit_mark_array_bgc_init());
+            do_concurrent_p = (bgc_thread_running && commit_mark_array_bgc_init());
             if (do_concurrent_p)
             {
                 background_saved_lowest_address = lowest_address;
@@ -30813,7 +30813,7 @@ void gc_heap::reset_mark_stack ()
 #else
 #define brick_bits (11)
 #endif //TARGET_AMD64
-C_ASSERT(brick_size == (1 << brick_bits));
+static_assert(brick_size == (1 << brick_bits));
 
 // The number of bits needed to represent the offset to a child node.
 // "brick_bits + 1" allows us to represent a signed offset within a brick.
