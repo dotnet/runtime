@@ -247,6 +247,11 @@ namespace Wasm.Build.Tests
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
                             $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'";
+            if (!line.Contains(expected))
+            {
+                _testOutput.WriteLine($"Actual:   {line}");
+                _testOutput.WriteLine($"Expected: {expected}");
+            }
             Assert.Contains(expected, line);
         }
     }
