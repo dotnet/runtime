@@ -13,13 +13,13 @@ endif (EXISTS "${_WASM_PRELOAD_DIR}")
 
 target_compile_options(corewasmrun PRIVATE -fwasm-exceptions)
 target_link_options(corewasmrun PRIVATE
-    -fwasm-exceptions
-    -sEXIT_RUNTIME=1
-    -sWASM_BIGINT=1
-    -sINITIAL_MEMORY=134217728
-    -sFORCE_FILESYSTEM=1
-    ${_WASM_PRELOAD_FILE}
-    -Wl,-error-limit=0)
+  -fwasm-exceptions
+  -sEXIT_RUNTIME=1
+  -sWASM_BIGINT=1
+  -sINITIAL_MEMORY=134217728
+  -sFORCE_FILESYSTEM=1
+  ${_WASM_PRELOAD_FILE}
+  -Wl,-error-limit=0)
 
 target_link_libraries(corewasmrun PRIVATE
   coreclr_static)
