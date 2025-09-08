@@ -7,6 +7,7 @@
 #include <emscripten.h>
 #endif
 
+#define MH_LVL_CRIPPLE 6
 #define MH_LVL_TRACE 5
 #define MH_LVL_VERBOSE 4
 #define MH_LVL_DEBUG 3

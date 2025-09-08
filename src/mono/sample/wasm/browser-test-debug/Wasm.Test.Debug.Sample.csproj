@@ -41,9 +41,11 @@
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
+    <NativeFileReference Include="wasmString.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
     
-    <Compile Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.cs" />    
+    
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.mjs" />
     

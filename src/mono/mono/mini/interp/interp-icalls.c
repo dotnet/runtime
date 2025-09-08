@@ -281,6 +281,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	MH_LOG("Got signature cookie %s", sigTest);
 	if (!sigTest)
 	{
+		// can't do this. need to handle no sig
 		memset(&ret_sp->data, 0, sizeof(stackval));
 	}
 	else

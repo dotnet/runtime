@@ -8,7 +8,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-[assembly: DisableRuntimeMarshalling]
+//[assembly: DisableRuntimeMarshalling]
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {

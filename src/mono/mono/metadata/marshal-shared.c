@@ -135,6 +135,7 @@ mono_marshal_shared_is_out (const MonoType *t)
 MonoMarshalConv
 mono_marshal_shared_conv_str_inverse (MonoMarshalConv conv)
 {
+	MH_LOGV(MH_LVL_VERBOSE, "Handling inverse conversion with code: %d", conv);
 	switch (conv) {
 	// AnsiBStr
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
@@ -152,6 +153,7 @@ mono_marshal_shared_conv_str_inverse (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_STR_LPSTR:
 		return MONO_MARSHAL_CONV_LPSTR_STR;
 	case MONO_MARSHAL_CONV_LPSTR_STR:
+		MH_LOGV(MH_LVL_VERBOSE, "returning MONO_MARSHAL_CONV_STR_LPSTR");
 		return MONO_MARSHAL_CONV_STR_LPSTR;
 
 	// LPTStr
@@ -367,6 +369,7 @@ mono_marshal_shared_conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 	// of the wrapper logic. In particular, to produce
 	// volatile stack-based handles. Being data-driven,
 	// from icall-def.h.
+	MH_LOGV(MH_LVL_VERBOSE, "Got here with conv %d", conv);
 
 	int dummy;
 	if (!ind_store_type)
@@ -393,6 +396,7 @@ mono_marshal_shared_conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 		return MONO_JIT_ICALL_mono_string_to_utf8str;
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
+		MH_LOGV(MH_LVL_VERBOSE, "returning MONO_MARSHAL_CONV_STR_LPSTR");
 		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
 	case MONO_MARSHAL_CONV_SB_LPSTR:
 		return MONO_JIT_ICALL_mono_string_builder_to_utf8;
@@ -477,6 +481,7 @@ mono_marshal_shared_conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 void
 mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
+	MH_LOGV(MH_LVL_VERBOSE, "Handling conversion with code: %d", conv);
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
 		mono_mb_emit_ldloc (mb, 1);
@@ -732,7 +737,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	default: {
 		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
-
+		MH_LOGV(MH_LVL_INFO, "NOT IMPLEMENTED: %s", msg);
 		mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}

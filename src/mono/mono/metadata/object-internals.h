@@ -26,6 +26,7 @@
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-coop-mutex.h"
 #include <mono/metadata/icalls.h>
+#include <mono/metadata/mh_log.h>
 
 /* Use this as MONO_CHECK_ARG (arg,expr,) in functions returning void */
 #define MONO_CHECK_ARG(arg, expr, retval) do { \
@@ -1972,6 +1973,7 @@ static inline gunichar2*
 mono_string_chars_internal (MonoString *s)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	MH_LOGV(MH_LVL_VERBOSE, "mono_string_chars_internal: s=%p\n", s);
 	return s->chars;
 }
 

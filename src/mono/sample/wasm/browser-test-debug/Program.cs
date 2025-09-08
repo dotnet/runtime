@@ -402,9 +402,19 @@ namespace Sample
         [JSExport]
         public static async Task DoTestMethod()
         {
-            await JavaScriptTestHelper.InitializeAsync();
-            const bool doCollect = true;
-            if (doCollect) GC.Collect();
+            //await JavaScriptTestHelper.InitializeAsync();
+            //const bool doCollect = true;
+            string myTestString = "Hello from .NET";
+            unsafe
+            {
+                fixed (char* p = myTestString)
+                {
+                    Console.WriteLine($"Address of x: 0x{(ulong)p:X}");
+                    StringTests.PrintMyStringFromCSharp(myTestString);
+                }
+            }
+            
+            //if (doCollect) GC.Collect();
 
             //ZeroFreeGlobalAllocAnsi_Zero_Nop();
             //if (doCollect) GC.Collect();            
@@ -413,8 +423,8 @@ namespace Sample
 
             //System.SpanTests.TryWriteTests.AppendFormatted_ReferenceTypes_ICustomFormatter();
             //if (doCollect) GC.Collect();
-            System.SpanTests.TryWriteTests.AppendFormatted_ValueTypes_CreateProviderFlowed();
-            if (doCollect) GC.Collect();
+            //System.SpanTests.TryWriteTests.AppendFormatted_ValueTypes_CreateProviderFlowed();
+            //if (doCollect) GC.Collect();
 
 
             //GCHandleTests.Ctor_Default();

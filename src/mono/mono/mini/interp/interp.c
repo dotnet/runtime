@@ -366,7 +366,8 @@ int mono_interp_traceopt = 0;
 #else
 
 #define MINT_IN_SWITCH(op) COUNT_OP(op); switch (opcode = (MintOpcode)(op))
-#define MINT_IN_CASE(x) case x:
+//#define MINT_IN_CASE(x) case x:
+#define MINT_IN_CASE(x) case x: if (mh_log_get_verbosity() >= MH_LVL_CRIPPLE) { printf("MH_LOG_MINT: %s\n", #x); fflush(stdout); }
 #define MINT_IN_BREAK break
 
 #endif
@@ -4961,9 +4962,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
 	NULL_CHECK (ptr); \
-	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) {\		
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) {\
 		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
-	} else {\		
+	} else {\
 		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
 	} \
 	ip += 3; \
@@ -6441,6 +6442,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETCHR) {
 			MonoString *s = LOCAL_VAR (ip [2], MonoString*);
+			MH_LOGV(MH_LVL_VERBOSE, "MINT_GETCHR, %p", s);
 			NULL_CHECK (s);
 			int i32 = LOCAL_VAR (ip [3], int);
 			if (i32 < 0 || i32 >= mono_string_length_internal (s))
@@ -7112,7 +7114,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDPTR)
-			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
+			(*(gpointer*)(locals + (ip[1]))) = frame->imethod->data_items [ip [2]];
+			{
+				intptr_t result = (*(guint64*)(locals + (ip[1])));
+				MH_LOG("MINT_LDPTR: *(%p + %d) =  frame->imethod->data_items [ip [%d]]: %p", locals, ip[1], ip[2], (void*)result);
+			}
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
@@ -7608,11 +7614,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_8) 
 			// TODO: this is hardcoded for x64
-			//assert(((uintptr_t)locals % 8) == 0 && "locals is not 8-byte aligned");
+			assert(((uintptr_t)locals % 8) == 0 && "locals is not 8-byte aligned");
 
 			(*(guint64*)(locals + (ip[1]))) = (*(guint64*)(locals + (ip[2])));
-			intptr_t result = (*(guint64*)(locals + (ip[1])));		
-			//MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
+			{
+				intptr_t result = (*(guint64*)(locals + (ip[1])));
+				MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
+			}
 			ip += 3;; 
 		MINT_IN_BREAK;
 

@@ -21,6 +21,7 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
+
 if (NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
@@ -129,6 +130,11 @@ endif ()
 if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
 endif()
+
+# Force all .c files to be compiled as C, not C++
+foreach(source_file ${NATIVE_SOURCES})
+    set_source_files_properties(${source_file} PROPERTIES LANGUAGE C)
+endforeach()
 
 if (CMAKE_USE_MEMORY64)
     message("MRH_LOGGING: Building native libs with MEMORY64 enabled")

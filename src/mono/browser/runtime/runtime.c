@@ -289,7 +289,10 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	PinvokeImport key = { name, NULL };
     PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_name);
     if (!result) {
-        // *err = g_strdup_printf ("Symbol not found: %s", name);
+        char buffer [512];
+        sprintf (buffer, "Symbol not found: %s", name);
+        *err = strdup(buffer);
+        MH_LOGV(MH_LVL_INFO, "Symbol not found: %s", name);        
         return NULL;
     }
     return result->func;

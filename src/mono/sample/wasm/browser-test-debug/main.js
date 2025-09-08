@@ -6,6 +6,12 @@ import { dotnet, exit } from './dotnet.js'
 let testAbort = true;
 let testError = true;
 let Module;
+
+function setLogLevel(logLevel) {
+
+    const runtimeApi = globalThis.getDotnetRuntime(0);
+    runtimeApi.INTERNAL.MH_SetLogVerbosity(logLevel);
+}
 function printGcLog(Module) {
     try {
         // List all files in the root directory
@@ -49,7 +55,7 @@ try {
                 config.environmentVariables["MONO_LOG_MASK"] = "gc";
                 config.environmentVariables["MONO_GC_DEBUG"] = "8:gc_log.txt,print-gchandles,clear-nursery-at-gc";
                 // 1 or lower = None, 2 = info, 3  = debug, 4 = verbose, 5 = trace
-                config.environmentVariables["MH_LOG_VERBOSITY"] = "3";
+                config.environmentVariables["MH_LOG_VERBOSITY"] = "1";
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -85,16 +91,18 @@ try {
     const exports = await getAssemblyExports(config.mainAssemblyName);
 
     document.getElementById("out").innerHTML = `NOT PASSED`;
-
+    
+    setLogLevel(5);
     await exports.Sample.Test.DoTestMethod();
+    setLogLevel(0);
     document.getElementById("out").innerHTML = `PASSED`;
 
 
     console.log('user code Module.onRuntimeInitialized');
-    printGcLog(Module);       
+    //printGcLog(Module);       
     exit(exit_code);
 }
 catch (err) {
-    printGcLog(Module);
+    //printGcLog(Module);
     exit(2, err);
 }

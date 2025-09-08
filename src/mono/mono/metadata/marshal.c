@@ -277,6 +277,7 @@ ves_icall_mono_string_to_utf8_impl (MonoStringHandle str, MonoError *error)
 MonoStringHandle
 ves_icall_string_new_wrapper_impl (const char *text, MonoError *error)
 {
+	MH_LOGV(MH_LVL_VERBOSE, "string_new_wrapper(\"%s\")", text ? text : "(null)");
 	return text ? mono_string_new_handle (text, error) : NULL_HANDLE_STRING;
 }
 
@@ -1065,6 +1066,7 @@ mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 char *
 mono_string_to_ansibstr_impl (MonoStringHandle string_obj, MonoError *error)
 {
+	MH_LOGV(MH_LVL_VERBOSE, "Got string handle %p", MONO_HANDLE_RAW (string_obj));
 	if (MONO_HANDLE_IS_NULL (string_obj))
 		return NULL;
 
@@ -1133,7 +1135,7 @@ mono_string_to_byvalstr_impl (char *dst, MonoStringHandle src, int size, MonoErr
 {
 	g_assert (dst != NULL);
 	g_assert (size > 0);
-
+	MH_LOGV(MH_LVL_VERBOSE, "Got string handle %p, size %d", MONO_HANDLE_RAW (src), size);
 	memset (dst, 0, size);
 	if (!MONO_HANDLE_BOOL (src))
 		return;
@@ -1536,7 +1538,7 @@ MonoMarshalConv
 mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec, gboolean *need_free)
 {
 	MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
-
+	MH_LOGV(MH_LVL_VERBOSE, "Got string encoding %d\n", encoding);
 	*need_free = TRUE;
 
 	switch (encoding) {
@@ -1547,6 +1549,7 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_UTF8STR_STR;
 	case MONO_NATIVE_LPSTR:
 	case MONO_NATIVE_VBBYREFSTR:
+		MH_LOGV(MH_LVL_VERBOSE, "returning MONO_MARSHAL_CONV_LPSTR_STR");
 		return MONO_MARSHAL_CONV_LPSTR_STR;
 	case MONO_NATIVE_LPTSTR:
 #ifdef TARGET_WIN32

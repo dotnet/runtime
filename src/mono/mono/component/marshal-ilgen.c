@@ -443,6 +443,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (eklass == cb_to_mono->mono_defaults->string_class) {
 			is_string = TRUE;
 			gboolean need_free;
+			MH_LOGV(MH_LVL_VERBOSE, "MARSHAL_ACTION_MANAGED_CONV_IN");
 			conv = cb_to_mono->get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		}
 		else if (eklass == cb_to_mono->try_get_stringbuilder_class ()) {
@@ -1722,6 +1723,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
+		MH_LOGV(MH_LVL_VERBOSE, "MARSHAL_ACTION_CONV_OUT");
 		conv = cb_to_mono->get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		if (conv == MONO_MARSHAL_CONV_INVALID) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
@@ -1730,7 +1732,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		if (encoding == MONO_NATIVE_VBBYREFSTR) {
-
+			MH_LOGV(MH_LVL_VERBOSE, "MONO_NATIVE_VBBYREFSTR");
 			if (!m_type_is_byref (t)) {
 				char *msg = g_strdup ("VBByRefStr marshalling requires a ref parameter.");
 				cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, msg);
@@ -1756,12 +1758,17 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_jit_icall (mb, mono_string_new_len_wrapper);
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_STIND_REF);
 		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
+			MH_LOGV(MH_LVL_VERBOSE, "m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))");
 			int stind_op;
 			cb_to_mono->methodBuilder.emit_ldarg (mb, argnum);
 			cb_to_mono->methodBuilder.emit_ldloc (mb, conv_arg);
 			cb_to_mono->methodBuilder.emit_icall_id (mb, cb_to_mono->conv_to_icall (conv, &stind_op));
 			cb_to_mono->methodBuilder.emit_byte (mb, GINT_TO_UINT8 (stind_op));
 			need_free = TRUE;
+		}
+		else
+		{
+			MH_LOGV(MH_LVL_VERBOSE, "Met no conditions. Need_free = %s", need_free ? "true" : "false");
 		}
 
 		if (need_free) {
@@ -1779,7 +1786,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		cb_to_mono->methodBuilder.emit_stloc (mb, 0);
-
+		MH_LOGV(MH_LVL_VERBOSE, "MARSHAL_ACTION_CONV_RESULT");
 		conv = cb_to_mono->get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		if (conv == MONO_MARSHAL_CONV_INVALID) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
@@ -1805,7 +1812,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (t->attrs & PARAM_ATTRIBUTE_OUT)
 				break;
 		}
-
+		MH_LOGV(MH_LVL_VERBOSE, "MARSHAL_ACTION_MANAGED_CONV_IN");
 		conv = cb_to_mono->get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		if (conv == MONO_MARSHAL_CONV_INVALID) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
