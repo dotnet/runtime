@@ -806,7 +806,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             return 0;
         }
 
-        C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
+        static_assert((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
 
@@ -2021,6 +2021,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_COMMA:
+            if (tree->gtEffectiveVal()->OperIs(GT_FIELD_LIST))
+            {
+                return false;
+            }
             break;
 
         case GT_COLON:

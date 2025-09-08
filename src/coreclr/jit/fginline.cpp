@@ -731,9 +731,38 @@ private:
         else if (tree->OperIs(GT_JTRUE))
         {
             // See if this jtrue is now foldable.
-            BasicBlock* block    = m_compiler->compCurBB;
-            GenTree*    condTree = tree->AsOp()->gtOp1;
+            BasicBlock* block        = m_compiler->compCurBB;
+            GenTree*    condTree     = tree->AsOp()->gtOp1;
+            bool        modifiedTree = false;
             assert(tree == block->lastStmt()->GetRootNode());
+
+            while (condTree->OperIs(GT_COMMA))
+            {
+                // Tree is a root node, and condTree its only child.
+                // Move comma effects to a prior statement.
+                //
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(condTree->gtGetOp1(), &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    m_compiler->fgNewStmtNearEnd(block, sideEffects);
+                }
+
+                // Splice out the comma with its value
+                //
+                GenTree* const valueTree = condTree->gtGetOp2();
+                condTree                 = valueTree;
+                tree->AsOp()->gtOp1      = valueTree;
+                modifiedTree             = true;
+            }
+
+            if (modifiedTree)
+            {
+                m_compiler->gtUpdateNodeSideEffects(tree);
+            }
+
+            assert(condTree->OperIs(GT_CNS_INT) || condTree->OperIsCompare());
 
             if (condTree->OperIs(GT_CNS_INT))
             {
@@ -1021,9 +1050,10 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             inliningFailed = true;
 
             // Clear the Inline Candidate flag so we can ensure later we tried
-            // inlining all candidates.
+            // inlining all candidates. In debug, remember that this was an inline candidate.
             //
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+            INDEBUG(call->SetWasInlineCandidate());
         }
     }
     else
@@ -1233,7 +1263,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
 
 void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 {
-    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate() || call->WasInlineCandidate())
     {
         return;
     }

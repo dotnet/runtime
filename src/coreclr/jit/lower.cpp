@@ -1562,8 +1562,6 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
     if (varTypeIsLong(arg))
     {
-        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
-
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
         fieldList->AddFieldLIR(comp, arg->gtGetOp1(), 0, TYP_INT);
@@ -5177,6 +5175,16 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
+            // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
+            // required)
+            if (varTypeUsesIntReg(use->GetNode()) && varTypeUsesFloatReg(regType) &&
+                (genTypeSize(regType) > TARGET_POINTER_SIZE))
+            {
+                JITDUMP("it is not; field [%06u] requires an insertion into float register %u of size %d\n",
+                        Compiler::dspTreeID(use->GetNode()), i, genTypeSize(regType));
+                return false;
+            }
+
             use = use->GetNext();
         } while (use != nullptr);
     }
@@ -7262,8 +7270,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    const bool hasRcpc2 = comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !hasRcpc2)
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
@@ -7306,7 +7314,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(hasRcpc2);
+        assert(comp->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
+
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;
@@ -11680,6 +11689,40 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
         BlockRange().Remove(op1);
     }
     return result;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::NormalizeIndexToNativeSized:
+//   Prepare to use an index for address calculations by ensuring it is native sized.
+//
+//  Arguments:
+//    index - The index that may be an int32
+//
+// Returns:
+//    The node itself, or a cast added on top of the node to perform normalization.
+//
+// Remarks:
+//    May insert a cast or may bash the node type in place for constants. Does
+//    not replace the use.
+//
+GenTree* Lowering::NormalizeIndexToNativeSized(GenTree* index)
+{
+    if (genActualType(index) == TYP_I_IMPL)
+    {
+        return index;
+    }
+
+    if (index->OperIsConst())
+    {
+        index->gtType = TYP_I_IMPL;
+        return index;
+    }
+    else
+    {
+        GenTree* cast = comp->gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+        BlockRange().InsertAfter(index, cast);
+        return cast;
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 

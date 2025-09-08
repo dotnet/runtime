@@ -1,11 +1,18 @@
 trigger: none
 
+parameters:
+- name: diagnosticsBranch
+  displayName: Diagnostics Branch
+  type: string
+  default: main
+
 resources:
   repositories:
     - repository: diagnostics
       type: github
-      name: dotnet/diagnostics
       endpoint: public
+      name: dotnet/diagnostics
+      ref:  ${{ parameters.diagnosticsBranch }}
 
 variables:
   - template: /eng/pipelines/common/variables.yml

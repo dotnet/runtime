@@ -104,9 +104,11 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.isExtraPlatformsBuild, true)) }}:
+        - OSX.26.Arm64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - OSX.13.Arm64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         # superpmi is not about testing platform differences, so go with highest capacity queue
         - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:

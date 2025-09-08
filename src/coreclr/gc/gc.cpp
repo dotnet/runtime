@@ -27,6 +27,7 @@
 #include "handletable.inl"
 #include "gcenv.inl"
 #include "gceventstatus.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
@@ -9871,7 +9872,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         if (!write_barrier_updated)
         {
             seg_mapping_table = new_seg_mapping_table;
-            GCToOSInterface::FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
             g_gc_lowest_address = saved_g_lowest_address;
             g_gc_highest_address = saved_g_highest_address;
 
@@ -24752,7 +24753,7 @@ void gc_heap::garbage_collect (int n)
                 }
             }
 #else
-            do_concurrent_p = (!!bgc_thread && commit_mark_array_bgc_init());
+            do_concurrent_p = (bgc_thread_running && commit_mark_array_bgc_init());
             if (do_concurrent_p)
             {
                 background_saved_lowest_address = lowest_address;
@@ -30812,7 +30813,7 @@ void gc_heap::reset_mark_stack ()
 #else
 #define brick_bits (11)
 #endif //TARGET_AMD64
-C_ASSERT(brick_size == (1 << brick_bits));
+static_assert(brick_size == (1 << brick_bits));
 
 // The number of bits needed to represent the offset to a child node.
 // "brick_bits + 1" allows us to represent a signed offset within a brick.
@@ -49417,8 +49418,15 @@ HRESULT GCHeap::Initialize()
         }
         else
         {
-            // If no hard_limit is configured the reservation size is min of 1/2 GetVirtualMemoryLimit() or max of 256Gb or 2x physical limit.
-            gc_heap::regions_range = max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
+            gc_heap::regions_range = 
+#ifdef MULTIPLE_HEAPS
+            // For SVR use max of 2x total_physical_memory or 256gb
+            max(
+#else // MULTIPLE_HEAPS
+            // for WKS use min
+            min(
+#endif // MULTIPLE_HEAPS
+                (size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
         }
         size_t virtual_mem_limit = GCToOSInterface::GetVirtualMemoryLimit();
         gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/2);
@@ -53615,10 +53623,22 @@ bool GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+#ifdef GC_DESCRIPTOR
+extern "C"
+{
+    struct ContractDescriptor;
+    extern ContractDescriptor GCContractDescriptorWKS;
+#if FEATURE_SVR_GC
+    extern ContractDescriptor GCContractDescriptorSVR;
+#endif // FEATURE_SVR_GC
+}
+#endif // GC_DESCRIPTOR
+
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
+    bool v6 = gcDacVars->minor_version_number >= 6;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53667,9 +53687,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
     }
 #endif //USE_REGIONS
-#ifndef BACKGROUND_GC
+#ifdef BACKGROUND_GC
     g_build_variant |= build_variant_background_gc;
-#endif //!BACKGROUND_GC
+#endif //BACKGROUND_GC
 #ifdef DYNAMIC_HEAP_COUNT
     g_build_variant |= build_variant_dynamic_heap_count;
 #endif //DYNAMIC_HEAP_COUNT
@@ -53755,6 +53775,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
         gcDacVars->dynamic_adaptation_mode = nullptr;
 #endif //DYNAMIC_HEAP_COUNT
+    }
+    if (v6)
+    {
+#ifdef GC_DESCRIPTOR
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorSVR;
+#else // MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
+#endif // MULTIPLE_HEAPS
+#endif // GC_DESCRIPTOR
     }
 }
 

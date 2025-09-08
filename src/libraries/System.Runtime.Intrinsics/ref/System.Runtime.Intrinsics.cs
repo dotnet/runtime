@@ -411,6 +411,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> WithLower<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Xor<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector128<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector128<T> : System.IEquatable<System.Runtime.Intrinsics.Vector128<T>>
     {
@@ -837,6 +855,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> WithLower<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Xor<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector256<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector256<T> : System.IEquatable<System.Runtime.Intrinsics.Vector256<T>>
     {
@@ -1262,6 +1298,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> WithLower<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Xor<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector512<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>>
     {
@@ -1650,6 +1704,24 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<ulong> WidenUpper(System.Runtime.Intrinsics.Vector64<System.UInt32> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> WithElement<T>(this System.Runtime.Intrinsics.Vector64<T> vector, int index, T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Xor<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.IFloatingPointConstants<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> E { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> Pi { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> Tau { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.IFloatingPointIeee754<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> Epsilon { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NaN { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeInfinity { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeZero { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> PositiveInfinity { get { throw null; } }
+        }
+        extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.ISignedNumber<T>
+        {
+            public static System.Runtime.Intrinsics.Vector64<T> NegativeOne { get { throw null; } }
+        }
     }
     public readonly partial struct Vector64<T> : System.IEquatable<System.Runtime.Intrinsics.Vector64<T>>
     {

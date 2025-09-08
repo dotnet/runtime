@@ -61,6 +61,7 @@ TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
+TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -74,6 +75,7 @@ TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
@@ -108,7 +110,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
 | `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
 | `Assembly` | `Module` | Pointer to the Assemblies module |
-| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected |
+| `Assembly` | `IsCollectible` | Flag indicating if this module may be collected |
+| `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
@@ -146,7 +149,6 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
 
 
-
 ### Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
@@ -170,6 +172,11 @@ private enum ModuleFlags_1 : uint
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
+
+private enum PEImageFlags : uint
+{
+    FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+};
 ```
 
 ### Method Implementations
@@ -333,6 +340,73 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     return true;
 }
 
+TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+{
+    TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
+    if(peImage == TargetPointer.Null)
+        throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
+
+    TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+    if(peImageLayout == TargetPointer.Null)
+        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+
+    // Get base address and flags from PEImageLayout
+    TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
+    uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
+
+    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+
+    uint offset;
+    if (isMapped)
+    {
+        offset = (uint)rva;
+    }
+    else
+    {
+        // find NT headers using DOS header
+        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
+        TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
+
+        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
+
+        // Get number of sections from file header
+        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
+        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
+
+        // Calculate first section address (after NT headers and optional header)
+        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
+        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
+
+        // Find the section containing this RVA
+        TargetPointer sectionPtr = TargetPointer.Null;
+        uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
+
+        for (uint i = 0; i < numberOfSections; i++)
+        {
+            TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
+            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+            uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
+
+            if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)
+            {
+                sectionPtr = currentSectionPtr;
+            }
+        }
+        if (sectionPtr == TargetPointer.Null)
+        {
+            throw new InvalidOperationException("Failed to read from image.");
+        }
+        else
+        {
+            // Convert RVA to file offset using section information
+            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
+            offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
+        }
+    }
+    return baseAddress + offset;
+}
+
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
 {
     buffer = TargetPointer.Null;
@@ -474,11 +548,45 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     return TargetPointer.Null;
 }
 
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
+{
+    Data.ModuleLookupMap lookupMap = new Data.ModuleLookupMap(table);
+    // have to read lookupMap an extra time upfront because only the first map
+    // has valid supportedFlagsMask
+    TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    uint index = 1; // zero is invalid
+    do
+    {
+        uint count = target.Read<uint>(table + /*ModuleLookupMap::Count*/);
+        if (index < count)
+        {
+            TargetPointer entryAddress = target.ReadPointer(table + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer rawValue = target.ReadPointer(entryAddress);
+            ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
+            if (maskedValue != 0)
+                yield return (new TargetPointer(maskedValue), index);
+            index++;
+        }
+        else
+        {
+            table = target.ReadPointer(table + /*ModuleLookupMap::Next*/);
+            index -= count;
+        }
+    } while (table != TargetPointer.Null);
+}
+
 bool IsCollectible(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
     byte isCollectible = target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
+}
+
+bool IsDynamic(ModuleHandle handle)
+{
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isDynamic = target.Read<byte>(assembly + /* Assembly::IsDynamic*/);
+    return isDynamic != 0;
 }
 
 bool IsAssemblyLoaded(ModuleHandle handle)
