@@ -1066,6 +1066,12 @@ namespace System
                     return "factor";
                 case ExceptionArgument.set:
                     return "set";
+                case ExceptionArgument.valueFactory:
+                    return "valueFactory";
+                case ExceptionArgument.addValueFactory:
+                    return "addValueFactory";
+                case ExceptionArgument.updateValueFactory:
+                    return "updateValueFactory";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1248,6 +1254,10 @@ namespace System
                     return SR.Argument_HasToBeArrayClass;
                 case ExceptionResource.InvalidOperation_IncompatibleComparer:
                     return SR.InvalidOperation_IncompatibleComparer;
+                case ExceptionResource.ConcurrentDictionary_ItemKeyIsNull:
+                    return SR.ConcurrentDictionary_ItemKeyIsNull;
+                case ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect:
+                    return SR.ConcurrentDictionary_TypeOfValueIncorrect;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1357,6 +1367,9 @@ namespace System
         divisor,
         factor,
         set,
+        valueFactory,
+        addValueFactory,
+        updateValueFactory
     }
 
     //
@@ -1444,5 +1457,7 @@ namespace System
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
         InvalidOperation_IncompatibleComparer,
+        ConcurrentDictionary_ItemKeyIsNull,
+        ConcurrentDictionary_TypeOfValueIncorrect,
     }
 }
