@@ -216,12 +216,21 @@ internal static partial class ZipHelper
                 totalCodePoints += rune.Utf8SequenceLength;
             }
 
-            bytes = encoding.GetBytes(text);
+            byte[] rentedArray = ArrayPool<byte>.Shared.Rent(encoding.GetMaxByteCount(text.Length));
+            try
+            {
+                int actualByteCount = encoding.GetBytes(text, rentedArray);
+                Debug.Assert(totalCodePoints > 0);
+                Debug.Assert(totalCodePoints <= actualByteCount);
 
-            Debug.Assert(totalCodePoints > 0);
-            Debug.Assert(totalCodePoints <= bytes.Length);
-
-            return bytes[0..totalCodePoints];
+                bytes = new byte[totalCodePoints];
+                Array.Copy(rentedArray, 0, bytes, 0, totalCodePoints);
+                return bytes;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedArray);
+            }
         }
 
         bytes = encoding.GetBytes(text);
