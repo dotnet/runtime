@@ -160,11 +160,11 @@ namespace System.IO.Compression
             if (_mode != CompressionMode.Decompress)
                 throw new InvalidOperationException(SR.CannotReadFromCompressionStream);
 
+            EnsureNotDisposed();
+
             try
             {
                 BeginRWOperation();
-
-                EnsureNotDisposed();
 
                 int bytesWritten;
                 while (!TryDecompress(buffer.Span, out bytesWritten))
