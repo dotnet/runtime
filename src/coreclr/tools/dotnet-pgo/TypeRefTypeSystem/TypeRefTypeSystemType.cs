@@ -148,6 +148,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override bool IsSequentialLayout => throw new NotImplementedException();
 
+        public override bool IsExtendedLayout => throw new NotImplementedException();
+
+        public override bool IsAutoLayout => throw new NotImplementedException();
+
         public override bool IsBeforeFieldInit => throw new NotImplementedException();
 
         public override ModuleDesc Module => _module;
@@ -259,11 +263,5 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         }
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => throw new NotImplementedException();
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
-        }
     }
 }

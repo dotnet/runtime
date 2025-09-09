@@ -11,6 +11,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 #Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
+if (DEFINED CLR_CMAKE_ICU_DIR)
+  link_directories(${CLR_CMAKE_ICU_DIR}/lib)
+endif(DEFINED CLR_CMAKE_ICU_DIR)
+
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
@@ -41,6 +45,20 @@ else(CLR_CMAKE_HOST_WIN32)
     # Android implements pthread natively
     if(NOT CLR_CMAKE_TARGET_ANDROID)
         target_link_libraries(corerun PRIVATE pthread)
+    endif()
+    # Static linking
+    if (CLR_CMAKE_TARGET_ARCH_WASM)
+        target_link_libraries(corerun PRIVATE
+        coreclr_static
+        clrinterpreter
+        icuuc
+        icui18n
+        icudata)
+        # linker options for NodeJs, link in JavaScript helper, access to local filesystem
+        if (CLR_CMAKE_TARGET_BROWSER)
+            target_compile_options(corerun PRIVATE -fwasm-exceptions)
+            target_link_options(corerun PRIVATE -fwasm-exceptions -sEXPORTED_RUNTIME_METHODS=FS -sEXIT_RUNTIME=1 -sINITIAL_MEMORY=134217728 -sSTACK_SIZE=5MB -lnoderawfs.js -lnodefs.js --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js -Wl,-error-limit=0)
+        endif()
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 

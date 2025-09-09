@@ -18,6 +18,7 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
         private EcmaModule _module;
         private TypeDefinitionHandle _handle;
 
@@ -542,26 +543,67 @@ namespace Internal.TypeSystem.Ecma
                 attributeNamespace, attributeName).IsNil;
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Assert(this.IsInlineArray);
-
-            var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
-                "System.Runtime.CompilerServices", "InlineArrayAttribute"));
-
-            var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
-
-            return value is int intValue ? intValue : 0;
-        }
-
         public override ClassLayoutMetadata GetClassLayout()
         {
             TypeLayout layout = _typeDefinition.GetLayout();
+            int inlineArrayLength = 0;
+
+            if (IsInlineArray)
+            {
+                var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.CompilerServices", "InlineArrayAttribute"));
+
+                var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
+
+                inlineArrayLength = value is int intValue ? intValue : 0;
+            }
+
+            MetadataLayoutKind layoutKind = MetadataLayoutKind.Auto;
+            if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout)
+            {
+                layoutKind = MetadataLayoutKind.Sequential;
+            }
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout)
+            {
+                layoutKind = MetadataLayoutKind.Explicit;
+            }
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout)
+            {
+                var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
+
+                if (attrHandle.IsNil)
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                }
+
+                var attr = MetadataReader.GetCustomAttribute(attrHandle);
+
+                var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
+
+                if (attrValue.FixedArguments is not [{ Value: int kind }])
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                    return default;
+                }
+
+                switch (kind)
+                {
+                    case 0:
+                        layoutKind = MetadataLayoutKind.CStruct;
+                        break;
+                    default:
+                        ThrowHelper.ThrowTypeLoadException(this);
+                        return default; // Invalid kind value
+                }
+            }
 
             return new ClassLayoutMetadata
             {
+                Kind = layoutKind,
                 PackingSize = layout.PackingSize,
-                Size = layout.Size
+                Size = layout.Size,
+                InlineArrayLength = inlineArrayLength,
             };
         }
 
@@ -569,7 +611,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.ExplicitLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout;
             }
         }
 
@@ -577,7 +619,23 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.SequentialLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout;
+            }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.AutoLayout;
             }
         }
 

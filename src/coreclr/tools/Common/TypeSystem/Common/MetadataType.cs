@@ -35,6 +35,18 @@ namespace Internal.TypeSystem
         public abstract bool IsSequentialLayout { get; }
 
         /// <summary>
+        /// If true, the type layout is dictated by extended layout rules provided by the
+        /// System.Runtime.InteropServices.ExtendedLayoutAttribute.
+        /// </summary>
+        public abstract bool IsExtendedLayout { get; }
+
+        /// <summary>
+        /// If true, the type layout is dictated by the auto layout rules provided by the runtime.
+        /// Corresponds to the definition of autolayout semantic defined in the ECMA-335 specification.
+        /// </summary>
+        public abstract bool IsAutoLayout { get; }
+
+        /// <summary>
         /// If true, the type initializer of this type has a relaxed semantic. Corresponds
         /// to the definition of beforefieldinit semantic defined in the ECMA-335 specification.
         /// </summary>
@@ -103,13 +115,21 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
             }
         }
-
-        public abstract int GetInlineArrayLength();
     }
 
     public struct ClassLayoutMetadata
     {
+        public MetadataLayoutKind Kind;
+        public int InlineArrayLength;
         public int PackingSize;
         public int Size;
+    }
+
+    public enum MetadataLayoutKind
+    {
+        Auto,
+        Sequential,
+        Explicit,
+        CStruct
     }
 }

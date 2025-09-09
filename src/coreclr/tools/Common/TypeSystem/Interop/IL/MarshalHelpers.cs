@@ -436,7 +436,7 @@ namespace Internal.TypeSystem.Interop
 
                     return MarshallerKind.BlittableStruct;
                 }
-                else if (((MetadataType)type).HasLayout())
+                else if (!((MetadataType)type).IsAutoLayout)
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
                         return MarshallerKind.Invalid;
@@ -642,7 +642,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type is MetadataType mdType && mdType.HasLayout())
+            else if (type is MetadataType mdType && !mdType.IsAutoLayout)
             {
                 if (type.HasInstantiation)
                 {

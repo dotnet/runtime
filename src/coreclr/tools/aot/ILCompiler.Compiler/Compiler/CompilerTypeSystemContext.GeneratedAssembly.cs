@@ -149,11 +149,7 @@ namespace ILCompiler
 
             public override ClassLayoutMetadata GetClassLayout()
             {
-                return new ClassLayoutMetadata
-                {
-                    PackingSize = 0,
-                    Size = 0,
-                };
+                return default;
             }
 
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
@@ -210,10 +206,20 @@ namespace ILCompiler
                 }
             }
 
-            public override int GetInlineArrayLength()
+            public override bool IsExtendedLayout
             {
-                Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-                throw new InvalidOperationException();
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsAutoLayout
+            {
+                get
+                {
+                    return true;
+                }
             }
 
             public override bool IsBeforeFieldInit
@@ -223,7 +229,6 @@ namespace ILCompiler
                     return false;
                 }
             }
-
 
             public override DefType BaseType
             {
