@@ -75,4 +75,19 @@
   <data name="ZStandardDecoder_DictionaryAttachFailed" xml:space="preserve">
     <value>Failed to attach dictionary to ZStandard decoder context.</value>
   </data>
+  <data name="ZStandardStream_Decompress_TruncatedData" xml:space="preserve">
+    <value>Found truncated data while decoding.</value>
+  </data>
+  <data name="ZStandardStream_Decompress_InvalidData" xml:space="preserve">
+    <value>Decoder ran into invalid data.</value>
+  </data>
+  <data name="ZStandardStream_Decompress_InvalidStream" xml:space="preserve">
+    <value>ZStandardStream.BaseStream returned more bytes than requested in Read.</value>
+  </data>
+  <data name="ZStandardStream_Compress_InvalidData" xml:space="preserve">
+    <value>Encoder ran into invalid data.</value>
+  </data>
+  <data name="ZStandardStream_ConcurrentRWOperation" xml:space="preserve">
+    <value>Only one pending read/write operation is supported.</value>
+  </data>
 </root>

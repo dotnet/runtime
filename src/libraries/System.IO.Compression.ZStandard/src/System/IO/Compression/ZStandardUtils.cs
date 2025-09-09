@@ -27,5 +27,15 @@ namespace System.IO.Compression
             IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName(errorCode);
             return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? "Unknown error";
         }
+
+        internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
+            compressionLevel switch
+            {
+                CompressionLevel.NoCompression => Quality_Min,
+                CompressionLevel.Fastest => 1, // TODO: is this right?
+                CompressionLevel.Optimal => Quality_Default,
+                CompressionLevel.SmallestSize => Quality_Max,
+                _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
+            };
     }
 }

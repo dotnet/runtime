@@ -58,15 +58,13 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
-            ThrowIfDisposed();
-
             bytesConsumed = 0;
             bytesWritten = 0;
 
-            if (source.IsEmpty)
-                return OperationStatus.Done;
+            EnsureInitialized();
 
-            InitializeDecoder();
+            if (destination.IsEmpty)
+                return OperationStatus.DestinationTooSmall;
 
             unsafe
             {
@@ -139,7 +137,7 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty)
-                return true;
+                return false;
 
             unsafe
             {
@@ -173,7 +171,7 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty)
-                return true;
+                return false;
 
             using var dctx = Interop.Zstd.ZSTD_createDCtx();
             if (dctx.IsInvalid)
