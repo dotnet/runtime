@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: config == Configuration.Debug && expectedWasmBuildNativeValue,
+                                wasmNativeDebugSymbols: config == Configuration.Debug && !expectedWasmNativeStripValue,
                                 wasmBuildingForNestedPublish: null);
         }
 
