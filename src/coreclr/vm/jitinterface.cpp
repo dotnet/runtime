@@ -10784,16 +10784,17 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             && helperDef.IsDynamicHelper(&dynamicFtnNum)
             && HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
-            (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
-            _ASSERTE(PortableEntryPoint::HasNativeEntryPoint((PCODE)targetAddr)
-                || PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+            helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
+            _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
         }
     }
     else
     {
         if (helperDef.IsDynamicHelper(&dynamicFtnNum))
         {
-            pfnHelper = LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+            pfnHelper = LoadDynamicJitHelper(dynamicFtnNum);
+            if (HasILBasedDynamicJitHelper(dynamicFtnNum))
+                helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         }
 
         // LoadDynamicJitHelper returns PortableEntryPoint for helpers backed by managed methods. We need to wrap
@@ -10851,7 +10852,8 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             targetAddr = finalTierAddr;
             if (pMethod != NULL && HasILBasedDynamicJitHelper(dynamicFtnNum))
             {
-                (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+                (void)LoadDynamicJitHelper(dynamicFtnNum);
+                helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
                 _ASSERT(helperMD != NULL);
             }
             goto exit;
@@ -10859,7 +10861,8 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
         if (HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
-            (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+            (void)LoadDynamicJitHelper(dynamicFtnNum);
+            helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
             _ASSERT(helperMD != NULL);
 
             // Check if the target MethodDesc is already jitted to its final Tier
