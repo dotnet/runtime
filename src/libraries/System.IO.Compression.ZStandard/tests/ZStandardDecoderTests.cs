@@ -39,7 +39,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TryDecompress_WithEmptySource_ReturnsTrue(bool useDictionary)
+        public void TryDecompress_WithEmptySource_ReturnsFalse(bool useDictionary)
         {
             ReadOnlySpan<byte> emptySource = ReadOnlySpan<byte>.Empty;
             Span<byte> destination = new byte[100];
@@ -50,7 +50,7 @@ namespace System.IO.Compression
                 ? ZStandardDecoder.TryDecompress(emptySource, dictionary, destination, out int bytesWritten)
                 : ZStandardDecoder.TryDecompress(emptySource, destination, out bytesWritten);
 
-            Assert.True(result);
+            Assert.False(result);
             Assert.Equal(0, bytesWritten);
         }
 
@@ -79,9 +79,8 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void Decompress_WithEmptySource_ReturnsOperationStatusDone()
+        public void Decompress_WithEmptySource_ReturnsNeedMoreData()
         {
-            byte[] dictionaryData = CreateSampleDictionary();
             using ZStandardDecoder decoder = new ZStandardDecoder();
 
             ReadOnlySpan<byte> emptySource = ReadOnlySpan<byte>.Empty;
@@ -89,7 +88,27 @@ namespace System.IO.Compression
 
             OperationStatus result = decoder.Decompress(emptySource, destination, out int bytesConsumed, out int bytesWritten);
 
-            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(OperationStatus.NeedMoreData, result);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+
+            Assert.False(ZStandardDecoder.TryDecompress(emptySource, destination, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void Decompress_WithEmptyDestination_ReturnsDestinationTooSmall()
+        {
+            Span<byte> destination = Span<byte>.Empty;
+            Span<byte> source = new byte[100];
+
+            Assert.True(ZStandardEncoder.TryCompress("This is a test content"u8, source, out int bytesWritten));
+            source = source.Slice(0, bytesWritten);
+
+            using ZStandardDecoder decoder = new ZStandardDecoder();
+            OperationStatus result = decoder.Decompress(source, destination, out int bytesConsumed, out bytesWritten);
+
+            Assert.Equal(OperationStatus.DestinationTooSmall, result);
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
         }

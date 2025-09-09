@@ -211,8 +211,8 @@ namespace System.IO.Compression
             compressedStream.Position = 0;
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
 
-            while (decompressor.Read(bytes, 0, _bufferSize) > 0);
-            
+            while (decompressor.Read(bytes, 0, _bufferSize) > 0) ;
+
             // With automatic stream rewinding, the position should be at the exact end of compressed data
             // (not rounded up to the next buffer boundary as it was before)
             Assert.Equal(compressedEndPosition, compressedStream.Position);
