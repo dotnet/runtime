@@ -646,15 +646,27 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
     assert(pRange->LowerLimit().IsUnknown());
     assert(pRange->UpperLimit().IsUnknown());
 
+    if (num == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    //
     // First, let's see if we can tighten the range based on VN information.
     //
+
+    // If it's a constant, it's already as tight as it can get.
     int cns;
     if (comp->vnStore->IsVNIntegralConstant(num, &cns))
     {
-        // If it's a constant, it's already as tight as it can get.
         pRange->lLimit = Limit(Limit::keConstant, cns);
         pRange->uLimit = Limit(Limit::keConstant, cns);
         return true;
+    }
+
+    if (comp->vnStore->IsVNNeverNegative(num))
+    {
+        pRange->lLimit = Limit(Limit::keConstant, 0);
     }
 
     VNFuncApp funcApp;
@@ -663,7 +675,7 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
         switch (funcApp.m_func)
         {
             case VNF_Cast:
-                if (varTypeIsIntegral(comp->vnStore->TypeOfVN(num)))
+                // The logic matches IntegralRange::ForCastOutput for small types.
                 {
                     var_types castToType;
                     bool      srcIsUnsigned;
@@ -699,6 +711,20 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
             case VNF_ARR_LENGTH:
                 pRange->lLimit = Limit(Limit::keConstant, 0);
                 pRange->uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                break;
+
+            case VNF_GT:
+            case VNF_GE:
+            case VNF_LT:
+            case VNF_LE:
+            case VNF_EQ:
+            case VNF_NE:
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+            case VNF_LE_UN:
+            case VNF_LT_UN:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, 1);
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
