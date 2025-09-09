@@ -7,12 +7,12 @@ This contract is for creating and using the SHash data structure.
 ```csharp
 public interface ITraits<TKey, TEntry>
 {
-    abstract TKey GetKey(TEntry entry);
-    abstract bool Equals(TKey left, TKey right);
-    abstract uint Hash(TKey key);
-    abstract bool IsNull(TEntry entry);
-    abstract TEntry Null();
-    abstract bool IsDeleted(TEntry entry);
+    TKey GetKey(TEntry entry);
+    bool Equals(TKey left, TKey right);
+    uint Hash(TKey key);
+    bool IsNull(TEntry entry);
+    TEntry Null();
+    bool IsDeleted(TEntry entry);
 }
 
 public interface ISHash<TKey, TEntry> where TEntry : IData<TEntry>

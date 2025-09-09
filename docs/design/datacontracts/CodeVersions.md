@@ -126,15 +126,6 @@ private readonly struct ILCodeVersionHandle
     public readonly TargetPointer ILCodeVersionNode;
     private ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
     {
-        if (module != TargetPointer.Null && ilCodeVersionNodeAddress != TargetPointer.Null)
-            throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
-
-        if (module != TargetPointer.Null && methodDef == 0)
-            throw new ArgumentException("MethodDefinition must be non-zero if Module is non-null");
-
-        if (module == TargetPointer.Null && methodDef != 0)
-            throw new ArgumentException("MethodDefinition must be zero if Module is null");
-
         Module = module;
         MethodDefinition = methodDef;
         ILCodeVersionNode = ilCodeVersionNodeAddress;
@@ -142,13 +133,13 @@ private readonly struct ILCodeVersionHandle
 
     // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
     public static ILCodeVersionHandle CreateExplicit(TargetPointer ilCodeVersionNodeAddress) =>
-        new ILCodeVersionHandle(TargetPointer.Null, 0, ilCodeVersionNodeAddress);
+        // create handle from node address
     public static ILCodeVersionHandle CreateSynthetic(TargetPointer module, uint methodDef) =>
-        new ILCodeVersionHandle(module, methodDef, TargetPointer.Null);
+        // create handle from module and methodDef
 
-    public static ILCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, 0, TargetPointer.Null);
+    public static ILCodeVersionHandle Invalid { get; } = // everything is null
 
-    public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+    public bool IsValid => // either module or node addr is non nulls
 
     public bool IsExplicit => ILCodeVersionNode != TargetPointer.Null;
 }
@@ -161,23 +152,19 @@ private readonly struct NativeCodeVersionHandle
     public readonly TargetPointer CodeVersionNodeAddress;
     private NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
     {
-        if (methodDescAddress != TargetPointer.Null && codeVersionNodeAddress != TargetPointer.Null)
-        {
-            throw new ArgumentException("Only one of methodDescAddress and codeVersionNodeAddress can be non-null");
-        }
         MethodDescAddress = methodDescAddress;
         CodeVersionNodeAddress = codeVersionNodeAddress;
     }
 
     // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
     public static NativeCodeVersionHandle CreateExplicit(TargetPointer codeVersionNodeAddress) =>
-        new NativeCodeVersionHandle(TargetPointer.Null, codeVersionNodeAddress);
+        // create handle from node address
     public static NativeCodeVersionHandle CreateSynthetic(TargetPointer methodDescAddress) =>
-        new NativeCodeVersionHandle(methodDescAddress, TargetPointer.Null);
+        // create handle from method desc
 
-    public static NativeCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, TargetPointer.Null);
+    public static NativeCodeVersionHandle Invalid { get; } = // all is null
 
-    public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
+    public bool Valid => // either method desc or node address is non null
 
     public bool IsExplicit => CodeVersionNodeAddress != TargetPointer.Null;
 }
@@ -377,6 +364,22 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     {
         ilAddress = target.ReadPointer(ilCodeVersionHandle.ILCodeVersionNode + /* ILCodeVersionNode::ILAddress offset */)
     }
+
+    // For the default code version we always fetch the globally stored default IL for a method
+    //
+    // In the non-default code version we assume NULL is the equivalent of explicitly requesting to
+    // re-use the default IL. Ideally there would be no reason to create a new version that re-uses
+    // the default IL (just use the default code version for that) but we do it here for compat. We've
+    // got some profilers that use ReJIT to create a new code version and then instead of calling
+    // ICorProfilerFunctionControl::SetILFunctionBody they call ICorProfilerInfo::SetILFunctionBody.
+    // This mutates the default IL so that it is now correct for their new code version. Of course this
+    // also overwrote the previous default IL so now the default code version GetIL() is out of sync
+    // with the jitted code. In the majority of cases we never re-read the IL after the initial
+    // jitting so this issue goes unnoticed.
+    //
+    // If changing the default IL after it is in use becomes more problematic in the future we would
+    // need to add enforcement that prevents profilers from using ICorProfilerInfo::SetILFunctionBody
+    // that way + coordinate with them because it is a breaking change for any profiler currently doing it.
 
     if (ilAddress == TargetPointer.Null)
     {

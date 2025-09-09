@@ -22,8 +22,8 @@
   "ReJIT": 1,
   "RuntimeInfo": 1,
   "RuntimeTypeSystem": 1,
+  "SHash": 1,
   "StackWalk": 1,
   "StressLog": 2,
-  "Thread": 1,
-  "SHash": 1
+  "Thread": 1
 }

@@ -17,6 +17,7 @@ internal sealed class ILCodeVersionNode : IData<ILCodeVersionNode>
         RejitState = target.Read<uint>(address + (ulong)type.Fields[nameof(RejitState)].Offset);
         ILAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ILAddress)].Offset);
     }
+
     public TargetNUInt VersionId { get; init; }
     public TargetPointer Next { get; init; }
     public uint RejitState { get; init; }

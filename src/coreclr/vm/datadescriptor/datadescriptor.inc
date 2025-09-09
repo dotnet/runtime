@@ -900,6 +900,7 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
+// this is an SHash type
 CDAC_TYPE_BEGIN(DynamicILBlobTable)
 CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, Table, cdac_data<DynamicILBlobTable>::Table)
@@ -911,6 +912,8 @@ CDAC_TYPE_END(DynamicILBlobTable)
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_FIELD(AsyncMethodData, /*uint32*/, Kind, offsetof(AsyncMethodData, kind))
 CDAC_TYPE_END(AsyncMethodData)
+
+CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 

@@ -2705,47 +2705,45 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData)
     {
         int hr = HResults.S_OK;
-        if (methodDesc == 0 || pRejitData == null || rejitId < 0)
-            hr = HResults.E_INVALIDARG;
-        else
+        try
         {
-            try
-            {
-                pRejitData->rejitID = (uint)rejitId;
-                ICodeVersions cv = _target.Contracts.CodeVersions;
-                IReJIT rejitContract = _target.Contracts.ReJIT;
-                TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
-                ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersions(methodDescPtr)
-                    .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
-                        ILCodeVersionHandle.Invalid);
+            if (methodDesc == 0 || pRejitData == null || rejitId < 0)
+                throw new ArgumentException();
+            pRejitData->rejitID = (uint)rejitId;
+            ICodeVersions cv = _target.Contracts.CodeVersions;
+            IReJIT rejitContract = _target.Contracts.ReJIT;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersions(methodDescPtr)
+                .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
+                    ILCodeVersionHandle.Invalid);
 
-                if (!ilCodeVersion.IsValid)
-                    hr = HResults.E_INVALIDARG;
-                else
-                {
-                    switch (rejitContract.GetRejitState(ilCodeVersion))
-                    {
-                        case RejitState.Requested:
-                            pRejitData->flags = DacpReJitData2.Flags.kRequested;
-                            break;
-                        case RejitState.Active:
-                            pRejitData->flags = DacpReJitData2.Flags.kActive;
-                            break;
-                        default:
-                            pRejitData->flags = DacpReJitData2.Flags.kUnknown;
-                            break;
-                    }
-                    pRejitData->il = cv.GetIL(ilCodeVersion).ToClrDataAddress(_target);
-                    if (ilCodeVersion.IsExplicit)
-                        pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
-                    else
-                        pRejitData->ilCodeVersionNodePtr = 0;
-                }
-            }
-            catch (System.Exception ex)
+            if (!ilCodeVersion.IsValid)
+                throw new ArgumentException();
+            else
             {
-                return ex.HResult;
+                switch (rejitContract.GetRejitState(ilCodeVersion))
+                {
+                    case RejitState.Requested:
+                        pRejitData->flags = DacpReJitData2.Flags.kRequested;
+                        break;
+                    case RejitState.Active:
+                        pRejitData->flags = DacpReJitData2.Flags.kActive;
+                        break;
+                    default:
+                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
+                }
+                pRejitData->il = cv.GetIL(ilCodeVersion).ToClrDataAddress(_target);
+                if (ilCodeVersion.IsExplicit)
+                    pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
+                else
+                    pRejitData->ilCodeVersionNodePtr = 0;
             }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl7 is not null)

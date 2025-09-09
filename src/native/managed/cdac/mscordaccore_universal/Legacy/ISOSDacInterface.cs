@@ -231,22 +231,6 @@ internal struct DacpReJitData
     public ClrDataAddress NativeCodeAddr;
 };
 
-internal struct DacpReJitData2
-{
-    public enum Flags : uint
-    {
-        kUnknown = 0,
-        kRequested = 1,
-        kActive = 2,
-       kReverted = 3,
-    };
-
-    public uint rejitID;
-    public Flags flags; /* = Flags::kUnknown*/
-    public ClrDataAddress il;
-    public ClrDataAddress ilCodeVersionNodePtr;
-}
-
 internal struct DacpMethodDescData
 {
     public int bHasNativeCode;
@@ -602,6 +586,22 @@ internal unsafe partial interface ISOSDacInterface6
     [PreserveSig]
     int GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data);
 };
+
+internal struct DacpReJitData2
+{
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+       kReverted = 3,
+    };
+
+    public uint rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ClrDataAddress il;
+    public ClrDataAddress ilCodeVersionNodePtr;
+}
 
 [GeneratedComInterface]
 [Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
