@@ -647,7 +647,7 @@ namespace System.DirectoryServices.AccountManagement
                 // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
                 List<string> schemaTypes = GetSchemaFilter(typeof(GroupPrincipal));
 
-                SecurityIdentifier principalSid = p.Sid;                
+                SecurityIdentifier principalSid = p.Sid;
 
                 if (principalSid == null)
                 {
