@@ -86,6 +86,18 @@ check_c_source_compiles(
     "
     HAVE_IP_MREQN)
 
+check_c_source_compiles(
+    "
+    #include <sys/socket.h>
+    #include <${SOCKET_INCLUDES}>
+    int main(void)
+    {
+        int opt = IP_MULTICAST_IFINDEX;
+        return 0;
+    }
+    "
+    HAVE_IP_MULTICAST_IFINDEX)
+
 # /in_pktinfo
 
 check_c_source_compiles(

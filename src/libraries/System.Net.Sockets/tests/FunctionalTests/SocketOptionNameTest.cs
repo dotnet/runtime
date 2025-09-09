@@ -65,7 +65,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113827", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
