@@ -130,6 +130,12 @@ public:
         return m_array[index];
     }
 
+    void Set(int32_t index, T value)
+    {
+        assert(index < m_size);
+        m_array[index] = value;
+    }
+
     int32_t Find(T element)
     {
         for (int i = 0; i < m_size; i++)
@@ -140,8 +146,32 @@ public:
         return -1;
     }
 
-    // Assumes elements are unique
     void RemoveAt(int32_t index)
+    {
+        assert(index < m_size);
+        for (int32_t iCopy = index + 1; iCopy < m_size; iCopy++)
+        {
+            m_array[iCopy - 1] = m_array[iCopy];
+        }
+        m_size--;
+    }
+
+    void InsertAt(int32_t index, T newValue)
+    {
+        assert(index < m_size);
+        if (m_size == m_capacity)
+            Grow();
+
+        for (int32_t iCopy = index; iCopy < m_size; iCopy++)
+        {
+            m_array[iCopy + 1] = m_array[iCopy];
+        }
+        m_array[index] = newValue;
+        m_size++;
+    }
+
+    // Assumes elements are unique, and order of items in the array is unimportant
+    void RemoveAt_ArrayIsBag(int32_t index)
     {
         assert(index < m_size);
         m_size--;
@@ -150,14 +180,14 @@ public:
             m_array[index] = m_array[m_size];
     } 
 
-    // Assumes elements are unique
-    void Remove(T element)
+    // Assumes elements are unique, and order of items in the array is unimportant
+    void Remove_ArrayIsBag(T element)
     {
         for (int32_t i = 0; i < m_size; i++)
         {
             if (element == m_array[i])
             {
-                RemoveAt(i);
+                RemoveAt_ArrayIsBag(i);
                 break;
             }
         }

@@ -649,6 +649,9 @@ private:
     InterpBasicBlock**  m_ppOffsetToBB;
 
     ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+#ifdef DEBUG
+    int32_t* m_pNativeMapIndexToILOffset = NULL;
+#endif
     int32_t m_ILToNativeMapSize = 0;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
@@ -781,15 +784,25 @@ public:
  *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
  */
 
- inline void* operator new(size_t sz, InterpCompiler* compiler)
- {
+inline void* operator new(size_t sz, InterpCompiler* compiler)
+{
     return compiler->AllocMemPool0(sz);
 }
 
- inline void* operator new[](size_t sz, InterpCompiler* compiler)
- {
-     return compiler->AllocMemPool0(sz);
- }
+inline void* operator new[](size_t sz, InterpCompiler* compiler)
+{
+    return compiler->AllocMemPool0(sz);
+}
+
+inline void operator delete(void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
+
+inline void operator delete[](void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
 
 template<typename T>
 int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)

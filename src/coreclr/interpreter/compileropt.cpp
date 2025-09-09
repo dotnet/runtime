@@ -137,7 +137,7 @@ void InterpCompiler::InitializeGlobalVars()
 void InterpCompiler::EndActiveCall(InterpInst *call)
 {
     // Remove call from array
-    m_pActiveCalls->Remove(call);
+    m_pActiveCalls->Remove_ArrayIsBag(call);
 
     // Push active call that should be resolved onto the stack
     if (m_pActiveCalls->GetSize())
@@ -211,7 +211,7 @@ void InterpCompiler::CompactActiveVars(int32_t *pCurrentOffset)
         if (m_pVars[var].alive)
             return;
         *pCurrentOffset = m_pVars[var].offset;
-        m_pActiveVars->RemoveAt(i);
+        m_pActiveVars->RemoveAt_ArrayIsBag(i);
         i--;
     }
 }
