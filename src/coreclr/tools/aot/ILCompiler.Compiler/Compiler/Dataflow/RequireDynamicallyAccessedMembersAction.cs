@@ -29,7 +29,7 @@ namespace ILLink.Shared.TrimAnalysis
         {
             if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext, needsAssemblyName, _reason, out TypeDesc? foundType))
             {
-                if (foundType.HasInstantiation && _reflectionMarker.Annotations.HasGenericParameterAnnotation(foundType))
+                if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_reflectionMarker.Annotations, foundType))
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(_diagnosticContext, _reflectionMarker, foundType);
                 }

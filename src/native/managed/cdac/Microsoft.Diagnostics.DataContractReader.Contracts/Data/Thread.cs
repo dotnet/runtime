@@ -33,6 +33,7 @@ internal sealed class Thread : IData<Thread>
 
         // Address of the exception tracker
         ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
+        ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
     }
 
     public uint Id { get; init; }
@@ -45,4 +46,5 @@ internal sealed class Thread : IData<Thread>
     public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
+    public TargetPointer ThreadLocalDataPtr { get; init; }
 }

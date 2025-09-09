@@ -192,9 +192,8 @@ namespace R2RDump
                     // Instructions are dumped as 4-byte hexadecimal integers
                     Machine.LoongArch64 => 4 * 2 + 1,
 
-                    // Instructions are dumped as 4-byte hexadecimal integers
-                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
-                    Machine.RiscV64 => 4 * 2 + 1,
+                    // Instructions are either 2 or 4 bytes long
+                    Machine.RiscV64 => 4 * 3,
 
                     _ => throw new NotImplementedException()
                 };
@@ -270,8 +269,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
-                        if (_reader.Machine is Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64)
+                        if (_reader.Machine is Machine.Arm64 or Machine.LoongArch64)
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
                             // CoreDisTools should be fixed to dump bytes this way for ARM64.
@@ -360,7 +358,7 @@ namespace R2RDump
                         break;
 
                     case Machine.RiscV64:
-                        ProbeRiscV64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
+                        // TODO-RISCV64-RVC: Add back ProbeRiscV64Quirks here once it's modified to support compressed instructions.
                         break;
 
                     default:
@@ -1222,6 +1220,7 @@ namespace R2RDump
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeRiscV64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
         {
+            // TODO-RISCV64-RVC: Modify this method to detect patterns in forward traversal. See ProbeArm64Quirks implementation.
             const int InstructionSize = 4;
             uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
 
@@ -1233,11 +1232,11 @@ namespace R2RDump
                     addi
                     ld
                     jalr
-            
+
                     auipc
                     ld
                     jalr
-            
+
                     auipc
                     addi
                     ld

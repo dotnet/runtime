@@ -3056,5 +3056,138 @@ namespace System.Numerics.Tensors.Tests
             Assert.False(tensorSpan.TryGetSpan([3, 3], 2, out span));
             Assert.Equal(0, span.Length);
         }
+
+        [Fact]
+        public static void ToStringTest()
+        {
+            Tensor<int> tensor = Tensor.Create<int>([1, 2, 3, 4, 5], lengths: [5]);
+            string expected = "System.Numerics.Tensors.Tensor<Int32>[5]";
+            Assert.Equal(expected, tensor.ToString());
+
+            tensor = Tensor.Create<int>([1, 2, 3, 4], lengths: [2, 2]);
+            expected = "System.Numerics.Tensors.Tensor<Int32>[2, 2]";
+            Assert.Equal(expected, tensor.ToString());
+
+            tensor = Tensor.Create<int>(Enumerable.Range(1, 27).ToArray(), lengths: [3, 3, 3]);
+            expected = "System.Numerics.Tensors.Tensor<Int32>[3, 3, 3]";
+            Assert.Equal(expected, tensor.ToString());
+        }
+
+        [Fact]
+        public static void ToStringAllDataTest()
+        {
+            Tensor<int> tensor = Tensor.Create<int>([1, 2, 3, 4, 5], lengths: [5]);
+            string expected = """
+                System.Numerics.Tensors.Tensor<Int32>[5] {
+                  [1, 2, 3, 4, 5]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([5]));
+
+            tensor = Tensor.Create<int>([1, 2, 3, 4], lengths: [2, 2]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[2, 2] {
+                  [1, 2],
+                  [3, 4]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([2, 2]));
+
+            tensor = Tensor.Create<int>(Enumerable.Range(1, 27).ToArray(), lengths: [3, 3, 3]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[3, 3, 3] {
+                  [
+                    [1, 2, 3],
+                    [4, 5, 6],
+                    [7, 8, 9]
+                  ],
+                  [
+                    [10, 11, 12],
+                    [13, 14, 15],
+                    [16, 17, 18]
+                  ],
+                  [
+                    [19, 20, 21],
+                    [22, 23, 24],
+                    [25, 26, 27]
+                  ]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([3, 3, 3]));
+        }
+
+        [Fact]
+        public static void ToStringPartialDataTest()
+        {
+            Tensor<int> tensor = Tensor.Create<int>([1, 2, 3, 4, 5], lengths: [5]);
+            string expected = """
+                System.Numerics.Tensors.Tensor<Int32>[5] {
+                  [1, 2, 3, ..]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([3]));
+            
+            tensor = Tensor.Create<int>([1, 2, 3, 4], lengths: [2, 2]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[2, 2] {
+                  [1, ..],
+                  [3, ..]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([2, 1]));
+
+            tensor = Tensor.Create<int>(Enumerable.Range(1, 27).ToArray(), lengths: [3, 3, 3]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[3, 3, 3] {
+                  [
+                    [1, 2, ..],
+                    [4, 5, ..],
+                    ..
+                  ],
+                  [
+                    [10, 11, ..],
+                    [13, 14, ..],
+                    ..
+                  ],
+                  ..
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([2, 2, 2]));
+        }
+
+        [Fact]
+        public static void ToStringZeroDataTest()
+        {
+            Tensor<int> tensor = Tensor.Create<int>([1, 2, 3, 4, 5], lengths: [5]);
+            string expected = """
+                System.Numerics.Tensors.Tensor<Int32>[5] {
+                  [..]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([0]));
+            
+            tensor = Tensor.Create<int>([1, 2, 3, 4], lengths: [2, 2]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[2, 2] {
+                  [..],
+                  [..]
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([2, 0]));
+
+            tensor = Tensor.Create<int>(Enumerable.Range(1, 27).ToArray(), lengths: [3, 3, 3]);
+            expected = """
+                System.Numerics.Tensors.Tensor<Int32>[3, 3, 3] {
+                  [
+                    ..
+                  ],
+                  [
+                    ..
+                  ],
+                  ..
+                }
+                """;
+            Assert.Equal(expected, tensor.ToString([2, 0, 2]));
+        }
     }
 }

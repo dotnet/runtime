@@ -32,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new NecessaryTypeHandleGenericLookupResult(type);
                 });
 
+                _metadataTypeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new MetadataTypeHandleGenericLookupResult(type);
+                });
+
                 _unwrapNullableSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new UnwrapNullableTypeHandleGenericLookupResult(type);
@@ -105,6 +110,13 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult NecessaryType(TypeDesc type)
             {
                 return _necessaryTypeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _metadataTypeSymbols;
+
+            public GenericLookupResult MetadataType(TypeDesc type)
+            {
+                return _metadataTypeSymbols.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _unwrapNullableSymbols;

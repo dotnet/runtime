@@ -31,7 +31,7 @@
 
 #include "GCMemoryHelpers.inl"
 
-#if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS)
 EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
@@ -136,7 +136,7 @@ FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 FCIMPLEND
 
 #endif
-#if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS)
 #if defined(FEATURE_64BIT_ALIGNMENT)
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
@@ -333,7 +333,7 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineWriteBarrier(dst, ref);
 }
@@ -341,7 +341,7 @@ FCIMPLEND
 
 FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineCheckedWriteBarrier(dst, ref);
 }
@@ -358,7 +358,7 @@ FCIMPLEND
 
 FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
