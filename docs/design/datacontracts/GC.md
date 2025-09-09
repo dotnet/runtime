@@ -22,6 +22,15 @@ public readonly struct GCHeapData
     // Fields only valid in segment GC builds
     public TargetPointer SavedSweepEphemeralSegment { get; init; }
     public TargetPointer SavedSweepEphemeralStart { get; init; }
+
+    public TargetPointer InternalRootArray { get; init; }
+    public TargetNUInt InternalRootArrayIndex { get; init; }
+    public bool HeapAnalyzeSuccess { get; init; }
+
+    public IReadOnlyList<TargetNUInt> InterestingData { get; init; }
+    public IReadOnlyList<TargetNUInt> CompactReasons { get; init; }
+    public IReadOnlyList<TargetNUInt> ExpandMechanisms { get; init; }
+    public IReadOnlyList<TargetNUInt> InterestingMechanismBits { get; init; }
 }
 
 public readonly struct GCGenerationData
@@ -80,6 +89,14 @@ Data descriptors used:
 | `GCHeap` | GenerationTable | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in sever builds) |
 | `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment) |
 | `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment) |
+| `GCHeap` | OOMData | GC | OOM related data in a struct (in sever builds) |
+| `GCHeap` | InternalRootArray | GC | Data array stored per heap (in sever builds) |
+| `GCHeap` | InternalRootArrayIndex | GC | Index into InternalRootArray (in sever builds) |
+| `GCHeap` | HeapAnalyzeSuccess | GC | Boolean indicating if heap analyze succeeded (in sever builds) |
+| `GCHeap` | InterestingData | GC | Data array stored per heap (in sever builds) |
+| `GCHeap` | CompactReasons | GC | Data array stored per heap (in sever builds) |
+| `GCHeap` | ExpandMechanisms | GC | Data array stored per heap (in sever builds) |
+| `GCHeap` | InterestingMechanismBits | GC | Data array stored per heap (in sever builds) |
 | `Generation` | AllocationContext | GC | A `GCAllocContext` struct |
 | `Generation` | StartSegment | GC | Pointer to the start heap segment |
 | `Generation` | AllocationStart | GC | Pointer to the allocation start |
@@ -97,6 +114,10 @@ Global variables used:
 | `MaxGeneration` | TargetPointer | GC | Pointer to the maximum generation number (uint) |
 | `TotalGenerationCount` | uint | GC | The total number of generations in the GC |
 | `CFinalizeFillPointersLength` | uint | GC | The number of elements in the `CFinalize::FillPointers` array |
+| `InterestingDataLength` | uint | GC | The number of elements in the `InterestingData` array |
+| `CompactReasonsLength` | uint | GC | The number of elements in the `CompactReasons` array |
+| `ExpandMechanismsLength` | uint | GC | The number of elements in the `ExpandMechanisms` array |
+| `InterestingMechanismBitsLength` | uint | GC | The number of elements in the `InterestingMechanismBits` array |
 | `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds) |
 | `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds) |
 | `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds) |
@@ -108,6 +129,14 @@ Global variables used:
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
 | `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
 | `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
+| `GCHeapOOMData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
+| `GCHeapInternalRootArray` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
+| `GCHeapInternalRootArrayIndex` | TargetPointer | GC | Index into InternalRootArray (in workstation builds) |
+| `GCHeapHeapAnalyzeSuccess` | TargetPointer | GC | Boolean indicating if heap analyze succeeded (in workstation builds) |
+| `GCHeapInterestingData` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
+| `GCHeapCompactReasons` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
+| `GCHeapExpandMechanisms` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
+| `GCHeapInterestingMechanismBits` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `CurrentGCState` | uint | GC | `c_gc_state` enum value. Only available when `GCIdentifiers` contains `background`. |
 | `DynamicAdaptationMode | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
@@ -225,6 +254,14 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
     data.EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer("GCHeapEphemeralHeapSegment"));
     data.CardTable = target.ReadPointer(target.ReadGlobalPointer("GCHeapCardTable"));
 
+    // Read GenerationTable
+    TargetPointer generationTableArrayStart = target.ReadGlobalPointer("GCHeapGenerationTable");
+    data.GenerationTable = GetGenerationData(generationTableArrayStart);
+
+    // Read finalize queue from global and CFinalize offsets
+    TargetPointer finalizeQueue = target.ReadPointer(target.ReadGlobalPointer("GCHeapFinalizeQueue"));
+    data.FillPointers = GetCFinalizeFillPointers(finalizeQueue);
+
     if (target.TryReadGlobalPointer("GCHeapSavedSweepEphemeralSeg", out TargetPointer? savedSweepEphemeralSegPtr))
     {
         data.SavedSweepEphemeralSeg = target.ReadPointer(savedSweepEphemeralSegPtr.Value);
@@ -243,41 +280,26 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
         data.SavedSweepEphemeralStart = 0;
     }
 
-    // Read GenerationTable
-    TargetPointer generationTableArrayStart = target.ReadGlobalPointer("GCHeapGenerationTable");
-    uint generationTableLength = target.ReadGlobal<uint>("TotalGenerationCount");
-    uint generationSize = target.GetTypeInfo(DataType.Generation).Size;
+    data.InternalRootArray = target.ReadPointer(target.ReadGlobalPointer("GCHeapInternalRootArray"));
+    data.InternalRootArrayIndex = target.ReadNUInt(target.ReadGlobalPointer("GCHeapInternalRootArrayIndex"));
+    data.HeapAnalyzeSuccess = target.Read<int>(target.ReadGlobalPointer("GCHeapHeapAnalyzeSuccess"));
 
-    List<GCGenerationData> generationTable = []
-    for (uint i = 0; i < generationTableLength; i++)
-    {
-        GCGenerationData generationData;
-        TargetPointer generationAddress = generationTableArrayStart + (i * generationSize);
-        generationData.StartSegment = target.ReadPointer(generationAddress + /* Generation::StartSegment offset */);
-        if (/* Generation::AllocationStart is present */)
-            generationData.AllocationStart = target.ReadPointer(generationAddress + /* Generation::AllocationStart offset */)
-        else
-            generationData.AllocationStart = -1;
-
-        generationData.AllocationContextPointer =
-            target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Pointer offset */);
-        generationData.AllocationContextLimit =
-            target.ReadPointer(generationAddress + /* Generation::AllocationContext offset */ + /* GCAllocContext::Limit offset */);
-
-        generationTable.Add(generationData);
-    }
-    data.GenerationTable = generationTable;
-
-    // Read finalize queue from global and CFinalize offsets
-    TargetPointer finalizeQueue = target.ReadPointer(target.ReadGlobalPointer("GCHeapFinalizeQueue"));
-    TargetPointer fillPointersArrayStart = finalizeQueue + /* CFinalize::FillPointers offset */;
-    uint fillPointersLength = target.ReadGlobal<uint>("CFinalizeFillPointersLength");
-
-    List<TargetPointer> fillPointers = [];
-    for (uint i = 0; i < fillPointersLength; i++)
-        fillPointers[i] = target.ReadPointer(fillPointersArrayStart + (i * target.PointerSize));
-    
-    data.FillPointers = fillPointers;
+    TargetPointer interestingDataStartAddr = target.ReadGlobalPointer("GCHeapInterestingData");
+    data.InterestingData = ReadGCHeapDataArray(
+        interestingDataStartAddr,
+        target.ReadGlobal<uint>("InterestingDataLength"));
+    TargetPointer compactReasonsStartAddr = target.ReadGlobalPointer("GCHeapCompactReasons");
+    data.CompactReasons = ReadGCHeapDataArray(
+        compactReasonsStartAddr,
+        target.ReadGlobal<uint>("CompactReasonsLength"));
+    TargetPointer expandMechanismsStartAddr = target.ReadGlobalPointer("GCHeapExpandMechanisms");
+    data.ExpandMechanisms = ReadGCHeapDataArray(
+        expandMechanismsStartAddr,
+        target.ReadGlobal<uint>("ExpandMechanismsLength"));
+    TargetPointer interestingMechanismBitsStartAddr = target.ReadGlobalPointer("GCHeapInterestingMechanismBits");
+    data.InterestingMechanismBits = ReadGCHeapDataArray(
+        interestingMechanismBitsStartAddr,
+        target.ReadGlobal<uint>("InterestingMechanismBitsLength"));
 
     return data;
 }
@@ -302,6 +324,15 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
     data.EphemeralHeapSegment = target.ReadPointer(heapAddress + /* GCHeap::EphemeralHeapSegment offset */);
     data.CardTable = target.ReadPointer(heapAddress + /* GCHeap::CardTable offset */);
 
+    // Read GenerationTable
+    TargetPointer generationTableArrayStart = heapAddress + /* GCHeap::GenerationTable offset */;
+    data.GenerationTable = GetGenerationData(generationTableArrayStart);
+
+    // Read finalize queue fill pointers
+    TargetPointer finalizeQueue = target.ReadPointer(heapAddress + /* GCHeap::FinalizeQueue offset */);
+    data.FillPointers = GetCFinalizeFillPointers(finalizeQueue);
+
+
     if (/* GCHeap::SavedSweepEphemeralSeg is present */)
     {
         data.SavedSweepEphemeralSeg = target.ReadPointer(heapAddress + /* GCHeap::SavedSweepEphemeralSeg offset */);
@@ -320,12 +351,39 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
         data.SavedSweepEphemeralStart = 0;
     }
 
-    // Read GenerationTable
-    TargetPointer generationTableArrayStart = heapAddress + /* GCHeap::GenerationTable offset */;
+    data.InternalRootArray = target.ReadPointer(heapAddress + /* GCHeap::InternalRootArray offset */);
+    data.InternalRootArrayIndex = target.ReadNUInt(heapAddress + /* GCHeap::InternalRootArrayIndex offset */);
+    data.HeapAnalyzeSuccess = target.Read<int>(heapAddress + /* GCHeap::HeapAnalyzeSuccess offset */);
+
+    TargetPointer interestingDataStartAddr = heapAddress + /* GCHeap::InterestingData offset */;
+    data.InterestingData = ReadGCHeapDataArray(
+        interestingDataStartAddr,
+        target.ReadGlobal<uint>("InterestingDataLength"));
+    TargetPointer compactReasonsStartAddr = heapAddress + /* GCHeap::CompactReasons offset */;
+    data.CompactReasons = ReadGCHeapDataArray(
+        compactReasonsStartAddr,
+        target.ReadGlobal<uint>("CompactReasonsLength"));
+    TargetPointer expandMechanismsStartAddr = heapAddress + /* GCHeap::ExpandMechanisms offset */;
+    data.ExpandMechanisms = ReadGCHeapDataArray(
+        expandMechanismsStartAddr,
+        target.ReadGlobal<uint>("ExpandMechanismsLength"));
+    TargetPointer interestingMechanismBitsStartAddr = heapAddress + /* GCHeap::InterestingMechanismBits offset */;
+    data.InterestingMechanismBits = ReadGCHeapDataArray(
+        interestingMechanismBitsStartAddr,
+        target.ReadGlobal<uint>("InterestingMechanismBitsLength"));
+
+    return data;
+}
+```
+
+Helper methods:
+```csharp
+private List<GCGeneration> GetGenerationData(TargetPointer generationTableArrayStart)
+{
     uint generationTableLength = target.ReadGlobal<uint>("TotalGenerationCount");
     uint generationSize = target.GetTypeInfo(DataType.Generation).Size;
 
-    List<GCGenerationData> generationTable = []
+    List<GCGenerationData> generationTable = [];
     for (uint i = 0; i < generationTableLength; i++)
     {
         GCGenerationData generationData;
@@ -343,20 +401,27 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
 
         generationTable.Add(generationData);
     }
-    data.GenerationTable = generationTable;
 
-    // Read finalize queue from global and CFinalize offsets
-    TargetPointer finalizeQueue = target.ReadPointer(heapAddress + /* GCHeap::FinalizeQueue offset */);
-    TargetPointer fillPointersArrayStart = finalizeQueue + /* CFinalize::FillPointers offset */;
+    return generationTable;
+}
+
+private List<TargetPointers> GetCFinalizeFillPointers(TargetPointer cfinalize)
+{
+    TargetPointer fillPointersArrayStart = cfinalize + /* CFinalize::FillPointers offset */;
     uint fillPointersLength = target.ReadGlobal<uint>("CFinalizeFillPointersLength");
 
     List<TargetPointer> fillPointers = [];
     for (uint i = 0; i < fillPointersLength; i++)
         fillPointers[i] = target.ReadPointer(fillPointersArrayStart + (i * target.PointerSize));
-    
-    data.FillPointers = fillPointers;
 
-    return data;
+    return fillPointers;
+}
+
+private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint length)
+{
+    List<TargetNUInt> arr = [];
+    for (uint i = 0; i < length; i++)
+        arr.Add(target.ReadNUInt(arrayStart + (i * target.PointerSize)));
+    return arr;
 }
 ```
-
