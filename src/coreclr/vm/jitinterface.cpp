@@ -10855,7 +10855,6 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             targetAddr = finalTierAddr;
             if (pMethod != NULL && HasILBasedDynamicJitHelper(dynamicFtnNum))
             {
-                (void)LoadDynamicJitHelper(dynamicFtnNum);
                 helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
                 _ASSERT(helperMD != NULL);
             }
@@ -10864,7 +10863,6 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
         if (HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
-            (void)LoadDynamicJitHelper(dynamicFtnNum);
             helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
             _ASSERT(helperMD != NULL);
 
@@ -10905,11 +10903,23 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
-                Precode* pPrecode = helperMD->GetPrecode();
-                _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
-                accessType = IAT_PVALUE;
-                targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-                goto exit;
+                if (helperMD->IsVersionable())
+                {
+                    _ASSERTE(helperMD->IsVersionableWithPrecode());
+                    Precode* pPrecode = helperMD->GetOrCreatePrecode();
+                    _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+                    accessType = IAT_PVALUE;
+                    targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+                    goto exit;
+                }
+
+                if (!helperMD->IsPointingToNativeCode())
+                {
+                    helperMD->EnsureTemporaryEntryPoint();
+                    accessType = IAT_PVALUE;
+                    targetAddr = helperMD->GetAddrOfSlot();
+                    goto exit;
+                }
             }
         }
 
