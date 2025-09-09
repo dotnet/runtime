@@ -333,6 +333,20 @@ namespace System.IO.Compression.Tests
             await ItemEqual(actualList, expectedList, isFile: true);
             await ItemEqual(actualFolders, expectedList, isFile: false);
         }
+        public static void NormalizeFileNames(string folder)
+        {
+            foreach (var entry in Directory.GetFileSystemEntries(folder, "*", SearchOption.AllDirectories))
+            {
+                string parent = Path.GetDirectoryName(entry)!;
+                string normalized = Path.GetFileName(entry).Normalize(NormalizationForm.FormC);
+                string newPath = Path.Combine(parent, normalized);
+
+                if (entry != newPath)
+                {
+                    File.Move(entry, newPath);
+                }
+            }
+        }
 
         public static void DirFileNamesEqual(string actual, string expected)
         {
