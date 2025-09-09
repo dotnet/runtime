@@ -2797,6 +2797,8 @@ PCODE MethodDesc::GetPortableEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
 
+    // The portable entry point is currently the same as the
+    // temporary entry point.
     return GetTemporaryEntryPoint();
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
