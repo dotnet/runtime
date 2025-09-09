@@ -38,7 +38,7 @@ namespace Internal.TypeSystem.Ecma
         private MethodDefinitionHandle _handle;
 
         // Cached values
-        private nint _namePointer;
+        private unsafe volatile byte* _namePointer;
         private int _nameLength;
         private ThreadSafeFlags _methodFlags;
         private MethodSignature _signature;
@@ -387,17 +387,17 @@ namespace Internal.TypeSystem.Ecma
         {
             StringHandle handle = MetadataReader.GetMethodDefinition(_handle).Name;
             _nameLength = MetadataReader.GetStringBytes(handle).Length;
-            Volatile.Write(ref _namePointer, (nint)(MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle)));
-            return new ReadOnlySpan<byte>((byte*)_namePointer, _nameLength);
+            _namePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
         public override unsafe ReadOnlySpan<byte> Name
         {
             get
             {
-                if (_namePointer != 0)
+                if (_namePointer != null)
                 {
-                    return new ReadOnlySpan<byte>((byte*)_namePointer, _nameLength);
+                    return new ReadOnlySpan<byte>(_namePointer, _nameLength);
                 }
                 return InitializeName();
             }

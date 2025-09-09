@@ -25,9 +25,9 @@ namespace Internal.TypeSystem.Ecma
         private TypeDefinition _typeDefinition;
 
         // Cached values
-        private nint _namePointer;
+        private unsafe volatile byte* _namePointer;
         private int _nameLength;
-        private nint _namespacePointer;
+        private unsafe volatile byte* _namespacePointer;
         private int _namespaceLength;
         private TypeDesc[] _genericParameters;
         private MetadataType _baseType;
@@ -268,17 +268,17 @@ namespace Internal.TypeSystem.Ecma
         {
             StringHandle handle = _typeDefinition.Name;
             _nameLength = MetadataReader.GetStringBytes(handle).Length;
-            Volatile.Write(ref _namePointer, (nint)(MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle)));
-            return new ReadOnlySpan<byte>((byte*)_namePointer, _nameLength);
+            _namePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
         public override unsafe ReadOnlySpan<byte> Name
         {
             get
             {
-                if (_namePointer != 0)
+                if (_namePointer != null)
                 {
-                    return new ReadOnlySpan<byte>((byte*)_namePointer, _nameLength);
+                    return new ReadOnlySpan<byte>(_namePointer, _nameLength);
                 }
                 return InitializeName();
             }
@@ -288,17 +288,17 @@ namespace Internal.TypeSystem.Ecma
         {
             StringHandle handle = _typeDefinition.Namespace;
             _namespaceLength = MetadataReader.GetStringBytes(handle).Length;
-            Volatile.Write(ref _namespacePointer, (nint)(MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle)));
-            return new ReadOnlySpan<byte>((byte*)_namespacePointer, _namespaceLength);
+            _namespacePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
         }
 
         public override unsafe ReadOnlySpan<byte> Namespace
         {
             get
             {
-                if (_namespacePointer != 0)
+                if (_namespacePointer != null)
                 {
-                    return new ReadOnlySpan<byte>((byte*)_namespacePointer, _namespaceLength);
+                    return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
                 }
                 return InitializeNamespace();
             }
