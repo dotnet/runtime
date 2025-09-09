@@ -10778,7 +10778,11 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     targetAddr = (LPVOID)VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
     if (targetAddr != NULL)
     {
-        if (helperDef.IsDynamicHelper(&dynamicFtnNum))
+        // If the target address is already cached, but the caller asked for the method handle
+        // then we verify the helper is an IL based dynamic helper and load the method handle for it.
+        if (pMethod != NULL
+            && helperDef.IsDynamicHelper(&dynamicFtnNum)
+            && HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
             (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
             _ASSERTE(PortableEntryPoint::HasNativeEntryPoint((PCODE)targetAddr)
@@ -10845,7 +10849,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         {
             accessType = IAT_VALUE;
             targetAddr = finalTierAddr;
-            if (pMethod != nullptr && HasILBasedDynamicJitHelper(dynamicFtnNum))
+            if (pMethod != NULL && HasILBasedDynamicJitHelper(dynamicFtnNum))
             {
                 (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
                 _ASSERT(helperMD != NULL);
