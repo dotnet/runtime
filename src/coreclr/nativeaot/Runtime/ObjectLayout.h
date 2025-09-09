@@ -54,7 +54,6 @@ public:
 #ifndef DACCESS_COMPILE
     void SetMethodTable(MethodTable * pEEType)
         { m_pEEType = pEEType; }
-    void InitMethodTable(MethodTable * pEEType);
 
     size_t GetSize();
 #endif

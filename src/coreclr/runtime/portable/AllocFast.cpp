@@ -4,6 +4,8 @@
 
 #include <fcall.h>
 
+extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
+
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
     PORTABILITY_ASSERT("RhpNewVariableSizeObject is not yet implemented");
@@ -50,7 +52,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PT
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return OBJECTREFToObject(AllocateSzArray(pMT, (INT32)size));
+        return RhpNewVariableSizeObject(typeHnd_, size);
     }
 #endif // !HOST_64BIT
 
@@ -85,11 +87,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_)
 {
     PORTABILITY_ASSERT("RhpNewFastMisalign is not yet implemented");
     return nullptr;
-}
-
-void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
-{
-    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF

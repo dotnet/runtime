@@ -2319,7 +2319,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         else
         {
             MethodDesc* helperMD = PortableEntryPoint::GetMethodDesc(pCode);
-            // If the FCall has a MethodDesc, then we need to potentially set up the interpreter code for it as well.
+            // If the FCall implementation is managed, then we need to potentially set up the interpreter code for it as well.
             // This is because the FCall may have been compiled to an IL stub that needs to be interpreted.
             if (helperMD->IsPointingToPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);

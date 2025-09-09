@@ -16,14 +16,6 @@
 #include "ObjectLayout.h"
 #include "MethodTable.inl"
 
-#ifndef DACCESS_COMPILE
-void Object::InitMethodTable(MethodTable * pEEType)
-{
-    ASSERT(NULL == m_pEEType);
-    m_pEEType = pEEType;
-}
-#endif
-
 uint32_t Array::GetArrayLength()
 {
     return m_Length;
