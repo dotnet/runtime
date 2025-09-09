@@ -10855,6 +10855,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             targetAddr = finalTierAddr;
             if (pMethod != NULL && HasILBasedDynamicJitHelper(dynamicFtnNum))
             {
+                (void)LoadDynamicJitHelper(dynamicFtnNum);
                 helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
                 _ASSERT(helperMD != NULL);
             }
