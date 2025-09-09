@@ -865,7 +865,7 @@ void EEStartupHelper()
         // the completion of its initialization part that initializes COM as that has to be done
         // before the first Thread is attached. Thus we want to give the thread a bit more time.
         FinalizerThread::FinalizerThreadCreate();
-#endif
+#endif // TARGET_WINDOWS
 
         InitPreStubManager();
 
@@ -926,17 +926,18 @@ void EEStartupHelper()
         }
 #endif
 
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
-#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
-        // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects
-        FinalizerThread::FinalizerThreadCreate();
-#else
+#ifdef TARGET_WINDOWS
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#endif
+#elif defined(TARGET_WASM)
+        // on wasm we need to run finalizers on main thread as we are single threaded
+        // active issue: https://github.com/dotnet/runtime/issues/114096
+#else
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects
+        FinalizerThread::FinalizerThreadCreate();
+#endif // TARGET_WINDOWS
 
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.

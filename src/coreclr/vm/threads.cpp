@@ -1062,6 +1062,7 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
@@ -1126,6 +1127,7 @@ void InitThreadManager()
 
     }
     else
+#endif // !FEATURE_PORTABLE_HELPERS
     {
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;

@@ -1072,6 +1072,50 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
 
+    GENERIC_CONTEXTPARAM_TYPE paramType;
+
+    switch (m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK)
+    {
+        case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+            paramType = GENERIC_CONTEXTPARAM_MD;
+            break;
+        case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+            paramType = GENERIC_CONTEXTPARAM_MT;
+            break;
+        case CORINFO_GENERICS_CTXT_FROM_THIS:
+        case 0:
+            paramType = GENERIC_CONTEXTPARAM_NONE;
+            break;
+        default:
+            paramType = GENERIC_CONTEXTPARAM_NONE;
+            assert(!"Unexpected generic context parameter type");
+            break;
+    }
+
+    gcInfoEncoder->SetSizeOfStackOutgoingAndScratchArea(0);
+    
+    if (m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_SHAREDINST)
+    {
+        if ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_THIS)
+        {
+            assert(paramType != GENERIC_CONTEXTPARAM_NONE);
+            
+            int32_t genericArgStackOffset = m_pVars[getParamArgIndex()].offset;
+            INTERP_DUMP("SetGenericsInstContextStackSlot at %u\n", (unsigned)genericArgStackOffset);
+            gcInfoEncoder->SetPrologSize(4); // Size of 1 instruction
+            gcInfoEncoder->SetStackBaseRegister(0);
+            gcInfoEncoder->SetGenericsInstContextStackSlot(genericArgStackOffset, paramType);
+        }
+        else
+        {
+            assert((paramType == GENERIC_CONTEXTPARAM_NONE));
+        }
+    }
+    else
+    {
+        assert((paramType == GENERIC_CONTEXTPARAM_NONE));
+    }
+
     INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
     for (int pass = 0; pass < 2; pass++)
@@ -1288,6 +1332,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     : m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
+    , m_hiddenArgumentVar(-1)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -2306,6 +2351,16 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             AddIns(INTOP_THROW_PNSE);
             return true;
 
+        case NI_System_StubHelpers_GetStubContext:
+        {
+            assert(m_hiddenArgumentVar >= 0);
+            AddIns(INTOP_MOV_P);
+            PushStackType(StackTypeI, NULL);
+            m_pLastNewIns->SetSVar(m_hiddenArgumentVar);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
         {
             CHECK_STACK(1);
@@ -2799,6 +2854,27 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
+{
+    AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
+    m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
+    bool suppressGCTransition = false;
+    CorInfoCallConv callConv = (CorInfoCallConv)(callSiteSig->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+    bool isPInvoke = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+    if (isPInvoke)
+    {
+        if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
+        {
+            BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
+        }
+        m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
+    }
+    m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
+                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0);
+    m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -2852,7 +2928,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
-            bool isMustExpand = (callInfo.hMethod == m_methodHnd);
+            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -3204,9 +3280,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
             }
             else
             {
@@ -3263,9 +3337,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-            m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-            m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
+            EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
@@ -3298,9 +3370,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
+                EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
             else
             {
@@ -3696,6 +3766,17 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
+
+    CORJIT_FLAGS corJitFlags;
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
+    assert(jitFlagsSize == sizeof(corJitFlags));
+
+    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    {
+        m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
+        AddIns(INTOP_STORESTUBCONTEXT);
+        m_pLastNewIns->SetDVar(m_hiddenArgumentVar);
+    }
 
     CorInfoInitClassResult initOnFunctionStart = m_compHnd->initClass(NULL, NULL, METHOD_BEING_COMPILED_CONTEXT());
     if ((initOnFunctionStart & CORINFO_INITCLASS_USE_HELPER) == CORINFO_INITCLASS_USE_HELPER)

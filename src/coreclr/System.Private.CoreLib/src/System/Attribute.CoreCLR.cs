@@ -391,7 +391,7 @@ namespace System
                 return indexParamTypes;
             }
 
-            return Type.EmptyTypes;
+            return [];
         }
 
         private static void AddAttributesToList(List<Attribute> attributeList, Attribute[] attributes, Dictionary<Type, AttributeUsageAttribute> types)
