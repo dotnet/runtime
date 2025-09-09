@@ -78,12 +78,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
-        {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
-        }
-
-        [DoesNotReturn]
         internal static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
@@ -135,6 +129,12 @@ namespace System
         internal static void ThrowArgumentException_TupleIncorrectType(object obj)
         {
             throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, obj.GetType()), "other");
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_NeedValueTypeWithNoRefs(Type targetType)
+        {
+            throw new ArgumentException(SR.Format(SR.Argument_NeedValueTypeWithNoRefs, targetType));
         }
 
         [DoesNotReturn]

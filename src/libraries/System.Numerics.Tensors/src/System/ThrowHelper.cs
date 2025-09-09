@@ -60,9 +60,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgumentException_NeedValueTypeWithNoRefs(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_NeedValueTypeWithNoRefs, targetType));
         }
 
         [DoesNotReturn]

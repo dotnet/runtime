@@ -403,7 +403,7 @@ namespace System.Runtime.InteropServices
         internal static uint SizeOf<T>() where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgumentException_NeedValueTypeWithNoRefs(typeof(T));
 
             return (uint)sizeof(T);
         }
