@@ -5,14 +5,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
-    <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasiObjDir>$(ArtifactsObjDir)wasi</WasiObjDir>
     <_WasiDefaultsRspPath>$(NativeBinDir)src\wasi-default.rsp</_WasiDefaultsRspPath>
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
@@ -26,11 +23,6 @@
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
-  </ItemGroup>
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
@@ -65,60 +57,6 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'"
-          DependsOnTargets="AcquireWasiSdk">
-    <PropertyGroup>
-      <WasiClang>$(RuntimeBuildWasiSdkPath)bin/clang</WasiClang>
-      <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
-      <WasiLLVMAr>$(RuntimeBuildWasiSdkPath)bin/llvm-ar</WasiLLVMAr>
-      <WasiLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiLLVMAr).exe</WasiLLVMAr>
-
-      <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
-      <_WasmTimezonesBundleObjectFile>wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
-      <_WasmTimezonesBundleArchive>$(WasiObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
-      <_WasmTimezonesArchiveRsp>$(WasiObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
-    </PropertyGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
-    </ItemGroup>
-    <ItemGroup>
-      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmTimezonesInternal>
-    </ItemGroup>
-    <!-- TODO make this incremental compilation -->
-    <EmitBundleObjectFiles
-      FilesToBundle="@(_WasmTimezonesInternal)"
-      ClangExecutable="$(WasiClang)"
-      BundleRegistrationFunctionName="mono_register_timezones_bundle"
-      BundleFile="$(_WasmTimezonesBundleObjectFile)"
-      OutputDirectory="$(WasiObjDir)">
-      <Output TaskParameter="BundledResources" ItemName="BundledWasiTimezones" />
-    </EmitBundleObjectFiles>
-    <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(BundledWasiTimezones.DestinationFile)).Replace('\','/'))" />
-      <WasmBundleTimezonesObjects Include="$(_WasmTimezonesBundleObjectFile)" />
-    </ItemGroup>
-    <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
-      Overwrite="true"
-      Lines="@(WasmBundleTimezonesObjects, ' ')"
-      WriteOnlyWhenDifferent="true" />
-    <Exec Command="$(WasiLLVMAr) cs -r $(_WasmTimezonesBundleArchive) @$(_WasmTimezonesArchiveRsp)" WorkingDirectory="$(WasiObjDir)" />
-
-    <ItemGroup>
-      <_WasmArchivedTimezones Include="$(_WasmTimezonesBundleArchive)" />
-    </ItemGroup>
-
-    <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
-    <ItemGroup>
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(BundledWasiTimezones.DestinationFile)" />
-    </ItemGroup>
-    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
-  </Target>
-
   <Target Name="GenerateWasiPropsAndRspFiles">
 
     <!-- Generate wasm-props.json -->
@@ -129,8 +67,6 @@
     <ItemGroup>
       <_WasiFlags Include="@(_WasiCommonFlags)" />
 
-      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
@@ -140,7 +76,6 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PTHREAD"/>
       <!-- keep in sync with src\mono\wasi\build\WasiApp.targets -->
-      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
     </ItemGroup>
 
@@ -190,13 +125,9 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasiRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="AcquireWasiSdk;GenerateWasiPropsAndRspFiles;GenerateManagedToNative;GenerateTimezonesArchive">
+          DependsOnTargets="AcquireWasiSdk;GenerateWasiPropsAndRspFiles;GenerateManagedToNative">
 
     <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
-      <ICULibFiles Include="$(ICULibDir)/*.dat" />
       <WASIComponentImports Include="$(RepoRoot)src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit" />
     </ItemGroup>
     <PropertyGroup>
@@ -224,7 +155,6 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -263,18 +193,10 @@
           DestinationFolder="%(_FilesToCopy.DestinationFolder)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       @(_WasmArchivedTimezones);
-                       @(WASIComponentImports);"
-          DestinationFolder="$(NativeBinDir)"
-          SkipUnchangedFiles="true" />
-
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" />
 
     <ItemGroup>
-      <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
       <WasmSrcFiles Include="$(_WasiDefaultsRspPath);$(_WasiCompileRspPath);$(_WasiLinkRspPath);$(NativeBinDir)src\wasm-props.json" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
@@ -284,7 +206,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones);@(WASIComponentImports);"
+    <Copy SourceFiles="@(WASIComponentImports);"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

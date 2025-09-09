@@ -301,6 +301,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
         public static void BuildPqcWithHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(

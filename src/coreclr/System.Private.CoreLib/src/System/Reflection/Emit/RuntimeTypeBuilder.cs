@@ -519,12 +519,6 @@ namespace System.Reflection.Emit
                 }
             }
 
-            // Verify that the layout mask is valid.
-            if (((attr & TypeAttributes.LayoutMask) != TypeAttributes.AutoLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.ExplicitLayout))
-            {
-                throw new ArgumentException(SR.Argument_BadTypeAttrInvalidLayout);
-            }
-
             // Check if the user attempted to set any reserved bits.
             if ((attr & TypeAttributes.ReservedMask) != 0)
             {
