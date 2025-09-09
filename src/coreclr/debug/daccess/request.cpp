@@ -3253,7 +3253,7 @@ ClrDataAccess::GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *analyzeDat
 
     SOSDacEnter();
 
-    analyzeData->internal_root_array = dac_cast<TADDR>(g_gcDacGlobals->internal_root_array);
+    analyzeData->internal_root_array = TO_CDADDR((TADDR)(*g_gcDacGlobals->internal_root_array));
     analyzeData->internal_root_array_index = *g_gcDacGlobals->internal_root_array_index;
     analyzeData->heap_analyze_success = *g_gcDacGlobals->heap_analyze_success;
 
