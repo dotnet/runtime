@@ -10860,7 +10860,6 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
         if (HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
-            (void)LoadDynamicJitHelper(dynamicFtnNum);
             helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
             _ASSERT(helperMD != NULL);
 
