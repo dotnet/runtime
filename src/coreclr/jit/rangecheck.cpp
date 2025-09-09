@@ -664,11 +664,6 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
         return true;
     }
 
-    if (comp->vnStore->IsVNNeverNegative(num))
-    {
-        pRange->lLimit = Limit(Limit::keConstant, 0);
-    }
-
     VNFuncApp funcApp;
     if (comp->vnStore->GetVNFunc(num, &funcApp))
     {
@@ -713,45 +708,6 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
                 pRange->uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
                 break;
 
-            case VNF_GT:
-            case VNF_GE:
-            case VNF_LT:
-            case VNF_LE:
-            case VNF_EQ:
-            case VNF_NE:
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-            case VNF_LE_UN:
-            case VNF_LT_UN:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, 1);
-                break;
-
-#ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_XARCH
-            case VNF_HWI_X86Base_PopCount:
-            case VNF_HWI_AVX2_LeadingZeroCount:
-            case VNF_HWI_AVX2_TrailingZeroCount:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, 32);
-                break;
-            case VNF_HWI_X86Base_X64_PopCount:
-            case VNF_HWI_AVX2_X64_LeadingZeroCount:
-            case VNF_HWI_AVX2_X64_TrailingZeroCount:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, 64);
-                break;
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_ArmBase_LeadingZeroCount:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, 32);
-                break;
-            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-                pRange->lLimit = Limit(Limit::keConstant, 0);
-                pRange->uLimit = Limit(Limit::keConstant, 64);
-                break;
-#endif
-#endif
             default:
                 break;
         }
