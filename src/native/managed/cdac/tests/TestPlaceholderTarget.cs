@@ -81,7 +81,7 @@ internal class TestPlaceholderTarget : Target
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataReader(address, buffer) < 0)
-            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
@@ -161,9 +161,34 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
-    public override bool Write<T>(ulong address, T value) => throw new NotImplementedException();
 
-#region subclass reader helpers
+    public override T ReadLittleEndian<T>(ulong address)
+    {
+        T value = default;
+        unsafe
+        {
+            Span<byte> buffer = stackalloc byte[sizeof(T)];
+            if (_dataReader(address, buffer) < 0)
+                throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+            T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!DefaultTryRead(address, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
+    }
+
+    public override void Write<T>(ulong address, T value) => throw new NotImplementedException();
+
+    #region subclass reader helpers
 
     /// <summary>
     /// Basic utility to read a value from memory, all the DefaultReadXXX methods call this.
@@ -220,14 +245,14 @@ internal class TestPlaceholderTarget : Target
     protected T DefaultRead<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!DefaultTryRead(address, out T value))
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
         return value;
     }
 
-    protected TargetPointer DefaultReadPointer (ulong address)
+    protected TargetPointer DefaultReadPointer(ulong address)
     {
         if (!DefaultTryReadPointer(address, out TargetPointer pointer))
-            throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
@@ -264,7 +289,7 @@ internal class TestPlaceholderTarget : Target
     protected TargetNUInt DefaultReadNUInt(ulong address)
     {
         if (!DefaultTryReadNUInt(address, out ulong value))
-            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }
@@ -273,7 +298,7 @@ internal class TestPlaceholderTarget : Target
     {
         return new TargetCodePointer(DefaultReadPointer(address));
     }
-#endregion subclass reader helpers
+    #endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
@@ -311,7 +336,8 @@ internal class TestPlaceholderTarget : Target
                 return constructed;
 
             bool found = TryGet(address, out result);
-            if (!found) {
+            if (!found)
+            {
                 throw new InvalidOperationException($"Failed to add {typeof(T)} at 0x{address:x8}.");
             }
             return result!;

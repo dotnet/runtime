@@ -73,7 +73,8 @@ public:
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
         SigTypeContext *pTypeContext,
-        ILStubLinker* pStubLinker);
+        ILStubLinker* pStubLinker,
+        BOOL isAsync = FALSE);
 
     MethodTable * GetStubMethodTable()
     {
@@ -97,6 +98,7 @@ private: // static
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
+        BOOL isAsync,
         SigTypeContext *pTypeContext,
         AllocMemTracker* pamTracker);
 

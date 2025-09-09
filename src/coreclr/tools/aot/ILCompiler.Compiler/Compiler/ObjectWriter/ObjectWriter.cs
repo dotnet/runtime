@@ -517,6 +517,13 @@ namespace ILCompiler.ObjectWriter
                         continue;
                     }
 
+                    ISymbolNode symbolNode = node as ISymbolNode;
+                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                    if (deduplicatedSymbolNode != symbolNode)
+                    {
+                        continue;
+                    }
+
                     // Ensure any allocated MethodTables have debug info
                     if (node is ConstructedEETypeNode methodTable)
                     {

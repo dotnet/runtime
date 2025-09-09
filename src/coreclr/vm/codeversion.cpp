@@ -322,11 +322,23 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
 }
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
+bool NativeCodeVersion::IsFinalTier() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_TIERED_COMPILATION
+    OptimizationTier tier = GetOptimizationTier();
+    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
+#else // !FEATURE_TIERED_COMPILATION
+    return true;
+#endif // FEATURE_TIERED_COMPILATION
+}
+
+#ifdef FEATURE_TIERED_COMPILATION
 NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         return AsNode()->GetOptimizationTier();
@@ -335,13 +347,6 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     {
         return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
     }
-}
-
-bool NativeCodeVersion::IsFinalTier() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    OptimizationTier tier = GetOptimizationTier();
-    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
 }
 
 #ifndef DACCESS_COMPILE

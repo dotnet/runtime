@@ -24,7 +24,8 @@ internal sealed class CachingContractRegistry : ContractRegistry
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
-        _factories = new() {
+        _factories = new()
+        {
             [typeof(IException)] = new ExceptionFactory(),
             [typeof(ILoader)] = new LoaderFactory(),
             [typeof(IEcmaMetadata)] = new EcmaMetadataFactory(),
@@ -40,6 +41,8 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IStackWalk)] = new StackWalkFactory(),
             [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
             [typeof(IComWrappers)] = new ComWrappersFactory(),
+            [typeof(IDebugInfo)] = new DebugInfoFactory(),
+            [typeof(IGC)] = new GCFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -59,6 +62,8 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IStackWalk StackWalk => GetContract<IStackWalk>();
     public override IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
     public override IComWrappers ComWrappers => GetContract<IComWrappers>();
+    public override IDebugInfo DebugInfo => GetContract<IDebugInfo>();
+    public override IGC GC => GetContract<IGC>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {
