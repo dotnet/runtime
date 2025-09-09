@@ -646,8 +646,17 @@ void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE 
 
 void InterpCompiler::PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd)
 {
-    // We don't really care about the exact size for non-valuetypes
-    PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    if (stackType == StackTypeVT)
+    {
+        assert(clsHnd != NULL);
+        int size = m_compHnd->getClassSize(clsHnd);
+        PushTypeExplicit(stackType, clsHnd, size);
+    }
+    else
+    {
+        // We don't really care about the exact size for non-valuetypes
+        PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    }
 }
 
 void InterpCompiler::PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd)
