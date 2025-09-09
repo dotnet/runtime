@@ -274,9 +274,9 @@ PTR_ExInfo Thread::GetCurExInfo()
 
 void Thread::Construct()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static_assert(OFFSETOF__Thread__m_pTransitionFrame == (offsetof(Thread, m_pTransitionFrame)));
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -1425,7 +1425,7 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef FEATURE_PORTABLE_HELPERS
 
 FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
@@ -1441,7 +1441,7 @@ FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 }
 FCIMPLEND
 
-#endif //USE_PORTABLE_HELPERS
+#endif //FEATURE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
 

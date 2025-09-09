@@ -63,9 +63,13 @@ This will start a local HTTP server and you can open the provided URL in your br
 You can also run the runtime directly in Node.js:
 
 ```bash
-cd artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun/
-node corewasmrun.js
+cp /runtime3/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL
+cp helloworld.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL
+cd /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/
+node ./corerun.js -c /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
 ```
+
+Note that path in the node args need to be **absolute path** on your host file system in **unix format** (even on Windows).
 
 ## Debugging
 
@@ -94,25 +98,39 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
 
 2. **Create a launch.json configuration:**
    ```json
-   {
-       "version": "0.2.0",
-       "configurations": [
-           {
-               "type": "node",
-               "request": "launch",
-               "name": "corewasmrun",
-               "skipFiles": [
-                   "<node_internals>/**"
-               ],
-               "program": "corewasmrun.js",
-               "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun/"
-           }
-       ]
-   }
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "type": "node",
+                "request": "launch",
+                "name": "corerun",
+                "skipFiles": [
+                    "<node_internals>/**"
+                ],
+                "outputCapture": "std",
+                "program": "corerun.js",
+                "env": {
+                    "PAL_DBG_CHANNELS": "+all.all",
+                    "CORE_ROOT":"/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
+                },
+                "args": [
+                    "/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
+                ],
+                "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/"
+            }
+        ]
+    }
    ```
 
-3. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
+Note that path in the `args` and `CORE_ROOT` need to be **absolute path** on your host file system in **unix format** (even on Windows).
 
-4. **Start debugging** and step through the WebAssembly code using the call stack
+3. **Copy managed DLLs** `System.Runtime.dll` and `helloworld.dll` into `artifacts/bin/coreclr/browser.wasm.Debug/IL/`.
+
+4. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
+
+5. **Start debugging** and step through the WebAssembly code using the call stack
 
 This approach allows you to debug the JavaScript host and step into WebAssembly code or into the C/C++ code if the Dwarf Debugging extension was installed.
+
+6. to display `WCHAR *` strings in debugger watch window, cast it to `char16_t*` like `(char16_t*)pLoaderModule->m_fileName`
