@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -105,6 +106,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer Address { get; init; }
 
         internal TargetPointer ChunkAddress { get; init; }
+        internal bool IsJitOptimizationDisabledForSpecificMethod { get; init; }
 
         internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, TargetPointer methodDescChunkAddress, Data.MethodDescChunk chunk)
         {
@@ -116,6 +118,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             Token = ComputeToken(target, desc, chunk);
             Size = ComputeSize(target, desc);
+            IsJitOptimizationDisabledForSpecificMethod = ComputeIsJitOptimizationDisabledForSpecificMethod(target, Token, chunk, desc);
         }
 
         public TargetPointer MethodTable => _chunk.MethodTable;
@@ -149,6 +152,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
                 MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
             return target.Read<byte>(methodDescSizeTable + arrayOffset);
+        }
+
+        private static bool ComputeIsJitOptimizationDisabledForSpecificMethod(Target target, uint token, Data.MethodDescChunk chunk, Data.MethodDesc desc)
+        {
+            if ((MethodClassification)(desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask) != MethodClassification.Dynamic)
+                return false;
+            EntityHandle entityHandle = MetadataTokens.EntityHandle((int)token);
+            TypeHandle mt = target.Contracts.RuntimeTypeSystem.GetTypeHandle(chunk.MethodTable);
+            TargetPointer modulePtr = target.Contracts.RuntimeTypeSystem.GetModule(mt);
+            ModuleHandle moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+            MethodDefinition md = reader.GetMethodDefinition((MethodDefinitionHandle)entityHandle);
+            return (md.ImplAttributes & System.Reflection.MethodImplAttributes.NoOptimization) != 0;
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -1036,6 +1052,36 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return md.IsEligibleForTieredCompilation;
     }
 
+    private bool ModuleJitOptsDisabled(MethodDesc md)
+    {
+        TypeHandle mt = GetTypeHandle(md.MethodTable);
+        TargetPointer modulePtr = GetModule(mt);
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        ModuleFlags flags = _target.Contracts.Loader.GetFlags(moduleHandle);
+
+        TargetPointer corDebuggerControlFlagsPtr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        uint corDebuggerControlFlags = _target.Read<uint>(corDebuggerControlFlagsPtr);
+        // debugger
+        if ((flags & ModuleFlags.DebuggerAllowJitOptsPriv) != 0 ||
+            (((corDebuggerControlFlags & (uint)DebuggerControlFlags.AllowJitOpt) != 0) && (flags & ModuleFlags.DebuggerUserOverridePriv) == 0))
+            return true;
+        // profiler
+        if ((flags & ModuleFlags.ProfilerDisableOptimizations) != 0)
+            return true;
+        return false;
+    }
+    private bool IsJitOptimizationDisabledForAllMethodsInChunk(MethodDesc md)
+    {
+        TargetPointer eeConfigPtr = _target.ReadGlobalPointer(Constants.Globals.EEConfig);
+        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadPointer(eeConfigPtr));
+        return eeConfig.JitMinOpts || eeConfig.Debuggable || ModuleJitOptsDisabled(md);
+    }
+
+    bool IRuntimeTypeSystem.IsJitOptimizationDisabled(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        return md.IsJitOptimizationDisabledForSpecificMethod && IsJitOptimizationDisabledForAllMethodsInChunk(md);
+    }
     TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];

@@ -128,7 +128,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
                         break;
                 }
             }
-            else if (2 == modulePtr)
+            else if (rts.IsJitOptimizationDisabled(mdh))
             {
                 dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
             }

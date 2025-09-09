@@ -176,6 +176,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsCollectibleMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    bool IsJitOptimizationDisabled(MethodDescHandle methodDesc) => throw new NotImplementedException();
     TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     TargetCodePointer GetNativeCode(MethodDescHandle methodDesc) => throw new NotImplementedException();

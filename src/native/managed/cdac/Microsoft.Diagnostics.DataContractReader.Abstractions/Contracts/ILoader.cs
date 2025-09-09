@@ -42,6 +42,13 @@ public enum ModuleFlags
 }
 
 [Flags]
+
+public enum DebuggerControlFlags
+{
+    AllowJitOpt = 0x0008,
+};
+
+[Flags]
 public enum AssemblyIterationFlags
 {
     // load status flags

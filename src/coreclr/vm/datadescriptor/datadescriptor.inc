@@ -304,6 +304,12 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
 
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, JitMinOpts, cdac_data<EEConfig>::JitMinOpts)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, Debuggable, cdac_data<EEConfig>::Debuggable)
+CDAC_TYPE_END(EEConfig)
+
 CDAC_TYPE_BEGIN(ArrayClass)
 CDAC_TYPE_INDETERMINATE(ArrayClass)
 CDAC_TYPE_FIELD(ArrayClass, /*uint8*/, Rank, cdac_data<ArrayClass>::Rank)
@@ -974,6 +980,8 @@ CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMAS
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)

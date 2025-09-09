@@ -61,6 +61,8 @@ public static class Constants
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
+        public const string EEConfig = nameof(EEConfig);
+        public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
