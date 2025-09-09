@@ -1936,45 +1936,53 @@ internal sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded)
     {
-        if (mt == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (mt == 0)
+                throw new ArgumentException();
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
-                return HResults.S_OK;
             }
-
-            // TODO(cdac) - The original code handles the case of the module being in the process of being unloaded. This is not yet handled
-
-            System.Text.StringBuilder methodTableName = new();
-            try
+            else
             {
                 TargetPointer modulePointer = typeSystemContract.GetModule(methodTableHandle);
-                TypeNameBuilder.AppendType(_target, methodTableName, methodTableHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
-            }
-            catch
-            {
-                try
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+                if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
                 {
-                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
-                    if (fallbackName != null)
-                    {
-                        methodTableName.Clear();
-                        methodTableName.Append(fallbackName);
-                    }
+                    OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "<Unloaded Type>");
                 }
-                catch
-                { }
+                else
+                {
+                    System.Text.StringBuilder methodTableName = new();
+                    try
+                    {
+                        TypeNameBuilder.AppendType(_target, methodTableName, methodTableHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
+                            if (fallbackName != null)
+                            {
+                                methodTableName.Clear();
+                                methodTableName.Append(fallbackName);
+                            }
+                        }
+                        catch
+                        { }
+                    }
+                    OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
+                }
             }
-            OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
+
         }
-        catch (global::System.Exception ex)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
