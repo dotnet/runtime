@@ -139,7 +139,7 @@
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
   <data name="Argument_TypeContainsReferences" xml:space="preserve">
-    <value>The type '{0}' is not supported because it contains references</value>
+    <value>The type '{0}' is not supported because it contains references.</value>
   </data>
   <data name="DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
