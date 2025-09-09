@@ -14,14 +14,14 @@
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
     <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
 
     <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(_IcuDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_ICU_DIR=$(_IcuDir)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
 
-    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_CMakeArgs)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -65,16 +65,6 @@
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeUnixArgs>
       <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
-
-    <ItemGroup>
-      <_IcuArtifacts Condition="'$(_IcuDir)' != ''"
-                     Include="$(_IcuDir)/lib/libicuuc.a;
-                              $(_IcuDir)/lib/libicui18n.a;
-                              $(_IcuDir)/lib/libicudata.a;
-                              $(_IcuDir)/lib/*.dat" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_IcuArtifacts)" DestinationFolder="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_BuildNativeOutConfig)'))" SkipUnchangedFiles="true" />
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to error in release branches -->
     <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
