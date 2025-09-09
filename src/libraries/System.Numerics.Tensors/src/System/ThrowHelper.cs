@@ -60,9 +60,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_NeedValueTypeWithNoRefs(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_NeedValueTypeWithNoRefs, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]

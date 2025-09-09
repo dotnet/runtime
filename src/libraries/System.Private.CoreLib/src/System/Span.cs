@@ -108,7 +108,7 @@ namespace System
         public unsafe Span(void* pointer, int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowArgumentException_NeedValueTypeWithNoRefs(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
