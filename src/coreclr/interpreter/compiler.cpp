@@ -1093,13 +1093,13 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     }
 
     gcInfoEncoder->SetSizeOfStackOutgoingAndScratchArea(0);
-    
+
     if (m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_SHAREDINST)
     {
         if ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_THIS)
         {
             assert(paramType != GENERIC_CONTEXTPARAM_NONE);
-            
+
             int32_t genericArgStackOffset = m_pVars[getParamArgIndex()].offset;
             INTERP_DUMP("SetGenericsInstContextStackSlot at %u\n", (unsigned)genericArgStackOffset);
             gcInfoEncoder->SetPrologSize(4); // Size of 1 instruction
@@ -3016,7 +3016,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
-                
+
                 // Implement the implicit argument conversion rules of III.1.6
                 switch (m_pStackPointer[iCurrentStackArg].type)
                 {
@@ -3062,7 +3062,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                         break;
                     }
                     break;
-                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the 
+                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the
                     // truncation rules for NativeInt/NativeUInt to I4/U4. However, on little-endian
                     // platforms, the interpreter calling convention will naturally produce the
                     // truncation, so there is no additional code necessary.

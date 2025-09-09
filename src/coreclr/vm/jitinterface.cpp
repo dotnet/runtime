@@ -10776,20 +10776,37 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
     accessType = IAT_VALUE;
     targetAddr = (LPVOID)VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
-    if (targetAddr == NULL)
+    if (targetAddr != NULL)
+    {
+        // If the target address is already cached, but the caller asked for the method handle
+        // then we verify the helper is an IL based dynamic helper and load the method handle for it.
+        if (pMethod != NULL
+            && helperDef.IsDynamicHelper(&dynamicFtnNum)
+            && HasILBasedDynamicJitHelper(dynamicFtnNum))
+        {
+            helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
+            _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+        }
+    }
+    else
     {
         if (helperDef.IsDynamicHelper(&dynamicFtnNum))
         {
-            pfnHelper = LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+            pfnHelper = LoadDynamicJitHelper(dynamicFtnNum);
+            if (HasILBasedDynamicJitHelper(dynamicFtnNum))
+                helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         }
 
         // LoadDynamicJitHelper returns PortableEntryPoint for helpers backed by managed methods. We need to wrap
         // the code address by PortableEntryPoint in all other cases.
         if (helperMD == NULL)
         {
-            AllocMemHolder<PortableEntryPoint> portableEntryPoint{ SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }) };
+            _ASSERTE(pfnHelper != NULL);
+            AllocMemHolder<PortableEntryPoint> portableEntryPoint = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
             portableEntryPoint->Init((void*)pfnHelper);
-            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], (PCODE)(PortableEntryPoint*)portableEntryPoint, (PCODE)NULL) == (PCODE)NULL)
+            pfnHelper = (PCODE)(PortableEntryPoint*)(portableEntryPoint);
+
+            if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], pfnHelper, (PCODE)NULL) == (PCODE)NULL)
                 portableEntryPoint.SuppressRelease();
             pfnHelper = hlpFuncEntryPoints[ftnNum];
         }
@@ -10836,9 +10853,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         {
             accessType = IAT_VALUE;
             targetAddr = finalTierAddr;
-            if (pMethod != nullptr && HasILBasedDynamicJitHelper(dynamicFtnNum))
+            if (pMethod != NULL && HasILBasedDynamicJitHelper(dynamicFtnNum))
             {
-                (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+                helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
                 _ASSERT(helperMD != NULL);
             }
             goto exit;
@@ -10846,7 +10863,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
         if (HasILBasedDynamicJitHelper(dynamicFtnNum))
         {
-            (void)LoadDynamicJitHelper(dynamicFtnNum, &helperMD);
+            helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
             _ASSERT(helperMD != NULL);
 
             // Check if the target MethodDesc is already jitted to its final Tier
@@ -10886,11 +10903,23 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
 
             if (IndirectionAllowedForJitHelper(ftnNum))
             {
-                Precode* pPrecode = helperMD->GetPrecode();
-                _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
-                accessType = IAT_PVALUE;
-                targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-                goto exit;
+                if (helperMD->IsVersionable())
+                {
+                    _ASSERTE(helperMD->IsVersionableWithPrecode());
+                    Precode* pPrecode = helperMD->GetOrCreatePrecode();
+                    _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+                    accessType = IAT_PVALUE;
+                    targetAddr = ((FixupPrecode*)pPrecode)->GetTargetSlot();
+                    goto exit;
+                }
+
+                if (!helperMD->IsPointingToNativeCode())
+                {
+                    helperMD->EnsureTemporaryEntryPoint();
+                    accessType = IAT_PVALUE;
+                    targetAddr = helperMD->GetAddrOfSlot();
+                    goto exit;
+                }
             }
         }
 
