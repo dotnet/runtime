@@ -325,6 +325,11 @@ namespace System
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
+            ref MemoryMarshal.GetReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
+#endif
+
         public static unsafe string FormatDecimalIeee754<TDecimal, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -361,11 +366,6 @@ namespace System
                 ArrayPool<byte>.Shared.Return(buffer);
             }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
-            ref MemoryMarshal.GetReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
-#endif
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
