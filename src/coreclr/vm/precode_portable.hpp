@@ -12,8 +12,6 @@
 class PortableEntryPoint final
 {
 public: // static
-    static PCODE CreateFromNativeEntryPoint(PCODE nativeEntryPoint, AllocMemHolder<PortableEntryPoint>* pEntryPointHolder);
-
     static bool HasNativeEntryPoint(PCODE addr);
 
     static void* GetActualCode(PCODE addr);

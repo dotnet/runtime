@@ -13,17 +13,6 @@
 #define CANARY_VALUE 0x12345678
 #endif // HOST_64BIT
 
-PCODE PortableEntryPoint::CreateFromNativeEntryPoint(PCODE nativeEntryPoint, AllocMemHolder<PortableEntryPoint>* pEntryPointHolder)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(nativeEntryPoint != NULL);
-    _ASSERTE(pEntryPointHolder != NULL);
-
-    *pEntryPointHolder = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
-    (*pEntryPointHolder)->Init((void*)nativeEntryPoint);
-    return (PCODE)(PortableEntryPoint*)(*pEntryPointHolder);
-}
-
 bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
