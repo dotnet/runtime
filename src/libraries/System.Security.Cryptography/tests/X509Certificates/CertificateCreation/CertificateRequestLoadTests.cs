@@ -834,6 +834,7 @@ BgkqhkiG9w0BAQsFAAMBAA==
         }
 
         [Theory]
+        [InlineData(0)]
         [InlineData(4)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]

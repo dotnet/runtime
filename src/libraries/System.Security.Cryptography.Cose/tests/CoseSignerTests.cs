@@ -82,6 +82,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(17)]
+        [InlineData(32)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         public void CoseSigner_PssPaddingWithInvalidSaltLength(int saltLength)
         {

@@ -57,7 +57,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-
         [Theory]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
@@ -71,17 +70,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSASignaturePadding signaturePadding = RSASignaturePadding.CreatePss(saltLengthToTest);
                 X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, signaturePadding);
 
-                var data = new byte[] { 1, 2, 3, 4, 5 };
-                var signature = signatureGenerator.SignData(data, HashAlgorithmName.SHA256);
-                var signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(HashAlgorithmName.SHA256);
+                byte[] data = new byte[] { 1, 2, 3, 4, 5 };
+                byte[] signature = signatureGenerator.SignData(data, HashAlgorithmName.SHA256);
+                byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(HashAlgorithmName.SHA256);
 
-                var asnReader = new AsnReader(signatureAlgorithm, AsnEncodingRules.DER);
-                var rootSequence = asnReader.ReadSequence();
+                AsnReader asnReader = new AsnReader(signatureAlgorithm, AsnEncodingRules.DER);
+                AsnReader rootSequence = asnReader.ReadSequence();
                 Assert.Equal("1.2.840.113549.1.1.10", rootSequence.ReadObjectIdentifier()); // Make sure it's RSASSA-PSS
-                var pssStructure = rootSequence.ReadSequence();
+                AsnReader pssStructure = rootSequence.ReadSequence();
                 pssStructure.ReadEncodedValue(); // Ignore the hash algorithm OID
                 pssStructure.ReadEncodedValue(); // Ignore the mask generation function OID
-                var saltTag = new Asn1Tag(TagClass.ContextSpecific, 2, true);
+                Asn1Tag saltTag = new Asn1Tag(TagClass.ContextSpecific, 2, true);
+
                 if (pssStructure.HasData && pssStructure.PeekTag().HasSameClassAndValue(saltTag))
                 {
                     var saltEntry = pssStructure.ReadSequence(saltTag);

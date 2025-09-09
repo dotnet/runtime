@@ -58,13 +58,6 @@ namespace System.Security.Cryptography.X509Certificates
             // RFC 5754 says that the NULL for SHA2 (256/384/512) MUST be omitted
             // (https://tools.ietf.org/html/rfc5754#section-2) (and that you MUST
             // be able to read it even if someone wrote it down)
-            //
-            // Since we
-            //  * don't support SHA-1 in this class
-            //  * only support MGF-1
-            //  * don't support the MGF PRF being different than hashAlgorithm
-            //  * don't allow custom trailer
-            // we don't have to worry about any of the DEFAULTs. (specify, specify, specify, omit).
 
             PssParamsAsn parameters = new PssParamsAsn
             {

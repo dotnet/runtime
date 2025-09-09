@@ -33,12 +33,18 @@ namespace System.Security.Cryptography
         /// </remarks>
         public int PssSaltLength { get; }
 
+        /// <summary>
+        /// Creates a new instance of <see cref="RSASignaturePadding"/> for PSS padding with a specific salt length.
+        /// </summary>
+        /// <param name="saltLength">The length of the salt in bytes, or one of the constants <see cref="PssSaltLengthIsHashLength"/> or <see cref="PssSaltLengthMax" />.</param>
+        /// <returns>A new instance of <see cref="RSASignaturePadding"/> configured for PSS padding with the specified salt length.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="saltLength"/> is negative or not one of the special constants.</exception>
         public static RSASignaturePadding CreatePss(int saltLength)
         {
             switch (saltLength)
             {
                 case PssSaltLengthIsHashLength or PssSaltLengthMax:
-                case > 0:
+                case >= 0:
                     return new RSASignaturePadding(saltLength);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(saltLength), SR.Cryptography_InvalidSaltLengthForPss);

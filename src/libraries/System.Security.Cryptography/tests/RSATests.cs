@@ -227,11 +227,11 @@ namespace System.Security.Cryptography.Tests
             Assert.False(RSASignaturePadding.Pkcs1 == null);
             Assert.True(RSASignaturePadding.Pkcs1 != null);
 
-            Assert.True(RSASignaturePadding.CreatePss(15).Equals(RSASignaturePadding.CreatePss(15)));
-            Assert.False(RSASignaturePadding.CreatePss(15).Equals(RSASignaturePadding.CreatePss(16)));
-            Assert.False(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.CreatePss(16)));
-            Assert.True(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax).Equals(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax)));
-            Assert.True(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength).Equals(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength)));
+            Assert.Equal(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength), RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength));
+            Assert.Equal(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax), RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax));
+            Assert.Equal(RSASignaturePadding.CreatePss(15), RSASignaturePadding.CreatePss(15));
+            Assert.NotEqual(RSASignaturePadding.CreatePss(15), RSASignaturePadding.CreatePss(16));
+            Assert.NotEqual(RSASignaturePadding.Pkcs1, RSASignaturePadding.CreatePss(16));
         }
 
         [Theory]

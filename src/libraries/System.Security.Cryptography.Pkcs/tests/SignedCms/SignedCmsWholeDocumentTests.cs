@@ -126,7 +126,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // CheckHash always throws for certificate-based signers.
             Assert.Throws<CryptographicException>(() => signer.CheckHash());
 
-            // At this time we cannot support the PSS parameters for this document.
             signer.CheckSignature(true);
 
             // Since there are no NoSignature signers the document CheckHash will succeed.
