@@ -2797,9 +2797,6 @@ PCODE MethodDesc::GetPortableEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (HasStableEntryPoint())
-        return GetStableEntryPoint();
-
     return GetTemporaryEntryPoint();
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
@@ -3146,14 +3143,14 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != (PCODE)NULL);
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    SetStableEntryPointInterlocked(entryPoint);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchEntryPointSlots(entryPoint);
+        return;
     }
-    else if (IsVersionable())
+
+    if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
@@ -3161,19 +3158,24 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
         // can continue assuming it was successful, similarly to it successfully updating the target and another thread
         // updating the target again shortly afterwards.
+        return;
     }
-    else if (HasPrecode() || RequiresStableEntryPoint())
+
+    if (HasPrecode() || RequiresStableEntryPoint())
     {
         // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
         //
         // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
+        return;
     }
-    else if (!HasStableEntryPoint())
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+    if (!HasStableEntryPoint())
     {
         SetStableEntryPointInterlocked(entryPoint);
+        return;
     }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 void MethodDesc::ResetCodeEntryPoint()

@@ -2315,6 +2315,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         {
             PCODE entryPoint = GetPortableEntryPoint();
             PortableEntryPoint::SetActualCode(entryPoint, pCode);
+            pCode = entryPoint;
         }
         else
         {

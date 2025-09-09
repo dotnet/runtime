@@ -390,13 +390,17 @@ void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
 
-    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
+    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(ftn);
+    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(actualFtn, pArgs, pRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
 {
+    _ASSERTE(ftn != (PCODE)NULL);
+    _ASSERTE(cookie != NULL);
+
     // WASMTODO: Reconcile calling conventions.
-    InvokeCalliStub(ftn, cookie, pArgs, pRet);
+    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
