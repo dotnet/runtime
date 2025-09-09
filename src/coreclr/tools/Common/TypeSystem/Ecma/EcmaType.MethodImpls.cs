@@ -40,8 +40,7 @@ namespace Internal.TypeSystem.Ecma
                     _ => default
                 };
 
-                ReadOnlySpan<byte> foundDeclName = metadataReader.GetStringBytes(foundDeclNameHandle);
-                if (declName.SequenceEqual(foundDeclName))
+                if (metadataReader.StringEquals(foundDeclNameHandle, declName))
                 {
                     MethodImplRecord newRecord = new MethodImplRecord(
                         (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),

@@ -285,51 +285,124 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private Dictionary<(string Name, string Namespace), EntityHandle> _nameLookupCache;
+        private TypeDefinitionHandle[] _typeDefinitionBuckets;
+        private volatile TypeDefinitionHandle[] _typeDefinitionBucketHeads;
 
-        private Dictionary<(string Name, string Namespace), EntityHandle> CreateNameLookupCache()
+        private TypeDefinitionHandle[] InitializeTypeDefinitionBucketHeads()
         {
-            // TODO: it's not particularly efficient to materialize strings just to hash them and hold
-            // onto them forever. We could instead hash the UTF-8 bytes and hold the TypeDefinitionHandle
-            // so we can obtain the bytes again when needed.
-            // E.g. see the scheme explored in the first commit of https://github.com/dotnet/runtime/pull/84285.
+            TypeDefinitionHandle[] buckets = new TypeDefinitionHandle[_metadataReader.TypeDefinitions.Count + 1];
+            TypeDefinitionHandle[] bucketHeads = new TypeDefinitionHandle[(buckets.Length / 8) + 1];
 
-            var result = new Dictionary<(string Name, string Namespace), EntityHandle>();
-
-            MetadataReader metadataReader = _metadataReader;
-            foreach (TypeDefinitionHandle typeDefHandle in metadataReader.TypeDefinitions)
+            MetadataReader reader = _metadataReader;
+            foreach (TypeDefinitionHandle typeHandle in reader.TypeDefinitions)
             {
-                TypeDefinition typeDefinition = metadataReader.GetTypeDefinition(typeDefHandle);
-                if (typeDefinition.Attributes.IsNested())
+                TypeDefinition typeDef = reader.GetTypeDefinition(typeHandle);
+                if (typeDef.Attributes.IsNested())
                     continue;
 
-                result.Add((metadataReader.GetString(typeDefinition.Name), metadataReader.GetString(typeDefinition.Namespace)), typeDefHandle);
+                int hashCode = VersionResilientHashCode.NameHashCode(reader.GetStringBytes(typeDef.Namespace), reader.GetStringBytes(typeDef.Name));
+
+                ref TypeDefinitionHandle head = ref bucketHeads[(uint)hashCode % bucketHeads.Length];
+                ref TypeDefinitionHandle entry = ref buckets[MetadataTokens.GetRowNumber(typeHandle)];
+
+                entry = head;
+                head = typeHandle;
             }
 
-            foreach (ExportedTypeHandle exportedTypeHandle in metadataReader.ExportedTypes)
+            _typeDefinitionBuckets = buckets;
+            _typeDefinitionBucketHeads = bucketHeads;
+
+            return bucketHeads;
+        }
+
+        private TypeDefinitionHandle FindDefinedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        {
+            MetadataReader reader = _metadataReader;
+
+            TypeDefinitionHandle[] bucketHeads = _typeDefinitionBucketHeads ?? InitializeTypeDefinitionBucketHeads();
+            TypeDefinitionHandle entry = bucketHeads[(uint)hashCode % bucketHeads.Length];
+            while (!entry.IsNil)
             {
-                ExportedType exportedType = metadataReader.GetExportedType(exportedTypeHandle);
-                if (exportedType.Implementation.Kind == HandleKind.ExportedType)
+                var typeDefinition = reader.GetTypeDefinition(entry);
+                if (reader.StringEquals(typeDefinition.Name, name) &&
+                    reader.StringEquals(typeDefinition.Namespace, nameSpace))
+                {
+                    return entry;
+                }
+
+                entry = _typeDefinitionBuckets[MetadataTokens.GetRowNumber(entry)];
+            }
+
+            return default;
+        }
+
+        private ExportedTypeHandle[] _exportedTypeBuckets;
+        private volatile ExportedTypeHandle[] _exportedTypeBucketHeads;
+
+        private ExportedTypeHandle[] InitializeExportedTypeBucketHeads()
+        {
+            ExportedTypeHandle[] buckets = new ExportedTypeHandle[_metadataReader.ExportedTypes.Count + 1];
+            ExportedTypeHandle[] bucketHeads = new ExportedTypeHandle[(buckets.Length / 8) + 1];
+
+            MetadataReader reader = _metadataReader;
+            foreach (ExportedTypeHandle typeHandle in reader.ExportedTypes)
+            {
+                ExportedType exportDef = reader.GetExportedType(typeHandle);
+                if (exportDef.Implementation.Kind == HandleKind.ExportedType)
                     continue;
 
-                result.Add((metadataReader.GetString(exportedType.Name), metadataReader.GetString(exportedType.Namespace)), exportedTypeHandle);
+                int hashCode = VersionResilientHashCode.NameHashCode(reader.GetStringBytes(exportDef.Namespace), reader.GetStringBytes(exportDef.Name));
+
+                ref ExportedTypeHandle head = ref bucketHeads[(uint)hashCode % bucketHeads.Length];
+                ref ExportedTypeHandle entry = ref buckets[MetadataTokens.GetRowNumber(typeHandle)];
+
+                entry = head;
+                head = typeHandle;
             }
 
-            return _nameLookupCache = result;
+            _exportedTypeBuckets = buckets;
+            _exportedTypeBucketHeads = bucketHeads;
+
+            return bucketHeads;
+        }
+
+        private ExportedTypeHandle FindExportedType(int hashCode, ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name)
+        {
+            MetadataReader reader = _metadataReader;
+
+            ExportedTypeHandle[] bucketHeads = _exportedTypeBucketHeads ?? InitializeExportedTypeBucketHeads();
+            ExportedTypeHandle entry = bucketHeads[(uint)hashCode % bucketHeads.Length];
+            while (!entry.IsNil)
+            {
+                var exportedType = reader.GetExportedType(entry);
+                if (reader.StringEquals(exportedType.Name, name) &&
+                    reader.StringEquals(exportedType.Namespace, nameSpace))
+                {
+                    return entry;
+                }
+
+                entry = _exportedTypeBuckets[MetadataTokens.GetRowNumber(entry)];
+            }
+
+            return default;
         }
 
         public sealed override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
         {
+            int hashCode = VersionResilientHashCode.NameHashCode(nameSpace, name);
+
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                if ((currentModule._nameLookupCache ?? currentModule.CreateNameLookupCache()).TryGetValue((System.Text.Encoding.UTF8.GetString(name.ToArray()), System.Text.Encoding.UTF8.GetString(nameSpace.ToArray())), out EntityHandle foundHandle))
-                {
-                    if (foundHandle.Kind == HandleKind.TypeDefinition)
-                        return currentModule.GetType((TypeDefinitionHandle)foundHandle);
+                TypeDefinitionHandle typeDefHandle = currentModule.FindDefinedType(hashCode, nameSpace, name);
+                if (!typeDefHandle.IsNil)
+                    return currentModule.GetType(typeDefHandle);
 
-                    ExportedType exportedType = currentModule._metadataReader.GetExportedType((ExportedTypeHandle)foundHandle);
+                ExportedTypeHandle exportedTypeHandle = currentModule.FindExportedType(hashCode, nameSpace, name);
+                if (!exportedTypeHandle.IsNil)
+                {
+                    ExportedType exportedType = currentModule._metadataReader.GetExportedType(exportedTypeHandle);
                     if (exportedType.IsForwarder)
                     {
                         object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
