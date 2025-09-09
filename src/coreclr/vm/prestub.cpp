@@ -2313,6 +2313,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         if (!hasManagedImpl)
         {
+            // Update the PortableEntryPoint to point to the actual code for the FCall implementation.
+            // Return the PortableEntryPoint as the PCODE.
             PCODE entryPoint = GetPortableEntryPoint();
             PortableEntryPoint::SetActualCode(entryPoint, pCode);
             pCode = entryPoint;
