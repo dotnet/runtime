@@ -4977,7 +4977,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 #endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
-// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
+// This method handles the case of a GT_IND with contained GT_LEA op1 of the form [base + offset]
 //
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
@@ -5014,8 +5014,9 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
             cns -= off;
 
-            emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-            emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+            regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
+            emitLoadImmediate(EA_PTRSIZE, tmpReg, cns);
+            emitIns_R_R_I(ins, attr, dataReg, tmpReg, off);
         }
         else if (isValidSimm12(offset))
         {
