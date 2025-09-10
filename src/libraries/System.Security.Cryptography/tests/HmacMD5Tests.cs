@@ -97,6 +97,11 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACMD5.Verify(key, source, hash);
 
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACMD5.Verify(key, source, hash);
+
         [Fact]
         public void HmacMD5_Rfc2202_1()
         {

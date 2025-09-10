@@ -380,6 +380,60 @@ namespace System.Security.Cryptography
             return Verify(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source), new ReadOnlySpan<byte>(hash));
         }
 
+        /// <summary>
+        /// Verifies the HMAC of a stream using the MD5 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The stream to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (hash.Length != HashSizeInBytes)
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            Span<byte> mac = stackalloc byte[HashSizeInBytes];
+            int written = LiteHashProvider.HmacStream(HashAlgorithmNames.MD5, key, source, mac);
+            Debug.Assert(written == HashSizeInBytes);
+
+            return CryptographicOperations.FixedTimeEquals(mac, hash);
+        }
+
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
+        [UnsupportedOSPlatform("browser")]
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(hash);
+            // source parameter check is done in called overload.
+
+            return Verify(new ReadOnlySpan<byte>(key), source, new ReadOnlySpan<byte>(hash));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
