@@ -527,6 +527,20 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
     }
 }
 
+static float CkfiniteHelper(float value)
+{
+    if (!std::isfinite(value))
+        COMPlusThrow(kArithmeticException);
+    return value;
+}
+
+static double CkfiniteHelper(double value)
+{
+    if (!std::isfinite(value))
+        COMPlusThrow(kArithmeticException);
+    return value;
+}
+
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
@@ -802,6 +816,15 @@ MAIN_LOOP:
                 case INTOP_MOV_VT:
                     memmove(stack + ip[1], stack + ip[2], ip[3]);
                     ip += 4;
+                    break;
+
+                case INTOP_CKFINITE_R4:
+                    LOCAL_VAR(ip[1], float) = CkfiniteHelper(LOCAL_VAR(ip[2], float));
+                    ip += 3;
+                    break;
+                case INTOP_CKFINITE_R8:
+                    LOCAL_VAR(ip[1], double) = CkfiniteHelper(LOCAL_VAR(ip[2], double));
+                    ip += 3;
                     break;
 
                 case INTOP_CONV_R_UN_I4:

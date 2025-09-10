@@ -4353,6 +4353,32 @@ retry_emit:
                 m_ip++;
                 break;
             }
+
+            case CEE_CKFINITE:
+            {
+                CHECK_STACK(1);
+                int sVar = m_pStackPointer[-1].var;
+                StackType argType = m_pStackPointer[-1].type;
+                switch (argType)
+                {
+                    case StackTypeR4:
+                        AddIns(INTOP_CKFINITE_R4);
+                        break;
+                    case StackTypeR8:
+                        AddIns(INTOP_CKFINITE_R8);
+                        break;
+                    default:
+                        BADCODE("ckfinite operand must be R4 or R8");
+                        break;
+                }
+                m_pStackPointer--;
+                PushStackType(argType, nullptr);
+                m_pLastNewIns->SetSVar(sVar);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip++;
+                break;
+            }
+
             case CEE_CONV_U1:
                 CHECK_STACK(1);
                 switch (m_pStackPointer[-1].type)
