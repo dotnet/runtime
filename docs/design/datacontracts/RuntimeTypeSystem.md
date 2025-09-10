@@ -221,7 +221,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_PrimitiveValueType = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
-        Collectible = 0x00200000, // GC depends on this bit.
+        Collectible = 0x00200000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
