@@ -95,6 +95,7 @@ extern ucol_safeClone_func ucol_safeClone_ptr;
     PER_FUNCTION_BLOCK(ucal_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_get, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getAttribute, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getCanonicalTimeZoneID, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getKeywordValuesForLocale, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getNow, libicui18n, true) \
@@ -232,6 +233,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucal_close(...) ucal_close_ptr(__VA_ARGS__)
 #define ucal_get(...) ucal_get_ptr(__VA_ARGS__)
 #define ucal_getAttribute(...) ucal_getAttribute_ptr(__VA_ARGS__)
+#define ucal_getCanonicalTimeZoneID(...) ucal_getCanonicalTimeZoneID_ptr(__VA_ARGS__)
 #define ucal_getKeywordValuesForLocale(...) ucal_getKeywordValuesForLocale_ptr(__VA_ARGS__)
 #define ucal_getLimit(...) ucal_getLimit_ptr(__VA_ARGS__)
 #define ucal_getNow(...) ucal_getNow_ptr(__VA_ARGS__)

@@ -448,6 +448,7 @@ void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UError
 void ucal_close(UCalendar * cal);
 int32_t ucal_get(const UCalendar * cal, UCalendarDateFields field, UErrorCode * status);
 int32_t ucal_getAttribute(const UCalendar * cal, UCalendarAttribute attr);
+int32_t ucal_getCanonicalTimeZoneID(const UChar * id, int32_t len, UChar * result, int32_t resultCapacity, UBool * isSystemID, UErrorCode * status);
 UEnumeration * ucal_getKeywordValuesForLocale(const char * key, const char * locale, UBool commonlyUsed, UErrorCode * status);
 int32_t ucal_getLimit(const UCalendar * cal, UCalendarDateFields field, UCalendarLimitType type, UErrorCode * status);
 UDate ucal_getNow(void);
