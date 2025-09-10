@@ -246,4 +246,3 @@ namespace HostActivation.Tests
         }
     }
 }
-

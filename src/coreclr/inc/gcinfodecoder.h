@@ -598,9 +598,7 @@ public:
 #endif
     size_t  GetNumBytesRead();
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32  GetSizeOfStackParameterArea();
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    UINT32 GetSizeOfStackParameterArea();
 
     inline UINT32 Version()
     {
@@ -636,9 +634,18 @@ private:
 #endif
     UINT32  m_NumInterruptibleRanges;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T> 
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = 0;
 
 #ifdef _DEBUG
     GcInfoDecoderFlags m_Flags;
