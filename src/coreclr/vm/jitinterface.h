@@ -569,7 +569,7 @@ public:
     void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
                       CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
                       CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
-    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
+    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum, MethodDesc** pMethod /* OUT */ = NULL);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
     InfoAccessType emptyStringLiteral(void ** ppValue) override;

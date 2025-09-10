@@ -2191,8 +2191,11 @@ MAIN_LOOP:
                     {
                         PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                        targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
-                        goto CALL_INTERP_METHOD;
+                        if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                        {
+                            targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
+                            goto CALL_INTERP_METHOD;
+                        }
 #else // FEATURE_PORTABLE_ENTRYPOINTS
                         InvokeCalliStub(calliFunctionPointer, cookie, stack + callArgsOffset, stack + returnOffset);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
