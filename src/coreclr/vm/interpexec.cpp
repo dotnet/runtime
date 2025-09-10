@@ -2172,7 +2172,7 @@ MAIN_LOOP:
                     HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4], &pILTargetMethod);
                     if (pILTargetMethod != NULL)
                     {
-                        returnOffset = -1;
+                        returnOffset = ip[1];
                         callArgsOffset = pMethod->allocaSize;
 
                         // Pass arguments to the target method
@@ -2201,7 +2201,7 @@ MAIN_LOOP:
                     HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[3], &pILTargetMethod);
                     if (pILTargetMethod != NULL)
                     {
-                        returnOffset = -1;
+                        returnOffset = ip[1];
                         callArgsOffset = pMethod->allocaSize;
 
                         // Pass arguments to the target method
