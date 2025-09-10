@@ -358,7 +358,9 @@ namespace System.Security.Cryptography
             int written = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA1, key, source, mac);
             Debug.Assert(written == HashSizeInBytes);
 
-            return CryptographicOperations.FixedTimeEquals(mac, hash);
+            bool result = CryptographicOperations.FixedTimeEquals(mac, hash);
+            CryptographicOperations.ZeroMemory(mac);
+            return result;
         }
 
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
@@ -410,7 +412,9 @@ namespace System.Security.Cryptography
             int written = LiteHashProvider.HmacStream(HashAlgorithmNames.SHA1, key, source, mac);
             Debug.Assert(written == HashSizeInBytes);
 
-            return CryptographicOperations.FixedTimeEquals(mac, hash);
+            bool result = CryptographicOperations.FixedTimeEquals(mac, hash);
+            CryptographicOperations.ZeroMemory(mac);
+            return result;
         }
 
         /// <exception cref="ArgumentNullException">
