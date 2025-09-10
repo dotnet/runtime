@@ -276,9 +276,10 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                if (_namePointer != null)
+                byte* namePointer = _namePointer;
+                if (namePointer != null)
                 {
-                    return new ReadOnlySpan<byte>(_namePointer, _nameLength);
+                    return new ReadOnlySpan<byte>(namePointer, _nameLength);
                 }
                 return InitializeName();
             }
@@ -296,9 +297,10 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                if (_namespacePointer != null)
+                byte* namespacePointer = _namespacePointer;
+                if (namespacePointer != null)
                 {
-                    return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
+                    return new ReadOnlySpan<byte>(namespacePointer, _namespaceLength);
                 }
                 return InitializeNamespace();
             }

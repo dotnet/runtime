@@ -395,9 +395,10 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                if (_namePointer != null)
+                byte* namePointer = _namePointer;
+                if (namePointer != null)
                 {
-                    return new ReadOnlySpan<byte>(_namePointer, _nameLength);
+                    return new ReadOnlySpan<byte>(namePointer, _nameLength);
                 }
                 return InitializeName();
             }
