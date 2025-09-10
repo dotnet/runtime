@@ -44,9 +44,19 @@ namespace System.CommandLine
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
-                if (targetOS == TargetOS.OSX)
+                if ((targetOS == TargetOS.OSX) || (targetOS == TargetOS.MacCatalyst))
                 {
-                    // For osx-arm64 we know that apple-m1 is the baseline
+                    // Apple has six targets today:
+                    // * OSX
+                    // * MacCatalyst
+                    // * iOS
+                    // * iOSSimulator
+                    // * tvOS
+                    // * tvOSSimulator
+                    //
+                    // For osx-arm64 and maccatalyst, we know that the baseline is apple-m1
+                    // For iOS, tvOS, and the simulator variants it can be older
+
                     instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
                 }
                 else if (isReadyToRun)
@@ -95,7 +105,7 @@ namespace System.CommandLine
                 }
 
                 string jitInterfaceLibrary = "jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.ApplicationDirectory);
+                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.AssemblyDirectory);
                 int cpuFeatures;
                 unsafe
                 {

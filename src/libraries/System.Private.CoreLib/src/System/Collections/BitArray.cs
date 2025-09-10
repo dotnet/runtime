@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Serialization;
 
 namespace System.Collections
@@ -807,6 +808,32 @@ namespace System.Collections
                             Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask128);
                             Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
                             Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+                        }
+                    }
+                }
+                else if (PackedSimd.IsSupported && ((uint)_bitLength >= Vector128<byte>.Count * 2u))
+                {
+                    Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
+                    Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
+                    Vector128<byte> ones = Vector128<byte>.One;
+                    Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
+
+                    fixed (bool* destination = &boolArray[index])
+                    {
+                        for (; (i + Vector128<byte>.Count * 2u) <= (uint)_bitLength; i += (uint)Vector128<byte>.Count * 2u)
+                        {
+                            int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
+                            Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
+
+                            Vector128<byte> shuffledLower = PackedSimd.Swizzle(scalar.AsByte(), lowerShuffleMask);
+                            Vector128<byte> extractedLower = PackedSimd.And(shuffledLower, bitMask128);
+                            Vector128<byte> normalizedLower = PackedSimd.Min(extractedLower, ones);
+                            PackedSimd.Store((byte*)destination + i, normalizedLower);
+
+                            Vector128<byte> shuffledHigher = PackedSimd.Swizzle(scalar.AsByte(), upperShuffleMask);
+                            Vector128<byte> extractedHigher = PackedSimd.And(shuffledHigher, bitMask128);
+                            Vector128<byte> normalizedHigher = PackedSimd.Min(extractedHigher, ones);
+                            PackedSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
                         }
                     }
                 }

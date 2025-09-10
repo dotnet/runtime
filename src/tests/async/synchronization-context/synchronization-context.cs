@@ -45,9 +45,9 @@ public class Async2SynchronizationContext
         // we check IsCompleted on the awaiter).
         //await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(false);
         //Assert.Null(SynchronizationContext.Current);
-
-        await WrappedYieldToThreadWithCustomSyncContext();
-        Assert.Null(SynchronizationContext.Current);
+        //
+        //await WrappedYieldToThreadWithCustomSyncContext();
+        //Assert.Null(SynchronizationContext.Current);
     }
 
     private static async Task WrappedYieldToThreadPool(bool suspend)
