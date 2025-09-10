@@ -270,61 +270,61 @@ void GenTree::InitNodeSize()
     assert(sizeof(GenTreeLclFld) <= GenTree::s_gtNodeSizes[GT_LCL_FLD]);
     assert(sizeof(GenTreeLclVar) <= GenTree::s_gtNodeSizes[GT_LCL_VAR]);
 
-    static_assert_no_msg(sizeof(GenTree)             <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeUnOp)         <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeOp)           <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeVal)          <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeIntConCommon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreePhysReg)      <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeIntCon)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLngCon)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeDblCon)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeStrCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTree)             <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeUnOp)         <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeOp)           <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeVal)          <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeIntConCommon) <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreePhysReg)      <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeIntCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeLngCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeDblCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeStrCon)       <= TREE_NODE_SZ_SMALL);
 #if defined(FEATURE_SIMD)
 #ifdef TARGET_XARCH
-    static_assert_no_msg(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_LARGE); // *** large node
 #else
-    static_assert_no_msg(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeVecCon)       <= TREE_NODE_SZ_SMALL);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
-    static_assert_no_msg(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
 #ifdef TARGET_ARM64
-    static_assert_no_msg(sizeof(GenTreeCCMP)         <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeCCMP)         <= TREE_NODE_SZ_SMALL);
 #endif
-    static_assert_no_msg(sizeof(GenTreeConditional)  <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeFieldAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeFieldList)    <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeColon)        <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCall)         <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeCmpXchg)      <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeFptrVal)      <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeMDArr)        <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeIndir)        <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeConditional)  <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeFieldAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeFieldList)    <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeColon)        <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeCall)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeCmpXchg)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeFptrVal)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeMDArr)        <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeIndir)        <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
-    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
+    static_assert(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 
 #ifdef FEATURE_HW_INTRINSICS
-    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
@@ -3605,17 +3605,17 @@ genTreeOps GenTree::ReverseRelop(genTreeOps relop)
 #endif
     };
 
-    static_assert_no_msg(reverseOps[GT_EQ - GT_EQ] == GT_NE);
-    static_assert_no_msg(reverseOps[GT_NE - GT_EQ] == GT_EQ);
-    static_assert_no_msg(reverseOps[GT_LT - GT_EQ] == GT_GE);
-    static_assert_no_msg(reverseOps[GT_LE - GT_EQ] == GT_GT);
-    static_assert_no_msg(reverseOps[GT_GE - GT_EQ] == GT_LT);
-    static_assert_no_msg(reverseOps[GT_GT - GT_EQ] == GT_LE);
-    static_assert_no_msg(reverseOps[GT_TEST_EQ - GT_EQ] == GT_TEST_NE);
-    static_assert_no_msg(reverseOps[GT_TEST_NE - GT_EQ] == GT_TEST_EQ);
+    static_assert(reverseOps[GT_EQ - GT_EQ] == GT_NE);
+    static_assert(reverseOps[GT_NE - GT_EQ] == GT_EQ);
+    static_assert(reverseOps[GT_LT - GT_EQ] == GT_GE);
+    static_assert(reverseOps[GT_LE - GT_EQ] == GT_GT);
+    static_assert(reverseOps[GT_GE - GT_EQ] == GT_LT);
+    static_assert(reverseOps[GT_GT - GT_EQ] == GT_LE);
+    static_assert(reverseOps[GT_TEST_EQ - GT_EQ] == GT_TEST_NE);
+    static_assert(reverseOps[GT_TEST_NE - GT_EQ] == GT_TEST_EQ);
 #ifdef TARGET_XARCH
-    static_assert_no_msg(reverseOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_NE);
-    static_assert_no_msg(reverseOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_EQ);
+    static_assert(reverseOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_NE);
+    static_assert(reverseOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_EQ);
 #endif
 
     assert(OperIsCompare(relop));
@@ -3647,17 +3647,17 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
 #endif
     };
 
-    static_assert_no_msg(swapOps[GT_EQ - GT_EQ] == GT_EQ);
-    static_assert_no_msg(swapOps[GT_NE - GT_EQ] == GT_NE);
-    static_assert_no_msg(swapOps[GT_LT - GT_EQ] == GT_GT);
-    static_assert_no_msg(swapOps[GT_LE - GT_EQ] == GT_GE);
-    static_assert_no_msg(swapOps[GT_GE - GT_EQ] == GT_LE);
-    static_assert_no_msg(swapOps[GT_GT - GT_EQ] == GT_LT);
-    static_assert_no_msg(swapOps[GT_TEST_EQ - GT_EQ] == GT_TEST_EQ);
-    static_assert_no_msg(swapOps[GT_TEST_NE - GT_EQ] == GT_TEST_NE);
+    static_assert(swapOps[GT_EQ - GT_EQ] == GT_EQ);
+    static_assert(swapOps[GT_NE - GT_EQ] == GT_NE);
+    static_assert(swapOps[GT_LT - GT_EQ] == GT_GT);
+    static_assert(swapOps[GT_LE - GT_EQ] == GT_GE);
+    static_assert(swapOps[GT_GE - GT_EQ] == GT_LE);
+    static_assert(swapOps[GT_GT - GT_EQ] == GT_LT);
+    static_assert(swapOps[GT_TEST_EQ - GT_EQ] == GT_TEST_EQ);
+    static_assert(swapOps[GT_TEST_NE - GT_EQ] == GT_TEST_NE);
 #ifdef TARGET_XARCH
-    static_assert_no_msg(swapOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_EQ);
-    static_assert_no_msg(swapOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_NE);
+    static_assert(swapOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_EQ);
+    static_assert(swapOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_NE);
 #endif
 
     assert(OperIsCompare(relop));
@@ -12225,7 +12225,7 @@ void Compiler::gtDispConst(GenTree* tree)
             else if (FloatingPointUtils::isNaN(dcon))
             {
                 uint64_t bits;
-                static_assert_no_msg(sizeof(bits) == sizeof(dcon));
+                static_assert(sizeof(bits) == sizeof(dcon));
                 memcpy(&bits, &dcon, sizeof(dcon));
                 printf(" %#.17g(0x%llx)\n", dcon, bits);
             }
@@ -14999,7 +14999,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 
     JITDUMP("\nReplacing BOX_NULLABLE(&x) %s null [%06u] with x.hasValue\n", GenTree::OpName(oper), dspTreeID(tree));
 
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree* srcAddr      = call->gtArgs.GetArgByIndex(1)->GetNode();
     GenTree* hasValueNode = gtNewIndir(TYP_UBYTE, srcAddr);
 
@@ -17231,6 +17231,18 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                 return;
             }
 #endif
+
+            if ((*use)->OperIs(GT_COMMA))
+            {
+                // We might as well get rid of the comma while we're at it. This avoids unnecessarily nested trees and
+                // also handles splitting some irregular nodes when nested under commas
+                // (like COMMA(op1, FIELD_LIST(...))).
+                SplitOutUse(UseInfo{&(*use)->AsOp()->gtOp1, *use}, false);
+                *use = (*use)->gtGetOp2();
+                SplitOutUse(useInf, userIsReturned);
+                MadeChanges = true;
+                return;
+            }
 
             if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
             {
@@ -28310,7 +28322,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
     if (addr != nullptr)
     {
 #ifdef TARGET_ARM64
-        static_assert_no_msg(
+        static_assert(
             AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
                           NI_Sve_GatherVectorByteZeroExtendFirstFaulting, NI_Sve_GatherVectorFirstFaulting,
                           NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
@@ -30850,7 +30862,7 @@ void ReturnTypeDesc::InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HAN
     const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(clsHnd);
     assert(!lowering->byReference);
 
-    static_assert_no_msg(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
+    static_assert(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
     assert(lowering->numLoweredElements <= MAX_RET_REG_COUNT);
 
     for (size_t i = 0; i < lowering->numLoweredElements; i++)

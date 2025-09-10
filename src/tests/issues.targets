@@ -232,9 +232,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
-          <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->
@@ -308,9 +305,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
-            <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -339,20 +333,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinning/object-pin/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18232/GitHub_18232/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19022/GitHub_19022/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19149/GitHub_19149/*">
-            <Issue>Needs Triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>timeout</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19601/Github_19601/*">
-            <Issue>Needs Triage</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -540,17 +522,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/AttributeConflict/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/PositiveCases/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -558,9 +534,6 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74555</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/*">
-            <Issue>https://github.com/dotnet/runtime/issues/85747</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -570,9 +543,6 @@
 
     <!-- Crossgen2 arm32/arm64 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
-            <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- NativeAOT specific -->
@@ -1024,13 +994,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/tailcall/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- NativeAOT ControlFlowGuard specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(ControlFlowGuard)' == 'Guard'">
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b425314/b425314/**">
-            <Issue>https://github.com/dotnet/runtime/issues/107418</Issue>
         </ExcludeList>
     </ItemGroup>
 

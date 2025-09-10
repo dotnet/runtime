@@ -4,7 +4,6 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
-#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
@@ -107,7 +106,7 @@ public:
 
         const size_t sizeOfStruct = sizeof(InterpGenericLookup);
 
-        static_assert_no_msg(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        static_assert(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
         return GetDataItemIndexForT(lookup);
     }
 
@@ -515,6 +514,10 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // If the method has a hidden argument, GenerateCode allocates a var to store it and
+    //  populates the var at method entry
+    int32_t m_hiddenArgumentVar;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
     TArray<LeavesTableEntry> m_leavesTable;
@@ -708,6 +711,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
@@ -802,9 +806,9 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     }
 
     // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
-    static_assert_no_msg(sizeof(VarSizedData) == sizeof(void*));
-    static_assert_no_msg(sizeof(T) % sizeof(void*) == 0);
-    static_assert_no_msg(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+    static_assert(sizeof(VarSizedData) == sizeof(void*));
+    static_assert(sizeof(T) % sizeof(void*) == 0);
+    static_assert(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
 
     void** LookupAsPtrs = (void**)&lookup;
     int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);

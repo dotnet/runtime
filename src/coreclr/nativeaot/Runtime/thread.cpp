@@ -274,10 +274,9 @@ PTR_ExInfo Thread::GetCurExInfo()
 
 void Thread::Construct()
 {
-#ifndef USE_PORTABLE_HELPERS
-    C_ASSERT(OFFSETOF__Thread__m_pTransitionFrame ==
-             (offsetof(Thread, m_pTransitionFrame)));
-#endif // USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
+    static_assert(OFFSETOF__Thread__m_pTransitionFrame == (offsetof(Thread, m_pTransitionFrame)));
+#endif // FEATURE_PORTABLE_HELPERS
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -318,8 +317,6 @@ void Thread::Construct()
     ASSERT(m_pInlinedThreadLocalStatics == NULL);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
-
-    ASSERT(m_threadAbortException == NULL);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
@@ -576,10 +573,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
-
-    // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
-    EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1161,6 +1154,23 @@ bool Thread::CheckPendingRedirect(PCODE eip)
 
 #endif // TARGET_X86
 
+void Thread::SetInterrupted(bool isInterrupted)
+{
+    if (isInterrupted)
+    {
+        SetState(TSF_Interrupted);
+    }
+    else
+    {
+        ClearState(TSF_Interrupted);
+    }
+}
+
+bool Thread::CheckInterrupted()
+{
+    return IsStateSet(TSF_Interrupted);
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1249,23 +1259,6 @@ void Thread::EnsureRuntimeInitialized()
 
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
-
-Object * Thread::GetThreadAbortException()
-{
-    return m_threadAbortException;
-}
-
-void Thread::SetThreadAbortException(Object *exception)
-{
-    m_threadAbortException = exception;
-}
-
-FCIMPL0(Object *, RhpGetThreadAbortException)
-{
-    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
-    return pCurThread->GetThreadAbortException();
-}
-FCIMPLEND
 
 Object** Thread::GetThreadStaticStorage()
 {
@@ -1367,6 +1360,43 @@ FCIMPL0(size_t, RhGetDefaultStackSize)
 }
 FCIMPLEND
 
+#ifdef TARGET_WINDOWS
+// Native APC callback for Thread.Interrupt
+// This callback sets the interrupt flag on the current thread
+static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (!pCurrentThread->IsInitialized())
+    {
+        // If the thread was interrupted before it was started
+        // the thread won't have been initialized.
+        // Attach the thread here if it's the first time we're seeing it.
+        ThreadStore::AttachCurrentThread();
+    }
+
+    pCurrentThread->SetInterrupted(true);
+}
+
+// Function to get the address of the interrupt APC callback
+FCIMPL0(void*, RhGetInterruptApcCallback)
+{
+    return (void*)InterruptApcCallback;
+}
+FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (pCurrentThread->CheckInterrupted())
+    {
+        pCurrentThread->SetInterrupted(false);
+        FC_RETURN_BOOL(true);
+    }
+    FC_RETURN_BOOL(false);
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
+
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
 {
@@ -1395,7 +1425,7 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef FEATURE_PORTABLE_HELPERS
 
 FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
@@ -1411,7 +1441,7 @@ FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 }
 FCIMPLEND
 
-#endif //USE_PORTABLE_HELPERS
+#endif //FEATURE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
 

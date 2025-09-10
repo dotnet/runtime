@@ -1113,7 +1113,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #endif // FEATURE_HIJACK
 
     // FRAME_TOP must not be 0/NULL.
-    static_assert_no_msg(FRAME_TOP_VALUE != 0);
+    static_assert(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -2877,11 +2877,10 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
-            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) &&
-                     (m_crawl.pFrame->PtrNextFrame() != FRAME_TOP) &&
-                     (m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && ((PTR_InlinedCallFrame)m_crawl.pFrame)->IsInInterpreter())
             {
-                // There is an active inlined call frame and the next frame is the interpreter frame. This is a special case where we need to save the current context registers that the interpreter frames walking reuses.
+                // There is an active inlined call frame localed in the interpreter code. This is a special case where we need
+                // to save the current context registers that the interpreter frames walking reuses.
                 m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
                 m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                 m_interpExecMethodFP = GetFP(pRD->pCurrentContext);

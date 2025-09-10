@@ -15,23 +15,23 @@ public class ErrorHandlingTests
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_s5Int32VtF", CharSet = CharSet.Unicode)]
     public static extern void SetErrorMessage(string message, int length);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0s5Int32VAE_tKF")]
     public static extern nint conditionallyThrowError(int willThrow, ref SwiftError error);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0s5Int32VAE_tKF")]
     public static extern nint conditionallyThrowErrorOnStack(int willThrow, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, int dummy8, int dummy9, ref SwiftError error);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling26nativeFunctionWithCallback03setB0_ys5Int32V_yAEXEtF")]
     public static extern unsafe void NativeFunctionWithCallback(int setError, delegate* unmanaged[Swift]<SwiftError*, int, void> callback, SwiftError* error);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling26nativeFunctionWithCallback5value03setB0_s5Int32VAF_A3F_AFtXEtF")]
     public static extern unsafe int NativeFunctionWithCallback(int value, int setError, delegate* unmanaged[Swift]<SwiftError*, int, int, int> callback, SwiftError* error);
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static unsafe void ConditionallySetErrorTo21(SwiftError* error, int setError) {
         if (setError != 0)
         {
@@ -43,7 +43,7 @@ public class ErrorHandlingTests
         }
     }
 
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvSwift)])]
     private static unsafe int ConditionallySetErrorAndReturn(SwiftError* error, int value, int setError) {
         if (setError != 0)
         {
@@ -158,7 +158,7 @@ public class ErrorHandlingTests
         Assert.True(error.Value == null, "Expected SwiftError value to be null.");
         Assert.True(retValue == (expectedValue * 2), string.Format("Return value does not match expected value. Expected: {0}, Actual: {1}", (expectedValue * 2), retValue));
     }
-    
+
     private static void SetErrorMessageForSwift(string message)
     {
         SetErrorMessage(message, message.Length);

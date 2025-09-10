@@ -994,8 +994,14 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
+        InterpByteCodeStart* interpreterCode;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
-        InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+        interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
@@ -2290,15 +2296,43 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             pCode = GetStubForInteropMethod(this);
         }
 
-        GetOrCreatePrecode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Store the IL Stub interpreter data on the actual
+        // P/Invoke MethodDesc.
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsFCall())
     {
         // Get the fcall implementation
-        pCode = ECall::GetFCallImpl(this);
+        bool hasManagedImpl = false;
+        pCode = ECall::GetFCallImpl(this, true /* throwForInvalidFCall */, &hasManagedImpl);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (!hasManagedImpl)
+        {
+            // Update the PortableEntryPoint to point to the actual code for the FCall implementation.
+            // Return the PortableEntryPoint as the PCODE.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetActualCode(entryPoint, pCode);
+            pCode = entryPoint;
+        }
+        else
+        {
+            MethodDesc* helperMD = PortableEntryPoint::GetMethodDesc(pCode);
+            // If the FCall implementation is managed, then we need to potentially set up the interpreter code for it as well.
+            // This is because the FCall may have been compiled to an IL stub that needs to be interpreted.
+            if (helperMD->IsPointingToPrestub())
+                (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+            void* ilStubInterpData = helperMD->GetInterpreterCode();
+            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+        }
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
         GetOrCreatePrecode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsArray())
     {
@@ -2371,13 +2405,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+// Interpreter-FIXME: Call stubs are not yet supported on WASM
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }

@@ -1562,8 +1562,6 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
     if (varTypeIsLong(arg))
     {
-        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
-
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
         fieldList->AddFieldLIR(comp, arg->gtGetOp1(), 0, TYP_INT);
@@ -5177,6 +5175,16 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
+            // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
+            // required)
+            if (varTypeUsesIntReg(use->GetNode()) && varTypeUsesFloatReg(regType) &&
+                (genTypeSize(regType) > TARGET_POINTER_SIZE))
+            {
+                JITDUMP("it is not; field [%06u] requires an insertion into float register %u of size %d\n",
+                        Compiler::dspTreeID(use->GetNode()), i, genTypeSize(regType));
+                return false;
+            }
+
             use = use->GetNext();
         } while (use != nullptr);
     }
@@ -8371,34 +8379,6 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #ifdef FEATURE_SIMD
     if (node->TypeIs(TYP_SIMD12))
     {
-        // Assumption 1:
-        // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
-        // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
-        // reading and writing purposes.
-        //
-        // Assumption 2:
-        // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
-        // registers or on stack, the upper most 4-bytes will be zero.
-        //
-        // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
-        // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
-        // invalid.
-        //
-        // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
-        // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
-        // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
-        // there is no need to clear upper 4-bytes of Vector3 type args.
-        //
-        // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
-        // Vector3 return values are returned two return registers and Caller assembles them into a
-        // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
-        // type args in prolog and Vector3 type return value of a call
-        //
-        // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
-        // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
-        // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
-        // it either.
-
         if (comp->lvaMapSimd12ToSimd16(node->AsLclVarCommon()->GetLclNum()))
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
@@ -8698,20 +8678,22 @@ void Lowering::FindInducedParameterRegisterLocals()
             assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
             unsigned structAccessedSize =
                 min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
-            if ((segment.Offset != fld->GetLclOffs()) || (structAccessedSize > segment.Size) ||
-                (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
+            if ((fld->GetLclOffs() < segment.Offset) ||
+                (fld->GetLclOffs() + structAccessedSize > segment.Offset + segment.Size))
             {
                 continue;
             }
 
-            // This is a match, but check if it is already remapped.
-            // TODO-CQ: If it is already remapped, we can reuse the value from
-            // the remapping.
-            if (comp->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) == nullptr)
+            // TODO-CQ: Float -> !float extractions are not supported
+            // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+            if (genIsValidFloatReg(segment.GetRegister()) &&
+                (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
             {
-                regSegment = &segment;
+                continue;
             }
 
+            // Found a register segment this field is contained in
+            regSegment = &segment;
             break;
         }
 
@@ -8720,7 +8702,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter corresponds to ", Compiler::dspTreeID(fld));
+        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter is contained in ", Compiler::dspTreeID(fld));
         DBEXEC(VERBOSE, regSegment->Dump());
         JITDUMP("\n");
 
@@ -8734,75 +8716,108 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        unsigned remappedLclNum = TryReuseLocalForParameterAccess(use, storedToLocals);
+        const ParameterRegisterLocalMapping* existingMapping =
+            comp->FindParameterRegisterLocalMappingByRegister(regSegment->GetRegister());
 
-        if (remappedLclNum == BAD_VAR_NUM)
+        unsigned remappedLclNum = BAD_VAR_NUM;
+        if (existingMapping == nullptr)
         {
-            // If we have seen register kills then avoid creating a new local.
-            // The local is going to have to move from the parameter register
-            // into a callee saved register, and the callee saved register will
-            // need to be saved/restored to/from stack anyway.
-            if (hasRegisterKill)
-            {
-                JITDUMP("  ..but use happens after a call and is deemed unprofitable to create a local for\n");
-                continue;
-            }
-
             remappedLclNum = comp->lvaGrabTemp(
                 false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
-            comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
+
+            // We always use the full width for integer registers even if the
+            // width is shorter, because various places in the JIT will type
+            // accesses larger to generate smaller code.
+            var_types registerType =
+                genIsValidIntReg(regSegment->GetRegister()) ? TYP_I_IMPL : regSegment->GetRegisterType();
+            if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
+            {
+                registerType = fld->TypeGet();
+            }
+
+            LclVarDsc* varDsc = comp->lvaGetDesc(remappedLclNum);
+            varDsc->lvType    = genActualType(registerType);
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+
+            comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+            varDsc->lvIsParamRegTarget = true;
+
+            JITDUMP("New mapping: ");
+            DBEXEC(VERBOSE, regSegment->Dump());
+            JITDUMP(" -> V%02u\n", remappedLclNum);
         }
         else
         {
-            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum,
-                    getRegName(regSegment->GetRegister()));
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+            remappedLclNum = existingMapping->LclNum;
+        }
 
-            // The store will be a no-op, so get rid of it
-            LIR::AsRange(comp->fgFirstBB).Remove(use.User(), true);
-            use = LIR::Use();
+        GenTree* value = comp->gtNewLclVarNode(remappedLclNum);
 
-#ifdef DEBUG
-            LclVarDsc* remappedLclDsc = comp->lvaGetDesc(remappedLclNum);
-            remappedLclDsc->lvReason =
-                comp->printfAlloc("%s%sV%02u.%s", remappedLclDsc->lvReason == nullptr ? "" : remappedLclDsc->lvReason,
-                                  remappedLclDsc->lvReason == nullptr ? "" : " ", fld->GetLclNum(),
-                                  getRegName(regSegment->GetRegister()));
+        if (varTypeUsesFloatReg(value))
+        {
+            assert(fld->GetLclOffs() == regSegment->Offset);
+
+            value->gtType = fld->TypeGet();
+
+#ifdef FEATURE_SIMD
+            // SIMD12s should be widened. We cannot do that with
+            // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+            // accesses of SIMD16 locals here.
+            if (value->TypeIs(TYP_SIMD12))
+            {
+                value->gtType = TYP_SIMD16;
+            }
 #endif
         }
-
-        comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
-        comp->lvaGetDesc(remappedLclNum)->lvIsParamRegTarget = true;
-
-        JITDUMP("New mapping: ");
-        DBEXEC(VERBOSE, regSegment->Dump());
-        JITDUMP(" -> V%02u\n", remappedLclNum);
-
-        // Insert explicit normalization for small types (the LCL_FLD we
-        // are replacing comes with this normalization).
-        if (varTypeIsSmall(fld))
+        else
         {
-            GenTree* lcl                = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-            GenTree* normalizeLcl       = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
-            GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
-            LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
+            var_types registerType = value->TypeGet();
 
-            JITDUMP("Parameter normalization:\n");
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeNormalizedLcl);
+            if (fld->GetLclOffs() > regSegment->Offset)
+            {
+                assert(value->TypeIs(TYP_INT, TYP_LONG));
+                GenTree* shiftAmount = comp->gtNewIconNode((fld->GetLclOffs() - regSegment->Offset) * 8, TYP_INT);
+                value = comp->gtNewOperNode(varTypeIsSmall(fld) && varTypeIsSigned(fld) ? GT_RSH : GT_RSZ,
+                                            value->TypeGet(), value, shiftAmount);
+            }
+
+            // Insert explicit normalization for small types (the LCL_FLD we
+            // are replacing comes with this normalization). This is only required
+            // if we didn't get the normalization via a right shift.
+            if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
+            {
+                value = comp->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
+            }
+
+            // If the node is still too large then get it to the right size
+            if (genTypeSize(value) != genTypeSize(genActualType((fld))))
+            {
+                assert(genTypeSize(value) == 8);
+                assert(genTypeSize(genActualType(fld)) == 4);
+
+                if (value->OperIsScalarLocal())
+                {
+                    // We can use lower bits directly
+                    value->gtType = TYP_INT;
+                }
+                else
+                {
+                    value = comp->gtNewCastNode(TYP_INT, value, false, TYP_INT);
+                }
+            }
+
+            // Finally insert a bitcast if necessary
+            if (value->TypeGet() != genActualType(fld))
+            {
+                value = comp->gtNewBitCastNode(genActualType(fld), value);
+            }
         }
 
-        // If we still have a valid use, then replace the LCL_FLD with a
-        // LCL_VAR of the remapped parameter register local.
-        if (use.IsInitialized())
-        {
-            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-            LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, lcl);
-            use.ReplaceWith(lcl);
-            LowerNode(lcl);
-            JITDUMP("New user tree range:\n");
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
-        }
+        // Now replace the LCL_FLD.
+        LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, LIR::SeqTree(comp, value));
+        use.ReplaceWith(value);
+        JITDUMP("New user tree range:\n");
+        DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
 
         fld->gtBashToNOP();
     }
