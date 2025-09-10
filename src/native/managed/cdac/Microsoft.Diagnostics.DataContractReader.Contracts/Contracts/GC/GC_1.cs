@@ -119,18 +119,18 @@ internal readonly struct GC_1 : IGC
         }
     }
 
-    GCHeapData IGC.WKSGetHeapData()
+    GCHeapData IGC.GetHeapData()
     {
         if (GetGCType() != GCType.Workstation)
-            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
+            throw new InvalidOperationException("GetHeapData() is only valid for Workstation GC.");
 
         return GetGCHeapDataFromHeap(new GCHeapWKS(_target));
     }
 
-    GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
+    GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
     {
         if (GetGCType() != GCType.Server)
-            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+            throw new InvalidOperationException("GetHeapData(TargetPointer heap) is only valid for Server GC.");
 
         Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
         return GetGCHeapDataFromHeap(heap);
@@ -216,20 +216,20 @@ internal readonly struct GC_1 : IGC
         return arr;
     }
 
-    GCOomData IGC.WKSGetOomData()
+    GCOomData IGC.GetOomData()
     {
         if (GetGCType() != GCType.Workstation)
-            throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
+            throw new InvalidOperationException("GetOomData() is only valid for Workstation GC.");
 
         TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOomData);
         Data.OomHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OomHistory>(oomHistory);
         return GetGCOomData(oomHistoryData);
     }
 
-    GCOomData IGC.SVRGetOomData(TargetPointer heapAddress)
+    GCOomData IGC.GetOomData(TargetPointer heapAddress)
     {
         if (GetGCType() != GCType.Server)
-            throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
+            throw new InvalidOperationException("GetOomData(TargetPointer heap) is only valid for Server GC.");
 
         Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
         return GetGCOomData(heap.OomData);

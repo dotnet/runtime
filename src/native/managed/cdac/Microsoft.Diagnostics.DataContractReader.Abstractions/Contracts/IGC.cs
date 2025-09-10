@@ -93,13 +93,15 @@ public interface IGC : IContract
     IReadOnlyList<TargetNUInt> GetGlobalMechanisms() => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 
-    /* WKS only APIs */
-    GCHeapData WKSGetHeapData() => throw new NotImplementedException();
-    GCOomData WKSGetOomData() => throw new NotImplementedException();
+    // workstation variant
+    GCHeapData GetHeapData() => throw new NotImplementedException();
+    // server variant
+    GCHeapData GetHeapData(TargetPointer heapAddress) => throw new NotImplementedException();
 
-    /* SVR only APIs */
-    GCHeapData SVRGetHeapData(TargetPointer heapAddress) => throw new NotImplementedException();
-    GCOomData SVRGetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
+    // workstation variant
+    GCOomData GetOomData() => throw new NotImplementedException();
+    // server variant
+    GCOomData GetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

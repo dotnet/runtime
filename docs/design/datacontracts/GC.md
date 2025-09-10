@@ -96,13 +96,17 @@ public readonly struct GCOomData
     // Returns pointers to all GC heaps
     IEnumerable<TargetPointer> GetGCHeaps();
 
-    /* WKS only APIs */
-    GCHeapData WKSGetHeapData();
-    GCOomData WKSGetOomData();
+    // The following APIs have both a workstation and serer variant.
+    // The workstation variant implitly operates on the global heap.
+    // The server variants allow passing in a heap pointer.
 
-    /* SVR only APIs */
-    GCHeapData SVRGetHeapData(TargetPointer heapAddress);
-    GCOomData SVRGetOomData(TargetPointer heapAddress);
+    // Gets data about a GC heap
+    GCHeapData GetHeapData();
+    GCHeapData GetHeapData(TargetPointer heapAddress);
+
+    // Gets data about a managed OOM occurance
+    GCOomData GetOomData();
+    GCOomData GetOomData(TargetPointer heapAddress);
 ```
 
 ## Version 1
@@ -320,9 +324,49 @@ IEnumerable<TargetPointer> IGC.GetGCHeaps()
 }
 ```
 
-workstation GC only APIs
+GetOomData
 ```csharp
-GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
+GCOomData IGC.GetOomData()
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("workstation"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOomData");
+    return GetGCOomData(oomHistoryData);
+}
+
+GCOomData IGC.GetOomData(TargetPointer heapAddress)
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("server"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OomData offset */);
+    return GetGCOomData(oomHistory);
+}
+
+private GCOomData GetGCOomData(TargetPointer oomHistory)
+{
+    GCOomData data = default;
+
+    data.Reason = target.Read<int>(oomHistory + /* OomHistory::Reason offset */);
+    data.AllocSize = target.ReadNUInt(oomHistory + /* OomHistory::AllocSize offset */);
+    data.Reserved = target.ReadPointer(oomHistory + /* OomHistory::Reserved offset */);
+    data.Allocated = target.ReadPointer(oomHistory + /* OomHistory::Allocated offset */);
+    data.GcIndex = target.ReadNUInt(oomHistory + /* OomHistory::GcIndex offset */);
+    data.Fgm = target.Read<int>(oomHistory + /* OomHistory::Fgm offset */);
+    data.Size = target.ReadNUInt(oomHistory + /* OomHistory::Size offset */);
+    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OomHistory::AvailablePagefileMb offset */);
+    data.LohP = target.Read<uint>(oomHistory + /* OomHistory::LohP offset */);
+
+    return data;
+}
+```
+
+GetHeapData
+```csharp
+GCHeapData IGC.GetHeapData()
 {
     string[] gcIdentifiers = GetGCIdentifiers();
     if (!gcType.Contains("workstation"))
@@ -389,20 +433,7 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
     return data;
 }
 
-GCOomData IGC.WKSGetOomData()
-{
-    string[] gcIdentifiers = GetGCIdentifiers();
-    if (!gcType.Contains("workstation"))
-        throw new InvalidOperationException();
-
-    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOomData");
-    return GetGCOomData(oomHistoryData);
-}
-```
-
-server GC only APIs
-```csharp
-GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
+GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
 {
     string[] gcIdentifiers = GetGCIdentifiers();
     if (!gcType.Contains("server"))
@@ -470,19 +501,6 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
     return data;
 }
 
-GCOomData IGC.SVRGetOomData(TargetPointer heapAddress)
-{
-    string[] gcIdentifiers = GetGCIdentifiers();
-    if (!gcType.Contains("server"))
-        throw new InvalidOperationException();
-
-    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OomData offset */);
-    return GetGCOomData(oomHistory);
-}
-```
-
-Helper methods:
-```csharp
 private List<GCGeneration> GetGenerationData(TargetPointer generationTableArrayStart)
 {
     uint generationTableLength = target.ReadGlobal<uint>("TotalGenerationCount");
@@ -528,22 +546,5 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
     for (uint i = 0; i < length; i++)
         arr.Add(target.ReadNUInt(arrayStart + (i * target.PointerSize)));
     return arr;
-}
-
-private GCOomData GetGCOomData(TargetPointer oomHistory)
-{
-    GCOomData data = default;
-
-    data.Reason = target.Read<int>(oomHistory + /* OomHistory::Reason offset */);
-    data.AllocSize = target.ReadNUInt(oomHistory + /* OomHistory::AllocSize offset */);
-    data.Reserved = target.ReadPointer(oomHistory + /* OomHistory::Reserved offset */);
-    data.Allocated = target.ReadPointer(oomHistory + /* OomHistory::Allocated offset */);
-    data.GcIndex = target.ReadNUInt(oomHistory + /* OomHistory::GcIndex offset */);
-    data.Fgm = target.Read<int>(oomHistory + /* OomHistory::Fgm offset */);
-    data.Size = target.ReadNUInt(oomHistory + /* OomHistory::Size offset */);
-    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OomHistory::AvailablePagefileMb offset */);
-    data.LohP = target.Read<uint>(oomHistory + /* OomHistory::LohP offset */);
-
-    return data;
 }
 ```

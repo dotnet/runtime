@@ -852,7 +852,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Server))
                 throw new ArgumentException();
 
-            GCHeapData heapData = gc.SVRGetHeapData(heap.ToTargetPointer(_target));
+            GCHeapData heapData = gc.GetHeapData(heap.ToTargetPointer(_target));
 
             details->heapAddr = heap;
 
@@ -985,7 +985,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
                 throw new ArgumentException();
 
-            GCHeapData heapData = gc.WKSGetHeapData();
+            GCHeapData heapData = gc.GetHeapData();
 
             details->heapAddr = 0;
 
@@ -1125,7 +1125,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Server))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            GCHeapData heapData = gc.SVRGetHeapData(addr.ToTargetPointer(_target));
+            GCHeapData heapData = gc.GetHeapData(addr.ToTargetPointer(_target));
 
             data->heapAddr = addr;
             data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
@@ -1176,8 +1176,8 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            // For workstation GC, use WKSGetHeapData
-            GCHeapData heapData = gc.WKSGetHeapData();
+            // For workstation GC, use GetHeapData()
+            GCHeapData heapData = gc.GetHeapData();
 
             data->heapAddr = 0; // Not applicable for static data
             data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
@@ -1235,7 +1235,7 @@ internal sealed unsafe partial class SOSDacImpl
             // For now, use allocated as a fallback (similar to non-ephemeral segments in legacy code)
             data->highAllocMark = data->allocated;
 
-            GCHeapData heapData = gcIdentifiers.Contains(GCIdentifiers.Server) ? gc.SVRGetHeapData(segmentData.Heap) : gc.WKSGetHeapData();
+            GCHeapData heapData = gcIdentifiers.Contains(GCIdentifiers.Server) ? gc.GetHeapData(segmentData.Heap) : gc.GetHeapData();
             if (seg.ToTargetPointer(_target) == heapData.EphemeralHeapSegment)
             {
                 data->highAllocMark = heapData.AllocAllocated.ToClrDataAddress(_target);
@@ -2567,7 +2567,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Server))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            GCOomData oomData = gc.SVRGetOomData(oomAddr.ToTargetPointer(_target));
+            GCOomData oomData = gc.GetOomData(oomAddr.ToTargetPointer(_target));
 
             data->reason = oomData.Reason;
             data->alloc_size = oomData.AllocSize.Value;
@@ -2617,7 +2617,7 @@ internal sealed unsafe partial class SOSDacImpl
             // This method is only valid for workstation GC mode
             if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            GCOomData oomData = gc.WKSGetOomData();
+            GCOomData oomData = gc.GetOomData();
 
             data->reason = oomData.Reason;
             data->alloc_size = oomData.AllocSize.Value;
@@ -3200,7 +3200,8 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Server))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            GCHeapData heapData = gc.SVRGetHeapData(interestingInfoAddr.ToTargetPointer(_target));
+            // For server GC, use GetHeapData(TargetPointer heap)
+            GCHeapData heapData = gc.GetHeapData(interestingInfoAddr.ToTargetPointer(_target));
 
             PopulateGCInterestingInfoData(heapData, data);
         }
@@ -3241,8 +3242,8 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            // For workstation GC, use WKSGetHeapData
-            GCHeapData heapData = gc.WKSGetHeapData();
+            // For workstation GC, use GetHeapData()
+            GCHeapData heapData = gc.GetHeapData();
 
             PopulateGCInterestingInfoData(heapData, data);
         }
