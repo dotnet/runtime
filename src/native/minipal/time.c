@@ -133,7 +133,7 @@ int64_t minipal_lowres_ticks(void)
 #endif
 }
 
-uint64_t minipal_get_system_time()
+uint64_t minipal_get_system_time(void)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
