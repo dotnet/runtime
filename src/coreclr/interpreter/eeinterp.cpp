@@ -106,50 +106,32 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        bool tryCompilation = true;
-        InterpreterRetryFlags retryFlags = InterpreterRetryFlags::None;
+        InterpCompiler compiler(compHnd, methodInfo);
+        InterpMethod *pMethod = compiler.CompileMethod();
+        int32_t IRCodeSize = 0;
+        int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
-        while (tryCompilation)
-        {
-            InterpCompiler compiler(compHnd, methodInfo, &retryFlags);
-            InterpMethod *pMethod = compiler.CompileMethod();
+        uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+        uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-            if (pMethod == nullptr)
-            {
-                assert(retryFlags != InterpreterRetryFlags::None);
-                continue;
-            }
-            else
-            {
-                // Once we reach here, we're committed to trying to complete the compilation
-                tryCompilation = false;
-            }
+        AllocMemArgs args {};
+        args.hotCodeSize = sizeOfCode;
+        args.coldCodeSize = 0;
+        args.roDataSize = 0;
+        args.xcptnsCount = 0;
+        args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
+        compHnd->allocMem(&args);
 
-            int32_t IRCodeSize = 0;
-            int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
+        // We store first the InterpMethod pointer as the code header, followed by the actual code
+        *(InterpMethod**)args.hotCodeBlockRW = pMethod;
+        memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
-            uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-            uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        *entryAddress = (uint8_t*)args.hotCodeBlock;
+        *nativeSizeOfCode = sizeOfCode;
 
-            AllocMemArgs args {};
-            args.hotCodeSize = sizeOfCode;
-            args.coldCodeSize = 0;
-            args.roDataSize = 0;
-            args.xcptnsCount = 0;
-            args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-            compHnd->allocMem(&args);
-
-            // We store first the InterpMethod pointer as the code header, followed by the actual code
-            *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-            memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
-
-            *entryAddress = (uint8_t*)args.hotCodeBlock;
-            *nativeSizeOfCode = sizeOfCode;
-
-            // We can't do this until we've called allocMem
-            compiler.BuildGCInfo(pMethod);
-            compiler.BuildEHInfo();
-        }
+        // We can't do this until we've called allocMem
+        compiler.BuildGCInfo(pMethod);
+        compiler.BuildEHInfo();
     }
     catch(const InterpException& e)
     {

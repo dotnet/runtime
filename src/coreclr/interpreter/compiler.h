@@ -433,14 +433,6 @@ struct LeavesTableEntry
     InterpBasicBlock *pFinallyCallIslandBB;
 };
 
-enum class InterpreterRetryFlags
-{
-    support_use_as_flags = -1, // Magic value which in combination with enum_class_flags.h allows the use of bitwise operations and the HasFlag helper method
-
-    None = 0,
-    RetryWithSavedThisPointer = 1,
-};
-
 class InterpCompiler
 {
     friend class InterpIAllocator;
@@ -516,9 +508,6 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
-    InterpreterRetryFlags m_originalRetryFlags;
-    InterpreterRetryFlags *m_pRetryFlags;
-
     uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
@@ -554,7 +543,7 @@ private:
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
-    bool GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -685,6 +674,8 @@ private:
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
+    bool m_shadowCopyOfThisPointerActuallyNeeded = false;
+    bool m_shadowCopyOfThisPointerHasVar = false;
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -777,7 +768,7 @@ private:
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryFlags *pRetryFlags);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);

@@ -1285,6 +1285,15 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
             ? (GcSlotFlags)GC_SLOT_UNTRACKED
             : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
 
+        // The this pointer may have a shadow copy or not, and if it does not
+        if (m_shadowCopyOfThisPointerHasVar && !m_shadowCopyOfThisPointerActuallyNeeded)
+        {
+            // Don't report the original this pointer var, we'll report the shadow copy instead
+            // which is forced to have the same offset
+            if (i == 0)
+                continue;
+        }
+
         switch (pVar->interpType) {
             case InterpTypeO:
                 break;
@@ -1487,11 +1496,8 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                               CORINFO_METHOD_INFO* methodInfo,
-                               InterpreterRetryFlags *pRetryFlags)
+                                CORINFO_METHOD_INFO* methodInfo)
     : m_stackmapsByClass(FreeInterpreterStackMap)
-    , m_originalRetryFlags(*pRetryFlags)
-    , m_pRetryFlags(pRetryFlags)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_globalVarsWithRefsStackTop(0)
@@ -1525,22 +1531,15 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (m_verbose || (InterpConfig.InterpList() && m_originalRetryFlags == InterpreterRetryFlags::None))
+    if (m_verbose || InterpConfig.InterpList())
     {
         printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
-        if (m_verbose && m_originalRetryFlags != InterpreterRetryFlags::None)
-        {
-            printf("  with retry flags: %d\n", (int)m_originalRetryFlags);
-        }
     }
 #endif
 
     CreateILVars();
 
-    if (!GenerateCode(m_methodInfo))
-    {
-        return nullptr;
-    }
+    GenerateCode(m_methodInfo);
 
 #ifdef DEBUG
     if (m_verbose)
@@ -1681,11 +1680,10 @@ void InterpCompiler::CreateILVars()
     bool hasThis = m_methodInfo->args.hasThis();
     bool hasParamArg = m_methodInfo->args.hasTypeArg();
     bool hasThisPointerShadowCopyAsParamIndex = false;
-    if (HasFlag(m_originalRetryFlags, InterpreterRetryFlags::RetryWithSavedThisPointer))
+    if (((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
     {
         hasThisPointerShadowCopyAsParamIndex = true;
-            BADCODE("Unexpected param arg in combination with this pointer mitigation");
-        }
+        m_shadowCopyOfThisPointerHasVar = true;
     }
     int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
     int32_t offset;
@@ -1720,6 +1718,7 @@ void InterpCompiler::CreateILVars()
         if (hasThisPointerShadowCopyAsParamIndex)
         {
             assert(interpType == InterpTypeO);
+            assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
             m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
         }
         CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
@@ -2221,9 +2220,9 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 {
     // Check for the unusual case of storing to the this pointer variable within a generic method which uses the this pointer as a generic context arg
     // and if doing so and the mitigation for this pointer changing is not enabled, restart the compile to enable it
-    if (var == 0 && ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
     {
-        *m_pRetryFlags |= InterpreterRetryFlags::RetryWithSavedThisPointer;
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
 
     InterpType interpType = m_pVars[var].interpType;
@@ -3879,9 +3878,9 @@ void InterpCompiler::EmitLdLocA(int32_t var)
 {
     // Check for the unusual case of taking the address of the this pointer variable within a generic method which uses the this pointer as a generic context arg
     // and if doing so and the mitigation for this pointer changing is not enabled, restart the compile to enable it
-    if (var == 0 && ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
     {
-        *m_pRetryFlags |= InterpreterRetryFlags::RetryWithSavedThisPointer;
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
 
     if (m_pCBB->clauseType == BBClauseFilter)
@@ -3920,7 +3919,7 @@ void InterpCompiler::EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_
     m_pStackPointer--;
 }
 
-bool InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
+void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
     bool tailcall = false;
@@ -3968,19 +3967,6 @@ bool InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
-
-    if (HasFlag(m_originalRetryFlags, InterpreterRetryFlags::RetryWithSavedThisPointer))
-    {
-        // If this flag is set, then we need to handle the case where an IL instruction may change the
-        // value of the this pointer during the execution of the method. We do that by operating on a
-        // local copy of the this pointer instead of the original this pointer for most operations.
-
-        // When this mitigation is enabled, the param arg is the actual input this pointer,
-        // and the arg 0 is the local copy of the this pointer.
-        AddIns(INTOP_MOV_P);
-        m_pLastNewIns->SetSVar(getParamArgIndex());
-        m_pLastNewIns->SetDVar(0);
-    }
 
     CORJIT_FLAGS corJitFlags;
     DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
@@ -6690,10 +6676,28 @@ DO_LDFTN:
         goto retry_emit;
     }
 
-    UnlinkUnreachableBBlocks();
 
-    // Detect if we have hit a condition which required a full restart of the compiler process
-    return m_originalRetryFlags == *m_pRetryFlags;
+    if (m_shadowCopyOfThisPointerActuallyNeeded)
+    {
+        InterpInst *pFirstIns = FirstRealIns(m_pEntryBB);
+        InterpInst *pMovInst = InsertIns(FirstRealIns(m_pEntryBB), INTOP_MOV_P);
+        // If this flag is set, then we need to handle the case where an IL instruction may change the
+        // value of the this pointer during the execution of the method. We do that by operating on a
+        // local copy of the this pointer instead of the original this pointer for most operations.
+
+        // When this mitigation is enabled, the param arg is the actual input this pointer,
+        // and the arg 0 is the local copy of the this pointer.
+        pMovInst->SetSVar(getParamArgIndex());
+        pMovInst->SetDVar(0);
+        pMovInst->ilOffset = pFirstIns->ilOffset; // Match the IL offset of the first real instruction
+    }
+    else if (m_shadowCopyOfThisPointerHasVar)
+    {
+        m_pVars[0].offset = 0; // Reset the this pointer offset to 0, since we won't actually need the shadow copy of the this pointer
+        // This will result in an unused local var slot on the stack, and two "var"s which point to the same location.
+    }
+
+    UnlinkUnreachableBBlocks();
 }
 
 InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
