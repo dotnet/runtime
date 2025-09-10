@@ -673,6 +673,7 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyLocation(assesmbly, count, location, pNeeded) : HResults.E_NOTIMPL;
+
     int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, DacpFieldDescData* data)
     {
         int hr = HResults.S_OK;
@@ -701,10 +702,9 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 // try to completely decode the signature
                 TypeHandle foundTypeHandle = signatureDecoder.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
-                TypeHandle methodTableHandle = rtsContract.GetMethodTable(foundTypeHandle);
-                data->MTOfType = methodTableHandle.Address.ToClrDataAddress(_target);
+                data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
             }
-            catch (System.Exception)
+            catch (VirtualReadException)
             {
                 // if we can't find the MT (e.g in a minidump)
                 data->MTOfType = 0;

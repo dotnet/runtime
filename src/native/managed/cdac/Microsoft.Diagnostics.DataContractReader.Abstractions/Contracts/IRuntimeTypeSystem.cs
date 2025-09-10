@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -94,7 +95,6 @@ public interface IRuntimeTypeSystem : IContract
     IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable) => throw new NotImplementedException();
     TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
-    TypeHandle GetMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
 
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
@@ -140,6 +140,8 @@ public interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
+    TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
+    TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();

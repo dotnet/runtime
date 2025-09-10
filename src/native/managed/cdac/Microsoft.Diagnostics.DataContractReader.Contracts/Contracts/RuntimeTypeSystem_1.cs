@@ -8,7 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
-using Microsoft.Diagnostics.Contracts;
+using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -660,6 +660,67 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         throw new ArgumentException(nameof(typeHandle));
     }
 
+    private bool GenericInstantiationMatch(TypeHandle genericType, TypeHandle potentialMatch, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ReadOnlySpan<TypeHandle> instantiation = GetInstantiation(potentialMatch);
+        if (instantiation.Length != typeArguments.Length)
+            return false;
+
+        if (GetTypeDefToken(genericType) != GetTypeDefToken(potentialMatch))
+            return false;
+
+        if (GetModule(genericType) != GetModule(potentialMatch))
+            return false;
+
+        for (int i = 0; i < instantiation.Length; i++)
+        {
+            if (!(instantiation[i].Address == typeArguments[i].Address))
+                return false;
+        }
+        return true;
+    }
+
+    private bool ArrayPtrMatch(TypeHandle elementType, CorElementType corElementType, int rank, TypeHandle potentialMatch)
+    {
+        IsArray(potentialMatch, out uint typeHandleRank);
+        return GetSignatureCorElementType(potentialMatch) == corElementType &&
+                GetTypeParam(potentialMatch).Address == elementType.Address &&
+                (corElementType == CorElementType.SzArray || corElementType == CorElementType.Byref ||
+                corElementType == CorElementType.Ptr || (rank == typeHandleRank));
+
+    }
+
+    TypeHandle IRuntimeTypeSystem.IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ILoader loaderContract = _target.Contracts.Loader;
+        TargetPointer loaderModule = ((IRuntimeTypeSystem)this).GetLoaderModule(typeHandle);
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        {
+            TypeHandle potentialMatch = GetTypeHandle(ptr);
+            if (corElementType == CorElementType.GenericInst)
+            {
+                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
+                {
+                    return potentialMatch;
+                }
+            }
+            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
+            {
+                return potentialMatch;
+            }
+        }
+        return new TypeHandle(TargetPointer.Null);
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)
+    {
+        TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
+        CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
+        TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
+        return GetTypeHandle(typeHandlePtr);
+    }
+
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
     {
         module = TargetPointer.Null;
@@ -1177,30 +1238,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return GetMethodDescForEntrypoint(pCode);
-    }
-
-    TypeHandle IRuntimeTypeSystem.GetMethodTable(TypeHandle typeHandle)
-    {
-        if (typeHandle.IsTypeDesc())
-        {
-            Data.TypeDesc typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
-            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
-            switch (elemType)
-            {
-                case CorElementType.Ptr:
-                case CorElementType.FnPtr:
-                    TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
-                    CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
-                    TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)CorElementType.U * (ulong)_target.PointerSize);
-                    return GetTypeHandle(typeHandlePtr);
-                case CorElementType.ValueType:
-                    Data.ParamTypeDesc paramTypeDesc = _target.ProcessedData.GetOrAdd<Data.ParamTypeDesc>(typeHandle.TypeDescAddress());
-                    return GetTypeHandle(paramTypeDesc.TypeArg);
-                default:
-                    return new TypeHandle(TargetPointer.Null);
-            }
-        }
-        return typeHandle;
     }
 
     private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)

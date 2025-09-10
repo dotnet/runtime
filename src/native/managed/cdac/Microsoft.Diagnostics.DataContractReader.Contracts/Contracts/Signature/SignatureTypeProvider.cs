@@ -4,90 +4,33 @@
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Data;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
 using System.Collections.Immutable;
-using Microsoft.Diagnostics.DataContractReader;
 
-namespace Microsoft.Diagnostics.Contracts;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
 {
     // All interface methods throw NotImplementedException for now
     private readonly Target _target;
-    private readonly DataContractReader.Contracts.ModuleHandle _moduleHandle;
+    private readonly ModuleHandle _moduleHandle;
 
-    public SignatureTypeProvider(Target target, DataContractReader.Contracts.ModuleHandle moduleHandle)
+    public SignatureTypeProvider(Target target, ModuleHandle moduleHandle)
     {
         _target = target;
         _moduleHandle = moduleHandle;
     }
     public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
-        => IterateTypeParams(elementType, CorElementType.Array, shape.Rank, default);
+        => _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.Array, shape.Rank, default);
 
     public TypeHandle GetByReferenceType(TypeHandle elementType)
-        => IterateTypeParams(elementType, CorElementType.Byref, 0, default);
+        => _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.Byref, 0, default);
 
-    private bool GenericInstantiationMatch(TypeHandle genericType, TypeHandle potentialMatch, ImmutableArray<TypeHandle> typeArguments)
-    {
-        IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-        ReadOnlySpan<TypeHandle> instantiation = rtsContract.GetInstantiation(potentialMatch);
-        if (instantiation.Length != typeArguments.Length)
-            return false;
-
-        if (rtsContract.GetTypeDefToken(genericType) != rtsContract.GetTypeDefToken(potentialMatch))
-            return false;
-
-        if (rtsContract.GetModule(genericType) != rtsContract.GetModule(potentialMatch))
-            return false;
-
-        for (int i = 0; i < instantiation.Length; i++)
-        {
-            if (!(instantiation[i].Address == typeArguments[i].Address))
-                return false;
-        }
-        return true;
-    }
-
-    private bool ArrayPtrMatch(TypeHandle elementType, CorElementType corElementType, int rank, TypeHandle potentialMatch)
-    {
-        IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-        rtsContract.IsArray(potentialMatch, out uint typeHandleRank);
-        return rtsContract.GetSignatureCorElementType(potentialMatch) == corElementType &&
-                rtsContract.GetTypeParam(potentialMatch).Address == elementType.Address &&
-                (corElementType == CorElementType.SzArray || corElementType == CorElementType.Byref ||
-                corElementType == CorElementType.Ptr || (rank == typeHandleRank));
-
-    }
-
-    private TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
-    {
-        ILoader loaderContract = _target.Contracts.Loader;
-        IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-        TargetPointer loaderModule = rtsContract.GetLoaderModule(typeHandle);
-        DataContractReader.Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
-        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
-        {
-            TypeHandle potentialMatch = rtsContract.GetTypeHandle(ptr);
-            if (corElementType == CorElementType.GenericInst)
-            {
-                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
-                {
-                    return potentialMatch;
-                }
-            }
-            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
-            {
-                return potentialMatch;
-            }
-        }
-        return new TypeHandle(TargetPointer.Null);
-    }
     public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
         => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
 
     public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
-        => IterateTypeParams(genericType, CorElementType.GenericInst, 0, typeArguments);
+        => _target.Contracts.RuntimeTypeSystem.IterateTypeParams(genericType, CorElementType.GenericInst, 0, typeArguments);
 
     public TypeHandle GetGenericMethodParameter(T context, int index)
     {
@@ -115,43 +58,27 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => elementType;
 
     public TypeHandle GetPointerType(TypeHandle elementType)
-        => IterateTypeParams(elementType, CorElementType.Ptr, 0, default);
+        => _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.Ptr, 0, default);
 
     public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
-    {
-        TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
-        CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
-        TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
-        return _target.Contracts.RuntimeTypeSystem.GetTypeHandle(typeHandlePtr);
-    }
-
-    private TypeHandle GetPrimitiveArrayType(CorElementType elementType)
-    {
-        TargetPointer arrayPtr = _target.ReadGlobalPointer(Constants.Globals.PredefinedArrayTypes);
-        TargetPointer typeHandlePtr = _target.ReadPointer(arrayPtr + (ulong)elementType * (ulong)_target.PointerSize);
-        return _target.Contracts.RuntimeTypeSystem.GetTypeHandle(typeHandlePtr);
-    }
+        => _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
     {
-        IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-        CorElementType corElementType = rtsContract.GetSignatureCorElementType(elementType);
         TypeHandle typeHandle = default;
-        if (corElementType <= CorElementType.R8)
+        if (elementType.Address == _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)))
         {
-            typeHandle = GetPrimitiveArrayType(corElementType);
-        }
-        else if (elementType.Address == _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)))
-        {
-            typeHandle = GetPrimitiveArrayType(CorElementType.Object);
+            TargetPointer arrayPtr = _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable);
+            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(arrayPtr);
         }
         else if (elementType.Address == _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable)))
         {
-            typeHandle = GetPrimitiveArrayType(CorElementType.String);
+            TargetPointer arrayPtr = _target.ReadGlobalPointer(Constants.Globals.StringArrayMethodTable);
+            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(arrayPtr);
         }
         if (typeHandle.Address == TargetPointer.Null)
         {
-            return IterateTypeParams(elementType, CorElementType.SzArray, 1, default);
+            return _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.SzArray, 1, default);
         }
         return typeHandle;
     }

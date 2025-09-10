@@ -87,6 +87,8 @@ partial interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
     public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
+    public virtual TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments);
+    public TypeHandle GetPrimitiveType(CorElementType typeCode);
     public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
 
@@ -181,6 +183,17 @@ partial interface IRuntimeTypeSystem : IContract
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 }
+```
+
+### FieldDesc
+```csharp
+TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
+uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
+bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+uint GetFieldDescType(TargetPointer fieldDescPointer);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer);
 ```
 
 ## Version 1
@@ -287,17 +300,6 @@ internal partial struct RuntimeTypeSystem_1
         ValidMask = 2,
     }
 }
-```
-
-### FieldDesc
-```csharp
-TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
-uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
-bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
-bool IsFieldDescStatic(TargetPointer fieldDescPointer);
-uint GetFieldDescType(TargetPointer fieldDescPointer);
-uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
-TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer);
 ```
 
 Internally the contract has a `MethodTable_1` struct that depends on the `MethodTable` data descriptor
@@ -711,6 +713,69 @@ Contracts used:
             }
         }
         throw new ArgumentException(nameof(typeHandle));
+    }
+
+    // helper functions
+
+    private bool GenericInstantiationMatch(TypeHandle genericType, TypeHandle potentialMatch, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ReadOnlySpan<TypeHandle> instantiation = GetInstantiation(potentialMatch);
+        if (instantiation.Length != typeArguments.Length)
+            return false;
+
+        if (GetTypeDefToken(genericType) != GetTypeDefToken(potentialMatch))
+            return false;
+
+        if (GetModule(genericType) != GetModule(potentialMatch))
+            return false;
+
+        for (int i = 0; i < instantiation.Length; i++)
+        {
+            if (!(instantiation[i].Address == typeArguments[i].Address))
+                return false;
+        }
+        return true;
+    }
+
+    private bool ArrayPtrMatch(TypeHandle elementType, CorElementType corElementType, int rank, TypeHandle potentialMatch)
+    {
+        IsArray(potentialMatch, out uint typeHandleRank);
+        return GetSignatureCorElementType(potentialMatch) == corElementType &&
+                GetTypeParam(potentialMatch).Address == elementType.Address &&
+                (corElementType == CorElementType.SzArray || corElementType == CorElementType.Byref ||
+                corElementType == CorElementType.Ptr || (rank == typeHandleRank));
+
+    }
+
+    public TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ILoader loaderContract = _target.Contracts.Loader;
+        TargetPointer loaderModule = ((IRuntimeTypeSystem)this).GetLoaderModule(typeHandle);
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        {
+            TypeHandle potentialMatch = GetTypeHandle(ptr);
+            if (corElementType == CorElementType.GenericInst)
+            {
+                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
+                {
+                    return potentialMatch;
+                }
+            }
+            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
+            {
+                return potentialMatch;
+            }
+        }
+        return new TypeHandle(TargetPointer.Null);
+    }
+
+    public TypeHandle GetPrimitiveType(CorElementType typeCode)
+    {
+        TargetPointer coreLib = _target.ReadGlobalPointer("CoreLib");
+        TargetPointer classes = _target.ReadPointer(coreLib + /* CoreLibBinder::Classes offset */);
+        TargetPointer typeHandlePtr = _target.ReadPointer(classes + (ulong)typeCode * (ulong)_target.PointerSize);
+        return GetTypeHandle(typeHandlePtr);
     }
 
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
@@ -1479,29 +1544,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
 
         return GetMethodDescForEntrypoint(pCode);
-    }
-
-    TypeHandle IRuntimeTypeSystem.GetMethodTable(TypeHandle typeHandle)
-    {
-        if (typeHandle.IsTypeDesc())
-        {
-            Data.TypeDesc typeDesc = target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
-            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
-            switch (elemType)
-            {
-                case CorElementType.Ptr:
-                case CorElementType.FnPtr:
-                    TargetPointer coreLib = target.ReadGlobalPointer(Constants.Globals.CoreLib);
-                    TargetPointer classes = target.ReadPointer(coreLib + /* CoreLibData::Classes offset */);
-                    TargetPointer typeHandlePtr = target.ReadPointer(classes + (ulong)CorElementType.U * (ulong)target.PointerSize);
-                    return GetTypeHandle(typeHandlePtr);
-                case CorElementType.ValueType:
-                    return GetTypeHandle(target.ReadPointer(typeHandle.TypeDescAddress() + /* ParamTypeDesc::TypeArg offset */));
-                default:
-                    return new TypeHandle(TargetPointer.Null);
-            }
-        }
-        return typeHandle;
     }
 ```
 

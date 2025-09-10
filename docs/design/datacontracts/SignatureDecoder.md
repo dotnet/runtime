@@ -16,14 +16,13 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | CoreLibBinder | Classes | MTs for primitive types |
-| ILCodeVersionNode | TypeDefToMethodTableMap | Mapping table |
-| ILCodeVersionNode | TypeRefToMethodTableMap | Mapping table |
+| Module | TypeDefToMethodTableMap | Mapping table |
+| Module | TypeRefToMethodTableMap | Mapping table |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | CoreLib | TargetPointer | pointer to the `CoreLibBinder` |
-| PredefinedArrayTypes | TargetPointer | pointer to the cache of primitive-type array MTs |
 | ObjectMethodTable | TargetPointer | pointer to the MT of `object` |
 | StringMethodTable | TargetPointer | pointer to the MT of `string` |
 

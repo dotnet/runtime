@@ -30,6 +30,7 @@ internal static class EcmaMetadataUtils
 
     public static uint CreateFieldDef(uint tokenParts)
     {
+        Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
         return (uint)TokenType.mdtFieldDef | tokenParts;
     }
 }
