@@ -2961,7 +2961,39 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface2.IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy)
-        => _legacyImpl2 is not null ? _legacyImpl2.IsRCWDCOMProxy(rcwAddress, inDCOMProxy) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (inDCOMProxy == null)
+                throw new NullReferenceException(); // HResults.E_POINTER;
+
+            *inDCOMProxy = (int)Interop.BOOL.FALSE;
+
+            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) == 0)
+            {
+                hr = HResults.E_NOTIMPL;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl2 is not null)
+        {
+            int inDCOMProxyLocal;
+            int hrLocal = _legacyImpl2.IsRCWDCOMProxy(rcwAddress, &inDCOMProxyLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*inDCOMProxy == inDCOMProxyLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface2
 
     #region ISOSDacInterface3
