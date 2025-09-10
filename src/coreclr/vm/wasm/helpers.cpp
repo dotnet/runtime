@@ -468,6 +468,12 @@ namespace
         *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2));
     }
 
+    void CallFunc_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
+    }
+
     // Special thunks for signatures with indirect arguments.
 
     void CallFunc_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
@@ -514,6 +520,7 @@ namespace
         (void*)&CallFunc_I32_RetI32,
         (void*)&CallFunc_I32_I32_RetI32,
         (void*)&CallFunc_I32_I32_I32_RetI32,
+        (void*)&CallFunc_I32_I32_I32_I32_RetI32,
     };
 
     enum class ConvertType
