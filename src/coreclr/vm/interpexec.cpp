@@ -1993,6 +1993,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
                     ip += 4;
                     break;
@@ -2046,6 +2047,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 5;
                     break;
@@ -2127,6 +2129,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    _ASSERTE(helperFtn != NULL);
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
                     ip += 6;
                     break;
@@ -2182,6 +2185,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    _ASSERTE(helperFtn != NULL);
                     helperFtn(helperArg1, helperArg2, helperArg3);
                     ip += 6;
                     break;
@@ -2210,6 +2214,7 @@ MAIN_LOOP:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    _ASSERTE(helperFtn != NULL);
                     helperFtn(helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
