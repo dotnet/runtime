@@ -23,16 +23,8 @@ namespace System.IO.Compression
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardCompressionOptions"/> class with the specified compression level.</summary>
         /// <param name="level">One of the enumeration values that indicates whether to emphasize speed or compression efficiency.</param>
-        public ZStandardCompressionOptions(CompressionLevel level)
+        public ZStandardCompressionOptions(CompressionLevel level) : this(ZStandardUtils.GetQualityFromCompressionLevel(level))
         {
-            Quality = level switch
-            {
-                CompressionLevel.NoCompression => 0,
-                CompressionLevel.Fastest => 1,
-                CompressionLevel.Optimal => DefaultQuality,
-                CompressionLevel.SmallestSize => 19,
-                _ => throw new ArgumentOutOfRangeException(nameof(level), "Invalid compression level.")
-            };
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardCompressionOptions"/> class with the specified dictionary.</summary>
@@ -41,8 +33,14 @@ namespace System.IO.Compression
         public ZStandardCompressionOptions(ZStandardDictionary dictionary)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
-            Quality = DefaultQuality;
+
+            if (dictionary.CompressionDictionary is null)
+            {
+                throw new ArgumentException(SR.ZStandardEncoder_InvalidDictionary);
+            }
+
             Dictionary = dictionary;
+            Quality = dictionary.CompressionDictionary.Quality;
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardCompressionOptions"/> class with the specified quality.</summary>

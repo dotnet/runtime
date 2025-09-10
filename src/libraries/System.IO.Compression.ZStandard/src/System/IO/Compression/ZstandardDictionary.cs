@@ -70,6 +70,7 @@ namespace System.IO.Compression
                     SafeZStdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict(dictData, (nuint)dictionaryData.Length, quality);
                     if (compressionDict.IsInvalid)
                         throw new InvalidOperationException("Failed to create ZStandard compression dictionary.");
+                    compressionDict.Quality = quality;
 
                     SafeZStdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
                     if (decompressionDict.IsInvalid)
