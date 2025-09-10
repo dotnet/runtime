@@ -81,6 +81,8 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        public int Quality { get; set; }
+
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
