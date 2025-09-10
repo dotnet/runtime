@@ -492,7 +492,13 @@ namespace
     void CallFunc_I32IND_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG(1), ARG_IND(2));
+        (*fptr)(ARG_IND(0), ARG(1), ARG(2));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
     }
 
     void CallFunc_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
@@ -603,9 +609,21 @@ namespace
                 case 3:
                     if (args[0] == ConvertType::ToI32Indirect &&
                         args[1] == ConvertType::ToI32 &&
-                        args[1] == ConvertType::ToI32)
+                        args[2] == ConvertType::ToI32)
                     {
                         return (void*)&CallFunc_I32IND_I32_I32_RetVoid;
+                    }
+                    break;
+                case 7:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32 &&
+                        args[2] == ConvertType::ToI32 &&
+                        args[3] == ConvertType::ToI32 &&
+                        args[4] == ConvertType::ToI32 &&
+                        args[5] == ConvertType::ToI32 &&
+                        args[6] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid;
                     }
                     break;
                 }
