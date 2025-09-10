@@ -1042,10 +1042,7 @@ int64_t
 ep_rt_system_timestamp_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-	FILETIME value;
-	GetSystemTimeAsFileTime (&value);
-	return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+	return minipal_get_system_time();
 }
 
 static
