@@ -6249,100 +6249,32 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     emitAttr size   = emitTypeSize(lea);
     int      offset = lea->Offset();
 
-    // So for the case of a LEA node of the form [Base + Index*Scale + Offset] we will generate:
-    // tmpReg = indexReg << scale;
-    // destReg = baseReg + tmpReg;
-    // destReg = destReg + offset;
-    //
-    // TODO-RISCV64-CQ: The purpose of the GT_LEA node is to directly reflect a single target architecture
-    //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
-    //             instructions to generate the addressing mode so we need to modify lowering to
-    //             produce LEAs that are a 1:1 relationship to the RISCV64 architecture.
-    if (lea->HasBase() && lea->HasIndex())
+    assert(lea->HasBase());
+    assert(!lea->HasIndex());
+    assert(lea->gtScale <= 1);
+    // Only [Base + Offset] supported, index and scale should be explicit nodes that calculate base
+
+    regNumber memBaseReg = lea->Base()->GetRegNum();
+    regNumber targetReg  = lea->GetRegNum();
+
+    if (emitter::isValidSimm12(offset))
     {
-        GenTree* memBase = lea->Base();
-        GenTree* index   = lea->Index();
-
-        DWORD scale;
-
-        assert(isPow2(lea->gtScale));
-        BitScanForward(&scale, lea->gtScale);
-        assert(scale <= 4);
-        regNumber scaleTempReg = scale ? internalRegisters.Extract(lea) : REG_NA;
-
-        if (offset == 0)
+        if (offset != 0 || targetReg != memBaseReg)
         {
-            // Then compute target reg from [base + index*scale]
-            genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
-        }
-        else
-        {
-            // When generating fully interruptible code we have to use the "large offset" sequence
-            // when calculating a EA_BYREF as we can't report a byref that points outside of the object
-            bool useLargeOffsetSeq = compiler->GetInterruptible() && (size == EA_BYREF);
-
-            if (!useLargeOffsetSeq && emitter::isValidSimm12(offset))
-            {
-                genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale, scaleTempReg);
-                instruction ins = size == EA_4BYTE ? INS_addiw : INS_addi;
-                emit->emitIns_R_R_I(ins, size, lea->GetRegNum(), lea->GetRegNum(), offset);
-            }
-            else
-            {
-                regNumber tmpReg = internalRegisters.GetSingle(lea);
-
-                noway_assert(tmpReg != index->GetRegNum());
-                noway_assert(tmpReg != memBase->GetRegNum());
-
-                // compute the large offset.
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-
-                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->GetRegNum(), scale, scaleTempReg);
-
-                instruction ins = size == EA_4BYTE ? INS_addw : INS_add;
-                emit->emitIns_R_R_R(ins, size, lea->GetRegNum(), tmpReg, memBase->GetRegNum());
-            }
+            // Then compute target reg from [memBase + offset]
+            emit->emitIns_R_R_I(INS_addi, size, targetReg, memBaseReg, offset);
         }
     }
-    else if (lea->HasBase())
+    else
     {
-        GenTree* memBase = lea->Base();
+        // We require a tmpReg to hold the offset
+        regNumber tmpReg = internalRegisters.GetSingle(lea);
 
-        if (emitter::isValidSimm12(offset))
-        {
-            if (offset != 0)
-            {
-                // Then compute target reg from [memBase + offset]
-                emit->emitIns_R_R_I(INS_addi, size, lea->GetRegNum(), memBase->GetRegNum(), offset);
-            }
-            else // offset is zero
-            {
-                if (lea->GetRegNum() != memBase->GetRegNum())
-                {
-                    emit->emitIns_R_R(INS_mov, size, lea->GetRegNum(), memBase->GetRegNum());
-                }
-            }
-        }
-        else
-        {
-            // We require a tmpReg to hold the offset
-            regNumber tmpReg = internalRegisters.GetSingle(lea);
+        // First load tmpReg with the large offset constant
+        emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
 
-            // First load tmpReg with the large offset constant
-            emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
-
-            // Then compute target reg from [memBase + tmpReg]
-            emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
-        }
-    }
-    else if (lea->HasIndex())
-    {
-        // If we encounter a GT_LEA node without a base it means it came out
-        // when attempting to optimize an arbitrary arithmetic expression during lower.
-        // This is currently disabled in RISCV64 since we need to adjust lower to account
-        // for the simpler instructions RISCV64 supports.
-        // TODO-RISCV64-CQ:  Fix this and let LEA optimize arithmetic trees too.
-        assert(!"We shouldn't see a baseless address computation during CodeGen for RISCV64");
+        // Then compute target reg from [memBase + tmpReg]
+        emit->emitIns_R_R_R(INS_add, size, targetReg, memBaseReg, tmpReg);
     }
 
     genProduceReg(lea);

@@ -699,46 +699,22 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
-
-            GenTree* base  = lea->Base();
-            GenTree* index = lea->Index();
-            int      cns   = lea->Offset();
+            assert(lea->HasBase());
+            assert(!lea->HasIndex());
+            assert(lea->gtScale <= 1);
 
             // This LEA is instantiating an address, so we set up the srcCount here.
-            srcCount = 0;
-            if (base != nullptr)
-            {
-                srcCount++;
-                BuildUse(base);
-            }
-            if (index != nullptr)
-            {
-                srcCount++;
-                BuildUse(index);
-            }
+            srcCount = 1;
+            BuildUse(lea->Base());
             assert(dstCount == 1);
 
-            if ((base != nullptr) && (index != nullptr))
+            if (!emitter::isValidSimm12(lea->Offset()))
             {
-                DWORD scale;
-                BitScanForward(&scale, lea->gtScale);
-                if (scale > 0)
-                    buildInternalIntRegisterDefForNode(tree); // scaleTempReg
+                // This offset can't be contained in the addi instruction, so we need an internal register
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
             }
 
-            // On RISCV64 we may need a single internal register
-            // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
-            {
-                // RISCV64 does not support both Index and offset so we need an internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-            else if (!emitter::isValidSimm12(cns))
-            {
-                // This offset can't be contained in the add instruction, so we need an internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-            buildInternalRegisterUses();
             BuildDef(tree);
         }
         break;
