@@ -89,6 +89,23 @@ public:
     }
 };
 
+
+void* MemPoolAllocator::Alloc(size_t sz) const { return m_compiler->AllocMemPool(sz); }
+void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
+
+void* MallocAllocator::Alloc(size_t sz) const
+{
+    void* mem = malloc(sz);
+    if (mem == nullptr)
+        NOMEM();
+    return mem;
+}
+void MallocAllocator::Free(void* ptr) const
+{
+    free(ptr);
+}
+
+
 size_t GetGenericLookupOffset(const CORINFO_RUNTIME_LOOKUP *pLookup, uint32_t index)
 {
     if (pLookup->indirections == CORINFO_USEHELPER)
@@ -716,7 +733,7 @@ uint32_t InterpCompiler::ConvertOffset(int32_t offset)
     return offset * sizeof(int32_t) + sizeof(void*);
 }
 
-int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs)
+int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*, MemPoolAllocator> *relocs)
 {
     ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
 
@@ -864,7 +881,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     return ip;
 }
 
-void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
+void InterpCompiler::PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs)
 {
     int32_t size = relocs->GetSize();
 
@@ -886,7 +903,7 @@ void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
     }
 }
 
-int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs)
+int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs)
 {
     m_pCBB = bb;
     m_pCBB->nativeOffset = (int32_t)(ip - m_pMethodCode);
@@ -909,7 +926,7 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
 
 void InterpCompiler::EmitCode()
 {
-    TArray<Reloc*> relocs;
+    TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator());
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
 
@@ -1030,7 +1047,11 @@ class InterpGcSlotAllocator
 
     struct ConservativeRanges
     {
-        TArray<ConservativeRange> m_liveRanges;
+        ConservativeRanges(InterpCompiler* pCompiler) : m_liveRanges(pCompiler->GetMemPoolAllocator())
+        {
+        }
+
+        TArray<ConservativeRange, MemPoolAllocator> m_liveRanges;
 
         void InsertRange(InterpCompiler* pCompiler, uint32_t start, uint32_t end)
         {
@@ -1098,7 +1119,7 @@ class InterpGcSlotAllocator
         }
     };
 
-    ConservativeRanges* m_conservativeRanges = nullptr;
+    TArray<ConservativeRanges*, MemPoolAllocator> m_conservativeRanges;
 
     unsigned m_slotTableSize;
 
@@ -1118,6 +1139,7 @@ public:
     InterpGcSlotAllocator(InterpCompiler *compiler, InterpreterGcInfoEncoder *encoder)
         : m_compiler(compiler)
         , m_encoder(encoder)
+        , m_conservativeRanges(compiler->GetMemPoolAllocator())
         , m_slotTableSize(compiler->m_totalVarsStackSize / sizeof(void *))
 #ifdef DEBUG
         , m_verbose(compiler->m_verbose)
@@ -1129,12 +1151,7 @@ public:
             // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
             memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
         }
-        m_conservativeRanges = new (m_compiler) ConservativeRanges[m_slotTableSize];
-    }
-
-    ~InterpGcSlotAllocator()
-    {
-        delete[] m_conservativeRanges;
+        m_conservativeRanges.GrowBy(m_slotTableSize);
     }
 
     void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
@@ -1186,28 +1203,36 @@ public:
         );
 
         uint32_t slotIndex = offsetBytes / sizeof(void *);
-        m_conservativeRanges[slotIndex].InsertRange(m_compiler, startOffset, endOffset);
+        if (m_conservativeRanges.Get(slotIndex) == nullptr)
+        {
+            m_conservativeRanges.Set(slotIndex, new (m_compiler) ConservativeRanges(m_compiler));
+        }
+        m_conservativeRanges.Get(slotIndex)->InsertRange(m_compiler, startOffset, endOffset);
     }
 
     void ReportConservativeRangesToGCEncoder()
     {
         uint32_t maxEndOffset = m_compiler->ConvertOffset(m_compiler->m_methodCodeSize);
-        for (uint32_t i = 0; i < m_slotTableSize; i++)
+        for (uint32_t iSlot = 0; iSlot < m_slotTableSize; iSlot++)
         {
-            if (m_conservativeRanges[i].m_liveRanges.GetSize() == 0)
+            ConservativeRanges* ranges = m_conservativeRanges.Get(iSlot);
+            if (ranges == nullptr)
                 continue;
 
-            GcSlotId* pSlot = LocateGcSlotTableEntry(i * sizeof(void *), GC_SLOT_INTERIOR);
+            if (ranges->m_liveRanges.GetSize() == 0)
+                continue;
+
+            GcSlotId* pSlot = LocateGcSlotTableEntry(iSlot * sizeof(void *), GC_SLOT_INTERIOR);
             assert(pSlot != nullptr && *pSlot != (GcSlotId)-1);
 
-            for(int32_t i = 0; i < m_conservativeRanges[i].m_liveRanges.GetSize(); i++)
+            for(int32_t iRange = 0; iRange < ranges->m_liveRanges.GetSize(); iRange++)
             {
-                ConservativeRange range = m_conservativeRanges[i].m_liveRanges.Get(i);
+                ConservativeRange range = ranges->m_liveRanges.Get(iRange);
 
                 INTERP_DUMP(
                     "Conservative range for slot %u at %u [%u - %u]\n",
                     *pSlot,
-                    (unsigned)(i * sizeof(void *)),
+                    (unsigned)(iSlot * sizeof(void *)),
                     range.startOffset,
                     range.endOffset + 1
                 );
@@ -1526,9 +1551,15 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
-    : m_stackmapsByClass(FreeInterpreterStackMap)
+    :
+    #ifdef DEBUG
+    m_methodName(GetMallocAllocator()),
+    #endif
+    m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
+    , m_leavesTable(this)
+    , m_dataItems(this)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -6746,7 +6777,7 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
     CORINFO_SIG_INFO sig;
     m_compHnd->getMethodSig(method, &sig, cls);
 
-    TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+    TArray<char, MallocAllocator> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
                             /* includeAssembly */ false,
                             /* includeClass */ true,
                             /* includeClassInstantiation */ true,
