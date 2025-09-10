@@ -354,13 +354,6 @@ namespace System
         private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
             => TryGetTimeZone(id, false, out timeZone, out e, cachedData, alwaysFallbackToLocalMachine: true);
 
-        // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
-        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
-        {
-            // Use the standard code path for Unix since there isn't a faster way of handling current-year-only time zones
-            return GetUtcOffsetFromUtc(time, Local, out _, out isAmbiguousLocalDst);
-        }
-
         // TZFILE(5)                   BSD File Formats Manual                  TZFILE(5)
         //
         // NAME
