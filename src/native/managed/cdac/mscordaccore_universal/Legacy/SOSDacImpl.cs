@@ -669,8 +669,44 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyLocation(assesmbly, count, location, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assembly, uint count, char* location, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (assembly == 0 || (location == null && pNeeded == null) || (location != null && count == 0))
+                throw new ArgumentException();
+
+            if (pNeeded != null)
+                *pNeeded = 1;
+            if (location != null)
+                location[0] = '\0';
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] locationLocal = new char[count];
+            uint neededLocal;
+            int hrLocal;
+            fixed (char* ptr = locationLocal)
+            {
+                hrLocal = _legacyImpl.GetFailedAssemblyLocation(assembly, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(location == null || new ReadOnlySpan<char>(locationLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(location)));
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetFieldDescData(fieldDesc, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
