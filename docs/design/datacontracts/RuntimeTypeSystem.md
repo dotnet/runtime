@@ -77,7 +77,7 @@ partial interface IRuntimeTypeSystem : IContract
     public bool IsInitError(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
-    public virtual int Collectible(TypeHandle typeHandle);
+    public virtual bool IsCollectible(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -267,7 +267,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-        public int Collectible => (int)GetFlag(WFLAGS_HIGH.Collectible);
+        public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
@@ -600,12 +600,12 @@ Contracts used:
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 
-    public int Collectible(TypeHandle typeHandle)
+    public bool IsCollectible(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())
             return 0;
         MethodTable typeHandle = _methodTables[typeHandle.Address];
-        return typeHandle.Flags.Collectible;
+        return typeHandle.Flags.IsCollectible;
     }
 
     public bool HasTypeParam(TypeHandle typeHandle)
@@ -776,7 +776,7 @@ Contracts used:
             }
             else
             {
-                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
                 return target.ReadPointer(typeHandle.TypeDescAddress() + /* FnPtrTypeDesc::LoaderModule offset */);
             }
         }

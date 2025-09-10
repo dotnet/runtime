@@ -3005,8 +3005,8 @@ internal sealed unsafe partial class SOSDacImpl
             ILoader loaderContract = _target.Contracts.Loader;
             Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
 
-            int collectible = rtsContract.Collectible(typeHandle);
-            if (collectible != 0)
+            bool isCollectible = rtsContract.IsCollectible(typeHandle);
+            if (isCollectible)
             {
                 TargetPointer modulePtr = rtsContract.GetLoaderModule(typeHandle);
                 Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
@@ -3014,7 +3014,7 @@ internal sealed unsafe partial class SOSDacImpl
                 TargetPointer loaderAllocatorHandle = loaderContract.GetObjectHandle(loaderAllocator);
                 data->LoaderAllocatorObjectHandle = loaderAllocatorHandle.ToClrDataAddress(_target);
             }
-            data->bCollectible = collectible;
+            data->bCollectible = isCollectible ? 0 : 1;
         }
         catch (System.Exception ex)
         {
@@ -3028,7 +3028,7 @@ internal sealed unsafe partial class SOSDacImpl
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(data->bCollectible == dataLocal.bCollectible, $"cDAC: {data->bCollectible}, DAC: {dataLocal.bCollectible}");
+                Debug.Assert((data->bCollectible == 0) == (dataLocal.bCollectible == 0), $"cDAC: {data->bCollectible}, DAC: {dataLocal.bCollectible}");
                 Debug.Assert(data->LoaderAllocatorObjectHandle == dataLocal.LoaderAllocatorObjectHandle, $"cDAC: {data->LoaderAllocatorObjectHandle:x}, DAC: {dataLocal.LoaderAllocatorObjectHandle:x}");
             }
         }

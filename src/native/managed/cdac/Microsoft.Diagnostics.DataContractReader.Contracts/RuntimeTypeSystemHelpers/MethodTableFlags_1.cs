@@ -98,7 +98,7 @@ internal struct MethodTableFlags_1
     public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
     public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
     public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-    public int Collectible => (int)GetFlag(WFLAGS_HIGH.Collectible);
+    public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
     public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
 

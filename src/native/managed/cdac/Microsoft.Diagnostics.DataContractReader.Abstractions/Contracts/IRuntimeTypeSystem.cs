@@ -127,7 +127,7 @@ public interface IRuntimeTypeSystem : IContract
     public bool IsClassInited(TypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsInitError(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
-    int Collectible(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
 
     bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
 
