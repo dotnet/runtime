@@ -82,6 +82,9 @@ namespace System.Net.Security.Tests
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
 
+            _output.WriteLine(_certificates.ServerCert.ToString(true));
+            _output.WriteLine(Convert.ToBase64String(_certificates.ServerCert.Export(X509ContentType.Pkcs12, "")));
+
             ConfigurableReadStream clientStream = new(stream1, framingType);
             ConfigurableReadStream serverStream = new(stream2, framingType);
             using SslStream client = new SslStream(clientStream);
