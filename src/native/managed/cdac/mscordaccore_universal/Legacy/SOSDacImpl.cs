@@ -611,7 +611,6 @@ internal sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            // to ensure that we have the right size buffer, use the old one and then repopulate the data
             int hrLocal;
             int sizeOfGenericModeBlock = (int)_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock);
             byte[] genericModeBlockLocal = new byte[sizeOfGenericModeBlock];
