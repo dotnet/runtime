@@ -1285,7 +1285,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
             ? (GcSlotFlags)GC_SLOT_UNTRACKED
             : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
 
-        // The this pointer may have a shadow copy or not, and if it does not
+        // The 'this' pointer may have a shadow copy, or it may not. If it does not have a shadow copy, handle accordingly below.
         if (m_shadowCopyOfThisPointerHasVar && !m_shadowCopyOfThisPointerActuallyNeeded)
         {
             // Don't report the original this pointer var, we'll report the shadow copy instead
