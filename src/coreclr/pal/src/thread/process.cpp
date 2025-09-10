@@ -34,7 +34,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
-#include <static_assert.h>
 
 #include <errno.h>
 #if HAVE_POLL

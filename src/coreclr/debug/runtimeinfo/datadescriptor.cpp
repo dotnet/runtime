@@ -6,8 +6,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "static_assert.h"
-
 #include <sospriv.h>
 #include "cdacplatformmetadata.hpp"
 #include "methodtable.h"
@@ -257,7 +255,7 @@ struct MagicAndBlob {
 };
 
 // we only support 32-bit and 64-bit right now
-static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
+static_assert(sizeof(void*) == 4 || sizeof(void*) == 8);
 
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
