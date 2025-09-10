@@ -98,7 +98,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             instance.ExtensionMembersPropertyMismatch = GetWithFields();
         }
 
-        [UnexpectedWarning("IL2072", "ExtensionMembersPropertyAnnotatedAccessor", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         static void TestExtensionPropertyAnnotatedAccessor()
         {
             var instance = GetWithFields();
@@ -123,7 +122,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = GetWithFields().ExtensionMembersPropertyRequires;
         }
 
-        [UnexpectedWarning("IL2072", "ExtensionMembersPropertyConflict", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         static void TestExtensionPropertyConflict()
         {
             var instance = GetWithFields();
@@ -131,7 +129,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             instance.ExtensionMembersPropertyConflict = GetWithFields();
         }
 
-        [UnexpectedWarning("IL2072", nameof(ExtensionMembers.op_Addition), nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
         static void TestExtensionOperators()
         {
@@ -143,14 +140,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
         [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-        [ExpectedWarning("IL2072", nameof(ExtensionMembers.op_Subtraction), nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-        [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(ExtensionMembers.op_Subtraction), nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+        [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
         static void TestExtensionOperatorsMismatch()
         {
             var a = GetWithMethods();
             var b = GetWithMethods();
             var c = a - b;
-            c.RequiresPublicFields();
+            c.RequiresPublicMethods();
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
@@ -237,7 +234,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             public Type ExtensionMembersPropertyAnnotatedAccessorMismatch
             {
-                [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithFields), Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/80017")]
+                [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithFields))]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 get => ExtensionMembersDataFlow.GetWithFields();
 
@@ -276,7 +273,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2067", "left", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
             [ExpectedWarning("IL2067", "right", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
-            [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithMethods), Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/80017")] 
+            [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithMethods))]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             public static Type operator -(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type left,

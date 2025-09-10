@@ -151,3 +151,20 @@ install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMP
 if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     install (TARGETS System.Native-Static DESTINATION sharedFramework COMPONENT runtime)
 endif()
+
+if (CLR_CMAKE_TARGET_ARCH_WASM AND DEFINED CMAKE_TZD_DIR)
+    cmake_path(CONVERT "${CMAKE_TZD_DIR}/" TO_CMAKE_PATH_LIST TZ_FILES_DIR NORMALIZE)
+    file(GLOB_RECURSE TZ_FILES RELATIVE "${TZ_FILES_DIR}" "${TZ_FILES_DIR}*")
+    string(REPLACE ";" "\",\"" TZ_FILES "${TZ_FILES}")
+    configure_file(pal_datetime_time_zone_data-config.h.in inc/pal_datetime_time_zone_data-config.h)
+
+    add_library(System.Native.TimeZoneData STATIC pal_datetime_time_zone_data.c)
+    target_compile_options(System.Native.TimeZoneData PRIVATE -Wno-overlength-strings)
+    target_compile_definitions(System.Native.TimeZoneData PRIVATE TZ_DATA_ENABLED)
+    target_include_directories(System.Native.TimeZoneData PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/inc")
+    install(TARGETS System.Native.TimeZoneData DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+    # Also add a stub to support InvariantTimezone.
+    add_library(System.Native.TimeZoneData.Invariant STATIC pal_datetime_time_zone_data.c)
+    install(TARGETS System.Native.TimeZoneData.Invariant DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+endif ()

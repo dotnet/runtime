@@ -138,8 +138,8 @@
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
-  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
-    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  <data name="Argument_TypeContainsReferences" xml:space="preserve">
+    <value>The type '{0}' is not supported because it contains references.</value>
   </data>
   <data name="DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>

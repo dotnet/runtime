@@ -82,6 +82,7 @@ TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
+TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 ```
 
 ## Version 1
@@ -134,6 +135,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -616,6 +618,11 @@ TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
+}
+
+TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
+{
+    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
 }
 
 ```
