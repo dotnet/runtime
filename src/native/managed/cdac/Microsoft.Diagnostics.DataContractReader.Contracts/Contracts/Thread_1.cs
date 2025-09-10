@@ -189,11 +189,11 @@ internal readonly struct Thread_1 : IThread
             readFrom = thread.UEWatsonBucketTrackerBuckets;
         }
 
-        Span<byte> span = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
+        byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         if (readFrom == TargetPointer.Null)
             return Array.Empty<byte>();
 
-        _target.ReadBuffer(readFrom, span);
-        return span.ToArray();
+        _target.ReadBuffer(readFrom, rval);
+        return rval;
     }
 }
