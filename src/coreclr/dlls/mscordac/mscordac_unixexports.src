@@ -92,7 +92,6 @@ nativeStringResourceTable_mscorrc
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
-#GetSystemTime
 #GetTempPathA
 #GetTempPathW
 #LoadLibraryExA

@@ -586,23 +586,6 @@ PALAPI GetFileSizeEx(
         IN   HANDLE hFile,
         OUT  PLARGE_INTEGER lpFileSize);
 
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTime(
-          OUT LPSYSTEMTIME lpSystemTime);
-
 PALIMPORT
 BOOL
 PALAPI
