@@ -438,6 +438,12 @@ namespace
         (*fptr)(ARG(0), ARG(1), ARG(2));
     }
 
+    void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+    }
+
     void CallFunc_Void_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(void) = (int32_t (*)(void))pcode;
@@ -484,6 +490,9 @@ namespace
         (void*)&CallFunc_I32_RetVoid,
         (void*)&CallFunc_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_RetVoid,
+        NULL,
+        NULL,
+        (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
     };
 
     void* const RetI32Thunks[] =
@@ -535,7 +544,7 @@ namespace
                     ? sig.GetRetTypeHandleThrowing()
                     : sig.GetLastTypeHandleThrowing();
 
-                if (vt.IsTypeDesc()
+                if (!vt.IsTypeDesc()
                     && vt.AsMethodTable()->GetNumInstanceFields() >= 2)
                 {
                     return ConvertType::ToI32Indirect;
