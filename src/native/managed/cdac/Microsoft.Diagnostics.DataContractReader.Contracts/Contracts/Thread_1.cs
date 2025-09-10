@@ -10,7 +10,6 @@ internal readonly struct Thread_1 : IThread
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
     private readonly ulong _threadLinkOffset;
-    private readonly int _genericModeBlockSize;
 
     [Flags]
     private enum TLSIndexType
@@ -29,7 +28,6 @@ internal readonly struct Thread_1 : IThread
         // first thread from the linked list node contained by the first thread.
         Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
         _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
-        _genericModeBlockSize = 5616; // size of generic mode block for watson buckets data
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -159,7 +157,7 @@ internal readonly struct Thread_1 : IThread
 
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     {
-        TargetPointer readFrom = TargetPointer.Null;
+        TargetPointer readFrom;
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
         TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
         if (ExceptionTrackerPtr == TargetPointer.Null)
@@ -171,8 +169,7 @@ internal readonly struct Thread_1 : IThread
             Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);
             if (exception.WatsonBuckets != TargetPointer.Null)
             {
-                Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(exception.WatsonBuckets);
-                readFrom = exception.WatsonBuckets + obj.MethodTable.BaseSize - _target.ReadGlobal<ulong>(Constants.Globals.ObjectHeaderSize);
+                readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
             }
             else
             {
@@ -192,7 +189,7 @@ internal readonly struct Thread_1 : IThread
             readFrom = thread.UEWatsonBucketTrackerBuckets;
         }
 
-        Span<byte> span = stackalloc byte[_genericModeBlockSize];
+        Span<byte> span = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         if (readFrom == TargetPointer.Null)
             return Array.Empty<byte>();
 

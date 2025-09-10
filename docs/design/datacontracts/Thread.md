@@ -64,6 +64,7 @@ The contract depends on the following globals
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
 | `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
+| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct
 
 The contract additionally depends on these data descriptors
 
@@ -80,8 +81,6 @@ The contract additionally depends on these data descriptors
 | `InflightTLSData` | `Next` | Pointer to next in-flight TLS data entry |
 | `InflightTLSData` | `TlsIndex` | TLS index for the in-flight static field |
 | `InflightTLSData` | `TLSData` | Object handle to the TLS data for the static field |
-| `MethodTable` | `BaseSize` | Base size of instance of this class |
-| `Object` | `m_pMethTab` | Pointer to the object's method table |
 | `ObjectHandle` | `Object` | Pointer to the managed object |
 | `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
 | `TLSIndex` | `IndexOffset` | Offset index for thread local storage |
@@ -111,6 +110,13 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `BackgroundCount` | Number of background threads |
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
+
+The contract depends on the following other contracts
+
+| Contract |
+| --- |
+| Object |
+
 ``` csharp
 enum TLSIndexType
 {
@@ -251,7 +257,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
 
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 {
-    TargetPointer readFrom = TargetPointer.Null;
+    TargetPointer readFrom;
     TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
     if (exceptionTrackerPtr == TargetPointer.Null)
         return Array.Empty<byte>();
@@ -262,8 +268,7 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
         TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
         if (watsonBuckets != TargetPointer.Null)
         {
-            uint baseSize = target.ReadPointer(target.ReadPointer(watsonBuckets + /* Object::m_pMethTab offset */) + /* MethodTable::BaseSize offset */);
-            readFrom = watsonBuckets + baseSize - _target.ReadGlobal<ulong>("ObjectHeaderSize");
+            readFrom = _target.Contracts.Object.GetArrayData(watsonBuckets, out _, out _, out _);
         }
         else
         {
@@ -283,7 +288,7 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
         readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
     }
 
-    Span<byte> span = stackalloc byte[_genericModeBlockSize];
+    Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];
     if (readFrom == TargetPointer.Null)
         return Array.Empty<byte>();
     

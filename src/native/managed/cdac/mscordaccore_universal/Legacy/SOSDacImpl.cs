@@ -534,7 +534,7 @@ internal sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             buckets = threadContract.GetWatsonBuckets(thread.ToTargetPointer(_target));
-            if (buckets != Array.Empty<byte>())
+            if (buckets.Length != 0)
             {
                 var dest = new Span<byte>(pGenericModeBlock, buckets.Length);
                 buckets.AsSpan().CopyTo(dest);
@@ -554,13 +554,18 @@ internal sealed unsafe partial class SOSDacImpl
         {
             // to ensure that we have the right size buffer, use the old one and then repopulate the data
             int hrLocal;
-            hrLocal = _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock);
+            int sizeOfGenericModeBlock = (int)_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock);
+            byte[] genericModeBlockLocal = new byte[sizeOfGenericModeBlock];
+            fixed (byte* ptr = genericModeBlockLocal)
+            {
+                hrLocal = _legacyImpl.GetClrWatsonBuckets(thread, ptr);
+            }
+
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(new ReadOnlySpan<byte>(buckets, 0, buckets.Length).SequenceEqual(new Span<byte>(pGenericModeBlock, buckets.Length)));
+                Debug.Assert(new ReadOnlySpan<byte>(genericModeBlockLocal, 0, sizeOfGenericModeBlock).SequenceEqual(new Span<byte>(pGenericModeBlock, sizeOfGenericModeBlock)));
             }
-            buckets.AsSpan().CopyTo(new Span<byte>(pGenericModeBlock, buckets.Length));
         }
 #endif
         return hr;
