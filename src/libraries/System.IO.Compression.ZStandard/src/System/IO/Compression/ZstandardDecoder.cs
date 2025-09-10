@@ -12,6 +12,8 @@ namespace System.IO.Compression
     {
         private SafeZStdDecompressHandle? _context;
         private bool _disposed;
+        // True if we finished decompressing the entire input.
+        private bool _finished;
 
         /// <summary>Initializes a new instance of the <see cref="ZStandardDecoder"/> struct with the specified dictionary.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
@@ -61,6 +63,9 @@ namespace System.IO.Compression
             bytesConsumed = 0;
             bytesWritten = 0;
 
+            if (_finished)
+                return OperationStatus.Done;
+
             EnsureInitialized();
 
             if (destination.IsEmpty)
@@ -94,11 +99,18 @@ namespace System.IO.Compression
                     bytesWritten = (int)output.pos;
 
                     if (result == 0)
+                    {
+                        _finished = true;
                         return OperationStatus.Done;
+                    }
                     else if (output.pos == output.size)
+                    {
                         return OperationStatus.DestinationTooSmall;
+                    }
                     else
+                    {
                         return OperationStatus.NeedMoreData;
+                    }
                 }
             }
         }
