@@ -828,26 +828,13 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
 
-    GenTree* addr  = indirTree->Addr();
-    GenTree* index = nullptr;
-    int      cns   = 0;
-
+    GenTree* addr = indirTree->Addr();
     if (addr->isContained())
     {
         if (addr->OperIs(GT_LEA))
         {
             GenTreeAddrMode* lea = addr->AsAddrMode();
-            index                = lea->Index();
-            cns                  = lea->Offset();
-
-            // On RISCV64 we may need a single internal register
-            // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
-            {
-                // RISCV64 does not support both Index and offset so we need an internal register
-                buildInternalIntRegisterDefForNode(indirTree);
-            }
-            else if (!emitter::isValidSimm12(cns))
+            if (!emitter::isValidSimm12(lea->Offset()))
             {
                 // This offset can't be contained in the ldr/str instruction, so we need an internal register
                 buildInternalIntRegisterDefForNode(indirTree);

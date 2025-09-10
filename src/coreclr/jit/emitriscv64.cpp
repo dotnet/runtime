@@ -4987,191 +4987,53 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     {
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
 
-        int   offset = 0;
-        DWORD lsl    = 0;
-
-        if (addr->OperIs(GT_LEA))
-        {
-            offset = addr->AsAddrMode()->Offset();
-            if (addr->AsAddrMode()->gtScale > 0)
-            {
-                assert(isPow2(addr->AsAddrMode()->gtScale));
-                BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
-            }
-        }
+        int offset = addr->OperIs(GT_LEA) ? indir->Offset() : 0;
 
         GenTree* memBase = indir->Base();
         emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
-        if (indir->HasIndex())
+        if (addr->OperIs(GT_LCL_ADDR))
         {
-            GenTree* index = indir->Index();
-
-            if (offset != 0)
+            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+            unsigned             lclNum  = varNode->GetLclNum();
+            unsigned             offset  = varNode->GetLclOffs();
+            if (emitInsIsStore(ins))
             {
-                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
-
-                if (isValidSimm12(offset))
-                {
-                    if (lsl > 0)
-                    {
-                        // Generate code to set tmpReg = base + index*scale
-                        emitIns_R_R_I(INS_slli, addType, tmpReg, index->GetRegNum(), lsl);
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
-                    }
-                    else // no scale
-                    {
-                        // Generate code to set tmpReg = base + index
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
-                    }
-
-                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-
-                    // Then load/store dataReg from/to [tmpReg + offset]
-                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset);
-                }
-                else // large offset
-                {
-                    // First load/store tmpReg with the large offset constant
-                    emitLoadImmediate(EA_PTRSIZE, tmpReg,
-                                      offset); // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-                    // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
-
-                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-                    noway_assert(tmpReg != index->GetRegNum());
-
-                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
-                    // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
-                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
-                }
-            }
-            else // (offset == 0)
-            {
-                // Then load/store dataReg from/to [memBase + index]
-                switch (EA_SIZE(emitTypeSize(indir->TypeGet())))
-                {
-                    case EA_1BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lbu;
-                            else
-                                ins = INS_lb;
-                        }
-                        else
-                            ins = INS_sb;
-                        break;
-                    case EA_2BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lhu;
-                            else
-                                ins = INS_lh;
-                        }
-                        else
-                            ins = INS_sh;
-                        break;
-                    case EA_4BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fsw ||
-                               ins == INS_flw);
-                        assert(INS_fsw > INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lwu;
-                            else
-                                ins = INS_lw;
-                        }
-                        else if (ins != INS_flw && ins != INS_fsw)
-                            ins = INS_sw;
-                        break;
-                    case EA_8BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fld ||
-                               ins == INS_fsd);
-                        assert(INS_fsd > INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            ins = INS_ld;
-                        }
-                        else if (ins != INS_fld && ins != INS_fsd)
-                            ins = INS_sd;
-                        break;
-                    default:
-                        NO_WAY("illegal ins within emitInsLoadStoreOp!");
-                }
-
-                if (lsl > 0)
-                {
-                    // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), codeGen->rsGetRsvdReg(),
-                                  index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(),
-                                  codeGen->rsGetRsvdReg());
-                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
-                }
-                else // no scale
-                {
-                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(), index->GetRegNum());
-                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
-                }
-            }
-        }
-        else // no Index register
-        {
-            if (addr->OperIs(GT_LCL_ADDR))
-            {
-                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-                unsigned             lclNum  = varNode->GetLclNum();
-                unsigned             offset  = varNode->GetLclOffs();
-                if (emitInsIsStore(ins))
-                {
-                    emitIns_S_R(ins, attr, dataReg, lclNum, offset);
-                }
-                else
-                {
-                    emitIns_R_S(ins, attr, dataReg, lclNum, offset);
-                }
-            }
-            else if (addr->OperIs(GT_CNS_INT))
-            {
-                assert(memBase == indir->Addr());
-                ssize_t cns = addr->AsIntCon()->IconValue();
-
-                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-                cns -= off;
-
-                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
-            }
-            else if (isValidSimm12(offset))
-            {
-                // Then load/store dataReg from/to [memBase + offset]
-                emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
+                emitIns_S_R(ins, attr, dataReg, lclNum, offset);
             }
             else
             {
-                // We require a tmpReg to hold the offset
-                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
-
-                // First load/store tmpReg with the large offset constant
-                emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
-                // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-
-                // Then load/store dataReg from/to [memBase + tmpReg]
-                emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
-                emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
+                emitIns_R_S(ins, attr, dataReg, lclNum, offset);
             }
+        }
+        else if (addr->OperIs(GT_CNS_INT))
+        {
+            assert(memBase == indir->Addr());
+            ssize_t cns = addr->AsIntCon()->IconValue();
+
+            ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+            cns -= off;
+
+            emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
+            emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+        }
+        else if (isValidSimm12(offset))
+        {
+            // Then load/store dataReg from/to [memBase + offset]
+            emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
+        }
+        else
+        {
+            // We require a tmpReg to hold the offset
+            regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
+
+            // First load/store tmpReg with the large offset constant
+            emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+            // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+
+            // Then load/store dataReg from/to [memBase + tmpReg]
+            emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
+            emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
         }
     }
     else // addr is not contained, so we evaluate it into a register
