@@ -470,6 +470,13 @@ namespace
 
     // Special thunks for signatures with indirect arguments.
 
+    void CallFunc_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
+        (*fptr)(ARG_IND(0));
+    }
+
+
     void CallFunc_I32IND_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
@@ -565,12 +572,22 @@ namespace
 
         if (isVoidReturn)
         {
-            if (numArgs == 2 &&
-                args[0] == ConvertType::ToI32Indirect &&
-                args[1] == ConvertType::ToI32)
+            switch(numArgs)
             {
-                return (void*)&CallFunc_I32IND_I32_RetVoid;
-            }
+                case 1:
+                    if (args[0] == ConvertType::ToI32Indirect)
+                    {
+                        return (void*)&CallFunc_I32IND_RetVoid;
+                    }
+                    break;
+                case 2:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_RetVoid;
+                    }
+                    break;
+                }
         }
         else
         {
