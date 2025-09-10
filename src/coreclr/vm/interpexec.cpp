@@ -2259,8 +2259,7 @@ MAIN_LOOP:
                 case INTOP_CALL_NULLCHECK:
                     // Check the target this pointer in the call for null
                     NULL_CHECK(LOCAL_VAR(ip[2], void*));
-                __fallthrough;
-                    // fall through
+                    FALLTHROUGH;
                 case INTOP_CALL_TAIL:
                 case INTOP_CALL:
                 {
