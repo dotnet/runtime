@@ -871,7 +871,7 @@ namespace System.Security.Cryptography
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
                 // PSS salt length is validated in the RsaSignaturePaddingMode constructor.
-                Debug.Assert(padding.PssSaltLength < RSASignaturePadding.PssSaltLengthMax);
+                Debug.Assert(padding.PssSaltLength >= RSASignaturePadding.PssSaltLengthMax);
             }
             else
             {
