@@ -164,7 +164,6 @@ file_io/GetFullPathNameW/test3/paltest_getfullpathnamew_test3
 file_io/GetFullPathNameW/test4/paltest_getfullpathnamew_test4
 file_io/GetStdHandle/test2/paltest_getstdhandle_test2
 file_io/GetSystemTime/test1/paltest_getsystemtime_test1
-file_io/GetSystemTimeAsFileTime/test1/paltest_getsystemtimeasfiletime_test1
 file_io/gettemppatha/test1/paltest_gettemppatha_test1
 file_io/GetTempPathW/test1/paltest_gettemppathw_test1
 file_io/ReadFile/test2/paltest_readfile_test2
