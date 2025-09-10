@@ -30,7 +30,7 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
             SavedSweepEphemeralStart = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralStart)].Offset);
 
-        OOMData = target.ProcessedData.GetOrAdd<OOMHistory>(address + (ulong)type.Fields[nameof(OOMData)].Offset);
+        OomData = target.ProcessedData.GetOrAdd<OomHistory>(address + (ulong)type.Fields[nameof(OomData)].Offset);
 
         InternalRootArray = target.ReadPointer(address + (ulong)type.Fields[nameof(InternalRootArray)].Offset);
         InternalRootArrayIndex = target.ReadNUInt(address + (ulong)type.Fields[nameof(InternalRootArrayIndex)].Offset);
@@ -55,7 +55,7 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     public TargetPointer? SavedSweepEphemeralSeg { get; }
     public TargetPointer? SavedSweepEphemeralStart { get; }
 
-    public OOMHistory OOMData { get; }
+    public OomHistory OomData { get; }
 
     public TargetPointer InternalRootArray { get; }
     public TargetNUInt InternalRootArrayIndex { get; }

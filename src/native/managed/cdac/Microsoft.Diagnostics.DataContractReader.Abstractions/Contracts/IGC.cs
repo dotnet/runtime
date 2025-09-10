@@ -64,7 +64,7 @@ public readonly struct GCHeapSegmentData
     public TargetPointer Heap { get; init; }
 }
 
-public readonly struct GCOOMData
+public readonly struct GCOomData
 {
     public int Reason { get; init; }
     public TargetNUInt AllocSize { get; init; }
@@ -95,11 +95,11 @@ public interface IGC : IContract
 
     /* WKS only APIs */
     GCHeapData WKSGetHeapData() => throw new NotImplementedException();
-    GCOOMData WKSGetOOMData() => throw new NotImplementedException();
+    GCOomData WKSGetOomData() => throw new NotImplementedException();
 
     /* SVR only APIs */
     GCHeapData SVRGetHeapData(TargetPointer heapAddress) => throw new NotImplementedException();
-    GCOOMData SVRGetOOMData(TargetPointer heapAddress) => throw new NotImplementedException();
+    GCOomData SVRGetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

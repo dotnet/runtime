@@ -107,7 +107,7 @@ public static class Constants
         public const string GCHeapGenerationTable = nameof(GCHeapGenerationTable);
         public const string GCHeapSavedSweepEphemeralSeg = nameof(GCHeapSavedSweepEphemeralSeg);
         public const string GCHeapSavedSweepEphemeralStart = nameof(GCHeapSavedSweepEphemeralStart);
-        public const string GCHeapOOMData = nameof(GCHeapOOMData);
+        public const string GCHeapOomData = nameof(GCHeapOomData);
         public const string GCHeapInternalRootArray = nameof(GCHeapInternalRootArray);
         public const string GCHeapInternalRootArrayIndex = nameof(GCHeapInternalRootArrayIndex);
         public const string GCHeapHeapAnalyzeSuccess = nameof(GCHeapHeapAnalyzeSuccess);

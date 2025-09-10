@@ -216,27 +216,27 @@ internal readonly struct GC_1 : IGC
         return arr;
     }
 
-    GCOOMData IGC.WKSGetOOMData()
+    GCOomData IGC.WKSGetOomData()
     {
         if (GetGCType() != GCType.Workstation)
             throw new InvalidOperationException("WKSGetHeapData is only valid for Workstation GC.");
 
-        TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData);
-        Data.OOMHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OOMHistory>(oomHistory);
-        return GetGCOOMData(oomHistoryData);
+        TargetPointer oomHistory = _target.ReadGlobalPointer(Constants.Globals.GCHeapOomData);
+        Data.OomHistory oomHistoryData = _target.ProcessedData.GetOrAdd<Data.OomHistory>(oomHistory);
+        return GetGCOomData(oomHistoryData);
     }
 
-    GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
+    GCOomData IGC.SVRGetOomData(TargetPointer heapAddress)
     {
         if (GetGCType() != GCType.Server)
             throw new InvalidOperationException("GetHeapData is only valid for Server GC.");
 
         Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
-        return GetGCOOMData(heap.OOMData);
+        return GetGCOomData(heap.OomData);
     }
 
-    private static GCOOMData GetGCOOMData(Data.OOMHistory oomHistory)
-        => new GCOOMData()
+    private static GCOomData GetGCOomData(Data.OomHistory oomHistory)
+        => new GCOomData()
         {
             Reason = oomHistory.Reason,
             AllocSize = oomHistory.AllocSize,

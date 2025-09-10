@@ -22,7 +22,7 @@ internal sealed class GCHeapWKS : IGCHeap
         if (target.TryReadGlobalPointer(Constants.Globals.GCHeapSavedSweepEphemeralStart, out TargetPointer? savedSweepEphemeralStartPtr))
             SavedSweepEphemeralStart = target.ReadPointer(savedSweepEphemeralStartPtr.Value);
 
-        OOMData = target.ProcessedData.GetOrAdd<Data.OOMHistory>(target.ReadGlobalPointer(Constants.Globals.GCHeapOOMData));
+        OomData = target.ProcessedData.GetOrAdd<Data.OomHistory>(target.ReadGlobalPointer(Constants.Globals.GCHeapOomData));
 
         InternalRootArray = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArray));
         InternalRootArrayIndex = target.ReadNUInt(target.ReadGlobalPointer(Constants.Globals.GCHeapInternalRootArrayIndex));
@@ -47,7 +47,7 @@ internal sealed class GCHeapWKS : IGCHeap
     public TargetPointer? SavedSweepEphemeralSeg { get; }
     public TargetPointer? SavedSweepEphemeralStart { get; }
 
-    public Data.OOMHistory OOMData { get; }
+    public Data.OomHistory OomData { get; }
 
     public TargetPointer InternalRootArray { get; }
     public TargetNUInt InternalRootArrayIndex { get; }

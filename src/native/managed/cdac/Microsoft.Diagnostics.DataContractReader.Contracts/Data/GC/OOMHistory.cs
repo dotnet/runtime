@@ -3,12 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class OOMHistory : IData<OOMHistory>
+internal sealed class OomHistory : IData<OomHistory>
 {
-    static OOMHistory IData<OOMHistory>.Create(Target target, TargetPointer address) => new OOMHistory(target, address);
-    public OOMHistory(Target target, TargetPointer address)
+    static OomHistory IData<OomHistory>.Create(Target target, TargetPointer address) => new OomHistory(target, address);
+    public OomHistory(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.OOMHistory);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.OomHistory);
 
         Reason = target.Read<int>(address + (ulong)type.Fields[nameof(Reason)].Offset);
         AllocSize = target.ReadNUInt(address + (ulong)type.Fields[nameof(AllocSize)].Offset);

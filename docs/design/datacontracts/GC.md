@@ -54,7 +54,7 @@ public readonly struct GCHeapSegmentData
     public TargetPointer Heap { get; init; }
 }
 
-public readonly struct GCOOMData
+public readonly struct GCOomData
 {
     public int Reason { get; init; }
     public TargetNUInt AllocSize { get; init; }
@@ -98,11 +98,11 @@ public readonly struct GCOOMData
 
     /* WKS only APIs */
     GCHeapData WKSGetHeapData();
-    GCOOMData WKSGetOOMData();
+    GCOomData WKSGetOomData();
 
     /* SVR only APIs */
     GCHeapData SVRGetHeapData(TargetPointer heapAddress);
-    GCOOMData SVRGetOOMData(TargetPointer heapAddress);
+    GCOomData SVRGetOomData(TargetPointer heapAddress);
 ```
 
 ## Version 1
@@ -121,7 +121,7 @@ Data descriptors used:
 | `GCHeap` | GenerationTable | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in sever builds) |
 | `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment) |
 | `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment) |
-| `GCHeap` | OOMData | GC | OOM related data in a struct (in sever builds) |
+| `GCHeap` | OomData | GC | OOM related data in a struct (in sever builds) |
 | `GCHeap` | InternalRootArray | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | InternalRootArrayIndex | GC | Index into InternalRootArray (in sever builds) |
 | `GCHeap` | HeapAnalyzeSuccess | GC | Boolean indicating if heap analyze succeeded (in sever builds) |
@@ -142,15 +142,15 @@ Data descriptors used:
 | `HeapSegment` | Next | GC | Pointer to the next heap segment |
 | `HeapSegment` | BackgroundAllocated | GC | Pointer to the background allocated memory in the heap segment |
 | `HeapSegment` | Heap | GC | Pointer to the heap that owns this segment (only in server builds) |
-| `OOMHistory` | Reason | GC | Reason code for the out-of-memory condition |
-| `OOMHistory` | AllocSize | GC | Size of the allocation that caused the OOM |
-| `OOMHistory` | Reserved | GC | Pointer to reserved memory at time of OOM |
-| `OOMHistory` | Allocated | GC | Pointer to allocated memory at time of OOM |
-| `OOMHistory` | GcIndex | GC | GC index when the OOM occurred |
-| `OOMHistory` | Fgm | GC | Foreground GC marker value |
-| `OOMHistory` | Size | GC | Size value related to the OOM condition |
-| `OOMHistory` | AvailablePagefileMb | GC | Available pagefile size in MB at time of OOM |
-| `OOMHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
+| `OomHistory` | Reason | GC | Reason code for the out-of-memory condition |
+| `OomHistory` | AllocSize | GC | Size of the allocation that caused the OOM |
+| `OomHistory` | Reserved | GC | Pointer to reserved memory at time of OOM |
+| `OomHistory` | Allocated | GC | Pointer to allocated memory at time of OOM |
+| `OomHistory` | GcIndex | GC | GC index when the OOM occurred |
+| `OomHistory` | Fgm | GC | Foreground GC marker value |
+| `OomHistory` | Size | GC | Size value related to the OOM condition |
+| `OomHistory` | AvailablePagefileMb | GC | Available pagefile size in MB at time of OOM |
+| `OomHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
 
@@ -179,7 +179,7 @@ Global variables used:
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
 | `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
 | `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
-| `GCHeapOOMData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
+| `GCHeapOomData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
 | `GCHeapInternalRootArray` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `GCHeapInternalRootArrayIndex` | TargetPointer | GC | Index into InternalRootArray (in workstation builds) |
 | `GCHeapHeapAnalyzeSuccess` | TargetPointer | GC | Boolean indicating if heap analyze succeeded (in workstation builds) |
@@ -389,14 +389,14 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
     return data;
 }
 
-GCOOMData IGC.WKSGetOOMData()
+GCOomData IGC.WKSGetOomData()
 {
     string[] gcIdentifiers = GetGCIdentifiers();
     if (!gcType.Contains("workstation"))
         throw new InvalidOperationException();
 
-    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOOMData");
-    return GetGCOOMData(oomHistoryData);
+    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOomData");
+    return GetGCOomData(oomHistoryData);
 }
 ```
 
@@ -470,14 +470,14 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
     return data;
 }
 
-GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
+GCOomData IGC.SVRGetOomData(TargetPointer heapAddress)
 {
     string[] gcIdentifiers = GetGCIdentifiers();
     if (!gcType.Contains("server"))
         throw new InvalidOperationException();
 
-    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OOMData offset */);
-    return GetGCOOMData(oomHistory);
+    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OomData offset */);
+    return GetGCOomData(oomHistory);
 }
 ```
 
@@ -530,19 +530,19 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
     return arr;
 }
 
-private GCOOMData GetGCOOMData(TargetPointer oomHistory)
+private GCOomData GetGCOomData(TargetPointer oomHistory)
 {
-    GCOOMData data = default;
+    GCOomData data = default;
 
-    data.Reason = target.Read<int>(oomHistory + /* OOMHistory::Reason offset */);
-    data.AllocSize = target.ReadNUInt(oomHistory + /* OOMHistory::AllocSize offset */);
-    data.Reserved = target.ReadPointer(oomHistory + /* OOMHistory::Reserved offset */);
-    data.Allocated = target.ReadPointer(oomHistory + /* OOMHistory::Allocated offset */);
-    data.GcIndex = target.ReadNUInt(oomHistory + /* OOMHistory::GcIndex offset */);
-    data.Fgm = target.Read<int>(oomHistory + /* OOMHistory::Fgm offset */);
-    data.Size = target.ReadNUInt(oomHistory + /* OOMHistory::Size offset */);
-    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OOMHistory::AvailablePagefileMb offset */);
-    data.LohP = target.Read<uint>(oomHistory + /* OOMHistory::LohP offset */);
+    data.Reason = target.Read<int>(oomHistory + /* OomHistory::Reason offset */);
+    data.AllocSize = target.ReadNUInt(oomHistory + /* OomHistory::AllocSize offset */);
+    data.Reserved = target.ReadPointer(oomHistory + /* OomHistory::Reserved offset */);
+    data.Allocated = target.ReadPointer(oomHistory + /* OomHistory::Allocated offset */);
+    data.GcIndex = target.ReadNUInt(oomHistory + /* OomHistory::GcIndex offset */);
+    data.Fgm = target.Read<int>(oomHistory + /* OomHistory::Fgm offset */);
+    data.Size = target.ReadNUInt(oomHistory + /* OomHistory::Size offset */);
+    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OomHistory::AvailablePagefileMb offset */);
+    data.LohP = target.Read<uint>(oomHistory + /* OomHistory::LohP offset */);
 
     return data;
 }

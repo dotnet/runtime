@@ -139,5 +139,5 @@ public enum DataType
     Generation,
     CFinalize,
     HeapSegment,
-    OOMHistory,
+    OomHistory,
 }

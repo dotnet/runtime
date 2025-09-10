@@ -2567,7 +2567,7 @@ internal sealed unsafe partial class SOSDacImpl
             if (!gcIdentifiers.Contains(GCIdentifiers.Server))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            GCOOMData oomData = gc.SVRGetOOMData(oomAddr.ToTargetPointer(_target));
+            GCOomData oomData = gc.SVRGetOomData(oomAddr.ToTargetPointer(_target));
 
             data->reason = oomData.Reason;
             data->alloc_size = oomData.AllocSize.Value;
@@ -2617,7 +2617,7 @@ internal sealed unsafe partial class SOSDacImpl
             // This method is only valid for workstation GC mode
             if (!gcIdentifiers.Contains(GCIdentifiers.Workstation))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            GCOOMData oomData = gc.WKSGetOOMData();
+            GCOomData oomData = gc.WKSGetOomData();
 
             data->reason = oomData.Reason;
             data->alloc_size = oomData.AllocSize.Value;

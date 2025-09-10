@@ -48,7 +48,7 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     static constexpr GC_NAMESPACE::gc_heap*** Heaps = &GC_NAMESPACE::gc_heap::g_heaps;
 #endif // SERVER_GC
 
-    GC_HEAP_FIELD(OOMData, oom_info)
+    GC_HEAP_FIELD(OomData, oom_info)
 
     /* For use in GCHeapDetails APIs */
     GC_HEAP_FIELD(MarkArray, mark_array)

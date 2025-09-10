@@ -18,7 +18,7 @@ internal interface IGCHeap
     TargetPointer? SavedSweepEphemeralSeg { get; }
     TargetPointer? SavedSweepEphemeralStart { get; }
 
-    Data.OOMHistory OOMData { get; }
+    Data.OomHistory OomData { get; }
 
     TargetPointer InternalRootArray { get; }
     TargetNUInt InternalRootArrayIndex { get; }
