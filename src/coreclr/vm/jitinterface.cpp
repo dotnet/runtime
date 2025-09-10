@@ -10767,14 +10767,24 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     LPVOID targetAddr;
     MethodDesc* helperMD = NULL;
 
+    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
+    DynamicCorInfoHelpFunc dynamicFtnNum;
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     accessType = IAT_VALUE;
-    targetAddr = (LPVOID)getHelperFtnStatic(ftnNum, &helperMD);
+    targetAddr = (LPVOID)getHelperFtnStatic(ftnNum);
+
+    // If the caller asked for the method handle then we verify the helper is
+    // an IL based dynamic helper and get the method handle for it.
+    if (pMethodHandle != NULL
+        && helperDef.IsDynamicHelper(&dynamicFtnNum)
+        && HasILBasedDynamicJitHelper(dynamicFtnNum))
+    {
+        helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
+        _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+    }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
-
-    DynamicCorInfoHelpFunc dynamicFtnNum;
     PCODE pfnHelper = helperDef.pfnHelper;
     if (helperDef.IsDynamicHelper(&dynamicFtnNum))
     {
@@ -10901,7 +10911,7 @@ exit: ;
     EE_TO_JIT_TRANSITION();
 }
 
-PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum, MethodDesc** pMethod)
+PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
     CONTRACTL
     {
@@ -10914,25 +10924,13 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum, MethodDesc** pM
     VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
 
     PCODE pfnHelper;
-    MethodDesc* helperMD = NULL;
     DynamicCorInfoHelpFunc dynamicFtnNum;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     pfnHelper = VolatileLoad(&hlpFuncEntryPoints[ftnNum]);
-    if (pfnHelper != (PCODE)NULL)
+    if (pfnHelper == (PCODE)NULL)
     {
-        // If the target address is already cached, but the caller asked for the method handle
-        // then we verify the helper is an IL based dynamic helper and load the method handle for it.
-        if (pMethod != NULL
-            && helperDef.IsDynamicHelper(&dynamicFtnNum)
-            && HasILBasedDynamicJitHelper(dynamicFtnNum))
-        {
-            helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
-            _ASSERTE(PortableEntryPoint::GetMethodDesc(pfnHelper) == helperMD);
-        }
-    }
-    else
-    {
+        MethodDesc* helperMD = NULL;
         pfnHelper = helperDef.pfnHelper;
         if (helperDef.IsDynamicHelper(&dynamicFtnNum))
         {
@@ -10970,9 +10968,6 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum, MethodDesc** pM
         pfnHelper = LoadDynamicJitHelper(dynamicFtnNum);
     }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-    if (pMethod != NULL)
-        *pMethod = helperMD;
 
     _ASSERTE(pfnHelper != (PCODE)NULL);
 
