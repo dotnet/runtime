@@ -1157,13 +1157,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetHeapAnalyzeStaticData(DacpGcHeapAnalyzeData* data)
     {
-        if (data == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
         int hr = HResults.S_OK;
-
         try
         {
             if (data == null)

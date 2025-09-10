@@ -277,9 +277,4 @@ internal readonly struct GC_1 : IGC
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
         return identifiers.Contains(GCIdentifiers.DynamicHeapCount);
     }
-
-    private sealed class GCHeap_WKS
-    {
-
-    }
 }
