@@ -6496,6 +6496,76 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
     return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
 }
 
+//------------------------------------------------------------------------
+// gtTreeHasLocalStore: Check if a tree has a store that affects the specified local,
+// taking promotion into account.
+//
+// Parameters:
+//   tree   - The tree to check.
+//   lclNum - The local to look for.
+//
+// Returns:
+//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//
+bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        unsigned   m_lclNum;
+        LclVarDsc* m_lclDsc;
+
+        Visitor(Compiler* compiler, unsigned lclNum)
+            : GenTreeVisitor(compiler)
+            , m_lclNum(lclNum)
+        {
+            m_lclDsc = compiler->lvaGetDesc(lclNum);
+            assert(!m_lclDsc->IsAddressExposed());
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_ASG) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->OperIsLocalStore())
+            {
+                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    // Store to parent local also affects the field
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    // Store to field also affects the parent
+                    return WALK_ABORT;
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, lclNum);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
 #ifdef DEBUG
 bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 {
