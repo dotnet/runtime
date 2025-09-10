@@ -55,7 +55,6 @@ set __BuildTypeRelease=0
 set __PgoInstrument=0
 set __PgoOptimize=0
 set __EnforcePgo=0
-set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -440,7 +439,7 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (

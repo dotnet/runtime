@@ -29,6 +29,13 @@
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
 
+// If FEATURE_INTERPRETER is set, always enable the GC side of FEATURE_CONSERVATIVE_GC
+#ifdef FEATURE_INTERPRETER
+#ifndef FEATURE_CONSERVATIVE_GC
+#define FEATURE_CONSERVATIVE_GC
+#endif
+#endif // FEATURE_INTERPRETER
+
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
 
@@ -24753,7 +24760,7 @@ void gc_heap::garbage_collect (int n)
                 }
             }
 #else
-            do_concurrent_p = (!!bgc_thread && commit_mark_array_bgc_init());
+            do_concurrent_p = (bgc_thread_running && commit_mark_array_bgc_init());
             if (do_concurrent_p)
             {
                 background_saved_lowest_address = lowest_address;

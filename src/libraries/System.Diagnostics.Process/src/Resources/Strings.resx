@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -331,7 +331,7 @@
     <value>Not all processes in process tree could be terminated.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
   </data>
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>

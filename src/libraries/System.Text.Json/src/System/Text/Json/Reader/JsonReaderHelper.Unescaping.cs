@@ -329,13 +329,11 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(utf8Buffer);
-#else
                 if (utf8Buffer.IsEmpty)
                 {
                     return;
                 }
+
                 unsafe
                 {
                     fixed (byte* srcPtr = utf8Buffer)
@@ -343,7 +341,6 @@ namespace System.Text.Json
                         s_utf8Encoding.GetCharCount(srcPtr, utf8Buffer.Length);
                     }
                 }
-#endif
             }
             catch (DecoderFallbackException ex)
             {

@@ -2603,22 +2603,49 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return NULL;
+    PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
                                                  EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+            gcInfoToken,
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
+            );
+
+    INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
+    if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
+    {
+        PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+        TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
+        TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
+        return PTR_VOID(taExactGenericsToken);
+    }
     return NULL;
 }
 
 GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
                                             EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return GENERIC_PARAM_CONTEXT_NONE;
+    MethodDesc *pMD = pCodeInfo->GetMethodDesc();
+    GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+
+    if (pMD->RequiresInstMethodDescArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
+    else if (pMD->RequiresInstMethodTableArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+    else if (pMD->AcquiresInstMethodTableFromThis())
+        paramContextType = GENERIC_PARAM_CONTEXT_THIS;
+
+    return paramContextType;
 }
 
 size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)

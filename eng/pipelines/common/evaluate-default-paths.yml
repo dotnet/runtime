@@ -213,6 +213,8 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
+      - eng/AcquireWasiSdk.targets
+      - eng/download-wasi-sdk.ps1
       - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/tests.browser.targets
