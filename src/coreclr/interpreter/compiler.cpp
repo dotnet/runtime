@@ -4937,13 +4937,18 @@ retry_emit:
                 }
                 m_ip++;
                 break;
+            // NOTE for the below cases: The spec does not say what it means to do a '.un' conversion with a FP operand.
+            // The JIT currently clears the unsigned flag when encountering a fp operand, so the below implementation
+            //  does the equivalent by manually duplicating the conversions from the non-.un opcodes.
             case CEE_CONV_OVF_I1_UN:
                 CHECK_STACK(1);
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U4);
@@ -4961,8 +4966,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U4);
@@ -4980,8 +4987,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U4);
@@ -4999,8 +5008,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U4);
@@ -5018,8 +5029,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U4);
@@ -5037,8 +5050,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
                     break;
                 case StackTypeI4:
                     break;
@@ -5055,8 +5070,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
@@ -5074,8 +5091,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
@@ -5092,8 +5111,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4);
+#endif
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8);
+#endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
@@ -5119,8 +5148,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4);
+#endif
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8);
+#endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
