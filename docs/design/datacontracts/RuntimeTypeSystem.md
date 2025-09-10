@@ -602,8 +602,8 @@ Contracts used:
 
     public bool IsCollectible(TypeHandle typeHandle)
     {
-        if (typeHandle.IsMethodTable())
-            return 0;
+        if (!typeHandle.IsMethodTable())
+            return false;
         MethodTable typeHandle = _methodTables[typeHandle.Address];
         return typeHandle.Flags.IsCollectible;
     }
