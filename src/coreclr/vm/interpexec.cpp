@@ -2189,8 +2189,8 @@ MAIN_LOOP:
                     }
                     else
                     {
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
                         goto CALL_INTERP_METHOD;
 #else // FEATURE_PORTABLE_ENTRYPOINTS
