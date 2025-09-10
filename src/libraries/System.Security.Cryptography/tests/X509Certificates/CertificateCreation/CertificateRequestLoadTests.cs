@@ -11,6 +11,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestLoadTests
     {
+        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+
         [Theory]
         [InlineData(CertificateRequestLoadOptions.Default, false)]
         [InlineData(CertificateRequestLoadOptions.UnsafeLoadCertificateExtensions, false)]
@@ -374,20 +376,35 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
         [InlineData("SHA256", 1)]
         [InlineData("SHA384", 1)]
         [InlineData("SHA512", 1)]
-        //[InlineData("SHA1", 1)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
+        [InlineData("SHA1", 1)] 
         [InlineData("SHA256", RSASignaturePadding.PssSaltLengthMax)]
         [InlineData("SHA384", RSASignaturePadding.PssSaltLengthMax)]
         [InlineData("SHA512", RSASignaturePadding.PssSaltLengthMax)]
-        //[InlineData("SHA1", RSASignaturePadding.PssSaltLengthMax)] // The current implementation for CertificateRequest does not support SHA-1 with PSS. If this is required, the RSASha1PssSignatureGenerator and the RSAPssX509SignatureGenerator class needs updates.
+        [InlineData("SHA1", RSASignaturePadding.PssSaltLengthMax)]
         [InlineData("SHA256", RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData("SHA384", RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData("SHA512", RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData("SHA1", RSASignaturePadding.PssSaltLengthIsHashLength)]
-        public static void VerifySignature_RSA_PSS(string hashAlgorithm, int saltLength)
+        public static void VerifySignature_RSA_PSS_CustomSaltLength(string hashAlgorithm, int saltLength)
+        {
+            VerifySignature_RSA_PSSCore(hashAlgorithm, saltLength);
+        }
+
+        [Theory]
+        [InlineData("SHA256")]
+        [InlineData("SHA384")]
+        [InlineData("SHA512")]
+        [InlineData("SHA1")]
+        public static void VerifySignature_RSA_PSS_SaltLengthIsHashLength(string hashAlgorithm)
+        {
+            VerifySignature_RSA_PSSCore(hashAlgorithm, RSASignaturePadding.PssSaltLengthIsHashLength);
+        }
+
+        private static bool VerifySignature_RSA_PSSCore(string hashAlgorithm, int saltLength)
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
@@ -411,7 +428,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     else
                     {
                         Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding)));
-                        return;
+                        return false;
                     }
                 }
                 else
@@ -434,6 +451,8 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     out _,
                     CertificateRequestLoadOptions.SkipSignatureValidation, signerSignaturePadding: padding);
             }
+
+            return true;
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
@@ -833,12 +852,22 @@ BgkqhkiG9w0BAQsFAAMBAA==
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
         [InlineData(0)]
         [InlineData(4)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
-        public static void LoadCreate_MatchesCreate_RSAPss(int saltLength)
+        public static void LoadCreate_MatchesCreate_RSAPss_CustomSaltLength(int saltLength)
+        {
+            LoadCreate_MatchesCreate_RSAPssCore(saltLength);
+        }
+
+        [Fact]
+        public static void LoadCreate_MatchesCreate_RSAPss_SaltLengthIsHashLength()
+        {
+            LoadCreate_MatchesCreate_RSAPssCore(RSASignaturePadding.PssSaltLengthIsHashLength);
+        }
+
+        private static void LoadCreate_MatchesCreate_RSAPssCore(int saltLength)
         {
             using (RSA key = RSA.Create(2048))
             {

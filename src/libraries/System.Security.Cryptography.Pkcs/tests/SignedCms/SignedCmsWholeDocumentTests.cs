@@ -126,14 +126,24 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // CheckHash always throws for certificate-based signers.
             Assert.Throws<CryptographicException>(() => signer.CheckHash());
 
+            // PSS signature with parameters are only supported on .NET 10 or later
+#if NET10_0_OR_GREATER
             signer.CheckSignature(true);
+#else
+            Assert.Throws<CryptographicException>(() => signer.CheckSignature(true));
+#endif
 
             // Since there are no NoSignature signers the document CheckHash will succeed.
             // Assert.NotThrows
             cms.CheckHash();
 
+            // PSS signature with parameters are only supported on .NET 10 or later
+#if NET10_0_OR_GREATER
             // Since at least one signer fails, the document signature will fail
             cms.CheckSignature(true);
+#else
+            Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+#endif
         }
 
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]

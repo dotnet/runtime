@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
     public static class CrlBuilderTests
     {
+        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+
         private const string CertParam = "issuerCertificate";
 
         public enum CertKind
@@ -38,8 +40,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             yield return new object[] { CertKind.RsaPkcs1 };
             yield return new object[] { CertKind.RsaPss };
-            yield return new object[] { CertKind.RsaPssWithCustomSaltLength };
-            yield return new object[] { CertKind.RsaPssWithMaxSaltLength };
+            if (AreCustomPssSaltLengthsSupported)
+            {
+                yield return new object[] { CertKind.RsaPssWithCustomSaltLength };
+                yield return new object[] { CertKind.RsaPssWithMaxSaltLength };
+            }
 
             if (SlhDsa.IsSupported)
             {

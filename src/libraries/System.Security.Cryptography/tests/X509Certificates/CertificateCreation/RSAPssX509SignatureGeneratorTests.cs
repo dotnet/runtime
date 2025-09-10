@@ -10,6 +10,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
     public static class RSAPssX509SignatureGeneratorTests
     {
+        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+
         [Fact]
         public static void RsaPssSignatureGeneratorCtor_Exceptions()
         {
@@ -57,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]

@@ -247,7 +247,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [InlineData(-3)]
-        [InlineData(0)]
         public void RSASignaturePadding_Constructor_InvalidParameters(int saltLength)
         {
             ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => RSASignaturePadding.CreatePss(saltLength));

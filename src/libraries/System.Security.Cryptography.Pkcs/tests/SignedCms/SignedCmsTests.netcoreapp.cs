@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
     public static partial class SignedCmsTests
     {
+        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+
         [Fact]
         public static void CmsSignerKeyIsNullByDefault()
         {
@@ -684,38 +686,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Theory]
-        [InlineData(Oids.Sha256, true, 0)]
-        [InlineData(Oids.Sha384, true, 0)]
-        [InlineData(Oids.Sha512, true, 0)]
-        [InlineData(Oids.Sha1, true, 0)]
-        [InlineData(Oids.Sha256, false, 0)]
-        [InlineData(Oids.Sha384, false, 0)]
-        [InlineData(Oids.Sha512, false, 0)]
-        [InlineData(Oids.Sha1, false, 0)]
-        [InlineData(Oids.Sha256, true, 1)]
-        [InlineData(Oids.Sha384, true, 1)]
-        [InlineData(Oids.Sha512, true, 1)]
-        [InlineData(Oids.Sha1, true, 1)]
-        [InlineData(Oids.Sha256, false, 1)]
-        [InlineData(Oids.Sha384, false, 1)]
-        [InlineData(Oids.Sha512, false, 1)]
-        [InlineData(Oids.Sha1, false, 1)]
-        [InlineData(Oids.Sha256, true, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha384, true, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha512, true, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha1, true, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha256, false, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha384, false, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha512, false, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha1, false, RSASignaturePadding.PssSaltLengthMax)]
-        [InlineData(Oids.Sha256, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha384, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha512, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha1, true, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha256, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha384, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha512, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
-        [InlineData(Oids.Sha1, false, RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [MemberData(nameof(CreateSignature_RsaPssTests))]
         public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor, int saltLength)
         {
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -756,6 +727,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> CreateSignature_RsaPssTests() =>
+            from oid in (string[])([Oids.Sha256, Oids.Sha384, Oids.Sha512, Oids.Sha1])
+            from byCtor in new[] { true, false }
+            from saltLength in AreCustomPssSaltLengthsSupported
+                ? new[] { 0, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength }
+                : new[] { RSASignaturePadding.PssSaltLengthIsHashLength }
+            select new object[] { oid, byCtor, saltLength };
 
         [Fact]
         public static void CreateSignature_RsaPss_SeparateKey()
