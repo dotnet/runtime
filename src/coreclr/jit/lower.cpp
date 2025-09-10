@@ -7451,6 +7451,18 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             }
         }
     }
+#elif defined(TARGET_RISCV64)
+    if (index != nullptr)
+    {
+        // RISC-V doesn't have indexed load/stores, add the index into the base
+        assert(base != nullptr);
+        assert(scale == 0 || scale == 1);
+        base = comp->gtNewOperNode(GT_ADD, addrMode->TypeGet(), base, index);
+        BlockRange().InsertBefore(addrMode, base);
+        addrMode->SetBase(base);
+        addrMode->SetIndex(nullptr);
+        LowerAdd(base->AsOp());
+    }
 #endif
 
     JITDUMP("New addressing mode node:\n  ");
