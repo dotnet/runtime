@@ -324,6 +324,48 @@ namespace System.Security.Cryptography
                 cancellationToken);
         }
 
+        /// <summary>
+        ///   Verifies the HMAC of data using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
+        {
+            if (hash.Length != HashSizeInBytes)
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
+
+            Span<byte> mac = stackalloc byte[HashSizeInBytes];
+            int written = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA256, key, source, mac);
+            Debug.Assert(written == HashSizeInBytes);
+
+            return CryptographicOperations.FixedTimeEquals(mac, hash);
+        }
+
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, byte[] source, byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return Verify(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source), new ReadOnlySpan<byte>(hash));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
