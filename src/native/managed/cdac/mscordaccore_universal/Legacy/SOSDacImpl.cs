@@ -3014,7 +3014,7 @@ internal sealed unsafe partial class SOSDacImpl
                 TargetPointer loaderAllocatorHandle = loaderContract.GetObjectHandle(loaderAllocator);
                 data->LoaderAllocatorObjectHandle = loaderAllocatorHandle.ToClrDataAddress(_target);
             }
-            data->bCollectible = isCollectible ? 0 : 1;
+            data->bCollectible = isCollectible ? 1 : 0;
         }
         catch (System.Exception ex)
         {
