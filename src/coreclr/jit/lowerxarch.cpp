@@ -826,7 +826,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     GenTree*  castOp  = tree->AsCast()->CastOp();
     var_types dstType = tree->CastToType();
-    var_types srcType = castOp->TypeGet();
+    var_types srcType = genActualType(castOp);
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
@@ -843,12 +843,104 @@ void Lowering::LowerCast(GenTree* tree)
         // Long types should have been handled by helper call or in DecomposeLongs on x86.
         assert(!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit);
     }
-    else if (srcType == TYP_UINT)
+
+#ifdef TARGET_X86
+    if ((srcType == TYP_UINT) && varTypeIsFloating(dstType) &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
     {
-        // uint->float casts should have an intermediate cast to long unless
-        // we have the EVEX unsigned conversion instructions available.
-        assert(dstType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
+        // Pre-AVX-512, there was no conversion instruction for uint->floating, so we emulate it
+        // using signed int conversion. This is necessary only on 32-bit, because x64 simply casts
+        // the uint up to a signed long before conversion.
+        //
+        // This logic depends on the fact that conversion from int to double is lossless. When
+        // converting to float, we use a double intermediate, and convert to float only after the
+        // double result is fixed up. This ensures the floating result is rounded correctly.
+
+        LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
+
+        LIR::Range  castRange   = LIR::EmptyRange();
+        CorInfoType dstBaseType = CORINFO_TYPE_DOUBLE;
+
+        // We will use the input value twice, so replace it with a lclVar.
+        LIR::Use srcUse;
+        LIR::Use::MakeDummyUse(castRange, castOp, &srcUse);
+        srcUse.ReplaceWithLclVar(comp);
+        castOp = srcUse.Def();
+
+        // This creates the equivalent of the following C# code:
+        //   var castResult = Sse2.ConvertScalarToVector128Double(Vector128<double>.Zero, (int)castOp);
+
+        GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
+        GenTree* castResult =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, zero, castOp, NI_X86Base_ConvertScalarToVector128Double,
+                                           CORINFO_TYPE_INT, 16);
+
+        castRange.InsertAtEnd(zero);
+        castRange.InsertAtEnd(castResult);
+
+        // We will use the conversion result multiple times, so replace it with a lclVar.
+        LIR::Use resUse;
+        LIR::Use::MakeDummyUse(castRange, castResult, &resUse);
+        resUse.ReplaceWithLclVar(comp);
+        castResult = resUse.Def();
+
+        // If the input had the MSB set, it will have converted as a negative, so we must wrap the
+        // result back around to positive by adding 2^32. `blendvpd` uses only the MSB of the mask
+        // element.
+        //
+        // This creates the equivalent of the following C# code:
+        //   var addRes = Sse2.AddScalar(castResult, Vector128.CreateScalar(4294967296.0));
+        //   castResult = Sse41.BlendVariable(castResult, addRes, castResult);
+
+        GenTreeVecCon* addCns    = comp->gtNewVconNode(TYP_SIMD16);
+        addCns->gtSimdVal.f64[0] = 4294967296.0;
+
+        GenTree* addRes =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castResult, addCns, NI_X86Base_AddScalar, dstBaseType, 16);
+
+        castRange.InsertAtEnd(addCns);
+        castRange.InsertAtEnd(addRes);
+
+        GenTree* resClone1 = comp->gtClone(castResult);
+        GenTree* resClone2 = comp->gtClone(castResult);
+        castResult = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, resClone1, addRes, resClone2, NI_X86Base_BlendVariable,
+                                                    dstBaseType, 16);
+        castRange.InsertAtEnd(resClone1);
+        castRange.InsertAtEnd(resClone2);
+        castRange.InsertAtEnd(castResult);
+
+        // Convert to float if necessary, then ToScalar() the result out.
+        if (dstType == TYP_FLOAT)
+        {
+            castResult  = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castResult, NI_X86Base_ConvertToVector128Single,
+                                                         dstBaseType, 16);
+            dstBaseType = CORINFO_TYPE_FLOAT;
+            castRange.InsertAtEnd(castResult);
+        }
+
+        GenTree* toScalar = comp->gtNewSimdToScalarNode(dstType, castResult, dstBaseType, 16);
+        castRange.InsertAtEnd(toScalar);
+
+        LIR::ReadOnlyRange lowerRange(castRange.FirstNode(), castRange.LastNode());
+        BlockRange().InsertBefore(tree, std::move(castRange));
+
+        LABELEDDISPTREERANGE("LowerCast after", BlockRange(), toScalar);
+
+        LIR::Use castUse;
+        if (BlockRange().TryGetUse(tree, &castUse))
+        {
+            castUse.ReplaceWith(toScalar);
+        }
+        else
+        {
+            toScalar->SetUnusedValue();
+        }
+
+        BlockRange().Remove(tree);
+        LowerRange(lowerRange);
+        return;
     }
+#endif // TARGET_X86
 
 #ifdef FEATURE_HW_INTRINSICS
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) &&
@@ -10227,6 +10319,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512_Shuffle:
                         case NI_AVX512_SumAbsoluteDifferencesInBlock32:
                         case NI_AVX512_CompareMask:
+                        case NI_AVX512_CompareScalarMask:
                         case NI_AES_CarrylessMultiply:
                         case NI_AES_V256_CarrylessMultiply:
                         case NI_AES_V512_CarrylessMultiply:
