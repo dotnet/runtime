@@ -434,30 +434,33 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
     MethodDesc* mdIsCompleted;
     MethodDesc* mdGetResult;
 
+    TypeHandle thReturnValueType;
+    bool isValueTask = MetaSig(pAsyncOtherVariant).GetReturnTypeNormalized(&thReturnValueType) == ELEMENT_TYPE_VALUETYPE;
+
     if (msig.IsReturnTypeVoid())
     {
-        pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
-        thTaskAwaiter = CoreLibBinder::GetClass(CLASS__TASK_AWAITER);
-        mdGetAwaiter = CoreLibBinder::GetMethod(METHOD__TASK__GET_AWAITER);
-        mdIsCompleted = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER__GET_ISCOMPLETED);
-        mdGetResult = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER__GET_RESULT);
+        pMTTask = CoreLibBinder::GetClass(isValueTask ? CLASS__VALUETASK : CLASS__TASK);
+        thTaskAwaiter = CoreLibBinder::GetClass(isValueTask ? CLASS__VALUETASK_AWAITER : CLASS__TASK_AWAITER);
+        mdGetAwaiter = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK__GET_AWAITER : METHOD__TASK__GET_AWAITER);
+        mdIsCompleted = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK_AWAITER__GET_ISCOMPLETED : METHOD__TASK_AWAITER__GET_ISCOMPLETED);
+        mdGetResult = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK_AWAITER__GET_RESULT : METHOD__TASK_AWAITER__GET_RESULT);
     }
     else
     {
         TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
-        MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
+        MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(isValueTask ? CLASS__VALUETASK_1 : CLASS__TASK_1);
         pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
-        MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(CLASS__TASK_AWAITER_1);
+        MethodTable* pMTTaskAwaiterOpen = CoreLibBinder::GetClass(isValueTask ? CLASS__VALUETASK_AWAITER_1 : CLASS__TASK_AWAITER_1);
 
         thTaskAwaiter = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskAwaiterOpen->GetModule(), pMTTaskAwaiterOpen->GetCl(), Instantiation(&thLogicalRetType, 1));
 
-        mdGetAwaiter = CoreLibBinder::GetMethod(METHOD__TASK_1__GET_AWAITER);
+        mdGetAwaiter = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK_1__GET_AWAITER : METHOD__TASK_1__GET_AWAITER);
         mdGetAwaiter = MethodDesc::FindOrCreateAssociatedMethodDesc(mdGetAwaiter, pMTTask, FALSE, Instantiation(), FALSE);
 
-        mdIsCompleted = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_ISCOMPLETED);
+        mdIsCompleted = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK_AWAITER_1__GET_ISCOMPLETED : METHOD__TASK_AWAITER_1__GET_ISCOMPLETED);
         mdIsCompleted = MethodDesc::FindOrCreateAssociatedMethodDesc(mdIsCompleted, thTaskAwaiter.GetMethodTable(), FALSE, Instantiation(), FALSE);
 
-        mdGetResult = CoreLibBinder::GetMethod(METHOD__TASK_AWAITER_1__GET_RESULT);
+        mdGetResult = CoreLibBinder::GetMethod(isValueTask ? METHOD__VALUETASK_AWAITER_1__GET_RESULT : METHOD__TASK_AWAITER_1__GET_RESULT);
         mdGetResult = MethodDesc::FindOrCreateAssociatedMethodDesc(mdGetResult, thTaskAwaiter.GetMethodTable(), FALSE, Instantiation(), FALSE);
     }
 
@@ -549,7 +552,19 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         getResultToken = pCode->GetToken(mdGetResult);
     }
 
-    pCode->EmitCALLVIRT(getAwaiterToken, 1, 1);
+    if (isValueTask)
+    {
+        LocalDesc valuetaskLocalDesc(pMTTask);
+        DWORD valuetaskLocal = pCode->NewLocal(valuetaskLocalDesc);
+        pCode->EmitSTLOC(valuetaskLocal);
+        pCode->EmitLDLOCA(valuetaskLocal);
+        pCode->EmitCALL(getAwaiterToken, 1, 1);
+    }
+    else
+    {
+        pCode->EmitCALLVIRT(getAwaiterToken, 1, 1);
+    }
+
     pCode->EmitSTLOC(awaiterLocal);
     pCode->EmitLDLOCA(awaiterLocal);
     pCode->EmitCALL(getIsCompletedToken, 1, 1);
