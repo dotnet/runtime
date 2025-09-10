@@ -1580,6 +1580,8 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
         public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC

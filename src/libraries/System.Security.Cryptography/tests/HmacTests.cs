@@ -42,6 +42,8 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash);
         protected abstract bool Verify(byte[] key, byte[] source, byte[] hash);
+        protected virtual bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) => throw new NotImplementedException();
+        protected virtual bool Verify(byte[] key, Stream source, byte[] hash) => throw new NotImplementedException();
 
         protected abstract ValueTask<int> HashDataOneShotAsync(
             ReadOnlyMemory<byte> key,
@@ -850,6 +852,11 @@ namespace System.Security.Cryptography.Tests
                 Verify(key, Array.Empty<byte>(), new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
             Assert.Throws<ArgumentException>("hash", () =>
                 Verify(new ReadOnlySpan<byte>(key), ReadOnlySpan<byte>.Empty, new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
+
+            Assert.Throws<ArgumentException>("hash", () =>
+                Verify(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
+            Assert.Throws<ArgumentException>("hash", () =>
+                Verify(new ReadOnlySpan<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -857,11 +864,24 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] key = new byte[1];
             Assert.Throws<ArgumentNullException>("key", () =>
-                Verify(null, Array.Empty<byte>(), new byte[THmacTrait.HashSizeInBytes + 1]));
+                Verify(null, Array.Empty<byte>(), new byte[THmacTrait.HashSizeInBytes]));
             Assert.Throws<ArgumentNullException>("source", () =>
-                Verify(key, null, new byte[THmacTrait.HashSizeInBytes + 1]));
+                Verify(key, (byte[])null, new byte[THmacTrait.HashSizeInBytes]));
             Assert.Throws<ArgumentNullException>("hash", () =>
                 Verify(key, Array.Empty<byte>(), null));
+
+            Assert.Throws<ArgumentNullException>("key", () =>
+                Verify(null, Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
+            Assert.Throws<ArgumentNullException>("source", () =>
+                Verify(key, (Stream)null, new byte[THmacTrait.HashSizeInBytes]));
+            Assert.Throws<ArgumentNullException>("hash", () =>
+                Verify(key, Stream.Null, null));
+
+            Assert.Throws<ArgumentNullException>("source", () =>
+                Verify(
+                    new ReadOnlySpan<byte>(key),
+                    (Stream)null,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -889,6 +909,12 @@ namespace System.Security.Cryptography.Tests
 
                 // Span
                 AssertExtensions.TrueExpression(Verify(keySpan, dataSpan, macSpan));
+
+                // Stream, arrays
+                AssertExtensions.TrueExpression(Verify(key, new MemoryStream(data), mac));
+
+                // Stream, spans
+                AssertExtensions.TrueExpression(Verify(keySpan, new MemoryStream(data), macSpan));
             }
         }
 
@@ -919,6 +945,12 @@ namespace System.Security.Cryptography.Tests
 
                 // Span
                 AssertExtensions.FalseExpression(Verify(keySpan, dataSpan, macSpan));
+
+                // Stream, arrays
+                AssertExtensions.FalseExpression(Verify(key, new MemoryStream(data), mac));
+
+                // Stream, spans
+                AssertExtensions.FalseExpression(Verify(keySpan, new MemoryStream(data), macSpan));
             }
         }
 
@@ -978,6 +1010,11 @@ namespace System.Security.Cryptography.Tests
                 Verify(key, Array.Empty<byte>(), new byte[THmacTrait.HashSizeInBytes]));
             Assert.Throws<PlatformNotSupportedException>(() =>
                 Verify(new ReadOnlySpan<byte>(key), ReadOnlySpan<byte>.Empty, new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                Verify(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                Verify(new ReadOnlySpan<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
         }
     }
 
