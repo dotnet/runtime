@@ -17,6 +17,12 @@ namespace System.IO.Compression
 
         public override Stream BaseStream(Stream stream) => ((ZStandardStream)stream).BaseStream;
 
+        // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
+        // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a
+        // power-of-2. If the buffer size employed changes (which could also mean that ArrayPool<byte>.Shared starts giving
+        // out different array sizes), the tests will need to be tweaked.
+        public override int BufferSize => 1 << 16;
+
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZStandardTestData", Path.GetFileName(uncompressedPath) + ".zst");
     }
 }
