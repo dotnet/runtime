@@ -16,8 +16,8 @@ internal partial interface ITransactionDispenser
 
     void BeginTransaction(
         IntPtr punkOuter,
-        OletxTransactionIsolationLevel isoLevel,
-        OletxTransactionIsoFlags isoFlags,
+        Interop.Xolehlp.OletxTransactionIsolationLevel isoLevel,
+        Interop.Xolehlp.OletxTransactionIsoFlags isoFlags,
         [MarshalAs(UnmanagedType.Interface)] ITransactionOptions pOptions,
         [MarshalAs(UnmanagedType.Interface)] out ITransaction ppTransaction);
 }
