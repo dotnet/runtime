@@ -14,8 +14,8 @@ extern bool g_hostpolicy_embedded;
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 
 #ifdef TARGET_UNIX
-#define PLATFORM_SHARED_LIB_SUFFIX_W u".dylib"
-#define PLATFORM_SHARED_LIB_PREFIX_W u"lib"
+#define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
+#define PLATFORM_SHARED_LIB_PREFIX_W PAL_SHLIB_PREFIX_W
 #else // !TARGET_UNIX
 // The default for Windows OS is ".DLL". This causes issues with case-sensitive file systems on Windows.
 // We are using the lowercase version due to historical precedence and how common it is now.
