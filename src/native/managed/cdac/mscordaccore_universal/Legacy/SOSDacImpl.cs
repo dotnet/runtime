@@ -2515,7 +2515,7 @@ internal sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
-        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
+        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLogPtr);
 
 #if DEBUG
         if (_legacyImpl is not null)
@@ -3117,27 +3117,31 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
     {
         int hr = HResults.S_OK;
-        if (_target.ReadGlobalPointer(Constants.Globals.FeatureCOMWrappers) == 0)
-            hr = HResults.E_NOTIMPL;
-        else if (rcw == 0)
-            hr = HResults.E_INVALIDARG;
-        else if ((rcw & ComWrappersConstants.rcwMask) == 0)
-            *identity = 0;
-        else
+        Contracts.IComWrappers comWrappersContract;
+        try
         {
-            try
+            comWrappersContract = _target.Contracts.ComWrappers;
+        }
+        catch (System.Exception)
+        {
+            return HResults.E_NOTIMPL; // we return directly here because the legacy DAC method is empty so we can't compare
+        }
+
+        try
+        {
+            if (rcw == 0 || identity == null)
+                throw new ArgumentException();
+            else if ((rcw & ComWrappersConstants.rcwMask) == 0)
+                *identity = 0;
+            else if (identity != null)
             {
-                if (identity != null)
-                {
-                    Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
-                    TargetPointer identityPtr = comWrappersContract.GetComWrappersRCWIdentity((rcw.ToTargetPointer(_target) & ~(ComWrappersConstants.rcwMask)));
-                    *identity = identityPtr.ToClrDataAddress(_target);
-                }
+                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~(ComWrappersConstants.rcwMask)));
+                *identity = identityPtr.ToClrDataAddress(_target);
             }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl10 is not null)

@@ -49,6 +49,12 @@ struct GlobalStringSpec
     uint32_t StringValue;
 };
 
+struct GlobalContractSpec
+{
+    uint32_t Name;
+    uint32_t Version;
+};
+
 #define CONCAT(token1,token2) token1 ## token2
 #define CONCAT4(token1, token2, token3, token4) token1 ## token2 ## token3 ## token4
 
@@ -78,6 +84,7 @@ struct CDacStringPoolSizes
     DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL_CONTRACT(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
 #include "wrappeddatadescriptor.inc"
@@ -145,6 +152,15 @@ enum
     CDacBlobGlobalSubDescriptorsCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) + 1
+#include "wrappeddatadescriptor.inc"
+};
+
+// count the contracts
+enum
+{
+    CDacBlobGlobalContractsCount =
+#define CDAC_GLOBALS_BEGIN() 0
+#define CDAC_GLOBAL_CONTRACT(name,value) + 1
 #include "wrappeddatadescriptor.inc"
 };
 
@@ -226,6 +242,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalStringValuesStart;
 
         uint32_t GlobalSubDescriptorsStart;
+        uint32_t ContractsStart;
         uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
@@ -235,6 +252,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalPointerValuesCount;
         uint32_t GlobalStringValuesCount;
         uint32_t GlobalSubDescriptorsCount;
+        uint32_t GlobalContractsCount;
 
         uint32_t NamesPoolCount;
 
@@ -253,6 +271,7 @@ struct BinaryBlobDataDescriptor
     struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount + 1];
     struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount + 1];
     struct GlobalPointerSpec GlobalSubDescriptorValues[CDacBlobGlobalSubDescriptorsCount + 1];
+    struct GlobalContractSpec GlobalContractValues[CDacBlobGlobalContractsCount + 1];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
     uint8_t EndMagic[4];
 };
@@ -279,6 +298,7 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
             /* .GlobalStringValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalStringValues),
             /* .GlobalSubDescriptorsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalSubDescriptorValues),
+            /* .ContractsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalContractValues),
             /* .NamesPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             /* .TypeCount = */ CDacBlobTypesCount,
             /* .FieldsPoolCount = */ CDacBlobFieldsPoolCount,
@@ -286,6 +306,7 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalPointerValuesCount = */ CDacBlobGlobalPointersCount,
             /* .GlobalStringValuesCount = */ CDacBlobGlobalStringsCount,
             /* .GlobalSubDescriptorsCount = */ CDacBlobGlobalSubDescriptorsCount,
+            /* .GlobalContractsCount = */ CDacBlobGlobalContractsCount,
             /* .NamesPoolCount = */ sizeof(struct CDacStringPoolSizes),
             /* .TypeSpecSize = */ sizeof(struct TypeSpec),
             /* .FieldSpecSize = */ sizeof(struct FieldSpec),
@@ -337,6 +358,11 @@ struct MagicAndBlob BlobDataDescriptor = {
 #include "wrappeddatadescriptor.inc"
         },
 
+        /* .GlobalContractValues = */ {
+#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .Version = */ value },
+#include "wrappeddatadescriptor.inc"
+        },
+
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
@@ -344,6 +370,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) #name "\0"
+#define CDAC_GLOBAL_CONTRACT(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
 #include "wrappeddatadescriptor.inc"
                   ),

@@ -17,9 +17,9 @@ internal readonly partial struct ComWrappers_1 : IComWrappers
         _target = target;
     }
 
-    public TargetPointer GetComWrappersRCWIdentity(TargetPointer rcw)
+    public TargetPointer GetComWrappersIdentity(TargetPointer address)
     {
-        Data.NativeObjectWrapperObject wrapper = _target.ProcessedData.GetOrAdd<Data.NativeObjectWrapperObject>(rcw);
+        Data.NativeObjectWrapperObject wrapper = _target.ProcessedData.GetOrAdd<Data.NativeObjectWrapperObject>(address);
         return wrapper.ExternalComObject;
     }
 }

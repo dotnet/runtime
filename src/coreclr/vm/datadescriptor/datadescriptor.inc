@@ -144,10 +144,12 @@ CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
 CDAC_TYPE_END(SyncBlock)
 
+#ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
 CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
 CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
 CDAC_TYPE_END(NativeObjectWrapperObject)
+#endif // FEATURE_COMWRAPPERS
 
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
@@ -996,7 +998,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
-CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLogPtr, &g_pStressLog)
 CDAC_GLOBAL(StressLogHasModuleTable, uint8, 1)
 CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
@@ -1006,7 +1008,7 @@ CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
-CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
+CDAC_GLOBAL_POINTER(PlatformMetadataPtr, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 
@@ -1014,5 +1016,25 @@ CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
+
+CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
+#endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+CDAC_GLOBAL_CONTRACT(DebugInfo, 1)
+CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
+CDAC_GLOBAL_CONTRACT(Exception, 1)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(Loader, 1)
+CDAC_GLOBAL_CONTRACT(Object, 1)
+CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
+CDAC_GLOBAL_CONTRACT(StackWalk, 1)
+CDAC_GLOBAL_CONTRACT(StressLog, 2)
+CDAC_GLOBAL_CONTRACT(Thread, 1)
 
 CDAC_GLOBALS_END()
