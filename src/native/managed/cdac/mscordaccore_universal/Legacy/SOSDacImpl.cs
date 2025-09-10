@@ -3109,7 +3109,36 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface8
     int ISOSDacInterface8.GetNumberGenerations(uint* pGenerations)
-        => _legacyImpl8 is not null ? _legacyImpl8.GetNumberGenerations(pGenerations) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pGenerations == null)
+                throw new ArgumentException();
+
+            // Read the total generation count from the global
+            uint totalGenerationCount = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+            *pGenerations = totalGenerationCount;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl8 is not null)
+        {
+            uint pGenerationsLocal;
+            int hrLocal = _legacyImpl8.GetNumberGenerations(&pGenerationsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pGenerations == pGenerationsLocal);
+            }
+        }
+#endif
+        return hr;
+    }
 
     // WKS
     int ISOSDacInterface8.GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
