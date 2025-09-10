@@ -617,11 +617,11 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     if (pObject == NULL)
         return NULL;
 
-    pObject->set_EEType(pEEType);
+    pObject->SetMethodTable(pEEType);
     if (pEEType->HasComponentSize())
     {
         ASSERT(numElements == (uint32_t)numElements);
-        ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
+        ((Array*)pObject)->SetNumComponents((uint32_t)numElements);
     }
 
     if (isSampled)
