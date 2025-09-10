@@ -441,13 +441,13 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void BaseStream_NullAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
+        public void BaseStream_ThrowsAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
         {
             var ms = new MemoryStream();
             using var compressor = CreateStream(ms, mode);
             compressor.Dispose();
 
-            Assert.Null(BaseStream(compressor));
+            Assert.Throws<ObjectDisposedException>(() => BaseStream(compressor));
 
             compressor.Dispose(); // Should be a no-op
         }

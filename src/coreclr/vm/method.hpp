@@ -1574,6 +1574,13 @@ public:
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Ensure that the portable entrypoint is allocated, and the slot is filled
+    void EnsurePortableEntryPoint();
+
+    PCODE GetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
@@ -2542,7 +2549,7 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE((tokenRange & ~enum_flag_TokenRangeMask) == 0);
-        static_assert_no_msg(enum_flag_TokenRangeMask == METHOD_TOKEN_RANGE_MASK);
+        static_assert(enum_flag_TokenRangeMask == METHOD_TOKEN_RANGE_MASK);
         m_flagsAndTokenRange = (m_flagsAndTokenRange & ~enum_flag_TokenRangeMask) | tokenRange;
     }
 
@@ -2744,8 +2751,8 @@ public:
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
     };
-    static_assert_no_msg((FlagMask & StubLast) == 0);
-    static_assert_no_msg((StackArgSizeMask & FlagMask) == 0);
+    static_assert((FlagMask & StubLast) == 0);
+    static_assert((StackArgSizeMask & FlagMask) == 0);
 
     // MethodDesc memory is acquired in an uninitialized state.
     // The first step should be to explicitly set the entire
@@ -3221,7 +3228,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
         return m_pImportThunkGlue;
+#else
+        return &m_ImportThunkGlue;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
     }
 
     LPVOID GetPInvokeTarget()
@@ -3241,7 +3252,7 @@ public:
 
         _ASSERTE(IsPInvoke());
 
-        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntrypoint());
+        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntryPoint());
     }
 #endif // !DACCESS_COMPILE
 
@@ -3728,7 +3739,7 @@ inline mdMethodDef MethodDesc::GetMemberDef() const
     UINT16   tokrange = pChunk->GetTokRange();
 
     UINT16 tokremainder = m_wFlags3AndTokenRemainder & enum_flag3_TokenRemainderMask;
-    static_assert_no_msg(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
+    static_assert(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
 
     return MergeToken(tokrange, tokremainder);
 }

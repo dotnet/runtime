@@ -137,6 +137,7 @@ if(FEATURE_STANDALONE_GC)
 
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
   add_definitions(-DVERIFY_HEAP)
+  add_definitions(-DGC_CONFIG_DRIVEN)
   if(CLR_CMAKE_HOST_APPLE)
     # The implementation of GCToOSInterface on Apple platforms makes use of non-POSIX
     # pthreads APIs, which by default are not included in the pthreads header

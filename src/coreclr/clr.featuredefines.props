@@ -3,11 +3,18 @@
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeatureEHFunclets>true</FeatureEHFunclets>
+        <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
+        <FeaturePortableHelpers>false</FeaturePortableHelpers>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
         <FeatureJavaMarshal>true</FeatureJavaMarshal>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
+        <FeaturePortableHelpers>true</FeaturePortableHelpers>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -43,6 +50,8 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureEHFunclets)' == 'true'">$(DefineConstants);FEATURE_EH_FUNCLETS</DefineConstants>
         <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
+        <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
+        <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>
