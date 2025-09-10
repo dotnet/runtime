@@ -507,6 +507,12 @@ namespace
         *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1));
     }
 
+    void CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+    }
+
 #undef ARG
 
     void* const RetVoidThunks[] =
@@ -626,15 +632,29 @@ namespace
                         return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid;
                     }
                     break;
-                }
+            }
         }
         else
         {
-            if (numArgs == 2 &&
-                args[0] == ConvertType::ToI32Indirect &&
-                args[1] == ConvertType::ToI32)
-            {
-                return (void*)&CallFunc_I32IND_I32_RetI32;
+            switch (numArgs) {
+                case 2:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_RetI32;
+                    }
+                    break;
+                case 6:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32 &&
+                        args[2] == ConvertType::ToI32 &&
+                        args[3] == ConvertType::ToI32 &&
+                        args[4] == ConvertType::ToI32 &&
+                        args[5] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32;
+                    }
+                    break;
             }
         }
 
