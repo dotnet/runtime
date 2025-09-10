@@ -40,6 +40,32 @@ public readonly struct GCGenerationData
     public TargetPointer AllocationContextPointer { get; init; }
     public TargetPointer AllocationContextLimit { get; init; }
 }
+
+public readonly struct GCHeapSegmentData
+{
+    public TargetPointer Allocated { get; init; }
+    public TargetPointer Committed { get; init; }
+    public TargetPointer Reserved { get; init; }
+    public TargetPointer Used { get; init; }
+    public TargetPointer Mem { get; init; }
+    public TargetNUInt Flags { get; init; }
+    public TargetPointer Next { get; init; }
+    public TargetPointer BackgroundAllocated { get; init; }
+    public TargetPointer Heap { get; init; }
+}
+
+public readonly struct GCOOMData
+{
+    public int Reason { get; init; }
+    public TargetNUInt AllocSize { get; init; }
+    public TargetPointer Reserved { get; init; }
+    public TargetPointer Allocated { get; init; }
+    public TargetNUInt GCIndex { get; init; }
+    public int Fgm { get; init; }
+    public TargetNUInt Size { get; init; }
+    public TargetNUInt AvailablePagefileMB { get; init; }
+    public bool LohP { get; init; }
+}
 ```
 
 ```csharp
@@ -61,16 +87,22 @@ public readonly struct GCGenerationData
     void GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr);
     // Gets the current GC state enum value
     uint GetCurrentGCState();
-    // Gets the current GC heap dynamic adaptation mode. -1 if not enabled.
-    int GetDynamicAdaptationMode();
-    // Returns pointers to all GC heaps.
+    // Gets the current GC heap dynamic adaptation mode
+    bool TryGetDynamicAdaptationMode(out int mode);
+    // Gets data on a GC heap segment
+    GCHeapSegmentData GetHeapSegmentData(TargetPointer segmentAddress);
+    // Gets the GlobalMechanisms list
+    IReadOnlyList<TargetNUInt> GetGlobalMechanisms();
+    // Returns pointers to all GC heaps
     IEnumerable<TargetPointer> GetGCHeaps();
 
     /* WKS only APIs */
     GCHeapData WKSGetHeapData();
+    GCOOMData WKSGetOOMData();
 
     /* SVR only APIs */
     GCHeapData SVRGetHeapData(TargetPointer heapAddress);
+    GCOOMData SVRGetOOMData(TargetPointer heapAddress);
 ```
 
 ## Version 1
@@ -101,6 +133,24 @@ Data descriptors used:
 | `Generation` | StartSegment | GC | Pointer to the start heap segment |
 | `Generation` | AllocationStart | GC | Pointer to the allocation start |
 | `CFinalize` | FillPointers | GC | Pointer to the start of an array containing `"CFinalizeFillPointersLength"` elements |
+| `HeapSegment` | Allocated | GC | Pointer to the allocated memory in the heap segment |
+| `HeapSegment` | Committed | GC | Pointer to the committed memory in the heap segment |
+| `HeapSegment` | Reserved | GC | Pointer to the reserved memory in the heap segment |
+| `HeapSegment` | Used | GC | Pointer to the used memory in the heap segment |
+| `HeapSegment` | Mem | GC | Pointer to the start of the heap segment memory |
+| `HeapSegment` | Flags | GC | Flags indicating the heap segment properties |
+| `HeapSegment` | Next | GC | Pointer to the next heap segment |
+| `HeapSegment` | BackgroundAllocated | GC | Pointer to the background allocated memory in the heap segment |
+| `HeapSegment` | Heap | GC | Pointer to the heap that owns this segment (only in server builds) |
+| `OOMHistory` | Reason | GC | Reason code for the out-of-memory condition |
+| `OOMHistory` | AllocSize | GC | Size of the allocation that caused the OOM |
+| `OOMHistory` | Reserved | GC | Pointer to reserved memory at time of OOM |
+| `OOMHistory` | Allocated | GC | Pointer to allocated memory at time of OOM |
+| `OOMHistory` | GcIndex | GC | GC index when the OOM occurred |
+| `OOMHistory` | Fgm | GC | Foreground GC marker value |
+| `OOMHistory` | Size | GC | Size value related to the OOM condition |
+| `OOMHistory` | AvailablePagefileMb | GC | Available pagefile size in MB at time of OOM |
+| `OOMHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
 
@@ -207,15 +257,50 @@ uint IGC.GetCurrentGCState()
     return 0;
 }
 
-int IGC.GetDynamicAdaptationMode()
+bool IGC.TryGetDynamicAdaptationMode(out int mode)
 {
+    mode = default;
     string[] gcIdentifiers = GetGCIdentifiers();
-    if (gcIdentifiers.Contains("dynamic_heap))
+    if (!gcIdentifiers.Contains("dynamic_heap))
     {
-        return target.read<int>(target.ReadGlobalPointer("DynamicAdaptationMode"));
+        return false;
     }
 
-    return -1;
+    mode = target.read<int>(target.ReadGlobalPointer("DynamicAdaptationMode"));
+    return true;
+}
+
+GCHeapSegmentData IGC.GetGCHeapSegmentData(TargetPointer segmentAddress)
+{
+    GCHeapSegmentData data = default;
+
+    data.Allocated = target.ReadPointer(segmentAddress + /* HeapSegment::Allocated offset */);
+    data.Committed = target.ReadPointer(segmentAddress + /* HeapSegment::Committed offset */);
+    data.Reserved = target.ReadPointer(segmentAddress + /* HeapSegment::Reserved offset */);
+    data.Used = target.ReadPointer(segmentAddress + /* HeapSegment::Used offset */);
+    data.Mem = target.ReadPointer(segmentAddress + /* HeapSegment::Mem offset */);
+    data.Flags = target.ReadNUInt(segmentAddress + /* HeapSegment::Flags offset */);
+    data.Next = target.ReadPointer(segmentAddress + /* HeapSegment::Next offset */);
+    data.BackGroundAllocated = target.ReadPointer(segmentAddress + /* HeapSegment::BackGroundAllocated offset */);
+
+    if (/* HeapSegment::Heap offset */)
+    {
+        data.Heap = target.ReadPointer(segmentAddress + /* HeapSegment::Heap offset */);
+    }
+    else
+    {
+        data.Heap = TargetPointer.Null;
+    }
+
+    return data;
+}
+
+IReadOnlyList<TargetNUInt> IGC.GetGlobalMechanisms()
+{
+    if (!target.TryReadGlobalPointer("GCGlobalMechanisms", out TargetPointer? globalMechanismsArrayStart))
+        return Array.Empty<TargetNUInt>();
+    uint globalMechanismsLength = target.ReadGlobal<uint>("GlobalMechanismsLength");
+    return ReadGCHeapDataArray(globalMechanismsArrayStart.Value, globalMechanismsLength);
 }
 
 IEnumerable<TargetPointer> IGC.GetGCHeaps()
@@ -303,6 +388,16 @@ GCHeapData IGC.WKSGetHeapData(TargetPointer heapAddress)
 
     return data;
 }
+
+GCOOMData IGC.WKSGetOOMData()
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("workstation"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadGlobalPointer("GCHeapOOMData");
+    return GetGCOOMData(oomHistoryData);
+}
 ```
 
 server GC only APIs
@@ -374,6 +469,16 @@ GCHeapData IGC.SVRGetHeapData(TargetPointer heapAddress)
 
     return data;
 }
+
+GCOOMData IGC.SVRGetOOMData(TargetPointer heapAddress)
+{
+    string[] gcIdentifiers = GetGCIdentifiers();
+    if (!gcType.Contains("server"))
+        throw new InvalidOperationException();
+
+    TargetPointer oomHistory = target.ReadPointer(heapAddress + /* GCHeap::OOMData offset */);
+    return GetGCOOMData(oomHistory);
+}
 ```
 
 Helper methods:
@@ -423,5 +528,22 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
     for (uint i = 0; i < length; i++)
         arr.Add(target.ReadNUInt(arrayStart + (i * target.PointerSize)));
     return arr;
+}
+
+private GCOOMData GetGCOOMData(TargetPointer oomHistory)
+{
+    GCOOMData data = default;
+
+    data.Reason = target.Read<int>(oomHistory + /* OOMHistory::Reason offset */);
+    data.AllocSize = target.ReadNUInt(oomHistory + /* OOMHistory::AllocSize offset */);
+    data.Reserved = target.ReadPointer(oomHistory + /* OOMHistory::Reserved offset */);
+    data.Allocated = target.ReadPointer(oomHistory + /* OOMHistory::Allocated offset */);
+    data.GcIndex = target.ReadNUInt(oomHistory + /* OOMHistory::GcIndex offset */);
+    data.Fgm = target.Read<int>(oomHistory + /* OOMHistory::Fgm offset */);
+    data.Size = target.ReadNUInt(oomHistory + /* OOMHistory::Size offset */);
+    data.AvailablePagefileMb = target.ReadNUInt(oomHistory + /* OOMHistory::AvailablePagefileMb offset */);
+    data.LohP = target.Read<uint>(oomHistory + /* OOMHistory::LohP offset */);
+
+    return data;
 }
 ```
