@@ -529,10 +529,18 @@ namespace
                 return ConvertType::ToI32Indirect;
             case ELEMENT_TYPE_VALUETYPE:
             {
-                // In WASM, values types that are larger than pointer size are passed indirectly.
+                // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
+                // WASMTODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
                 TypeHandle vt = isReturn
                     ? sig.GetRetTypeHandleThrowing()
                     : sig.GetLastTypeHandleThrowing();
+
+                if (vt.IsTypeDesc()
+                    && vt.AsMethodTable()->GetNumInstanceFields() >= 2)
+                {
+                    return ConvertType::ToI32Indirect;
+                }
+
                 return vt.GetSize() <= sizeof(uint32_t)
                     ? ConvertType::ToI32
                     : ConvertType::ToI32Indirect;
@@ -614,7 +622,7 @@ namespace
         uint32_t numArgs = sig.NumFixedArgs();
 
         // Check for homogeneous i32 argument types.
-        for (uint32_t j = 0; j < i; j++)
+        for (uint32_t j = 0; j < numArgs; j++)
         {
             if (args[j] != ConvertType::ToI32)
                 return ComputeCalliSigThunkSpecial(returnsVoid, numArgs, args);
