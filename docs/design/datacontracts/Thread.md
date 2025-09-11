@@ -73,7 +73,7 @@ The contract additionally depends on these data descriptors
 | `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
 | `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
-| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets |
+| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `IdDispenser` | `HighestId` | Highest possible small thread ID |
@@ -125,7 +125,6 @@ enum TLSIndexType
     DirectOnThreadLocalData = 2,
 };
 
-private readonly int _genericModeBlockSize = 5616;
 
 ThreadStoreData GetThreadStoreData()
 {

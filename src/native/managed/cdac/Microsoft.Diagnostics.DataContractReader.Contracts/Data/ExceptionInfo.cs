@@ -14,7 +14,8 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
 
         PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
         ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
+        if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
+            ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
     }
 
     public TargetPointer PreviousNestedInfo { get; init; }

@@ -35,5 +35,4 @@ internal readonly struct Exception_1 : IException
             exception.HResult,
             exception.XCode);
     }
-
 }
