@@ -865,6 +865,9 @@ void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
     for (int32_t i = 0; i < size; i++)
     {
         Reloc *reloc = relocs->Get(i);
+        if (reloc->pTargetBB->nativeOffset < 0)
+            BADCODE("jump with invalid offset");
+
         int32_t offset = reloc->pTargetBB->nativeOffset - reloc->offset;
         int32_t *pSlot = NULL;
 
@@ -2111,14 +2114,15 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 {
     int32_t target = (int32_t)(m_ip - m_pILCode) + ilOffset;
     if (target < 0 || target >= m_ILCodeSize)
-        assert(0);
+        BADCODE("code jumps to outer space");
 
     // Backwards branch, emit safepoint
     if (ilOffset < 0)
         AddIns(INTOP_SAFEPOINT);
 
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
-    assert(pTargetBB != NULL);
+    if (pTargetBB == NULL)
+        BADCODE("code jumps to invalid offset");
 
     EmitBranchToBB(opcode, pTargetBB);
 }
