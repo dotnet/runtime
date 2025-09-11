@@ -90,4 +90,13 @@
   <data name="ZStandardStream_ConcurrentRWOperation" xml:space="preserve">
     <value>Only one pending read/write operation is supported.</value>
   </data>
+  <data name="ZStandardDictionary_EmptyBuffer" xml:space="preserve">
+    <value>Buffer cannot be empty.</value>
+  </data>
+  <data name="ZStandardDictionary_CreateCompressionFailed" xml:space="preserve">
+    <value>Failed to create ZStandard compression dictionary.</value>
+  </data>
+  <data name="ZStandardDictionary_CreateDecompressionFailed" xml:space="preserve">
+    <value>Failed to create ZStandard decompression dictionary.</value>
+  </data>
 </root>
