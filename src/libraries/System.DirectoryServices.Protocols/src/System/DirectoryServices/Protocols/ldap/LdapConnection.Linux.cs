@@ -83,7 +83,7 @@ namespace System.DirectoryServices.Protocols
                 var timeout = new LDAP_TIMEVAL()
                 {
                     tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond),
-                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / 10) // Convert 100ns ticks to microseconds
+                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / TimeSpan.TicksPerMicrosecond) // Convert 100ns ticks to microseconds
                 };
 
                 int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);
