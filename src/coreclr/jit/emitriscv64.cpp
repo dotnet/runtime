@@ -4986,11 +4986,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     if (addr->isContained())
     {
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
+        assert(!addr->OperIs(GT_LEA) || !addr->AsAddrMode()->HasIndex());
 
-        int offset = addr->OperIs(GT_LEA) ? indir->Offset() : 0;
+        ssize_t offset = indir->Offset();
 
         GenTree* memBase = indir->Base();
-        emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
         if (addr->OperIs(GT_LCL_ADDR))
         {
@@ -5025,16 +5025,19 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else
         {
+            ssize_t lo12 = (offset << (64 - 12)) >> (64 - 12);
+            offset -= lo12;
+
             // We require a tmpReg to hold the offset
             regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
             // First load/store tmpReg with the large offset constant
             emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
-            // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
             // Then load/store dataReg from/to [memBase + tmpReg]
+            emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
             emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
-            emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
+            emitIns_R_R_I(ins, attr, dataReg, tmpReg, lo12);
         }
     }
     else // addr is not contained, so we evaluate it into a register
