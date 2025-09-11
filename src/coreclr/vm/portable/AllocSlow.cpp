@@ -4,10 +4,28 @@
 
 #include <fcall.h>
 
+EXTERN_C void* RhpGcAlloc(CORINFO_CLASS_HANDLE typeHnd_, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+
+void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
+{
+    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
+}
+
+static Object* _RhpNewObject(CORINFO_CLASS_HANDLE typeHnd_, uint32_t allocFlags)
+{
+    Object* obj = (Object*)RhpGcAlloc(typeHnd_, allocFlags, 0, nullptr);
+    if (obj == NULL)
+    {
+        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0); // never returns
+        return nullptr; // unreachable
+    }
+
+    return obj;
+}
+
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    PORTABILITY_ASSERT("RhpNew is not yet implemented");
-    return nullptr;
+    return _RhpNewObject(typeHnd_, 0);
 }
 
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
@@ -20,9 +38,4 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_,
 {
     PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not yet implemented");
     return nullptr;
-}
-
-void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
-{
-    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
