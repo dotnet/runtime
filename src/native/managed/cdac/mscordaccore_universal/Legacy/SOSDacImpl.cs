@@ -60,7 +60,7 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    private enum CorTokenType : uint
+    private enum CorTokenType: uint
     {
         mdtTypeRef = 0x01000000,
         mdtTypeDef = 0x02000000,
@@ -581,7 +581,53 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
-        => _legacyImpl is not null ? _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        byte[] buckets = Array.Empty<byte>();
+        try
+        {
+            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            else if (thread == 0 || pGenericModeBlock == null)
+                throw new ArgumentException();
+
+            buckets = threadContract.GetWatsonBuckets(thread.ToTargetPointer(_target));
+            if (buckets.Length != 0)
+            {
+                var dest = new Span<byte>(pGenericModeBlock, buckets.Length);
+                buckets.AsSpan().CopyTo(dest);
+            }
+            else
+            {
+                hr = HResults.S_FALSE; // No Watson buckets found
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal;
+            int sizeOfGenericModeBlock = (int)_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock);
+            byte[] genericModeBlockLocal = new byte[sizeOfGenericModeBlock];
+            fixed (byte* ptr = genericModeBlockLocal)
+            {
+                hrLocal = _legacyImpl.GetClrWatsonBuckets(thread, ptr);
+            }
+
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(new ReadOnlySpan<byte>(genericModeBlockLocal, 0, sizeOfGenericModeBlock).SequenceEqual(new Span<byte>(pGenericModeBlock, sizeOfGenericModeBlock)));
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCodeHeaderData(ip, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
