@@ -85,7 +85,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         string folderName = zfolder("unicode");
         using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
         await CallZipFileExtractToDirectory(async, source, tempFolder.Path);
-        NormalizeFileNames(tempFolder.Path);
         DirFileNamesEqual(tempFolder.Path, folderName);
         await DisposeStream(async, source);
     }

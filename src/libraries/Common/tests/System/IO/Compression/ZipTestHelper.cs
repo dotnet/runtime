@@ -333,26 +333,20 @@ namespace System.IO.Compression.Tests
             await ItemEqual(actualList, expectedList, isFile: true);
             await ItemEqual(actualFolders, expectedList, isFile: false);
         }
-        public static void NormalizeFileNames(string folder)
-        {
-            foreach (var entry in Directory.GetFileSystemEntries(folder, "*", SearchOption.AllDirectories))
-            {
-                string parent = Path.GetDirectoryName(entry)!;
-                string normalized = Path.GetFileName(entry).Normalize(NormalizationForm.FormC);
-                string newPath = Path.Combine(parent, normalized);
-
-                if (entry != newPath)
-                {
-                    File.Move(entry, newPath);
-                }
-            }
-        }
 
         public static void DirFileNamesEqual(string actual, string expected)
         {
-            IOrderedEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Order();
-            IOrderedEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Order();
-            AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
+            IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories);
+            IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories);
+
+#if OS_IOS || OS_TVOS
+            actualEntries = actualEntries.Select(Path.GetFileName).Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+#else
+            actualEntries = actualEntries.Select(Path.GetFileName).Order();
+#endif
+            expectedEntries = expectedEntries.Select(Path.GetFileName).Order();
+
+            AssertExtensions.SequenceEqual(expectedEntries.ToArray(), actualEntries.ToArray());
         }
 
         private static async Task ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)

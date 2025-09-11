@@ -51,7 +51,6 @@ namespace System.IO.Compression.Tests
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
                 await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
-                NormalizeFileNames(tempFolder.Path);
                 DirFileNamesEqual(tempFolder.Path, folderName);
             }
         }

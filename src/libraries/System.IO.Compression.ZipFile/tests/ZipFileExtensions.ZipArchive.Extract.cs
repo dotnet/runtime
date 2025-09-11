@@ -32,7 +32,6 @@ namespace System.IO.Compression.Tests
 
             string tempFolder = GetTestFilePath();
             await CallZipFileExtensionsExtractToDirectory(async, archive, tempFolder);
-            NormalizeFileNames(tempFolder);
             DirFileNamesEqual(tempFolder, zfolder("unicode"));
 
             await DisposeZipArchive(async, archive);
