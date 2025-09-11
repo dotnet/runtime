@@ -1069,7 +1069,10 @@ SingleResponse ::= SEQUENCE {
                         factories.Add(MLDsa);
                     }
 
-                    if (Cryptography.SlhDsa.IsSupported)
+                    // OpenSSL default provider does not advertise SLH-DSA in TLS-SIGALG capability,
+                    // causing it to not recognize SLH-DSA certificates for use in TLS connections
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119573")]
+                    if (!PlatformDetection.IsOpenSslSupported && Cryptography.SlhDsa.IsSupported)
                     {
                         factories.Add(SlhDsa);
                     }
