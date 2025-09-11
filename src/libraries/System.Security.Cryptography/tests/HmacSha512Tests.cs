@@ -72,6 +72,24 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACSHA512.Verify(key, source, hash);
 
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA512.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA512.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         private static byte[][] s_testMacs4231 =
         {
             null,

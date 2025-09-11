@@ -73,6 +73,24 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACSHA3_512.Verify(key, source, hash);
 
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA3_512.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA3_512.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         private static readonly byte[][] s_testKeys = new byte[][]
         {
             // From: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/HMAC_SHA3-512.pdf

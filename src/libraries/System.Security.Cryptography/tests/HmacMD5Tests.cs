@@ -102,6 +102,24 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACMD5.Verify(key, source, hash);
 
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         [Fact]
         public void HmacMD5_Rfc2202_1()
         {

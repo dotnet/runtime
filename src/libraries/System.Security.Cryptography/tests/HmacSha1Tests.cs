@@ -115,9 +115,9 @@ namespace System.Security.Cryptography.Tests
             Stream source,
             byte[] hash,
             CancellationToken cancellationToken)
-            {
-                return HMACSHA1.VerifyAsync(key, source, hash, cancellationToken);
-            }
+        {
+            return HMACSHA1.VerifyAsync(key, source, hash, cancellationToken);
+        }
 
         [Fact]
         public void HmacSha1_Byte_Constructors()
