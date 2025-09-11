@@ -287,6 +287,68 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Verifies the hash or Hash-based Message Authentication Code (HMAC) for the data accumulated from prior
+        ///   calls to the <c>AppendData</c> methods, without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash or HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash or HMAC is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashLengthInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public bool VerifyCurrentHash(ReadOnlySpan<byte> hash) =>
+            VerifyCore(hash, this, static (IncrementalHash ih, Span<byte> buffer) => ih.GetCurrentHashCore(buffer));
+
+        /// <inheritdoc cref="VerifyCurrentHash(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyCurrentHash(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyCurrentHash(new ReadOnlySpan<byte>(hash));
+        }
+
+        /// <summary>
+        ///   Verifies the hash or Hash-based Message Authentication Code (HMAC) for the data accumulated from prior
+        ///   calls to the <c>AppendData</c> methods, and resets the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash or HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash or HMAC is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashLengthInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public bool VerifyHashAndReset(ReadOnlySpan<byte> hash) =>
+            VerifyCore(hash, this, static (IncrementalHash ih, Span<byte> buffer) => ih.GetHashAndResetCore(buffer));
+
+        /// <inheritdoc cref="VerifyHashAndReset(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyHashAndReset(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyHashAndReset(new ReadOnlySpan<byte>(hash));
+        }
+
+        /// <summary>
         /// Release all resources used by the current instance of the
         /// <see cref="IncrementalHash"/> class.
         /// </summary>
@@ -404,6 +466,33 @@ namespace System.Security.Cryptography
                     // Other unknown algorithms will be handled separately as CryptographicExceptions.
                     break;
             }
+        }
+
+        private static bool VerifyCore(
+            ReadOnlySpan<byte> hash,
+            IncrementalHash ih,
+            Func<IncrementalHash, Span<byte>, int> getHashCallback)
+        {
+            if (hash.Length != ih.HashLengthInBytes)
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, ih.HashLengthInBytes), nameof(hash));
+
+            ObjectDisposedException.ThrowIf(ih._disposed, ih);
+
+            const int MaxStackAlloc = 64; // SHA3-512 / SHA2-512
+            Span<byte> computedBuffer = stackalloc byte[MaxStackAlloc];
+
+            if (ih.HashLengthInBytes > MaxStackAlloc)
+            {
+                computedBuffer = new byte[ih.HashLengthInBytes];
+            }
+
+            int written = getHashCallback(ih, computedBuffer);
+            Debug.Assert(written == ih.HashLengthInBytes);
+            Span<byte> computed = computedBuffer.Slice(0, written);
+
+            bool result = CryptographicOperations.FixedTimeEquals(hash, computed);
+            CryptographicOperations.ZeroMemory(computed);
+            return result;
         }
     }
 }

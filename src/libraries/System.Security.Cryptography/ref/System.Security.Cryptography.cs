@@ -1815,6 +1815,10 @@ namespace System.Security.Cryptography
         public int GetHashAndReset(System.Span<byte> destination) { throw null; }
         public bool TryGetCurrentHash(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryGetHashAndReset(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm
     {
