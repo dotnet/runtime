@@ -24,7 +24,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         internal Rule(Backend backend, string name, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-            : base(backend, null! /* Cannot path 'this' into base constructor - setting this on _rule instead */)
+            : base(backend, null! /* Cannot pass 'this' into base constructor - setting this on _rule instead */)
         {
             _rule = this;
             _id = name;

@@ -72,7 +72,7 @@ namespace System.Speech.Internal
             int iPos = 0, iPosNext;
             int cLen = sPhone.Length;
             StringBuilder pidArray = new(cLen);
-            PhoneId phoneIdRef = new(null!, null!);
+            PhoneId phoneIdRef = new(null!, null!); // phone and cp are not necessary, PhoneId is begin used here as a sorting helper
 
             while (iPos < cLen)
             {

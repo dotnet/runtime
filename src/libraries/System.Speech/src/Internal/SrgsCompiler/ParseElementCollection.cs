@@ -299,7 +299,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        protected Backend _backend { get; set; }
+        protected Backend _backend;
         protected Arc? _startArc;
         protected Arc? _endArc;
     }

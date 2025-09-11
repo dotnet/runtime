@@ -113,7 +113,7 @@ namespace System.Speech.Internal.SapiInterop
             #region Constructors
 
             internal MTAThread(SapiRecognizer.RecognizerType type)
-                : base(null!)
+                : base(null!) // Set _recognizer field instead of base constructor
             {
                 _mta = new Thread(new ThreadStart(SapiMTAThread));
                 if (!_mta.TrySetApartmentState(ApartmentState.MTA))

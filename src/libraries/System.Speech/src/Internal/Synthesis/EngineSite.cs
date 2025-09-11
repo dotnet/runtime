@@ -324,7 +324,7 @@ namespace System.Speech.Internal.Synthesis
 
         private SPVESACTIONS _actions = SPVESACTIONS.SPVES_RATE | SPVESACTIONS.SPVES_VOLUME;
 
-        private AudioBase? _audio { get; set; }
+        private AudioBase? _audio;
 
         private Prompt? _prompt;
 
@@ -443,7 +443,7 @@ namespace System.Speech.Internal.Synthesis
             ConvertCompleteUnit();
             while (_queue.Count > 0)
             {
-                SendToOutput((TTSEvent)_queue.Dequeue());
+                SendToOutput(_queue.Dequeue());
             }
             _phonemeQueue.Clear();
             _lastComplete = 0;
@@ -483,10 +483,10 @@ namespace System.Speech.Internal.Synthesis
             //
             TTSEvent ttsEvent, targetEvent, basePhonemeEvent;
             long totalDuration = 0;
-            basePhonemeEvent = (TTSEvent)_phonemeQueue.Peek()!;
+            basePhonemeEvent = _phonemeQueue.Peek();
             for (int i = 0; i < _lastComplete;)
             {
-                ttsEvent = (TTSEvent)_phonemeQueue.Dequeue()!;
+                ttsEvent = _phonemeQueue.Dequeue();
                 totalDuration += ttsEvent.PhonemeDuration.Milliseconds;
                 i += ttsEvent.Phoneme!.Length;
             }
@@ -514,7 +514,7 @@ namespace System.Speech.Internal.Synthesis
                 TTSEvent firstEvent;
                 if (_queue.Count > 0)
                 {
-                    firstEvent = (TTSEvent)_queue.Dequeue()!;
+                    firstEvent = _queue.Dequeue();
                     if (firstEvent.Id == TtsEventId.Phoneme)
                     {
                         firstEvent.NextPhoneme = evt.Phoneme;
@@ -526,7 +526,7 @@ namespace System.Speech.Internal.Synthesis
                     SendToOutput(firstEvent);
                     while (_queue.Count > 0)
                     {
-                        SendToOutput((TTSEvent)_queue.Dequeue());
+                        SendToOutput(_queue.Dequeue());
                     }
                 }
                 _queue.Enqueue(evt);

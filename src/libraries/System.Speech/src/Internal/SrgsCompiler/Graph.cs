@@ -330,8 +330,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Attempt to move properties referencing EpsilonArc to the left.
                     // Optimization can only be applied when the epsilon arc is not referenced by any properties
                     // and when the arc does not connect RuleInitialState to null.
-                    bool v = (state == state.Rule._firstState) && (epsilonArc.End == null);
-                    if (!v && MoveSemanticTagLeft(epsilonArc))
+                    if (!((state == state.Rule._firstState) && (epsilonArc.End == null)) && MoveSemanticTagLeft(epsilonArc))
                     {
                         // Delete the output epsilon transition
                         State? pEpsilonEndState = epsilonArc.End;

@@ -232,14 +232,14 @@ namespace System.Speech.Internal
         {
             private sealed class ConversionUnit
             {
-                public string _sapi;
-                public string _ups;
-                public bool _isDefault;
+                public string sapi;
+                public string ups;
+                public bool isDefault;
                 public ConversionUnit(string sapi, string ups, bool isDefault)
                 {
-                    _sapi = sapi;
-                    _ups = ups;
-                    _isDefault = isDefault;
+                    this.sapi = sapi;
+                    this.ups = ups;
+                    this.isDefault = isDefault;
                 }
             }
 
@@ -282,17 +282,17 @@ namespace System.Speech.Internal
                 ConversionUnit? unit;
                 if (isSapi)
                 {
-                    unit = (ConversionUnit)_prefixSapiTable[phoneme]!;
+                    unit = (ConversionUnit?)_prefixSapiTable[phoneme];
                 }
                 else
                 {
-                    unit = (ConversionUnit)_prefixUpsTable[phoneme]!;
+                    unit = (ConversionUnit?)_prefixUpsTable[phoneme];
                 }
                 if (unit == null)
                 {
                     return null;
                 }
-                return isSapi ? unit._ups : unit._sapi;
+                return isSapi ? unit.ups : unit.sapi;
             }
 
             /// <summary>
@@ -308,11 +308,11 @@ namespace System.Speech.Internal
                 {
                     if (isSapi)
                     {
-                        from = _convertTable[i]._sapi;
+                        from = _convertTable[i].sapi;
                     }
                     else
                     {
-                        from = _convertTable[i]._ups;
+                        from = _convertTable[i].ups;
                     }
 
                     for (j = 0; j + 1 < from.Length; j++)
@@ -324,7 +324,7 @@ namespace System.Speech.Internal
                         }
                     }
 
-                    if (_convertTable[i]._isDefault || prefixTable[from] == null)
+                    if (_convertTable[i].isDefault || prefixTable[from] == null)
                     {
                         prefixTable[from] = _convertTable[i];
                     }

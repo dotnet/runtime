@@ -360,7 +360,6 @@ namespace System.Speech.Internal
                 return; // Tree is still valid.
             }
 
-
             // Now, its parent is RED, so it must have an uncle since its parent is not root.
             // Also, its grandparent must be BLACK.
             Debug.Assert(IsBlack(node.Parent.Parent));

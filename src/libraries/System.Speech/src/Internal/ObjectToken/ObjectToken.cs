@@ -180,7 +180,8 @@ namespace System.Speech.Internal.ObjectTokens
             get
             {
                 CultureInfo? culture = null;
-                if (Attributes.TryGetString("Language", out string langId))
+                string langId;
+                if (Attributes.TryGetString("Language", out langId))
                 {
                     culture = SapiAttributeParser.GetCultureInfoFromLanguageString(langId);
                 }

@@ -563,9 +563,7 @@ namespace System.Speech.Internal.SapiInterop
     internal class SPSERIALIZEDPHRASE
     {
         internal SPSERIALIZEDPHRASE()
-        {
-            Rule = null!;
-        }
+        { }
 
         internal SPSERIALIZEDPHRASE(SPSERIALIZEDPHRASE_Sapi51 source)
         {
@@ -600,7 +598,7 @@ namespace System.Speech.Internal.SapiInterop
         internal uint ulAudioSizeBytes;
         internal uint ulRetainedSizeBytes;
         internal uint ulAudioSizeTime;
-        internal SPSERIALIZEDPHRASERULE Rule;
+        internal SPSERIALIZEDPHRASERULE Rule = null!;
         internal uint PropertiesOffset;
         internal uint ElementsOffset;
         internal uint cReplacements;

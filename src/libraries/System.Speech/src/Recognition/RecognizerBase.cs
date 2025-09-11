@@ -1233,7 +1233,7 @@ namespace System.Speech.Recognition
         // The event fired on a no recognition
         internal event EventHandler<SpeechRecognitionRejectedEventArgs>? SpeechRecognitionRejected;
 
-#pragma warning disable CS6504
+#pragma warning disable 6504
         // Occurs when a spoken phrase is partially recognized.
         internal event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
         {

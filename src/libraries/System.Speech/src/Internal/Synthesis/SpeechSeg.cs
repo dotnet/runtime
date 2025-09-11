@@ -14,13 +14,13 @@ namespace System.Speech.Internal.Synthesis
 
         internal SpeechSeg(TTSVoice voice)
         {
-            System.Diagnostics.Debug.Assert((voice != null));
+            System.Diagnostics.Debug.Assert(voice != null);
             _voice = voice;
         }
 
         internal SpeechSeg(AudioData audio)
         {
-            System.Diagnostics.Debug.Assert((audio != null));
+            System.Diagnostics.Debug.Assert(audio != null);
             _audio = audio;
         }
 

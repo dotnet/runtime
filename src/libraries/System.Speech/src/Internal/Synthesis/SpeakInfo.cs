@@ -45,22 +45,22 @@ namespace System.Speech.Internal.Synthesis
             if (!ttsVoice.Equals(_ttsVoice))
             {
                 _ttsVoice = ttsVoice;
-                _fNotInTextSeg = true;
+                NotInTextSeg = true;
             }
         }
 
         internal void AddAudio(AudioData audio)
         {
             AddNewSeg(new SpeechSeg(audio));
-            _fNotInTextSeg = true;
+            NotInTextSeg = true;
         }
 
         internal void AddText(TTSVoice ttsVoice, TextFragment textFragment)
         {
-            if (_fNotInTextSeg || ttsVoice != _ttsVoice)
+            if (NotInTextSeg || ttsVoice != _ttsVoice)
             {
                 AddNewSeg(new SpeechSeg(ttsVoice));
-                _fNotInTextSeg = false;
+                NotInTextSeg = false;
             }
             _lastSeg.AddFrag(textFragment);
         }
@@ -96,7 +96,7 @@ namespace System.Speech.Internal.Synthesis
 
         // If true then a new segment is required for the next Add Text
         [MemberNotNullWhen(false, nameof(_lastSeg))]
-        private bool _fNotInTextSeg { get; set; } = true;
+        private bool NotInTextSeg { get; set; } = true;
 
         // list of segments (text or audio)
         private List<SpeechSeg> _listSeg = new();
