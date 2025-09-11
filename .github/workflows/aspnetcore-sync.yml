@@ -16,14 +16,14 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout aspnetcore
-      uses: actions/checkout@v5
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/aspnetcore'
         path: aspnetcore
         ref: main
     - name: Checkout runtime
-      uses: actions/checkout@v5
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         # Test this script using changes in a fork
         repository: 'dotnet/runtime'
@@ -42,7 +42,7 @@ jobs:
         mkdir ..\artifacts
         git status > ..\artifacts\status.txt
         git diff > ..\artifacts\diff.txt
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: results
         path: artifacts
@@ -57,7 +57,7 @@ jobs:
     - name: Send PR
       if: steps.check.outputs.changed == 'true'
       # https://github.com/marketplace/actions/create-pull-request
-      uses: dotnet/actions-create-pull-request@v4
+      uses: dotnet/actions-create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         path: .\runtime
