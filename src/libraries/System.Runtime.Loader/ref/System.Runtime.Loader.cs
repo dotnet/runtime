@@ -33,6 +33,10 @@ namespace System.Runtime.CompilerServices
     public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
     {
     }
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
+    public sealed class MetadataUpdateDeletedAttribute : Attribute
+    {
+    }
     [AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct,
                     AllowMultiple=false, Inherited=false)]
     public class MetadataUpdateOriginalTypeAttribute : Attribute
