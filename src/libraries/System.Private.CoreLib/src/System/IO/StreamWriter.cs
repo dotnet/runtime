@@ -505,7 +505,7 @@ namespace System.IO
                 new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(estimatedLength);
 
-            vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
+            vsb.AppendFormat(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
 
             WriteSpan(vsb.AsSpan(), appendNewLine);
 
