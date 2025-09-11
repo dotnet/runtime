@@ -194,8 +194,8 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
     }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
+        if (ENVIRONMENT_IS_NODE) {
+            process.exit(exit_code);
         } else if (runtimeHelpers.quit) {
             runtimeHelpers.quit(exit_code, reason);
         }
