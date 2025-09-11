@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
             return result;
         }
 
-        internal static bool Verify(byte[] key, System.IO.Stream source, byte[] hash)
+        internal static bool Verify(byte[] key, Stream source, byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(hash);

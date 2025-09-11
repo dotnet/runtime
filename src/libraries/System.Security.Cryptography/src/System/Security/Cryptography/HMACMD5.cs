@@ -405,7 +405,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
         [UnsupportedOSPlatform("browser")]
-        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash)
+        public static bool Verify(byte[] key, Stream source, byte[] hash)
         {
             return HMACShared<HMACMD5>.Verify(key, source, hash);
         }

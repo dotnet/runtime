@@ -437,7 +437,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
         /// </exception>
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
-        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash)
+        public static bool Verify(byte[] key, Stream source, byte[] hash)
         {
             CheckSha3Support();
             return HMACShared<HMACSHA3_256>.Verify(key, source, hash);
