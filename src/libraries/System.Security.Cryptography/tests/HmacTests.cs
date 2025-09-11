@@ -867,6 +867,120 @@ namespace System.Security.Cryptography.Tests
                 VerifyAsync(new ReadOnlyMemory<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset], default(CancellationToken)));
         }
 
+        [ConditionalTheory(nameof(IsSupported))]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public void Verify_CryptographicOperations_ArgValidation_WrongHashSize(int sizeOffset)
+        {
+            byte[] key = new byte[1];
+            Assert.Throws<ArgumentException>("hash", () =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    key,
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
+
+            Assert.Throws<ArgumentException>("hash", () =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    new ReadOnlySpan<byte>(key),
+                    ReadOnlySpan<byte>.Empty,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes + sizeOffset])));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Verify_CryptographicOperations_ArgValidation_Null()
+        {
+            Assert.Throws<ArgumentNullException>("key", () =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    null,
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<ArgumentNullException>("source", () =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    Array.Empty<byte>(),
+                    (byte[])null,
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<ArgumentNullException>("hash", () =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
+                    null));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Verify_CryptographicOperations_ArgValidation_HashName_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("hashAlgorithm", () =>
+                CryptographicOperations.VerifyHmac(
+                    default(HashAlgorithmName),
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<ArgumentNullException>("hashAlgorithm", () =>
+                CryptographicOperations.VerifyHmac(
+                    default(HashAlgorithmName),
+                    ReadOnlySpan<byte>.Empty,
+                    ReadOnlySpan<byte>.Empty,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
+
+            Assert.Throws<ArgumentException>("hashAlgorithm", () =>
+                CryptographicOperations.VerifyHmac(
+                    new HashAlgorithmName(""),
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<ArgumentException>("hashAlgorithm", () =>
+                CryptographicOperations.VerifyHmac(
+                    new HashAlgorithmName(""),
+                    ReadOnlySpan<byte>.Empty,
+                    ReadOnlySpan<byte>.Empty,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Verify_CryptographicOperations_HashName_Unknown()
+        {
+            Assert.Throws<CryptographicException>(() =>
+                CryptographicOperations.VerifyHmac(
+                    new HashAlgorithmName("POTATO256"),
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<CryptographicException>(() =>
+                CryptographicOperations.VerifyHmac(
+                    new HashAlgorithmName("POTATO256"),
+                    ReadOnlySpan<byte>.Empty,
+                    ReadOnlySpan<byte>.Empty,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
+        }
+
+        [ConditionalFact(nameof(IsNotSupported))]
+        public void Verify_CryptographicOperations_HashName_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
+                    new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                CryptographicOperations.VerifyHmac(
+                    HashAlgorithm,
+                    ReadOnlySpan<byte>.Empty,
+                    ReadOnlySpan<byte>.Empty,
+                    new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
+        }
+
         [ConditionalFact(nameof(IsSupported))]
         public void Verify_ArgValidation_Null()
         {
@@ -983,9 +1097,7 @@ namespace System.Security.Cryptography.Tests
                     continue;
                 }
 
-                int index = Random.Shared.Next(0, mac.Length);
-                mac[index] = (byte)(mac[index] ^ 0b_10000000);
-
+                FlipRandomBit(mac);
                 ReadOnlySpan<byte> keySpan = key;
                 ReadOnlySpan<byte> dataSpan = data;
                 ReadOnlySpan<byte> macSpan = mac;
@@ -1019,8 +1131,7 @@ namespace System.Security.Cryptography.Tests
                     continue;
                 }
 
-                int index = Random.Shared.Next(0, mac.Length);
-                mac[index] = (byte)(mac[index] ^ 0b_10000000);
+                FlipRandomBit(mac);
                 ReadOnlyMemory<byte> keyMemory = key;
                 ReadOnlyMemory<byte> macMemory = mac;
 
@@ -1045,6 +1156,75 @@ namespace System.Security.Cryptography.Tests
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 async () => await VerifyAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, new ReadOnlyMemory<byte>(hash), cancelledToken));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Verify_CryptographicOperations_Match()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId];
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                ReadOnlySpan<byte> keySpan = key;
+                ReadOnlySpan<byte> dataSpan = data;
+                ReadOnlySpan<byte> macSpan = mac;
+
+                // Array
+                AssertExtensions.TrueExpression(CryptographicOperations.VerifyHmac(HashAlgorithm, key, data, mac));
+
+                // Span
+                AssertExtensions.TrueExpression(CryptographicOperations.VerifyHmac(HashAlgorithm, keySpan, dataSpan, macSpan));
+
+                // Stream, arrays
+                // AssertExtensions.TrueExpression(Verify(key, new MemoryStream(data), mac));
+
+                // // Stream, spans
+                // AssertExtensions.TrueExpression(Verify(keySpan, new MemoryStream(data), macSpan));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void Verify_CryptographicOperations_Misatch()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId].AsSpan().ToArray();
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                FlipRandomBit(mac);
+                ReadOnlySpan<byte> keySpan = key;
+                ReadOnlySpan<byte> dataSpan = data;
+                ReadOnlySpan<byte> macSpan = mac;
+
+                // Array
+                AssertExtensions.FalseExpression(CryptographicOperations.VerifyHmac(HashAlgorithm, key, data, mac));
+
+                // Span
+                AssertExtensions.FalseExpression(CryptographicOperations.VerifyHmac(HashAlgorithm, keySpan, dataSpan, macSpan));
+
+                // Stream, arrays
+                // AssertExtensions.TrueExpression(Verify(key, new MemoryStream(data), mac));
+
+                // // Stream, spans
+                // AssertExtensions.TrueExpression(Verify(keySpan, new MemoryStream(data), macSpan));
+            }
         }
 
         [ConditionalFact(nameof(IsNotSupported))]
@@ -1113,6 +1293,12 @@ namespace System.Security.Cryptography.Tests
                 VerifyAsync(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
             Assert.Throws<PlatformNotSupportedException>(() =>
                 VerifyAsync(new ReadOnlyMemory<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
+        }
+
+        private static void FlipRandomBit(Span<byte> input)
+        {
+            int index = Random.Shared.Next(0, input.Length);
+            input[index] = (byte)(input[index] ^ 0b_10000000);
         }
     }
 

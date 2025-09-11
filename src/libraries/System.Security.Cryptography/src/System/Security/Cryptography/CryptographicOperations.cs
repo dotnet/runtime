@@ -756,6 +756,92 @@ namespace System.Security.Cryptography
             return LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, cancellationToken);
         }
 
+        /// <summary>
+        ///   Verifies the HMAC of data.
+        /// </summary>
+        /// <param name="hashAlgorithm">The algorithm used to compute the HMAC.</param>
+        /// <param name="key">The secret key. The key can be any length.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash"/> has a length not equal to the size of the HMAC output.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="hashAlgorithm"/> has a <see cref="HashAlgorithmName.Name" /> that is empty.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm"/> has a <see cref="HashAlgorithmName.Name" /> that is
+        ///   <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm"/> specifies an unknown hash algorithm.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="hashAlgorithm"/> specifies a hash algorithm not supported by the current platform.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static bool VerifyHmac(
+            HashAlgorithmName hashAlgorithm,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> hash)
+        {
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
+
+            if (hash.Length != hashSizeInBytes)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, hashSizeInBytes), nameof(hash));
+            }
+
+            Debug.Assert(hashAlgorithm.Name is not null);
+
+            const int MaxStackAlloc = 64; // SHA2-512 / SHA3-512
+            Span<byte> macBuffer = stackalloc byte[MaxStackAlloc];
+
+            if (hashSizeInBytes > MaxStackAlloc)
+            {
+                macBuffer = new byte[hashSizeInBytes];
+            }
+
+            int written = HashProviderDispenser.OneShotHashProvider.MacData(hashAlgorithm.Name, key, source, macBuffer);
+            Debug.Assert(written == hashSizeInBytes);
+            Span<byte> mac = macBuffer.Slice(0, written);
+
+            bool result = FixedTimeEquals(mac, hash);
+            ZeroMemory(mac);
+            return result;
+        }
+
+        /// <exception cref="ArgumentNullException">
+        ///   <para>
+        ///     <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     <paramref name="hashAlgorithm"/> has a <see cref="HashAlgorithmName.Name" /> that is
+        ///     <see langword="null" />.
+        ///   </para>
+        /// </exception>
+        /// <inheritdoc cref="VerifyHmac(HashAlgorithmName, ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        public static bool VerifyHmac(HashAlgorithmName hashAlgorithm, byte[] key, byte[] source, byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return VerifyHmac(
+                hashAlgorithm,
+                new ReadOnlySpan<byte>(key),
+                new ReadOnlySpan<byte>(source),
+                new ReadOnlySpan<byte>(hash));
+        }
+
         private static void CheckStream([NotNull] Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
