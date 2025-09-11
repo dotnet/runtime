@@ -44,7 +44,7 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
         unsigned bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
@@ -70,8 +70,9 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
         unsigned long long bits = 0x7FF8000000000000ull;
+
 #else
 #error Unsupported or unset target architecture
 #endif

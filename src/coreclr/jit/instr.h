@@ -76,6 +76,30 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_S390X) //TODO: Giri :what is the correct implementation
+    #define INST1(id, nm, ldst, fmt, e1                                ) INS_##id,
+    #define INST2(id, nm, ldst, fmt, e1, e2                            ) INS_##id,
+    #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) INS_##id,
+    #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) INS_##id,
+    #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) INS_##id,
+    #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) INS_##id,
+    #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
+    #include "instrs.h"
+
+    #define INST1(id, nm, info, fmt, e1                                                     ) INS_sve_##id,
+    #define INST2(id, nm, info, fmt, e1, e2                                                 ) INS_sve_##id,
+    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) INS_sve_##id,
+    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) INS_sve_##id,
+    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) INS_sve_##id,
+    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) INS_sve_##id,
+    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) INS_sve_##id,
+    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) INS_sve_##id,
+    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) INS_sve_##id,
+    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) INS_sve_##id,
+    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) INS_sve_##id,
+    #include "instrss390x.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -258,7 +282,7 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -287,7 +311,7 @@ enum insBarrier : unsigned
 {
     INS_BARRIER_SY = 15
 };
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined (TARGET_S390X)
 enum insOpts : unsigned
 {
     INS_OPTS_NONE,
@@ -549,6 +573,9 @@ enum emitAttr : unsigned
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
 #if defined(TARGET_ARM64)
+                EA_SCALABLE      = 0x020,
+                EA_SIZE_MASK     = 0x03F,
+#elif defined(TARGET_S390X)
                 EA_SCALABLE      = 0x020,
                 EA_SIZE_MASK     = 0x03F,
 #elif defined(TARGET_XARCH)

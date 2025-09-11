@@ -60,6 +60,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "LOONGARCH64"
 #elif defined(TARGET_RISCV64)
 #define TARGET_READABLE_NAME "RISCV64"
+#elif defined(TARGET_S390X)
+#define TARGET_READABLE_NAME "S390X"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -88,6 +90,10 @@ inline bool compUnixX86Abi()
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_RISCV64)
+#define REGMASK_BITS              64
+#define CSE_CONST_SHARED_LOW_BITS 12
+
+#elif defined(TARGET_S390X)
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
@@ -186,6 +192,26 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
+#include "register.h"
+};
+
+#elif defined(TARGET_S390X)
+enum _regNumber_enum : unsigned
+{
+#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
+#include "register.h"
+
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
+
+enum _regMask_enum : uint64_t
+{
+    RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
 #define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
@@ -398,7 +424,7 @@ public:
     }
 };
 
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
 
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
@@ -584,6 +610,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #include "targetloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "targetriscv64.h"
+#elif defined(TARGET_S390X)
+#include "targets390x.h"
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -905,7 +933,7 @@ extern const regMaskSmall regMasks[REG_COUNT];
 inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
-    defined(TARGET_RISCV64)
+    defined(TARGET_RISCV64) || defined(TARGET_S390X)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];

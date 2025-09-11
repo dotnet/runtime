@@ -2336,7 +2336,7 @@ void CodeGen::genEmitCallIndir(int                   callType,
                                xReg,
                                indir->Scale(),
                                indir->Offset(),
-                               isJump);
+                               isJump, 0);
 }
 // clang-format on
 

@@ -7310,7 +7310,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             return false;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
         ssize_t magic;
         int     shift;
 
@@ -9877,6 +9877,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
+    bool useNullCheck = false;
+#elif defined(TARGET_S390X)
     bool useNullCheck = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();

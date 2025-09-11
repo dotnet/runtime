@@ -469,6 +469,11 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 
 // See unwindRiscv64.cpp
 
+#elif defined(TARGET_S390X)
+
+// TODO: S390X unwind implementation needed
+
+
 #else // TARGET*
 
 #error Unsupported or unset target architecture

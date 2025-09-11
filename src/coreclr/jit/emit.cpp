@@ -3748,6 +3748,9 @@ const size_t hexEncodingSize = 13;
 #elif defined(TARGET_ARM64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
+#elif defined(TARGET_S390X)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
 #elif defined(TARGET_ARM)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 11;
@@ -5394,6 +5397,10 @@ AGAIN:
         jmp->idInsSize(isz);
 #endif
 #elif defined(TARGET_ARM64)
+        // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
+        // All other code size is 4.
+        assert((sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_S390X)
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
@@ -7573,6 +7580,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
+#elif defined(TARGET_S390X)
+                    assert(!jmp->idAddr()->iiaHasInstrCount());
+                    emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
@@ -7591,6 +7601,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_S390X)
+                    assert(!jmp->idAddr()->iiaHasInstrCount());
+                    emitOutputLJ(NULL, adr, jmp);
 #else
 #error Unsupported or unset target architecture
 #endif
