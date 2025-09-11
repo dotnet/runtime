@@ -367,7 +367,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Verifies the HMAC of a stream using the SHA1 algorithm.
+        ///   Verifies the HMAC of a stream using the SHA1 algorithm.
         /// </summary>
         /// <param name="key">The HMAC key.</param>
         /// <param name="source">The stream to HMAC.</param>
@@ -403,7 +403,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Asynchronously verifies the HMAC of a stream using the SHA1 algorithm.
+        ///   Asynchronously verifies the HMAC of a stream using the SHA1 algorithm.
         /// </summary>
         /// <param name="key">The HMAC key.</param>
         /// <param name="source">The stream to HMAC.</param>
