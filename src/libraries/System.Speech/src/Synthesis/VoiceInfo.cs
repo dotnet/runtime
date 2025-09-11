@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Speech.AudioFormat;
 using System.Speech.Internal;
@@ -121,7 +122,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Tests whether two AutomationIdentifier objects are equivalent
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
 #pragma warning disable 6506
             return obj is VoiceInfo voice

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.Synthesis;
 
 namespace System.Speech.AudioFormat
@@ -99,7 +100,7 @@ namespace System.Speech.AudioFormat
 
         #region Public Methods
         public byte[] FormatSpecificData() { return (byte[])_formatSpecificData.Clone(); }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not SpeechAudioFormatInfo refObj)
             {

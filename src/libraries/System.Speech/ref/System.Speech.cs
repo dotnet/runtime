@@ -41,7 +41,7 @@ namespace System.Speech.AudioFormat
         public int ChannelCount { get { throw null; } }
         public System.Speech.AudioFormat.EncodingFormat EncodingFormat { get { throw null; } }
         public int SamplesPerSecond { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public byte[] FormatSpecificData() { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -307,7 +307,7 @@ namespace System.Speech.Recognition
         public object? Value { get { throw null; } }
         public bool Contains(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> item) { throw null; }
         public bool ContainsKey(string key) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.Add(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> key) { }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.Clear() { }
@@ -653,7 +653,7 @@ namespace System.Speech.Synthesis
         internal InstalledVoice() { }
         public bool Enabled { get { throw null; } set { } }
         public System.Speech.Synthesis.VoiceInfo VoiceInfo { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial class PhonemeReachedEventArgs : System.Speech.Synthesis.PromptEventArgs
@@ -924,7 +924,7 @@ namespace System.Speech.Synthesis
         public string? Name { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.AudioFormat.SpeechAudioFormatInfo>? SupportedAudioFormats { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
 }
@@ -940,7 +940,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public float Change { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.ContourPointChangeType ChangeType { get { throw null; } }
         public float Start { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.ContourPoint other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.ContourPoint point1, System.Speech.Synthesis.TtsEngine.ContourPoint point2) { throw null; }
@@ -991,7 +991,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public char[]? Phoneme { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.Prosody? Prosody { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.SayAs? SayAs { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.FragmentState other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.FragmentState state1, System.Speech.Synthesis.TtsEngine.FragmentState state2) { throw null; }
@@ -1034,7 +1034,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public float Number { get { throw null; } }
         public int SsmlAttributeId { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.ProsodyUnit Unit { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.ProsodyNumber other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.ProsodyNumber prosodyNumber1, System.Speech.Synthesis.TtsEngine.ProsodyNumber prosodyNumber2) { throw null; }
@@ -1115,7 +1115,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public int Param1 { get { throw null; } }
         public System.IntPtr Param2 { get { throw null; } }
         public short ParameterType { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.SpeechEventInfo other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.SpeechEventInfo event1, System.Speech.Synthesis.TtsEngine.SpeechEventInfo event2) { throw null; }

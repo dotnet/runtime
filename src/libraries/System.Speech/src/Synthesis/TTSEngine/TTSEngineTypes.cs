@@ -95,7 +95,7 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not SpeechEventInfo sei)
             {
@@ -248,7 +248,7 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not FragmentState fs)
             {
@@ -336,7 +336,7 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not ContourPoint cp)
             {
@@ -388,7 +388,7 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not ProsodyNumber pn)
             {

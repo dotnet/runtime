@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Speech.Internal;
 using System.Speech.Internal.Synthesis;
@@ -46,7 +47,7 @@ namespace System.Speech.Synthesis
         #endregion Events
 
         #region public Methods
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is not InstalledVoice ti2)
             {

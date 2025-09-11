@@ -35,7 +35,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             SemanticValue? refObj = obj as SemanticValue;
             if (refObj == null || refObj.Count != Count || refObj.Value == null && Value != null || (refObj.Value != null && !refObj.Value.Equals(Value)))
