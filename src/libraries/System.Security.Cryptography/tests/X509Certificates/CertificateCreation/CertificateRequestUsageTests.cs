@@ -12,8 +12,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestUsageTests
     {
-        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
-
         [Fact]
         public static void ReproduceBigExponentCsr()
         {
@@ -309,7 +307,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]

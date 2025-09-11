@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         // Android supports PSS at the algorithms layer, but does not support it
         // being used in cert chains.
         public static bool PlatformSupportsPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.IsRsaPssSupported;
-        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+        public static bool AreCustomSaltLengthsSupportedWithPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
 
         [Fact]
         public static void CreateChain_ECC()
@@ -490,7 +490,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
         [InlineData(1)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]

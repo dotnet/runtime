@@ -11,8 +11,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class CertificateRequestLoadTests
     {
-        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
-
         [Theory]
         [InlineData(CertificateRequestLoadOptions.Default, false)]
         [InlineData(CertificateRequestLoadOptions.UnsafeLoadCertificateExtensions, false)]
@@ -376,7 +374,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
         [InlineData("SHA256", 1)]
         [InlineData("SHA384", 1)]
         [InlineData("SHA512", 1)]
@@ -852,7 +850,7 @@ BgkqhkiG9w0BAQsFAAMBAA==
             }
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
         [InlineData(0)]
         [InlineData(4)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]

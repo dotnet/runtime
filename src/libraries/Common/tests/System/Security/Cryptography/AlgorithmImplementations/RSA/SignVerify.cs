@@ -43,8 +43,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public abstract class SignVerify
     {
         public static bool SupportsPss => RSAFactory.SupportsPss;
-        public static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
-
+        public static bool AreCustomSaltLengthsSupportedWithPss => SupportsPss && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
         protected abstract byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract bool VerifyData(RSA rsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
@@ -583,7 +582,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, HashAlgorithmName.SHA3_512.Name, TestData.RSA2048Params);
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(nameof(AreCustomSaltLengthsSupportedWithPss))]
         [InlineData(true)]
         [InlineData(false)]
         public void PssSignature_Sha_256_RSA2048_PSS_SaltLength_24(bool validateWithCorrectSaltLength)
@@ -625,7 +624,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory(nameof(AreCustomPssSaltLengthsSupported))]
+        [ConditionalTheory(nameof(AreCustomSaltLengthsSupportedWithPss))]
         [InlineData(true)]
         [InlineData(false)]
         public void PssSignature_Sha_256_RSA2048_PSS_SaltLength_Max(bool validateWithCorrectSaltLength)
@@ -1674,7 +1673,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get
             {
-                int?[] saltLengths = AreCustomPssSaltLengthsSupported
+                int?[] saltLengths = AreCustomSaltLengthsSupportedWithPss
                     ? [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 0, 1, 4]
                     : [null];
                 foreach (var saltLength in saltLengths)

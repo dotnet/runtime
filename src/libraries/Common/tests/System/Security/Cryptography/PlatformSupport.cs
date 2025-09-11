@@ -164,6 +164,12 @@ namespace Test.Cryptography
         /// </summary>
         internal static bool IsRsaPssSupported => s_isRsaPssSupported ??= CheckIfRsaPssSupported();
 
+#if NET10_0_OR_GREATER
+        internal static bool AreCustomSaltLengthsSupportedWithPss => IsRsaPssSupported && !PlatformDetection.IsApplePlatform;
+#else
+        internal static bool AreCustomSaltLengthsSupportedWithPss => false;
+#endif
+
         internal static bool IsPqcMLKemX509Supported
         {
             get
