@@ -1695,6 +1695,15 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
+    // HACK: Not sure why it can happen, but we may see the end IL for the block
+    //       to increasing after splitting off its tail.
+    //       This tweak is just to avoid asserts later on.
+    //       This is not a real fix.
+    if (block->bbCodeOffsEnd > (*remainder)->bbCodeOffs)
+    {
+        block->bbCodeOffsEnd = (*remainder)->bbCodeOffs;
+    }
+
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
