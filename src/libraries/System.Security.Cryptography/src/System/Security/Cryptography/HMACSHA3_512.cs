@@ -471,6 +471,90 @@ namespace System.Security.Cryptography
             return Verify(new ReadOnlySpan<byte>(key), source, new ReadOnlySpan<byte>(hash));
         }
 
+        /// <summary>
+        /// Asynchronously verifies the HMAC of a stream using the SHA3-512 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The stream to HMAC.</param>
+        /// <param name="hash">The HMAC to compare against.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public static ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (hash.Length != HashSizeInBytes)
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            CheckSha3Support();
+
+            return VerifyAsyncInner(key, source, hash, cancellationToken);
+
+            static async ValueTask<bool> VerifyAsyncInner(
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                ReadOnlyMemory<byte> hash,
+                CancellationToken cancellationToken)
+            {
+                byte[] mac = new byte[HashSizeInBytes];
+
+                using (PinAndClear.Track(mac))
+                {
+                    int written = await LiteHashProvider.HmacStreamAsync(
+                        HashAlgorithmNames.SHA3_512,
+                        key.Span,
+                        source,
+                        mac,
+                        cancellationToken).ConfigureAwait(false);
+
+                    Debug.Assert(written == HashSizeInBytes);
+                    return CryptographicOperations.FixedTimeEquals(mac, hash.Span);
+                }
+            }
+        }
+
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        /// <inheritdoc cref="VerifyAsync(ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, CancellationToken)" />
+        public static ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(hash);
+            // source parameter check is done in called overload.
+
+            return VerifyAsync(new ReadOnlyMemory<byte>(key), source, new ReadOnlyMemory<byte>(hash), cancellationToken);
+        }
+
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
