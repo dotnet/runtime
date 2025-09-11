@@ -1069,6 +1069,7 @@ PCODE GPRegsRefStoreRoutines[] =
     (PCODE)Store_Ref_X3,        // 3
 };
 
+#if 0
 extern "C" void Load_F0();
 extern "C" void Load_F0_F1();
 extern "C" void Load_F0_F1_F2();
@@ -1130,6 +1131,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)0,                               // 14
     (PCODE)Load_F3,                         // 15
 };
+#endif
 
 #endif // TARGET_ARM
 
@@ -1204,7 +1206,12 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
     printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
 #endif
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
+#ifdef TARGET_ARM
+    _ASSERTE(!"Not supported FP reg in ARMEL");
+    return NULL;
+#else
     return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
+#endif
 }
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
