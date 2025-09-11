@@ -81,7 +81,7 @@ namespace System.Tests
         [Fact]
         public static void Construction()
         {
-            // Check a number of the simple APIs on Array for dimensions up to 4.
+            // Check a number of the simple APIs on Array for dimensions up to 4, first with value types, then reference types.
             Array array = new int[] { 1, 2, 3 };
             VerifyArray(array, typeof(int), new int[] { 3 }, new int[1]);
 
@@ -93,6 +93,19 @@ namespace System.Tests
 
             array = new int[2, 3, 4, 5];
             VerifyArray(array, typeof(int), new int[] { 2, 3, 4, 5 }, new int[4]);
+
+            // Check a number of the simple APIs on Array for dimensions up to 4.
+            array = new string[] { "1", "2", "3" };
+            VerifyArray(array, typeof(string), new int[] { 3 }, new int[1]);
+
+            array = new string[,] { { "1", "2", "3" }, { "4", null, "6" } };
+            VerifyArray(array, typeof(string), new int[] { 2, 3 }, new int[2]);
+
+            array = new string[2, 3, 4];
+            VerifyArray(array, typeof(string), new int[] { 2, 3, 4 }, new int[3]);
+
+            array = new string[2, 3, 4, 5];
+            VerifyArray(array, typeof(string), new int[] { 2, 3, 4, 5 }, new int[4]);
         }
 
         [Fact]
@@ -4682,10 +4695,19 @@ namespace System.Tests
             }
             else
             {
-                Assert.Throws<RankException>(() => iList.Contains(null));
                 Assert.Throws<RankException>(() => iList.IndexOf(null));
                 AssertExtensions.Throws<ArgumentException>(null, () => iList[0]);
                 AssertExtensions.Throws<ArgumentException>(null, () => iList[0] = 1);
+
+                bool containsNull = false;
+                foreach (object? obj in array)
+                {
+                    containsNull |= obj is null;
+                    Assert.True(iList.Contains(obj), $"{obj} not found in {string.Join(",", array.Cast<object?>())}");
+                }
+
+                Assert.False(iList.Contains(new object()));
+                Assert.Equal(containsNull, iList.Contains(null));
             }
         }
 

@@ -228,5 +228,35 @@ namespace System.Linq.Tests
                 Assert.Equal(i + 1, count);
             }
         }
+
+        [Fact]
+        public void MultiDimArray_OfType_Succeeds()
+        {
+            var array = new string[3, 4];
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    array[i, j] = $"{i}{j}";
+                }
+            }
+
+            // ToArray
+            var result = array.OfType<string>().ToArray();
+            Assert.Equal(12, result.Length);
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    Assert.Equal($"{i}{j}", result[i * 4 + j]);
+                }
+            }
+
+            // Contains
+            foreach (string s in array)
+            {
+                Assert.True(result.OfType<string>().Contains(s));
+            }
+        }
     }
 }

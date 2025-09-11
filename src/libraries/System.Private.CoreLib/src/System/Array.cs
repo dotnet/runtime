@@ -1039,7 +1039,22 @@ namespace System
 
         bool IList.Contains(object? value)
         {
-            return IndexOf(this, value) >= this.GetLowerBound(0);
+            // IndexOf only works for single-dimensional arrays.
+            if (Rank == 1)
+            {
+                return IndexOf(this, value) >= GetLowerBound(0);
+            }
+
+            // For multi-dimensional arrays, fall back to enumeration.
+            foreach (object? element in this)
+            {
+                if (Equals(element, value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         void IList.Clear()
