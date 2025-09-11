@@ -51,7 +51,8 @@ namespace System.IO
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             // Get the full path
-            GetFullPathName(path.AsSpan(terminate: true), ref builder);
+            path.EnsureTerminated();
+            GetFullPathName(path.AsSpan(), ref builder);
 
             string result = builder.AsSpan().IndexOf('~') >= 0
                 ? TryExpandShortFileName(ref builder, originalPath: null)
@@ -176,8 +177,9 @@ namespace System.IO
 
             while (!success)
             {
+                inputBuilder.EnsureTerminated();
                 uint result = Interop.Kernel32.GetLongPathNameW(
-                    ref inputBuilder.GetPinnableReference(terminate: true), ref outputBuilder.GetPinnableReference(), (uint)outputBuilder.Capacity);
+                    ref inputBuilder.GetPinnableReference(), ref outputBuilder.GetPinnableReference(), (uint)outputBuilder.Capacity);
 
                 // Replace any temporary null we added
                 if (inputBuilder[foundIndex] == '\0') inputBuilder[foundIndex] = '\\';

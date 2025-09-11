@@ -1538,6 +1538,9 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.EnsureTerminated.cs" Condition="'$(TargetsWindows)' == 'true'">
+      <Link>Common\System\Text\ValueStringBuilder.EnsureTerminated.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
       <Link>Common\System\Threading\ITimer.cs</Link>
     </Compile>
