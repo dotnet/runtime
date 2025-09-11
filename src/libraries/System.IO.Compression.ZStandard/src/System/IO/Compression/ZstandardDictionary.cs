@@ -28,7 +28,7 @@ namespace System.IO.Compression
         public static ZStandardDictionary Create(ReadOnlyMemory<byte> buffer)
         {
             if (buffer.IsEmpty)
-                throw new ArgumentException("Buffer cannot be empty.", nameof(buffer));
+                throw new ArgumentException(SR.ZStandardDictionary_EmptyBuffer, nameof(buffer));
 
             byte[] dictionaryData = buffer.ToArray();
 
@@ -41,7 +41,7 @@ namespace System.IO.Compression
                     // Create only decompression dictionary since no quality level is specified
                     SafeZStdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
                     if (decompressionDict.IsInvalid)
-                        throw new InvalidOperationException("Failed to create ZStandard decompression dictionary.");
+                        throw new InvalidOperationException(SR.ZStandardDictionary_CreateDecompressionFailed);
 
                     return new ZStandardDictionary(null, decompressionDict, dictionaryData);
                 }
@@ -56,7 +56,7 @@ namespace System.IO.Compression
         public static ZStandardDictionary Create(ReadOnlyMemory<byte> buffer, int quality)
         {
             if (buffer.IsEmpty)
-                throw new ArgumentException("Buffer cannot be empty.", nameof(buffer));
+                throw new ArgumentException(SR.ZStandardDictionary_EmptyBuffer, nameof(buffer));
 
             byte[] dictionaryData = buffer.ToArray();
 
@@ -69,14 +69,14 @@ namespace System.IO.Compression
                     // Create both compression and decompression dictionaries
                     SafeZStdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict(dictData, (nuint)dictionaryData.Length, quality);
                     if (compressionDict.IsInvalid)
-                        throw new InvalidOperationException("Failed to create ZStandard compression dictionary.");
+                        throw new InvalidOperationException(SR.ZStandardDictionary_CreateCompressionFailed);
                     compressionDict.Quality = quality;
 
                     SafeZStdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
                     if (decompressionDict.IsInvalid)
                     {
                         compressionDict.Dispose();
-                        throw new InvalidOperationException("Failed to create ZStandard decompression dictionary.");
+                        throw new InvalidOperationException(SR.ZStandardDictionary_CreateDecompressionFailed);
                     }
 
                     return new ZStandardDictionary(compressionDict, decompressionDict, dictionaryData);
