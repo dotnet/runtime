@@ -2987,6 +2987,74 @@ do {                                                                           \
                     break;
                 }
 
+                case INTOP_COMPARE_EXCHANGE_I1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    uint8_t comparand = LOCAL_VAR(ip[4], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint8_t) = (uint8_t)(oldULONG >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_I2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    uint16_t comparand = LOCAL_VAR(ip[4], uint16_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 1)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint8_t) = (uint8_t)(oldULONG >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
+
 #define COMPARE_EXCHANGE(type)                                          \
 do                                                                      \
 {                                                                       \
@@ -3021,6 +3089,59 @@ do                                                                      \
     LOCAL_VAR(ip[1], type) = old;                                       \
     ip += 4;                                                            \
 } while (0)
+
+                case INTOP_EXCHANGE_I1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint8_t) = (uint8_t)oldULONG >> shift;
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGE_I2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 1)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint16_t) = (uint16_t)oldULONG >> shift;
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
 
                 case INTOP_EXCHANGE_I4:
                 {

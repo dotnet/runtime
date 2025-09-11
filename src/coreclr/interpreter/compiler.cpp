@@ -2676,6 +2676,14 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             int32_t opcode;
             switch (retType)
             {
+                case InterpTypeI1:
+                case InterpTypeU1:
+                    opcode = INTOP_COMPARE_EXCHANGE_I1;
+                    break;
+                case InterpTypeI2:
+                case InterpTypeU2:
+                    opcode = INTOP_COMPARE_EXCHANGE_I2;
+                    break;
                 case InterpTypeI4:
                     opcode = INTOP_COMPARE_EXCHANGE_I4;
                     break;
@@ -2683,7 +2691,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     opcode = INTOP_COMPARE_EXCHANGE_I8;
                     break;
                 default:
-                    return false;
+                    goto FAIL_TO_EXPAND_INTRINSIC;
             }
 
             AddIns(opcode);
@@ -2707,6 +2715,14 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             int32_t opcode;
             switch (retType)
             {
+                case InterpTypeI1:
+                case InterpTypeU1:
+                    opcode = INTOP_EXCHANGE_I1;
+                    break;
+                case InterpTypeI2:
+                case InterpTypeU2:
+                    opcode = INTOP_EXCHANGE_I2;
+                    break;
                 case InterpTypeI4:
                     opcode = INTOP_EXCHANGE_I4;
                     break;
@@ -2714,7 +2730,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     opcode = INTOP_EXCHANGE_I8;
                     break;
                 default:
-                    return false;
+                    goto FAIL_TO_EXPAND_INTRINSIC;
             }
 
             AddIns(opcode);
@@ -2754,8 +2770,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         {
             if (sig.sigInst.methInstCount != 1)
             {
-                assert(!mustExpand);
-                return false;
+                goto FAIL_TO_EXPAND_INTRINSIC;
             }
             CHECK_STACK(1);
 
@@ -2781,8 +2796,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         default:
         {
+            FAIL_TO_EXPAND_INTRINSIC:
 #ifdef DEBUG
-            if (m_verbose)
+            if (m_verbose || mustExpand)
             {
                 const char* className = NULL;
                 const char* namespaceName = NULL;
