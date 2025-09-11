@@ -2191,6 +2191,10 @@ MAIN_LOOP:
                     {
                         PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                        // WASMTODO: We may end up here with native JIT helper entrypoint without MethodDesc
+                        // that CALL_INTERP_METHOD is not able to handle. This is a potential problem for
+                        // interpreter<->native code stub generator.
+                        // https://github.com/dotnet/runtime/pull/119516#discussion_r2337631271
                         if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                         {
                             targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
