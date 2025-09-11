@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Internal;
@@ -35,7 +36,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <param name="uri">uri</param>
         /// <param name="mediaType">media type</param>
         /// <param name="site">Engine site</param>
-        public abstract void AddLexicon(Uri uri, string mediaType, ITtsEngineSite site);
+        public abstract void AddLexicon(Uri uri, string? mediaType, ITtsEngineSite site);
 
         /// <summary>
         /// Removes a lexicon for this engine
@@ -94,14 +95,14 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (!(obj is SpeechEventInfo))
+            if (obj is not SpeechEventInfo sei)
             {
                 return false;
             }
 
-            return Equals((SpeechEventInfo)obj);
+            return Equals(sei);
         }
         public override int GetHashCode()
         {
@@ -119,7 +120,7 @@ namespace System.Speech.Synthesis.TtsEngine
         int Write(IntPtr data, int count);
         SkipInfo GetSkipInfo();
         void CompleteSkip(int skipped);
-        Stream LoadResource(Uri uri, string mediaType);
+        Stream? LoadResource(Uri uri, string mediaType);
         int EventInterest { get; }
         int Actions { get; }
         int Rate { get; }
@@ -187,7 +188,7 @@ namespace System.Speech.Synthesis.TtsEngine
         {
         }
 
-        internal TextFragment(FragmentState fragState, string textToSpeak, string textFrag, int offset, int length)
+        internal TextFragment(FragmentState fragState, string? textToSpeak, string? textFrag, int offset, int length)
         {
             if (fragState.Action == TtsEngineAction.Speak || fragState.Action == TtsEngineAction.Pronounce)
             {
@@ -216,15 +217,15 @@ namespace System.Speech.Synthesis.TtsEngine
         public int LangId { get { return _langId; } internal set { _langId = value; } }
         public int Emphasis { get { return _emphasis; } internal set { _emphasis = value; } }
         public int Duration { get { return _duration; } internal set { _duration = value; } }
-        public SayAs SayAs { get { return _sayAs; } internal set { ArgumentNullException.ThrowIfNull(value); _sayAs = value; } }
-        public Prosody Prosody { get { return _prosody; } internal set { ArgumentNullException.ThrowIfNull(value); _prosody = value; } }
-        public char[] Phoneme { get { return _phoneme; } internal set { ArgumentNullException.ThrowIfNull(value); _phoneme = value; } }
+        [DisallowNull] public SayAs? SayAs { get { return _sayAs; } internal set { ArgumentNullException.ThrowIfNull(value); _sayAs = value; } }
+        [DisallowNull] public Prosody? Prosody { get { return _prosody; } internal set { ArgumentNullException.ThrowIfNull(value); _prosody = value; } }
+        [DisallowNull] public char[]? Phoneme { get { return _phoneme; } internal set { ArgumentNullException.ThrowIfNull(value); _phoneme = value; } }
         public FragmentState(TtsEngineAction action,
                              int langId,
                              int emphasis,
                              int duration,
-                             SayAs sayAs,
-                             Prosody prosody,
+                             SayAs? sayAs,
+                             Prosody? prosody,
                              char[] phonemes)
         {
             _action = action;
@@ -247,14 +248,14 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (!(obj is FragmentState))
+            if (obj is not FragmentState fs)
             {
                 return false;
             }
 
-            return Equals((FragmentState)obj);
+            return Equals(fs);
         }
         public override int GetHashCode()
         {
@@ -265,9 +266,9 @@ namespace System.Speech.Synthesis.TtsEngine
         private int _langId;
         private int _emphasis;
         private int _duration;
-        private SayAs _sayAs;
-        private Prosody _prosody;
-        private char[] _phoneme;
+        private SayAs? _sayAs;
+        private Prosody? _prosody;
+        private char[]? _phoneme;
     }
     [StructLayout(LayoutKind.Sequential)]
     public class Prosody
@@ -277,8 +278,8 @@ namespace System.Speech.Synthesis.TtsEngine
         public ProsodyNumber Rate { get { return _rate; } set { _rate = value; } }
         public int Duration { get { return _duration; } set { _duration = value; } }
         public ProsodyNumber Volume { get { return _volume; } set { _volume = value; } }
-        public ContourPoint[] GetContourPoints() { return _contourPoints; }
-        public void SetContourPoints(ContourPoint[] points)
+        public ContourPoint[]? GetContourPoints() { return _contourPoints; }
+        public void SetContourPoints([NotNull] ContourPoint[]? points)
         {
             ArgumentNullException.ThrowIfNull(points);
 
@@ -308,7 +309,7 @@ namespace System.Speech.Synthesis.TtsEngine
         internal ProsodyNumber _rate; // can be casted to a Prosody Rate
         internal int _duration;
         internal ProsodyNumber _volume;
-        internal ContourPoint[] _contourPoints;
+        internal ContourPoint[]? _contourPoints;
     }
     [ImmutableObject(true)]
 
@@ -335,14 +336,14 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (!(obj is ContourPoint))
+            if (obj is not ContourPoint cp)
             {
                 return false;
             }
 
-            return Equals((ContourPoint)obj);
+            return Equals(cp);
         }
         public override int GetHashCode()
         {
@@ -387,14 +388,14 @@ namespace System.Speech.Synthesis.TtsEngine
         {
             return this == other;
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (!(obj is ProsodyNumber))
+            if (obj is not ProsodyNumber pn)
             {
                 return false;
             }
 
-            return Equals((ProsodyNumber)obj);
+            return Equals(pn);
         }
         public override int GetHashCode()
         {
@@ -409,18 +410,18 @@ namespace System.Speech.Synthesis.TtsEngine
     [StructLayout(LayoutKind.Sequential)]
     public class SayAs
     {
-        public string InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _interpretAs = value; } }
-        public string Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _format = value; } }
-        public string Detail { get { return _detail; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _detail = value; } }
+        [DisallowNull] public string? InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _interpretAs = value; } }
+        [DisallowNull] public string? Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _format = value; } }
+        [DisallowNull] public string? Detail { get { return _detail; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _detail = value; } }
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        private string _interpretAs;
+        private string? _interpretAs;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        private string _format;
+        private string? _format;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        private string _detail;
+        private string? _detail;
     }
 
     #endregion

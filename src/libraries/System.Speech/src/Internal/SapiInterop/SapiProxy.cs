@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Speech.Internal.SapiInterop
 {
-    internal abstract class SapiProxy : IDisposable
+    internal abstract class SapiProxy(ISpRecognizer recognizer) : IDisposable
     {
         #region Constructors
 
@@ -20,7 +20,7 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Internal Methods
 
-        internal abstract object Invoke(ObjectDelegate pfn);
+        internal abstract T Invoke<T>(ObjectDelegate<T> pfn);
         internal abstract void Invoke2(VoidDelegate pfn);
 
         #endregion
@@ -45,9 +45,9 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Protected Fields
 
-        protected ISpeechRecognizer _speechRecognizer;
-        protected ISpRecognizer2 _recognizer2;
-        protected ISpRecognizer _recognizer;
+        protected ISpeechRecognizer? _speechRecognizer;
+        protected ISpRecognizer2? _recognizer2;
+        protected ISpRecognizer _recognizer = recognizer;
 
         #endregion
 
@@ -58,8 +58,8 @@ namespace System.Speech.Internal.SapiInterop
             #region Constructors
 
             internal PassThrough(ISpRecognizer recognizer)
+                : base(recognizer)
             {
-                _recognizer = recognizer;
             }
 
             ~PassThrough()
@@ -82,7 +82,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            internal override object Invoke(ObjectDelegate pfn)
+            internal override T Invoke<T>(ObjectDelegate<T> pfn)
             {
                 return pfn.Invoke();
             }
@@ -113,6 +113,7 @@ namespace System.Speech.Internal.SapiInterop
             #region Constructors
 
             internal MTAThread(SapiRecognizer.RecognizerType type)
+                : base(null!)
             {
                 _mta = new Thread(new ThreadStart(SapiMTAThread));
                 if (!_mta.TrySetApartmentState(ApartmentState.MTA))
@@ -130,6 +131,7 @@ namespace System.Speech.Internal.SapiInterop
                 {
                     Invoke2(delegate { _recognizer = (ISpRecognizer)new SpSharedRecognizer(); });
                 }
+                System.Diagnostics.Debug.Assert(_recognizer is not null);
             }
 
             ~MTAThread()
@@ -153,21 +155,21 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            internal override object Invoke(ObjectDelegate pfn)
+            internal override T Invoke<T>(ObjectDelegate<T> pfn)
             {
                 lock (this)
                 {
-                    _doit = pfn;
+                    _doit = () => pfn();
                     _process.Set();
                     _done.WaitOne();
                     if (_exception == null)
                     {
-                        return _result;
+                        return (T)_result!;
                     }
                     else
                     {
                         ExceptionDispatchInfo.Throw(_exception);
-                        return null;
+                        return default;
                     }
                 }
             }
@@ -218,7 +220,7 @@ namespace System.Speech.Internal.SapiInterop
                         }
                         else
                         {
-                            _doit2.Invoke();
+                            _doit2!.Invoke();
                             _doit2 = null;
                         }
                     }
@@ -244,15 +246,15 @@ namespace System.Speech.Internal.SapiInterop
             private Thread _mta;
             private AutoResetEvent _process = new(false);
             private AutoResetEvent _done = new(false);
-            private ObjectDelegate _doit;
-            private VoidDelegate _doit2;
-            private object _result;
-            private Exception _exception;
+            private ObjectDelegate<object?>? _doit;
+            private VoidDelegate? _doit2;
+            private object? _result;
+            private Exception? _exception;
 
             #endregion
         }
 
-        internal delegate object ObjectDelegate();
+        internal delegate T ObjectDelegate<T>();
         internal delegate void VoidDelegate();
     }
 

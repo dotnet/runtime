@@ -46,26 +46,25 @@ namespace System.Speech.Synthesis
         #endregion Events
 
         #region public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            InstalledVoice ti2 = obj as InstalledVoice;
-            if (ti2 == null)
+            if (obj is not InstalledVoice ti2)
             {
                 return false;
             }
 
-            return VoiceInfo.Name == ti2.VoiceInfo.Name && VoiceInfo.Age == ti2.VoiceInfo.Age && VoiceInfo.Gender == ti2.VoiceInfo.Gender && VoiceInfo.Culture.Equals(ti2.VoiceInfo.Culture);
+            return VoiceInfo.Name == ti2.VoiceInfo.Name && VoiceInfo.Age == ti2.VoiceInfo.Age && VoiceInfo.Gender == ti2.VoiceInfo.Gender && object.Equals(VoiceInfo.Culture, ti2.VoiceInfo.Culture);
         }
         public override int GetHashCode()
         {
-            return VoiceInfo.Name.GetHashCode();
+            return VoiceInfo.Name?.GetHashCode() ?? 0;
         }
 
         #endregion Events
 
         #region Internal Methods
 
-        internal static InstalledVoice Find(List<InstalledVoice> list, VoiceInfo voiceId)
+        internal static InstalledVoice? Find(List<InstalledVoice> list, VoiceInfo voiceId)
         {
             foreach (InstalledVoice ti in list)
             {
@@ -77,14 +76,14 @@ namespace System.Speech.Synthesis
             return null;
         }
 
-        internal static InstalledVoice FirstEnabled(List<InstalledVoice> list, CultureInfo culture)
+        internal static InstalledVoice? FirstEnabled(List<InstalledVoice> list, CultureInfo culture)
         {
-            InstalledVoice voiceFirst = null;
+            InstalledVoice? voiceFirst = null;
             foreach (InstalledVoice ti in list)
             {
                 if (ti.Enabled)
                 {
-                    if (Helpers.CompareInvariantCulture(ti.VoiceInfo.Culture, culture))
+                    if (Helpers.CompareInvariantCulture(ti.VoiceInfo.Culture!, culture))
                     {
                         return ti;
                     }

@@ -17,10 +17,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            GrammarBuilderWildcard refObj = obj as GrammarBuilderWildcard;
-            return refObj != null;
+            return obj is GrammarBuilderWildcard;
         }
         public override int GetHashCode()
         {
@@ -36,7 +35,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return new GrammarBuilderWildcard();
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule? rule, IdentifierCollection ruleIds)
         {
             // Return a ruleref to Garbage
             IRuleRef ruleRef = elementFactory.Garbage;

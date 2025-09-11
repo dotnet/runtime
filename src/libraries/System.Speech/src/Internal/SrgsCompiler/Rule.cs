@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.SrgsParser;
+using System.Speech.Synthesis.TtsEngine;
 using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
@@ -15,23 +17,34 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // Only used for the special transition
         internal Rule(int iSerialize)
-            : base(null, null)
+            : base(null!, null!)
         {
             _iSerialize = iSerialize;
+            _id = null!;
         }
 
         internal Rule(Backend backend, string name, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-            : base(backend, null)
+            : base(backend, null! /* Cannot path 'this' into base constructor - setting this on _rule instead */)
         {
             _rule = this;
-            Init(name, cfgRule, iSerialize, SemanticFormat, ref cImportedRules);
+            _id = name;
+            _cfgRule = cfgRule;
+            _firstState = null;
+            _cfgRule.DirtyRule = true;
+            _iSerialize = iSerialize;
+            _fHasExitPath = false;
+            _fHasDynamicRef = false;
+            _fIsEpsilonRule = false;
+            _fStaticRule = false;
+            if (_cfgRule.Import)
+            {
+                cImportedRules++;
+            }
         }
 
         internal Rule(Backend backend, string name, int offsetName, SPCFGRULEATTRIBUTES attributes, int id, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-            : base(backend, null)
+            : this(backend, name, new CfgRule(id, offsetName, attributes), iSerialize, SemanticFormat, ref cImportedRules)
         {
-            _rule = this;
-            Init(name, new CfgRule(id, offsetName, attributes), iSerialize, SemanticFormat, ref cImportedRules);
         }
 
         #endregion
@@ -40,8 +53,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<Rule> Interface implementation
 
-        int IComparable<Rule>.CompareTo(Rule rule2)
+        int IComparable<Rule>.CompareTo(Rule? rule2)
         {
+            if (rule2 is null)
+            {
+                return 1;
+            }
+
             Rule rule1 = this;
 
             if (rule1._cfgRule.Import)
@@ -77,7 +95,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void Validate()
         {
-            if ((!_cfgRule.Dynamic) && (!_cfgRule.Import) && _id != "VOID" && _firstState.NumArcs == 0)
+            if ((!_cfgRule.Dynamic) && (!_cfgRule.Import) && _id != "VOID" && _firstState!.NumArcs == 0)
             {
                 XmlParser.ThrowSrgsException(SRID.EmptyRule);
             }
@@ -131,7 +149,7 @@ namespace System.Speech.Internal.SrgsCompiler
             streamBuffer.WriteStream(_cfgRule);
         }
 
-        void IElement.PostParse(IElement grammar)
+        void IElement.PostParse(IElement? grammar)
         {
             // Empty rule
             if (_endArc == null)
@@ -145,7 +163,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 TrimEndEpsilons(_endArc, _backend);
 
                 // If the first arc was an epsilon value then there is no need to create a new state
-                if (_startArc.IsEpsilonTransition && _startArc.End != null && Graph.MoveSemanticTagRight(_startArc))
+                if (_startArc!.IsEpsilonTransition && _startArc.End != null && Graph.MoveSemanticTagRight(_startArc))
                 {
                     // Discard the arc and replace it with the startArc
                     _firstState = _startArc.End;
@@ -180,7 +198,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        string IRule.BaseClass
+        string? IRule.BaseClass
         {
             get
             {
@@ -192,7 +210,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal string BaseClass
+        internal string? BaseClass
         {
             get
             {
@@ -220,28 +238,11 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Methods
 
-        private void Init(string id, CfgRule cfgRule, int iSerialize, GrammarOptions SemanticFormat, ref int cImportedRules)
-        {
-            _id = id;
-            _cfgRule = cfgRule;
-            _firstState = null;
-            _cfgRule.DirtyRule = true;
-            _iSerialize = iSerialize;
-            _fHasExitPath = false;
-            _fHasDynamicRef = false;
-            _fIsEpsilonRule = false;
-            _fStaticRule = false;
-            if (_cfgRule.Import)
-            {
-                cImportedRules++;
-            }
-        }
-
         private static void TrimEndEpsilons(Arc end, Backend backend)
         {
             Arc endArc = end;
 
-            State endState = endArc.Start;
+            State? endState = endArc.Start;
             if (endState != null)
             {
                 // Remove the end arc if possible, check done by MoveSemanticTagRight
@@ -270,7 +271,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal CfgRule _cfgRule;
 
-        internal State _firstState;
+        internal State? _firstState;
 
         internal bool _fHasExitPath;
 
@@ -296,7 +297,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private string _id;
 
         // STG fields
-        private string _baseclass;
+        private string? _baseclass;
 
         private StringBuilder _script = new();
 

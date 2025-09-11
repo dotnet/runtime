@@ -14,7 +14,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
         }
 
-        internal GrammarBuilderDictation(string category)
+        internal GrammarBuilderDictation(string? category)
         {
             _category = category;
         }
@@ -22,13 +22,13 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            GrammarBuilderDictation refObj = obj as GrammarBuilderDictation;
-            if (refObj == null)
+            if (obj is not GrammarBuilderDictation refObj)
             {
                 return false;
             }
+
             return _category == refObj._category;
         }
         public override int GetHashCode()
@@ -87,7 +87,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Private Fields
 
-        private readonly string _category;
+        private readonly string? _category;
 
         #endregion
     }

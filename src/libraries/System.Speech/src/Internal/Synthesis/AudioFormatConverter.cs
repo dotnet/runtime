@@ -23,7 +23,7 @@ namespace System.Speech.Internal.Synthesis
         /// <returns>New array with the audio data in requested format.</returns>
         internal static short[] Convert(byte[] data, AudioCodec from, AudioCodec to)
         {
-            ConvertByteShort cnvDlgt = null;
+            ConvertByteShort? cnvDlgt = null;
 
             switch (from)
             {
@@ -74,22 +74,19 @@ namespace System.Speech.Internal.Synthesis
         /// <returns>New array with the audio data in requested format.</returns>
         internal static byte[] Convert(short[] data, AudioCodec from, AudioCodec to)
         {
-            ConvertShortByte cnvDlgt = null;
-
-            switch (from)
+            if (from is not AudioCodec.PCM16)
             {
-                case AudioCodec.PCM16:
-                    switch (to)
-                    {
-                        case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte(ConvertLinear8LinearShortByte); break;
-                        case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte(ConvertLinear2LinearShortByte); break;
-                        case AudioCodec.G711U: cnvDlgt = new ConvertShortByte(ConvertLinear2ULaw); break;
-                        case AudioCodec.G711A: cnvDlgt = new ConvertShortByte(ConvertLinear2ALaw); break;
-                    }
-                    break;
+                throw new FormatException();
+            }
 
-                default:
-                    throw new FormatException();
+            ConvertShortByte cnvDlgt;
+            switch (to)
+            {
+                case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte(ConvertLinear8LinearShortByte); break;
+                case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte(ConvertLinear2LinearShortByte); break;
+                case AudioCodec.G711U: cnvDlgt = new ConvertShortByte(ConvertLinear2ULaw); break;
+                case AudioCodec.G711A: cnvDlgt = new ConvertShortByte(ConvertLinear2ALaw); break;
+                default: throw new FormatException();
             }
 
             return cnvDlgt(data, data.Length);
@@ -432,8 +429,8 @@ namespace System.Speech.Internal.Synthesis
         #region Conversion tables for direct conversions
 
         // Cached table for aLaw and uLaw conversion (16K * 2 bytes each)
-        private static byte[] s_uLawCompTableCached;
-        private static byte[] s_aLawCompTableCached;
+        private static byte[]? s_uLawCompTableCached;
+        private static byte[]? s_aLawCompTableCached;
 
         #endregion
 

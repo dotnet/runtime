@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
 
@@ -19,14 +20,16 @@ namespace System.Speech.Internal
     {
         #region Constructors
 
-        internal AsyncSerializedWorker(WaitCallback defaultCallback, SynchronizationContext syncContext)
+        internal AsyncSerializedWorker(WaitCallback? defaultCallback, SynchronizationContext? syncContext)
         {
             _syncContext = syncContext;
             _workerPostCallback = new SendOrPostCallback(WorkerProc);
             Initialize(defaultCallback);
         }
 
-        private void Initialize(WaitCallback defaultCallback)
+        [MemberNotNull(nameof(_queue))]
+        [MemberNotNull(nameof(_workerCallback))]
+        private void Initialize(WaitCallback? defaultCallback)
         {
             _queue = new Queue();
             _hasPendingPost = false;
@@ -60,7 +63,7 @@ namespace System.Speech.Internal
             }
         }
 
-        public void PostOperation(Delegate callback, params object[] parameters)
+        public void PostOperation(Delegate callback, params object?[] parameters)
         {
             AddItem(new AsyncWorkItem(callback, parameters));
         }
@@ -95,7 +98,7 @@ namespace System.Speech.Internal
             }
         }
 
-        internal WaitCallback DefaultCallback
+        internal WaitCallback? DefaultCallback
         {
             get
             {
@@ -106,7 +109,7 @@ namespace System.Speech.Internal
             }
         }
 
-        internal AsyncWorkItem NextWorkItem()
+        internal AsyncWorkItem? NextWorkItem()
         {
             lock (_queue.SyncRoot)
             {
@@ -116,7 +119,7 @@ namespace System.Speech.Internal
                 }
                 else
                 {
-                    AsyncWorkItem workItem = (AsyncWorkItem)_queue.Dequeue();
+                    AsyncWorkItem workItem = (AsyncWorkItem)_queue.Dequeue()!;
                     if (_queue.Count == 0)
                     {
                         _hasPendingPost = false;
@@ -128,7 +131,7 @@ namespace System.Speech.Internal
 
         internal void ConsumeQueue()
         {
-            AsyncWorkItem workItem;
+            AsyncWorkItem? workItem;
             while (null != (workItem = NextWorkItem()))
             {
                 workItem.Invoke();
@@ -168,7 +171,7 @@ namespace System.Speech.Internal
         }
 
         // event handler of this event should execute quickly and must not acquire any lock
-        internal event WaitCallback WorkItemPending;
+        internal event WaitCallback? WorkItemPending;
 
         #endregion
         #region Private/Protected Methods
@@ -195,7 +198,7 @@ namespace System.Speech.Internal
             }
         }
 
-        private void WorkerProc(object ignored)
+        private void WorkerProc(object? _)
         {
             AsyncWorkItem workItem;
             while (true)
@@ -204,7 +207,7 @@ namespace System.Speech.Internal
                 {
                     if (_queue.Count > 0 && _isAsyncMode)
                     {
-                        workItem = (AsyncWorkItem)_queue.Dequeue();
+                        workItem = (AsyncWorkItem)_queue.Dequeue()!;
                     }
                     else
                     {
@@ -247,14 +250,14 @@ namespace System.Speech.Internal
 
         #region Private Fields
 
-        private SynchronizationContext _syncContext;
+        private SynchronizationContext? _syncContext;
         private SendOrPostCallback _workerPostCallback;
 
         private Queue _queue;
         private bool _hasPendingPost;
         private bool _isAsyncMode;
         private WaitCallback _workerCallback;
-        private WaitCallback _defaultCallback;
+        private WaitCallback? _defaultCallback;
         private bool _isEnabled;
 
         #endregion
@@ -262,7 +265,7 @@ namespace System.Speech.Internal
 
     internal class AsyncWorkItem
     {
-        internal AsyncWorkItem(Delegate dynamicCallback, params object[] postData)
+        internal AsyncWorkItem(Delegate? dynamicCallback, params object?[] postData)
         {
             _dynamicCallback = dynamicCallback;
             _postData = postData;
@@ -273,7 +276,7 @@ namespace System.Speech.Internal
             _dynamicCallback?.DynamicInvoke(_postData);
         }
 
-        private Delegate _dynamicCallback;
-        private object[] _postData;
+        private Delegate? _dynamicCallback;
+        private object?[] _postData;
     }
 }

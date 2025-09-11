@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -78,18 +79,16 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private static void ProcessSpeakElement(XmlReader reader, ISsmlParser engine, object voice)
         {
-            SsmlAttributes ssmlAttributes = new();
-            ssmlAttributes._voice = voice;
+            SsmlAttributes ssmlAttributes = new(voice, new List<SsmlXmlAttribute>());
             ssmlAttributes._age = VoiceAge.NotSet;
             ssmlAttributes._gender = VoiceGender.NotSet;
-            ssmlAttributes._unknownNamespaces = new List<SsmlXmlAttribute>();
 
-            string sVersion = null;
-            string sCulture = null;
-            string sBaseUri = null;
-            CultureInfo culture = null;
+            string? sVersion = null;
+            string? sCulture = null;
+            string? sBaseUri = null;
+            CultureInfo? culture = null;
             List<SsmlXmlAttribute> extraSpeakAttributes = new();
-            Exception innerException = null;
+            Exception? innerException = null;
 
             // Process attributes.
             while (reader.MoveToNextAttribute())
@@ -189,12 +188,13 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // append the local attributes to list of unknown attributes
-            List<SsmlXmlAttribute> extraAttributes = null;
+            List<SsmlXmlAttribute>? extraAttributes = null;
             foreach (SsmlXmlAttribute attribute in extraSpeakAttributes)
             {
                 ssmlAttributes.AddUnknowAttribute(attribute, ref extraAttributes);
             }
 
+            System.Diagnostics.Debug.Assert(culture != null);
             voice = engine.ProcessSpeak(sVersion, sBaseUri, culture, ssmlAttributes._unknownNamespaces);
 
             ssmlAttributes._fragmentState.LangId = culture.LCID;
@@ -214,10 +214,10 @@ namespace System.Speech.Internal.Synthesis
         /// The element name is fetch from the element name array and
         /// the delegate for that element will be called.
         /// </summary>
-        private static void ProcessElement(XmlReader reader, ISsmlParser engine, string sElement, SsmlElement possibleElements, SsmlAttributes ssmAttributesParent, bool fIgnore, List<SsmlXmlAttribute> extraAttributes)
+        private static void ProcessElement(XmlReader reader, ISsmlParser engine, string? sElement, SsmlElement possibleElements, SsmlAttributes ssmAttributesParent, bool fIgnore, List<SsmlXmlAttribute>? extraAttributes)
         {
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -296,13 +296,13 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Audio, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sUri = null;
+            string? sUri = null;
             bool fRenderDesc = false;
             while (reader.MoveToNextAttribute())
             {
@@ -357,16 +357,16 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Break, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
             ssmlAttributes._fragmentState.Action = TtsEngineAction.Silence;
             ssmlAttributes._fragmentState.Emphasis = (int)EmphasisBreak.Default;
 
-            string sTime = null;
-            string sStrength = null;
+            string? sTime = null;
+            string? sStrength = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -377,13 +377,13 @@ namespace System.Speech.Internal.Synthesis
                     switch (reader.LocalName)
                     {
                         case "time":
-                            {
-                                CheckForDuplicates(ref sTime, reader);
-                                ssmlAttributes._fragmentState.Emphasis = (int)EmphasisBreak.None;
-                                ssmlAttributes._fragmentState.Duration = ParseCSS2Time(sTime);
-                                isInvalidAttribute = ssmlAttributes._fragmentState.Duration < 0;
-                            }
-                            break;
+                        {
+                            CheckForDuplicates(ref sTime, reader);
+                            ssmlAttributes._fragmentState.Emphasis = (int)EmphasisBreak.None;
+                            ssmlAttributes._fragmentState.Duration = ParseCSS2Time(sTime);
+                            isInvalidAttribute = ssmlAttributes._fragmentState.Duration < 0;
+                        }
+                        break;
 
                         case "strength":
                             CheckForDuplicates(ref sStrength, reader);
@@ -432,14 +432,14 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Desc, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sCulture = null;
-            CultureInfo culture = null;
+            string? sCulture = null;
+            CultureInfo? culture = null;
             while (reader.MoveToNextAttribute())
             {
                 bool isInvalidAttribute = reader.NamespaceURI != xmlNamespace;
@@ -488,8 +488,8 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Emphasis, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -497,7 +497,7 @@ namespace System.Speech.Internal.Synthesis
             // Set the default value
             ssmlAttributes._fragmentState.Emphasis = (int)EmphasisWord.Moderate;
 
-            string sLevel = null;
+            string? sLevel = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -548,13 +548,13 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Mark, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sName = null;
+            string? sName = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -645,14 +645,14 @@ namespace System.Speech.Internal.Synthesis
         private static void ParseTextBlock(XmlReader reader, ISsmlParser engine, bool isParagraph, string sElement, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sCulture = null;
-            CultureInfo culture = null;
+            string? sCulture = null;
+            CultureInfo? culture = null;
             while (reader.MoveToNextAttribute())
             {
                 bool isInvalidAttribute = reader.NamespaceURI != xmlNamespace;
@@ -690,7 +690,7 @@ namespace System.Speech.Internal.Synthesis
             ssmlAttributes._voice = engine.ProcessTextBlock(isParagraph, ssmlAttributes._voice, ref ssmlAttributes._fragmentState, culture, fNewCulture, ssmlAttributes._gender, ssmlAttributes._age);
             if (fNewCulture)
             {
-                ssmlAttributes._fragmentState.LangId = culture.LCID;
+                ssmlAttributes._fragmentState.LangId = culture!.LCID;
             }
 
             // Process child elements.
@@ -713,16 +713,16 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Phoneme, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sAlphabet = null;
+            string? sAlphabet = null;
             AlphabetType alphabet = AlphabetType.Ipa;
-            string sPh = null;
-            char[] aPhoneIds = null;
+            string? sPh = null;
+            char[]? aPhoneIds = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -835,18 +835,18 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Prosody, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sPitch = null;
-            string sContour = null;
-            string sRange = null;
-            string sRate = null;
-            string sDuration = null;
-            string sVolume = null;
+            string? sPitch = null;
+            string? sContour = null;
+            string? sRange = null;
+            string? sRate = null;
+            string? sDuration = null;
+            string? sVolume = null;
             Prosody prosody = ssmlAttributes._fragmentState.Prosody != null ? ssmlAttributes._fragmentState.Prosody.Clone() : new Prosody();
             while (reader.MoveToNextAttribute())
             {
@@ -918,15 +918,15 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.SayAs, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sInterpretAs = null;
-            string sFormat = null;
-            string sDetail = null;
+            string? sInterpretAs = null;
+            string? sFormat = null;
+            string? sDetail = null;
             System.Speech.Synthesis.TtsEngine.SayAs sayAs = new();
             while (reader.MoveToNextAttribute())
             {
@@ -987,13 +987,13 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Sub, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sAlias = null;
+            string? sAlias = null;
             int textPosition = 0;
             while (reader.MoveToNextAttribute())
             {
@@ -1007,8 +1007,7 @@ namespace System.Speech.Internal.Synthesis
                         // The W3C spec says ignore
                         case "alias":
                             CheckForDuplicates(ref sAlias, reader);
-                            XmlTextReader textReader = reader as XmlTextReader;
-                            if (textReader != null && engine.Ssml != null)
+                            if (reader is XmlTextReader textReader && engine.Ssml != null)
                             {
                                 textPosition = engine.Ssml.IndexOf(reader.Value, textReader.LinePosition + reader.LocalName.Length, StringComparison.Ordinal);
                             }
@@ -1050,23 +1049,23 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sCulture = null;
-            string sGender = null;
-            string sVariant = null;
-            string sName = null;
-            string sAge = null;
-            string xmlns = null;
-            CultureInfo culture = null;
+            string? sCulture = null;
+            string? sGender = null;
+            string? sVariant = null;
+            string? sName = null;
+            string? sAge = null;
+            string? xmlns = null;
+            CultureInfo? culture = null;
             int variant = -1;
 
-            List<SsmlXmlAttribute> extraAttributes = null;
-            List<SsmlXmlAttribute> extraAttributesVoice = null;
-            List<SsmlXmlAttribute> localUnknownNamespaces = null;
+            List<SsmlXmlAttribute>? extraAttributes = null;
+            List<SsmlXmlAttribute>? extraAttributesVoice = null;
+            List<SsmlXmlAttribute>? localUnknownNamespaces = null;
 
             while (reader.MoveToNextAttribute())
             {
@@ -1219,14 +1218,14 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Lexicon, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
-            List<SsmlXmlAttribute> extraAttributes = null;
+            SsmlAttributes ssmlAttributes = default;
+            List<SsmlXmlAttribute>? extraAttributes = null;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
-            string sUri = null;
-            string sMediaType = null;
+            string? sUri = null;
+            string? sMediaType = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -1280,7 +1279,7 @@ namespace System.Speech.Internal.Synthesis
         #region Prompt Engine
 
         private delegate bool ProcessPromptEngine0(object voice);
-        private delegate bool ProcessPromptEngine1(object voice, string value);
+        private delegate bool ProcessPromptEngine1(object voice, string? value);
 
         private static void ParsePromptEngine0(XmlReader reader, ISsmlParser engine, SsmlElement elementAllowed, SsmlElement element, ProcessPromptEngine0 process, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
@@ -1288,7 +1287,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(elementAllowed, element, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -1316,19 +1315,19 @@ namespace System.Speech.Internal.Synthesis
             ProcessElement(reader, engine, sElement, SsmlElement.AudioMarkTextWithStyle | ElementPromptEngine(ssmlAttributes), ssmlAttributes, fIgnore, null);
         }
 
-        private static string ParsePromptEngine1(XmlReader reader, ISsmlParser engine, SsmlElement elementAllowed, SsmlElement element, string attribute, ProcessPromptEngine1 process, SsmlAttributes ssmAttributesParent, bool fIgnore)
+        private static string? ParsePromptEngine1(XmlReader reader, ISsmlParser engine, SsmlElement elementAllowed, SsmlElement element, string attribute, ProcessPromptEngine1 process, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
             // Validate the SSML markup
             string sElement = ValidateElement(elementAllowed, element, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
             // 1 attribute
-            string value = null;
+            string? value = null;
             while (reader.MoveToNextAttribute())
             {
                 if (reader.LocalName == attribute)
@@ -1381,15 +1380,15 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.PromptEngineDatabase, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
 
             // No attributes allowed
-            string fname = null;
-            string delta = null;
-            string idset = null;
+            string? fname = null;
+            string? delta = null;
+            string? idset = null;
             while (reader.MoveToNextAttribute())
             {
                 // Namespace must be empty
@@ -1453,7 +1452,7 @@ namespace System.Speech.Internal.Synthesis
 
         private static void ParseWithTag(XmlReader reader, ISsmlParser engine, SsmlElement element, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
-            string tag = ParsePromptEngine1(reader, engine, element, SsmlElement.PromptEngineWithTag, "tag", new ProcessPromptEngine1(engine.BeginPromptEngineWithTag), ssmAttributesParent, fIgnore);
+            string? tag = ParsePromptEngine1(reader, engine, element, SsmlElement.PromptEngineWithTag, "tag", new ProcessPromptEngine1(engine.BeginPromptEngineWithTag), ssmAttributesParent, fIgnore);
 
             // Notify the engine that the element is processed
             engine.EndElement();
@@ -1462,7 +1461,7 @@ namespace System.Speech.Internal.Synthesis
 
         private static void ParseRule(XmlReader reader, ISsmlParser engine, SsmlElement element, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
-            string name = ParsePromptEngine1(reader, engine, element, SsmlElement.PromptEngineRule, "name", new ProcessPromptEngine1(engine.BeginPromptEngineRule), ssmAttributesParent, fIgnore);
+            string? name = ParsePromptEngine1(reader, engine, element, SsmlElement.PromptEngineRule, "name", new ProcessPromptEngine1(engine.BeginPromptEngineRule), ssmAttributesParent, fIgnore);
 
             // Notify the engine that the element is processed
             engine.EndElement();
@@ -1471,7 +1470,7 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        private static void CheckForDuplicates(ref string dest, XmlReader reader)
+        private static void CheckForDuplicates([NotNull] ref string? dest, XmlReader reader)
         {
             if (!string.IsNullOrEmpty(dest))
             {
@@ -1518,7 +1517,7 @@ namespace System.Speech.Internal.Synthesis
             return duration;
         }
 
-        private static ContourPoint[] ParseContour(string contour)
+        private static ContourPoint[]? ParseContour(string contour)
         {
             char[] achContour = contour.ToCharArray();
             List<ContourPoint> points = new();
@@ -1589,7 +1588,7 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // Add a 100% if necessary
-            if (!points[points.Count - 1].Start.Equals(1.0))
+            if (!points[points.Count - 1].Start.Equals(1.0f))
             {
                 points.Add(new ContourPoint(1, points[points.Count - 1].Change, points[points.Count - 1].ChangeType));
             }
@@ -1635,7 +1634,7 @@ namespace System.Speech.Internal.Synthesis
             return start + 1;
         }
 
-        private static bool ParseNumberHz(XmlReader reader, ref string attribute, string[] attributeValues, int[] attributeConst, ref ProsodyNumber number)
+        private static bool ParseNumberHz(XmlReader reader, ref string? attribute, string[] attributeValues, int[] attributeConst, ref ProsodyNumber number)
         {
             bool isInvalidAttribute = false;
             bool isHz;
@@ -1656,7 +1655,7 @@ namespace System.Speech.Internal.Synthesis
             return isInvalidAttribute;
         }
 
-        private static bool ParseNumberRelative(XmlReader reader, ref string attribute, string[] attributeValues, int[] attributeConst, ref ProsodyNumber number)
+        private static bool ParseNumberRelative(XmlReader reader, ref string? attribute, string[] attributeValues, int[] attributeConst, ref ProsodyNumber number)
         {
             bool isInvalidAttribute = false;
 
@@ -1780,6 +1779,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Throws an Exception with the error specified by the resource ID.
         /// </summary>
+        [DoesNotReturn]
         private static void ThrowFormatException(SRID id, params object[] args)
         {
             throw new FormatException(SR.Get(id, args));
@@ -1788,7 +1788,8 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Throws an Exception with the error specified by the resource ID.
         /// </summary>
-        private static void ThrowFormatException(Exception innerException, SRID id, params object[] args)
+        [DoesNotReturn]
+        private static void ThrowFormatException(Exception? innerException, SRID id, params object[] args)
         {
             throw new FormatException(SR.Get(id, args), innerException);
         }
@@ -1809,7 +1810,7 @@ namespace System.Speech.Internal.Synthesis
 
         private static int GetColumnPosition(XmlReader reader)
         {
-            XmlTextReader textReader = reader as XmlTextReader;
+            XmlTextReader? textReader = reader as XmlTextReader;
             return textReader != null ? textReader.LinePosition - 1 : 0;
         }
 
@@ -1819,16 +1820,22 @@ namespace System.Speech.Internal.Synthesis
 
         private struct SsmlAttributes
         {
+            public SsmlAttributes(object voice, List<SsmlXmlAttribute> unknownNamespaces)
+            {
+                _voice = voice;
+                _unknownNamespaces = unknownNamespaces;
+            }
+
             internal object _voice;
             internal FragmentState _fragmentState;
             internal bool _fRenderDesc;
             internal VoiceAge _age;
             internal VoiceGender _gender;
-            internal string _baseUri;
+            internal string? _baseUri;
             internal short _cPromptOutput;
             internal List<SsmlXmlAttribute> _unknownNamespaces;
 
-            internal bool AddUnknowAttribute(SsmlXmlAttribute attribute, ref List<SsmlXmlAttribute> extraAttributes)
+            internal bool AddUnknowAttribute(SsmlXmlAttribute attribute, ref List<SsmlXmlAttribute>? extraAttributes)
             {
                 foreach (SsmlXmlAttribute ns in _unknownNamespaces)
                 {
@@ -1842,7 +1849,7 @@ namespace System.Speech.Internal.Synthesis
                 return false;
             }
 
-            internal bool AddUnknowAttribute(XmlReader reader, ref List<SsmlXmlAttribute> extraAttributes)
+            internal bool AddUnknowAttribute(XmlReader reader, ref List<SsmlXmlAttribute>? extraAttributes)
             {
                 foreach (SsmlXmlAttribute ns in _unknownNamespaces)
                 {

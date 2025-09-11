@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Speech.Recognition
 {
@@ -16,7 +17,7 @@ namespace System.Speech.Recognition
 #pragma warning disable 6507
 
         // Constructor for recognized 'word'
-        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
+        public RecognizedWordUnit(string? text, float confidence, string? pronunciation, [NotNull] string? lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
         {
             ArgumentNullException.ThrowIfNull(lexicalForm);
 
@@ -41,7 +42,7 @@ namespace System.Speech.Recognition
 
         #region Public Properties
         // Spoken text of the word {No conversion to display form}
-        public string Text
+        public string? Text
         {
             get { return _text; }
         }
@@ -51,7 +52,7 @@ namespace System.Speech.Recognition
         {
             get { return _confidence; }
         }
-        public string Pronunciation
+        public string? Pronunciation
         {
             get
             {
@@ -92,10 +93,10 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private string _text;
+        private string? _text;
         private string _lexicalForm;
         private float _confidence;
-        private string _pronunciation;
+        private string? _pronunciation;
         private DisplayAttributes _displayAttributes;
 
         #endregion

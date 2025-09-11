@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
@@ -56,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
             List<State> sortedStates = new(_states);
 
             // Release the memory for the original list of states
-            _states = null;
+            _states = null!;
 
             sortedStates.Sort();
 
@@ -66,7 +67,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             // Include null terminator
             int cBasePath = _basePath != null ? _basePath.Length + 1 : 0;
-            float[] pWeights;
+            float[]? pWeights;
             int cArcs;
 
             // Add the top level semantic interpretation tag
@@ -114,6 +115,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             if (cBasePath > 0)
             {
+                System.Diagnostics.Debug.Assert(_basePath != null, "cBasePath should only be positive when we have a _basePath");
                 streamBuffer.WriteArrayChar(_basePath.ToCharArray(), _basePath.Length);
 
                 // Add a zero to be compatible with SAPI 5
@@ -138,12 +140,13 @@ namespace System.Speech.Internal.SrgsCompiler
             bool semanticInterpretation = (GrammarOptions & GrammarOptions.MssV1) == GrammarOptions.MssV1;
             foreach (State state in sortedStates)
             {
-                state.SerializeStateEntries(streamBuffer, semanticInterpretation, pWeights, ref arcOffset, ref ulWeightOffset);
+                state.SerializeStateEntries(streamBuffer, semanticInterpretation, pWeights!, ref arcOffset, ref ulWeightOffset);
             }
 
             System.Diagnostics.Debug.Assert(streamBuffer.Stream.Position - startStreamPosition == header.pWeights);
             if (_fNeedWeightTable)
             {
+                System.Diagnostics.Debug.Assert(pWeights is not null, "If we need a weight table, we should have gotten one");
                 streamBuffer.WriteArray<float>(pWeights, cArcs);
             }
 
@@ -192,7 +195,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Description:
         /// Combine the current data in a grammar with one coming from a CFG
         /// </summary>
-        internal static Backend CombineGrammar(string ruleName, Backend org, Backend extra)
+        internal static Backend CombineGrammar(string? ruleName, Backend org, Backend extra)
         {
             Backend be = new();
             be._fLoadedFromBinary = true;
@@ -327,9 +330,9 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Internal method for finding rule in rule list
         /// </summary>
-        internal Rule FindRule(string sRule)
+        internal Rule? FindRule(string sRule)
         {
-            Rule rule = null;
+            Rule? rule = null;
 
             if (_nameOffsetRules.Count > 0)
             {
@@ -342,7 +345,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     System.Diagnostics.Debug.Assert(dwSymbolOffset == 0 || _symbols[iWord] == sRule);
 
-                    rule = dwSymbolOffset > 0 && _nameOffsetRules.TryGetValue(dwSymbolOffset, out Rule value) ? value : null;
+                    rule = dwSymbolOffset > 0 && _nameOffsetRules.TryGetValue(dwSymbolOffset, out Rule? value) ? value : null;
                 }
             }
 
@@ -358,7 +361,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
 
-            return rule ?? null;
+            return rule;
         }
 
         /// <summary>
@@ -392,16 +395,16 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="rule">must be initial state of rule</param>
         /// <param name="parentRule">Rule calling the ruleref</param>
         /// <param name="flWeight">Weight</param>
-        internal Arc RuleTransition(Rule rule, Rule parentRule, float flWeight)
+        internal Arc RuleTransition(Rule rule, Rule? parentRule, float flWeight)
         {
-            Rule ruleToTransitionTo = null;
+            Rule? ruleToTransitionTo = null;
 
             if (flWeight < 0.0f)
             {
                 XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
             }
 
-            Rule specialRuleTrans = null;
+            Rule? specialRuleTrans = null;
 
             if (rule == CfgGrammar.SPRULETRANS_WILDCARD || rule == CfgGrammar.SPRULETRANS_DICTATION || rule == CfgGrammar.SPRULETRANS_TEXTBUFFER)
             {
@@ -484,8 +487,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 foreach (Arc arc in srcFromState.OutArcs)
                 {
                     // - Lookup the DestToState corresponding to SrcToState
-                    State srcToState = arc.End;
-                    State destToState = null;
+                    State? srcToState = arc.End;
+                    State? destToState = null;
 
                     if (srcToState != null)
                     {
@@ -522,6 +525,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal void CloneSubGraph(Rule rule, Backend org, Backend extra, Dictionary<State, State> srcToDestHash, bool fromOrg)
         {
+            System.Diagnostics.Debug.Assert(rule._firstState != null);
             Backend beSrc = fromOrg ? org : extra;
 
             List<State> CloneStack = new();       // States to process
@@ -540,8 +544,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 foreach (Arc arc in srcFromState.OutArcs)
                 {
                     // - Lookup the DestToState corresponding to SrcToState
-                    State srcToState = arc.End;
-                    State destToState = null;
+                    State? srcToState = arc.End;
+                    State? destToState = null;
 
                     if (srcToState != null)
                     {
@@ -577,7 +581,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             ruleName = arc.RuleRef.Name.Substring(12);
                             if (fromOrg && FindInRules(ruleName) == null)
                             {
-                                Rule ruleExtra = extra.FindInRules(ruleName);
+                                Rule? ruleExtra = extra.FindInRules(ruleName);
                                 if (ruleExtra == null)
                                 {
                                     XmlParser.ThrowSrgsException(SRID.DynamicRuleNotFound, ruleName);
@@ -590,7 +594,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             ruleName = arc.RuleRef.Name.Substring(11);
                             if (fromOrg == false && FindInRules(ruleName) == null)
                             {
-                                Rule ruleOrg = org.FindInRules(ruleName);
+                                Rule? ruleOrg = org.FindInRules(ruleName);
                                 if (ruleOrg == null)
                                 {
                                     XmlParser.ThrowSrgsException(SRID.DynamicRuleNotFound, ruleName);
@@ -601,14 +605,14 @@ namespace System.Speech.Internal.SrgsCompiler
                         else
                         {
                             ruleName = arc.RuleRef.Name;
-                            Rule ruleExtra = org.FindInRules(ruleName);
+                            Rule? ruleExtra = org.FindInRules(ruleName);
                             if (fromOrg == false)
                             {
                                 CloneSubGraph(arc.RuleRef, org, extra, srcToDestHash, true);
                             }
                         }
-                        Rule refRule = FindInRules(ruleName);
-                        refRule ??= CloneState(arc.RuleRef._firstState, CloneStack, srcToDestHash);
+                        Rule? refRule = FindInRules(ruleName);
+                        refRule ??= CloneState(arc.RuleRef._firstState!, CloneStack, srcToDestHash);
                         newArc.RuleRef = refRule;
                     }
 
@@ -643,7 +647,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 foreach (Arc arc in state.OutArcs)
                 {
                     // Add EndState to listDelete, if unique
-                    State endState = arc.End;
+                    State? endState = arc.End;
 
                     // Add this state to the list of states to delete
                     if (endState != null && !stateToProcess.Contains(endState) && !statesToDelete.Contains(endState))
@@ -789,10 +793,16 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Load compiled grammar data. This overwrites any existing data in the grammar
         /// We end up with containers of words, symbols, rules, arcs, states and state handles, etc.
         /// </summary>
+        [MemberNotNull(nameof(_words))]
+        [MemberNotNull(nameof(_symbols))]
         internal void InitFromBinaryGrammar(StreamMarshaler streamHelper)
         {
             CfgGrammar.CfgHeader header = CfgGrammar.ConvertCfgHeader(streamHelper);
 
+            System.Diagnostics.Debug.Assert(header.pszWords != null, "ConvertCfgHeader should set includeAllGrammarData");
+            System.Diagnostics.Debug.Assert(header.pszSymbols != null, "ConvertCfgHeader should set includeAllGrammarData");
+            System.Diagnostics.Debug.Assert(header.arcs != null, "ConvertCfgHeader should set includeAllGrammarData");
+            System.Diagnostics.Debug.Assert(header.tags != null, "ConvertCfgHeader should set includeAllGrammarData");
             _words = header.pszWords;
             _symbols = header.pszSymbols;
 
@@ -801,7 +811,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //
             // Build up the internal representation
             //
-            State[] apStateTable = new State[header.arcs.Length];
+            State?[] apStateTable = new State[header.arcs.Length];
             SortedDictionary<int, Rule> ruleFirstArcs = new();
 
             //
@@ -818,7 +828,7 @@ namespace System.Speech.Internal.SrgsCompiler
             Arc[] apArcTable = new Arc[header.arcs.Length];
             bool fLastArcNull = true;
             CfgArc pLastArc = new();
-            State currentState = null;
+            State? currentState = null;
             SortedDictionary<int, Rule>.Enumerator ieFirstArcs = ruleFirstArcs.GetEnumerator();
 
             // If no rules, then we have no arcs
@@ -859,8 +869,9 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             uint hNewState = CfgGrammar.NextHandle;
 
-                            apStateTable[k] = new State(ruleCur, hNewState, k);
-                            AddState(apStateTable[k]);
+                            var newState = new State(ruleCur, hNewState, k);
+                            apStateTable[k] = newState;
+                            AddState(newState);
                         }
 
                         currentState = apStateTable[k];
@@ -871,7 +882,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     //
                     int iNextArc = (int)(arc.NextStartArcIndex);
                     Arc newArc;
-                    State targetState = null;
+                    State? targetState = null;
 
                     if (currentState != null && iNextArc != 0)
                     {
@@ -879,8 +890,9 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             uint hNewState = CfgGrammar.NextHandle;
 
-                            apStateTable[iNextArc] = new State(ruleCur, hNewState, iNextArc);
-                            AddState(apStateTable[iNextArc]);
+                            var nextState = new State(ruleCur, hNewState, iNextArc);
+                            apStateTable[iNextArc] = nextState;
+                            AddState(nextState);
                         }
 
                         targetState = apStateTable[iNextArc];
@@ -893,7 +905,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         Rule ruleToTransitionTo = _rules[(int)arc.TransitionIndex];
 
-                        newArc = new Arc(null, ruleToTransitionTo, _words, flWeight, CfgGrammar.SP_NORMAL_CONFIDENCE, null, MatchMode.AllWords, ref _fNeedWeightTable);
+                        newArc = new Arc(null, ruleToTransitionTo, _words!, flWeight, CfgGrammar.SP_NORMAL_CONFIDENCE, null, MatchMode.AllWords, ref _fNeedWeightTable);
                     }
                     else
                     {
@@ -960,13 +972,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         }
 
-        private Arc CreateTransition(string sWord, float flWeight, int requiredConfidence)
+        private Arc CreateTransition(string? sWord, float flWeight, int requiredConfidence)
         {
             // epsilon transition for empty words
             return AddSingleWordTransition(!string.IsNullOrEmpty(sWord) ? sWord : null, flWeight, requiredConfidence);
         }
 
-        private CfgGrammar.CfgSerializedHeader BuildHeader(List<State> sortedStates, int cBasePath, ushort iSemanticGlobals, out int cArcs, out float[] pWeights)
+        private CfgGrammar.CfgSerializedHeader BuildHeader(List<State> sortedStates, int cBasePath, ushort iSemanticGlobals, out int cArcs, out float[]? pWeights)
         {
             cArcs = 1; // Start with offset one! (0 indicates dead state).
             pWeights = null;
@@ -1074,7 +1086,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return header;
         }
 
-        private CfgGrammar.CfgHeader BuildRulesFromBinaryGrammar(CfgGrammar.CfgHeader header, State[] apStateTable, SortedDictionary<int, Rule> ruleFirstArcs, int previousCfgLastRules)
+        private CfgGrammar.CfgHeader BuildRulesFromBinaryGrammar(CfgGrammar.CfgHeader header, State?[] apStateTable, SortedDictionary<int, Rule> ruleFirstArcs, int previousCfgLastRules)
         {
             for (int i = 0; i < header.rules.Length; i++)
             {
@@ -1082,9 +1094,11 @@ namespace System.Speech.Internal.SrgsCompiler
                 CfgRule cfgRule = header.rules[i];
                 int firstArc = (int)cfgRule.FirstArcIndex;
 
-                cfgRule._nameOffset = _symbols.OffsetFromId(_symbols.Find(header.pszSymbols.FromOffset(cfgRule._nameOffset)));
+                cfgRule._nameOffset = _symbols.OffsetFromId(_symbols.Find(header.pszSymbols!.FromOffset(cfgRule._nameOffset)));
 
-                Rule rule = new(this, _symbols.FromOffset(cfgRule._nameOffset), cfgRule, i + previousCfgLastRules, _grammarOptions & GrammarOptions.TagFormat, ref _cImportedRules);
+                string? ruleName = _symbols.FromOffset(cfgRule._nameOffset);
+                System.Diagnostics.Debug.Assert(ruleName is not null);
+                Rule rule = new(this, ruleName, cfgRule, i + previousCfgLastRules, _grammarOptions & GrammarOptions.TagFormat, ref _cImportedRules);
 
                 rule._firstState = _states.CreateNewState(rule);
                 _rules.Add(rule);
@@ -1134,7 +1148,7 @@ namespace System.Speech.Internal.SrgsCompiler
             bool newRule = false;
             int posDynamic = srcToState.Rule.Name.IndexOf("URL:DYNAMIC#", StringComparison.Ordinal);
             string ruleName = posDynamic != 0 ? srcToState.Rule.Name : srcToState.Rule.Name.Substring(12);
-            Rule dstRule = FindInRules(ruleName);
+            Rule? dstRule = FindInRules(ruleName);
 
             // Clone this rule into this GrammarBuilder if it does not exist yet
             if (dstRule == null)
@@ -1160,7 +1174,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return dstRule;
         }
 
-        private Rule FindInRules(string ruleName)
+        private Rule? FindInRules(string ruleName)
         {
             foreach (Rule rule in _rules)
             {
@@ -1172,6 +1186,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return null;
         }
 
+        [DoesNotReturn]
         private static void LogError(string rule, SRID srid, params object[] args)
         {
             string sError = SR.Get(srid, args);
@@ -1244,7 +1259,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        private Arc AddSingleWordTransition(string s, float flWeight, int requiredConfidence)
+        private Arc AddSingleWordTransition(string? s, float flWeight, int requiredConfidence)
         {
 
             Arc arc = new(s, null, _words, flWeight, requiredConfidence, null, MatchMode.AllWords, ref _fNeedWeightTable);
@@ -1349,7 +1364,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private Dictionary<int, Rule> _nameOffsetRules = new();
 
-        private Rule _rootRule;
+        private Rule? _rootRule;
 
         private GrammarOptions _grammarOptions = GrammarOptions.KeyValuePairs;
 
@@ -1357,7 +1372,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private int _ulRecursiveDepth;
 
         // Path from which relative grammar imports are calculated. As specified by xml:base
-        private string _basePath;
+        private string? _basePath;
 
         // Collection of all SemanticTags in the grammar (sorted by StartArc)
         private List<Tag> _tags = new();

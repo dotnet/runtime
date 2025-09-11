@@ -99,15 +99,15 @@ namespace System.Speech.Internal.SapiInterop
             ISpObjectToken sapiObjectToken;
             return (RecognizerInfo)_proxy.Invoke(delegate
           {
-              RecognizerInfo recognizerInfo;
+              RecognizerInfo? recognizerInfo;
               _proxy.Recognizer.GetRecognizer(out sapiObjectToken);
 
               IntPtr sapiTokenId;
               try
               {
                   sapiObjectToken.GetId(out sapiTokenId);
-                  string tokenId = Marshal.PtrToStringUni(sapiTokenId);
-                  recognizerInfo = RecognizerInfo.Create(ObjectToken.Open(null, tokenId, false));
+                  string tokenId = Marshal.PtrToStringUni(sapiTokenId)!;
+                  recognizerInfo = RecognizerInfo.Create(ObjectToken.Open(null, tokenId, false)!);
                   if (recognizerInfo == null)
                   {
                       throw new InvalidOperationException(SR.Get(SRID.RecognizerNotFound));
@@ -123,7 +123,7 @@ namespace System.Speech.Internal.SapiInterop
           });
         }
 
-        internal void SetInput(object input, bool allowFormatChanges)
+        internal void SetInput(object? input, bool allowFormatChanges)
         {
             _proxy.Invoke2(delegate { _proxy.Recognizer.SetInput(input, allowFormatChanges); });
         }
@@ -161,7 +161,7 @@ namespace System.Speech.Internal.SapiInterop
           });
         }
 
-        internal SAPIErrorCodes EmulateRecognition(string phrase)
+        internal SAPIErrorCodes EmulateRecognition(string? phrase)
         {
             object displayAttributes = " "; // Passing a null object here doesn't work because EmulateRecognition doesn't handle VT_EMPTY
             return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.SapiSpeechRecognizer.EmulateRecognition(phrase, ref displayAttributes, 0); });
@@ -224,7 +224,7 @@ namespace System.Speech.Internal.SapiInterop
         private static object GetProperty(ISpRecognizer sapiRecognizer, string name, bool integer)
         {
             SAPIErrorCodes errorCode;
-            object result = null;
+            object? result = null;
 
             if (integer)
             {

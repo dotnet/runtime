@@ -19,11 +19,11 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         internal ItemElement(int minRepeat, int maxRepeat)
-            : this((GrammarBuilderBase)null, minRepeat, maxRepeat)
+            : this((GrammarBuilderBase?)null, minRepeat, maxRepeat)
         {
         }
 
-        internal ItemElement(GrammarBuilderBase builder, int minRepeat, int maxRepeat)
+        internal ItemElement(GrammarBuilderBase? builder, int minRepeat, int maxRepeat)
         {
             if (builder != null)
             {
@@ -54,10 +54,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            ItemElement refObj = obj as ItemElement;
-            if (refObj == null)
+            if (obj is not ItemElement refObj)
             {
                 return false;
             }

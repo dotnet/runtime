@@ -31,7 +31,7 @@ namespace System.Speech.AudioFormat
     {
         public SpeechAudioFormatInfo(int samplesPerSecond, System.Speech.AudioFormat.AudioBitsPerSample bitsPerSample, System.Speech.AudioFormat.AudioChannel channel) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public SpeechAudioFormatInfo(System.Speech.AudioFormat.EncodingFormat encodingFormat, int samplesPerSecond, int bitsPerSample, int channelCount, int averageBytesPerSecond, int blockAlign, byte[] formatSpecificData) { }
+        public SpeechAudioFormatInfo(System.Speech.AudioFormat.EncodingFormat encodingFormat, int samplesPerSecond, int bitsPerSample, int channelCount, int averageBytesPerSecond, int blockAlign, byte[]? formatSpecificData) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public int AverageBytesPerSecond { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -41,7 +41,7 @@ namespace System.Speech.AudioFormat
         public int ChannelCount { get { throw null; } }
         public System.Speech.AudioFormat.EncodingFormat EncodingFormat { get { throw null; } }
         public int SamplesPerSecond { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public byte[] FormatSpecificData() { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -95,7 +95,7 @@ namespace System.Speech.Recognition
     {
         public DictationGrammar() { }
         public DictationGrammar(string topic) { }
-        public void SetDictationContext(string precedingText, string subsequentText) { }
+        public void SetDictationContext(string? precedingText, string? subsequentText) { }
     }
     [System.FlagsAttribute]
     public enum DisplayAttributes
@@ -109,7 +109,7 @@ namespace System.Speech.Recognition
     public partial class EmulateRecognizeCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {
         internal EmulateRecognizeCompletedEventArgs() : base (default(System.Exception), default(bool), default(object)) { }
-        public System.Speech.Recognition.RecognitionResult Result { get { throw null; } }
+        public System.Speech.Recognition.RecognitionResult? Result { get { throw null; } }
     }
     public partial class Grammar
     {
@@ -120,7 +120,7 @@ namespace System.Speech.Recognition
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public Grammar(System.IO.Stream stream, string ruleName, System.Uri baseUri) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public Grammar(System.IO.Stream stream, string ruleName, System.Uri baseUri, object[] parameters) { }
+        public Grammar(System.IO.Stream stream, string? ruleName, System.Uri? baseUri, object[]? parameters) { }
         public Grammar(System.Speech.Recognition.GrammarBuilder builder) { }
         public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument) { }
         public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName) { }
@@ -128,20 +128,21 @@ namespace System.Speech.Recognition
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName, System.Uri baseUri) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName, System.Uri baseUri, object[] parameters) { }
+        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument, string? ruleName, System.Uri? baseUri, object[]? parameters) { }
         public Grammar(string path) { }
         public Grammar(string path, string ruleName) { }
-        public Grammar(string path, string ruleName, object[] parameters) { }
+        public Grammar(string path, string? ruleName, object[]? parameters) { }
         public bool Enabled { get { throw null; } set { } }
         protected internal virtual bool IsStg { get { throw null; } }
         public bool Loaded { get { throw null; } }
         public string Name { get { throw null; } set { } }
         public int Priority { get { throw null; } set { } }
-        protected string ResourceName { get { throw null; } set { } }
-        public string RuleName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        protected string? ResourceName { get { throw null; } set { } }
+        public string? RuleName { get { throw null; } }
         public float Weight { get { throw null; } set { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs> SpeechRecognized { add { } remove { } }
-        public static System.Speech.Recognition.Grammar LoadLocalizedGrammarFromType(System.Type type, params object[] onInitParameters) { throw null; }
+        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs>? SpeechRecognized { add { } remove { } }
+        public static System.Speech.Recognition.Grammar? LoadLocalizedGrammarFromType(System.Type type, params object[] onInitParameters) { throw null; }
         protected void StgInit(object[] parameters) { }
     }
     public partial class GrammarBuilder
@@ -198,7 +199,7 @@ namespace System.Speech.Recognition
     {
         internal RecognitionResult() { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.RecognizedPhrase> Alternates { get { throw null; } }
-        public System.Speech.Recognition.RecognizedAudio Audio { get { throw null; } }
+        public System.Speech.Recognition.RecognizedAudio? Audio { get { throw null; } }
         public System.Speech.Recognition.RecognizedAudio GetAudioForWordRange(System.Speech.Recognition.RecognizedWordUnit firstWord, System.Speech.Recognition.RecognizedWordUnit lastWord) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
@@ -209,7 +210,7 @@ namespace System.Speech.Recognition
         public bool BabbleTimeout { get { throw null; } }
         public bool InitialSilenceTimeout { get { throw null; } }
         public bool InputStreamEnded { get { throw null; } }
-        public System.Speech.Recognition.RecognitionResult Result { get { throw null; } }
+        public System.Speech.Recognition.RecognitionResult? Result { get { throw null; } }
     }
     public partial class RecognizedAudio
     {
@@ -226,23 +227,23 @@ namespace System.Speech.Recognition
     {
         internal RecognizedPhrase() { }
         public float Confidence { get { throw null; } }
-        public System.Speech.Recognition.Grammar Grammar { get { throw null; } }
+        public System.Speech.Recognition.Grammar? Grammar { get { throw null; } }
         public int HomophoneGroupId { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.RecognizedPhrase> Homophones { get { throw null; } }
         public System.Collections.ObjectModel.Collection<System.Speech.Recognition.ReplacementText> ReplacementWordUnits { get { throw null; } }
-        public System.Speech.Recognition.SemanticValue Semantics { get { throw null; } }
+        public System.Speech.Recognition.SemanticValue? Semantics { get { throw null; } }
         public string Text { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.RecognizedWordUnit> Words { get { throw null; } }
         public System.Xml.XPath.IXPathNavigable ConstructSmlFromSemantics() { throw null; }
     }
     public partial class RecognizedWordUnit
     {
-        public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, System.Speech.Recognition.DisplayAttributes displayAttributes, System.TimeSpan audioPosition, System.TimeSpan audioDuration) { }
+        public RecognizedWordUnit(string? text, float confidence, string? pronunciation, [System.Diagnostics.CodeAnalysis.NotNullAttribute] string? lexicalForm, System.Speech.Recognition.DisplayAttributes displayAttributes, System.TimeSpan audioPosition, System.TimeSpan audioDuration) { }
         public float Confidence { get { throw null; } }
         public System.Speech.Recognition.DisplayAttributes DisplayAttributes { get { throw null; } }
         public string LexicalForm { get { throw null; } }
-        public string Pronunciation { get { throw null; } }
-        public string Text { get { throw null; } }
+        public string? Pronunciation { get { throw null; } }
+        public string? Text { get { throw null; } }
     }
     public enum RecognizeMode
     {
@@ -269,7 +270,7 @@ namespace System.Speech.Recognition
     {
         internal RecognizerUpdateReachedEventArgs() { }
         public System.TimeSpan AudioPosition { get { throw null; } }
-        public object UserToken { get { throw null; } }
+        public object? UserToken { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial class ReplacementText
@@ -296,26 +297,26 @@ namespace System.Speech.Recognition
     public sealed partial class SemanticValue : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.IEnumerable
     {
         public SemanticValue(object value) { }
-        public SemanticValue(string keyName, object value, float confidence) { }
+        public SemanticValue(string keyName, object? value, float confidence) { }
         public float Confidence { get { throw null; } }
         public int Count { get { throw null; } }
         public System.Speech.Recognition.SemanticValue this[string key] { get { throw null; } set { } }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.IsReadOnly { get { throw null; } }
-        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<System.String,System.Speech.Recognition.SemanticValue>.Keys { get { throw null; } }
-        System.Collections.Generic.ICollection<System.Speech.Recognition.SemanticValue> System.Collections.Generic.IDictionary<System.String,System.Speech.Recognition.SemanticValue>.Values { get { throw null; } }
-        public object Value { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.IsReadOnly { get { throw null; } }
+        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<System.Speech.Recognition.SemanticValue> System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>.Values { get { throw null; } }
+        public object? Value { get { throw null; } }
         public bool Contains(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> item) { throw null; }
         public bool ContainsKey(string key) { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.Add(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> key) { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.Clear() { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.CopyTo(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>[] array, int index) { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.Remove(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> key) { throw null; }
-        void System.Collections.Generic.IDictionary<System.String,System.Speech.Recognition.SemanticValue>.Add(string key, System.Speech.Recognition.SemanticValue value) { }
-        bool System.Collections.Generic.IDictionary<System.String,System.Speech.Recognition.SemanticValue>.Remove(string key) { throw null; }
-        bool System.Collections.Generic.IDictionary<System.String,System.Speech.Recognition.SemanticValue>.TryGetValue(string key, out System.Speech.Recognition.SemanticValue value) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Speech.Recognition.SemanticValue>>.GetEnumerator() { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.Add(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> key) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.Clear() { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.CopyTo(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>[] array, int index) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.Remove(System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue> key) { throw null; }
+        void System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>.Add(string key, System.Speech.Recognition.SemanticValue value) { }
+        bool System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>.Remove(string key) { throw null; }
+        bool System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>.TryGetValue(string key, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Speech.Recognition.SemanticValue value) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public partial class SpeechDetectedEventArgs : System.EventArgs
@@ -333,7 +334,7 @@ namespace System.Speech.Recognition
         public SpeechRecognitionEngine(System.Globalization.CultureInfo culture) { }
         public SpeechRecognitionEngine(System.Speech.Recognition.RecognizerInfo recognizerInfo) { }
         public SpeechRecognitionEngine(string recognizerId) { }
-        public System.Speech.AudioFormat.SpeechAudioFormatInfo AudioFormat { get { throw null; } }
+        public System.Speech.AudioFormat.SpeechAudioFormatInfo? AudioFormat { get { throw null; } }
         public int AudioLevel { get { throw null; } }
         public System.TimeSpan AudioPosition { get { throw null; } }
         public System.Speech.Recognition.AudioState AudioState { get { throw null; } }
@@ -352,19 +353,19 @@ namespace System.Speech.Recognition
         public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs> AudioLevelUpdated { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs> AudioStateChanged { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs> EmulateRecognizeCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs> LoadGrammarCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.RecognizeCompletedEventArgs> RecognizeCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.RecognizerUpdateReachedEventArgs> RecognizerUpdateReached { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechDetectedEventArgs> SpeechDetected { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechHypothesizedEventArgs> SpeechHypothesized { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechRecognitionRejectedEventArgs> SpeechRecognitionRejected { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs> SpeechRecognized { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs>? EmulateRecognizeCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs>? LoadGrammarCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.RecognizeCompletedEventArgs>? RecognizeCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.RecognizerUpdateReachedEventArgs>? RecognizerUpdateReached { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechDetectedEventArgs>? SpeechDetected { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechHypothesizedEventArgs>? SpeechHypothesized { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechRecognitionRejectedEventArgs>? SpeechRecognitionRejected { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs>? SpeechRecognized { add { } remove { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { throw null; }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(string inputText) { throw null; }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(string inputText, System.Globalization.CompareOptions compareOptions) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(string inputText) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(string inputText, System.Globalization.CompareOptions compareOptions) { throw null; }
         public void EmulateRecognizeAsync(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { }
         public void EmulateRecognizeAsync(string inputText) { }
         public void EmulateRecognizeAsync(string inputText, System.Globalization.CompareOptions compareOptions) { }
@@ -372,8 +373,8 @@ namespace System.Speech.Recognition
         public void LoadGrammar(System.Speech.Recognition.Grammar grammar) { }
         public void LoadGrammarAsync(System.Speech.Recognition.Grammar grammar) { }
         public object QueryRecognizerSetting(string settingName) { throw null; }
-        public System.Speech.Recognition.RecognitionResult Recognize() { throw null; }
-        public System.Speech.Recognition.RecognitionResult Recognize(System.TimeSpan initialSilenceTimeout) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? Recognize() { throw null; }
+        public System.Speech.Recognition.RecognitionResult? Recognize(System.TimeSpan initialSilenceTimeout) { throw null; }
         public void RecognizeAsync() { }
         public void RecognizeAsync(System.Speech.Recognition.RecognizeMode mode) { }
         public void RecognizeAsyncCancel() { }
@@ -402,7 +403,7 @@ namespace System.Speech.Recognition
     public partial class SpeechRecognizer : System.IDisposable
     {
         public SpeechRecognizer() { }
-        public System.Speech.AudioFormat.SpeechAudioFormatInfo AudioFormat { get { throw null; } }
+        public System.Speech.AudioFormat.SpeechAudioFormatInfo? AudioFormat { get { throw null; } }
         public int AudioLevel { get { throw null; } }
         public System.TimeSpan AudioPosition { get { throw null; } }
         public System.Speech.Recognition.AudioState AudioState { get { throw null; } }
@@ -416,19 +417,19 @@ namespace System.Speech.Recognition
         public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs> AudioLevelUpdated { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs> AudioStateChanged { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs> EmulateRecognizeCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs> LoadGrammarCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.RecognizerUpdateReachedEventArgs> RecognizerUpdateReached { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechDetectedEventArgs> SpeechDetected { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechHypothesizedEventArgs> SpeechHypothesized { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechRecognitionRejectedEventArgs> SpeechRecognitionRejected { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs> SpeechRecognized { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.StateChangedEventArgs> StateChanged { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs>? EmulateRecognizeCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs>? LoadGrammarCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.RecognizerUpdateReachedEventArgs>? RecognizerUpdateReached { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechDetectedEventArgs>? SpeechDetected { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechHypothesizedEventArgs>? SpeechHypothesized { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechRecognitionRejectedEventArgs>? SpeechRecognitionRejected { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs>? SpeechRecognized { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.StateChangedEventArgs>? StateChanged { add { } remove { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { throw null; }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(string inputText) { throw null; }
-        public System.Speech.Recognition.RecognitionResult EmulateRecognize(string inputText, System.Globalization.CompareOptions compareOptions) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(string inputText) { throw null; }
+        public System.Speech.Recognition.RecognitionResult? EmulateRecognize(string inputText, System.Globalization.CompareOptions compareOptions) { throw null; }
         public void EmulateRecognizeAsync(System.Speech.Recognition.RecognizedWordUnit[] wordUnits, System.Globalization.CompareOptions compareOptions) { }
         public void EmulateRecognizeAsync(string inputText) { }
         public void EmulateRecognizeAsync(string inputText, System.Globalization.CompareOptions compareOptions) { }
@@ -472,14 +473,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         public System.Globalization.CultureInfo Culture { get { throw null; } set { } }
         public bool Debug { get { throw null; } set { } }
         public System.Collections.ObjectModel.Collection<string> ImportNamespaces { get { throw null; } }
-        public string Language { get { throw null; } set { } }
+        public string? Language { get { throw null; } set { } }
         public System.Speech.Recognition.SrgsGrammar.SrgsGrammarMode Mode { get { throw null; } set { } }
-        public string Namespace { get { throw null; } set { } }
+        public string? Namespace { get { throw null; } set { } }
         public System.Speech.Recognition.SrgsGrammar.SrgsPhoneticAlphabet PhoneticAlphabet { get { throw null; } set { } }
-        public System.Speech.Recognition.SrgsGrammar.SrgsRule Root { get { throw null; } set { } }
+        public System.Speech.Recognition.SrgsGrammar.SrgsRule? Root { get { throw null; } set { } }
         public System.Speech.Recognition.SrgsGrammar.SrgsRulesCollection Rules { get { throw null; } }
         public string Script { get { throw null; } set { } }
-        public System.Uri XmlBase { get { throw null; } set { } }
+        public System.Uri? XmlBase { get { throw null; } set { } }
         public void WriteSrgs(System.Xml.XmlWriter srgsGrammar) { }
     }
     public abstract partial class SrgsElement : System.MarshalByRefObject
@@ -527,8 +528,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsNameValueTag() { }
         public SrgsNameValueTag(object value) { }
         public SrgsNameValueTag(string name, object value) { }
-        public string Name { get { throw null; } set { } }
-        public object Value { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? Name { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public object? Value { get { throw null; } set { } }
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
@@ -552,13 +555,13 @@ namespace System.Speech.Recognition.SrgsGrammar
     {
         public SrgsRule(string id) { }
         public SrgsRule(string id, params System.Speech.Recognition.SrgsGrammar.SrgsElement[] elements) { }
-        public string BaseClass { get { throw null; } set { } }
+        public string? BaseClass { get { throw null; } set { } }
         public System.Collections.ObjectModel.Collection<System.Speech.Recognition.SrgsGrammar.SrgsElement> Elements { get { throw null; } }
         public string Id { get { throw null; } set { } }
-        public string OnError { get { throw null; } set { } }
-        public string OnInit { get { throw null; } set { } }
-        public string OnParse { get { throw null; } set { } }
-        public string OnRecognition { get { throw null; } set { } }
+        public string? OnError { get { throw null; } set { } }
+        public string? OnInit { get { throw null; } set { } }
+        public string? OnParse { get { throw null; } set { } }
+        public string? OnRecognition { get { throw null; } set { } }
         public System.Speech.Recognition.SrgsGrammar.SrgsRuleScope Scope { get { throw null; } set { } }
         public string Script { get { throw null; } set { } }
         public void Add(System.Speech.Recognition.SrgsGrammar.SrgsElement element) { }
@@ -578,9 +581,9 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsRuleRef(System.Uri uri, string rule) { }
         public SrgsRuleRef(System.Uri uri, string rule, string semanticKey) { }
         public SrgsRuleRef(System.Uri uri, string rule, string semanticKey, string parameters) { }
-        public string Params { get { throw null; } }
-        public string SemanticKey { get { throw null; } }
-        public System.Uri Uri { get { throw null; } }
+        public string? Params { get { throw null; } }
+        public string? SemanticKey { get { throw null; } }
+        public System.Uri? Uri { get { throw null; } }
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
@@ -623,8 +626,10 @@ namespace System.Speech.Recognition.SrgsGrammar
     public partial class SrgsToken : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsToken(string text) { }
-        public string Display { get { throw null; } set { } }
-        public string Pronunciation { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? Display { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? Pronunciation { get { throw null; } set { } }
         public string Text { get { throw null; } set { } }
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
@@ -636,7 +641,7 @@ namespace System.Speech.Synthesis
     {
         internal BookmarkReachedEventArgs() { }
         public System.TimeSpan AudioPosition { get { throw null; } }
-        public string Bookmark { get { throw null; } }
+        public string? Bookmark { get { throw null; } }
     }
     public partial class FilePrompt : System.Speech.Synthesis.Prompt
     {
@@ -648,7 +653,7 @@ namespace System.Speech.Synthesis
         internal InstalledVoice() { }
         public bool Enabled { get { throw null; } set { } }
         public System.Speech.Synthesis.VoiceInfo VoiceInfo { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial class PhonemeReachedEventArgs : System.Speech.Synthesis.PromptEventArgs
@@ -657,8 +662,8 @@ namespace System.Speech.Synthesis
         public System.TimeSpan AudioPosition { get { throw null; } }
         public System.TimeSpan Duration { get { throw null; } }
         public System.Speech.Synthesis.SynthesizerEmphasis Emphasis { get { throw null; } }
-        public string NextPhoneme { get { throw null; } }
-        public string Phoneme { get { throw null; } }
+        public string? NextPhoneme { get { throw null; } }
+        public string? Phoneme { get { throw null; } }
     }
     public partial class Prompt
     {
@@ -709,9 +714,9 @@ namespace System.Speech.Synthesis
         public void EndStyle() { }
         public void EndVoice() { }
         public void StartParagraph() { }
-        public void StartParagraph(System.Globalization.CultureInfo culture) { }
+        public void StartParagraph(System.Globalization.CultureInfo? culture) { }
         public void StartSentence() { }
-        public void StartSentence(System.Globalization.CultureInfo culture) { }
+        public void StartSentence(System.Globalization.CultureInfo? culture) { }
         public void StartStyle(System.Speech.Synthesis.PromptStyle style) { }
         public void StartVoice(System.Globalization.CultureInfo culture) { }
         public void StartVoice(System.Speech.Synthesis.VoiceGender gender) { }
@@ -796,7 +801,7 @@ namespace System.Speech.Synthesis
         public System.TimeSpan AudioPosition { get { throw null; } }
         public int CharacterCount { get { throw null; } }
         public int CharacterPosition { get { throw null; } }
-        public string Text { get { throw null; } }
+        public string? Text { get { throw null; } }
     }
     public partial class SpeakStartedEventArgs : System.Speech.Synthesis.PromptEventArgs
     {
@@ -820,7 +825,7 @@ namespace System.Speech.Synthesis
         public void AddLexicon(System.Uri uri, string mediaType) { }
         public void Dispose() { }
         ~SpeechSynthesizer() { }
-        public System.Speech.Synthesis.Prompt GetCurrentlySpokenPrompt() { throw null; }
+        public System.Speech.Synthesis.Prompt? GetCurrentlySpokenPrompt() { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Synthesis.InstalledVoice> GetInstalledVoices() { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Synthesis.InstalledVoice> GetInstalledVoices(System.Globalization.CultureInfo culture) { throw null; }
         public void Pause() { }
@@ -897,7 +902,7 @@ namespace System.Speech.Synthesis
     public partial class VoiceChangeEventArgs : System.Speech.Synthesis.PromptEventArgs
     {
         internal VoiceChangeEventArgs() { }
-        public System.Speech.Synthesis.VoiceInfo Voice { get { throw null; } }
+        public System.Speech.Synthesis.VoiceInfo? Voice { get { throw null; } }
     }
     public enum VoiceGender
     {
@@ -912,14 +917,14 @@ namespace System.Speech.Synthesis
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Collections.Generic.IDictionary<string, string> AdditionalInfo { get { throw null; } }
         public System.Speech.Synthesis.VoiceAge Age { get { throw null; } }
-        public System.Globalization.CultureInfo Culture { get { throw null; } }
+        public System.Globalization.CultureInfo? Culture { get { throw null; } }
         public string Description { get { throw null; } }
         public System.Speech.Synthesis.VoiceGender Gender { get { throw null; } }
-        public string Id { get { throw null; } }
-        public string Name { get { throw null; } }
+        public string? Id { get { throw null; } }
+        public string? Name { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.AudioFormat.SpeechAudioFormatInfo> SupportedAudioFormats { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.AudioFormat.SpeechAudioFormatInfo>? SupportedAudioFormats { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
 }
@@ -935,7 +940,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public float Change { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.ContourPointChangeType ChangeType { get { throw null; } }
         public float Start { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.ContourPoint other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.ContourPoint point1, System.Speech.Synthesis.TtsEngine.ContourPoint point2) { throw null; }
@@ -978,15 +983,15 @@ namespace System.Speech.Synthesis.TtsEngine
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public FragmentState(System.Speech.Synthesis.TtsEngine.TtsEngineAction action, int langId, int emphasis, int duration, System.Speech.Synthesis.TtsEngine.SayAs sayAs, System.Speech.Synthesis.TtsEngine.Prosody prosody, char[] phonemes) { throw null; }
+        public FragmentState(System.Speech.Synthesis.TtsEngine.TtsEngineAction action, int langId, int emphasis, int duration, System.Speech.Synthesis.TtsEngine.SayAs? sayAs, System.Speech.Synthesis.TtsEngine.Prosody? prosody, char[] phonemes) { throw null; }
         public System.Speech.Synthesis.TtsEngine.TtsEngineAction Action { get { throw null; } }
         public int Duration { get { throw null; } }
         public int Emphasis { get { throw null; } }
         public int LangId { get { throw null; } }
-        public char[] Phoneme { get { throw null; } }
-        public System.Speech.Synthesis.TtsEngine.Prosody Prosody { get { throw null; } }
-        public System.Speech.Synthesis.TtsEngine.SayAs SayAs { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public char[]? Phoneme { get { throw null; } }
+        public System.Speech.Synthesis.TtsEngine.Prosody? Prosody { get { throw null; } }
+        public System.Speech.Synthesis.TtsEngine.SayAs? SayAs { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.FragmentState other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.FragmentState state1, System.Speech.Synthesis.TtsEngine.FragmentState state2) { throw null; }
@@ -1001,7 +1006,7 @@ namespace System.Speech.Synthesis.TtsEngine
         void AddEvents(System.Speech.Synthesis.TtsEngine.SpeechEventInfo[] events, int count);
         void CompleteSkip(int skipped);
         System.Speech.Synthesis.TtsEngine.SkipInfo GetSkipInfo();
-        System.IO.Stream LoadResource(System.Uri uri, string mediaType);
+        System.IO.Stream? LoadResource(System.Uri uri, string mediaType);
         int Write(System.IntPtr data, int count);
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1013,8 +1018,8 @@ namespace System.Speech.Synthesis.TtsEngine
         public System.Speech.Synthesis.TtsEngine.ProsodyNumber Range { get { throw null; } set { } }
         public System.Speech.Synthesis.TtsEngine.ProsodyNumber Rate { get { throw null; } set { } }
         public System.Speech.Synthesis.TtsEngine.ProsodyNumber Volume { get { throw null; } set { } }
-        public System.Speech.Synthesis.TtsEngine.ContourPoint[] GetContourPoints() { throw null; }
-        public void SetContourPoints(System.Speech.Synthesis.TtsEngine.ContourPoint[] points) { }
+        public System.Speech.Synthesis.TtsEngine.ContourPoint[]? GetContourPoints() { throw null; }
+        public void SetContourPoints([System.Diagnostics.CodeAnalysis.NotNullAttribute] System.Speech.Synthesis.TtsEngine.ContourPoint[]? points) { }
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1029,7 +1034,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public float Number { get { throw null; } }
         public int SsmlAttributeId { get { throw null; } }
         public System.Speech.Synthesis.TtsEngine.ProsodyUnit Unit { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.ProsodyNumber other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.ProsodyNumber prosodyNumber1, System.Speech.Synthesis.TtsEngine.ProsodyNumber prosodyNumber2) { throw null; }
@@ -1078,13 +1083,15 @@ namespace System.Speech.Synthesis.TtsEngine
         Silent = -2,
         Default = -1,
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial class SayAs
     {
         public SayAs() { }
-        public string Detail { get { throw null; } set { } }
-        public string Format { get { throw null; } set { } }
-        public string InterpretAs { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? Detail { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? Format { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public string? InterpretAs { get { throw null; } set { } }
     }
     public partial class SkipInfo
     {
@@ -1108,13 +1115,12 @@ namespace System.Speech.Synthesis.TtsEngine
         public int Param1 { get { throw null; } }
         public System.IntPtr Param2 { get { throw null; } }
         public short ParameterType { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Speech.Synthesis.TtsEngine.SpeechEventInfo other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Speech.Synthesis.TtsEngine.SpeechEventInfo event1, System.Speech.Synthesis.TtsEngine.SpeechEventInfo event2) { throw null; }
         public static bool operator !=(System.Speech.Synthesis.TtsEngine.SpeechEventInfo event1, System.Speech.Synthesis.TtsEngine.SpeechEventInfo event2) { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial class TextFragment
     {
         public TextFragment() { }
@@ -1137,7 +1143,7 @@ namespace System.Speech.Synthesis.TtsEngine
     public abstract partial class TtsEngineSsml
     {
         protected TtsEngineSsml(string registryKey) { }
-        public abstract void AddLexicon(System.Uri uri, string mediaType, System.Speech.Synthesis.TtsEngine.ITtsEngineSite site);
+        public abstract void AddLexicon(System.Uri uri, string? mediaType, System.Speech.Synthesis.TtsEngine.ITtsEngineSite site);
         public abstract System.IntPtr GetOutputFormat(System.Speech.Synthesis.TtsEngine.SpeakOutputFormat speakOutputFormat, System.IntPtr targetWaveFormat);
         public abstract void RemoveLexicon(System.Uri uri, System.Speech.Synthesis.TtsEngine.ITtsEngineSite site);
         public abstract void Speak(System.Speech.Synthesis.TtsEngine.TextFragment[] fragment, System.IntPtr waveHeader, System.Speech.Synthesis.TtsEngine.ITtsEngineSite site);

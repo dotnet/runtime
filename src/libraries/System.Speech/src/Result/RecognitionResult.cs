@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -22,18 +23,17 @@ namespace System.Speech.Recognition
     public sealed class RecognitionResult : RecognizedPhrase, ISerializable
     {
         #region Constructors
-        internal RecognitionResult(IRecognizerInternal recognizer, ISpRecoResult recoResult, byte[] sapiResultBlob, int maxAlternates)
+        internal RecognitionResult(IRecognizerInternal recognizer, ISpRecoResult? recoResult, byte[] sapiResultBlob, int maxAlternates)
         {
             Initialize(recognizer, recoResult, sapiResultBlob, maxAlternates);
-        }
-
-        internal RecognitionResult()
-        {
         }
 
 #pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
         private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
+            _header = null!;
+            _sapiAudioBlob = null!;
+            _sapiAlternatesBlob = null!;
             // Get the set of serializable members for our class and base classes
             Type thisType = this.GetType();
             MemberInfo[] mis = FormatterServices.GetSerializableMembers(
@@ -65,7 +65,9 @@ namespace System.Speech.Recognition
             ArgumentNullException.ThrowIfNull(firstWord);
             ArgumentNullException.ThrowIfNull(lastWord);
 
-            return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
+            var audio = Audio ?? throw new InvalidOperationException("No audio detected");
+
+            return audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
 #pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
@@ -84,7 +86,7 @@ namespace System.Speech.Recognition
                     {
                         // Get the sml Content and toy with this variable to fool the compiler in not doing the calucation at all
                         string sml = phrase.SmlContent;
-                        RecognizedAudio audio = Audio;
+                        RecognizedAudio? audio = Audio;
                         if (phrase.Text == null || phrase.Homophones == null || phrase.Semantics == null || (sml == null && sml != null) || (audio == null && audio != null))
                         {
                             throw new SerializationException();
@@ -143,7 +145,7 @@ namespace System.Speech.Recognition
         #region Public Properties
 
         // Recognized Audio:
-        public RecognizedAudio Audio
+        public RecognizedAudio? Audio
         {
             get
             {
@@ -157,7 +159,7 @@ namespace System.Speech.Recognition
                     {
                         IntPtr audioBuffer = gc.AddrOfPinnedObject();
 
-                        SPWAVEFORMATEX audioHeader = Marshal.PtrToStructure<SPWAVEFORMATEX>(audioBuffer);
+                        SPWAVEFORMATEX audioHeader = Marshal.PtrToStructure<SPWAVEFORMATEX>(audioBuffer)!;
 
                         IntPtr rawDataBuffer = new((long)audioBuffer + audioHeader.cbUsed);
                         byte[] rawAudioData = new byte[audioLength - audioHeader.cbUsed];
@@ -223,7 +225,7 @@ namespace System.Speech.Recognition
                 _alphabetConverter.SetLanguageId(langId);
             }
 
-            char[] ipa = _alphabetConverter.SapiToIpa(pronunciation.ToCharArray());
+            char[]? ipa = _alphabetConverter.SapiToIpa(pronunciation.ToCharArray());
 
             if (ipa != null)
             {
@@ -257,10 +259,7 @@ namespace System.Speech.Recognition
         {
             get
             {
-                if (_audioPosition == null)
-                {
-                    _audioPosition = new TimeSpan((long)_header.times.ullStart);
-                }
+                _audioPosition ??= new TimeSpan((long)_header.times.ullStart);
                 return (TimeSpan)_audioPosition;
             }
         }
@@ -269,10 +268,7 @@ namespace System.Speech.Recognition
         {
             get
             {
-                if (_audioDuration == null)
-                {
-                    _audioDuration = new TimeSpan((long)_header.times.ullLength);
-                }
+                _audioDuration ??= new TimeSpan((long)_header.times.ullLength);
                 return (TimeSpan)_audioDuration;
             }
         }
@@ -281,7 +277,10 @@ namespace System.Speech.Recognition
 
         #region Private Methods
 
-        private void Initialize(IRecognizerInternal recognizer, ISpRecoResult recoResult, byte[] sapiResultBlob, int maxAlternates)
+        [MemberNotNull(nameof(_header))]
+        [MemberNotNull(nameof(_sapiAudioBlob))]
+        [MemberNotNull(nameof(_sapiAlternatesBlob))]
+        private void Initialize(IRecognizerInternal recognizer, ISpRecoResult? recoResult, byte[] sapiResultBlob, int maxAlternates)
         {
             // record parameters
             _recognizer = recognizer;
@@ -304,13 +303,13 @@ namespace System.Speech.Recognition
 
                 if (headerSize == Marshal.SizeOf<SPRESULTHEADER_Sapi51>()) // SAPI 5.1 size
                 {
-                    SPRESULTHEADER_Sapi51 legacyHeader = Marshal.PtrToStructure<SPRESULTHEADER_Sapi51>(buffer);
+                    SPRESULTHEADER_Sapi51 legacyHeader = Marshal.PtrToStructure<SPRESULTHEADER_Sapi51>(buffer)!;
                     _header = new SPRESULTHEADER(legacyHeader);
                     _isSapi53Header = false;
                 }
                 else
                 {
-                    _header = Marshal.PtrToStructure<SPRESULTHEADER>(buffer);
+                    _header = Marshal.PtrToStructure<SPRESULTHEADER>(buffer)!;
                     _isSapi53Header = true;
                 }
 
@@ -366,7 +365,7 @@ namespace System.Speech.Recognition
                     for (int i = 0; i < numberOfAlternates; i++)
                     {
                         IntPtr altBuffer = new((long)buffer + offset);
-                        SPSERIALIZEDPHRASEALT alt = Marshal.PtrToStructure<SPSERIALIZEDPHRASEALT>(altBuffer);
+                        SPSERIALIZEDPHRASEALT alt = Marshal.PtrToStructure<SPSERIALIZEDPHRASEALT>(altBuffer)!;
 
                         offset += sizeOfSpSerializedPhraseAlt; // advance over SPSERIALIZEDPHRASEALT
                         if (isSapi53Header)
@@ -410,7 +409,7 @@ namespace System.Speech.Recognition
             return alternates;
         }
 
-        private void ExtractDictationAlternates(ISpRecoResult recoResult, int maxAlternates)
+        private void ExtractDictationAlternates(ISpRecoResult? recoResult, int maxAlternates)
         {
             // Get the alternates for dictation
             // alternates for dictation are not part of the recognition results and must be pulled out
@@ -486,7 +485,7 @@ namespace System.Speech.Recognition
                     GCHandle gc = GCHandle.Alloc(_phraseBuffer, GCHandleType.Pinned);
                     try
                     {
-                        alternate.InitializeFromSerializedBuffer(this, _serializedPhrase, gc.AddrOfPinnedObject(), _phraseBuffer.Length, _isSapi53Header, _hasIPAPronunciation);
+                        alternate.InitializeFromSerializedBuffer(this, _serializedPhrase, gc.AddrOfPinnedObject(), _phraseBuffer!.Length, _isSapi53Header, _hasIPAPronunciation);
                     }
                     finally
                     {
@@ -503,13 +502,13 @@ namespace System.Speech.Recognition
             StringBuilder sb = new("Recognized text = '");
             sb.Append(Text);
             sb.Append('\'');
-            if (Semantics.Value != null)
+            if (Semantics?.Value != null)
             {
                 sb.Append(", Semantic Value  = ");
                 sb.Append(Semantics.Value.ToString());
             }
 
-            if (Semantics.Count > 0)
+            if (Semantics?.Count > 0)
             {
                 sb.Append(", Semantic children count = ");
                 sb.Append(Semantics.Count.ToString(CultureInfo.InvariantCulture));
@@ -529,27 +528,27 @@ namespace System.Speech.Recognition
         #region Private Fields
 
         [field: NonSerialized]
-        private IRecognizerInternal _recognizer;
+        private IRecognizerInternal? _recognizer;
 
         [field: NonSerialized]
         private int _maxAlternates;
 
         [field: NonSerialized]
-        private AlphabetConverter _alphabetConverter;
+        private AlphabetConverter? _alphabetConverter;
 
         // sapi blobs
         private byte[] _sapiAudioBlob;
         private byte[] _sapiAlternatesBlob;
 
-        private Collection<RecognizedPhrase> _alternates;
+        private Collection<RecognizedPhrase>? _alternates;
 
         private SPRESULTHEADER _header;
 
-        private RecognizedAudio _audio;
+        private RecognizedAudio? _audio;
         private DateTime _startTime = DateTime.Now;
 
         [field: NonSerialized]
-        private ISpRecoResult2 _sapiRecoResult;
+        private ISpRecoResult2? _sapiRecoResult;
         // Keep as members because MSS uses these fields:
         private TimeSpan? _audioPosition;
         private TimeSpan? _audioDuration;

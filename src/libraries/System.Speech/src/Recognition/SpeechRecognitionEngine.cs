@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -91,7 +92,7 @@ namespace System.Speech.Recognition
                 if (_sapiRecognizer != null)
                 {
                     _sapiRecognizer.Dispose();
-                    _sapiRecognizer = null;
+                    _sapiRecognizer = null!;
                 }
                 _disposed = true; // Don't set RecognizerBase to null as every method will then need to throw ObjectDisposedException.
             }
@@ -107,7 +108,7 @@ namespace System.Speech.Recognition
             List<RecognizerInfo> recognizers = new();
 
             // Get list of ObjectTokens
-            using (ObjectTokenCategory category = ObjectTokenCategory.Create(SAPICategories.Recognizers))
+            using (ObjectTokenCategory? category = ObjectTokenCategory.Create(SAPICategories.Recognizers))
             {
                 if (category != null)
                 {
@@ -115,7 +116,7 @@ namespace System.Speech.Recognition
                     foreach (ObjectToken token in (IEnumerable<ObjectToken>)category)
                     {
                         // Create RecognizerInfo + add to collection
-                        RecognizerInfo recognizerInfo = RecognizerInfo.Create(token);
+                        RecognizerInfo? recognizerInfo = RecognizerInfo.Create(token);
 
                         if (recognizerInfo == null)
                         {
@@ -209,7 +210,7 @@ namespace System.Speech.Recognition
         {
             get { return RecoBase.AudioPosition; }
         }
-        public SpeechAudioFormatInfo AudioFormat
+        public SpeechAudioFormatInfo? AudioFormat
         {
             get { return RecoBase.AudioFormat; }
         }
@@ -256,11 +257,11 @@ namespace System.Speech.Recognition
 
         // Does a single synchronous Recognition and then stops the audio stream.
         // Returns null if there was a timeout. Throws on error.
-        public RecognitionResult Recognize()
+        public RecognitionResult? Recognize()
         {
             return RecoBase.Recognize(RecoBase.InitialSilenceTimeout);
         }
-        public RecognitionResult Recognize(TimeSpan initialSilenceTimeout)
+        public RecognitionResult? Recognize(TimeSpan initialSilenceTimeout)
         {
             if (Grammars.Count == 0)
             {
@@ -328,11 +329,11 @@ namespace System.Speech.Recognition
         {
             RecoBase.UnloadAllGrammars();
         }
-        public RecognitionResult EmulateRecognize(string inputText)
+        public RecognitionResult? EmulateRecognize(string inputText)
         {
             return EmulateRecognize(inputText, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth);
         }
-        public RecognitionResult EmulateRecognize(string inputText, CompareOptions compareOptions)
+        public RecognitionResult? EmulateRecognize(string inputText, CompareOptions compareOptions)
         {
             if (Grammars.Count == 0)
             {
@@ -341,7 +342,7 @@ namespace System.Speech.Recognition
 
             return RecoBase.EmulateRecognize(inputText, compareOptions);
         }
-        public RecognitionResult EmulateRecognize(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
+        public RecognitionResult? EmulateRecognize(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             if (Grammars.Count == 0)
             {
@@ -392,24 +393,24 @@ namespace System.Speech.Recognition
         #region public Events
 
         // Fired when the RecognizeAsync process completes.
-        public event EventHandler<RecognizeCompletedEventArgs> RecognizeCompleted;
+        public event EventHandler<RecognizeCompletedEventArgs>? RecognizeCompleted;
 
         // Fired when the RecognizeAsync process completes.
-        public event EventHandler<EmulateRecognizeCompletedEventArgs> EmulateRecognizeCompleted;
-        public event EventHandler<LoadGrammarCompletedEventArgs> LoadGrammarCompleted;
+        public event EventHandler<EmulateRecognizeCompletedEventArgs>? EmulateRecognizeCompleted;
+        public event EventHandler<LoadGrammarCompletedEventArgs>? LoadGrammarCompleted;
 
         // The event fired when speech is detected. Used for barge-in.
-        public event EventHandler<SpeechDetectedEventArgs> SpeechDetected;
+        public event EventHandler<SpeechDetectedEventArgs>? SpeechDetected;
 
         // The event fired on a recognition.
-        public event EventHandler<SpeechRecognizedEventArgs> SpeechRecognized;
+        public event EventHandler<SpeechRecognizedEventArgs>? SpeechRecognized;
 
         // The event fired on a no recognition
-        public event EventHandler<SpeechRecognitionRejectedEventArgs> SpeechRecognitionRejected;
-        public event EventHandler<RecognizerUpdateReachedEventArgs> RecognizerUpdateReached;
+        public event EventHandler<SpeechRecognitionRejectedEventArgs>? SpeechRecognitionRejected;
+        public event EventHandler<RecognizerUpdateReachedEventArgs>? RecognizerUpdateReached;
 
         // Occurs when a spoken phrase is partially recognized.
-        public event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
+        public event EventHandler<SpeechHypothesizedEventArgs>? SpeechHypothesized
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -510,7 +511,8 @@ namespace System.Speech.Recognition
 
         #region Private Methods
 
-        private void Initialize(RecognizerInfo recognizerInfo)
+        [MemberNotNull(nameof(_sapiRecognizer))]
+        private void Initialize(RecognizerInfo? recognizerInfo)
         {
             try
             {
@@ -544,57 +546,57 @@ namespace System.Speech.Recognition
 
         // Proxy event handlers used to translate the sender from the RecognizerBase to this class:
 
-        private void RecognizeCompletedProxy(object sender, RecognizeCompletedEventArgs e)
+        private void RecognizeCompletedProxy(object? sender, RecognizeCompletedEventArgs e)
         {
             RecognizeCompleted?.Invoke(this, e);
         }
 
-        private void EmulateRecognizeCompletedProxy(object sender, EmulateRecognizeCompletedEventArgs e)
+        private void EmulateRecognizeCompletedProxy(object? sender, EmulateRecognizeCompletedEventArgs e)
         {
             EmulateRecognizeCompleted?.Invoke(this, e);
         }
 
-        private void LoadGrammarCompletedProxy(object sender, LoadGrammarCompletedEventArgs e)
+        private void LoadGrammarCompletedProxy(object? sender, LoadGrammarCompletedEventArgs e)
         {
             LoadGrammarCompleted?.Invoke(this, e);
         }
 
-        private void SpeechDetectedProxy(object sender, SpeechDetectedEventArgs e)
+        private void SpeechDetectedProxy(object? sender, SpeechDetectedEventArgs e)
         {
             SpeechDetected?.Invoke(this, e);
         }
 
-        private void SpeechRecognizedProxy(object sender, SpeechRecognizedEventArgs e)
+        private void SpeechRecognizedProxy(object? sender, SpeechRecognizedEventArgs e)
         {
             SpeechRecognized?.Invoke(this, e);
         }
 
-        private void SpeechRecognitionRejectedProxy(object sender, SpeechRecognitionRejectedEventArgs e)
+        private void SpeechRecognitionRejectedProxy(object? sender, SpeechRecognitionRejectedEventArgs e)
         {
             SpeechRecognitionRejected?.Invoke(this, e);
         }
 
-        private void RecognizerUpdateReachedProxy(object sender, RecognizerUpdateReachedEventArgs e)
+        private void RecognizerUpdateReachedProxy(object? sender, RecognizerUpdateReachedEventArgs e)
         {
             RecognizerUpdateReached?.Invoke(this, e);
         }
 
-        private void SpeechHypothesizedProxy(object sender, SpeechHypothesizedEventArgs e)
+        private void SpeechHypothesizedProxy(object? sender, SpeechHypothesizedEventArgs e)
         {
             _speechHypothesizedDelegate?.Invoke(this, e);
         }
 
-        private void AudioSignalProblemOccurredProxy(object sender, AudioSignalProblemOccurredEventArgs e)
+        private void AudioSignalProblemOccurredProxy(object? sender, AudioSignalProblemOccurredEventArgs e)
         {
             _audioSignalProblemOccurredDelegate?.Invoke(this, e);
         }
 
-        private void AudioLevelUpdatedProxy(object sender, AudioLevelUpdatedEventArgs e)
+        private void AudioLevelUpdatedProxy(object? sender, AudioLevelUpdatedEventArgs e)
         {
             _audioLevelUpdatedDelegate?.Invoke(this, e);
         }
 
-        private void AudioStateChangedProxy(object sender, AudioStateChangedEventArgs e)
+        private void AudioStateChangedProxy(object? sender, AudioStateChangedEventArgs e)
         {
             _audioStateChangedDelegate?.Invoke(this, e);
         }
@@ -612,8 +614,7 @@ namespace System.Speech.Recognition
                 }
                 if (_recognizerBase == null)
                 {
-                    _recognizerBase = new RecognizerBase();
-                    _recognizerBase.Initialize(_sapiRecognizer, true);
+                    _recognizerBase = new RecognizerBase(_sapiRecognizer, true);
 
                     // Add event handlers for low-overhead events:
                     _recognizerBase.RecognizeCompleted += RecognizeCompletedProxy;
@@ -632,14 +633,14 @@ namespace System.Speech.Recognition
         #region Private Fields
 
         private bool _disposed;
-        private RecognizerBase _recognizerBase;
+        private RecognizerBase? _recognizerBase;
         private SapiRecognizer _sapiRecognizer;
 
-        private EventHandler<AudioSignalProblemOccurredEventArgs> _audioSignalProblemOccurredDelegate;
-        private EventHandler<AudioLevelUpdatedEventArgs> _audioLevelUpdatedDelegate;
-        private EventHandler<AudioStateChangedEventArgs> _audioStateChangedDelegate;
+        private EventHandler<AudioSignalProblemOccurredEventArgs>? _audioSignalProblemOccurredDelegate;
+        private EventHandler<AudioLevelUpdatedEventArgs>? _audioLevelUpdatedDelegate;
+        private EventHandler<AudioStateChangedEventArgs>? _audioStateChangedDelegate;
 
-        private EventHandler<SpeechHypothesizedEventArgs> _speechHypothesizedDelegate;
+        private EventHandler<SpeechHypothesizedEventArgs>? _speechHypothesizedDelegate;
 
         #endregion
     }

@@ -9,7 +9,7 @@ namespace System.Speech.Recognition
     {
         #region Constructors
 
-        internal RecognizerUpdateReachedEventArgs(object userToken, TimeSpan audioPosition)
+        internal RecognizerUpdateReachedEventArgs(object? userToken, TimeSpan audioPosition)
         {
             _userToken = userToken;
             _audioPosition = audioPosition;
@@ -20,7 +20,7 @@ namespace System.Speech.Recognition
         #region Public Properties
 
         // Application supplied object reference.
-        public object UserToken
+        public object? UserToken
         {
             get { return _userToken; }
         }
@@ -33,7 +33,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private object _userToken;
+        private object? _userToken;
         private TimeSpan _audioPosition;
 
         #endregion

@@ -54,10 +54,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            GrammarBuilderPhrase refObj = obj as GrammarBuilderPhrase;
-            if (refObj == null)
+            if (obj is not GrammarBuilderPhrase refObj)
             {
                 return false;
             }
@@ -77,7 +76,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return new GrammarBuilderPhrase(_phrase, _subsetMatching, _matchMode);
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement? CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             return CreatePhraseElement(elementFactory, parent);
         }
@@ -98,7 +97,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Private Methods
 
-        private IElement CreatePhraseElement(IElementFactory elementFactory, IElement parent)
+        private IElement? CreatePhraseElement(IElementFactory elementFactory, IElement parent)
         {
             if (_subsetMatching)
             {

@@ -32,17 +32,18 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            TagElement refObj = obj as TagElement;
-            if (refObj == null)
+            if (obj is not TagElement refObj)
             {
                 return false;
             }
+
             if (!base.Equals(obj))
             {
                 return false;
             }
+
             return _value.Equals(refObj._value);
         }
 
@@ -65,8 +66,7 @@ namespace System.Speech.Internal.GrammarBuilding
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the children elements
-            IItem item = parent as IItem;
-            if (item != null)
+            if (parent is IItem item)
             {
                 CreateChildrenElements(elementFactory, item, rule, ruleIds);
             }

@@ -392,7 +392,7 @@ namespace System.Speech.Internal.SapiInterop
         internal uint ulAudioSizeBytes;
         internal uint ulRetainedSizeBytes;
         internal uint ulAudioSizeTime;
-        internal SPSERIALIZEDPHRASERULE Rule;
+        internal SPSERIALIZEDPHRASERULE Rule = null!;
         internal uint PropertiesOffset;
         internal uint ElementsOffset;
         internal uint cReplacements;
@@ -415,7 +415,7 @@ namespace System.Speech.Internal.SapiInterop
         internal uint ulAudioSizeBytes;
         internal uint ulRetainedSizeBytes;
         internal uint ulAudioSizeTime;  // In 100ns units
-        internal SPPHRASERULE Rule;
+        internal SPPHRASERULE? Rule;
         internal IntPtr pProperties;
         internal IntPtr pElements;
         internal uint cReplacements;
@@ -527,7 +527,7 @@ namespace System.Speech.Internal.SapiInterop
     internal class SPPHRASERULE
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pszName;
+        internal string? pszName;
         internal uint ulId;
         internal uint ulFirstElement;
         internal uint ulCountOfElements;
@@ -563,7 +563,9 @@ namespace System.Speech.Internal.SapiInterop
     internal class SPSERIALIZEDPHRASE
     {
         internal SPSERIALIZEDPHRASE()
-        { }
+        {
+            Rule = null!;
+        }
 
         internal SPSERIALIZEDPHRASE(SPSERIALIZEDPHRASE_Sapi51 source)
         {
@@ -723,9 +725,9 @@ namespace System.Speech.Internal.SapiInterop
         void LoadCmdFromMemory(IntPtr pGrammar, SPLOADOPTIONS Options);
         void Slot15(); // void LoadCmdFromProprietaryGrammar(ref Guid rguidParam, string pszStringParam, IntPtr pvDataPrarm, UInt32 cbDataSize, SPLOADOPTIONS Options);
         [PreserveSig]
-        int SetRuleState([MarshalAs(UnmanagedType.LPWStr)] string pszName, IntPtr pReserved, SPRULESTATE NewState);
+        int SetRuleState([MarshalAs(UnmanagedType.LPWStr)] string? pszName, IntPtr pReserved, SPRULESTATE NewState);
         void Slot17(); // void SetRuleIdState(UInt32 ulRuleId, SPRULESTATE NewState);
-        void LoadDictation([MarshalAs(UnmanagedType.LPWStr)] string pszTopicName, SPLOADOPTIONS Options);
+        void LoadDictation([MarshalAs(UnmanagedType.LPWStr)] string? pszTopicName, SPLOADOPTIONS Options);
         void Slot19(); // void UnloadDictation();
         [PreserveSig]
         int SetDictationState(SPRULESTATE NewState);
@@ -742,9 +744,9 @@ namespace System.Speech.Internal.SapiInterop
     {
         void GetRules(out IntPtr ppCoMemRules, out uint puNumRules);
         void LoadCmdFromFile2([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, SPLOADOPTIONS Options, [MarshalAs(UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs(UnmanagedType.LPWStr)] string pszBaseUri);
-        void LoadCmdFromMemory2(IntPtr pGrammar, SPLOADOPTIONS Options, [MarshalAs(UnmanagedType.LPWStr)] string pszSharingUri, [MarshalAs(UnmanagedType.LPWStr)] string pszBaseUri);
-        void SetRulePriority([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, uint ulRuleId, int nRulePriority);
-        void SetRuleWeight([MarshalAs(UnmanagedType.LPWStr)] string pszRuleName, uint ulRuleId, float flWeight);
+        void LoadCmdFromMemory2(IntPtr pGrammar, SPLOADOPTIONS Options, [MarshalAs(UnmanagedType.LPWStr)] string? pszSharingUri, [MarshalAs(UnmanagedType.LPWStr)] string? pszBaseUri);
+        void SetRulePriority([MarshalAs(UnmanagedType.LPWStr)] string? pszRuleName, uint ulRuleId, int nRulePriority);
+        void SetRuleWeight([MarshalAs(UnmanagedType.LPWStr)] string? pszRuleName, uint ulRuleId, float flWeight);
         void SetDictationWeight(float flWeight);
         void SetGrammarLoader(ISpGrammarResourceLoader pLoader);
         void Slot2(); //HRESULT SetSMLSecurityManager([in] IInternetSecurityManager* pSMLSecurityManager);
@@ -828,7 +830,7 @@ namespace System.Speech.Internal.SapiInterop
         // ISpRecognizer Methods
         void SetRecognizer(ISpObjectToken pRecognizer);
         void GetRecognizer(out ISpObjectToken ppRecognizer);
-        void SetInput([MarshalAs(UnmanagedType.IUnknown)] object pUnkInput, [MarshalAs(UnmanagedType.Bool)] bool fAllowFormatChanges);
+        void SetInput([MarshalAs(UnmanagedType.IUnknown)] object? pUnkInput, [MarshalAs(UnmanagedType.Bool)] bool fAllowFormatChanges);
         void Slot8(); // void GetInputObjectToken(out ISpObjectToken ppToken);
         void Slot9(); // void GetInputStream(out ISpStreamFormat ppStream);
         void CreateRecoContext(out ISpRecoContext ppNewCtxt);
@@ -870,7 +872,7 @@ namespace System.Speech.Internal.SapiInterop
         object Slot8 { get; } // [DispId(7)] ISpeechRecognizerStatus Status { get; }
         [DispId(9)]
         [PreserveSig]
-        int EmulateRecognition(object TextElements, ref object ElementDisplayAttributes, int LanguageId);
+        int EmulateRecognition(object? TextElements, ref object ElementDisplayAttributes, int LanguageId);
         void Slot10(); // [DispId(10)] ISpeechRecoContext CreateRecoContext();
         void Slot11(); // [DispId(11)] SpAudioFormat GetFormat(SpeechFormatType Type);
         void Slot12(); // [DispId(12)] bool SetPropertyNumber(string Name, Int32 Value);
@@ -1005,13 +1007,13 @@ namespace System.Speech.Internal.SapiInterop
         /// Load some data
         /// </summary>
         [PreserveSig]
-        int LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
+        int LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream? pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
 
         /// <summary>
         /// Converts the resourcePath to a location in the file cache and returns a reference into the
         /// cache
         /// </summary>
-        string GetLocalCopy(Uri resourcePath, out string mimeType, out Uri redirectUrl);
+        string? GetLocalCopy(Uri resourcePath, out string? mimeType, out Uri? redirectUrl);
 
         /// <summary>
         /// Mark an entry in the file cache as unused.

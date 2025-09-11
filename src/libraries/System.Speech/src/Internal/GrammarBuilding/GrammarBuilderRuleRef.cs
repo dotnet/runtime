@@ -10,7 +10,7 @@ namespace System.Speech.Internal.GrammarBuilding
     {
         #region Constructors
 
-        internal GrammarBuilderRuleRef(Uri uri, string rule)
+        internal GrammarBuilderRuleRef(Uri uri, string? rule)
         {
             _uri = uri.OriginalString + ((rule != null) ? "#" + rule : "");
         }
@@ -23,10 +23,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            GrammarBuilderRuleRef refObj = obj as GrammarBuilderRuleRef;
-            if (refObj == null)
+            if (obj is not GrammarBuilderRuleRef refObj)
             {
                 return false;
             }
@@ -46,7 +45,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return new GrammarBuilderRuleRef(_uri);
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule? rule, IdentifierCollection ruleIds)
         {
             Uri ruleUri = new(_uri, UriKind.RelativeOrAbsolute);
             return elementFactory.CreateRuleRef(parent, ruleUri, null, null);

@@ -121,11 +121,10 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Tests whether two AutomationIdentifier objects are equivalent
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
 #pragma warning disable 6506
-            VoiceInfo voice = obj as VoiceInfo;
-            return voice != null
+            return obj is VoiceInfo voice
                 && _name == voice._name
                 && (_age == voice._age || _age == VoiceAge.NotSet || voice._age == VoiceAge.NotSet)
                 && (_gender == voice._gender || _gender == VoiceGender.NotSet || voice._gender == VoiceGender.NotSet)
@@ -138,7 +137,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         public override int GetHashCode()
         {
-            return _name.GetHashCode();
+            return _name?.GetHashCode() ?? 0;
         }
 
         #endregion
@@ -158,7 +157,7 @@ namespace System.Speech.Synthesis
                 return _age;
             }
         }
-        public string Name
+        public string? Name
         {
             get
             {
@@ -171,14 +170,14 @@ namespace System.Speech.Synthesis
         /// Return a copy of the internal Language set. This disable client
         /// applications to modify the internal languages list.
         /// </summary>
-        public CultureInfo Culture
+        public CultureInfo? Culture
         {
             get
             {
                 return _culture;
             }
         }
-        public string Id
+        public string? Id
         {
             get
             {
@@ -193,7 +192,7 @@ namespace System.Speech.Synthesis
             }
         }
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public ReadOnlyCollection<SpeechAudioFormatInfo> SupportedAudioFormats
+        public ReadOnlyCollection<SpeechAudioFormatInfo>? SupportedAudioFormats
         {
             get
             {
@@ -226,21 +225,21 @@ namespace System.Speech.Synthesis
                 return _variant;
             }
         }
-        internal string AssemblyName
+        internal string? AssemblyName
         {
             get
             {
                 return _assemblyName;
             }
         }
-        internal string Clsid
+        internal string? Clsid
         {
             get
             {
                 return _clsid;
             }
         }
-        internal string RegistryKeyPath
+        internal string? RegistryKeyPath
         {
             get
             {
@@ -252,9 +251,9 @@ namespace System.Speech.Synthesis
 
         #region Private Fields
 
-        private string _name;
+        private string? _name;
 
-        private CultureInfo _culture;
+        private CultureInfo? _culture;
 
         private VoiceGender _gender;
 
@@ -263,25 +262,25 @@ namespace System.Speech.Synthesis
         private int _variant = -1;
 
         [NonSerialized]
-        private string _id;
+        private string? _id;
 
         [NonSerialized]
-        private string _registryKeyPath;
+        private string? _registryKeyPath;
 
         [NonSerialized]
-        private string _assemblyName;
+        private string? _assemblyName;
 
         [NonSerialized]
-        private string _clsid;
+        private string? _clsid;
 
         [NonSerialized]
-        private string _description;
+        private string? _description;
 
         [NonSerialized]
-        private ReadOnlyDictionary<string, string> _attributes;
+        private ReadOnlyDictionary<string, string>? _attributes;
 
         [NonSerialized]
-        private ReadOnlyCollection<SpeechAudioFormatInfo> _audioFormats;
+        private ReadOnlyCollection<SpeechAudioFormatInfo>? _audioFormats;
 
         #endregion
     }

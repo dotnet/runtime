@@ -85,7 +85,7 @@ namespace System.Speech.Internal.SrgsParser
             _parser.AddScript(grammar, source.Script, null, -1);
             // Finish all initialization - should check for the Root and the all
             // rules are defined
-            grammar.PostParse(null);
+            grammar.PostParse(null!);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.Speech.Internal.SrgsParser
         /// </summary>
         private IRuleRef ParseRuleRef(SrgsRuleRef srgsRuleRef, IElement parent)
         {
-            IRuleRef ruleRef = null;
+            IRuleRef? ruleRef = null;
             bool fSpecialRuleRef = true;
 
             if (srgsRuleRef == SrgsRuleRef.Null)
@@ -154,6 +154,7 @@ namespace System.Speech.Internal.SrgsParser
             }
             else
             {
+                System.Diagnostics.Debug.Assert(srgsRuleRef.Uri != null, "If it is not a special rule ref, the uri is not null");
                 ruleRef = _parser.CreateRuleRef(parent, srgsRuleRef.Uri, srgsRuleRef.SemanticKey, srgsRuleRef.Params);
                 fSpecialRuleRef = false;
             }
@@ -215,7 +216,7 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        private void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence)
+        private void ParseText(IElement parent, string sChars, string? pronunciation, string? display, float reqConfidence)
         {
             System.Diagnostics.Debug.Assert((parent != null) && (!string.IsNullOrEmpty(sChars)));
 
@@ -283,9 +284,9 @@ namespace System.Speech.Internal.SrgsParser
         private void ProcessChildNodes(SrgsElement srgsElement, IElement parent, IRule rule)
         {
             Type elementType = srgsElement.GetType();
-            IElement child = null;
-            IRule parentRule = parent as IRule;
-            IItem parentItem = parent as IItem;
+            IElement child;
+            IRule? parentRule = parent as IRule;
+            IItem? parentItem = parent as IItem;
 
             if (elementType == typeof(SrgsRuleRef))
             {
@@ -341,19 +342,19 @@ namespace System.Speech.Internal.SrgsParser
                         XmlParser.ThrowSrgsException(SRID.InvalidElement);
                     }
                 }
+                child = null!;
             }
             else
             {
+                child = null!;
                 System.Diagnostics.Debug.Fail("Unsupported Srgs element");
                 XmlParser.ThrowSrgsException(SRID.InvalidElement);
             }
 
             // if the parent is a one of, then the children must be an Item
-            IOneOf parentOneOf = parent as IOneOf;
-            if (parentOneOf != null)
+            if (parent is IOneOf parentOneOf)
             {
-                IItem childItem = child as IItem;
-                if (childItem != null)
+                if (child is IItem childItem)
                 {
                     _parser.AddItem(parentOneOf, childItem);
                 }
@@ -389,7 +390,7 @@ namespace System.Speech.Internal.SrgsParser
                 List<SrgsElement> list = new();
                 foreach (SrgsElement element in elements)
                 {
-                    if (!(element is SrgsNameValueTag))
+                    if (element is not SrgsNameValueTag)
                     {
                         list.Add(element);
                     }
@@ -416,7 +417,7 @@ namespace System.Speech.Internal.SrgsParser
 
         private SrgsGrammar _grammar;
 
-        private IElementFactory _parser;
+        private IElementFactory _parser = null!;
 
         #endregion
     }

@@ -37,7 +37,8 @@ namespace System.Speech.Recognition.SrgsGrammar
                 ArgumentNullException.ThrowIfNull(value);
 
                 // Parse the text to check for errors
-                XmlParser.ParseText(null, value, null, null, -1f, null);
+                // Suppress parent null because callback is also null
+                XmlParser.ParseText(null!, value, null, null, -1f, null);
                 _text = value;
             }
         }

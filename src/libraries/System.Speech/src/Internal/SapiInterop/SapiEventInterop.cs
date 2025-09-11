@@ -84,7 +84,7 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpNotifySource
     {
         // ISpNotifySource Methods
-        void SetNotifySink(ISpNotifySink pNotifySink);
+        void SetNotifySink(ISpNotifySink? pNotifySink);
         void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
@@ -98,7 +98,7 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpEventSource : ISpNotifySource
     {
         // ISpNotifySource Methods
-        new void SetNotifySink(ISpNotifySink pNotifySink);
+        new void SetNotifySink(ISpNotifySink? pNotifySink);
         new void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
@@ -117,7 +117,7 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpEventSource2 : ISpEventSource
     {
         // ISpNotifySource Methods
-        new void SetNotifySink(ISpNotifySink pNotifySink);
+        new void SetNotifySink(ISpNotifySink? pNotifySink);
         new void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);

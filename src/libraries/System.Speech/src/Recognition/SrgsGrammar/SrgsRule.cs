@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsParser;
 using System.Xml;
@@ -18,23 +19,20 @@ namespace System.Speech.Recognition.SrgsGrammar
         private static readonly SearchValues<char> s_invalidChars = SearchValues.Create("?*+|()^$/;.=<>[]{}\\ \t\r\n");
 
         #region Constructors
-        private SrgsRule()
-        {
-            _elements = new SrgsElementList();
-        }
+
         public SrgsRule(string id)
-            : this()
         {
             XmlParser.ValidateRuleId(id);
-            Id = id;
+            _id = id;
+            _elements = new SrgsElementList();
         }
         public SrgsRule(string id, params SrgsElement[] elements)
-            : this()
         {
             ArgumentNullException.ThrowIfNull(elements);
 
             XmlParser.ValidateRuleId(id);
-            Id = id;
+            _id = id;
+            _elements = new SrgsElementList();
 
             for (int iElement = 0; iElement < elements.Length; iElement++)
             {
@@ -66,6 +64,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _elements;
             }
         }
+
         public string Id
         {
             get
@@ -94,7 +93,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// classname
         /// </summary>
-        public string BaseClass
+        public string? BaseClass
         {
             get
             {
@@ -102,10 +101,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                // base value can be null
-#pragma warning disable 56526
                 _baseclass = value;
-#pragma warning restore 56526
             }
         }
 
@@ -128,7 +124,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// OnInit
         /// </summary>
-        public string OnInit
+        public string? OnInit
         {
             get
             {
@@ -144,7 +140,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// OnParse
         /// </summary>
-        public string OnParse
+        public string? OnParse
         {
             get
             {
@@ -160,7 +156,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// OnError
         /// </summary>
-        public string OnError
+        public string? OnError
         {
             get
             {
@@ -176,7 +172,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// OnRecognition
         /// </summary>
-        public string OnRecognition
+        public string? OnRecognition
         {
             get
             {
@@ -252,7 +248,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 writer.WriteAttributeString("sapi", "onRecognition", XmlParser.sapiNamespace, OnRecognition);
             }
             // Write <rule> body and footer.
-            Type previousElementType = null;
+            Type? previousElementType = null;
 
             foreach (SrgsElement element in _elements)
             {
@@ -379,7 +375,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
 #pragma warning disable 56507 // check for null or empty strings
 
-        private void ValidateIdentifier(string s)
+        private void ValidateIdentifier(string? s)
         {
             if (s == _id)
             {
@@ -407,18 +403,18 @@ namespace System.Speech.Recognition.SrgsGrammar
         private bool _isScopeSet;
 
         // class name for the code behind
-        private string _baseclass;
+        private string? _baseclass;
 
         // .NET Language for this grammar
         private string _script = string.Empty;
 
-        private string _onInit;
+        private string? _onInit;
 
-        private string _onParse;
+        private string? _onParse;
 
-        private string _onError;
+        private string? _onError;
 
-        private string _onRecognition;
+        private string? _onRecognition;
 
         #endregion
 
@@ -448,7 +444,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            public object BaseClass
+            public object? BaseClass
             {
                 get
                 {
@@ -464,7 +460,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            public object OnInit
+            public object? OnInit
             {
                 get
                 {
@@ -472,7 +468,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            public object OnParse
+            public object? OnParse
             {
                 get
                 {
@@ -480,7 +476,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            public object OnError
+            public object? OnError
             {
                 get
                 {
@@ -488,7 +484,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
             }
 
-            public object OnRecognition
+            public object? OnRecognition
             {
                 get
                 {

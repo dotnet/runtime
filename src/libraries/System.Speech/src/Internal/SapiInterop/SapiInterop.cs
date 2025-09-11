@@ -122,7 +122,7 @@ namespace System.Speech.Internal.SapiInterop
         new int EnumValues(uint Index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszValueName);
 
         // ISpObjectToken Methods
-        void SetId([MarshalAs(UnmanagedType.LPWStr)] string pszCategoryId, [MarshalAs(UnmanagedType.LPWStr)] string pszTokenId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist);
+        void SetId([MarshalAs(UnmanagedType.LPWStr)] string? pszCategoryId, [MarshalAs(UnmanagedType.LPWStr)] string? pszTokenId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist);
         void GetId(out IntPtr ppszCoMemTokenId);
         void Slot15(); // void GetCategory(out ISpObjectTokenCategory ppTokenCategory);
         void Slot16(); // void CreateInstance(object pUnkOuter, UInt32 dwClsContext, ref Guid riid, ref IntPtr ppvObject);
@@ -241,7 +241,7 @@ namespace System.Speech.Internal.SapiInterop
         void SetId([MarshalAs(UnmanagedType.LPWStr)] string pszCategoryId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist);
         void GetId([MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemCategoryId);
         void Slot14(); // void GetDataKey(System.Speech.Internal.SPDATAKEYLOCATION spdkl, out ISpDataKey ppDataKey);
-        void EnumTokens([MarshalAs(UnmanagedType.LPWStr)] string pzsReqAttribs, [MarshalAs(UnmanagedType.LPWStr)] string pszOptAttribs, out IEnumSpObjectTokens ppEnum);
+        void EnumTokens([MarshalAs(UnmanagedType.LPWStr)] string? pzsReqAttribs, [MarshalAs(UnmanagedType.LPWStr)] string? pszOptAttribs, out IEnumSpObjectTokens ppEnum);
         void Slot16(); // void SetDefaultTokenId([MarshalAs(UnmanagedType.LPWStr)] string pszTokenId);
         void GetDefaultTokenId([MarshalAs(UnmanagedType.LPWStr)] out string ppszCoMemTokenId);
     }

@@ -236,7 +236,7 @@ namespace System.Speech.Synthesis
             _outputStream = Stream.Null;
         }
         // Dynamic content, use a method instead of a property to denote that fact
-        public Prompt GetCurrentlySpokenPrompt()
+        public Prompt? GetCurrentlySpokenPrompt()
         {
             return VoiceSynthesizer.Prompt;
         }
@@ -452,7 +452,7 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Private Methods
-        private void SetOutputStream(Stream stream, SpeechAudioFormatInfo formatInfo, bool headerInfo, bool closeStreamOnExit)
+        private void SetOutputStream(Stream? stream, SpeechAudioFormatInfo? formatInfo, bool headerInfo, bool closeStreamOnExit)
         {
             SetOutputToNull();
             _outputStream = stream;
@@ -520,7 +520,7 @@ namespace System.Speech.Synthesis
         #region Private Fields
 
         // SpVoice for this synthesizer
-        private VoiceSynthesis _voiceSynthesis;
+        private VoiceSynthesis? _voiceSynthesis;
 
         // Is the object disposed?
         private bool _isDisposed;
@@ -529,7 +529,7 @@ namespace System.Speech.Synthesis
         private bool _paused;
 
         // .NET Stream - keep a reference to it to avoid it to be GC
-        private Stream _outputStream;
+        private Stream? _outputStream;
 
         // If stream were created in SpeechFx then close it, otherwise it should remain open.
         private bool _closeStreamOnExit;

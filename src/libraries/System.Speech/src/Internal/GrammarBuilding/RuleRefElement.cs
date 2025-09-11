@@ -16,7 +16,7 @@ namespace System.Speech.Internal.GrammarBuilding
             _rule = rule;
         }
 
-        internal RuleRefElement(RuleElement rule, string semanticKey)
+        internal RuleRefElement(RuleElement rule, string? semanticKey)
         {
             _rule = rule;
             _semanticKey = semanticKey;
@@ -25,13 +25,13 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            RuleRefElement refObj = obj as RuleRefElement;
-            if (refObj == null)
+            if (obj is not RuleRefElement refObj)
             {
                 return false;
             }
+
             return _semanticKey == refObj._semanticKey && _rule.Equals(refObj._rule);
         }
         public override int GetHashCode()
@@ -58,7 +58,7 @@ namespace System.Speech.Internal.GrammarBuilding
             _rule.CloneItems(builders._rule);
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule? rule, IdentifierCollection ruleIds)
         {
             // Create the new rule and add the reference to the item
             return elementFactory.CreateRuleRef(parent, new Uri("#" + Rule.RuleName, UriKind.Relative), _semanticKey, null);
@@ -89,7 +89,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Private Fields
 
         private readonly RuleElement _rule;
-        private readonly string _semanticKey;
+        private readonly string? _semanticKey;
 
         #endregion
     }
