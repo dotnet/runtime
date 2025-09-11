@@ -1019,7 +1019,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public System.Speech.Synthesis.TtsEngine.ProsodyNumber Rate { get { throw null; } set { } }
         public System.Speech.Synthesis.TtsEngine.ProsodyNumber Volume { get { throw null; } set { } }
         public System.Speech.Synthesis.TtsEngine.ContourPoint[]? GetContourPoints() { throw null; }
-        public void SetContourPoints([System.Diagnostics.CodeAnalysis.NotNullAttribute] System.Speech.Synthesis.TtsEngine.ContourPoint[]? points) { }
+        public void SetContourPoints(System.Speech.Synthesis.TtsEngine.ContourPoint[] points) { }
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]

@@ -279,7 +279,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public int Duration { get { return _duration; } set { _duration = value; } }
         public ProsodyNumber Volume { get { return _volume; } set { _volume = value; } }
         public ContourPoint[]? GetContourPoints() { return _contourPoints; }
-        public void SetContourPoints([NotNull] ContourPoint[]? points)
+        public void SetContourPoints(ContourPoint[] points)
         {
             ArgumentNullException.ThrowIfNull(points);
 
