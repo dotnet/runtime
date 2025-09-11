@@ -7454,9 +7454,9 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 #elif defined(TARGET_RISCV64)
     if (index != nullptr)
     {
-        // RISC-V doesn't have indexed load/stores, add the index into the base
+        // RISC-V doesn't have indexed load/stores, explicitly add the index into the base
         assert(base != nullptr);
-        assert(scale <= 1);
+        assert(scale == 1);
         base = comp->gtNewOperNode(GT_ADD, addrMode->TypeGet(), base, index);
         BlockRange().InsertBefore(addrMode, base);
         addrMode->SetBase(base);
