@@ -270,19 +270,20 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
 
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(mapNeeded == null || *mapNeeded == mapNeededLocal);
                 if (mapsLocal is not null)
                 {
-                    for (int i = 0; i < mapsLocal.Length; i++)
+                    int countToCheck = Math.Min(mapsLocal.Length, (int)mapNeededLocal);
+                    for (int i = 0; i < countToCheck; i++)
                     {
-                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
-                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
-                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
-                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
+                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"ILOffset - cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
+                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"StartAddress - cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
+                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"EndAddress - cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
+                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"Type - cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
                     }
                 }
             }
