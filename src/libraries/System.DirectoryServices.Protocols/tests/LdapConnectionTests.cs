@@ -333,7 +333,6 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
-        [OuterLoop("Uses unreachable server which may take up to 2 seconds to timeout")]
         public void NetworkTimeout_UnreachableServer_ThrowsTimeoutException()
         {
             // Use TEST-NET-1 address (192.0.2.x) which is reserved for documentation and testing
