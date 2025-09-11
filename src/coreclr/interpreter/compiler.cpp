@@ -3478,26 +3478,39 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else
             {
                 // Normal call
-                if (callInfo.nullInstanceCheck)
-                {
-                    // If the call is a normal call, we need to check for null instance
-                    // before the call.
-                    // TODO: Add null checking behavior somewhere here!
-                }
+                InterpOpcode opcode;
                 if (isDelegateInvoke)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    AddIns(INTOP_CALLDELEGATE);
+                    opcode = INTOP_CALLDELEGATE;
                 }
                 else if (tailcall)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    AddIns(INTOP_CALL_TAIL);
+                    opcode = INTOP_CALL_TAIL;
                 }
                 else
                 {
-                    AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                    opcode = (isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL;
                 }
+
+                if (callInfo.nullInstanceCheck)
+                {
+                    // If the call is a normal call, we need to check for null instance
+                    // before the call.
+                    if (opcode == INTOP_CALL)
+                    {
+                        // There is an optimized form of this for the INTOP_CALL opcode as it is so very common
+                        opcode = INTOP_CALL_NULLCHECK;
+                    }
+                    else
+                    {
+                        // Otherwise, insert an explicit null check instruction
+                        AddIns(INTOP_NULLCHECK);
+                        m_pLastNewIns->SetSVar(callArgs[0]);
+                    }
+                }
+                AddIns(opcode);
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
                 if (isPInvoke && !isMarshaledPInvoke)
                 {
@@ -3521,7 +3534,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // If the call is a normal call, we need to check for null instance
                 // before the call.
-                // TODO: Add null checking behavior somewhere here!
+                AddIns(INTOP_NULLCHECK);
+                m_pLastNewIns->SetSVar(callArgs[0]);
             }
 
             EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
