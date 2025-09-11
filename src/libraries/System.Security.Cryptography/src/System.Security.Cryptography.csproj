@@ -597,6 +597,7 @@
     <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
     <Compile Include="System\Security\Cryptography\HMAC.cs" />
     <Compile Include="System\Security\Cryptography\HMACCommon.cs" />
+    <Compile Include="System\Security\Cryptography\HMACShared.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />

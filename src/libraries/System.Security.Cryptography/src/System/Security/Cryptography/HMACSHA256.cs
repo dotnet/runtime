@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    public class HMACSHA256 : HMAC
+    public class HMACSHA256 : HMAC, IHMACShared
     {
         /// <summary>
         /// The hash size produced by the HMAC SHA256 algorithm, in bits.
@@ -59,6 +59,9 @@ namespace System.Security.Cryptography
                 base.Key = _hMacCommon.ActualKey!;
             }
         }
+
+        static int IHMACShared.HashSizeInBytes => HashSizeInBytes;
+        static string IHMACShared.HashAlgorithmName => HashAlgorithmNames.SHA256;
 
         protected override void HashCore(byte[] rgb, int ib, int cb) =>
             _hMacCommon.AppendHashData(rgb, ib, cb);
@@ -343,16 +346,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
         {
-            if (hash.Length != HashSizeInBytes)
-                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
-
-            Span<byte> mac = stackalloc byte[HashSizeInBytes];
-            int written = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA256, key, source, mac);
-            Debug.Assert(written == HashSizeInBytes);
-
-            bool result = CryptographicOperations.FixedTimeEquals(mac, hash);
-            CryptographicOperations.ZeroMemory(mac);
-            return result;
+            return HMACShared<HMACSHA256>.Verify(key, source, hash);
         }
 
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
@@ -361,11 +355,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool Verify(byte[] key, byte[] source, byte[] hash)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(hash);
-
-            return Verify(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source), new ReadOnlySpan<byte>(hash));
+            return HMACShared<HMACSHA256>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -392,21 +382,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (hash.Length != HashSizeInBytes)
-                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            Span<byte> mac = stackalloc byte[HashSizeInBytes];
-            int written = LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, key, source, mac);
-            Debug.Assert(written == HashSizeInBytes);
-
-            bool result = CryptographicOperations.FixedTimeEquals(mac, hash);
-            CryptographicOperations.ZeroMemory(mac);
-            return result;
+            return HMACShared<HMACSHA256>.Verify(key, source, hash);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -415,11 +391,7 @@ namespace System.Security.Cryptography
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
         public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(hash);
-            // source parameter check is done in called overload.
-
-            return Verify(new ReadOnlySpan<byte>(key), source, new ReadOnlySpan<byte>(hash));
+            return HMACShared<HMACSHA256>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -454,37 +426,7 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> hash,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (hash.Length != HashSizeInBytes)
-                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, HashSizeInBytes), nameof(hash));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return VerifyAsyncInner(key, source, hash, cancellationToken);
-
-            static async ValueTask<bool> VerifyAsyncInner(
-                ReadOnlyMemory<byte> key,
-                Stream source,
-                ReadOnlyMemory<byte> hash,
-                CancellationToken cancellationToken)
-            {
-                byte[] mac = new byte[HashSizeInBytes];
-
-                using (PinAndClear.Track(mac))
-                {
-                    int written = await LiteHashProvider.HmacStreamAsync(
-                        HashAlgorithmNames.SHA256,
-                        key.Span,
-                        source,
-                        mac,
-                        cancellationToken).ConfigureAwait(false);
-
-                    Debug.Assert(written == HashSizeInBytes);
-                    return CryptographicOperations.FixedTimeEquals(mac, hash.Span);
-                }
-            }
+            return HMACShared<HMACSHA256>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -497,11 +439,7 @@ namespace System.Security.Cryptography
             byte[] hash,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(hash);
-            // source parameter check is done in called overload.
-
-            return VerifyAsync(new ReadOnlyMemory<byte>(key), source, new ReadOnlyMemory<byte>(hash), cancellationToken);
+            return HMACShared<HMACSHA256>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
