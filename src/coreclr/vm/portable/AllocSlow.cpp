@@ -4,7 +4,7 @@
 
 #include <fcall.h>
 
-EXTERN_C void* RhpGcAlloc(CORINFO_CLASS_HANDLE typeHnd_, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C Object* RhpGcAlloc(CORINFO_CLASS_HANDLE typeHnd_, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
 {
@@ -13,7 +13,7 @@ void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
 
 static Object* _RhpNewObject(CORINFO_CLASS_HANDLE typeHnd_, uint32_t allocFlags)
 {
-    Object* obj = (Object*)RhpGcAlloc(typeHnd_, allocFlags, 0, nullptr);
+    Object* obj = RhpGcAlloc(typeHnd_, allocFlags, 0, nullptr);
     if (obj == NULL)
     {
         RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0); // never returns
