@@ -174,7 +174,7 @@ namespace ILVerification.Tests
                 foreach (var methodHandle in testModule.MetadataReader.MethodDefinitions)
                 {
                     var method = (EcmaMethod)testModule.GetMethod(methodHandle);
-                    var methodName = method.Name;
+                    var methodName = method.GetName();
 
                     if (!methodName.Contains('_', StringComparison.Ordinal))
                         continue;
@@ -232,7 +232,7 @@ namespace ILVerification.Tests
             // Substitute method parameters with friendly name
             methodParams[0] = friendlyName;
 
-            var specialMethodHandle = (EcmaMethod)method.OwningType.GetMethod(specialName, method.Signature);
+            var specialMethodHandle = (EcmaMethod)method.OwningType.GetMethod(Encoding.UTF8.GetBytes(specialName), method.Signature);
             return specialMethodHandle == null ? method.Handle : specialMethodHandle.Handle;
         }
 

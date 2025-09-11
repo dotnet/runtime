@@ -37,7 +37,7 @@ namespace Internal.TypeSystem
 
         public override bool IsModuleType => false;
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
         {
             return null;
         }
