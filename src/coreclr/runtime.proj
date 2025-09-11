@@ -4,13 +4,14 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
+
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsBrowser)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
-    <PackageReference Condition="'$(TargetsBrowser)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
@@ -51,7 +52,7 @@
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
-      <_CoreClrBuildArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCLR_CMAKE_ICU_DIR=$(_IcuDir)&quot;" />
+      <_CoreClrBuildArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
     </ItemGroup>
 

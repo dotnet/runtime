@@ -1375,8 +1375,8 @@
   <data name="Argument_InvalidTypeName" xml:space="preserve">
     <value>The name of the type is invalid.</value>
   </data>
-  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
-    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  <data name="Argument_TypeContainsReferences" xml:space="preserve">
+    <value>The type '{0}' is not supported because it contains references.</value>
   </data>
   <data name="Argument_InvalidUnity" xml:space="preserve">
     <value>Type '{0}' is not deserializable.</value>
@@ -1455,9 +1455,6 @@
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type.</value>
-  </data>
-  <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
-    <value>The specified Type must be a struct containing no references.</value>
   </data>
   <data name="Argument_NegativeFieldOffsetNotPermitted" xml:space="preserve">
     <value>Negative field offset is not allowed.</value>

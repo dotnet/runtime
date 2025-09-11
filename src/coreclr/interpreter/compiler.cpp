@@ -646,8 +646,17 @@ void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE 
 
 void InterpCompiler::PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd)
 {
-    // We don't really care about the exact size for non-valuetypes
-    PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    if (stackType == StackTypeVT)
+    {
+        assert(clsHnd != NULL);
+        int size = m_compHnd->getClassSize(clsHnd);
+        PushTypeExplicit(stackType, clsHnd, size);
+    }
+    else
+    {
+        // We don't really care about the exact size for non-valuetypes
+        PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    }
 }
 
 void InterpCompiler::PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd)
@@ -979,6 +988,65 @@ class InterpGcSlotAllocator
     InterpreterGcInfoEncoder *m_encoder;
     // [pObjects, pByrefs]
     GcSlotId *m_slotTables[2];
+
+    struct ConservativeRange
+    {
+        ConservativeRange(uint32_t start, uint32_t end)
+            : startOffset(start), endOffset(end) {}
+
+        ConservativeRange* next = nullptr;
+        uint32_t startOffset;
+        uint32_t endOffset;
+
+        void MergeWith(uint32_t startOther, uint32_t endOther)
+        {
+            // This can only be called with overlapping or adjacent ranges
+            if (startOffset <= startOther)
+            {
+                assert(endOffset >= startOther);
+            }
+            else
+            {
+                assert(endOffset >= startOther);
+            }
+            endOffset = endOffset > endOther ? endOffset : endOther;
+            startOffset = startOffset < startOther ? startOffset : startOther;
+        }
+    };
+
+    ConservativeRange** m_conservativeRanges = nullptr;
+
+    ConservativeRange* FindAndRemoveOverlappingOrAdjacentRange(uint32_t offsetBytes, uint32_t start, uint32_t end)
+    {
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+        ConservativeRange* prev = nullptr;
+        ConservativeRange* range = m_conservativeRanges[slotIndex];
+        while (range)
+        {
+            if (!(end < range->startOffset || start > range->endOffset))
+            {
+                // Overlapping or adjacent ranges
+                if (prev)
+                    prev->next = range->next;
+                else
+                    m_conservativeRanges[slotIndex] = range->next;
+                range->next = nullptr;
+                return range;
+            }
+            prev = range;
+            range = range->next;
+        }
+        return nullptr;
+    }
+
+    void InsertConservativeRange(uint32_t offsetBytes, ConservativeRange* range)
+    {
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+
+        range->next = m_conservativeRanges[slotIndex];
+        m_conservativeRanges[slotIndex] = range;
+    }
+
     unsigned m_slotTableSize;
 
 #ifdef DEBUG
@@ -1008,6 +1076,8 @@ public:
             // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
             memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
         }
+        m_conservativeRanges = new (m_compiler) ConservativeRange *[m_slotTableSize];
+        memset(m_conservativeRanges, 0, sizeof(ConservativeRange *) * m_slotTableSize);
     }
 
     void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
@@ -1057,8 +1127,78 @@ public:
             m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
             startOffset, endOffset
         );
-        m_encoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
-        m_encoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+
+
+        ConservativeRange* pExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, startOffset, endOffset);
+        if (pExistingRange != nullptr)
+        {
+            INTERP_DUMP("Merging with existing range [%u - %u]\n", pExistingRange->startOffset, pExistingRange->endOffset);
+            pExistingRange->MergeWith(startOffset, endOffset);
+            ConservativeRange* pOtherExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, pExistingRange->startOffset, pExistingRange->endOffset);
+            while (pOtherExistingRange != nullptr)
+            {
+                INTERP_DUMP("Merging with existing range [%u - %u]\n", pOtherExistingRange->startOffset, pOtherExistingRange->endOffset);
+                pExistingRange->MergeWith(pOtherExistingRange->startOffset, pOtherExistingRange->endOffset);
+                pOtherExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, pExistingRange->startOffset, pExistingRange->endOffset);
+            };
+            InsertConservativeRange(offsetBytes, pExistingRange);
+        }
+        else
+        {
+            ConservativeRange* pNewRange = new (m_compiler) ConservativeRange(startOffset, endOffset);
+            InsertConservativeRange(offsetBytes, pNewRange);
+        }
+    }
+
+    void ReportConservativeRangesToGCEncoder()
+    {
+        uint32_t maxEndOffset = m_compiler->ConvertOffset(m_compiler->m_methodCodeSize);
+        for (uint32_t i = 0; i < m_slotTableSize; i++)
+        {
+            ConservativeRange* range = m_conservativeRanges[i];
+
+            if (range == nullptr)
+                continue;
+
+            GcSlotId* pSlot = LocateGcSlotTableEntry(i * sizeof(void *), GC_SLOT_INTERIOR);
+            assert(pSlot != nullptr && *pSlot != (GcSlotId)-1);
+
+            while (range)
+            {
+                INTERP_DUMP(
+                    "Conservative range for slot %u at %u [%u - %u]\n",
+                    *pSlot,
+                    (unsigned)(i * sizeof(void *)),
+                    range->startOffset,
+                    range->endOffset + 1
+                );
+                m_encoder->SetSlotState(range->startOffset, *pSlot, GC_SLOT_LIVE);
+
+                // Conservatively assume that the lifetime of a slot extends to just past the end of what
+                // the lifetime analysis has determined. This is due to an inaccuracy of reporting in the
+                // interpreter execution path, where if the instruction may call another function, or may
+                // cause an exception, the ip may be moved forward to the next instruction before the variable
+                // actually ceases to be in use.
+                //
+                // TODO-Interp, Since this reporting for call arguments is double reporting once the call happens, it
+                // is only safe since outgoing argument reporting is done via conservative reporting, but it also means
+                // that we could add an optimization to the reporting algorithm so that if a callee of the function
+                // takes ownership of the stack, then we could not do the conservative reporting for the range
+                // in the caller's stack. This would likely reduce the conservative reporting being done by
+                // functions up the stack in the interpreter case, such that we don't have excessive conservative
+                // reporting causing substantial pinning overhead.
+                uint32_t endOffset = range->endOffset + 1;
+
+                if (endOffset > maxEndOffset)
+                {
+                    // The GcInfoEncoder should not report slots beyond the method's end
+                    endOffset = maxEndOffset;
+                    assert(endOffset == range->endOffset);
+                }
+                m_encoder->SetSlotState(endOffset, *pSlot, GC_SLOT_DEAD);
+                range = range->next;
+            }
+        }
     }
 };
 #endif
@@ -1071,6 +1211,8 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
+    gcInfoEncoder->SetStackBaseRegister(0);
+    gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
 
     GENERIC_CONTEXTPARAM_TYPE paramType;
 
@@ -1093,13 +1235,13 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     }
 
     gcInfoEncoder->SetSizeOfStackOutgoingAndScratchArea(0);
-    
+
     if (m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_SHAREDINST)
     {
         if ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_THIS)
         {
             assert(paramType != GENERIC_CONTEXTPARAM_NONE);
-            
+
             int32_t genericArgStackOffset = m_pVars[getParamArgIndex()].offset;
             INTERP_DUMP("SetGenericsInstContextStackSlot at %u\n", (unsigned)genericArgStackOffset);
             gcInfoEncoder->SetPrologSize(4); // Size of 1 instruction
@@ -1118,57 +1260,73 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 
     INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
-    for (int pass = 0; pass < 2; pass++)
+    // We have 2 different types of slots that we allocate. We allocate all global vars as untracked
+    // (otherwise known as always live throughout the function) and temporaries are allocated as tracked
+    // locals. The untracked locals, we report with precise GC information about what they are.
+    // The tracked locals are reported with conservative GC information and a slightly expanded lifetime(hence
+    // why they are reported conservatively). See comment in ReportConservativeRangesToGCEncoder for the details.
+    //
+    // For catch/finally/fault funclets, since the GC reporting only uses the leaf funclet, and funclets actually
+    // share the exact same portion of the data stack, there is no additional complexity for funclets.
+    //
+    // For filter funclets the correctness of this algorithm is much more nuanced. Filter funclets do NOT share
+    // the same data stack frame, and would require additional handling to ensure correct GC reporting, EXCEPT
+    // for the fact that the compiler computes the offsets of temporary vars used in the filter funclet as if they
+    // were shared with the parent function stack AND the start of every filter funclet begins by setting the entire
+    // possible utilized memory space of that frame with zeros. This results in the filter funclet attempting to report all
+    // of the local variables of the parent frame, which would normally be a problem, but since the frame is physically
+    // separate it will not cause double reporting faults, and because the frame is zero'd it won't generate unsafe
+    // memory access.
+
+    for (int i = 0; i < m_varsSize; i++)
     {
-        for (int i = 0; i < m_varsSize; i++)
-        {
-            InterpVar *pVar = &m_pVars[i];
-            GcSlotFlags flags = pVar->global
-                ? (GcSlotFlags)GC_SLOT_UNTRACKED
-                : (GcSlotFlags)0;
+        InterpVar *pVar = &m_pVars[i];
+        GcSlotFlags flags = pVar->global
+            ? (GcSlotFlags)GC_SLOT_UNTRACKED
+            : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
 
-            switch (pVar->interpType) {
-                case InterpTypeO:
-                    break;
-                case InterpTypeByRef:
-                    flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
-                    break;
-                case InterpTypeVT:
+        switch (pVar->interpType) {
+            case InterpTypeO:
+                break;
+            case InterpTypeByRef:
+                flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
+                break;
+            case InterpTypeVT:
+            {
+                InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
+                for (unsigned j = 0; j < stackMap->m_slotCount; j++)
                 {
-                    InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
-                    for (unsigned j = 0; j < stackMap->m_slotCount; j++)
+                    InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
+                    unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
+                    GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
+                    slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
+                    if (!pVar->global)
                     {
-                        InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
-                        unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
-                        GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
-                        if (pass == 0)
-                            slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
-                        else
-                            slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
+                        slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
                     }
-
-                    // Don't perform the regular allocateGcSlot call
-                    continue;
                 }
-                default:
-                    // Neither an object, interior pointer, or vt, so no slot needed
-                    continue;
+
+                // Don't perform the regular allocateGcSlot call
+                continue;
             }
-
-            if (pVar->pinned)
-                flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
-
-            if (pass == 0)
-                slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
-            else
-                slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+            default:
+                // Neither an object, interior pointer, or vt, so no slot needed
+                continue;
         }
 
-        if (pass == 0)
-            gcInfoEncoder->FinalizeSlotIds();
-        else
-            gcInfoEncoder->Build();
+        if (pVar->pinned)
+            flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
+
+        slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
+        if (!pVar->global)
+        {
+            slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+        }
     }
+
+    gcInfoEncoder->FinalizeSlotIds();
+    slotAllocator.ReportConservativeRangesToGCEncoder();
+    gcInfoEncoder->Build();
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     gcInfoEncoder->Emit();
@@ -3016,7 +3174,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
-                
+
                 // Implement the implicit argument conversion rules of III.1.6
                 switch (m_pStackPointer[iCurrentStackArg].type)
                 {
@@ -3062,7 +3220,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                         break;
                     }
                     break;
-                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the 
+                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the
                     // truncation rules for NativeInt/NativeUInt to I4/U4. However, on little-endian
                     // platforms, the interpreter calling convention will naturally produce the
                     // truncation, so there is no additional code necessary.
@@ -4195,6 +4353,32 @@ retry_emit:
                 m_ip++;
                 break;
             }
+
+            case CEE_CKFINITE:
+            {
+                CHECK_STACK(1);
+                int sVar = m_pStackPointer[-1].var;
+                StackType argType = m_pStackPointer[-1].type;
+                switch (argType)
+                {
+                    case StackTypeR4:
+                        AddIns(INTOP_CKFINITE_R4);
+                        break;
+                    case StackTypeR8:
+                        AddIns(INTOP_CKFINITE_R8);
+                        break;
+                    default:
+                        BADCODE("ckfinite operand must be R4 or R8");
+                        break;
+                }
+                m_pStackPointer--;
+                PushStackType(argType, nullptr);
+                m_pLastNewIns->SetSVar(sVar);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip++;
+                break;
+            }
+
             case CEE_CONV_U1:
                 CHECK_STACK(1);
                 switch (m_pStackPointer[-1].type)
