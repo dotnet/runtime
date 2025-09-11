@@ -20,6 +20,8 @@
     - [Extensions and Verification](#extensions-and-verification)
     - [ABI](#abi)
     - [Exception Handling](#exception-handling)
+    - [Stack walking](#stack-walking)
+    - [JIT](#jit)
     - [Fixed-width SIMD](#fixed-width-simd)
     - [Threading](#threading)
     - [Async](#async)
@@ -77,7 +79,7 @@ In no particular order (sorry!)
 
 ### Memories
 
-  WASM has a linear memory model where a module can define 1 or more linear memories with an initial size (in pages) and a maximum size (in pages), and then at runtime it can be grown on-demand up to that requested maximum size (usually). The linear heap has no holes and no access controls (all of it is RW), does not support mmap, and cannot shrink.
+  WASM has a linear memory model where a module can define 1 or more linear memories with an initial size (in pages) and a maximum size (in pages), and then at runtime it can be grown on-demand up to that requested maximum size (usually). The linear memory has no holes and no access controls (all of it is RW), does not support mmap, and cannot shrink.
 
   While a module can have multiple memories (or no memories at all), the typical scenario is for all modules to share a single growable linear memory.
 
@@ -132,6 +134,14 @@ In no particular order (sorry!)
   Exception handling in WASM is relatively bare-bones. You define a try block with one or more catch clauses, where a given clause either catches a specific 'exception tag' or catches all exceptions (referred to as `catch_all`). Exception tags can be thought of conceptually like `Exception` or `ArgumentException` but in practice they are typically not used this way, and instead an entire language or compiler may use a single tag for its purposes - i.e. a `c++exception` tag which has an attached pointer into the linear memory where the real exception data lives. A given catch clause might then contain a series of type checks based on the data in linear memory.
 
   Emscripten currently mostly aligns with the the libc++ ABI (functions like `__cxa_begin_catch`) for exception handling. The best documentation I've found is at https://github.com/WebAssembly/tool-conventions/blob/main/EHScheme.md, and it appears to be derived from the Itanium C++ ABI.
+
+### Stack walking
+
+  There is no stack-walking mechanism in WASM, and the only way to unwind the stack is by throwing an exception. You can technically get the stack from an exception object, but this requires the assistance of the host.
+
+### JIT
+
+  There are no JIT affordances in the spec, so JIT-compiling WASM modules on the fly requires the assistance of the host.
 
 ### Fixed-width SIMD
 
