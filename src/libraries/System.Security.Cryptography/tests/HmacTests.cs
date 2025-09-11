@@ -42,8 +42,11 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash);
         protected abstract bool Verify(byte[] key, byte[] source, byte[] hash);
-        protected virtual bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) => throw new NotImplementedException();
-        protected virtual bool Verify(byte[] key, Stream source, byte[] hash) => throw new NotImplementedException();
+        protected abstract bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash);
+        protected abstract bool Verify(byte[] key, Stream source, byte[] hash);
+
+        protected virtual ValueTask<bool> VerifyAsync(ReadOnlyMemory<byte> key, Stream source, ReadOnlyMemory<byte> hash, CancellationToken cancellationToken) => throw new NotImplementedException();
+        protected virtual ValueTask<bool> VerifyAsync(byte[] key, Stream source, byte[] hash, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         protected abstract ValueTask<int> HashDataOneShotAsync(
             ReadOnlyMemory<byte> key,
@@ -857,6 +860,11 @@ namespace System.Security.Cryptography.Tests
                 Verify(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
             Assert.Throws<ArgumentException>("hash", () =>
                 Verify(new ReadOnlySpan<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset]));
+
+            Assert.Throws<ArgumentException>("hash", () =>
+                VerifyAsync(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset], default(CancellationToken)));
+            Assert.Throws<ArgumentException>("hash", () =>
+                VerifyAsync(new ReadOnlyMemory<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes + sizeOffset], default(CancellationToken)));
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -882,6 +890,19 @@ namespace System.Security.Cryptography.Tests
                     new ReadOnlySpan<byte>(key),
                     (Stream)null,
                     new ReadOnlySpan<byte>(new byte[THmacTrait.HashSizeInBytes])));
+
+            Assert.Throws<ArgumentNullException>("key", () =>
+                VerifyAsync(null, Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
+            Assert.Throws<ArgumentNullException>("source", () =>
+                VerifyAsync(key, (Stream)null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
+            Assert.Throws<ArgumentNullException>("hash", () =>
+                VerifyAsync(key, Stream.Null, null, default(CancellationToken)));
+
+            Assert.Throws<ArgumentNullException>("source", () =>
+                VerifyAsync(
+                    new ReadOnlyMemory<byte>(key),
+                    (Stream)null,
+                    new ReadOnlyMemory<byte>(new byte[THmacTrait.HashSizeInBytes]), default(CancellationToken)));
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -919,6 +940,35 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyAsync_Match()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId];
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                ReadOnlyMemory<byte> keyMemory = key;
+                ReadOnlyMemory<byte> macMemory = mac;
+
+                // Array
+                AssertExtensions.TrueExpression(
+                    await VerifyAsync(key, new MemoryStream(data), mac, default(CancellationToken)));
+
+                // Memory
+                AssertExtensions.TrueExpression(
+                    await VerifyAsync(keyMemory, new MemoryStream(data), macMemory, default(CancellationToken)));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void Verify_Mismatch()
         {
             for (int caseId = 1; caseId < _testKeys.Length; caseId++)
@@ -952,6 +1002,49 @@ namespace System.Security.Cryptography.Tests
                 // Stream, spans
                 AssertExtensions.FalseExpression(Verify(keySpan, new MemoryStream(data), macSpan));
             }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyAsync_Mismatch()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId].AsSpan().ToArray();
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                int index = Random.Shared.Next(0, mac.Length);
+                mac[index] = (byte)(mac[index] ^ 0b_10000000);
+                ReadOnlyMemory<byte> keyMemory = key;
+                ReadOnlyMemory<byte> macMemory = mac;
+
+                // Array
+                AssertExtensions.FalseExpression(
+                    await VerifyAsync(key, new MemoryStream(data), mac, default(CancellationToken)));
+
+                // Memory
+                AssertExtensions.FalseExpression(
+                    await VerifyAsync(keyMemory, new MemoryStream(data), macMemory, default(CancellationToken)));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyAsync_Cancelled()
+        {
+            CancellationToken cancelledToken = new(true);
+            byte[] hash = new byte[THmacTrait.HashSizeInBytes];
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                async () => await VerifyAsync(Array.Empty<byte>(), Stream.Null, hash, cancelledToken));
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                async () => await VerifyAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, new ReadOnlyMemory<byte>(hash), cancelledToken));
         }
 
         [ConditionalFact(nameof(IsNotSupported))]
@@ -1015,6 +1108,11 @@ namespace System.Security.Cryptography.Tests
                 Verify(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
             Assert.Throws<PlatformNotSupportedException>(() =>
                 Verify(new ReadOnlySpan<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                VerifyAsync(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                VerifyAsync(new ReadOnlyMemory<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
         }
     }
 
