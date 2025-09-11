@@ -115,18 +115,18 @@ namespace System.Speech.Recognition
     {
         protected Grammar() { }
         public Grammar(System.IO.Stream stream) { }
-        public Grammar(System.IO.Stream stream, string ruleName) { }
-        public Grammar(System.IO.Stream stream, string ruleName, object[] parameters) { }
+        public Grammar(System.IO.Stream stream, string? ruleName) { }
+        public Grammar(System.IO.Stream stream, string? ruleName, object[]? parameters) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public Grammar(System.IO.Stream stream, string ruleName, System.Uri baseUri) { }
+        public Grammar(System.IO.Stream stream, string? ruleName, System.Uri? baseUri) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public Grammar(System.IO.Stream stream, string? ruleName, System.Uri? baseUri, object[]? parameters) { }
         public Grammar(System.Speech.Recognition.GrammarBuilder builder) { }
-        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument) { }
-        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName) { }
-        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName, object[] parameters) { }
+        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument) { }
+        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument, string? ruleName) { }
+        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument, string? ruleName, object[]? parameters) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument srgsDocument, string ruleName, System.Uri baseUri) { }
+        public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument, string? ruleName, System.Uri? baseUri) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public Grammar(System.Speech.Recognition.SrgsGrammar.SrgsDocument? srgsDocument, string? ruleName, System.Uri? baseUri, object[]? parameters) { }
         public Grammar(string path) { }
@@ -142,7 +142,7 @@ namespace System.Speech.Recognition
         public string? RuleName { get { throw null; } }
         public float Weight { get { throw null; } set { } }
         public event System.EventHandler<System.Speech.Recognition.SpeechRecognizedEventArgs>? SpeechRecognized { add { } remove { } }
-        public static System.Speech.Recognition.Grammar? LoadLocalizedGrammarFromType(System.Type type, params object[] onInitParameters) { throw null; }
+        public static System.Speech.Recognition.Grammar? LoadLocalizedGrammarFromType(System.Type type, params object[]? onInitParameters) { throw null; }
         protected void StgInit(object[] parameters) { }
     }
     public partial class GrammarBuilder

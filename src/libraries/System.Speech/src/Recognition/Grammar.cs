@@ -55,20 +55,20 @@ namespace System.Speech.Recognition
 
             InitialGrammarLoad(ruleName, parameters, false);
         }
-        public Grammar(SrgsDocument srgsDocument)
+        public Grammar(SrgsDocument? srgsDocument)
             : this(srgsDocument, null, null, null)
         {
         }
-        public Grammar(SrgsDocument srgsDocument, string ruleName)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName)
             : this(srgsDocument, ruleName, null, null)
         {
         }
-        public Grammar(SrgsDocument srgsDocument, string ruleName, object[] parameters)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName, object[]? parameters)
             : this(srgsDocument, ruleName, null, parameters)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName, Uri? baseUri)
             : this(srgsDocument, ruleName, baseUri, null)
         {
         }
@@ -86,16 +86,16 @@ namespace System.Speech.Recognition
             : this(stream, null, null, null)
         {
         }
-        public Grammar(Stream stream, string ruleName)
+        public Grammar(Stream stream, string? ruleName)
             : this(stream, ruleName, null, null)
         {
         }
-        public Grammar(Stream stream, string ruleName, object[] parameters)
+        public Grammar(Stream stream, string? ruleName, object[]? parameters)
             : this(stream, ruleName, null, parameters)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(Stream stream, string ruleName, Uri baseUri)
+        public Grammar(Stream stream, string? ruleName, Uri? baseUri)
             : this(stream, ruleName, baseUri, null)
         {
         }
@@ -142,7 +142,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-        public static Grammar? LoadLocalizedGrammarFromType(Type type, params object[] onInitParameters)
+        public static Grammar? LoadLocalizedGrammarFromType(Type type, params object[]? onInitParameters)
         {
             ArgumentNullException.ThrowIfNull(type);
 
