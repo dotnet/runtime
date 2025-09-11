@@ -783,8 +783,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
+                            case NI_Sve2_AddPairwise:
                             case NI_Sve2_MaxNumberPairwise:
+                            case NI_Sve2_MaxPairwise:
                             case NI_Sve2_MinNumberPairwise:
+                            case NI_Sve2_MinPairwise:
                                 // These instructions have unpredictable behaviour when using predicated movprfx,
                                 // so the unpredicated variant must be used here.
                                 assert(!intrin.op3->isContained() && falseReg != REG_NA);
