@@ -255,7 +255,7 @@ namespace System.Linq.Tests
             // Contains
             foreach (string s in array)
             {
-                Assert.True(result.OfType<string>().Contains(s));
+                Assert.True(array.OfType<string>().Contains(s));
             }
         }
     }
