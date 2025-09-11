@@ -94,7 +94,6 @@ namespace System.Tests
             array = new int[2, 3, 4, 5];
             VerifyArray(array, typeof(int), new int[] { 2, 3, 4, 5 }, new int[4]);
 
-            // Check a number of the simple APIs on Array for dimensions up to 4.
             array = new string[] { "1", "2", "3" };
             VerifyArray(array, typeof(string), new int[] { 3 }, new int[1]);
 
