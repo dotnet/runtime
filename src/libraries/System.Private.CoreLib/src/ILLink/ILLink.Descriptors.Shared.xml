@@ -72,6 +72,11 @@
       <method name="GetActiveTaskFromId" />
     </type>
 
+    <type fullname="System.Threading.ThreadBlockingInfo">
+      <property name="LockOwnerManagedThreadId" />
+      <property name="LockOwnerOSThreadId" />
+    </type>
+
      <!-- methods used by hot reload -->
     <type fullname="System.Reflection.Metadata.MetadataUpdater">
       <method name="GetCapabilities" />
