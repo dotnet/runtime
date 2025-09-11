@@ -28,7 +28,7 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly ReflectionMarker _reflectionMarker;
         private ILOpcode _operation;
         private readonly MethodDesc _callingMethod;
-        private readonly string _reason;
+        private readonly MethodDesc _reason;
 
         public HandleCallAction(
             FlowAnnotations annotations,
@@ -36,7 +36,7 @@ namespace ILLink.Shared.TrimAnalysis
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
             MethodDesc callingMethod,
-            string reason)
+            MethodDesc reason)
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;

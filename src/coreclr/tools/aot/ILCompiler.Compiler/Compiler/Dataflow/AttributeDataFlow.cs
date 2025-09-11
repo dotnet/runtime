@@ -102,7 +102,7 @@ namespace ILCompiler.Dataflow
                 if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
                     MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
-                    RequireDynamicallyAccessedMembers(_diagnosticContext, value, parameterValue, method.GetDisplayName(), ref result);
+                    RequireDynamicallyAccessedMembers(_diagnosticContext, value, parameterValue, method, ref result);
                 }
             }
         }
@@ -114,7 +114,7 @@ namespace ILCompiler.Dataflow
                 && fieldValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
             {
                 MultiValue valueNode = GetValueForCustomAttributeArgument(value);
-                RequireDynamicallyAccessedMembers(_diagnosticContext, valueNode, fieldValue, field.GetDisplayName(), ref result);
+                RequireDynamicallyAccessedMembers(_diagnosticContext, valueNode, fieldValue, field, ref result);
             }
         }
 
@@ -132,7 +132,7 @@ namespace ILCompiler.Dataflow
             in DiagnosticContext diagnosticContext,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
-            string reason,
+            TypeSystemEntity reason,
             ref DependencyList? result)
         {
             var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
