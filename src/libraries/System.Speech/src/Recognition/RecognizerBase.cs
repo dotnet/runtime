@@ -303,7 +303,7 @@ namespace System.Speech.Recognition
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
 
-            InternalGrammarData internalData = grammar.InternalData ?? throw new InvalidOperationException("Cannot set dictation context on an unloaded grammar");
+            InternalGrammarData internalData = grammar.InternalData ?? throw new InvalidOperationException(SR.Get(SRID.GrammarUnloaded));
             SapiGrammar sapiGrammar = internalData._sapiGrammar;
             sapiGrammar.SetWordSequenceData(textString, selectionInfo);
         }
@@ -1902,7 +1902,7 @@ namespace System.Speech.Recognition
                 {
                     if (phrase == null)
                     {
-                        throw new ArgumentException($"Either {nameof(phrase)} or {nameof(wordUnits)} should be provided to recognize");
+                        throw new ArgumentException(string.Format(SR.Get(SRID.CannotRecognizeWithoutParameters), nameof(phrase), nameof(wordUnits)));
                     }
 
                     iSpPhrase = SPPHRASE.CreatePhraseFromText(phrase.Trim(), RecognizerInfo.Culture, out memHandles, out data);
@@ -2619,7 +2619,7 @@ namespace System.Speech.Recognition
         // current audio format. This should only needed if not using SAPI 5.3.
         private ulong TimeSpanToStreamPosition(TimeSpan time)
         {
-            SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException("Cannot get the audio format without an audio source");
+            SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioAvailable));
             return (ulong)(time.Ticks * audioFormat.AverageBytesPerSecond) / TimeSpan.TicksPerSecond;
         }
 
@@ -2819,7 +2819,7 @@ namespace System.Speech.Recognition
 
                     lock (SapiRecognizer) // Lock to protect _audioStatus.
                     {
-                        SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException("Cannot get the audio format without an audio source");
+                        SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioDetected));
                         audioPosition = audioFormat.AverageBytesPerSecond > 0 ? new TimeSpan((long)((recoStatus.AudioStatus.CurDevicePos * TimeSpan.TicksPerSecond) / (ulong)audioFormat.AverageBytesPerSecond)) : TimeSpan.Zero;
                         recognizerPosition = new TimeSpan((long)recoStatus.ullRecognitionStreamTime);
                     }

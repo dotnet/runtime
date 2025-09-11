@@ -772,7 +772,7 @@ namespace System.Speech.Internal.Synthesis
                                     }
                                     else
                                     {
-                                        throw new InvalidOperationException("Speak parameter has neither text to speak nor an audio file to play");
+                                        throw new InvalidOperationException(SR.Get(SRID.SpeakHasNeitherTextNorAudioFile));
                                     }
 
                                     // Add the global synthesizer lexicon

@@ -65,7 +65,7 @@ namespace System.Speech.Recognition
             ArgumentNullException.ThrowIfNull(firstWord);
             ArgumentNullException.ThrowIfNull(lastWord);
 
-            var audio = Audio ?? throw new InvalidOperationException("No audio detected");
+            var audio = Audio ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioDetected));
 
             return audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }

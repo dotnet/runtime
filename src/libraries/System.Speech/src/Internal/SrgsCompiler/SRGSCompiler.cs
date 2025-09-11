@@ -164,7 +164,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 if (stream == null)
                 {
-                    throw new InvalidOperationException("Either a Stream or a file name must be provided");
+                    throw new InvalidOperationException(SR.Get(SRID.NeitherStreamNorFileNameProvided));
                 }
                 try
                 {
