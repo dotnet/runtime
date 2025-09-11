@@ -383,7 +383,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="hash"/> has a length not equal to <see cref="HashSizeInBytes" />.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
-        /// The SHA3-512 algorithm is not supported on this platform.
+        ///   The SHA3-512 algorithm is not supported on this platform.
         /// </exception>
         /// <remarks>
         ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
@@ -422,6 +422,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The SHA3-512 algorithm is not supported on this platform.
         /// </exception>
         /// <remarks>
         ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
@@ -464,6 +467,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The SHA3-512 algorithm is not supported on this platform.
         /// </exception>
         /// <remarks>
         ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
