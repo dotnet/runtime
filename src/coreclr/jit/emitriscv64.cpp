@@ -5008,15 +5008,19 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else if (addr->OperIs(GT_CNS_INT))
         {
-            assert(memBase == indir->Addr());
-            ssize_t cns = addr->AsIntCon()->IconValue();
+            assert(memBase == addr);
 
-            ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-            cns -= off;
+            ssize_t lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+            offset -= lo12;
 
-            regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
-            emitLoadImmediate(EA_PTRSIZE, tmpReg, cns);
-            emitIns_R_R_I(ins, attr, dataReg, tmpReg, off);
+            regNumber tmpReg = REG_ZERO;
+            if (offset != 0)
+            {
+                assert(!isValidSimm12(indir->Offset()));
+                tmpReg = codeGen->internalRegisters.GetSingle(indir);
+                emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+            }
+            emitIns_R_R_I(ins, attr, dataReg, tmpReg, lo12);
         }
         else if (isValidSimm12(offset))
         {

@@ -828,22 +828,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
 
-    GenTree* addr = indirTree->Addr();
-    if (addr->isContained())
+    if (indirTree->Addr()->isContained() && !emitter::isValidSimm12(indirTree->Offset()))
     {
-        if (addr->OperIs(GT_LEA))
-        {
-            GenTreeAddrMode* lea = addr->AsAddrMode();
-            if (!emitter::isValidSimm12(lea->Offset()))
-            {
-                // This offset can't be contained in the ldr/str instruction, so we need an internal register
-                buildInternalIntRegisterDefForNode(indirTree);
-            }
-        }
-        else if (addr->OperIs(GT_CNS_INT))
-        {
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
+        // This offset can't be contained in the ld/sd instruction, so we need an internal register
+        buildInternalIntRegisterDefForNode(indirTree);
     }
 
 #ifdef FEATURE_SIMD
