@@ -382,7 +382,26 @@ namespace System
                                 Debug.Fail("Invalid CacheType");
                                 break;
                         }
-                        return (T[])list;
+
+                        if (RuntimeType.FilterDeletedMembers)
+                        {
+                            T[] sourceItems = (T[])list;
+                            ListBuilder<T> nonDeletedList = default;
+
+                            for (int i = 0; i < sourceItems.Length; i++)
+                            {
+                                if (!sourceItems[i].IsDefined(typeof(System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute), true))
+                                {
+                                    nonDeletedList.Add(sourceItems[i]);
+                                }
+                            }
+
+                            return nonDeletedList.ToArray();
+                        }
+                        else
+                        {
+                            return (T[])list;
+                        }
                     }
                 }
 
