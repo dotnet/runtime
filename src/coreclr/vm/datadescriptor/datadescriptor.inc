@@ -201,6 +201,7 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAll
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(PEAssembly)
@@ -1019,6 +1020,9 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
+
+CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
+CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 

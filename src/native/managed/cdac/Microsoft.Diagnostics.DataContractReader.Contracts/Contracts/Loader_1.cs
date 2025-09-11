@@ -41,7 +41,7 @@ internal readonly struct Loader_1 : ILoader
 
     private enum PEImageFlags : uint
     {
-        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+        FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
     private readonly Target _target;
 
@@ -522,10 +522,10 @@ internal readonly struct Loader_1 : ILoader
         return loaderAllocator.StubHeap;
     }
 
-    private TargetPointer GetMDImport(ModuleHandle handle)
+    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return module.PEAssembly;
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.ObjectHandle.Handle;
     }
 
     private int GetRVAFromMetadata(ModuleHandle handle, int token)
@@ -549,6 +549,7 @@ internal readonly struct Loader_1 : ILoader
         }
         return headerPtr;
     }
+
     private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
     {
         public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
@@ -558,6 +559,7 @@ internal readonly struct Loader_1 : ILoader
         public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
         public bool IsDeleted(DynamicILBlobEntry entry) => false;
     }
+
     private sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
     {
         static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)

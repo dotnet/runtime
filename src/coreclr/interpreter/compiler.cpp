@@ -646,8 +646,17 @@ void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE 
 
 void InterpCompiler::PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd)
 {
-    // We don't really care about the exact size for non-valuetypes
-    PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    if (stackType == StackTypeVT)
+    {
+        assert(clsHnd != NULL);
+        int size = m_compHnd->getClassSize(clsHnd);
+        PushTypeExplicit(stackType, clsHnd, size);
+    }
+    else
+    {
+        // We don't really care about the exact size for non-valuetypes
+        PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+    }
 }
 
 void InterpCompiler::PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd)
@@ -979,6 +988,65 @@ class InterpGcSlotAllocator
     InterpreterGcInfoEncoder *m_encoder;
     // [pObjects, pByrefs]
     GcSlotId *m_slotTables[2];
+
+    struct ConservativeRange
+    {
+        ConservativeRange(uint32_t start, uint32_t end)
+            : startOffset(start), endOffset(end) {}
+
+        ConservativeRange* next = nullptr;
+        uint32_t startOffset;
+        uint32_t endOffset;
+
+        void MergeWith(uint32_t startOther, uint32_t endOther)
+        {
+            // This can only be called with overlapping or adjacent ranges
+            if (startOffset <= startOther)
+            {
+                assert(endOffset >= startOther);
+            }
+            else
+            {
+                assert(endOffset >= startOther);
+            }
+            endOffset = endOffset > endOther ? endOffset : endOther;
+            startOffset = startOffset < startOther ? startOffset : startOther;
+        }
+    };
+
+    ConservativeRange** m_conservativeRanges = nullptr;
+
+    ConservativeRange* FindAndRemoveOverlappingOrAdjacentRange(uint32_t offsetBytes, uint32_t start, uint32_t end)
+    {
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+        ConservativeRange* prev = nullptr;
+        ConservativeRange* range = m_conservativeRanges[slotIndex];
+        while (range)
+        {
+            if (!(end < range->startOffset || start > range->endOffset))
+            {
+                // Overlapping or adjacent ranges
+                if (prev)
+                    prev->next = range->next;
+                else
+                    m_conservativeRanges[slotIndex] = range->next;
+                range->next = nullptr;
+                return range;
+            }
+            prev = range;
+            range = range->next;
+        }
+        return nullptr;
+    }
+
+    void InsertConservativeRange(uint32_t offsetBytes, ConservativeRange* range)
+    {
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+
+        range->next = m_conservativeRanges[slotIndex];
+        m_conservativeRanges[slotIndex] = range;
+    }
+
     unsigned m_slotTableSize;
 
 #ifdef DEBUG
@@ -1008,6 +1076,8 @@ public:
             // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
             memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
         }
+        m_conservativeRanges = new (m_compiler) ConservativeRange *[m_slotTableSize];
+        memset(m_conservativeRanges, 0, sizeof(ConservativeRange *) * m_slotTableSize);
     }
 
     void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
@@ -1057,8 +1127,78 @@ public:
             m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
             startOffset, endOffset
         );
-        m_encoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
-        m_encoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+
+
+        ConservativeRange* pExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, startOffset, endOffset);
+        if (pExistingRange != nullptr)
+        {
+            INTERP_DUMP("Merging with existing range [%u - %u]\n", pExistingRange->startOffset, pExistingRange->endOffset);
+            pExistingRange->MergeWith(startOffset, endOffset);
+            ConservativeRange* pOtherExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, pExistingRange->startOffset, pExistingRange->endOffset);
+            while (pOtherExistingRange != nullptr)
+            {
+                INTERP_DUMP("Merging with existing range [%u - %u]\n", pOtherExistingRange->startOffset, pOtherExistingRange->endOffset);
+                pExistingRange->MergeWith(pOtherExistingRange->startOffset, pOtherExistingRange->endOffset);
+                pOtherExistingRange = FindAndRemoveOverlappingOrAdjacentRange(offsetBytes, pExistingRange->startOffset, pExistingRange->endOffset);
+            };
+            InsertConservativeRange(offsetBytes, pExistingRange);
+        }
+        else
+        {
+            ConservativeRange* pNewRange = new (m_compiler) ConservativeRange(startOffset, endOffset);
+            InsertConservativeRange(offsetBytes, pNewRange);
+        }
+    }
+
+    void ReportConservativeRangesToGCEncoder()
+    {
+        uint32_t maxEndOffset = m_compiler->ConvertOffset(m_compiler->m_methodCodeSize);
+        for (uint32_t i = 0; i < m_slotTableSize; i++)
+        {
+            ConservativeRange* range = m_conservativeRanges[i];
+
+            if (range == nullptr)
+                continue;
+
+            GcSlotId* pSlot = LocateGcSlotTableEntry(i * sizeof(void *), GC_SLOT_INTERIOR);
+            assert(pSlot != nullptr && *pSlot != (GcSlotId)-1);
+
+            while (range)
+            {
+                INTERP_DUMP(
+                    "Conservative range for slot %u at %u [%u - %u]\n",
+                    *pSlot,
+                    (unsigned)(i * sizeof(void *)),
+                    range->startOffset,
+                    range->endOffset + 1
+                );
+                m_encoder->SetSlotState(range->startOffset, *pSlot, GC_SLOT_LIVE);
+
+                // Conservatively assume that the lifetime of a slot extends to just past the end of what
+                // the lifetime analysis has determined. This is due to an inaccuracy of reporting in the
+                // interpreter execution path, where if the instruction may call another function, or may
+                // cause an exception, the ip may be moved forward to the next instruction before the variable
+                // actually ceases to be in use.
+                //
+                // TODO-Interp, Since this reporting for call arguments is double reporting once the call happens, it
+                // is only safe since outgoing argument reporting is done via conservative reporting, but it also means
+                // that we could add an optimization to the reporting algorithm so that if a callee of the function
+                // takes ownership of the stack, then we could not do the conservative reporting for the range
+                // in the caller's stack. This would likely reduce the conservative reporting being done by
+                // functions up the stack in the interpreter case, such that we don't have excessive conservative
+                // reporting causing substantial pinning overhead.
+                uint32_t endOffset = range->endOffset + 1;
+
+                if (endOffset > maxEndOffset)
+                {
+                    // The GcInfoEncoder should not report slots beyond the method's end
+                    endOffset = maxEndOffset;
+                    assert(endOffset == range->endOffset);
+                }
+                m_encoder->SetSlotState(endOffset, *pSlot, GC_SLOT_DEAD);
+                range = range->next;
+            }
+        }
     }
 };
 #endif
@@ -1071,60 +1211,131 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
+    gcInfoEncoder->SetStackBaseRegister(0);
+    gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
+
+    GENERIC_CONTEXTPARAM_TYPE paramType;
+
+    switch (m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK)
+    {
+        case CORINFO_GENERICS_CTXT_FROM_METHODDESC:
+            paramType = GENERIC_CONTEXTPARAM_MD;
+            break;
+        case CORINFO_GENERICS_CTXT_FROM_METHODTABLE:
+            paramType = GENERIC_CONTEXTPARAM_MT;
+            break;
+        case CORINFO_GENERICS_CTXT_FROM_THIS:
+        case 0:
+            paramType = GENERIC_CONTEXTPARAM_NONE;
+            break;
+        default:
+            paramType = GENERIC_CONTEXTPARAM_NONE;
+            assert(!"Unexpected generic context parameter type");
+            break;
+    }
+
+    gcInfoEncoder->SetSizeOfStackOutgoingAndScratchArea(0);
+
+    if (m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_SHAREDINST)
+    {
+        if ((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) != CORINFO_GENERICS_CTXT_FROM_THIS)
+        {
+            assert(paramType != GENERIC_CONTEXTPARAM_NONE);
+
+            int32_t genericArgStackOffset = m_pVars[getParamArgIndex()].offset;
+            INTERP_DUMP("SetGenericsInstContextStackSlot at %u\n", (unsigned)genericArgStackOffset);
+            gcInfoEncoder->SetPrologSize(4); // Size of 1 instruction
+            gcInfoEncoder->SetStackBaseRegister(0);
+            gcInfoEncoder->SetGenericsInstContextStackSlot(genericArgStackOffset, paramType);
+        }
+        else
+        {
+            assert((paramType == GENERIC_CONTEXTPARAM_NONE));
+        }
+    }
+    else
+    {
+        assert((paramType == GENERIC_CONTEXTPARAM_NONE));
+    }
 
     INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
-    for (int pass = 0; pass < 2; pass++)
+    // We have 2 different types of slots that we allocate. We allocate all global vars as untracked
+    // (otherwise known as always live throughout the function) and temporaries are allocated as tracked
+    // locals. The untracked locals, we report with precise GC information about what they are.
+    // The tracked locals are reported with conservative GC information and a slightly expanded lifetime(hence
+    // why they are reported conservatively). See comment in ReportConservativeRangesToGCEncoder for the details.
+    //
+    // For catch/finally/fault funclets, since the GC reporting only uses the leaf funclet, and funclets actually
+    // share the exact same portion of the data stack, there is no additional complexity for funclets.
+    //
+    // For filter funclets the correctness of this algorithm is much more nuanced. Filter funclets do NOT share
+    // the same data stack frame, and would require additional handling to ensure correct GC reporting, EXCEPT
+    // for the fact that the compiler computes the offsets of temporary vars used in the filter funclet as if they
+    // were shared with the parent function stack AND the start of every filter funclet begins by setting the entire
+    // possible utilized memory space of that frame with zeros. This results in the filter funclet attempting to report all
+    // of the local variables of the parent frame, which would normally be a problem, but since the frame is physically
+    // separate it will not cause double reporting faults, and because the frame is zero'd it won't generate unsafe
+    // memory access.
+
+    for (int i = 0; i < m_varsSize; i++)
     {
-        for (int i = 0; i < m_varsSize; i++)
+        InterpVar *pVar = &m_pVars[i];
+        GcSlotFlags flags = pVar->global
+            ? (GcSlotFlags)GC_SLOT_UNTRACKED
+            : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
+
+        // The 'this' pointer may have a shadow copy, or it may not. If it does not have a shadow copy, handle accordingly below.
+        if (m_shadowCopyOfThisPointerHasVar && !m_shadowCopyOfThisPointerActuallyNeeded)
         {
-            InterpVar *pVar = &m_pVars[i];
-            GcSlotFlags flags = pVar->global
-                ? (GcSlotFlags)GC_SLOT_UNTRACKED
-                : (GcSlotFlags)0;
-
-            switch (pVar->interpType) {
-                case InterpTypeO:
-                    break;
-                case InterpTypeByRef:
-                    flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
-                    break;
-                case InterpTypeVT:
-                {
-                    InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
-                    for (unsigned j = 0; j < stackMap->m_slotCount; j++)
-                    {
-                        InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
-                        unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
-                        GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
-                        if (pass == 0)
-                            slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
-                        else
-                            slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
-                    }
-
-                    // Don't perform the regular allocateGcSlot call
-                    continue;
-                }
-                default:
-                    // Neither an object, interior pointer, or vt, so no slot needed
-                    continue;
-            }
-
-            if (pVar->pinned)
-                flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
-
-            if (pass == 0)
-                slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
-            else
-                slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+            // Don't report the original this pointer var, we'll report the shadow copy instead
+            // which is forced to have the same offset
+            if (i == 0)
+                continue;
         }
 
-        if (pass == 0)
-            gcInfoEncoder->FinalizeSlotIds();
-        else
-            gcInfoEncoder->Build();
+        switch (pVar->interpType) {
+            case InterpTypeO:
+                break;
+            case InterpTypeByRef:
+                flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
+                break;
+            case InterpTypeVT:
+            {
+                InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
+                for (unsigned j = 0; j < stackMap->m_slotCount; j++)
+                {
+                    InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
+                    unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
+                    GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
+                    slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
+                    if (!pVar->global)
+                    {
+                        slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
+                    }
+                }
+
+                // Don't perform the regular allocateGcSlot call
+                continue;
+            }
+            default:
+                // Neither an object, interior pointer, or vt, so no slot needed
+                continue;
+        }
+
+        if (pVar->pinned)
+            flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
+
+        slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
+        if (!pVar->global)
+        {
+            slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+        }
     }
+
+    gcInfoEncoder->FinalizeSlotIds();
+    slotAllocator.ReportConservativeRangesToGCEncoder();
+    gcInfoEncoder->Build();
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     gcInfoEncoder->Emit();
@@ -1468,6 +1679,12 @@ void InterpCompiler::CreateILVars()
 {
     bool hasThis = m_methodInfo->args.hasThis();
     bool hasParamArg = m_methodInfo->args.hasTypeArg();
+    bool hasThisPointerShadowCopyAsParamIndex = false;
+    if (((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
+    {
+        hasThisPointerShadowCopyAsParamIndex = true;
+        m_shadowCopyOfThisPointerHasVar = true;
+    }
     int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
     int32_t offset;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
@@ -1477,7 +1694,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars + hasParamArg;
+    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0);
 
     offset = 0;
 
@@ -1498,7 +1715,13 @@ void InterpCompiler::CreateILVars()
     {
         CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
         InterpType interpType = m_compHnd->isValueClass(argClass) ? InterpTypeByRef : InterpTypeO;
-        CreateNextLocalVar(0, argClass, interpType, &offset);
+        if (hasThisPointerShadowCopyAsParamIndex)
+        {
+            assert(interpType == InterpTypeO);
+            assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
+            m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        }
+        CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
         argIndexOffset++;
     }
 
@@ -1538,6 +1761,14 @@ void InterpCompiler::CreateILVars()
         // The param arg is stored after the IL locals in the m_pVars array
         assert(index == m_paramArgIndex);
         index++;
+    }
+
+    if (hasThisPointerShadowCopyAsParamIndex)
+    {
+        // This is the allocation of memory space for the shadow copy of the this pointer, operations like starg 0, and ldarga 0 will operate on this copy
+        CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
+        CreateNextLocalVar(0, argClass, InterpTypeO, &offset);
+        index++; // We need to account for the shadow copy in the variable index
     }
 
     offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
@@ -1987,6 +2218,12 @@ void InterpCompiler::EmitLoadVar(int32_t var)
 
 void InterpCompiler::EmitStoreVar(int32_t var)
 {
+    // Check for the unusual case of storing to the this pointer variable within a generic method which uses the this pointer as a generic context arg
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
+    {
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
+    }
+
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK(1);
 
@@ -2810,6 +3047,27 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
+{
+    AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
+    m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
+    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
+    bool suppressGCTransition = false;
+    CorInfoCallConv callConv = (CorInfoCallConv)(callSiteSig->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+    bool isPInvoke = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+    if (isPInvoke)
+    {
+        if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
+        {
+            BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
+        }
+        m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
+    }
+    m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
+                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0);
+    m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -2951,7 +3209,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
-                
+
                 // Implement the implicit argument conversion rules of III.1.6
                 switch (m_pStackPointer[iCurrentStackArg].type)
                 {
@@ -2997,7 +3255,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                         break;
                     }
                     break;
-                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the 
+                    // TODO-Interp, for 64bit Big endian platforms, we may need to implement the
                     // truncation rules for NativeInt/NativeUInt to I4/U4. However, on little-endian
                     // platforms, the interpreter calling convention will naturally produce the
                     // truncation, so there is no additional code necessary.
@@ -3215,33 +3473,44 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
+                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
             }
             else
             {
                 // Normal call
-                if (callInfo.nullInstanceCheck)
-                {
-                    // If the call is a normal call, we need to check for null instance
-                    // before the call.
-                    // TODO: Add null checking behavior somewhere here!
-                }
+                InterpOpcode opcode;
                 if (isDelegateInvoke)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    AddIns(INTOP_CALLDELEGATE);
+                    opcode = INTOP_CALLDELEGATE;
                 }
                 else if (tailcall)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    AddIns(INTOP_CALL_TAIL);
+                    opcode = INTOP_CALL_TAIL;
                 }
                 else
                 {
-                    AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                    opcode = (isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL;
                 }
+
+                if (callInfo.nullInstanceCheck)
+                {
+                    // If the call is a normal call, we need to check for null instance
+                    // before the call.
+                    if (opcode == INTOP_CALL)
+                    {
+                        // There is an optimized form of this for the INTOP_CALL opcode as it is so very common
+                        opcode = INTOP_CALL_NULLCHECK;
+                    }
+                    else
+                    {
+                        // Otherwise, insert an explicit null check instruction
+                        AddIns(INTOP_NULLCHECK);
+                        m_pLastNewIns->SetSVar(callArgs[0]);
+                    }
+                }
+                AddIns(opcode);
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
                 if (isPInvoke && !isMarshaledPInvoke)
                 {
@@ -3265,7 +3534,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // If the call is a normal call, we need to check for null instance
                 // before the call.
-                // TODO: Add null checking behavior somewhere here!
+                AddIns(INTOP_NULLCHECK);
+                m_pLastNewIns->SetSVar(callArgs[0]);
             }
 
             EmitPushCORINFO_LOOKUP(callInfo.codePointerLookup);
@@ -3274,9 +3544,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-            m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-            m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
+            EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
@@ -3309,9 +3577,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
-                m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
-                m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
+                EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
             else
             {
@@ -3623,6 +3889,12 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
+    // Check for the unusual case of taking the address of the this pointer variable within a generic method which uses the this pointer as a generic context arg
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
+    {
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
+    }
+
     if (m_pCBB->clauseType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
@@ -4136,6 +4408,32 @@ retry_emit:
                 m_ip++;
                 break;
             }
+
+            case CEE_CKFINITE:
+            {
+                CHECK_STACK(1);
+                int sVar = m_pStackPointer[-1].var;
+                StackType argType = m_pStackPointer[-1].type;
+                switch (argType)
+                {
+                    case StackTypeR4:
+                        AddIns(INTOP_CKFINITE_R4);
+                        break;
+                    case StackTypeR8:
+                        AddIns(INTOP_CKFINITE_R8);
+                        break;
+                    default:
+                        BADCODE("ckfinite operand must be R4 or R8");
+                        break;
+                }
+                m_pStackPointer--;
+                PushStackType(argType, nullptr);
+                m_pLastNewIns->SetSVar(sVar);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip++;
+                break;
+            }
+
             case CEE_CONV_U1:
                 CHECK_STACK(1);
                 switch (m_pStackPointer[-1].type)
@@ -4694,13 +4992,18 @@ retry_emit:
                 }
                 m_ip++;
                 break;
+            // NOTE for the below cases: The spec does not say what it means to do a '.un' conversion with a FP operand.
+            // The JIT currently clears the unsigned flag when encountering a fp operand, so the below implementation
+            //  does the equivalent by manually duplicating the conversions from the non-.un opcodes.
             case CEE_CONV_OVF_I1_UN:
                 CHECK_STACK(1);
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U4);
@@ -4718,8 +5021,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U4);
@@ -4737,8 +5042,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U4);
@@ -4756,8 +5063,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U4);
@@ -4775,8 +5084,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U4);
@@ -4794,8 +5105,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R8);
                     break;
                 case StackTypeI4:
                     break;
@@ -4812,8 +5125,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
@@ -4831,8 +5146,10 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+                    EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R8);
                     break;
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
@@ -4849,8 +5166,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R4);
+#endif
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_I4_R8);
+#endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
@@ -4876,8 +5203,18 @@ retry_emit:
                 switch (m_pStackPointer[-1].type)
                 {
                 case StackTypeR4:
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R4);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R4);
+#endif
+                    break;
                 case StackTypeR8:
-                    assert(!"Floating point unsigned conversions");
+#ifdef TARGET_64BIT
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U8_R8);
+#else
+                    EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_CONV_OVF_U4_R8);
+#endif
                     break;
                 case StackTypeI4:
 #ifdef TARGET_64BIT
@@ -6414,6 +6751,27 @@ DO_LDFTN:
         needsRetryEmit = false;
         INTERP_DUMP("retry emit\n");
         goto retry_emit;
+    }
+
+
+    if (m_shadowCopyOfThisPointerActuallyNeeded)
+    {
+        InterpInst *pFirstIns = FirstRealIns(m_pEntryBB);
+        InterpInst *pMovInst = InsertIns(pFirstIns, INTOP_MOV_P);
+        // If this flag is set, then we need to handle the case where an IL instruction may change the
+        // value of the this pointer during the execution of the method. We do that by operating on a
+        // local copy of the this pointer instead of the original this pointer for most operations.
+
+        // When this mitigation is enabled, the param arg is the actual input this pointer,
+        // and the arg 0 is the local copy of the this pointer.
+        pMovInst->SetSVar(getParamArgIndex());
+        pMovInst->SetDVar(0);
+        pMovInst->ilOffset = pFirstIns->ilOffset; // Match the IL offset of the first real instruction
+    }
+    else if (m_shadowCopyOfThisPointerHasVar)
+    {
+        m_pVars[0].offset = 0; // Reset the this pointer offset to 0, since we won't actually need the shadow copy of the this pointer
+        // This will result in an unused local var slot on the stack, and two "var"s which point to the same location.
     }
 
     UnlinkUnreachableBBlocks();
