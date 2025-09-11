@@ -9447,7 +9447,7 @@ struct GenTreeOpCC : public GenTreeOp
 #endif // DEBUGGABLE_GENTREE
 };
 
-#if defined(TARGET_ARM64) 
+#ifdef TARGET_ARM64
 enum insCflags : unsigned
 {
     INS_FLAGS_NONE,
@@ -9490,30 +9490,6 @@ struct GenTreeCCMP final : public GenTreeOpCC
 };
 #endif
 
-#if defined(TARGET_S390X) //TODO: Giri, should there b a seperate section for target_S390x?
-enum insCflags : unsigned
-{
-    INS_FLAGS_NONE,
-    INS_FLAGS_V,
-    INS_FLAGS_C,
-    INS_FLAGS_CV,
-
-    INS_FLAGS_Z,
-    INS_FLAGS_ZV,
-    INS_FLAGS_ZC,
-    INS_FLAGS_ZCV,
-
-    INS_FLAGS_N,
-    INS_FLAGS_NV,
-    INS_FLAGS_NC,
-    INS_FLAGS_NCV,
-
-    INS_FLAGS_NZ,
-    INS_FLAGS_NZV,
-    INS_FLAGS_NZC,
-    INS_FLAGS_NZCV,
-};
-#endif
 //------------------------------------------------------------------------
 // Deferred inline functions of GenTree -- these need the subtypes above to
 // be defined already.

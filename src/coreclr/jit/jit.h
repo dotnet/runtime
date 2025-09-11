@@ -45,9 +45,6 @@
 #if defined(HOST_RISCV64)
 #error Cannot define both HOST_X86 and HOST_RISCV64
 #endif
-#if defined(S390X)
-#error Cannot define both HOST_X86 and S390X 
-#endif
 #elif defined(HOST_AMD64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_AMD64 and HOST_X86
@@ -63,9 +60,6 @@
 #endif
 #if defined(HOST_RISCV64)
 #error Cannot define both HOST_AMD64 and HOST_RISCV64
-#endif
-#if defined(S390X)
-#error Cannot define both HOST_AMD64 and S390X 
 #endif
 #elif defined(HOST_ARM)
 #if defined(HOST_X86)
@@ -99,9 +93,6 @@
 #if defined(HOST_RISCV64)
 #error Cannot define both HOST_ARM64 and HOST_RISCV64
 #endif
-#if defined(S390X)
-#error Cannot define both HOST_ARM64 and S390X 
-#endif
 #elif defined(HOST_LOONGARCH64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_LOONGARCH64 and HOST_X86
@@ -118,9 +109,6 @@
 #if defined(HOST_RISCV64)
 #error Cannot define both HOST_LOONGARCH64 and HOST_RISCV64
 #endif
-#if defined(S390X)
-#error Cannot define both HOST_LOONARCH64 and S390X 
-#endif
 #elif defined(HOST_RISCV64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_RISCV64 and HOST_X86
@@ -136,28 +124,6 @@
 #endif
 #if defined(HOST_LOONGARCH64)
 #error Cannot define both HOST_RISCV64 and HOST_LOONGARCH64
-#endif
-#if defined(S390X)
-#error Cannot define both HOST_RISCV64 and S390X 
-#endif
-#elif defined(HOST_S390X)
-#if defined(HOST_X86)
-#error Cannot define both HOST_S390X and HOST_X86
-#endif
-#if defined(HOST_AMD64)
-#error Cannot define both HOST_S390X and HOST_AMD64
-#endif
-#if defined(HOST_ARM)
-#error Cannot define both HOST_S390X and HOST_ARM
-#endif
-#if defined(HOST_ARM64)
-#error Cannot define both HOST_S390X and HOST_ARM64
-#endif
-#if defined(HOST_LOONGARCH64)
-#error Cannot define both HOST_S390X and HOST_LOONGARCH64
-#endif
-#if defined(HOST_RISCV64)
-#error Cannot define both HOST_S390X and HOST_RISCV64
 #endif
 #else
 #error Unsupported or unset host architecture
@@ -179,9 +145,6 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_X86 and TARGET_S390X
-#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -197,9 +160,6 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
-#endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_AMD64 and TARGET_S390X
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -217,9 +177,6 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_ARM and TARGET_S390X
-#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -235,9 +192,6 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
-#endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_ARM64 and TARGET_S390X
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -255,9 +209,6 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_S390X
-#endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_RISCV64 and TARGET_X86
@@ -274,25 +225,7 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
-#if defined(TARGET_S390X)
-#error Cannot define both TARGET_RISCV64 and TARGET_S390X
-#endif
-#elif defined(TARGET_S390X)
-#if defined(TARGET_X86)
-#error Cannot define both TARGET_S390X and TARGET_X86
-#endif
-#if defined(TARGET_AMD64)
-#error Cannot define both TARGET_S390X and TARGET_AMD64
-#endif
-#if defined(TARGET_ARM)
-#error Cannot define both TARGET_S390X and TARGET_ARM
-#endif
-#if defined(TARGET_ARM64)
-#error Cannot define both TARGET_S390X and TARGET_ARM64
-#endif
-#if defined(TARGET_LOONGARCH64)
-#error Cannot define both TARGET_S390X and TARGET_LOONGARCH64
-#endif
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -344,8 +277,6 @@
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #elif defined(TARGET_RISCV64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
-#elif defined(TARGET_S390X)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_S390X // 0x5064
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -427,7 +358,7 @@ typedef ptrdiff_t ssize_t;
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_S390X)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define MULTIREG_HAS_SECOND_GC_RET             1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x)     x

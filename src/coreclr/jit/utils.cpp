@@ -345,14 +345,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                         inRegRange = true;
                         sep        = "-";
                     }
-#elif defined(TARGET_S390X)
-                    // R11 and R28 can't be the start of a range, since the range would include TEB or FP
-                    if ((regNum < REG_R11) || (regNum >=12 && regNum <=13 ) || ((REG_R16 <= regNum) && (regNum < REG_R28)))
-                    {
-                        regHead    = regNum;
-                        inRegRange = true;
-                        sep        = "-";
-                    }
 #elif defined(TARGET_ARM)
                     if (regNum < REG_R12)
                     {

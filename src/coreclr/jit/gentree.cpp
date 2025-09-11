@@ -4733,27 +4733,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
-#elif defined TARGET_S390X
-        if (base)
-        {
-            addrModeCostEx += base->GetCostEx();
-            addrModeCostSz += base->GetCostSz();
-        }
-
-        if (idx)
-        {
-            addrModeCostEx += idx->GetCostEx();
-            addrModeCostSz += idx->GetCostSz();
-        }
-
-        if (cns != 0)
-        {
-            if (cns >= (4096 * genTypeSize(type)))
-            {
-                addrModeCostEx += 1;
-                addrModeCostSz += 4;
-            }
-        }
 #elif defined(TARGET_LOONGARCH64)
         if (base)
         {
@@ -5182,68 +5161,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
                 goto COMMON_CNS;
 
-#elif defined(TARGET_S390X)
-
-            case GT_CNS_STR:
-            case GT_CNS_LNG:
-            case GT_CNS_INT:
-            {
-                GenTreeIntConCommon* con            = tree->AsIntConCommon();
-                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                INT64                imm            = con->LngValue();
-                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
-
-                if (iconNeedsReloc)
-                {
-                    costSz = 8;
-                    costEx = 2;
-                }
-                else if (emitter::emitIns_valid_imm_for_add(imm, size))
-                {
-                    costSz = 2;
-                    costEx = 1;
-                }
-                else if (emitter::emitIns_valid_imm_for_mov(imm, size))
-                {
-                    costSz = 4;
-                    costEx = 1;
-                }
-                else
-                {
-                    // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
-                    // There are three forms
-                    //    movk which loads into any halfword preserving the remaining halfwords
-                    //    movz which loads into any halfword zeroing the remaining halfwords
-                    //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting
-                    //    the register
-                    // In some cases it is preferable to use movn, because it has the side effect of filling the
-                    // other halfwords
-                    // with ones
-
-                    // Determine whether movn or movz will require the fewest instructions to populate the immediate
-                    bool preferMovz       = false;
-                    bool preferMovn       = false;
-                    int  instructionCount = 4;
-
-                    for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
-                    {
-                        if (!preferMovn && (uint16_t(imm >> i) == 0x0000))
-                        {
-                            preferMovz = true; // by using a movk to start we can save one instruction
-                            instructionCount--;
-                        }
-                        else if (!preferMovz && (uint16_t(imm >> i) == 0xffff))
-                        {
-                            preferMovn = true; // by using a movn to start we can save one instruction
-                            instructionCount--;
-                        }
-                    }
-
-                    costEx = instructionCount;
-                    costSz = 4 * instructionCount;
-                }
-            }
-                goto COMMON_CNS;
 #elif defined(TARGET_LOONGARCH64)
             // TODO-LoongArch64-CQ: tune the costs.
             case GT_CNS_STR:
@@ -5322,22 +5239,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 + 8;
                 }
 #elif defined(TARGET_ARM64)
-                if (tree->IsFloatPositiveZero() || emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->DconValue()))
-                {
-                    // Zero and certain other immediates can be specially created with a single instruction
-                    // These can be cheaply reconstituted but still take up 4-bytes of native codegen
-
-                    costEx = 1;
-                    costSz = 2;
-                }
-                else
-                {
-                    // We load the constant from memory and so will take the same cost as GT_IND
-
-                    costEx = IND_COST_EX;
-                    costSz = 2;
-                }
-#elif defined(TARGET_S390X)
                 if (tree->IsFloatPositiveZero() || emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->DconValue()))
                 {
                     // Zero and certain other immediates can be specially created with a single instruction
@@ -5513,14 +5414,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 4;
                     }
 #elif defined(TARGET_ARM64)
-                    costEx = 1;
-                    costSz = 2;
-                    if (isflt || varTypeIsFloating(op1->TypeGet()))
-                    {
-                        costEx = 2;
-                        costSz = 4;
-                    }
-#elif defined(TARGET_S390X)
                     costEx = 1;
                     costSz = 2;
                     if (isflt || varTypeIsFloating(op1->TypeGet()))

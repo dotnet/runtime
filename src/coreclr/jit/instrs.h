@@ -11,8 +11,6 @@
 #include "instrsloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "instrsriscv64.h"
-#elif defined(TARGET_S390X)
-#include "instrss390x.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

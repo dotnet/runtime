@@ -632,9 +632,6 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
-#elif defined (TARGET_S390X)
-	static_assert_no_msg(INS_count <= 2048); //TODO: Giri : What should be the value of INS_count for s390x
-        instruction _idIns : 11; // TODO: Giri: What is this ? 
 #else
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
@@ -651,9 +648,6 @@ protected:
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
-#elif defined(TARGET_S390X)
-        static_assert_no_msg(IF_COUNT <= 1024); //TODO: Giri : What should be the value of INS_count for s390x
-        insFormat _idInsFmt : 10; //TODO: Giri: What is this ? 
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -722,7 +716,6 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
-        // s390x :      21 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -731,9 +724,6 @@ protected:
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
 #elif defined(TARGET_ARM64)
-        opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts _idInsOpt : 6; // options for instructions
-#elif defined (TARGET_S390X)
         opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts _idInsOpt : 6; // options for instructions
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -771,7 +761,6 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
-        // s390x :      46 bits
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -811,11 +800,6 @@ protected:
         unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
 #endif
 
-#ifdef TARGET_S390X
-        unsigned _idLclVar     : 1; // access a local on stack
-        unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
-#endif
-
 #ifdef TARGET_LOONGARCH64
         // TODO-LoongArch64: maybe delete on future.
         opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
@@ -847,7 +831,6 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
-        // s390x:       55 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -862,8 +845,6 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
 #define ID_EXTRA_BITFIELD_BITS (16)
-#elif defined(TARGET_S390X)//TODO: Giri: what exactly needs to be added here ? 
-#define ID_EXTRA_BITFIELD_BITS (23)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -903,7 +884,6 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        // s390x:       62/57 bits
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -920,7 +900,6 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        // s390x:        2/7 bits
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -946,7 +925,7 @@ protected:
         // SMALL_IDSC_SIZE is this size, in bytes.
         //
 
-#define SMALL_IDSC_SIZE 8 
+#define SMALL_IDSC_SIZE 8
 
     public:
         instrDescDebugInfo* idDebugOnlyInfo() const
@@ -963,6 +942,7 @@ protected:
     private:
 
         void checkSizes();
+
         union idAddrUnion
         {
             // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
@@ -1009,14 +989,6 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_S390X)
-            struct
-            {
-                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
-                GCtype         _idGCref2 : 2;
-                regNumber _idReg3 : REGNUM_BITS;
-                regNumber _idReg4 : REGNUM_BITS;
-            };
 #elif defined(TARGET_ARM64)
             struct
             {
@@ -1029,6 +1001,7 @@ protected:
             };
 
             insSvePattern _idSvePattern;
+
 #elif defined(TARGET_XARCH)
             struct
             {
@@ -1157,49 +1130,6 @@ protected:
             return size;
         }
 
-#elif defined(TARGET_S390X)
-
-        inline bool idIsEmptyAlign() const
-        {
-            //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
-            return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
-        }
-
-        unsigned idCodeSize() const
-        {
-            int size = 4;
-            switch (idInsFmt())
-            {
-                case IF_LARGEADR:
-                // adrp + add
-                case IF_LARGEJMP:
-                    // b<cond> + b<uncond>
-                    size = 8;
-                    break;
-                case IF_LARGELDC:
-                    if (isVectorRegister(idReg1()))
-                    {
-                        // (adrp + ldr + fmov) or (adrp + add + ld1)
-                        size = 12;
-                    }
-                    else
-                    {
-                        // adrp + ldr
-                        size = 8;
-                    }
-                    break;
-                case IF_SN_0A:
-                    if (idIsEmptyAlign())
-                    {
-                        size = 0;
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            return size;
-        }
 #elif defined(TARGET_ARM)
 
         bool idInstrIsT1() const
@@ -1284,7 +1214,7 @@ protected:
             assert(reg == _idReg1);
         }
 
-#if defined (TARGET_ARM64) || defined (TARGET_S390X)
+#ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
         {
             assert(!idIsSmallDsc());
@@ -1555,7 +1485,7 @@ protected:
 #endif // TARGET_ARM64
 
 #endif // TARGET_ARMARCH
-       //
+
 #ifdef TARGET_LOONGARCH64
         insOpts idInsOpt() const
         {
@@ -1627,48 +1557,6 @@ protected:
         }
 
 #endif // TARGET_RISCV64
-#ifdef TARGET_S390X
-        bool idReg3Scaled() const
-        {
-            assert(!idIsSmallDsc());
-            return (idAddr()->_idRegBit == 1);
-        }
-        void idReg3Scaled(bool val)
-        {
-            assert(!idIsSmallDsc());
-            idAddr()->_idRegBit = val ? 1 : 0;
-        }
-        insOpts idInsOpt() const
-        {
-            return (insOpts)_idInsOpt;
-        }
-        void idInsOpt(insOpts opt)
-        {   
-            _idInsOpt = opt;
-            assert(opt == _idInsOpt);
-        }   
-            
-        regNumber idReg3() const        {
-            assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
-        }   
-        void idReg3(regNumber reg)
-        {
-            assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;            assert(reg == idAddr()->_idReg3);
-        }   
-        regNumber idReg4() const
-        {
-            assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
-        }           void idReg4(regNumber reg) 
-        {
-            assert(!idIsSmallDsc());
-            idAddr()->_idReg4 = reg;
-            assert(reg == idAddr()->_idReg4);
-        }
-
-#endif // TARGET_S390X
 
         inline static bool fitsInSmallCns(cnsval_ssize_t val)
         {
@@ -1862,24 +1750,6 @@ protected:
 #endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
 
-#if defined(TARGET_S390X)
-        bool idIsLclVar() const
-        {
-            return _idLclVar != 0;
-        }
-        bool idIsLclVarPair() const
-        {
-            return _idLclVarPair != 0;        
-        }
-        void idSetIsLclVarPair()
-        {
-            _idLclVarPair = 1;
-        }
-        void idSetIsLclVar()
-        {
-            _idLclVar = 1;
-        }
-#endif
 #if defined(TARGET_ARM)
         bool idIsLclFPBase() const
         {
@@ -2095,24 +1965,6 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#elif defined(TARGET_S390X)
-
-// a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
-
-// a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
-
-// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
-// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
-#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
-
 #elif defined(TARGET_LOONGARCH64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
@@ -2301,20 +2153,6 @@ protected:
         emitLclVarAddr iiaLclVar2;
     };
 
-    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
-    {
-        instrDescLclVarPairCns() = delete;
-
-        emitLclVarAddr iiaLclVar2;
-    };
-#endif
-#ifdef TARGET_S390X
-    struct instrDescLclVarPair : instrDesc // contains 2 gc vars to be tracked
-    {
-        instrDescLclVarPair() = delete;
-
-        emitLclVarAddr iiaLclVar2;
-    };
     struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
     {
         instrDescLclVarPairCns() = delete;
@@ -3713,7 +3551,6 @@ public:
 inline void emitter::instrDesc::checkSizes()
 {
     C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
-    //TODO : Giri - how to resolve this issue.. 
 }
 
 /*****************************************************************************

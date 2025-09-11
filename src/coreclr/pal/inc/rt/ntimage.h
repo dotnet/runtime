@@ -245,7 +245,6 @@ typedef struct _IMAGE_FILE_HEADER {
 #define IMAGE_FILE_MACHINE_CEE               0xC0EE
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
 #define IMAGE_FILE_MACHINE_RISCV64           0x5064  // RISCV64
-#define IMAGE_FILE_MACHINE_S390X             IMAGE_FILE_MACHINE_UNKNOWN //TODO: S390X - this value needs to be reassigned once MS provides. 
 
 //
 // Directory format.
