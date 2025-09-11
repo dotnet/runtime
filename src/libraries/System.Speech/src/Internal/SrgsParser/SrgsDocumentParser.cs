@@ -417,7 +417,7 @@ namespace System.Speech.Internal.SrgsParser
 
         private SrgsGrammar _grammar;
 
-        private IElementFactory _parser = null!;
+        private IElementFactory _parser = null!; // Correct usage relies on ElementFactory being set
 
         #endregion
     }

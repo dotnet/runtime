@@ -296,7 +296,7 @@ namespace System.Speech.Recognition
     }
     public sealed partial class SemanticValue : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.IEnumerable
     {
-        public SemanticValue(object value) { }
+        public SemanticValue(object? value) { }
         public SemanticValue(string keyName, object? value, float confidence) { }
         public float Confidence { get { throw null; } }
         public int Count { get { throw null; } }

@@ -200,11 +200,11 @@ namespace System.Speech.Internal
 
         private PhoneMapData CreateMap(string resourceName)
         {
-            Assembly? assembly = Assembly.GetAssembly(GetType());
-            Stream? stream = assembly?.GetManifestResourceStream(resourceName);
+            Assembly assembly = Assembly.GetAssembly(GetType())!;
+            Stream? stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
-                throw new FileLoadException(SR.Get(SRID.CannotLoadResourceFromManifest, resourceName, assembly?.FullName ?? GetType().Assembly.FullName));
+                throw new FileLoadException(SR.Get(SRID.CannotLoadResourceFromManifest, resourceName, assembly));
             }
             return new PhoneMapData(new BufferedStream(stream));
         }

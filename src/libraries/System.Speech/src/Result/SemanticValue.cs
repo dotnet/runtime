@@ -27,7 +27,7 @@ namespace System.Speech.Recognition
             _value = value;
         }
 #pragma warning restore 6504, 56507
-        public SemanticValue(object value)
+        public SemanticValue(object? value)
             : this(string.Empty, value, -1f)
         {
         }

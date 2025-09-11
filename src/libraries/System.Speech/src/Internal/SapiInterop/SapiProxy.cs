@@ -20,7 +20,7 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Internal Methods
 
-        internal abstract T Invoke<T>(ObjectDelegate<T> pfn);
+        internal abstract object? Invoke(ObjectDelegate pfn);
         internal abstract void Invoke2(VoidDelegate pfn);
 
         #endregion
@@ -82,7 +82,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            internal override T Invoke<T>(ObjectDelegate<T> pfn)
+            internal override object? Invoke(ObjectDelegate pfn)
             {
                 return pfn.Invoke();
             }
@@ -155,16 +155,16 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            internal override T Invoke<T>(ObjectDelegate<T> pfn)
+            internal override object? Invoke(ObjectDelegate pfn)
             {
                 lock (this)
                 {
-                    _doit = () => pfn();
+                    _doit = pfn;
                     _process.Set();
                     _done.WaitOne();
                     if (_exception == null)
                     {
-                        return (T)_result!;
+                        return _result;
                     }
                     else
                     {
@@ -246,7 +246,7 @@ namespace System.Speech.Internal.SapiInterop
             private Thread _mta;
             private AutoResetEvent _process = new(false);
             private AutoResetEvent _done = new(false);
-            private ObjectDelegate<object?>? _doit;
+            private ObjectDelegate? _doit;
             private VoidDelegate? _doit2;
             private object? _result;
             private Exception? _exception;
@@ -254,7 +254,7 @@ namespace System.Speech.Internal.SapiInterop
             #endregion
         }
 
-        internal delegate T ObjectDelegate<T>();
+        internal delegate object? ObjectDelegate();
         internal delegate void VoidDelegate();
     }
 

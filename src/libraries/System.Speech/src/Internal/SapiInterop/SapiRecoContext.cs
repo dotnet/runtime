@@ -69,7 +69,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal EventNotify CreateEventNotify(AsyncSerializedWorker asyncWorker, bool supportsSapi53)
         {
-            return (EventNotify)_proxy.Invoke(delegate { return new EventNotify(_recoContext, asyncWorker, supportsSapi53); });
+            return (EventNotify)_proxy.Invoke(delegate { return new EventNotify(_recoContext, asyncWorker, supportsSapi53); })!;
         }
 
         internal void DisposeEventNotify(EventNotify eventNotify)
