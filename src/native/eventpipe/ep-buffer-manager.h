@@ -31,9 +31,6 @@ struct _EventPipeBufferList_Internal {
 	EventPipeBuffer *tail_buffer;
 	// The number of buffers in the list.
 	uint32_t buffer_count;
-	// The sequence number of the last event that was read, only
-	// updated/read by the reader thread.
-	uint32_t last_read_sequence_number;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_MANAGER_GETTER_SETTER)
@@ -77,6 +74,9 @@ ep_buffer_list_insert_tail (
 EventPipeBuffer *
 ep_buffer_list_get_and_remove_head (EventPipeBufferList *buffer_list);
 
+bool
+ep_buffer_list_is_empty (const EventPipeBufferList *buffer_list);
+
 #ifdef EP_CHECKED_BUILD
 bool
 ep_buffer_list_ensure_consistency (EventPipeBufferList *buffer_list);
@@ -112,7 +112,9 @@ struct _EventPipeBufferManager_Internal {
 	// These are not protected by rt_lock and expected to only be used on the reader thread.
 	EventPipeEventInstance *current_event;
 	EventPipeBuffer *current_buffer;
-	EventPipeBufferList *current_buffer_list;
+	// The thread session state grabbed from the thread_session_state_list containing the current event
+	// that is being processed by the reader thread.
+	EventPipeThreadSessionState *current_thread_session_state;
 	// The total allocation size of buffers under management.
 	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
@@ -190,20 +192,6 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
-// READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
-// write_event that start during the suspension period or were in progress but hadn't yet recorded
-// their event into a buffer before the start of the suspension period will return false and the
-// event will not be recorded. Any events that not recorded as a result of this suspension will be
-// treated the same as events that were not recorded due to configuration.
-// EXPECTED USAGE: First the caller will disable all events via configuration, then call
-// suspend_write_event () to force any write_event calls that may still be in progress to either
-// finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
-// _Requires_lock_held (ep)
-void
-ep_buffer_manager_suspend_write_event (
-	EventPipeBufferManager *buffer_manager,
-	uint32_t session_index);
-
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we
 // skip any events that might be partially written due to races when tracing is stopped.
@@ -242,6 +230,14 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager);
 bool
 ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager);
 #endif
+
+void
+ep_buffer_manager_remove_and_delete_thread_session_state (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state);
+
+bool
+ep_buffer_manager_uses_sequence_points (const EventPipeBufferManager *buffer_manager);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_BUFFERMANAGER_H__ */
