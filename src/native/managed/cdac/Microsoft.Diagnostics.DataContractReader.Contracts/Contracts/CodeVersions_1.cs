@@ -400,7 +400,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
         if (ilAddress == TargetPointer.Null)
         {
-            // Synthetic ILCodeVersion, get the IL from the method desc
+            // Synthetic ILCodeVersion, get the IL from the module and method def
             ILoader loader = _target.Contracts.Loader;
             ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
             ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);

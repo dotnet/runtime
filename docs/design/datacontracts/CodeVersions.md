@@ -370,7 +370,7 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
 
     if (ilAddress == TargetPointer.Null)
     {
-        // Synthetic ILCodeVersion, get the IL from the method desc
+        // Synthetic ILCodeVersion, get the IL from the module and method def
 
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
