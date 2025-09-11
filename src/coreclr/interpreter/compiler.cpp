@@ -1285,6 +1285,15 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
             ? (GcSlotFlags)GC_SLOT_UNTRACKED
             : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
 
+        // The 'this' pointer may have a shadow copy, or it may not. If it does not have a shadow copy, handle accordingly below.
+        if (m_shadowCopyOfThisPointerHasVar && !m_shadowCopyOfThisPointerActuallyNeeded)
+        {
+            // Don't report the original this pointer var, we'll report the shadow copy instead
+            // which is forced to have the same offset
+            if (i == 0)
+                continue;
+        }
+
         switch (pVar->interpType) {
             case InterpTypeO:
                 break;
@@ -1670,6 +1679,12 @@ void InterpCompiler::CreateILVars()
 {
     bool hasThis = m_methodInfo->args.hasThis();
     bool hasParamArg = m_methodInfo->args.hasTypeArg();
+    bool hasThisPointerShadowCopyAsParamIndex = false;
+    if (((m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK) == CORINFO_GENERICS_CTXT_FROM_THIS))
+    {
+        hasThisPointerShadowCopyAsParamIndex = true;
+        m_shadowCopyOfThisPointerHasVar = true;
+    }
     int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
     int32_t offset;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
@@ -1679,7 +1694,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars + hasParamArg;
+    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0);
 
     offset = 0;
 
@@ -1700,7 +1715,13 @@ void InterpCompiler::CreateILVars()
     {
         CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
         InterpType interpType = m_compHnd->isValueClass(argClass) ? InterpTypeByRef : InterpTypeO;
-        CreateNextLocalVar(0, argClass, interpType, &offset);
+        if (hasThisPointerShadowCopyAsParamIndex)
+        {
+            assert(interpType == InterpTypeO);
+            assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
+            m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        }
+        CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
         argIndexOffset++;
     }
 
@@ -1740,6 +1761,14 @@ void InterpCompiler::CreateILVars()
         // The param arg is stored after the IL locals in the m_pVars array
         assert(index == m_paramArgIndex);
         index++;
+    }
+
+    if (hasThisPointerShadowCopyAsParamIndex)
+    {
+        // This is the allocation of memory space for the shadow copy of the this pointer, operations like starg 0, and ldarga 0 will operate on this copy
+        CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
+        CreateNextLocalVar(0, argClass, InterpTypeO, &offset);
+        index++; // We need to account for the shadow copy in the variable index
     }
 
     offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
@@ -2189,6 +2218,12 @@ void InterpCompiler::EmitLoadVar(int32_t var)
 
 void InterpCompiler::EmitStoreVar(int32_t var)
 {
+    // Check for the unusual case of storing to the this pointer variable within a generic method which uses the this pointer as a generic context arg
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
+    {
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
+    }
+
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK(1);
 
@@ -3840,6 +3875,12 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
+    // Check for the unusual case of taking the address of the this pointer variable within a generic method which uses the this pointer as a generic context arg
+    if (var == 0 && m_shadowCopyOfThisPointerHasVar)
+    {
+        m_shadowCopyOfThisPointerActuallyNeeded = true;
+    }
+
     if (m_pCBB->clauseType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
@@ -6696,6 +6737,27 @@ DO_LDFTN:
         needsRetryEmit = false;
         INTERP_DUMP("retry emit\n");
         goto retry_emit;
+    }
+
+
+    if (m_shadowCopyOfThisPointerActuallyNeeded)
+    {
+        InterpInst *pFirstIns = FirstRealIns(m_pEntryBB);
+        InterpInst *pMovInst = InsertIns(pFirstIns, INTOP_MOV_P);
+        // If this flag is set, then we need to handle the case where an IL instruction may change the
+        // value of the this pointer during the execution of the method. We do that by operating on a
+        // local copy of the this pointer instead of the original this pointer for most operations.
+
+        // When this mitigation is enabled, the param arg is the actual input this pointer,
+        // and the arg 0 is the local copy of the this pointer.
+        pMovInst->SetSVar(getParamArgIndex());
+        pMovInst->SetDVar(0);
+        pMovInst->ilOffset = pFirstIns->ilOffset; // Match the IL offset of the first real instruction
+    }
+    else if (m_shadowCopyOfThisPointerHasVar)
+    {
+        m_pVars[0].offset = 0; // Reset the this pointer offset to 0, since we won't actually need the shadow copy of the this pointer
+        // This will result in an unused local var slot on the stack, and two "var"s which point to the same location.
     }
 
     UnlinkUnreachableBBlocks();
