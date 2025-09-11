@@ -6678,7 +6678,7 @@ DO_LDFTN:
     if (m_shadowCopyOfThisPointerActuallyNeeded)
     {
         InterpInst *pFirstIns = FirstRealIns(m_pEntryBB);
-        InterpInst *pMovInst = InsertIns(FirstRealIns(m_pEntryBB), INTOP_MOV_P);
+        InterpInst *pMovInst = InsertIns(pFirstIns, INTOP_MOV_P);
         // If this flag is set, then we need to handle the case where an IL instruction may change the
         // value of the this pointer during the execution of the method. We do that by operating on a
         // local copy of the this pointer instead of the original this pointer for most operations.
