@@ -366,20 +366,7 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     }
 
     // For the default code version we always fetch the globally stored default IL for a method
-    //
-    // In the non-default code version we assume NULL is the equivalent of explicitly requesting to
-    // re-use the default IL. Ideally there would be no reason to create a new version that re-uses
-    // the default IL (just use the default code version for that) but we do it here for compat. We've
-    // got some profilers that use ReJIT to create a new code version and then instead of calling
-    // ICorProfilerFunctionControl::SetILFunctionBody they call ICorProfilerInfo::SetILFunctionBody.
-    // This mutates the default IL so that it is now correct for their new code version. Of course this
-    // also overwrote the previous default IL so now the default code version GetIL() is out of sync
-    // with the jitted code. In the majority of cases we never re-read the IL after the initial
-    // jitting so this issue goes unnoticed.
-    //
-    // If changing the default IL after it is in use becomes more problematic in the future we would
-    // need to add enforcement that prevents profilers from using ICorProfilerInfo::SetILFunctionBody
-    // that way + coordinate with them because it is a breaking change for any profiler currently doing it.
+    // See src/coreclr/vm/codeversion.cpp for more detailed implementation comments.
 
     if (ilAddress == TargetPointer.Null)
     {
@@ -387,17 +374,7 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
 
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
-        TargetPointer methodDefToDescTable = loader.GetLookupTables(moduleHandle).MethodDefToDesc;
-        TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(methodDefToDescTable, ilCodeVersionHandle.MethodDefinition, out _);
-
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle md = rts.GetMethodDescHandle(methodDescPtr);
-        if (methodDescPtr != TargetPointer.Null && rts.MayHaveILHeader(md))
-        {
-            ILoader loader = _target.Contracts.Loader;
-            ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
-            ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
-        }
+        ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
     }
 
     return ilAddress;

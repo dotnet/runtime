@@ -403,15 +403,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             // Synthetic ILCodeVersion, get the IL from the method desc
             ILoader loader = _target.Contracts.Loader;
             ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
-            TargetPointer methodDefToDescTable = loader.GetLookupTables(moduleHandle).MethodDefToDesc;
-            TargetPointer methodDescPtr = loader.GetModuleLookupMapElement(methodDefToDescTable, ilCodeVersionHandle.MethodDefinition, out _);
-
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            MethodDescHandle md = rts.GetMethodDescHandle(methodDescPtr);
-            if (methodDescPtr != TargetPointer.Null && rts.MayHaveILHeader(md))
-            {
-                ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
-            }
+            ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
         }
 
         return ilAddress;

@@ -68,7 +68,6 @@ public enum DataType
     MethodDesc,
     MethodDescChunk,
     MethodDescCodeData,
-    AsyncMethodData,
     PlatformMetadata,
     PrecodeMachineDescriptor,
     StubPrecodeData,

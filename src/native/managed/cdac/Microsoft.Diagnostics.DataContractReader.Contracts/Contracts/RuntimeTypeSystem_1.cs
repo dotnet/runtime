@@ -96,12 +96,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsInitError = 0x0100,
     }
 
-    internal enum AsyncMethodKind
-    {
-        RuntimeAsync = 2,
-        AsyncVariantThunk = 4,
-    }
-
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
@@ -155,17 +149,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
                 MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
             return target.Read<byte>(methodDescSizeTable + arrayOffset);
-        }
-
-        internal bool IsAsyncThunkMethod()
-        {
-            if (!HasFlags(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
-                return false;
-
-            TargetPointer asyncMethodDataPtr = Address + Size;
-            Data.AsyncMethodData asyncMethodData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(asyncMethodDataPtr);
-            AsyncMethodKind asyncMethodKind = (AsyncMethodKind)asyncMethodData.Kind;
-            return asyncMethodKind == AsyncMethodKind.AsyncVariantThunk || asyncMethodKind == AsyncMethodKind.RuntimeAsync;
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -1246,11 +1229,4 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
         return slot < GetNumVtableSlots(typeHandle);
     }
-
-    bool IRuntimeTypeSystem.MayHaveILHeader(MethodDescHandle methodDescHandle)
-    {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && !methodDesc.IsAsyncThunkMethod();
-    }
-
 }
