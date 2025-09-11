@@ -174,16 +174,23 @@ namespace ILLink.RoslynAnalyzer
                 context.RegisterCompilationAction(extraCompilationAction);
         }
 
-        internal void CheckAndCreateRequiresDiagnostic(
+        private void CheckAndCreateRequiresDiagnostic(
             ISymbol member,
             ISymbol containingSymbol,
             ImmutableArray<ISymbol> incompatibleMembers,
-            in DiagnosticContext diagnosticContext)
+            in DiagnosticContext diagnosticContext,
+            bool isAttributeOnType)
         {
-            // Do not emit any diagnostic if caller is annotated with the attribute too.
+            // Do not emit any diagnostic if caller is annotated with the attribute too
             if (containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
-                return;
-
+            {
+                // Warnings for attributes on type declarations are not suppressed by RUC on the type.
+                // This allows attribute warnings to still be reported when attributes are applied to RUC types.
+                if (!isAttributeOnType)
+                {
+                    return;
+                }
+            }
             if (CreateSpecialIncompatibleMembersDiagnostic(incompatibleMembers, member, diagnosticContext))
                 return;
 
@@ -224,7 +231,8 @@ namespace ILLink.RoslynAnalyzer
                 baseCtor,
                 implicitCtor,
                 ImmutableArray<ISymbol>.Empty,
-                diagnosticContext);
+                diagnosticContext,
+                isAttributeOnType: false);
         }
 
         [Flags]
@@ -405,11 +413,45 @@ namespace ILLink.RoslynAnalyzer
             ISymbol containingSymbol = operation.FindContainingSymbol(owningSymbol);
 
             var incompatibleMembers = context.GetSpecialIncompatibleMembers(this);
+
+            bool isAttributeOnType = containingSymbol is INamedTypeSymbol && IsAttributeOnType(operation, member);
             CheckAndCreateRequiresDiagnostic(
                 member,
                 containingSymbol,
                 incompatibleMembers,
-                diagnosticContext);
+                diagnosticContext,
+                isAttributeOnType);
+        }
+
+        private static bool IsAttributeOnType(IOperation operation, ISymbol member)
+        {
+            INamedTypeSymbol? potentialAttrType = null;
+            if (operation.Kind == OperationKind.ObjectCreation &&
+                member is IMethodSymbol potentialAttrCtor &&
+                potentialAttrCtor.IsConstructor())
+            {
+                potentialAttrType = potentialAttrCtor.ContainingType;
+            }
+            else if (member is IMethodSymbol method &&
+                     method.MethodKind == MethodKind.PropertySet &&
+                     method.AssociatedSymbol is IPropertySymbol associatedProperty)
+            {
+                potentialAttrType = associatedProperty.ContainingType;
+            }
+
+            return potentialAttrType != null && IsAttributeType(potentialAttrType);
+        }
+
+        private static bool IsAttributeType(INamedTypeSymbol? type)
+        {
+            var current = type;
+            while (current != null)
+            {
+                if (current.ToDisplayString() == "System.Attribute")
+                    return true;
+                current = current.BaseType;
+            }
+            return false;
         }
 
         internal virtual bool IsIntrinsicallyHandled(
