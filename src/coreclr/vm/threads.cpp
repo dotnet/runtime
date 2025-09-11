@@ -2600,6 +2600,9 @@ void Thread::CleanupDetachedThreads()
                 {
                     // Record threads that we'll need to do some managed cleanup of
                     // after we exit the thread store lock.
+                    // Increase the external ref count to ensure the exposed object stays alive
+                    // until we do our cleanup outside of the thread store lock.
+                    thread->IncExternalCount();
                     threadsWithManagedCleanup.Append(thread);
                 }
 
@@ -2677,15 +2680,15 @@ void Thread::CleanupDetachedThreads()
         // During the actual thread shutdown,
         // it may not be practical for us to run enough managed code to clean up
         // any managed code that needs to know when a thread exits.
-        // Instead, run that clean up here when the thread object is finalized
-        // (which is definitely after the thread has exited)
-        //
-        // We know its safe to do this work here as we can't have finalized the managed thread object yet
-        // as we're running on the finalizer thread right now.
+        // Instead, run that clean up here when the Thread is detached,
+        // which is definitely after the thread has exited.
+        PTR_Thread pThread = (PTR_Thread)iter.GetElement();
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
         DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(((Thread*)iter.GetElement())->GetExposedObject());
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
         CALL_MANAGED_METHOD_NORET(args);
+
+        pThread->DecExternalCount(FALSE);
     }
 }
 
