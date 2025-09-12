@@ -25,10 +25,10 @@ target_link_options(corewasmrun PRIVATE
   -sFORCE_FILESYSTEM=1
   ${_WASM_PRELOAD_FILE}
   -Wl,-error-limit=0)
-
 target_link_libraries(corewasmrun PRIVATE
   coreclr_static
-  System.Native-Static)
+  System.Native-Static
+  System.Native.TimeZoneData)
 
 # The corerun version for wasm is being installed in its own directory
 # because it is an executable that comes with an index.html and we

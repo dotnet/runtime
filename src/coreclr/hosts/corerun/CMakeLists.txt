@@ -47,7 +47,8 @@ else(CLR_CMAKE_HOST_WIN32)
         target_sources(corerun PRIVATE corerun.wasm.cpp)
         target_link_libraries(corerun PRIVATE
         coreclr_static
-        System.Native-Static)
+        System.Native-Static
+        System.Native.TimeZoneData)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
