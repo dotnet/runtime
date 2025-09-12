@@ -23,8 +23,6 @@ Global variables used:
 | --- | --- | --- |
 | ObjectMethodTable | TargetPointer | pointer to the MT of `object` |
 | StringMethodTable | TargetPointer | pointer to the MT of `string` |
-| ObjectArrayMethodTable | TargetPointer | pointer to the MT of `object[]` |
-| StringArrayMethodTable | TargetPointer | pointer to the MT of `string[]` |
 
 Contracts used:
 | Contract Name |
@@ -91,24 +89,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
-    {
-        TypeHandle typeHandle = default;
-        if (elementType.Address == _target.ReadPointer(_target.ReadGlobalPointer("ObjectMethodTable")))
-        {
-            TargetPointer arrayPtr = _target.ReadGlobalPointer("ObjectArrayMethodTable");
-            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(arrayPtr);
-        }
-        else if (elementType.Address == _target.ReadPointer(_target.ReadGlobalPointer("StringMethodTable")))
-        {
-            TargetPointer arrayPtr = _target.ReadGlobalPointer("StringArrayMethodTable");
-            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(arrayPtr);
-        }
-        if (typeHandle.Address == TargetPointer.Null)
-        {
-            return _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.SzArray, 1, default);
-        }
-        return typeHandle;
-    }
+        => _target.Contracts.RuntimeTypeSystem.IterateTypeParams(elementType, CorElementType.SzArray, 1, default);
 
     public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {

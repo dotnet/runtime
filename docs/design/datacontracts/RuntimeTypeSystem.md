@@ -91,6 +91,7 @@ partial interface IRuntimeTypeSystem : IContract
     public TypeHandle GetPrimitiveType(CorElementType typeCode);
     public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    public virtual bool IsPointer(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
 }
@@ -809,7 +810,7 @@ Contracts used:
             return false;
 
         int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
-        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
 
         if (elemType != CorElementType.FnPtr)
             return false;
@@ -824,6 +825,16 @@ Contracts used:
         retAndArgTypes = retAndArgTypesArray;
         callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress(), and then ignore all but the low 8 bits.
         return true;
+    }
+
+    public bool IsPointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+        CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
+        return elemType == CorElementType.Ptr;
     }
 ```
 

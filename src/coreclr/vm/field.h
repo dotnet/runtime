@@ -45,11 +45,9 @@ class FieldDesc
     // See also: FieldDesc::InitializeFrom method
     // if this structure is changed please update cdac_data<FieldDesc>
 
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump.
         unsigned m_dword1;
         struct {
-#endif
         unsigned m_mb               : 24;
 
         // 8 bits...
@@ -57,24 +55,17 @@ class FieldDesc
         unsigned m_isThreadLocal    : 1;
         unsigned m_isRVA            : 1;
         unsigned m_prot             : 3;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
-
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump
         unsigned m_dword2;
         struct {
-#endif
         // Note: this has been as low as 22 bits in the past & seemed to be OK.
         // we can steal some more bits here if we need them.
         unsigned m_dwOffset         : 27;
         unsigned m_type             : 5;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
 
 #ifdef _DEBUG
     LPUTF8 m_debugName;
@@ -750,8 +741,8 @@ public:
 template<>
 struct cdac_data<FieldDesc>
 {
-    static constexpr size_t DWord1 = offsetof(FieldDesc, m_pMTOfEnclosingClass) + sizeof(PTR_MethodTable);
-    static constexpr size_t DWord2 = DWord1 + 4;
+    static constexpr size_t DWord1 = offsetof(FieldDesc, m_dword1);
+    static constexpr size_t DWord2 = offsetof(FieldDesc, m_dword2);
     static constexpr size_t MTOfEnclosingClass = offsetof(FieldDesc, m_pMTOfEnclosingClass);
 };
 

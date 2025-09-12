@@ -762,6 +762,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
+    public bool IsPointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        return elemType == CorElementType.Ptr;
+    }
+
     private sealed class FunctionPointerRetAndArgs : IData<FunctionPointerRetAndArgs>
     {
         public static FunctionPointerRetAndArgs Create(Target target, TargetPointer address) => new FunctionPointerRetAndArgs(target, address);

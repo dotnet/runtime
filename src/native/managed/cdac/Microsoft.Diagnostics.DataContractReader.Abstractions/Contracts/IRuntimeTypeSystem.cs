@@ -145,6 +145,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
+    bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 
