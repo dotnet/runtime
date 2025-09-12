@@ -806,6 +806,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         *ip++ = srcOffset;
         if (opcode == INTOP_MOV_VT)
             *ip++ = fSize;
+
+        // NOTE: It is important to patch the opcode of the insn so that live end offsets are computed correctly.
+        // Otherwise the live end offset will be computed using the size of mov_src_off instead of the actual move,
+        //  which will break gc live range computations.
+        ins->opcode = opcode;
+        ins->data[0] = fSize;
     }
     else if (opcode == INTOP_LDLOCA)
     {
@@ -1063,11 +1069,11 @@ class InterpGcSlotAllocator
 #endif
 
             ConservativeRange newRange(start, end);
-            
+
             if (m_liveRanges.GetSize() != 0)
             {
                 // Find the first range which has a start offset greater or equal to the new ranges start offset
-                
+
                 int32_t hiBound = m_liveRanges.GetSize();
                 int32_t loBound = 0;
                 while (loBound < hiBound)
