@@ -121,6 +121,6 @@
   
   <Fragment>
     <!-- Unlike DOTNETHOME which gives precedence to a user specified value over an x64 suffix, here we always want the suffixed path -->
-    <SetProperty Action="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" Id="PROGRAMFILES_DOTNET" Value="[$(var.Program_Files)]dotnet\x64\" After="Set_NON_NATIVE_ARCHITECTURE" Condition="NON_NATIVE_ARCHITECTURE" />
+    <SetProperty Action="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" Id="PROGRAMFILES_DOTNET" Value="[ProgramFiles6432Folder]dotnet\x64\" After="Set_NON_NATIVE_ARCHITECTURE" Condition="NON_NATIVE_ARCHITECTURE" />
   </Fragment>
 </Wix>
