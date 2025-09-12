@@ -336,7 +336,6 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //
 // Arguments:
 //      cond       - A BBJ_COND block that exits the loop
-//      header     - Loop header block
 //      ppTest     - [out] The test stmt of the loop if found.
 //      ppIncr     - [out] The incr stmt of the loop if found.
 //
@@ -352,7 +351,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      This method just retrieves what it thinks is the "test" node,
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
-bool Compiler::optExtractTestIncr(BasicBlock* cond, BasicBlock* header, GenTree** ppTest, GenTree** ppIncr)
+bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr)
 {
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
