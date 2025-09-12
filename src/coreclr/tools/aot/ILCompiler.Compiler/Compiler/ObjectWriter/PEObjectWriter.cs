@@ -33,18 +33,26 @@ namespace ILCompiler.ObjectWriter
         private uint _pdataRva;
         private uint _pdataSize;
 
-        // Add export directory fields
         private uint _exportRva;
         private uint _exportSize;
+
+        // Base relocation (.reloc) bookkeeping
+        private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
+        private uint _baseRelocRva;
+        private uint _baseRelocSize;
+
+        // Emitted Symbol Table info
+        private record PESymbol(string Name, uint Offset);
+        private readonly List<PESymbol> _exportedPESymbols = new();
 
         // Grouping of object sections by base image section name. Populated by
         // EmitSectionsAndLayout so EmitObjectFile / EmitSections can consume
         // the grouping without recomputing it.
-        private List<string> _groupOrder;
-        private Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>> _groupMap;
+        private readonly List<string> _groupOrder = new();
+        private readonly Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>> _groupMap = new Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>>(StringComparer.Ordinal);
+        private readonly Dictionary<int, int> _origToMergedSectionIndex = new();
 
-        private HashSet<string> _exportedSymbols = new();
-        private readonly Dictionary<string, SymbolDefinition> _exportedSymbolDefinitions = new(StringComparer.Ordinal);
+        private HashSet<string> _exportedSymbolNames = new();
 
         public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -55,7 +63,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (!string.IsNullOrEmpty(symbol))
             {
-                _exportedSymbols.Add(symbol);
+                _exportedSymbolNames.Add(symbol);
             }
         }
 
@@ -291,14 +299,21 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols)
         {
+            if (undefinedSymbols.Count > 0)
+            {
+                throw new NotSupportedException("PEObjectWriter does not support undefined symbols");
+            }
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
-                if (_exportedSymbols.Contains(symbolName))
+                if (!_exportedSymbolNames.Contains(symbolName))
                 {
-                    _exportedSymbolDefinitions[symbolName] = symbolDefinition;
+                    continue;
                 }
+                int mergedIdx = _origToMergedSectionIndex.TryGetValue(symbolDefinition.SectionIndex, out var mi) ? mi : 0;
+                uint targetRva = _sections[mergedIdx].Header.VirtualAddress + (uint)symbolDefinition.Value;
+                PESymbol sym = new(symbolName, targetRva);
+                _exportedPESymbols.Add(sym);
             }
-            base.EmitSymbolTable(definedSymbols, undefinedSymbols);
         }
 
         private protected override void EmitSectionsAndLayout()
@@ -309,8 +324,6 @@ namespace ILCompiler.ObjectWriter
             // Precompute grouping first so image header counts and the
             // header size calculation below reflect the final number of
             // image sections (base names without '$' suffix).
-            _groupOrder = new List<string>();
-            _groupMap = new Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>>(StringComparer.Ordinal);
             for (int i = 0; i < _sections.Count; i++)
             {
                 var sec = _sections[i];
@@ -324,6 +337,7 @@ namespace ILCompiler.ObjectWriter
                     _groupOrder.Add(baseName);
                 }
                 list.Add((sec, i));
+                _origToMergedSectionIndex.Add(i, _groupOrder.IndexOf(baseName));
             }
 
             // Build merged section definitions and grouped symbolic relocations
@@ -447,17 +461,10 @@ namespace ILCompiler.ObjectWriter
             }
 
             // If we have exports, create an export data section (.edata) and place it after other sections.
-            if (_exportedSymbolDefinitions.Count > 0)
+            if (_exportedSymbolNames.Count > 0)
             {
-                var origToMerged = new Dictionary<int, int>();
-                for (int mi = 0; mi < _groupOrder.Count; mi++)
-                {
-                    foreach (var (sec, origIdx) in _groupMap[_groupOrder[mi]])
-                        origToMerged[origIdx] = mi;
-                }
-
                 uint edataRva = virtualAddress;
-                var exportDir = new ExportDirectory(_exportedSymbolDefinitions, origToMerged, _sections, edataRva);
+                var exportDir = new ExportDirectory(_exportedPESymbols, moduleName: "UNKNOWN", edataRva);
                 var edataSection = exportDir.Section;
                 var edataHeader = edataSection.Header;
 
@@ -491,6 +498,115 @@ namespace ILCompiler.ObjectWriter
             _peSizeOfImage = sizeOfImage;
             _peSizeOfCode = sizeOfCode;
             _peSizeOfInitializedData = sizeOfInitializedData;
+        }
+
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            base.EmitRelocations(sectionIndex, relocationList);
+
+            // Gather file-level relocations that need to go into the .reloc
+            // section. We collect entries grouped by 4KB page (page RVA ->
+            // list of (type<<12 | offsetInPage) WORD entries). When this
+            // override is invoked for the last section, synthesize the
+            // .reloc section from the collected entries and append it to
+            // the image section list so that it will be emitted by
+            // EmitObjectFile.
+
+            foreach (var symRel in relocationList)
+            {
+                RelocType fileRelocType = Relocation.GetFileRelocationType(symRel.Type);
+                if (fileRelocType == RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                    continue;
+
+                uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)symRel.Offset;
+                uint pageRva = targetRva & ~0xFFFu;
+                ushort offsetInPage = (ushort)(targetRva & 0xFFFu);
+                ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
+
+                if (!_baseRelocMap.TryGetValue(pageRva, out var list))
+                {
+                    list = new List<ushort>();
+                    _baseRelocMap.Add(pageRva, list);
+                }
+                list.Add(entry);
+            }
+
+            // If this is the last section being processed, create the
+            // .reloc section from the accumulated relocation blocks.
+            if (sectionIndex == _sectionIndexToRelocations.Count - 1 && _baseRelocMap.Count > 0)
+            {
+                var ms = new MemoryStream();
+
+                foreach (var kv in _baseRelocMap)
+                {
+                    uint pageRva = kv.Key;
+                    List<ushort> entries = kv.Value;
+                    entries.Sort();
+
+                    int entriesSize = entries.Count * 2;
+                    int sizeOfBlock = 8 + entriesSize;
+                    // Pad to 4-byte alignment as customary
+                    if ((sizeOfBlock & 3) != 0)
+                        sizeOfBlock += 2;
+
+                    byte[] headerBuf = new byte[8];
+                    BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(0, 4), pageRva);
+                    BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(4, 4), (uint)sizeOfBlock);
+                    ms.Write(headerBuf, 0, headerBuf.Length);
+
+                    // Emit entries
+                    foreach (ushort e in entries)
+                    {
+                        byte[] w = new byte[2];
+                        BinaryPrimitives.WriteUInt16LittleEndian(w.AsSpan(), e);
+                        ms.Write(w, 0, 2);
+                    }
+
+                    // Ensure block is 4-byte aligned by padding a WORD if needed
+                    if (((entriesSize) & 3) != 0)
+                    {
+                        byte[] pad = new byte[2];
+                        BinaryPrimitives.WriteUInt16LittleEndian(pad.AsSpan(), 0);
+                        ms.Write(pad, 0, 2);
+                    }
+                }
+
+                // Create a new section for .reloc and compute its raw/virtual layout
+                var relocHeader = new CoffSectionHeader
+                {
+                    Name = ".reloc",
+                    SectionCharacteristics = SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData
+                };
+
+                var relocSection = new SectionDefinition(relocHeader, ms, new List<CoffRelocation>(), null, null, ".reloc");
+
+                // Compute pointer to raw data: find last used raw end and align
+                uint lastRawEnd = 0;
+                uint lastVEnd = 0;
+                foreach (var s in _sections)
+                {
+                    if (s.Header.PointerToRawData != 0)
+                    {
+                        lastRawEnd = Math.Max(lastRawEnd, s.Header.PointerToRawData + s.Header.SizeOfRawData);
+                    }
+                    uint vEnd = s.Header.VirtualAddress + (uint)AlignmentHelper.AlignUp((int)s.Header.VirtualSize, (int)_peSectionAlignment);
+                    lastVEnd = Math.Max(lastVEnd, vEnd);
+                }
+
+                uint pointerToRawData = lastRawEnd == 0 ? (uint)AlignmentHelper.AlignUp((int)_peSizeOfHeaders, (int)_peFileAlignment) : lastRawEnd;
+                relocHeader.PointerToRawData = pointerToRawData;
+                relocHeader.SizeOfRawData = (uint)AlignmentHelper.AlignUp((int)ms.Length, (int)_peFileAlignment);
+                relocHeader.VirtualAddress = (uint)AlignmentHelper.AlignUp((int)lastVEnd, (int)_peSectionAlignment);
+                relocHeader.VirtualSize = (uint)ms.Length;
+
+                _sections.Add(relocSection);
+                _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
+                _groupOrder.Add(".reloc");
+                _groupMap[".reloc"] = new List<(SectionDefinition, int)> { (relocSection, -1) };
+
+                _baseRelocRva = relocHeader.VirtualAddress;
+                _baseRelocSize = (uint)ms.Length;
+            }
         }
 
         private protected override void EmitObjectFile(string objectFilePath)
@@ -548,7 +664,7 @@ namespace ILCompiler.ObjectWriter
             Characteristics characteristics = Characteristics.ExecutableImage | Characteristics.Dll;
             characteristics |= isPE32Plus ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
 
-            // COFF File Header (use the shared CoffHeader type)
+            // COFF File Header
             var coffHeader = new CoffHeader
             {
                 Machine = _machine,
@@ -606,6 +722,11 @@ namespace ILCompiler.ObjectWriter
             {
                 dataDirs.Set((int)ImageDirectoryEntry.Export, _exportRva, _exportSize);
             }
+            // Populate base relocation directory if present
+            if (_baseRelocSize != 0)
+            {
+                dataDirs.Set((int)ImageDirectoryEntry.BaseRelocation, _baseRelocRva, _baseRelocSize);
+            }
             peOptional.Write(stream, dataDirs);
 
             CoffStringTable stringTable = new();
@@ -629,7 +750,7 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex++;
             }
 
-            // Write section content and relocations
+            // Write section content
             foreach (string baseName in _groupOrder)
             {
                 foreach (var (section, _) in _groupMap[baseName])
@@ -639,15 +760,6 @@ namespace ILCompiler.ObjectWriter
                         Debug.Assert(stream.Position == section.Header.PointerToRawData);
                         section.Stream.Position = 0;
                         section.Stream.CopyTo(stream);
-                    }
-
-                    // TODO: We don't want to support COFF relocations here.
-                    if (section.Relocations.Count > 0)
-                    {
-                        foreach (var relocation in section.Relocations)
-                        {
-                            relocation.Write(stream);
-                        }
                     }
                 }
             }
@@ -667,9 +779,9 @@ namespace ILCompiler.ObjectWriter
             public int ExportDirectoryOffset { get; }
             public int ExportDirectorySize { get; }
 
-            public ExportDirectory(IDictionary<string, SymbolDefinition> exportedSymbolDefinitions, Dictionary<int, int> origToMerged, List<SectionDefinition> mergedSections, uint edataRva)
+            public ExportDirectory(IEnumerable<PESymbol> exportedPESymbols, string moduleName, uint edataRva)
             {
-                var exports = exportedSymbolDefinitions.Select(kv => (Name: kv.Key, Def: kv.Value)).OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
+                var exports = exportedPESymbols.OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
 
                 using var ms = new MemoryStream();
 
@@ -682,10 +794,9 @@ namespace ILCompiler.ObjectWriter
                     ms.WriteByte(0);
                 }
 
-                // DLL name
-                string dllName = "UNKNOWN";
-                uint dllNameRva = edataRva + (uint)ms.Position;
-                ms.Write(System.Text.Encoding.UTF8.GetBytes(dllName));
+                // Module name
+                uint moduleNameRva = edataRva + (uint)ms.Position;
+                ms.Write(System.Text.Encoding.UTF8.GetBytes(moduleName));
                 ms.WriteByte(0);
 
                 // Align to 4
@@ -703,12 +814,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     // name RVA
                     WriteLittleEndian(ms, (int)nameRvas[i]);
-
-                    var def = exports[i].Def;
-                    int origIdx = def.SectionIndex;
-                    int mergedIdx = origToMerged.TryGetValue(origIdx, out var mi) ? mi : 0;
-                    uint targetRva = mergedSections[mergedIdx].Header.VirtualAddress + (uint)def.Value;
-                    addressTable[i] = (int)targetRva;
+                    addressTable[i] = (int)exports[i].Offset;
                 }
 
                 // Ordinal table
@@ -745,7 +851,7 @@ namespace ILCompiler.ObjectWriter
                 // +0x0A: minor version
                 WriteLittleEndian<ushort>(ms, 0);
                 // +0x0C: DLL name RVA
-                WriteLittleEndian(ms, (int)dllNameRva);
+                WriteLittleEndian(ms, (int)moduleNameRva);
                 // +0x10: ordinal base
                 WriteLittleEndian(ms, minOrdinal);
                 // +0x14: number of entries in the address table
