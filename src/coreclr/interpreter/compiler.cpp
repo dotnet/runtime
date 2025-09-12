@@ -7288,6 +7288,8 @@ void InterpCompiler::PrintCompiledCode()
         PrintCompiledIns(ip, m_pMethodCode);
         ip = InterpNextOp(ip);
     }
+
+    printf("End of method: %04x: IR_%04x\n", (int32_t)ConvertOffset((int32_t)(ip - m_pMethodCode)), (int32_t)(ip - m_pMethodCode));
 }
 
 void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
@@ -7295,7 +7297,7 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
     int32_t opcode = *ip;
     int32_t insOffset = (int32_t)(ip - start);
 
-    printf("IR_%04x: %-14s", insOffset, InterpOpName(opcode));
+    printf("%04x: IR_%04x: %-14s", (int32_t)ConvertOffset(insOffset), insOffset, InterpOpName(opcode));
     ip++;
 
     if (g_interpOpDVars[opcode] > 0)
