@@ -74,22 +74,25 @@ namespace System.Speech.Internal.Synthesis
         /// <returns>New array with the audio data in requested format.</returns>
         internal static byte[] Convert(short[] data, AudioCodec from, AudioCodec to)
         {
-            if (from is not AudioCodec.PCM16)
+            ConvertShortByte? cnvDlgt = null;
+
+            switch (from)
             {
-                throw new FormatException();
+                case AudioCodec.PCM16:
+                    switch (to)
+                    {
+                        case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte(ConvertLinear8LinearShortByte); break;
+                        case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte(ConvertLinear2LinearShortByte); break;
+                        case AudioCodec.G711U: cnvDlgt = new ConvertShortByte(ConvertLinear2ULaw); break;
+                        case AudioCodec.G711A: cnvDlgt = new ConvertShortByte(ConvertLinear2ALaw); break;
+                    }
+                    break;
+
+                default:
+                    throw new FormatException();
             }
 
-            ConvertShortByte cnvDlgt;
-            switch (to)
-            {
-                case AudioCodec.PCM8: cnvDlgt = new ConvertShortByte(ConvertLinear8LinearShortByte); break;
-                case AudioCodec.PCM16: cnvDlgt = new ConvertShortByte(ConvertLinear2LinearShortByte); break;
-                case AudioCodec.G711U: cnvDlgt = new ConvertShortByte(ConvertLinear2ULaw); break;
-                case AudioCodec.G711A: cnvDlgt = new ConvertShortByte(ConvertLinear2ALaw); break;
-                default: throw new FormatException();
-            }
-
-            return cnvDlgt(data, data.Length);
+            return cnvDlgt!(data, data.Length);
         }
 
         internal static AudioCodec TypeOf(WAVEFORMATEX format)
