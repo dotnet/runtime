@@ -1982,10 +1982,9 @@ ClrDataAccess::GetFieldDescData(CLRDATA_ADDRESS addr, struct DacpFieldDescData *
         // drag in this data structure in minidump's case.
         //
         TypeHandle th = pFieldDesc->LookupFieldTypeHandle();
-        MethodTable *pMt = th.GetMethodTable();
-        if (pMt)
+        if (th.m_asTAddr)
         {
-            FieldDescData->MTOfType = HOST_CDADDR(th.GetMethodTable());
+            FieldDescData->MTOfType = HOST_CDADDR(PTR_MethodTable(th.m_asTAddr));
         }
         else
         {
