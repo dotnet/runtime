@@ -8,6 +8,7 @@
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 #error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#include "cdacdata.h"
 
 class PortableEntryPoint final
 {
@@ -61,7 +62,14 @@ public:
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
         return _pInterpreterData != nullptr && _pActualCode != nullptr;
     }
+    friend struct ::cdac_data<PortableEntryPoint>;
 };
+template<>
+struct cdac_data<PortableEntryPoint>
+{
+    static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+};
+
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 

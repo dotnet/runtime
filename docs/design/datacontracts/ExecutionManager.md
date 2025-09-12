@@ -29,8 +29,8 @@ struct CodeBlockHandle
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
     // Get the JIT type
     uint GetJITType(CodeBlockHandle codeInfoHandle);
-    // Attempt to get the method desc of an IP with no valid codeblock
-    TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer ip);
+    // Attempt to get the method desc of an entrypoint
+    TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
 
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
@@ -105,6 +105,7 @@ Data descriptors used:
 | `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
 | `UnwindInfo` | `CountOfUnwindCodes` | Number of unwind codes in the unwind info. Only exists on some platforms |
 | `UnwindInfo` | `UnwindCodeOffset` | Offset of UnwindCodeOffset in the UnwindInfo data struct. Only exists on some platforms |
+| `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -116,6 +117,7 @@ Global variables used:
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
+| `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
 
 Contracts used:
 | Contract Name |
@@ -332,19 +334,19 @@ public override void GetMethodRegionInfo(TargetPointer rangeSection, TargetCodeP
 
 ```
 
-`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return TYPE_JIT for the EEJitManager, TYPE_PJIT for the R2RJitManager, and TYPE_UNKNOWN for any other value.
+`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return TYPE_JIT for the EEJitManager, TYPE_R2R for the R2RJitManager, and TYPE_UNKNOWN for any other value.
 ```csharp
 private enum JITTypes
 {
     TYPE_UNKNOWN = 0,
     TYPE_JIT = 1,
-    TYPE_PJIT = 2,
+    TYPE_R2R = 2,
     TYPE_INTERPRETER = 3
 };
 ```
-`NonVirtualEntry2MethodDesc` attempts to find a method desc from an IP that has no valid code block We attempt to find a method desc from a stub address, and if this fails we return TargetPointer.Null.
+`NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
 ```csharp
-TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer ip)
+TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
 {
     TargetPointer rangeSection = // find range section corresponding to jittedCodeAddress - see RangeSectionMap
     if (/* no corresponding range section */)
@@ -353,7 +355,12 @@ TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer ip)
     if (/* range flags indicate RangeList */)
     {
         IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-        return precodeStubs.GetMethodDescFromStubAddress(ip);
+        return precodeStubs.GetMethodDescFromPrecode(entrypoint);
+    }
+    else
+    {
+        // get the jit manager
+        // attempt to get the method info from a code block
     }
     return TargetPointer.Null;
 }

@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IPrecodeStubs : IContract
 {
     static string IContract.Name { get; } = nameof(PrecodeStubs);
-    TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
+    TargetPointer GetMethodDescFromPrecode(TargetCodePointer entryPoint) => throw new NotImplementedException();
 }
 
 public readonly struct PrecodeStubs : IPrecodeStubs

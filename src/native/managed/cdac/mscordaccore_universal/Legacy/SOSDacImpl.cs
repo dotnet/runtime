@@ -599,7 +599,7 @@ internal sealed unsafe partial class SOSDacImpl
                 if (methodDesc == TargetPointer.Null)
                     throw new ArgumentException();
                 data->MethodDescPtr = methodDesc.ToClrDataAddress(_target);
-                data->JITType = JITTypes.TYPE_UNKNOWN;
+                data->JITType = JitTypes.TYPE_UNKNOWN;
                 data->GCInfo = 0;
                 data->MethodStart = 0;
                 data->MethodSize = 0;
@@ -608,7 +608,7 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 data->MethodDescPtr = executionManager.GetMethodDesc(codeBlockHandle.Value).ToClrDataAddress(_target);
-                data->JITType = (JITTypes)executionManager.GetJITType(codeBlockHandle.Value);
+                data->JITType = (JitTypes)executionManager.GetJITType(codeBlockHandle.Value);
                 executionManager.GetGCInfo(codeBlockHandle.Value, out TargetPointer gcInfo, out uint gcVersion);
                 data->GCInfo = gcInfo.ToClrDataAddress(_target);
                 data->MethodStart = executionManager.GetStartAddress(codeBlockHandle.Value).Value;

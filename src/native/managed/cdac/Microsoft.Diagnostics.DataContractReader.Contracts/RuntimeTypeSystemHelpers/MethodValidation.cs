@@ -196,7 +196,7 @@ internal sealed class MethodValidation
             if (temporaryEntryPoint != TargetCodePointer.Null)
             {
                 Contracts.IPrecodeStubs precode = _target.Contracts.PrecodeStubs;
-                TargetPointer methodDesc = precode.GetMethodDescFromStubAddress(temporaryEntryPoint);
+                TargetPointer methodDesc = precode.GetMethodDescFromPrecode(temporaryEntryPoint);
                 if (methodDesc != methodDescPointer)
                 {
                     return false;

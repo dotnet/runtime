@@ -1176,7 +1176,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         // stub path, read address as a Precode and read MethodDesc from it
         {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
+            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromPrecode(pCode);
             return methodDescPtr;
         }
     }

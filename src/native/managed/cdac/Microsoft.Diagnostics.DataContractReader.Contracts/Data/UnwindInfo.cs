@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class UnwindInfo : IData<UnwindInfo>
@@ -22,16 +24,15 @@ internal sealed class UnwindInfo : IData<UnwindInfo>
             // Otherwise, it starts with a bitfield header
             Header = target.Read<uint>(address);
         }
-        if (type.Fields.ContainsKey(nameof(CountOfUnwindCodes)))
+        RuntimeInfoArchitecture arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch == RuntimeInfoArchitecture.X64)
         {
-            // The unwind info contains a header and unwind codes on some platforms (x64, Arm64)
-            CountOfUnwindCodes = target.Read<byte>(address + (ulong)type.Fields[nameof(CountOfUnwindCodes)].Offset);
-            UnwindCodeOffset = (uint?)type.Fields[nameof(UnwindCodeOffset)].Offset;
+            // see https://learn.microsoft.com/cpp/build/exception-handling-x64
+            CountOfUnwindCodes = target.Read<byte>(address + 2);
         }
     }
 
     public uint? FunctionLength { get; }
     public uint? Header { get; }
-    public byte? CountOfUnwindCodes { get; }
-    public uint? UnwindCodeOffset { get; }
+    public byte CountOfUnwindCodes { get; init; }
 }

@@ -115,6 +115,7 @@ public enum DataType
     InstMethodHashTable,
     EEJitManager,
     PatchpointInfo,
+    PortableEntryPoint,
 
     TransitionBlock,
     DebuggerEval,

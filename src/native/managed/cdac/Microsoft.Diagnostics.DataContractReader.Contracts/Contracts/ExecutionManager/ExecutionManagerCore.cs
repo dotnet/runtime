@@ -56,11 +56,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         RangeList = 0x04,
     }
 
-    private enum JITTypes
+    private enum JitTypes
     {
         TYPE_UNKNOWN = 0,
         TYPE_JIT = 1,
-        TYPE_PJIT = 2,
+        TYPE_R2R = 2,
         TYPE_INTERPRETER = 3
     };
 
@@ -237,28 +237,40 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         if (jitManager == _eeJitManager)
         {
-            return (uint)JITTypes.TYPE_JIT;
+            return (uint)JitTypes.TYPE_JIT;
         }
         else if (jitManager == _r2rJitManager)
         {
-            return (uint)JITTypes.TYPE_PJIT;
+            return (uint)JitTypes.TYPE_R2R;
         }
         else
         {
-            return (uint)JITTypes.TYPE_UNKNOWN;
+            return (uint)JitTypes.TYPE_UNKNOWN;
         }
     }
 
-    TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer ip)
+    TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
-        Debug.Assert(GetCodeBlock(ip) == null);
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, ip);
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeaturePortableEntrypoints) != 0)
+        {
+            Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
+            return portableEntryPoint.MethodDesc;
+        }
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, entrypoint);
         if (range.Data == null)
             return TargetPointer.Null;
         if (range.IsRangeList)
         {
             IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-            return precodeStubs.GetMethodDescFromStubAddress(ip);
+            return precodeStubs.GetMethodDescFromPrecode(entrypoint);
+        }
+        else
+        {
+            JitManager jitManager = GetJitManager(range.Data);
+            if (jitManager.GetMethodInfo(range, entrypoint, out CodeBlock? info) && info != null)
+            {
+                return info.MethodDescAddress;
+            }
         }
         return TargetPointer.Null;
     }

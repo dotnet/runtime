@@ -349,7 +349,7 @@ internal unsafe partial interface ISOSEnum
     int GetCount(uint* pCount);
 }
 
-internal enum JITTypes
+internal enum JitTypes
 {
     TYPE_UNKNOWN = 0,
     TYPE_JIT,
@@ -360,7 +360,7 @@ internal enum JITTypes
 internal struct DacpCodeHeaderData
 {
     public ClrDataAddress GCInfo;
-    public JITTypes JITType;
+    public JitTypes JITType;
     public ClrDataAddress MethodDescPtr;
     public ClrDataAddress MethodStart;
     public uint MethodSize;
