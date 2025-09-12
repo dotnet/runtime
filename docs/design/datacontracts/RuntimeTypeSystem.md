@@ -762,7 +762,7 @@ Contracts used:
     public TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
         ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer loaderModule = ((IRuntimeTypeSystem)this).GetLoaderModule(typeHandle);
+        TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {

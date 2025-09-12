@@ -693,7 +693,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     TypeHandle IRuntimeTypeSystem.IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
         ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer loaderModule = ((IRuntimeTypeSystem)this).GetLoaderModule(typeHandle);
+        TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {
@@ -1066,32 +1066,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).HasMethodInstantiation;
     }
 
-    TargetPointer IRuntimeTypeSystem.GetLoaderModule(TypeHandle typeHandle)
-    {
-        if (typeHandle.IsTypeDesc())
-        {
-            // TypeDesc::GetLoaderModule
-            if (HasTypeParam(typeHandle))
-            {
-                return ((IRuntimeTypeSystem)this).GetLoaderModule(GetTypeParam(typeHandle));
-            }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
-            {
-                return genericParamModule;
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
-                FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
-                return fnPtrTypeDesc.LoaderModule;
-            }
-        }
-
-        MethodTable mt = _methodTables[typeHandle.Address];
-        Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
-        return mtAuxData.LoaderModule;
-    }
-
     private bool IsGenericMethodDefinition(MethodDesc md)
     {
         return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).IsGenericMethodDefinition;
@@ -1113,7 +1087,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             TargetPointer mtAddr = GetMethodTable(new MethodDescHandle(md.Address));
             TypeHandle mt = GetTypeHandle(mtAddr);
-            return ((IRuntimeTypeSystem)this).GetLoaderModule(mt);
+            return GetLoaderModule(mt);
         }
     }
 
