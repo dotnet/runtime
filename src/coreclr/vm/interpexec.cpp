@@ -3024,8 +3024,8 @@ do {                                                                           \
                     NULL_CHECK(dst);
                     uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
                     uint16_t comparand = LOCAL_VAR(ip[4], uint16_t);
-                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
-                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
                     ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
                     int32_t shift = ((size_t)dst & 3) * 8;
                     if (shift & 1)
@@ -3119,7 +3119,7 @@ do                                                                      \
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
                     NULL_CHECK(dst);
                     uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
-                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
                     // This is not optimal, but 16-bit exchange is not a common operation.
                     ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
                     int32_t shift = ((size_t)dst & 3) * 8;
