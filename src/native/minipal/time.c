@@ -141,8 +141,8 @@ uint64_t minipal_get_system_time(void)
         assert(!"clock_gettime(CLOCK_REALTIME) failed");
     }
 
-    const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-    return ((int64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
+    const uint64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+    return ((uint64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
 }
 
 #endif // HOST_WINDOWS
