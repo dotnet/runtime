@@ -44,9 +44,10 @@ else(CLR_CMAKE_HOST_WIN32)
     endif()
     # Static linking
     if (CLR_CMAKE_TARGET_ARCH_WASM)
+        target_sources(corerun PRIVATE corerun.wasm.cpp)
         target_link_libraries(corerun PRIVATE
         coreclr_static
-        clrinterpreter)
+        System.Native-Static)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
@@ -54,7 +55,6 @@ else(CLR_CMAKE_HOST_WIN32)
                 -fwasm-exceptions
                 -sEXPORTED_RUNTIME_METHODS=FS
                 -sEXIT_RUNTIME=1
-                -sWASM_BIGINT=1
                 -sINITIAL_MEMORY=134217728
                 -sSTACK_SIZE=5MB
                 -lnoderawfs.js

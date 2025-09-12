@@ -758,3 +758,11 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 {
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }
+
+// WASM-TODO: this is temporary workaround to avoid adding a dependency on System.Native.TimeZoneData
+// which is conditionally included in the build based on logic in separate files
+extern "C" const char* SystemNative_GetTimeZoneData(const char* name, int* length)
+{
+    PORTABILITY_ASSERT("SystemNative_GetTimeZoneData has empty placeholder");
+    return nullptr;
+}
