@@ -880,15 +880,8 @@ namespace System.Speech.Internal.Synthesis
 
                         case "contour":
                             CheckForDuplicates(ref sContour, reader);
-                            ContourPoint[]? contourArray = ParseContour(sContour);
-                            if (contourArray == null)
-                            {
-                                isInvalidAttribute = true;
-                            }
-                            else
-                            {
-                                prosody.SetContourPoints(contourArray);
-                            }
+                            prosody.SetContourPoints(ParseContour(sContour)!); // Validation issues in ParseContour manifest as ArgumentNullException out of SetContourPoints
+                            if (prosody.GetContourPoints() == null) { isInvalidAttribute = true; }
                             break;
 
                         default:
