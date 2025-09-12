@@ -2791,11 +2791,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             {
                 case InterpTypeI1:
                 case InterpTypeU1:
-                    opcode = INTOP_COMPARE_EXCHANGE_I1;
+                    opcode = INTOP_COMPARE_EXCHANGE_U1;
                     break;
                 case InterpTypeI2:
                 case InterpTypeU2:
-                    opcode = INTOP_COMPARE_EXCHANGE_I2;
+                    opcode = INTOP_COMPARE_EXCHANGE_U2;
                     break;
                 case InterpTypeI4:
                     opcode = INTOP_COMPARE_EXCHANGE_I4;
@@ -2842,11 +2842,11 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             {
                 case InterpTypeI1:
                 case InterpTypeU1:
-                    opcode = INTOP_EXCHANGE_I1;
+                    opcode = INTOP_EXCHANGE_U1;
                     break;
                 case InterpTypeI2:
                 case InterpTypeU2:
-                    opcode = INTOP_EXCHANGE_I2;
+                    opcode = INTOP_EXCHANGE_U2;
                     break;
                 case InterpTypeI4:
                     opcode = INTOP_EXCHANGE_I4;
