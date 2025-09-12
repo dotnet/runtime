@@ -2987,7 +2987,7 @@ do {                                                                           \
                     break;
                 }
 
-                case INTOP_COMPARE_EXCHANGE_I1:
+                case INTOP_COMPARE_EXCHANGE_U1:
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
                     NULL_CHECK(dst);
@@ -3018,7 +3018,7 @@ do {                                                                           \
                     break;
                 }
 
-                case INTOP_COMPARE_EXCHANGE_I2:
+                case INTOP_COMPARE_EXCHANGE_U2:
                 {
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
                     NULL_CHECK(dst);
@@ -3090,7 +3090,7 @@ do                                                                      \
     ip += 4;                                                            \
 } while (0)
 
-                case INTOP_EXCHANGE_I1:
+                case INTOP_EXCHANGE_U1:
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
                     NULL_CHECK(dst);
@@ -3114,7 +3114,7 @@ do                                                                      \
                     break;
                 }
 
-                case INTOP_EXCHANGE_I2:
+                case INTOP_EXCHANGE_U2:
                 {
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
                     NULL_CHECK(dst);
