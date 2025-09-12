@@ -6608,8 +6608,7 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
                                             &isRelative);
 
     // Dereference the this pointer to obtain the method table, it is called vtab below
-    assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
-    GenTree* vtab = gtNewIndir(TYP_I_IMPL, thisPtr, GTF_IND_INVARIANT);
+    GenTree* vtab = gtNewMethodTableLookup(thisPtr);
 
     if (fgGlobalMorph)
     {
@@ -8420,12 +8419,14 @@ DONE_MORPHING_CHILDREN:
                     // We're lucky to catch a constant here while importer was not
                     JITDUMP("true\n");
                     DEBUG_DESTROY_NODE(tree, op1);
-                    tree = gtNewIconNode(1);
+                    tree = gtNewTrue();
                 }
                 else
                 {
                     JITDUMP("false\n");
-                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
+                    tree = gtNewFalse();
+                    tree->SetMorphed(this);
+                    tree = gtWrapWithSideEffects(tree, op1, GTF_ALL_EFFECT);
                 }
                 tree->SetMorphed(this);
                 return tree;

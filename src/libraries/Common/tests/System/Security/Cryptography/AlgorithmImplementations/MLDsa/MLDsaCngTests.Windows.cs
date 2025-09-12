@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         public void ImportPrivateKey_Persisted()
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(

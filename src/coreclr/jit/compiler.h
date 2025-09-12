@@ -353,8 +353,8 @@ class SsaDefArray
     unsigned m_arraySize;
     unsigned m_count;
 
-    static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0);
-    static_assert_no_msg(SsaConfig::FIRST_SSA_NUM == 1);
+    static_assert(SsaConfig::RESERVED_SSA_NUM == 0);
+    static_assert(SsaConfig::FIRST_SSA_NUM == 1);
 
     // Get the minimum valid SSA number.
     unsigned GetMinSsaNum() const
@@ -1996,11 +1996,12 @@ class FlowGraphNaturalLoop
 
     GenTreeLclVarCommon* FindDef(unsigned lclNum);
 
-    void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
+    bool FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
-    bool IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info);
-    bool InitBlockEntersLoopOnTrue(BasicBlock* initBlock);
+    bool HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info);
+    bool IsZeroTripTest(BasicBlock* guardBlock, bool entersOnTrue, NaturalLoopIterInfo* info);
+
     template<typename T>
     static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
@@ -3645,6 +3646,7 @@ public:
     unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
+    bool gtTreeHasLocalStore(GenTree* tree, unsigned lclNum);
 
     void gtSetStmtInfo(Statement* stmt);
 
@@ -4488,9 +4490,16 @@ protected:
 
     // Enumerator de-abstraction support
     //
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    struct InferredGdvEntry
+    {
+        CORINFO_CLASS_HANDLE m_classHandle;
+        unsigned m_likelihood;
+    };
 
-    // Map is only set on the root instance.
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, InferredGdvEntry> VarToLikelyClassMap;
+
+    // Maps are only set on the root instance.
     //
     NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
     bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
@@ -4504,6 +4513,20 @@ protected:
         }
 
         return compiler->impEnumeratorGdvLocalMap;
+    }
+
+    VarToLikelyClassMap* impEnumeratorLikelyTypeMap = nullptr;
+    bool hasEnumeratorLikelyTypeMap() { return impInlineRoot()->impEnumeratorLikelyTypeMap != nullptr; }
+    VarToLikelyClassMap* getImpEnumeratorLikelyTypeMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorLikelyTypeMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorLikelyTypeMap = new (alloc) VarToLikelyClassMap(alloc);
+        }
+
+        return compiler->impEnumeratorLikelyTypeMap;
     }
 
     bool hasUpdatedTypeLocals = false;
@@ -4577,6 +4600,10 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags);
+
+    void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
@@ -7038,8 +7065,8 @@ protected:
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
-    bool optExtractInitTestIncr(
-        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
+    bool optExtractTestIncr(
+        BasicBlock* bottom, BasicBlock* top, GenTree** ppTest, GenTree** ppIncr);
 
     void optSetMappedBlockTargets(BasicBlock*      blk,
                           BasicBlock*      newBlk,
@@ -7634,14 +7661,26 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus   optRedundantBranches();
-    bool          optRedundantRelop(BasicBlock* const block);
-    bool          optRedundantBranch(BasicBlock* const block);
-    bool          optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool          optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool          optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool          optJumpThreadCore(JumpThreadInfo& jti);
-    bool          optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    PhaseStatus optRedundantBranches();
+    bool        optRedundantRelop(BasicBlock* const block);
+    bool        optRedundantBranch(BasicBlock* const block);
+    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool        optJumpThreadCore(JumpThreadInfo& jti);
+
+    enum class ReachabilityResult
+    {
+        BudgetExceeded,
+        Unreachable,
+        Reachable
+    };
+    ReachabilityResult optReachableWithBudget(BasicBlock* const fromBlock,
+                                              BasicBlock* const toBlock,
+                                              BasicBlock* const excludedBlock,
+                                              int*              pBudget);
+    bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
@@ -7745,7 +7784,7 @@ public:
             {
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
-                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
+                static_assert((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
 
                 GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
@@ -9966,11 +10005,11 @@ public:
             // target from the register for the call (even in debug mode).
             // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
 #if defined(TARGET_AMD64)
-            static_assert_no_msg(
-                (RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
+            static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                          RBM_NONE);
 #else
-            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
-                                 RBM_NONE);
+            static_assert((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                          RBM_NONE);
 #endif
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
@@ -11232,7 +11271,7 @@ public:
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
-#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
+#define DEFAULT_INLINE_BUDGET 22 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
@@ -11596,8 +11635,8 @@ protected:
     {
         assert(compiler != nullptr);
 
-        static_assert_no_msg(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
-        static_assert_no_msg(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
+        static_assert(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
+        static_assert(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

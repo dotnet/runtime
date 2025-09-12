@@ -90,7 +90,6 @@
         Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
@@ -100,16 +99,11 @@
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
-      <!--
-        Create work items for run-only apps
-
-        Note: We're excluding iOS and tvOS device runonly as mlaunch does not seem to return and times out.
-      -->
-      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+      <!-- Create work items for run-only apps -->
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly')" Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
@@ -118,7 +112,7 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)') and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'ios'"
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveRoot)runonly/$(OSPlatformConfig)')"
         Include="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly/$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)runonly', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <!-- The sample app doesn't need test runner -->

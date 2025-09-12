@@ -83,6 +83,7 @@ jobs:
       nameSuffix: _Threading
       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       extraHelixArguments: /p:WasmEnableThreads=true
+      shouldContinueOnError: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}

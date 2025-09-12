@@ -150,7 +150,6 @@ namespace ILCompiler
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
-            _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(_nodeFactory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved")), "Substitution for methods removed based on scanning");
 
             _dependencyGraph.ComputeMarkedNodes();
 
@@ -277,37 +276,18 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
-        public BodyAndFieldSubstitutions GetBodyAndFieldSubstitutions()
-        {
-            Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
-
-            bool hasIDynamicInterfaceCastableType = false;
-
-            foreach (var type in ConstructedEETypes)
-            {
-                if (type.IsIDynamicInterfaceCastable)
-                {
-                    hasIDynamicInterfaceCastableType = true;
-                    break;
-                }
-            }
-
-            if (!hasIDynamicInterfaceCastableType)
-            {
-                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
-                // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
-                // Trim out the logic that we can't do easily here.
-                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
-                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetKnownMethod("GetDynamicInterfaceImplementation", null);
-                bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
-            }
-
-            return new BodyAndFieldSubstitutions(bodySubstitutions, []);
-        }
-
         public TypeMapManager GetTypeMapManager()
         {
             return new ScannedTypeMapManager(_factory);
+        }
+
+        public IEnumerable<string> GetAnalysisCharacteristics()
+        {
+            foreach (DependencyNodeCore<NodeFactory> n in MarkedNodes)
+            {
+                if (n is AnalysisCharacteristicNode acn)
+                    yield return acn.Characteristic;
+            }
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider

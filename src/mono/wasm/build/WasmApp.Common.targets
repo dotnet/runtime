@@ -240,7 +240,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -528,13 +529,15 @@
     </PropertyGroup>
 
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
-      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' != 'false' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == 'false' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>

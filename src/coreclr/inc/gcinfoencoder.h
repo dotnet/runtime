@@ -418,10 +418,7 @@ public:
     void SetHasTailCalls();
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     void SetSizeOfStackOutgoingAndScratchArea( UINT32 size );
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 
     //------------------------------------------------------------------------
     // Encoding
@@ -489,9 +486,18 @@ private:
     INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T> 
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = -1;
 
     void * eeAllocGCInfo (size_t        blockSize);
 

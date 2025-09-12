@@ -20,12 +20,12 @@ namespace BenchmarksGame
             if (bigInput)
             {
                 ExpectedLength = 136381;
-                resourceName = $"{Path.GetFileNameWithoutExtension(csFileName)}.regexdna-input25000.txt";
+                resourceName = $"{Path.GetFileNameWithoutExtension(csFileName).Replace('-', '_')}.regexdna-input25000.txt";
             }
             else
             {
                 ExpectedLength = 152;
-                resourceName = $"{Path.GetFileNameWithoutExtension(csFileName)}.regexdna-input25.txt";
+                resourceName = $"{Path.GetFileNameWithoutExtension(csFileName).Replace('-', '_')}.regexdna-input25.txt";
             }
         }
 
