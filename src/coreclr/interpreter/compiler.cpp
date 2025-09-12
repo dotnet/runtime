@@ -2631,6 +2631,77 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
 
+        case NI_PRIMITIVE_ConvertToIntegerNative:
+        {
+            CHECK_STACK(1);
+            InterpType targetType = GetInterpType(sig.retType);
+            CORINFO_ARG_LIST_HANDLE args;
+            args = sig.args;
+            CORINFO_CLASS_HANDLE argClsHnd;
+            CorInfoType sourceCorElementType = strip(m_compHnd->getArgType(&sig, args, &argClsHnd));
+            InterpType sourceType;
+            if (sourceCorElementType == CORINFO_TYPE_FLOAT)
+            {
+                sourceType = InterpTypeR4;
+            }
+            else if (sourceCorElementType == CORINFO_TYPE_DOUBLE)
+            {
+                sourceType = InterpTypeR8;
+            }
+            else
+            {
+                NO_WAY("ConvertToIntegerNative: source type is not floating point");
+            }
+
+            if (g_stackTypeFromInterpType[targetType] != StackTypeI4 && 
+                g_stackTypeFromInterpType[targetType] != StackTypeI8)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            InterpOpcode convOp;
+            
+            // Interpreter-TODO: In theory this should use the "native" variants of the conversion opcodes which are likely faster
+            // than the ones with cross-platform consistent behavior; however, that is quite a lot of new opcodes for probably little gain, so 
+            // for now we just use the consistent ones like normal conversions.
+            switch (sig.retType)
+            {
+                case CORINFO_TYPE_INT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8; break;
+                case CORINFO_TYPE_UINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U4_R4 : INTOP_CONV_U4_R8; break;
+                case CORINFO_TYPE_LONG:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I8_R4 : INTOP_CONV_I8_R8; break;
+                case CORINFO_TYPE_ULONG:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U8_R4 : INTOP_CONV_U8_R8; break;
+                case CORINFO_TYPE_SHORT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I2_R4 : INTOP_CONV_I2_R8; break;
+                case CORINFO_TYPE_CHAR:
+                case CORINFO_TYPE_USHORT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U2_R4 : INTOP_CONV_U2_R8; break;
+                case CORINFO_TYPE_BYTE:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I1_R4 : INTOP_CONV_I1_R8; break;
+                case CORINFO_TYPE_UBYTE:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U1_R4 : INTOP_CONV_U1_R8; break;
+#ifdef TARGET_64BIT
+                case CORINFO_TYPE_NATIVEINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I8_R4 : INTOP_CONV_I8_R8; break;
+                case CORINFO_TYPE_NATIVEUINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U8_R4 : INTOP_CONV_U8_R8; break;
+#else
+                case CORINFO_TYPE_NATIVEINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8; break;
+                case CORINFO_TYPE_NATIVEUINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U4_R4 : INTOP_CONV_U4_R8; break;
+#endif
+                default:
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            EmitConv(m_pStackPointer - 1, g_stackTypeFromInterpType[targetType], convOp);
+            return true;
+        }
+
         case NI_System_Math_MultiplyAddEstimate:
         {
             CHECK_STACK(3);
