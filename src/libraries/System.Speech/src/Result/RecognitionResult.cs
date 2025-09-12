@@ -12,6 +12,7 @@ using System.Runtime.Serialization;
 using System.Speech.AudioFormat;
 using System.Speech.Internal;
 using System.Speech.Internal.SapiInterop;
+using System.Speech.Internal.SrgsParser;
 using System.Text;
 
 #pragma warning disable 56507 // check for null or empty strings
@@ -49,7 +50,7 @@ namespace System.Speech.Recognition
                 FieldInfo fi = (FieldInfo)mi;
 
                 // Set the field to the deserialized value
-                if (!appDomainTransition || (mi.Name != "_recognizer" && mi.Name != "_grammar" && mi.Name != "_ruleList" && mi.Name != "_audio" && mi.Name != "_audio"))
+                if (!appDomainTransition || (mi.Name != nameof(_recognizer) && mi.Name != "_grammar" && mi.Name != "_ruleList" && mi.Name != nameof(_audio) && mi.Name != nameof(_audio)))
                 {
                     fi.SetValue(this, info.GetValue(fi.Name, fi.FieldType));
                 }

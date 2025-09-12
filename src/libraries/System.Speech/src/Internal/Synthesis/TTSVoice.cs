@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 
@@ -24,7 +25,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Tests whether two objects are equivalent
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is TTSVoice voice && (_voiceId.Equals(voice.VoiceInfo));
         }

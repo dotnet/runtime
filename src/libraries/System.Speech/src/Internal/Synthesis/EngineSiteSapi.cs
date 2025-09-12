@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -190,7 +191,7 @@ namespace System.Speech.Internal.Synthesis
         public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2) => event1.Equals(event2);
         public static bool operator !=(SpeechEventSapi event1, SpeechEventSapi event2) => !event1.Equals(event2);
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is SpeechEventSapi other && Equals(other);
 
         public bool Equals(SpeechEventSapi other) =>

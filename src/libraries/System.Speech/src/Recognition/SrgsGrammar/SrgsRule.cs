@@ -101,7 +101,10 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
+                // base value can be null
+#pragma warning disable 56526
                 _baseclass = value;
+#pragma warning restore 56526
             }
         }
 

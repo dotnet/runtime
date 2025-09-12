@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -388,8 +387,8 @@ namespace System.Speech.Internal.Synthesis
 
         internal PhonemeEventMapper(ITtsEventSink sink, PhonemeConversion conversion, AlphabetConverter alphabetConverter) : base(sink)
         {
-            _queue = new Queue<TTSEvent>();
-            _phonemeQueue = new Queue<TTSEvent>();
+            _queue = new Queue();
+            _phonemeQueue = new Queue();
             _conversion = conversion;
             _alphabetConverter = alphabetConverter;
             Reset();
@@ -443,7 +442,7 @@ namespace System.Speech.Internal.Synthesis
             ConvertCompleteUnit();
             while (_queue.Count > 0)
             {
-                SendToOutput(_queue.Dequeue());
+                SendToOutput((TTSEvent)_queue.Dequeue()!);
             }
             _phonemeQueue.Clear();
             _lastComplete = 0;
@@ -483,10 +482,10 @@ namespace System.Speech.Internal.Synthesis
             //
             TTSEvent ttsEvent, targetEvent, basePhonemeEvent;
             long totalDuration = 0;
-            basePhonemeEvent = _phonemeQueue.Peek();
+            basePhonemeEvent = (TTSEvent)_phonemeQueue.Peek()!;
             for (int i = 0; i < _lastComplete;)
             {
-                ttsEvent = _phonemeQueue.Dequeue();
+                ttsEvent = (TTSEvent)_phonemeQueue.Dequeue()!;
                 totalDuration += ttsEvent.PhonemeDuration.Milliseconds;
                 i += ttsEvent.Phoneme!.Length;
             }
@@ -514,7 +513,7 @@ namespace System.Speech.Internal.Synthesis
                 TTSEvent firstEvent;
                 if (_queue.Count > 0)
                 {
-                    firstEvent = _queue.Dequeue();
+                    firstEvent = (TTSEvent)_queue.Dequeue()!;
                     if (firstEvent.Id == TtsEventId.Phoneme)
                     {
                         firstEvent.NextPhoneme = evt.Phoneme;
@@ -526,7 +525,7 @@ namespace System.Speech.Internal.Synthesis
                     SendToOutput(firstEvent);
                     while (_queue.Count > 0)
                     {
-                        SendToOutput(_queue.Dequeue());
+                        SendToOutput((TTSEvent)_queue.Dequeue()!);
                     }
                 }
                 _queue.Enqueue(evt);
@@ -546,8 +545,8 @@ namespace System.Speech.Internal.Synthesis
 
         private PhonemeConversion _conversion;
         private StringBuilder _phonemes;
-        private Queue<TTSEvent> _queue;
-        private Queue<TTSEvent> _phonemeQueue;
+        private Queue _queue;
+        private Queue _phonemeQueue;
         private AlphabetConverter _alphabetConverter;
         private int _lastComplete;
     }

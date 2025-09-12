@@ -169,7 +169,7 @@ namespace System.Speech.Internal.SapiInterop
                     else
                     {
                         ExceptionDispatchInfo.Throw(_exception);
-                        return default;
+                        return null;
                     }
                 }
             }

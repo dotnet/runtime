@@ -41,7 +41,7 @@ namespace System.Speech.Internal
         }
 
         internal void WriteArray<T>(T[] ao, int c)
-            where T : struct
+            where T : notnull
         {
             int sizeOfOne = Marshal.SizeOf<T>();
             int sizeObject = sizeOfOne * c;
@@ -113,7 +113,7 @@ namespace System.Speech.Internal
         }
 
         internal void ReadStream<T>(T o)
-            where T : class
+            where T : notnull
         {
             int sizeObject = Marshal.SizeOf<T>();
             byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);

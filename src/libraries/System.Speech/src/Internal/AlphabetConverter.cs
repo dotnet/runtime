@@ -204,7 +204,7 @@ namespace System.Speech.Internal
             Stream? stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
-                throw new FileLoadException(SR.Get(SRID.CannotLoadResourceFromManifest, resourceName, assembly));
+                throw new FileLoadException(SR.Get(SRID.CannotLoadResourceFromManifest, resourceName, assembly.FullName));
             }
             return new PhoneMapData(new BufferedStream(stream));
         }

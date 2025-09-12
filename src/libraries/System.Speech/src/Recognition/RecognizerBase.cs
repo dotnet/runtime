@@ -2598,9 +2598,9 @@ namespace System.Speech.Recognition
                 {
                 }
 
+                // If for some reason the GetFormat fails OR we can't get a wave format, assume 16 Kb, 16 bits, Audio.
                 if (!hasWaveFormat)
                 {
-                    // If for some reason the GetFormat fails OR we can't get a wave format, assume 16 Kb, 16 bits, Audio.
                     formatInfo = new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono);
                 }
             }
@@ -2618,8 +2618,7 @@ namespace System.Speech.Recognition
         // current audio format. This should only needed if not using SAPI 5.3.
         private ulong TimeSpanToStreamPosition(TimeSpan time)
         {
-            SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioAvailable));
-            return (ulong)(time.Ticks * audioFormat.AverageBytesPerSecond) / TimeSpan.TicksPerSecond;
+            return (ulong)(time.Ticks * AudioFormat!.AverageBytesPerSecond) / TimeSpan.TicksPerSecond;
         }
 
         // Converts COM errors returned by SPEI_END_SR_STREAM or SetRecoState to an appropriate .NET exception.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -88,7 +89,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Tests whether two AutomationIdentifier objects are equivalent
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ObjectToken token && string.Equals(Id, token.Id, StringComparison.OrdinalIgnoreCase);
         }

@@ -11,9 +11,9 @@ namespace System.Speech.Internal
 {
     internal interface IAsyncDispatch
     {
-        void Post(object evt);
-        void Post(object[] evt);
-        void PostOperation(Delegate callback, params object[] parameters);
+        void Post(object? evt);
+        void Post(object?[] evt);
+        void PostOperation(Delegate callback, params object?[]? parameters);
     }
 
     internal class AsyncSerializedWorker : IAsyncDispatch
@@ -43,12 +43,12 @@ namespace System.Speech.Internal
 
         #region Public Methods
 
-        public void Post(object evt)
+        public void Post(object? evt)
         {
             AddItem(new AsyncWorkItem(DefaultCallback, evt));
         }
 
-        public void Post(object[] evt)
+        public void Post(object?[] evt)
         {
             int i;
             lock (_queue.SyncRoot)
@@ -63,7 +63,7 @@ namespace System.Speech.Internal
             }
         }
 
-        public void PostOperation(Delegate callback, params object?[] parameters)
+        public void PostOperation(Delegate callback, params object?[]? parameters)
         {
             AddItem(new AsyncWorkItem(callback, parameters));
         }
@@ -265,7 +265,7 @@ namespace System.Speech.Internal
 
     internal class AsyncWorkItem
     {
-        internal AsyncWorkItem(Delegate? dynamicCallback, params object?[] postData)
+        internal AsyncWorkItem(Delegate? dynamicCallback, params object?[]? postData)
         {
             _dynamicCallback = dynamicCallback;
             _postData = postData;
@@ -277,6 +277,6 @@ namespace System.Speech.Internal
         }
 
         private Delegate? _dynamicCallback;
-        private object?[] _postData;
+        private object?[]? _postData;
     }
 }

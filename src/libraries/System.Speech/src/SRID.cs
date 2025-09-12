@@ -411,6 +411,6 @@ namespace System.Speech
         SapiNonWordTransition,        // 0x80045090 == SPERR_NON_WORD_TRANSITION
         SapiSisrAttributesNotAllowed, // 0x80045091
         SapiSisrMixedNotAllowed,      // 0x80045092
-        SapiVoiceNotFound,             // 0x80045093 == SPERR_VOICE_NOT_FOUND == SPERR_LAST
+        SapiVoiceNotFound             // 0x80045093 == SPERR_VOICE_NOT_FOUND == SPERR_LAST
     }
 }
