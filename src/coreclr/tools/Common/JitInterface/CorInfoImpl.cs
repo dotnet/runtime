@@ -3188,6 +3188,12 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
+        private bool canOmitPinning(CORINFO_FIELD_STRUCT_* fldHnd)
+        {
+            // TODO: implement in this PR...
+            return false;
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging

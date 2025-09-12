@@ -6917,6 +6917,40 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
     return user;
 }
 
+bool GenTree::IsNotGcDef(Compiler* comp) const
+{
+    GenTree* tree = const_cast<GenTree*>(this);
+
+    target_ssize_t offset = 0;
+    comp->gtPeelOffsets(&tree, &offset, nullptr);
+    if (comp->fgIsBigOffset(offset))
+    {
+        return false;
+    }
+
+    if (tree->IsIntegralConst(0) || tree->OperIs(GT_LCL_ADDR))
+    {
+        return true;
+    }
+
+    // Any NonGC object or NonGC object + any offset.
+    if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        return true;
+    }
+
+    if (tree->IsIconHandle(GTF_ICON_STATIC_HDL))
+    {
+        FieldSeq* fldSeq = AsIntCon()->gtFieldSeq;
+        if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+        {
+            return comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle());
+        }
+    }
+
+    return false;
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
