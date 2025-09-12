@@ -82,7 +82,7 @@ namespace System.Collections.Generic
         {
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {
-                Grow(_span.Length - _pos + source.Length);
+                Grow(source.Length);
             }
 
             source.CopyTo(_span.Slice(_pos));
@@ -110,7 +110,7 @@ namespace System.Collections.Generic
 
             int pos = _pos;
             Span<T> span = _span;
-            if ((ulong)(uint)pos + (ulong)(uint)length <= (ulong)(uint)span.Length) // same guard condition as in Span<T>.Slice on 64-bit
+            if ((uint)(pos + length) <= (uint)span.Length)
             {
                 _pos = pos + length;
                 return span.Slice(pos, length);
@@ -125,7 +125,7 @@ namespace System.Collections.Generic
         private Span<T> AppendSpanWithGrow(int length)
         {
             int pos = _pos;
-            Grow(_span.Length - pos + length);
+            Grow(length);
             _pos += length;
             return _span.Slice(pos, length);
         }
@@ -161,7 +161,11 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
+            int pos = _pos;
             T[]? toReturn = _arrayFromPool;
+
+            this = default;
+
             if (toReturn != null)
             {
                 _arrayFromPool = null;
@@ -169,7 +173,7 @@ namespace System.Collections.Generic
 #if SYSTEM_PRIVATE_CORELIB
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
-                    ArrayPool<T>.Shared.Return(toReturn, _pos);
+                    ArrayPool<T>.Shared.Return(toReturn, pos);
                 }
                 else
                 {
@@ -178,7 +182,7 @@ namespace System.Collections.Generic
 #else
                 if (!typeof(T).IsPrimitive)
                 {
-                    Array.Clear(toReturn, 0, _pos);
+                    Array.Clear(toReturn, 0, pos);
                 }
 
                 ArrayPool<T>.Shared.Return(toReturn);
@@ -186,18 +190,31 @@ namespace System.Collections.Generic
             }
         }
 
-        // Note that consuming implementations depend on the list only growing if it's absolutely
-        // required.  If the list is already large enough to hold the additional items be added,
-        // it must not grow. The list is used in a number of places where the reference is checked
-        // and it's expected to match the initial reference provided to the constructor if that
-        // span was sufficiently large.
-        private void Grow(int additionalCapacityRequired = 1)
+        /// <summary>
+        /// Resize the internal buffer either by doubling current buffer size or
+        /// by adding <paramref name="additionalCapacityBeyondPos"/> to
+        /// <see cref="_pos"/> whichever is greater.
+        /// </summary>
+        /// <param name="additionalCapacityBeyondPos">
+        /// Number of chars requested beyond current position.
+        /// </param>
+        /// <remarks>
+        /// Note that consuming implementations depend on the list only growing if it's absolutely
+        /// required.  If the list is already large enough to hold the additional items be added,
+        /// it must not grow. The list is used in a number of places where the reference is checked
+        /// and it's expected to match the initial reference provided to the constructor if that
+        /// span was sufficiently large.
+        /// </remarks>
+        private void Grow(int additionalCapacityBeyondPos)
         {
+            Debug.Assert(additionalCapacityBeyondPos > 0);
+            Debug.Assert(_pos > _span.Length - additionalCapacityBeyondPos, "Grow called incorrectly, no resize is needed.");
+
             const int ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength
 
             // Double the size of the span.  If it's currently empty, default to size 4,
             // although it'll be increased in Rent to the pool's minimum bucket size.
-            int nextCapacity = Math.Max(_span.Length != 0 ? _span.Length * 2 : 4, _span.Length + additionalCapacityRequired);
+            int nextCapacity = Math.Max(_span.Length != 0 ? _span.Length * 2 : 4, _pos + additionalCapacityBeyondPos);
 
             // If the computed doubled capacity exceeds the possible length of an array, then we
             // want to downgrade to either the maximum array length if that's large enough to hold
