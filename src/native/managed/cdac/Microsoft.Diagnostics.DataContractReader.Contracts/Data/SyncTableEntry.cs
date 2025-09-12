@@ -12,10 +12,10 @@ internal sealed class SyncTableEntry : IData<SyncTableEntry>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncTableEntry);
 
-        TargetPointer syncBlockPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(SyncBlock)].Offset);
-        if (syncBlockPointer != TargetPointer.Null)
-            SyncBlock = target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer);
+        SyncBlock = target.ReadPointer(address + (ulong)type.Fields[nameof(SyncBlock)].Offset);
+        Object = target.ReadPointer(address + (ulong)type.Fields[nameof(Object)].Offset);
     }
 
-    public SyncBlock? SyncBlock { get; init; }
+    public TargetPointer SyncBlock { get; }
+    public TargetPointer Object { get; }
 }
