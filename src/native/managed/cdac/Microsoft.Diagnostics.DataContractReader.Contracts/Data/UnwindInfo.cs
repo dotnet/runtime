@@ -22,8 +22,16 @@ internal sealed class UnwindInfo : IData<UnwindInfo>
             // Otherwise, it starts with a bitfield header
             Header = target.Read<uint>(address);
         }
-     }
+        if (type.Fields.ContainsKey(nameof(CountOfUnwindCodes)))
+        {
+            // The unwind info contains a header and unwind codes on some platforms (x64, Arm64)
+            CountOfUnwindCodes = target.Read<byte>(address + (ulong)type.Fields[nameof(CountOfUnwindCodes)].Offset);
+            UnwindCodeOffset = (uint?)type.Fields[nameof(UnwindCodeOffset)].Offset;
+        }
+    }
 
     public uint? FunctionLength { get; }
     public uint? Header { get; }
+    public byte? CountOfUnwindCodes { get; }
+    public uint? UnwindCodeOffset { get; }
 }

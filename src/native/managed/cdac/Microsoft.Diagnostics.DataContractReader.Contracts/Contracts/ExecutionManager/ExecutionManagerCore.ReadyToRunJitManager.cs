@@ -60,6 +60,43 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
+        public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+        {
+            hotSize = 0;
+            coldSize = 0;
+            coldStart = TargetPointer.Null;
+
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return;
+
+            if (_hotCold.TryGetHotColdStartEnd(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint hotIdx, out uint coldStartIdx, out uint coldEndIdx))
+            {
+
+                Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, hotIdx);
+                hotSize = _runtimeFunctions.GetFunctionLength(function);
+                // Sum up the lengths of all the runtime functions to get the cold size
+                for (uint i = coldStartIdx; i <= coldEndIdx; i++)
+                {
+                    function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, i);
+                    coldSize += _runtimeFunctions.GetFunctionLength(function);
+                }
+                coldStart = imageBase + _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx).BeginAddress;
+            }
+            else
+            {
+                // No hot/cold splitting for this method, sum up the hot size only
+                uint hotStartIdx = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+                uint hotEndIdx = AdjustRuntimeFunctionToMethodEnd(r2rInfo, imageBase, hotStartIdx);
+
+                for (uint i = hotStartIdx; i <= hotEndIdx; i++)
+                {
+                    Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, i);
+                    hotSize += _runtimeFunctions.GetFunctionLength(function);
+                }
+            }
+        }
+
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             // ReadyToRunJitManager::JitCodeToMethodInfo
@@ -120,7 +157,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = GetUnwindDataSize();
+            uint unwindDataSize = GetUnwindDataSize(runtimeFunction.UnwindData, imageBase);
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
@@ -141,14 +178,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             };
         }
 
-        private uint GetUnwindDataSize()
+        private uint GetUnwindDataSize(uint unwindData, TargetPointer moduleBase)
         {
+            TargetPointer unwindInfo = unwindData + moduleBase;
             RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            return arch switch
-            {
-                RuntimeInfoArchitecture.X86 => sizeof(uint),
-                _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
-            };
+            return UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, moduleBase, arch);
         }
 
         #region RuntimeFunction Helpers
@@ -212,6 +246,25 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             Debug.Assert(methodDesc != TargetPointer.Null);
             return index;
+        }
+
+        private uint AdjustRuntimeFunctionToMethodEnd(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint index)
+        {
+            TargetPointer methodDesc;
+            do
+            {
+                // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
+                // The funclet's address (and index) will be greater than that of the corresponding function, so
+                // we increment the index to find the actual function / method desc for the funclet.
+                index++;
+                if (index >= r2rInfo.NumRuntimeFunctions)
+                {
+                    break;
+                }
+                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            } while (methodDesc == TargetPointer.Null);
+
+            return index - 1;
         }
 
         private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)

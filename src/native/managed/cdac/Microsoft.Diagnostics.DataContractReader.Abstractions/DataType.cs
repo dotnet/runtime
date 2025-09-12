@@ -104,6 +104,7 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    UnwindCode,
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,

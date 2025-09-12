@@ -581,11 +581,18 @@ CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, UnwindData, offsetof(RUNTIME_FUNCTI
 CDAC_TYPE_END(RuntimeFunction)
 
 CDAC_TYPE_BEGIN(UnwindInfo)
-CDAC_TYPE_INDETERMINATE(UnwindInfo)
+CDAC_TYPE_SIZE(sizeof(UNWIND_INFO))
 #ifdef TARGET_X86
 CDAC_TYPE_FIELD(UnwindInfo, /*uint32*/, FunctionLength, offsetof(UNWIND_INFO, FunctionLength))
+#else
+CDAC_TYPE_FIELD(UnwindInfo, /*uint8*/, CountOfUnwindCodes, offsetof(UNWIND_INFO, CountOfUnwindCodes))
+CDAC_TYPE_FIELD(UnwindInfo, /*uint8*/, UnwindCodeOffset, offsetof(UNWIND_INFO, UnwindCode))
 #endif
 CDAC_TYPE_END(UnwindInfo)
+
+CDAC_TYPE_BEGIN(UnwindCode)
+CDAC_TYPE_SIZE(sizeof(UNWIND_CODE))
+CDAC_TYPE_END(UnwindCode)
 
 CDAC_TYPE_BEGIN(HashMap)
 CDAC_TYPE_INDETERMINATE(HashMap)
