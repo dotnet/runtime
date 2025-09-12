@@ -271,16 +271,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             foreach (var intf in type.RuntimeInterfaces)
             {
-                if (intf.Name == "IReflect" && intf.Namespace == "System.Reflection")
+                if (intf.Name.SequenceEqual("IReflect"u8) && intf.Namespace.SequenceEqual("System.Reflection"u8))
                     return true;
             }
 
-            if (metadataType.Name == "IReflect" && metadataType.Namespace == "System.Reflection")
+            if (metadataType.Name.SequenceEqual("IReflect"u8) && metadataType.Namespace.SequenceEqual("System.Reflection"u8))
                 return true;
 
             do
             {
-                if (metadataType.Name == "Type" && metadataType.Namespace == "System")
+                if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
             } while ((metadataType = metadataType.MetadataBaseType) != null);
 
@@ -655,7 +655,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.GetName()))
                 {
                     return null;
                 }
@@ -1017,7 +1017,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal SingleValue GetFieldValue(FieldDesc field)
-            => field.Name switch
+            => field.GetName() switch
             {
                 "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type) => ArrayValue.Create(0, field.OwningType),
                 "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String) => new KnownStringValue(string.Empty),
