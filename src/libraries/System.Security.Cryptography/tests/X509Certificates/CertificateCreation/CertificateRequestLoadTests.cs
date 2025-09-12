@@ -402,7 +402,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             VerifySignature_RSA_PSSCore(hashAlgorithm, RSASignaturePadding.PssSaltLengthIsHashLength);
         }
 
-        private static bool VerifySignature_RSA_PSSCore(string hashAlgorithm, int saltLength)
+        private static void VerifySignature_RSA_PSSCore(string hashAlgorithm, int saltLength)
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
@@ -426,7 +426,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     else
                     {
                         Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding)));
-                        return false;
+                        return;
                     }
                 }
                 else
@@ -449,8 +449,6 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     out _,
                     CertificateRequestLoadOptions.SkipSignatureValidation, signerSignaturePadding: padding);
             }
-
-            return true;
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]

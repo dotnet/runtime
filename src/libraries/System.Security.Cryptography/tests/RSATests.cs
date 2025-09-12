@@ -235,6 +235,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(0)]
         [InlineData(2)]
         [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
         [InlineData(RSASignaturePadding.PssSaltLengthMax)]

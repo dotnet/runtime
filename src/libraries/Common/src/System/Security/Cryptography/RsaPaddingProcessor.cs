@@ -12,11 +12,6 @@ namespace System.Security.Cryptography
     {
         private static ReadOnlySpan<byte> EightZeros => [0, 0, 0, 0, 0, 0, 0, 0];
 
-        internal static int BytesRequiredForBitCount(int keySizeInBits)
-        {
-            return (int)(((uint)keySizeInBits + 7) / 8);
-        }
-
         internal static void PadPkcs1Encryption(
             ReadOnlySpan<byte> source,
             Span<byte> destination)

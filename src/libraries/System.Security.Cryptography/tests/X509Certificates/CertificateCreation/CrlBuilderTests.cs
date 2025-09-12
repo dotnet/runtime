@@ -38,6 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             yield return new object[] { CertKind.RsaPkcs1 };
             yield return new object[] { CertKind.RsaPss };
+
             if (PlatformSupport.AreCustomSaltLengthsSupportedWithPss)
             {
                 yield return new object[] { CertKind.RsaPssWithCustomSaltLength };
@@ -1547,13 +1548,13 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 }
                 else if (certKind == CertKind.RsaPssWithMaxSaltLength)
                 {
-                    var rsa = RSA.Create();
+                    RSA rsa = RSA.Create();
                     key = rsa;
                     req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax));
                 }
                 else if (certKind == CertKind.RsaPssWithCustomSaltLength)
                 {
-                    var rsa = RSA.Create();
+                    RSA rsa = RSA.Create();
                     key = rsa;
                     req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, RSASignaturePadding.CreatePss(200));
                 }

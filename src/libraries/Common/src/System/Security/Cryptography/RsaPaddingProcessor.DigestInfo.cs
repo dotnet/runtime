@@ -63,7 +63,6 @@ namespace System.Security.Cryptography
                 0x40,
             ];
 
-
         /// <summary>
         /// Represents a constant value indicating that the salt length should match the hash length.
         /// </summary>
@@ -87,7 +86,7 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         internal static int CalculatePssSaltLength(int pssSaltLength, int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
         {
-            int emLen = (rsaKeySizeInBits + 7) >>> 3;
+            int emLen = BytesRequiredForBitCount(rsaKeySizeInBits);
             int hLen = HashLength(hashAlgorithm);
             return pssSaltLength switch
             {
@@ -97,9 +96,14 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static int BytesRequiredForBitCount(int keySizeInBits)
+        {
+            return (int)(((uint)keySizeInBits + 7) >>> 3);
+        }
+
         private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
-          HashAlgorithmName hashAlgorithmName,
-          out int digestLengthInBytes)
+            HashAlgorithmName hashAlgorithmName,
+            out int digestLengthInBytes)
         {
             switch (hashAlgorithmName.Name)
             {

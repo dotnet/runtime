@@ -367,7 +367,7 @@
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>
   <data name="Cryptography_CustomPssSaltLengthNotSupported" xml:space="preserve">
-    <value>Custom salt lengths for PSS are not supported on this platform.</value>
+    <value>Custom PSS salt lengths are not supported on this platform.</value>
   </data>
   <data name="Cryptography_CustomTrustCertsInSystemMode" xml:space="preserve">
     <value>Custom trust certificates were provided while in System trust mode.</value>
@@ -526,7 +526,7 @@
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
   <data name="Cryptography_InvalidSaltLengthForPss" xml:space="preserve">
-    <value>Specified salt length is invalid.</value>
+    <value>Specified PSS salt length is invalid.</value>
   </data>
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>

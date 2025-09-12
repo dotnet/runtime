@@ -44,6 +44,8 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         public static bool SupportsPss => RSAFactory.SupportsPss;
         public static bool AreCustomSaltLengthsSupportedWithPss => SupportsPss && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
+        public static bool IsAppleCrypto => PlatformDetection.IsApplePlatform;
+
         protected abstract byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract byte[] SignHash(RSA rsa, byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract bool VerifyData(RSA rsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
@@ -631,22 +633,22 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             // echo -n Hello | openssl dgst -sha-256 -binary | openssl pkeyutl -sign -inkey rsa.pem -pkeyopt rsa_padding_mode:pss -pkeyopt digest:sha-256 -pkeyopt rsa_pss_saltlen:max | xxd -i -c 16
             byte[] signature = new byte[] {
-              0x46, 0x31, 0x80, 0x84, 0x97, 0x26, 0x47, 0x7a, 0xb3, 0x61, 0x13, 0x52, 0x51, 0x03, 0x6a, 0x71,
-              0x41, 0x89, 0x66, 0xf3, 0xd5, 0xd4, 0xa3, 0x9c, 0x67, 0x87, 0x25, 0x00, 0x6e, 0x93, 0xcc, 0xc0,
-              0xd0, 0xe6, 0x34, 0x7c, 0xe4, 0x1a, 0xb9, 0x3b, 0x48, 0xd1, 0xf7, 0x7e, 0x1b, 0x09, 0xa9, 0xd5,
-              0x92, 0x74, 0x57, 0x08, 0xcb, 0xfd, 0xc2, 0x75, 0xe8, 0x8c, 0xb5, 0x9c, 0x28, 0xc4, 0x68, 0x40,
-              0xe5, 0xa3, 0x1d, 0x29, 0x10, 0x7c, 0x60, 0x82, 0x50, 0xfb, 0xc1, 0x8c, 0x05, 0x23, 0xfb, 0xd5,
-              0x3e, 0xf0, 0x6c, 0x36, 0x31, 0xdc, 0x1f, 0xfa, 0xd3, 0xba, 0x99, 0x24, 0x13, 0x06, 0x0b, 0x50,
-              0x18, 0xe0, 0x43, 0x8b, 0xed, 0x6c, 0xa5, 0x7b, 0x0b, 0x94, 0xd9, 0x2a, 0x21, 0xd0, 0xe0, 0x58,
-              0x31, 0x8b, 0x60, 0x55, 0xa2, 0x10, 0x95, 0xc4, 0xb1, 0x2d, 0x6c, 0x96, 0x0a, 0x61, 0xf2, 0xe7,
-              0xd4, 0x5c, 0x5a, 0x8d, 0x4d, 0xd2, 0xe9, 0x2a, 0x34, 0xcb, 0x32, 0xe5, 0xd1, 0x17, 0xb2, 0xd2,
-              0x02, 0x47, 0x90, 0xba, 0x69, 0xd5, 0xa3, 0xfe, 0x35, 0xba, 0x0a, 0xb7, 0x35, 0xe2, 0xae, 0xb6,
-              0x82, 0xf1, 0xee, 0x72, 0x8e, 0x1e, 0xf9, 0x06, 0xed, 0xd7, 0x09, 0x6d, 0xf2, 0x49, 0x00, 0x3d,
-              0x11, 0x8a, 0x1b, 0xb1, 0x9d, 0x6e, 0xd2, 0x49, 0xca, 0xab, 0x6d, 0x6e, 0x13, 0xca, 0xa9, 0x9f,
-              0xdf, 0xfb, 0x6b, 0x29, 0xaa, 0x16, 0x54, 0x23, 0x52, 0xa7, 0x69, 0xa2, 0x72, 0xba, 0xc3, 0x07,
-              0x3d, 0x60, 0x36, 0xdf, 0xfd, 0x9b, 0x1f, 0x4e, 0x58, 0xd9, 0x65, 0xf0, 0x10, 0xa7, 0x8d, 0x08,
-              0xc0, 0x3c, 0xcf, 0x8a, 0x92, 0x2d, 0x9d, 0x75, 0x9b, 0xae, 0x68, 0xd0, 0xda, 0xaa, 0xe2, 0xd2,
-              0x11, 0xf2, 0x10, 0xbd, 0x19, 0x47, 0x75, 0x3c, 0x30, 0xc4, 0x0f, 0xd0, 0x7b, 0xc2, 0x6b, 0x4b
+                0x46, 0x31, 0x80, 0x84, 0x97, 0x26, 0x47, 0x7a, 0xb3, 0x61, 0x13, 0x52, 0x51, 0x03, 0x6a, 0x71,
+                0x41, 0x89, 0x66, 0xf3, 0xd5, 0xd4, 0xa3, 0x9c, 0x67, 0x87, 0x25, 0x00, 0x6e, 0x93, 0xcc, 0xc0,
+                0xd0, 0xe6, 0x34, 0x7c, 0xe4, 0x1a, 0xb9, 0x3b, 0x48, 0xd1, 0xf7, 0x7e, 0x1b, 0x09, 0xa9, 0xd5,
+                0x92, 0x74, 0x57, 0x08, 0xcb, 0xfd, 0xc2, 0x75, 0xe8, 0x8c, 0xb5, 0x9c, 0x28, 0xc4, 0x68, 0x40,
+                0xe5, 0xa3, 0x1d, 0x29, 0x10, 0x7c, 0x60, 0x82, 0x50, 0xfb, 0xc1, 0x8c, 0x05, 0x23, 0xfb, 0xd5,
+                0x3e, 0xf0, 0x6c, 0x36, 0x31, 0xdc, 0x1f, 0xfa, 0xd3, 0xba, 0x99, 0x24, 0x13, 0x06, 0x0b, 0x50,
+                0x18, 0xe0, 0x43, 0x8b, 0xed, 0x6c, 0xa5, 0x7b, 0x0b, 0x94, 0xd9, 0x2a, 0x21, 0xd0, 0xe0, 0x58,
+                0x31, 0x8b, 0x60, 0x55, 0xa2, 0x10, 0x95, 0xc4, 0xb1, 0x2d, 0x6c, 0x96, 0x0a, 0x61, 0xf2, 0xe7,
+                0xd4, 0x5c, 0x5a, 0x8d, 0x4d, 0xd2, 0xe9, 0x2a, 0x34, 0xcb, 0x32, 0xe5, 0xd1, 0x17, 0xb2, 0xd2,
+                0x02, 0x47, 0x90, 0xba, 0x69, 0xd5, 0xa3, 0xfe, 0x35, 0xba, 0x0a, 0xb7, 0x35, 0xe2, 0xae, 0xb6,
+                0x82, 0xf1, 0xee, 0x72, 0x8e, 0x1e, 0xf9, 0x06, 0xed, 0xd7, 0x09, 0x6d, 0xf2, 0x49, 0x00, 0x3d,
+                0x11, 0x8a, 0x1b, 0xb1, 0x9d, 0x6e, 0xd2, 0x49, 0xca, 0xab, 0x6d, 0x6e, 0x13, 0xca, 0xa9, 0x9f,
+                0xdf, 0xfb, 0x6b, 0x29, 0xaa, 0x16, 0x54, 0x23, 0x52, 0xa7, 0x69, 0xa2, 0x72, 0xba, 0xc3, 0x07,
+                0x3d, 0x60, 0x36, 0xdf, 0xfd, 0x9b, 0x1f, 0x4e, 0x58, 0xd9, 0x65, 0xf0, 0x10, 0xa7, 0x8d, 0x08,
+                0xc0, 0x3c, 0xcf, 0x8a, 0x92, 0x2d, 0x9d, 0x75, 0x9b, 0xae, 0x68, 0xd0, 0xda, 0xaa, 0xe2, 0xd2,
+                0x11, 0xf2, 0x10, 0xbd, 0x19, 0x47, 0x75, 0x3c, 0x30, 0xc4, 0x0f, 0xd0, 0x7b, 0xc2, 0x6b, 0x4b
             };
 
             RSASignaturePadding padding = RSASignaturePadding.CreatePss(validateWithCorrectSaltLength ? RSASignaturePadding.PssSaltLengthMax : 2);
@@ -1102,7 +1104,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA256,
                 TestData.RSA2048Params.Modulus,
-                modulus2048Signature);
+                modulus2048Signature, RSASignaturePadding.Pss);
         }
 
         [Fact]
@@ -1178,7 +1180,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA16384Params,
                 HashAlgorithmName.SHA256,
                 TestData.RSA2048Params.Modulus,
-                modulus2048Signature);
+                modulus2048Signature, RSASignaturePadding.Pss);
         }
 
         [Fact]
@@ -1195,7 +1197,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters,
                 HashAlgorithmName.SHA384,
                 TestData.RSA16384Params.Modulus,
-                bigModulusSignature);
+                bigModulusSignature, RSASignaturePadding.Pss);
         }
 
         [Fact]
@@ -1215,7 +1217,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA512,
                 TestData.HelloBytes,
-                helloSignature);
+                helloSignature, RSASignaturePadding.Pss);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1247,7 +1249,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_256,
                 TestData.HelloBytes,
-                helloSignature);
+                helloSignature, RSASignaturePadding.Pss);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1279,7 +1281,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_384,
                 TestData.HelloBytes,
-                helloSignature);
+                helloSignature, RSASignaturePadding.Pss);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1311,7 +1313,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_512,
                 TestData.HelloBytes,
-                helloSignature);
+                helloSignature, RSASignaturePadding.Pss);
         }
 
         [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
@@ -1335,6 +1337,22 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.True(
                     ex is PlatformNotSupportedException or CryptographicException,
                     "ex is PlatformNotSupportedException or CryptographicException");
+            }
+        }
+
+        [ConditionalTheory(nameof(IsAppleCrypto))]
+        [InlineData(0)]
+        [InlineData(5)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public void PssUnsupportedPssSaltLengthOnApple(int saltLength)
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    SignData(rsa, new byte[] { 1 }, HashAlgorithmName.SHA256, RSASignaturePadding.CreatePss(saltLength)));
+
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, HashAlgorithmName.SHA256, RSASignaturePadding.CreatePss(saltLength)));
             }
         }
 
@@ -1367,6 +1385,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             HashAlgorithmName hashAlgorithm,
             byte[] data,
             byte[] signature,
+            RSASignaturePadding padding,
             [System.Runtime.CompilerServices.CallerMemberName] string callerName = null)
         {
             RSAParameters publicParameters = new RSAParameters
@@ -1374,9 +1393,6 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Modulus = keyParameters.Modulus,
                 Exponent = keyParameters.Exponent,
             };
-
-            RSASignaturePadding padding = RSASignaturePadding.Pss;
-
             using (RSA rsaPublic = RSAFactory.Create())
             using (RSA rsaPrivate = RSAFactory.Create())
             {
@@ -1676,6 +1692,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 int?[] saltLengths = AreCustomSaltLengthsSupportedWithPss
                     ? [null, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength, 0, 1, 4]
                     : [null];
+
                 foreach (var saltLength in saltLengths)
                 {
                     var padding = saltLength is null ? RSASignaturePadding.Pss : RSASignaturePadding.CreatePss(saltLength.Value);
@@ -1700,6 +1717,27 @@ namespace System.Security.Cryptography.Rsa.Tests
                         yield return new object[] { HashAlgorithmName.SHA3_384.Name, padding };
                         yield return new object[] { HashAlgorithmName.SHA3_512.Name, padding };
                     }
+                }
+
+                yield return new object[] { HashAlgorithmName.SHA256.Name, RSASignaturePadding.CreatePss(32) };
+                yield return new object[] { HashAlgorithmName.SHA384.Name, RSASignaturePadding.CreatePss(48) };
+                yield return new object[] { HashAlgorithmName.SHA512.Name, RSASignaturePadding.CreatePss(64) };
+
+                if (RSAFactory.SupportsMd5Signatures)
+                {
+                    yield return new object[] { HashAlgorithmName.MD5.Name, RSASignaturePadding.CreatePss(16) };
+                }
+
+                if (RSAFactory.SupportsSha1Signatures)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA1.Name, RSASignaturePadding.CreatePss(20) };
+                }
+
+                if (RSAFactory.SupportsSha3)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA3_256.Name, RSASignaturePadding.CreatePss(32) };
+                    yield return new object[] { HashAlgorithmName.SHA3_384.Name, RSASignaturePadding.CreatePss(48) };
+                    yield return new object[] { HashAlgorithmName.SHA3_512.Name, RSASignaturePadding.CreatePss(64) };
                 }
             }
         }

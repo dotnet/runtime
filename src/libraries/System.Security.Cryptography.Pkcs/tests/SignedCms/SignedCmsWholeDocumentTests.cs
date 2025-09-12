@@ -90,7 +90,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(
                 "07849DC26FCBB2F3BD5F57BDF214BAE374575F1BD4E6816482324799417CB379",
                 messageDigestAttr.MessageDigest.ByteArrayToHex());
-
             
             Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
 #if !NET
@@ -129,7 +128,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // PSS signature with parameters are only supported on .NET 10 or later
 #if NET10_0_OR_GREATER
-            signer.CheckSignature(true);
+            if (PlatformSupport.AreCustomSaltLengthsSupportedWithPss)
+            {
+                signer.CheckSignature(true);
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(() => signer.CheckSignature(true));
+            }
 #else
             Assert.Throws<CryptographicException>(() => signer.CheckSignature(true));
 #endif
