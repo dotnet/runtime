@@ -1122,7 +1122,6 @@ namespace System.Security.Cryptography.Tests
         {
             for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
-
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
                 byte[] mac = _testMacs[caseId];
@@ -1156,7 +1155,6 @@ namespace System.Security.Cryptography.Tests
         {
             for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
-
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
                 byte[] mac = _testMacs[caseId];
@@ -1257,11 +1255,33 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyHmacAsync_CryptographicOperations_Cancelled()
+        {
+            CancellationToken cancelledToken = new(true);
+            byte[] hash = new byte[THmacTrait.HashSizeInBytes];
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                async () => await CryptographicOperations.VerifyHmacAsync(
+                    HashAlgorithm,
+                    Array.Empty<byte>(),
+                    Stream.Null,
+                    hash,
+                    cancelledToken));
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                async () => await CryptographicOperations.VerifyHmacAsync(
+                    HashAlgorithm,
+                    ReadOnlyMemory<byte>.Empty,
+                    Stream.Null,
+                    new ReadOnlyMemory<byte>(hash),
+                    cancelledToken));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void Verify_CryptographicOperations_Match()
         {
             for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
-
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
                 byte[] mac = _testMacs[caseId];
@@ -1295,7 +1315,6 @@ namespace System.Security.Cryptography.Tests
         {
             for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
-
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
                 byte[] mac = _testMacs[caseId].AsSpan().ToArray();
@@ -1322,6 +1341,71 @@ namespace System.Security.Cryptography.Tests
 
                 // Stream, spans
                 AssertExtensions.FalseExpression(Verify(keySpan, new MemoryStream(data), macSpan));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyAsync_CryptographicOperations_Match()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId];
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                ReadOnlyMemory<byte> keyMemory = key;
+                ReadOnlyMemory<byte> macMemory = mac;
+
+                // Stream, arrays
+                AssertExtensions.TrueExpression(
+                    await CryptographicOperations.VerifyHmacAsync(HashAlgorithm, key, new MemoryStream(data), mac));
+
+                // Stream, memory
+                AssertExtensions.TrueExpression(
+                    await CryptographicOperations.VerifyHmacAsync(HashAlgorithm, keyMemory, new MemoryStream(data), macMemory));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task VerifyAsync_CryptographicOperations_Mismatch()
+        {
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
+            {
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                byte[] mac = _testMacs[caseId].AsSpan().ToArray();
+
+                if (mac.Length != THmacTrait.HashSizeInBytes)
+                {
+                    // Some test vectors are truncated MACs. Skip them since Verify does not support truncated values.
+                    continue;
+                }
+
+                FlipRandomBit(mac);
+                ReadOnlyMemory<byte> keyMemory = key;
+                ReadOnlyMemory<byte> macMemory = mac;
+
+                // Stream, arrays
+                AssertExtensions.FalseExpression(
+                    await CryptographicOperations.VerifyHmacAsync(
+                        HashAlgorithm,
+                        key,
+                        new MemoryStream(data),
+                        mac));
+
+                // Stream, spans
+                AssertExtensions.FalseExpression(
+                    await CryptographicOperations.VerifyHmacAsync(
+                        HashAlgorithm,
+                        new ReadOnlyMemory<byte>(key),
+                        new MemoryStream(data),
+                        new ReadOnlyMemory<byte>(mac)));
             }
         }
 

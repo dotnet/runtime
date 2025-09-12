@@ -939,6 +939,67 @@ namespace System.Security.Cryptography
             return VerifyHmac(hashAlgorithm, new ReadOnlySpan<byte>(key), source, new ReadOnlySpan<byte>(hash));
         }
 
+        public static ValueTask<bool> VerifyHmacAsync(
+            HashAlgorithmName hashAlgorithm,
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken = default)
+        {
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
+
+            if (hash.Length != hashSizeInBytes)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, hashSizeInBytes), nameof(hash));
+            }
+
+            CheckStream(source);
+            Debug.Assert(hashAlgorithm.Name is not null);
+
+            return VerifyHmacAsyncInner(hashAlgorithm.Name, key, source, hash, cancellationToken);
+
+            static async ValueTask<bool> VerifyHmacAsyncInner(
+                string hashAlgorithm,
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                ReadOnlyMemory<byte> hash,
+                CancellationToken cancellationToken)
+            {
+                byte[] mac = new byte[hash.Length];
+
+                using (PinAndClear.Track(mac))
+                {
+                    int written = await LiteHashProvider.HmacStreamAsync(
+                        hashAlgorithm,
+                        key.Span,
+                        source,
+                        mac,
+                        cancellationToken).ConfigureAwait(false);
+
+                    Debug.Assert(written == mac.Length);
+                    return CryptographicOperations.FixedTimeEquals(mac, hash.Span);
+                }
+            }
+        }
+
+        public static ValueTask<bool> VerifyHmacAsync(
+            HashAlgorithmName hashAlgorithm,
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return VerifyHmacAsync(
+                hashAlgorithm,
+                new ReadOnlyMemory<byte>(key),
+                source,
+                new ReadOnlyMemory<byte>(hash),
+                cancellationToken);
+        }
+
         private static void CheckStream([NotNull] Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
