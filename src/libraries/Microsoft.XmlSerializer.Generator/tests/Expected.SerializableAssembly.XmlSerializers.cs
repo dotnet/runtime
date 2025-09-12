@@ -888,7 +888,25 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             WriteSerializable((System.Xml.Serialization.IXmlSerializable)((global::SerializationTypes.ClassImplementingIXmlSerializable)o), @"ClassImplementingIXmlSerializable", @"", true, true);
         }
 
-        public void Write202_TypeWithPropertyNameSpecified(object o) {
+        public void Write202_Item(object o) {
+            WriteStartDocument();
+            if (o == null) {
+                WriteEmptyTag(@"StructImplementingIXmlSerializableWithoutParameterlessConstructor", @"");
+                return;
+            }
+            WriteSerializable((System.Xml.Serialization.IXmlSerializable)((global::SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor)o), @"StructImplementingIXmlSerializableWithoutParameterlessConstructor", @"", false, true);
+        }
+
+        public void Write203_Item(object o) {
+            WriteStartDocument();
+            if (o == null) {
+                WriteEmptyTag(@"StructImplementingIXmlSerializableWithParameterlessConstructor", @"");
+                return;
+            }
+            WriteSerializable((System.Xml.Serialization.IXmlSerializable)((global::SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor)o), @"StructImplementingIXmlSerializableWithParameterlessConstructor", @"", false, true);
+        }
+
+        public void Write204_TypeWithPropertyNameSpecified(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithPropertyNameSpecified", @"");
@@ -898,7 +916,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write87_TypeWithPropertyNameSpecified(@"TypeWithPropertyNameSpecified", @"", ((global::SerializationTypes.TypeWithPropertyNameSpecified)o), true, false);
         }
 
-        public void Write203_TypeWithXmlSchemaFormAttribute(object o) {
+        public void Write205_TypeWithXmlSchemaFormAttribute(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithXmlSchemaFormAttribute", @"");
@@ -908,7 +926,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write88_TypeWithXmlSchemaFormAttribute(@"TypeWithXmlSchemaFormAttribute", @"", ((global::SerializationTypes.TypeWithXmlSchemaFormAttribute)o), true, false);
         }
 
-        public void Write204_MyXmlType(object o) {
+        public void Write206_MyXmlType(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"MyXmlType", @"");
@@ -918,7 +936,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write89_Item(@"MyXmlType", @"", ((global::SerializationTypes.TypeWithTypeNameInXmlTypeAttribute)o), true, false);
         }
 
-        public void Write205_Item(object o) {
+        public void Write207_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithSchemaFormInXmlAttribute", @"");
@@ -928,7 +946,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write90_Item(@"TypeWithSchemaFormInXmlAttribute", @"", ((global::SerializationTypes.TypeWithSchemaFormInXmlAttribute)o), true, false);
         }
 
-        public void Write206_CustomDocument(object o) {
+        public void Write208_CustomDocument(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"CustomDocument", @"");
@@ -938,7 +956,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write92_CustomDocument(@"CustomDocument", @"", ((global::SerializationTypes.CustomDocument)o), true, false);
         }
 
-        public void Write207_CustomElement(object o) {
+        public void Write209_CustomElement(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"CustomElement", @"");
@@ -948,7 +966,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write91_CustomElement(@"CustomElement", @"", ((global::SerializationTypes.CustomElement)o), true, false);
         }
 
-        public void Write208_Item(object o) {
+        public void Write210_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"", null);
@@ -963,7 +981,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             }
         }
 
-        public void Write209_Item(object o) {
+        public void Write211_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithNonPublicDefaultConstructor", @"");
@@ -973,7 +991,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write93_Item(@"TypeWithNonPublicDefaultConstructor", @"", ((global::SerializationTypes.TypeWithNonPublicDefaultConstructor)o), true, false);
         }
 
-        public void Write210_ServerSettings(object o) {
+        public void Write212_ServerSettings(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"ServerSettings", @"");
@@ -983,7 +1001,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write94_ServerSettings(@"ServerSettings", @"", ((global::SerializationTypes.ServerSettings)o), true, false);
         }
 
-        public void Write211_TypeWithXmlQualifiedName(object o) {
+        public void Write213_TypeWithXmlQualifiedName(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithXmlQualifiedName", @"");
@@ -993,7 +1011,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write95_TypeWithXmlQualifiedName(@"TypeWithXmlQualifiedName", @"", ((global::SerializationTypes.TypeWithXmlQualifiedName)o), true, false);
         }
 
-        public void Write212_TypeWith2DArrayProperty2(object o) {
+        public void Write214_TypeWith2DArrayProperty2(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWith2DArrayProperty2", @"");
@@ -1003,7 +1021,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write96_TypeWith2DArrayProperty2(@"TypeWith2DArrayProperty2", @"", ((global::SerializationTypes.TypeWith2DArrayProperty2)o), true, false);
         }
 
-        public void Write213_Item(object o) {
+        public void Write215_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithPropertiesHavingDefaultValue", @"");
@@ -1013,7 +1031,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write97_Item(@"TypeWithPropertiesHavingDefaultValue", @"", ((global::SerializationTypes.TypeWithPropertiesHavingDefaultValue)o), true, false);
         }
 
-        public void Write214_Item(object o) {
+        public void Write216_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithEnumPropertyHavingDefaultValue", @"");
@@ -1023,7 +1041,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write98_Item(@"TypeWithEnumPropertyHavingDefaultValue", @"", ((global::SerializationTypes.TypeWithEnumPropertyHavingDefaultValue)o), true, false);
         }
 
-        public void Write215_Item(object o) {
+        public void Write217_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithEnumFlagPropertyHavingDefaultValue", @"");
@@ -1033,7 +1051,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write99_Item(@"TypeWithEnumFlagPropertyHavingDefaultValue", @"", ((global::SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue)o), true, false);
         }
 
-        public void Write216_TypeWithShouldSerializeMethod(object o) {
+        public void Write218_TypeWithShouldSerializeMethod(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithShouldSerializeMethod", @"");
@@ -1043,7 +1061,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write100_TypeWithShouldSerializeMethod(@"TypeWithShouldSerializeMethod", @"", ((global::SerializationTypes.TypeWithShouldSerializeMethod)o), true, false);
         }
 
-        public void Write217_Item(object o) {
+        public void Write219_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"KnownTypesThroughConstructorWithArrayProperties", @"");
@@ -1053,7 +1071,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write101_Item(@"KnownTypesThroughConstructorWithArrayProperties", @"", ((global::SerializationTypes.KnownTypesThroughConstructorWithArrayProperties)o), true, false);
         }
 
-        public void Write218_Item(object o) {
+        public void Write220_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"KnownTypesThroughConstructorWithValue", @"");
@@ -1063,7 +1081,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write102_Item(@"KnownTypesThroughConstructorWithValue", @"", ((global::SerializationTypes.KnownTypesThroughConstructorWithValue)o), true, false);
         }
 
-        public void Write219_Item(object o) {
+        public void Write221_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithTypesHavingCustomFormatter", @"");
@@ -1073,7 +1091,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write103_Item(@"TypeWithTypesHavingCustomFormatter", @"", ((global::SerializationTypes.TypeWithTypesHavingCustomFormatter)o), true, false);
         }
 
-        public void Write220_Item(object o) {
+        public void Write222_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithArrayPropertyHavingChoice", @"");
@@ -1083,7 +1101,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write105_Item(@"TypeWithArrayPropertyHavingChoice", @"", ((global::SerializationTypes.TypeWithArrayPropertyHavingChoice)o), true, false);
         }
 
-        public void Write221_Item(object o) {
+        public void Write223_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithPropertyHavingComplexChoice", @"");
@@ -1093,7 +1111,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write108_Item(@"TypeWithPropertyHavingComplexChoice", @"", ((global::SerializationTypes.TypeWithPropertyHavingComplexChoice)o), true, false);
         }
 
-        public void Write222_MoreChoices(object o) {
+        public void Write224_MoreChoices(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteEmptyTag(@"MoreChoices", @"");
@@ -1102,7 +1120,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             WriteElementString(@"MoreChoices", @"", Write104_MoreChoices(((global::SerializationTypes.MoreChoices)o)));
         }
 
-        public void Write223_ComplexChoiceA(object o) {
+        public void Write225_ComplexChoiceA(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"ComplexChoiceA", @"");
@@ -1112,7 +1130,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write107_ComplexChoiceA(@"ComplexChoiceA", @"", ((global::SerializationTypes.ComplexChoiceA)o), true, false);
         }
 
-        public void Write224_ComplexChoiceB(object o) {
+        public void Write226_ComplexChoiceB(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"ComplexChoiceB", @"");
@@ -1122,7 +1140,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write106_ComplexChoiceB(@"ComplexChoiceB", @"", ((global::SerializationTypes.ComplexChoiceB)o), true, false);
         }
 
-        public void Write225_TypeWithFieldsOrdered(object o) {
+        public void Write227_TypeWithFieldsOrdered(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithFieldsOrdered", @"");
@@ -1132,7 +1150,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write109_TypeWithFieldsOrdered(@"TypeWithFieldsOrdered", @"", ((global::SerializationTypes.TypeWithFieldsOrdered)o), true, false);
         }
 
-        public void Write226_Item(object o) {
+        public void Write228_Item(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeWithKnownTypesOfCollectionsWithConflictingXmlName", @"");
@@ -1142,7 +1160,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write110_Item(@"TypeWithKnownTypesOfCollectionsWithConflictingXmlName", @"", ((global::SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName)o), true, false);
         }
 
-        public void Write227_Root(object o) {
+        public void Write229_Root(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"Root", @"");
@@ -1152,7 +1170,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write113_Item(@"Root", @"", ((global::SerializationTypes.NamespaceTypeNameClashContainer)o), true, false);
         }
 
-        public void Write228_TypeClashB(object o) {
+        public void Write230_TypeClashB(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeClashB", @"");
@@ -1162,7 +1180,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write112_TypeNameClash(@"TypeClashB", @"", ((global::SerializationTypes.TypeNameClashB.TypeNameClash)o), true, false);
         }
 
-        public void Write229_TypeClashA(object o) {
+        public void Write231_TypeClashA(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"TypeClashA", @"");
@@ -1172,7 +1190,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             Write111_TypeNameClash(@"TypeClashA", @"", ((global::SerializationTypes.TypeNameClashA.TypeNameClash)o), true, false);
         }
 
-        public void Write230_Person(object o) {
+        public void Write232_Person(object o) {
             WriteStartDocument();
             if (o == null) {
                 WriteNullTagLiteral(@"Person", @"");
@@ -6408,12 +6426,48 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read206_TypeWithPropertyNameSpecified() {
+        public object Read206_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id95_TypeWithPropertyNameSpecified && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id95_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        o = (global::SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)System.Activator.CreateInstance(typeof(global::SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.CreateInstance | System.Reflection.BindingFlags.NonPublic, null, new object[0], null));
+                        break;
+                    }
+                    throw CreateUnknownNodeException();
+                } while (false);
+            }
+            else {
+                UnknownNode(null, @":StructImplementingIXmlSerializableWithoutParameterlessConstructor");
+            }
+            return (object)o;
+        }
+
+        public object Read207_Item() {
+            object o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
+                do {
+                    if (((object) Reader.LocalName == (object)id96_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        o = (global::SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)new global::SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor());
+                        break;
+                    }
+                    throw CreateUnknownNodeException();
+                } while (false);
+            }
+            else {
+                UnknownNode(null, @":StructImplementingIXmlSerializableWithParameterlessConstructor");
+            }
+            return (object)o;
+        }
+
+        public object Read208_TypeWithPropertyNameSpecified() {
+            object o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
+                do {
+                    if (((object) Reader.LocalName == (object)id97_TypeWithPropertyNameSpecified && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read91_TypeWithPropertyNameSpecified(true, true);
                         break;
                     }
@@ -6426,12 +6480,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read207_TypeWithXmlSchemaFormAttribute() {
+        public object Read209_TypeWithXmlSchemaFormAttribute() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id96_TypeWithXmlSchemaFormAttribute && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id98_TypeWithXmlSchemaFormAttribute && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read92_TypeWithXmlSchemaFormAttribute(true, true);
                         break;
                     }
@@ -6444,12 +6498,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read208_MyXmlType() {
+        public object Read210_MyXmlType() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id97_MyXmlType && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id99_MyXmlType && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read93_Item(true, true);
                         break;
                     }
@@ -6462,12 +6516,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read209_Item() {
+        public object Read211_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id98_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id100_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read94_Item(true, true);
                         break;
                     }
@@ -6480,12 +6534,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read210_CustomDocument() {
+        public object Read212_CustomDocument() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id99_CustomDocument && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id101_CustomDocument && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read96_CustomDocument(true, true);
                         break;
                     }
@@ -6498,12 +6552,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read211_CustomElement() {
+        public object Read213_CustomElement() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id100_CustomElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id102_CustomElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read95_CustomElement(true, true);
                         break;
                     }
@@ -6516,7 +6570,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read212_Item() {
+        public object Read214_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
@@ -6528,12 +6582,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read213_Item() {
+        public object Read215_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id101_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id103_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read97_Item(true, true);
                         break;
                     }
@@ -6546,12 +6600,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read214_ServerSettings() {
+        public object Read216_ServerSettings() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id102_ServerSettings && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id104_ServerSettings && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read98_ServerSettings(true, true);
                         break;
                     }
@@ -6564,12 +6618,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read215_TypeWithXmlQualifiedName() {
+        public object Read217_TypeWithXmlQualifiedName() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id103_TypeWithXmlQualifiedName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id105_TypeWithXmlQualifiedName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read99_TypeWithXmlQualifiedName(true, true);
                         break;
                     }
@@ -6582,12 +6636,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read216_TypeWith2DArrayProperty2() {
+        public object Read218_TypeWith2DArrayProperty2() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id104_TypeWith2DArrayProperty2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id106_TypeWith2DArrayProperty2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read100_TypeWith2DArrayProperty2(true, true);
                         break;
                     }
@@ -6600,12 +6654,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read217_Item() {
+        public object Read219_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id105_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id107_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read101_Item(true, true);
                         break;
                     }
@@ -6618,12 +6672,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read218_Item() {
+        public object Read220_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id106_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id108_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read102_Item(true, true);
                         break;
                     }
@@ -6636,12 +6690,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read219_Item() {
+        public object Read221_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id107_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id109_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read103_Item(true, true);
                         break;
                     }
@@ -6654,12 +6708,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read220_TypeWithShouldSerializeMethod() {
+        public object Read222_TypeWithShouldSerializeMethod() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id108_TypeWithShouldSerializeMethod && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id110_TypeWithShouldSerializeMethod && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read104_TypeWithShouldSerializeMethod(true, true);
                         break;
                     }
@@ -6672,12 +6726,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read221_Item() {
+        public object Read223_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id109_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id111_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read105_Item(true, true);
                         break;
                     }
@@ -6690,12 +6744,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read222_Item() {
+        public object Read224_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id110_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id112_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read106_Item(true, true);
                         break;
                     }
@@ -6708,12 +6762,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read223_Item() {
+        public object Read225_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id111_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id113_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read107_Item(true, true);
                         break;
                     }
@@ -6726,12 +6780,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read224_Item() {
+        public object Read226_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id112_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id114_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read109_Item(true, true);
                         break;
                     }
@@ -6744,12 +6798,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read225_Item() {
+        public object Read227_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id113_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id115_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read112_Item(true, true);
                         break;
                     }
@@ -6762,12 +6816,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read226_MoreChoices() {
+        public object Read228_MoreChoices() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id114_MoreChoices && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id116_MoreChoices && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         {
                             o = Read108_MoreChoices(Reader.ReadElementString());
                         }
@@ -6782,12 +6836,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read227_ComplexChoiceA() {
+        public object Read229_ComplexChoiceA() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id115_ComplexChoiceA && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id117_ComplexChoiceA && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read111_ComplexChoiceA(true, true);
                         break;
                     }
@@ -6800,12 +6854,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read228_ComplexChoiceB() {
+        public object Read230_ComplexChoiceB() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id116_ComplexChoiceB && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id118_ComplexChoiceB && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read110_ComplexChoiceB(true, true);
                         break;
                     }
@@ -6818,12 +6872,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read229_TypeWithFieldsOrdered() {
+        public object Read231_TypeWithFieldsOrdered() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id117_TypeWithFieldsOrdered && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id119_TypeWithFieldsOrdered && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read113_TypeWithFieldsOrdered(true, true);
                         break;
                     }
@@ -6836,12 +6890,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read230_Item() {
+        public object Read232_Item() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id118_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id120_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read114_Item(true, true);
                         break;
                     }
@@ -6854,12 +6908,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read231_Root() {
+        public object Read233_Root() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id119_Root && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id121_Root && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read117_Item(true, true);
                         break;
                     }
@@ -6872,12 +6926,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read232_TypeClashB() {
+        public object Read234_TypeClashB() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id120_TypeClashB && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id122_TypeClashB && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read116_TypeNameClash(true, true);
                         break;
                     }
@@ -6890,12 +6944,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read233_TypeClashA() {
+        public object Read235_TypeClashA() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id121_TypeClashA && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id123_TypeClashA && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read115_TypeNameClash(true, true);
                         break;
                     }
@@ -6908,12 +6962,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             return (object)o;
         }
 
-        public object Read234_Person() {
+        public object Read236_Person() {
             object o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                 do {
-                    if (((object) Reader.LocalName == (object)id122_Person && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                    if (((object) Reader.LocalName == (object)id124_Person && (object) Reader.NamespaceURI == (object)id2_Item)) {
                         o = Read118_Person(true, true);
                         break;
                     }
@@ -6931,7 +6985,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id122_Person && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id124_Person && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -6956,21 +7010,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id123_FirstName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id125_FirstName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@FirstName = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id124_MiddleName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id126_MiddleName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MiddleName = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id125_LastName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id127_LastName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@LastName = Reader.ReadElementString();
                             }
@@ -6994,7 +7048,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id121_TypeClashA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id123_TypeClashA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -7019,7 +7073,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -7043,7 +7097,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id120_TypeClashB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id122_TypeClashB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -7068,7 +7122,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -7092,7 +7146,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id127_ContainerType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id129_ContainerType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -7123,11 +7177,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id128_A && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id130_A && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             a_0 = (global::SerializationTypes.TypeNameClashA.TypeNameClash[])EnsureArrayIndex(a_0, ca_0, typeof(global::SerializationTypes.TypeNameClashA.TypeNameClash));a_0[ca_0++] = Read115_TypeNameClash(false, true);
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id129_B && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id131_B && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             a_1 = (global::SerializationTypes.TypeNameClashB.TypeNameClash[])EnsureArrayIndex(a_1, ca_1, typeof(global::SerializationTypes.TypeNameClashB.TypeNameClash));a_1[ca_1++] = Read116_TypeNameClash(false, true);
                             break;
                         }
@@ -7150,7 +7204,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id118_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id120_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -7175,12 +7229,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id130_Value1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id132_Value1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Value1 = Read1_Object(false, true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id131_Value2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id133_Value2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Value2 = Read1_Object(false, true);
                             paramsRead[1] = true;
                             break;
@@ -7210,57 +7264,57 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                     return ReadTypedPrimitive(new System.Xml.XmlQualifiedName("anyType", "http://www.w3.org/2001/XMLSchema"));
                 }
                 else {
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id122_Person && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id124_Person && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read118_Person(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id127_ContainerType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id129_ContainerType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read117_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id120_TypeClashB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id122_TypeClashB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read116_TypeNameClash(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id121_TypeClashA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id123_TypeClashA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read115_TypeNameClash(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id118_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id120_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read114_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id117_TypeWithFieldsOrdered && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id119_TypeWithFieldsOrdered && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read113_TypeWithFieldsOrdered(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id113_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id115_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read112_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id115_ComplexChoiceA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id117_ComplexChoiceA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read111_ComplexChoiceA(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id116_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id118_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read110_ComplexChoiceB(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id112_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id114_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read109_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id111_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id113_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read107_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id110_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id112_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read106_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id109_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id111_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read105_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id108_TypeWithShouldSerializeMethod && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id110_TypeWithShouldSerializeMethod && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read104_TypeWithShouldSerializeMethod(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id107_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id109_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read103_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id106_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id108_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read102_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id105_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id107_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read101_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id104_TypeWith2DArrayProperty2 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id106_TypeWith2DArrayProperty2 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read100_TypeWith2DArrayProperty2(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id103_TypeWithXmlQualifiedName && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id105_TypeWithXmlQualifiedName && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read99_TypeWithXmlQualifiedName(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id102_ServerSettings && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id104_ServerSettings && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read98_ServerSettings(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id101_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id103_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read97_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id99_CustomDocument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id101_CustomDocument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read96_CustomDocument(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id100_CustomElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id102_CustomElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read95_CustomElement(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id97_MyXmlType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id99_MyXmlType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read93_Item(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id96_TypeWithXmlSchemaFormAttribute && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id98_TypeWithXmlSchemaFormAttribute && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read92_TypeWithXmlSchemaFormAttribute(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id95_TypeWithPropertyNameSpecified && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id97_TypeWithPropertyNameSpecified && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read91_TypeWithPropertyNameSpecified(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id93_SimpleKnownTypeValue && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read90_SimpleKnownTypeValue(isNullable, false);
@@ -7268,7 +7322,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         return Read89_KnownTypesThroughConstructor(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id91_TypeWithAnyAttribute && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read88_TypeWithAnyAttribute(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id132_XmlSerializerAttributes && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id134_XmlSerializerAttributes && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read87_XmlSerializerAttributes(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id81_WithNullables && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read80_WithNullables(isNullable, false);
@@ -7336,13 +7390,13 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         return Read42_RootClass(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id45_Parameter && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read41_Parameter(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id133_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id135_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read40_ParameterOfString(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id134_MsgDocumentType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id43_httpexamplecom))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id136_MsgDocumentType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id43_httpexamplecom))
                         return Read39_MsgDocumentType(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id41_TypeWithLinkedProperty && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read38_TypeWithLinkedProperty(isNullable, false);
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id135_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id137_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read37_Item(isNullable, false);
                     if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id39_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                         return Read36_Item(isNullable, false);
@@ -7416,7 +7470,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         ReadEndElement();
                         return e;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id136_ArrayOfOrderedItem && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id24_httpwwwcontoso1com)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id138_ArrayOfOrderedItem && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id24_httpwwwcontoso1com)) {
                         global::OrderedItem[] a = null;
                         if (!ReadNull()) {
                             global::OrderedItem[] z_0_0 = null;
@@ -7448,7 +7502,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id137_ArrayOfInt && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id139_ArrayOfInt && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::System.Int32> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::System.Int32>();
@@ -7462,7 +7516,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 {
                                                     z_0_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                 }
@@ -7481,7 +7535,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id139_ArrayOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id141_ArrayOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::System.String> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::System.String>();
@@ -7495,7 +7549,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 if (ReadNull()) {
                                                     z_0_0.Add(null);
                                                 }
@@ -7517,7 +7571,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id141_ArrayOfDouble && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id143_ArrayOfDouble && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::System.Double> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::System.Double>();
@@ -7531,7 +7585,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id142_double && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id144_double && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 {
                                                     z_0_0.Add(System.Xml.XmlConvert.ToDouble(Reader.ReadElementString()));
                                                 }
@@ -7583,7 +7637,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id143_ArrayOfInstrument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id145_ArrayOfInstrument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::Instrument[] a = null;
                         if (!ReadNull()) {
                             global::Instrument[] z_0_0 = null;
@@ -7615,7 +7669,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id144_ArrayOfTypeWithLinkedProperty && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id146_ArrayOfTypeWithLinkedProperty && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::TypeWithLinkedProperty> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::TypeWithLinkedProperty>();
@@ -7646,7 +7700,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id145_ArrayOfParameter && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id147_ArrayOfParameter && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::Parameter> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::Parameter>();
@@ -7677,7 +7731,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id146_ArrayOfXElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id148_ArrayOfXElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Xml.Linq.XElement[] a = null;
                         if (!ReadNull()) {
                             global::System.Xml.Linq.XElement[] z_0_0 = null;
@@ -7691,7 +7745,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id147_XElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id149_XElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 z_0_0 = (global::System.Xml.Linq.XElement[])EnsureArrayIndex(z_0_0, cz_0_0, typeof(global::System.Xml.Linq.XElement));z_0_0[cz_0_0++] = (global::System.Xml.Linq.XElement)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)new global::System.Xml.Linq.XElement("default"), true
                                                 );
                                                 break;
@@ -7710,7 +7764,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id148_ArrayOfSimpleType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id150_ArrayOfSimpleType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::SerializationTypes.SimpleType[] a = null;
                         if (!ReadNull()) {
                             global::SerializationTypes.SimpleType[] z_0_0 = null;
@@ -7779,7 +7833,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         ReadEndElement();
                         return e;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id149_ArrayOfTypeA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id151_ArrayOfTypeA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::SerializationTypes.TypeA[] a = null;
                         if (!ReadNull()) {
                             global::SerializationTypes.TypeA[] z_0_0 = null;
@@ -7865,7 +7919,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         ReadEndElement();
                         return e;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id150_ArrayOfItemChoiceType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id152_ArrayOfItemChoiceType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::SerializationTypes.ItemChoiceType[] a = null;
                         if (!ReadNull()) {
                             global::SerializationTypes.ItemChoiceType[] z_0_0 = null;
@@ -7899,7 +7953,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id139_ArrayOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id151_httpmynamespace)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id141_ArrayOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id153_httpmynamespace)) {
                         global::System.Object[] a = null;
                         if (!ReadNull()) {
                             global::System.Object[] z_0_0 = null;
@@ -7913,7 +7967,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id151_httpmynamespace)) {
+                                            if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id153_httpmynamespace)) {
                                                 if (ReadNull()) {
                                                     z_0_0 = (global::System.Object[])EnsureArrayIndex(z_0_0, cz_0_0, typeof(global::System.Object));z_0_0[cz_0_0++] = null;
                                                 }
@@ -7936,7 +7990,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id152_ArrayOfString1 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id154_ArrayOfString1 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::System.String> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::System.String>();
@@ -7950,7 +8004,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id153_NoneParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id155_NoneParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 {
                                                     z_0_0.Add(Reader.ReadElementString());
                                                 }
@@ -7969,7 +8023,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id154_ArrayOfBoolean && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id156_ArrayOfBoolean && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::System.Collections.Generic.List<global::System.Boolean> a = null;
                         if (!ReadNull()) {
                             if ((object)(a) == null) a = new global::System.Collections.Generic.List<global::System.Boolean>();
@@ -7983,7 +8037,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                 while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                     if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                         do {
-                                            if (((object) Reader.LocalName == (object)id155_QualifiedParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                            if (((object) Reader.LocalName == (object)id157_QualifiedParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                 {
                                                     z_0_0.Add(System.Xml.XmlConvert.ToBoolean(Reader.ReadElementString()));
                                                 }
@@ -8002,7 +8056,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id156_ArrayOfArrayOfSimpleType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id158_ArrayOfArrayOfSimpleType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         global::SerializationTypes.SimpleType[][] a = null;
                         if (!ReadNull()) {
                             global::SerializationTypes.SimpleType[][] z_0_0 = null;
@@ -8061,7 +8115,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         }
                         return a;
                     }
-                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id114_MoreChoices && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+                    if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id116_MoreChoices && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
                         Reader.ReadStartElement();
                         object e = Read108_MoreChoices(CollapseWhitespace(Reader.ReadString()));
                         ReadEndElement();
@@ -8138,14 +8192,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id157_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@P1 = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id158_P2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id160_P2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@P2 = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -8287,7 +8341,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -8323,7 +8377,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id45_Parameter && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
-                if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id133_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id135_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                     return Read40_ParameterOfString(isNullable, false);
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
             }
@@ -8333,7 +8387,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::Parameter();
             System.Span<bool> paramsRead = stackalloc bool[1];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Name = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -8366,7 +8420,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id133_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id135_ParameterOfString && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -8377,7 +8431,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::Parameter<global::System.String>();
             System.Span<bool> paramsRead = stackalloc bool[2];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Name = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -8395,7 +8449,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Value = Reader.ReadElementString();
                             }
@@ -8446,12 +8500,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id160_Child && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id162_Child && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Child = Read38_TypeWithLinkedProperty(false, true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id161_Children && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id163_Children && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Children) == null) o.@Children = new global::System.Collections.Generic.List<global::TypeWithLinkedProperty>();
                                 global::System.Collections.Generic.List<global::TypeWithLinkedProperty> a_1_0 = (global::System.Collections.Generic.List<global::TypeWithLinkedProperty>)o.@Children;
@@ -8527,7 +8581,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -8576,21 +8630,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id162_IsValved && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id164_IsValved && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IsValved = System.Xml.XmlConvert.ToBoolean(Reader.ReadElementString());
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id163_Modulation && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id165_Modulation && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Modulation = ToChar(Reader.ReadElementString());
                             }
@@ -8641,14 +8695,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id162_IsValved && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id164_IsValved && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IsValved = System.Xml.XmlConvert.ToBoolean(Reader.ReadElementString());
                             }
@@ -8697,35 +8751,35 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id164_ItemName && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id166_ItemName && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@ItemName = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id165_Description && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id167_Description && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@Description = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id166_UnitPrice && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id168_UnitPrice && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@UnitPrice = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id167_Quantity && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id169_Quantity && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@Quantity = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id168_LineTotal && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id170_LineTotal && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@LineTotal = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
@@ -8873,14 +8927,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id169_BinaryHexContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id171_BinaryHexContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@BinaryHexContent = ToByteArrayHex(false);
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id170_Base64Content && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id172_Base64Content && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Base64Content = ToByteArrayBase64(false);
                             }
@@ -8929,7 +8983,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id171_DTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id173_DTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 if (Reader.IsEmptyElement) {
                                     Reader.Skip();
@@ -8942,7 +8996,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id172_DTO2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id174_DTO2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 if (Reader.IsEmptyElement) {
                                     Reader.Skip();
@@ -8955,7 +9009,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id173_DefaultDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id175_DefaultDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -8971,12 +9025,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id174_NullableDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id176_NullableDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@NullableDTO = Read5_NullableOfDateTimeOffset(true);
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id175_NullableDefaultDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id177_NullableDefaultDTO && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@NullableDTOWithDefault = Read5_NullableOfDateTimeOffset(true);
                             paramsRead[4] = true;
                             break;
@@ -9039,7 +9093,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id176_TimeSpanProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id178_TimeSpanProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 if (Reader.IsEmptyElement) {
                                     Reader.Skip();
@@ -9094,7 +9148,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id176_TimeSpanProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id178_TimeSpanProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -9110,7 +9164,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id177_TimeSpanProperty2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id179_TimeSpanProperty2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -9168,7 +9222,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id178_ByteProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id180_ByteProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@ByteProperty = System.Xml.XmlConvert.ToByte(Reader.ReadElementString());
                             }
@@ -9268,21 +9322,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id179_Age && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id181_Age && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Age = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id180_Breed && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id182_Breed && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Breed = Read12_DogBreed(Reader.ReadElementString());
                             }
@@ -9333,14 +9387,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id179_Age && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id181_Age && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Age = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -9389,7 +9443,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id181_LicenseNumber && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id183_LicenseNumber && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@LicenseNumber = Reader.ReadElementString();
                             }
@@ -9438,14 +9492,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id182_GroupName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id184_GroupName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@GroupName = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id183_GroupVehicle && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id185_GroupVehicle && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@GroupVehicle = Read14_Vehicle(false, true);
                             paramsRead[1] = true;
                             break;
@@ -9492,7 +9546,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id184_EmployeeName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id186_EmployeeName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@EmployeeName = Reader.ReadElementString();
                             }
@@ -9541,14 +9595,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Value = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id185_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id187_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@value = Reader.ReadElementString();
                             }
@@ -9599,14 +9653,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Value = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id185_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id187_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@value = Reader.ReadElementString();
                             }
@@ -9641,15 +9695,15 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::SimpleDerivedClass();
             System.Span<bool> paramsRead = stackalloc bool[3];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id186_AttributeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id188_AttributeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@AttributeString = Reader.Value;
                     paramsRead[0] = true;
                 }
-                else if (!paramsRead[1] && ((object) Reader.LocalName == (object)id187_DateTimeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                else if (!paramsRead[1] && ((object) Reader.LocalName == (object)id189_DateTimeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@DateTimeValue = ToDateTime(Reader.Value);
                     paramsRead[1] = true;
                 }
-                else if (!paramsRead[2] && ((object) Reader.LocalName == (object)id188_BoolValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                else if (!paramsRead[2] && ((object) Reader.LocalName == (object)id190_BoolValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@BoolValue = System.Xml.XmlConvert.ToBoolean(Reader.Value);
                     paramsRead[2] = true;
                 }
@@ -9695,11 +9749,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::SimpleBaseClass();
             System.Span<bool> paramsRead = stackalloc bool[2];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id186_AttributeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id188_AttributeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@AttributeString = Reader.Value;
                     paramsRead[0] = true;
                 }
-                else if (!paramsRead[1] && ((object) Reader.LocalName == (object)id187_DateTimeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                else if (!paramsRead[1] && ((object) Reader.LocalName == (object)id189_DateTimeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@DateTimeValue = ToDateTime(Reader.Value);
                     paramsRead[1] = true;
                 }
@@ -9743,7 +9797,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::Address();
             System.Span<bool> paramsRead = stackalloc bool[5];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Name = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -9761,28 +9815,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id189_Line1 && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id191_Line1 && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@Line1 = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id190_City && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id192_City && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@City = Reader.ReadElementString();
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id191_State && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id193_State && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@State = Reader.ReadElementString();
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id192_Zip && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id194_Zip && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@Zip = Reader.ReadElementString();
                             }
@@ -9833,19 +9887,19 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id193_ShipTo && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id195_ShipTo && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             o.@ShipTo = Read21_Address(false, true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id194_OrderDate && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id196_OrderDate && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@OrderDate = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id195_Items && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (((object) Reader.LocalName == (object)id197_Items && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             if (!ReadNull()) {
                                 global::OrderedItem[] a_2_0 = null;
                                 int ca_2_0 = 0;
@@ -9876,21 +9930,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id196_SubTotal && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id198_SubTotal && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@SubTotal = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id197_ShipCost && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id199_ShipCost && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@ShipCost = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
                             paramsRead[4] = true;
                             break;
                         }
-                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id198_TotalCost && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
+                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id200_TotalCost && (object) Reader.NamespaceURI == (object)id24_httpwwwcontoso1com)) {
                             {
                                 o.@TotalCost = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
@@ -9925,7 +9979,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::Address();
             System.Span<bool> paramsRead = stackalloc bool[5];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Name = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -9943,28 +9997,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id189_Line1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id191_Line1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Line1 = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id190_City && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id192_City && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@City = Reader.ReadElementString();
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id191_State && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id193_State && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@State = Reader.ReadElementString();
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id192_Zip && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id194_Zip && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Zip = Reader.ReadElementString();
                             }
@@ -10013,35 +10067,35 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id164_ItemName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id166_ItemName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@ItemName = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id165_Description && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id167_Description && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Description = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id166_UnitPrice && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id168_UnitPrice && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@UnitPrice = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id167_Quantity && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id169_Quantity && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Quantity = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id168_LineTotal && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id170_LineTotal && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@LineTotal = System.Xml.XmlConvert.ToDecimal(Reader.ReadElementString());
                             }
@@ -10090,7 +10144,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id199_X && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id201_X && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Aliased) == null) o.@Aliased = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_0_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@Aliased;
@@ -10103,7 +10157,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_0_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -10123,7 +10177,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id200_Y && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id202_Y && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Aliased) == null) o.@Aliased = new global::System.Collections.Generic.List<global::System.String>();
                                 global::System.Collections.Generic.List<global::System.String> a_0_0 = (global::System.Collections.Generic.List<global::System.String>)o.@Aliased;
@@ -10136,7 +10190,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_0_0.Add(null);
                                                     }
@@ -10159,7 +10213,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id201_Z && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id203_Z && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Aliased) == null) o.@Aliased = new global::System.Collections.Generic.List<global::System.Double>();
                                 global::System.Collections.Generic.List<global::System.Double> a_0_0 = (global::System.Collections.Generic.List<global::System.Double>)o.@Aliased;
@@ -10172,7 +10226,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id142_double && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id144_double && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_0_0.Add(System.Xml.XmlConvert.ToDouble(Reader.ReadElementString()));
                                                     }
@@ -10236,7 +10290,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id202_Prop && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id204_Prop && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 a_0.Add(ToDateTime(Reader.ReadElementString()));
                             }
@@ -10288,7 +10342,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id202_Prop && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id204_Prop && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 a_0.Add(ToDateTime(Reader.ReadElementString()));
                             }
@@ -10338,7 +10392,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id203_Instruments && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id205_Instruments && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::Instrument[] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -10418,7 +10472,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id204_Comment2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id206_Comment2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Comment2 = Reader.ReadElementString();
                             }
@@ -10467,7 +10521,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id205_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id207_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10477,7 +10531,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id206_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id208_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10487,7 +10541,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id207_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id209_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10497,7 +10551,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id208_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id210_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10549,7 +10603,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id205_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id207_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10559,7 +10613,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id206_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id208_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10569,7 +10623,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id207_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id209_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10579,7 +10633,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id208_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id210_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10631,7 +10685,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id205_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id207_DoubleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10641,7 +10695,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id206_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id208_SingleField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10651,7 +10705,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id207_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id209_DoubleProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10661,7 +10715,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id208_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id210_FloatProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -10688,7 +10742,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id135_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id137_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -10699,7 +10753,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::TypeWithMismatchBetweenAttributeAndPropertyType();
             System.Span<bool> paramsRead = stackalloc bool[1];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id209_IntValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id211_IntValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@IntValue = System.Xml.XmlConvert.ToInt32(Reader.Value);
                     paramsRead[0] = true;
                 }
@@ -10732,7 +10786,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id134_MsgDocumentType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id43_httpexamplecom)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id136_MsgDocumentType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id43_httpexamplecom)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -10745,11 +10799,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             int ca_1 = 0;
             System.Span<bool> paramsRead = stackalloc bool[2];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id210_id && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id212_id && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Id = CollapseWhitespace(Reader.Value);
                     paramsRead[0] = true;
                 }
-                else if (((object) Reader.LocalName == (object)id211_refs && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                else if (((object) Reader.LocalName == (object)id213_refs && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     string listValues = Reader.Value;
                     string[] vals = listValues.Split(null);
                     for (int i = 0; i < vals.Length; i++) {
@@ -10814,7 +10868,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id212_Parameters && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id214_Parameters && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Parameters) == null) o.@Parameters = new global::System.Collections.Generic.List<global::Parameter>();
                                 global::System.Collections.Generic.List<global::Parameter> a_0_0 = (global::System.Collections.Generic.List<global::Parameter>)o.@Parameters;
@@ -10886,7 +10940,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Value = (global::System.Xml.Linq.XElement)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)new global::System.Xml.Linq.XElement("default"), true
                             );
                             paramsRead[0] = true;
@@ -10940,7 +10994,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id213_xelement && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id215_xelement && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@xelement = (global::System.Xml.Linq.XElement)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)new global::System.Xml.Linq.XElement("default"), true
                             );
                             paramsRead[0] = true;
@@ -10990,7 +11044,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id214_xelements && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id216_xelements && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Xml.Linq.XElement[] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -11003,7 +11057,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id147_XElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id149_XElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     a_0_0 = (global::System.Xml.Linq.XElement[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Xml.Linq.XElement));a_0_0[ca_0_0++] = (global::System.Xml.Linq.XElement)ReadSerializable(( System.Xml.Serialization.IXmlSerializable)new global::System.Xml.Linq.XElement("default"), true
                                                     );
                                                     break;
@@ -11064,14 +11118,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id215_DateTimeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id217_DateTimeString && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateTimeString = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id216_CurrentDateTime && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id218_CurrentDateTime && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@CurrentDateTime = ToDateTime(Reader.ReadElementString());
                             }
@@ -11128,7 +11182,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id217_F1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id219_F1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.SimpleType[] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -11159,7 +11213,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id218_F2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id220_F2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_1_0 = null;
                                 int ca_1_0 = 0;
@@ -11172,7 +11226,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_1_0 = (global::System.Int32[])EnsureArrayIndex(a_1_0, ca_1_0, typeof(global::System.Int32));a_1_0[ca_1_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11192,7 +11246,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id157_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id159_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.SimpleType[] a_2_0 = null;
                                 int ca_2_0 = 0;
@@ -11223,7 +11277,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id158_P2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id160_P2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_3_0 = null;
                                 int ca_3_0 = 0;
@@ -11236,7 +11290,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_3_0 = (global::System.Int32[])EnsureArrayIndex(a_3_0, ca_3_0, typeof(global::System.Int32));a_3_0[ca_3_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11354,7 +11408,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id219_IntAField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id221_IntAField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -11367,7 +11421,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_0_0 = (global::System.Int32[])EnsureArrayIndex(a_0_0, ca_0_0, typeof(global::System.Int32));a_0_0[ca_0_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11387,7 +11441,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id220_NIntAField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id222_NIntAField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_1_0 = null;
                                 int ca_1_0 = 0;
@@ -11400,7 +11454,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_1_0 = (global::System.Int32[])EnsureArrayIndex(a_1_0, ca_1_0, typeof(global::System.Int32));a_1_0[ca_1_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11420,7 +11474,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id221_IntLField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id223_IntLField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@IntLField) == null) o.@IntLField = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_2_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@IntLField;
@@ -11433,7 +11487,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_2_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -11452,7 +11506,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id222_NIntLField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id224_NIntLField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@NIntLField) == null) o.@NIntLField = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_3_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@NIntLField;
@@ -11465,7 +11519,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_3_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -11488,7 +11542,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id223_IntAProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id225_IntAProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_4_0 = null;
                                 int ca_4_0 = 0;
@@ -11501,7 +11555,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_4_0 = (global::System.Int32[])EnsureArrayIndex(a_4_0, ca_4_0, typeof(global::System.Int32));a_4_0[ca_4_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11521,7 +11575,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id224_NIntAProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id226_NIntAProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::System.Int32[] a_5_0 = null;
                                 int ca_5_0 = 0;
@@ -11534,7 +11588,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_5_0 = (global::System.Int32[])EnsureArrayIndex(a_5_0, ca_5_0, typeof(global::System.Int32));a_5_0[ca_5_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                                                     }
@@ -11559,7 +11613,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id225_IntLProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id227_IntLProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@IntLProp) == null) o.@IntLProp = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_6_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@IntLProp;
@@ -11572,7 +11626,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_6_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -11591,7 +11645,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id226_NIntLProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id228_NIntLProp && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@NIntLProp) == null) o.@NIntLProp = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_7_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@NIntLProp;
@@ -11604,7 +11658,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_7_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -11671,7 +11725,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id185_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id187_value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@value = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -11722,7 +11776,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id227_Collection && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id229_Collection && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@Collection) == null) o.@Collection = new global::SerializationTypes.MyCollection<global::System.String>();
                                 global::SerializationTypes.MyCollection<global::System.String> a_0_0 = (global::SerializationTypes.MyCollection<global::System.String>)o.@Collection;
@@ -11735,7 +11789,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_0_0.Add(null);
                                                     }
@@ -11800,7 +11854,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id227_Collection && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id229_Collection && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.MyCollection<global::System.String> a_0_0 = (global::SerializationTypes.MyCollection<global::System.String>)o.@Collection;
                                 if (((object)(a_0_0) == null) || (Reader.IsEmptyElement)) {
@@ -11812,7 +11866,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_0_0.Add(null);
                                                     }
@@ -11876,14 +11930,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id217_F1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id219_F1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@F1 = Read54_MyEnum(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id157_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id159_P1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@P1 = Read54_MyEnum(Reader.ReadElementString());
                             }
@@ -11938,7 +11992,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id228_Data && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id230_Data && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Data = Reader.ReadElementString();
                             }
@@ -11987,12 +12041,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id229_MyStruct && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id231_MyStruct && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@MyStruct = Read56_DCStruct(true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id230_MyEnum1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id232_MyEnum1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MyEnum1 = Read54_MyEnum(Reader.ReadElementString());
                             }
@@ -12041,7 +12095,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id231_ByteArray && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id233_ByteArray && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@ByteArray = ToByteArrayBase64(false);
                             }
@@ -12090,7 +12144,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -12141,7 +12195,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id195_Items && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id197_Items && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.TypeA[] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -12214,7 +12268,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id232_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id234_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@PropertyNameWithSpecialCharacters漢ñ = Reader.ReadElementString();
                             }
@@ -12265,28 +12319,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id233_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id235_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringProperty = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id234_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id236_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IntProperty = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id235_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id237_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateTimeProperty = ToDateTime(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id236_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id238_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@ListProperty) == null) o.@ListProperty = new global::System.Collections.Generic.List<global::System.String>();
                                 global::System.Collections.Generic.List<global::System.String> a_3_0 = (global::System.Collections.Generic.List<global::System.String>)o.@ListProperty;
@@ -12299,7 +12353,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_3_0.Add(null);
                                                     }
@@ -12367,28 +12421,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id233_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id235_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringProperty = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id234_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id236_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IntProperty = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id235_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id237_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateTimeProperty = ToDateTime(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id236_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id238_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@ListProperty) == null) o.@ListProperty = new global::System.Collections.Generic.List<global::System.String>();
                                 global::System.Collections.Generic.List<global::System.String> a_3_0 = (global::System.Collections.Generic.List<global::System.String>)o.@ListProperty;
@@ -12401,7 +12455,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_3_0.Add(null);
                                                     }
@@ -12471,28 +12525,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id233_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id235_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringProperty = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id234_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id236_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IntProperty = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id235_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id237_DateTimeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateTimeProperty = ToDateTime(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id236_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id238_ListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@ListProperty) == null) o.@ListProperty = new global::System.Collections.Generic.List<global::System.String>();
                                 global::System.Collections.Generic.List<global::System.String> a_3_0 = (global::System.Collections.Generic.List<global::System.String>)o.@ListProperty;
@@ -12505,7 +12559,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     if (ReadNull()) {
                                                         a_3_0.Add(null);
                                                     }
@@ -12663,7 +12717,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id228_Data && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id230_Data && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Data = Reader.ReadElementString();
                             }
@@ -12763,28 +12817,28 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id237_ClassID && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id239_ClassID && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@ClassID = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id238_DisplayName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id240_DisplayName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DisplayName = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id239_Id && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id241_Id && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Id = Reader.ReadElementString();
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id240_IsLoaded && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id242_IsLoaded && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IsLoaded = System.Xml.XmlConvert.ToBoolean(Reader.ReadElementString());
                             }
@@ -12839,14 +12893,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_A && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id130_A && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@A = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id129_B && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id131_B && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@B = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -12895,7 +12949,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id241_Some && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id243_Some && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Some = Read72_SomeStruct(true);
                             paramsRead[0] = true;
                             break;
@@ -12942,14 +12996,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id242_Int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id244_Int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Int = Read74_IntEnum(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id243_Short && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id245_Short && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Short = Read75_ShortEnum(Reader.ReadElementString());
                             }
@@ -12998,32 +13052,32 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id244_Optional && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id246_Optional && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Optional = Read77_NullableOfIntEnum(true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id245_Optionull && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id247_Optionull && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Optionull = Read77_NullableOfIntEnum(true);
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id246_OptionalInt && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id248_OptionalInt && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@OptionalInt = Read78_NullableOfInt32(true);
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id247_OptionullInt && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id249_OptionullInt && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@OptionullInt = Read78_NullableOfInt32(true);
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id248_Struct1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id250_Struct1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Struct1 = Read79_NullableOfSomeStruct(true);
                             paramsRead[4] = true;
                             break;
                         }
-                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id249_Struct2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id251_Struct2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Struct2 = Read79_NullableOfSomeStruct(true);
                             paramsRead[5] = true;
                             break;
@@ -13073,7 +13127,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id132_XmlSerializerAttributes && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id134_XmlSerializerAttributes && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13088,7 +13142,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             int ca_7 = 0;
             System.Span<bool> paramsRead = stackalloc bool[8];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[6] && ((object) Reader.LocalName == (object)id250_XmlAttributeName && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[6] && ((object) Reader.LocalName == (object)id252_XmlAttributeName && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@XmlAttributeProperty = System.Xml.XmlConvert.ToInt32(Reader.Value);
                     paramsRead[6] = true;
                 }
@@ -13107,7 +13161,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                 string tmp = null;
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id251_Word && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id253_Word && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MyChoice = Reader.ReadElementString();
                             }
@@ -13115,7 +13169,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id252_Number && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id254_Number && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MyChoice = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -13123,7 +13177,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id253_DecimalNumber && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id255_DecimalNumber && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MyChoice = System.Xml.XmlConvert.ToDouble(Reader.ReadElementString());
                             }
@@ -13131,12 +13185,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id254_XmlIncludeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id256_XmlIncludeProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@XmlIncludeProperty = Read1_Object(false, true);
                             paramsRead[1] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id255_XmlEnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id257_XmlEnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.ItemChoiceType[] a_2_0 = null;
                                 int ca_2_0 = 0;
@@ -13169,21 +13223,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id256_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id258_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@XmlNamespaceDeclarationsProperty = Reader.ReadElementString();
                             }
                             paramsRead[4] = true;
                             break;
                         }
-                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id257_XmlElementPropertyNode && (object) Reader.NamespaceURI == (object)id258_httpelement)) {
+                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id259_XmlElementPropertyNode && (object) Reader.NamespaceURI == (object)id260_httpelement)) {
                             {
                                 o.@XmlElementProperty = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
                             paramsRead[5] = true;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id259_CustomXmlArrayProperty && (object) Reader.NamespaceURI == (object)id151_httpmynamespace)) {
+                        if (((object) Reader.LocalName == (object)id261_CustomXmlArrayProperty && (object) Reader.NamespaceURI == (object)id153_httpmynamespace)) {
                             if (!ReadNull()) {
                                 global::System.Object[] a_7_0 = null;
                                 int ca_7_0 = 0;
@@ -13196,7 +13250,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id140_string && (object) Reader.NamespaceURI == (object)id151_httpmynamespace)) {
+                                                if (((object) Reader.LocalName == (object)id142_string && (object) Reader.NamespaceURI == (object)id153_httpmynamespace)) {
                                                     if (ReadNull()) {
                                                         a_7_0 = (global::System.Object[])EnsureArrayIndex(a_7_0, ca_7_0, typeof(global::System.Object));a_7_0[ca_7_0++] = null;
                                                     }
@@ -13256,7 +13310,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             int ca_2 = 0;
             System.Span<bool> paramsRead = stackalloc bool[3];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[1] && ((object) Reader.LocalName == (object)id234_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[1] && ((object) Reader.LocalName == (object)id236_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@IntProperty = System.Xml.XmlConvert.ToInt32(Reader.Value);
                     paramsRead[1] = true;
                 }
@@ -13278,7 +13332,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -13328,12 +13382,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id260_EnumValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id262_EnumValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@EnumValue = Read1_Object(false, true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id261_SimpleTypeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id263_SimpleTypeValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@SimpleTypeValue = Read1_Object(false, true);
                             paramsRead[1] = true;
                             break;
@@ -13380,7 +13434,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id262_StrProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id264_StrProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StrProperty = Reader.ReadElementString();
                             }
@@ -13404,7 +13458,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id95_TypeWithPropertyNameSpecified && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id97_TypeWithPropertyNameSpecified && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13429,7 +13483,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id263_MyField && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id265_MyField && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@MyFieldSpecified = true;
                             {
                                 o.@MyField = Reader.ReadElementString();
@@ -13437,7 +13491,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id264_MyFieldIgnored && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id266_MyFieldIgnored && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@MyFieldIgnoredSpecified = true;
                             {
                                 o.@MyFieldIgnored = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
@@ -13462,7 +13516,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id96_TypeWithXmlSchemaFormAttribute && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id98_TypeWithXmlSchemaFormAttribute && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13493,7 +13547,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id265_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id267_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@UnqualifiedSchemaFormListProperty) == null) o.@UnqualifiedSchemaFormListProperty = new global::System.Collections.Generic.List<global::System.Int32>();
                                 global::System.Collections.Generic.List<global::System.Int32> a_0_0 = (global::System.Collections.Generic.List<global::System.Int32>)o.@UnqualifiedSchemaFormListProperty;
@@ -13506,7 +13560,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id138_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id140_int && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_0_0.Add(System.Xml.XmlConvert.ToInt32(Reader.ReadElementString()));
                                                     }
@@ -13525,7 +13579,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id266_NoneSchemaFormListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id268_NoneSchemaFormListProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@NoneSchemaFormListProperty) == null) o.@NoneSchemaFormListProperty = new global::System.Collections.Generic.List<global::System.String>();
                                 global::System.Collections.Generic.List<global::System.String> a_1_0 = (global::System.Collections.Generic.List<global::System.String>)o.@NoneSchemaFormListProperty;
@@ -13538,7 +13592,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id153_NoneParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id155_NoneParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_1_0.Add(Reader.ReadElementString());
                                                     }
@@ -13557,7 +13611,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             }
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id267_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id269_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 if ((object)(o.@QualifiedSchemaFormListProperty) == null) o.@QualifiedSchemaFormListProperty = new global::System.Collections.Generic.List<global::System.Boolean>();
                                 global::System.Collections.Generic.List<global::System.Boolean> a_2_0 = (global::System.Collections.Generic.List<global::System.Boolean>)o.@QualifiedSchemaFormListProperty;
@@ -13570,7 +13624,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                                     while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                                         if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                                             do {
-                                                if (((object) Reader.LocalName == (object)id155_QualifiedParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                                                if (((object) Reader.LocalName == (object)id157_QualifiedParameter && (object) Reader.NamespaceURI == (object)id2_Item)) {
                                                     {
                                                         a_2_0.Add(System.Xml.XmlConvert.ToBoolean(Reader.ReadElementString()));
                                                     }
@@ -13606,7 +13660,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id97_MyXmlType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id99_MyXmlType && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13617,7 +13671,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::SerializationTypes.TypeWithTypeNameInXmlTypeAttribute();
             System.Span<bool> paramsRead = stackalloc bool[1];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id268_XmlAttributeForm && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id270_XmlAttributeForm && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@XmlAttributeForm = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -13650,7 +13704,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id100_CustomElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id102_CustomElement && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13665,7 +13719,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             int ca_2 = 0;
             System.Span<bool> paramsRead = stackalloc bool[3];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id269_name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id271_name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     o.@Name = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -13708,7 +13762,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id99_CustomDocument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id101_CustomDocument && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13738,7 +13792,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id270_customElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id272_customElement && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if ((object)(a_0) == null) Reader.Skip(); else a_0.Add(Read95_CustomElement(false, true));
                             break;
                         }
@@ -13760,7 +13814,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id101_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id103_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13793,7 +13847,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -13817,7 +13871,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id102_ServerSettings && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id104_ServerSettings && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13842,14 +13896,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id271_DS2Root && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id273_DS2Root && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DS2Root = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id272_MetricConfigUrl && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id274_MetricConfigUrl && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@MetricConfigUrl = Reader.ReadElementString();
                             }
@@ -13873,7 +13927,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id103_TypeWithXmlQualifiedName && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id105_TypeWithXmlQualifiedName && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13898,7 +13952,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Value = ReadElementQualifiedName();
                             }
@@ -13922,7 +13976,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id104_TypeWith2DArrayProperty2 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id106_TypeWith2DArrayProperty2 && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -13949,7 +14003,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id273_TwoDArrayOfSimpleType && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id275_TwoDArrayOfSimpleType && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (!ReadNull()) {
                                 global::SerializationTypes.SimpleType[][] a_0_0 = null;
                                 int ca_0_0 = 0;
@@ -14024,7 +14078,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id105_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id107_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14049,21 +14103,21 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id274_EmptyStringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id276_EmptyStringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@EmptyStringProperty = Reader.ReadElementString();
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id233_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id235_StringProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringProperty = Reader.ReadElementString();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id234_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id236_IntProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -14073,7 +14127,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id275_CharProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id277_CharProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -14100,7 +14154,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id106_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id108_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14125,7 +14179,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id276_EnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id278_EnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -14152,7 +14206,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id107_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id109_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14177,7 +14231,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id276_EnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id278_EnumProperty && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             if (Reader.IsEmptyElement) {
                                 Reader.Skip();
                             }
@@ -14204,7 +14258,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id108_TypeWithShouldSerializeMethod && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id110_TypeWithShouldSerializeMethod && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14229,7 +14283,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id277_Foo && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id279_Foo && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Foo = Reader.ReadElementString();
                             }
@@ -14253,7 +14307,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id109_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id111_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14278,12 +14332,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id278_StringArrayValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id280_StringArrayValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@StringArrayValue = Read1_Object(false, true);
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id279_IntArrayValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id281_IntArrayValue && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@IntArrayValue = Read1_Object(false, true);
                             paramsRead[1] = true;
                             break;
@@ -14305,7 +14359,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id110_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id112_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14330,7 +14384,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id159_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id161_Value && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             o.@Value = Read1_Object(false, true);
                             paramsRead[0] = true;
                             break;
@@ -14352,7 +14406,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id111_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id113_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14377,63 +14431,63 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id280_DateTimeContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id282_DateTimeContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateTimeContent = ToDateTime(Reader.ReadElementString());
                             }
                             paramsRead[0] = true;
                             break;
                         }
-                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id281_QNameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[1] && ((object) Reader.LocalName == (object)id283_QNameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@QNameContent = ReadElementQualifiedName();
                             }
                             paramsRead[1] = true;
                             break;
                         }
-                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id282_DateContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[2] && ((object) Reader.LocalName == (object)id284_DateContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@DateContent = ToDate(Reader.ReadElementString());
                             }
                             paramsRead[2] = true;
                             break;
                         }
-                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id283_NameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[3] && ((object) Reader.LocalName == (object)id285_NameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@NameContent = ToXmlName(Reader.ReadElementString());
                             }
                             paramsRead[3] = true;
                             break;
                         }
-                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id284_NCNameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[4] && ((object) Reader.LocalName == (object)id286_NCNameContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@NCNameContent = ToXmlNCName(Reader.ReadElementString());
                             }
                             paramsRead[4] = true;
                             break;
                         }
-                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id285_NMTOKENContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[5] && ((object) Reader.LocalName == (object)id287_NMTOKENContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@NMTOKENContent = ToXmlNmToken(Reader.ReadElementString());
                             }
                             paramsRead[5] = true;
                             break;
                         }
-                        if (!paramsRead[6] && ((object) Reader.LocalName == (object)id286_NMTOKENSContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[6] && ((object) Reader.LocalName == (object)id288_NMTOKENSContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@NMTOKENSContent = ToXmlNmTokens(Reader.ReadElementString());
                             }
                             paramsRead[6] = true;
                             break;
                         }
-                        if (!paramsRead[7] && ((object) Reader.LocalName == (object)id287_Base64BinaryContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[7] && ((object) Reader.LocalName == (object)id289_Base64BinaryContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Base64BinaryContent = ToByteArrayBase64(false);
                             }
                             paramsRead[7] = true;
                             break;
                         }
-                        if (!paramsRead[8] && ((object) Reader.LocalName == (object)id288_HexBinaryContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[8] && ((object) Reader.LocalName == (object)id290_HexBinaryContent && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@HexBinaryContent = ToByteArrayHex(false);
                             }
@@ -14457,7 +14511,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id112_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id114_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14488,14 +14542,14 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id289_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id291_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 a_0 = (global::System.Object[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.Object));a_0[ca_0++] = Reader.ReadElementString();
                             }
                             choice_a_0 = (global::SerializationTypes.MoreChoices[])EnsureArrayIndex(choice_a_0, cchoice_a_0, typeof(global::SerializationTypes.MoreChoices));choice_a_0[cchoice_a_0++] = global::SerializationTypes.MoreChoices.@Item;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id290_Amount && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id292_Amount && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 a_0 = (global::System.Object[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.Object));a_0[ca_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -14521,7 +14575,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id116_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id118_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14546,7 +14600,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -14570,10 +14624,10 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id115_ComplexChoiceA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id117_ComplexChoiceA && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
-                if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id116_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
+                if (((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id118_ComplexChoiceB && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item))
                     return Read110_ComplexChoiceB(isNullable, false);
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
             }
@@ -14597,7 +14651,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id126_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (!paramsRead[0] && ((object) Reader.LocalName == (object)id128_Name && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@Name = Reader.ReadElementString();
                             }
@@ -14621,7 +14675,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id113_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id115_Item && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14652,12 +14706,12 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             while (Reader.NodeType != System.Xml.XmlNodeType.EndElement && Reader.NodeType != System.Xml.XmlNodeType.None) {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     do {
-                        if (((object) Reader.LocalName == (object)id289_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id291_Item && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             a_0 = (global::System.Object[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.Object));a_0[ca_0++] = Read111_ComplexChoiceA(false, true);
                             choice_a_0 = (global::SerializationTypes.MoreChoices[])EnsureArrayIndex(choice_a_0, cchoice_a_0, typeof(global::SerializationTypes.MoreChoices));choice_a_0[cchoice_a_0++] = global::SerializationTypes.MoreChoices.@Item;
                             break;
                         }
-                        if (((object) Reader.LocalName == (object)id290_Amount && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id292_Amount && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 a_0 = (global::System.Object[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.Object));a_0[ca_0++] = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -14683,7 +14737,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             bool isNull = false;
             if (isNullable) isNull = ReadNull();
             if (checkType) {
-            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id117_TypeWithFieldsOrdered && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
+            if (xsiType == null || ((object) ((System.Xml.XmlQualifiedName)xsiType).Name == (object)id119_TypeWithFieldsOrdered && (object) ((System.Xml.XmlQualifiedName)xsiType).Namespace == (object)id2_Item)) {
             }
             else {
                 throw CreateUnknownTypeException((System.Xml.XmlQualifiedName)xsiType);
@@ -14710,7 +14764,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                 if (Reader.NodeType == System.Xml.XmlNodeType.Element) {
                     switch (state) {
                     case 0:
-                        if (((object) Reader.LocalName == (object)id291_IntField2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id293_IntField2 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IntField2 = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -14718,7 +14772,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         state = 1;
                         break;
                     case 1:
-                        if (((object) Reader.LocalName == (object)id292_IntField1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id294_IntField1 && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@IntField1 = System.Xml.XmlConvert.ToInt32(Reader.ReadElementString());
                             }
@@ -14726,7 +14780,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         state = 2;
                         break;
                     case 2:
-                        if (((object) Reader.LocalName == (object)id293_strfld && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id295_strfld && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringField2 = Reader.ReadElementString();
                             }
@@ -14734,7 +14788,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                         state = 3;
                         break;
                     case 3:
-                        if (((object) Reader.LocalName == (object)id293_strfld && (object) Reader.NamespaceURI == (object)id2_Item)) {
+                        if (((object) Reader.LocalName == (object)id295_strfld && (object) Reader.NamespaceURI == (object)id2_Item)) {
                             {
                                 o.@StringField1 = Reader.ReadElementString();
                             }
@@ -14771,7 +14825,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             o = new global::SerializationTypes.TypeWithSchemaFormInXmlAttribute();
             System.Span<bool> paramsRead = stackalloc bool[1];
             while (Reader.MoveToNextAttribute()) {
-                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id294_TestProperty && (object) Reader.NamespaceURI == (object)id295_httptestcom)) {
+                if (!paramsRead[0] && ((object) Reader.LocalName == (object)id296_TestProperty && (object) Reader.NamespaceURI == (object)id297_httptestcom)) {
                     o.@TestProperty = Reader.Value;
                     paramsRead[0] = true;
                 }
@@ -14802,598 +14856,602 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         protected override void InitCallbacks() {
         }
 
-        string id288_HexBinaryContent;
-        string id160_Child;
-        string id86_UIntEnum;
-        string id167_Quantity;
-        string id292_IntField1;
-        string id133_ParameterOfString;
-        string id286_NMTOKENSContent;
-        string id265_Item;
-        string id263_MyField;
-        string id88_ULongEnum;
-        string id24_httpwwwcontoso1com;
-        string id179_Age;
-        string id14_Vehicle;
-        string id182_GroupName;
-        string id76_EnumFlags;
-        string id220_NIntAField;
-        string id241_Some;
-        string id18_SimpleBaseClass;
-        string id192_Zip;
-        string id146_ArrayOfXElement;
-        string id97_MyXmlType;
-        string id50_SimpleType;
-        string id48_XElementArrayWrapper;
-        string id60_TypeWithEnumMembers;
-        string id117_TypeWithFieldsOrdered;
-        string id99_CustomDocument;
-        string id141_ArrayOfDouble;
-        string id271_DS2Root;
-        string id148_ArrayOfSimpleType;
-        string id107_Item;
-        string id255_XmlEnumProperty;
-        string id261_SimpleTypeValue;
-        string id249_Struct2;
-        string id29_DerivedClass1;
-        string id38_Item;
-        string id125_LastName;
-        string id106_Item;
-        string id215_DateTimeString;
-        string id118_Item;
-        string id124_MiddleName;
-        string id257_XmlElementPropertyNode;
-        string id74_Item;
-        string id81_WithNullables;
-        string id54_StructNotSerializable;
-        string id195_Items;
-        string id132_XmlSerializerAttributes;
-        string id70_DerivedClassWithSameProperty2;
-        string id58_anyType;
-        string id274_EmptyStringProperty;
-        string id211_refs;
-        string id208_FloatProp;
-        string id280_DateTimeContent;
-        string id188_BoolValue;
-        string id79_SomeStruct;
-        string id23_PurchaseOrder;
-        string id136_ArrayOfOrderedItem;
-        string id92_KnownTypesThroughConstructor;
-        string id59_MyEnum;
-        string id185_value;
-        string id135_Item;
-        string id91_TypeWithAnyAttribute;
-        string id83_SByteEnum;
-        string id205_DoubleField;
-        string id116_ComplexChoiceB;
-        string id214_xelements;
-        string id19_SimpleDerivedClass;
-        string id150_ArrayOfItemChoiceType;
-        string id159_Value;
-        string id234_IntProperty;
-        string id202_Prop;
-        string id41_TypeWithLinkedProperty;
-        string id149_ArrayOfTypeA;
-        string id115_ComplexChoiceA;
-        string id22_DerivedIXmlSerializable;
-        string id184_EmployeeName;
-        string id245_Optionull;
-        string id36_Pet;
-        string id62_DCClassWithEnumAndStruct;
-        string id254_XmlIncludeProperty;
-        string id56_Item;
-        string id90_ItemChoiceType;
-        string id209_IntValue;
-        string id196_SubTotal;
-        string id281_QNameContent;
-        string id17_DerivedClass;
-        string id84_ShortEnum;
-        string id145_ArrayOfParameter;
-        string id49_TypeWithDateTimeStringProperty;
-        string id164_ItemName;
-        string id69_DerivedClassWithSameProperty;
-        string id10_Animal;
-        string id268_XmlAttributeForm;
-        string id40_RootElement;
-        string id272_MetricConfigUrl;
-        string id183_GroupVehicle;
-        string id163_Modulation;
-        string id246_OptionalInt;
-        string id75_Item;
-        string id204_Comment2;
-        string id203_Instruments;
-        string id161_Children;
-        string id248_Struct1;
-        string id193_ShipTo;
-        string id200_Y;
-        string id55_TypeWithMyCollectionField;
-        string id77_ClassImplementsInterface;
-        string id33_Instrument;
-        string id9_TypeWithXmlNodeArrayProperty;
-        string id153_NoneParameter;
-        string id264_MyFieldIgnored;
-        string id73_SimpleDC;
-        string id5_Item;
-        string id275_CharProperty;
-        string id171_DTO;
-        string id39_Item;
-        string id20_BaseIXmlSerializable;
-        string id131_Value2;
-        string id259_CustomXmlArrayProperty;
-        string id199_X;
-        string id96_TypeWithXmlSchemaFormAttribute;
-        string id233_StringProperty;
-        string id44_RootClass;
-        string id216_CurrentDateTime;
-        string id120_TypeClashB;
-        string id61_DCStruct;
-        string id114_MoreChoices;
-        string id154_ArrayOfBoolean;
-        string id7_Item;
         string id109_Item;
-        string id282_DateContent;
-        string id13_Group;
-        string id46_XElementWrapper;
-        string id270_customElement;
-        string id112_Item;
-        string id52_TypeWithGetOnlyArrayProperties;
-        string id207_DoubleProp;
-        string id3_TypeWithXmlDocumentProperty;
-        string id35_Trumpet;
-        string id178_ByteProperty;
-        string id71_Item;
-        string id251_Word;
-        string id93_SimpleKnownTypeValue;
-        string id252_Number;
-        string id262_StrProperty;
-        string id100_CustomElement;
-        string id197_ShipCost;
-        string id122_Person;
-        string id222_NIntLField;
-        string id278_StringArrayValue;
-        string id273_TwoDArrayOfSimpleType;
-        string id169_BinaryHexContent;
-        string id244_Optional;
-        string id238_DisplayName;
-        string id228_Data;
-        string id287_Base64BinaryContent;
-        string id103_TypeWithXmlQualifiedName;
-        string id291_IntField2;
-        string id181_LicenseNumber;
-        string id229_MyStruct;
-        string id175_NullableDefaultDTO;
-        string id28_BaseClass1;
-        string id295_httptestcom;
-        string id21_Item;
-        string id173_DefaultDTO;
-        string id266_NoneSchemaFormListProperty;
-        string id157_P1;
-        string id47_XElementStruct;
-        string id139_ArrayOfString;
-        string id212_Parameters;
-        string id87_LongEnum;
-        string id155_QualifiedParameter;
-        string id121_TypeClashA;
-        string id187_DateTimeValue;
-        string id95_TypeWithPropertyNameSpecified;
-        string id166_UnitPrice;
-        string id110_Item;
-        string id236_ListProperty;
-        string id11_Dog;
-        string id247_OptionullInt;
-        string id276_EnumProperty;
-        string id232_Item;
-        string id72_TypeWithByteArrayAsXmlText;
-        string id65_TypeB;
-        string id31_dateTime;
-        string id85_IntEnum;
-        string id108_TypeWithShouldSerializeMethod;
-        string id279_IntArrayValue;
-        string id290_Amount;
-        string id102_ServerSettings;
-        string id138_int;
-        string id176_TimeSpanProperty;
-        string id165_Description;
-        string id45_Parameter;
-        string id226_NIntLProp;
-        string id42_Document;
-        string id177_TimeSpanProperty2;
-        string id82_ByteEnum;
-        string id269_name;
-        string id225_IntLProp;
-        string id126_Name;
-        string id151_httpmynamespace;
-        string id32_Orchestra;
-        string id180_Breed;
-        string id224_NIntAProp;
-        string id235_DateTimeProperty;
-        string id113_Item;
-        string id51_TypeWithGetSetArrayMembers;
-        string id174_NullableDTO;
-        string id142_double;
-        string id129_B;
-        string id37_DefaultValuesSetToNaN;
-        string id162_IsValved;
-        string id250_XmlAttributeName;
-        string id27_AliasedTestType;
-        string id285_NMTOKENContent;
-        string id144_ArrayOfTypeWithLinkedProperty;
-        string id57_ArrayOfAnyType;
+        string id209_DoubleProp;
+        string id151_ArrayOfTypeA;
+        string id19_SimpleDerivedClass;
+        string id91_TypeWithAnyAttribute;
         string id1_TypeWithXmlElementProperty;
-        string id186_AttributeString;
-        string id123_FirstName;
-        string id243_Short;
-        string id4_TypeWithBinaryProperty;
-        string id221_IntLField;
-        string id63_BuiltInTypes;
-        string id64_TypeA;
-        string id258_httpelement;
-        string id134_MsgDocumentType;
-        string id190_City;
-        string id189_Line1;
-        string id119_Root;
-        string id231_ByteArray;
-        string id143_ArrayOfInstrument;
-        string id30_ArrayOfDateTime;
-        string id137_ArrayOfInt;
-        string id25_Address;
-        string id53_TypeWithArraylikeMembers;
-        string id98_Item;
-        string id227_Collection;
-        string id218_F2;
-        string id78_WithStruct;
-        string id104_TypeWith2DArrayProperty2;
-        string id170_Base64Content;
-        string id147_XElement;
-        string id260_EnumValue;
-        string id223_IntAProp;
-        string id15_Employee;
-        string id105_Item;
-        string id152_ArrayOfString1;
-        string id128_A;
-        string id284_NCNameContent;
-        string id219_IntAField;
-        string id210_id;
-        string id34_Brass;
-        string id158_P2;
-        string id294_TestProperty;
+        string id271_name;
+        string id121_Root;
+        string id297_httptestcom;
+        string id265_MyField;
+        string id275_TwoDArrayOfSimpleType;
+        string id17_DerivedClass;
+        string id45_Parameter;
+        string id92_KnownTypesThroughConstructor;
+        string id47_XElementStruct;
+        string id207_DoubleField;
+        string id280_StringArrayValue;
+        string id197_Items;
+        string id175_DefaultDTO;
+        string id282_DateTimeContent;
+        string id144_double;
+        string id22_DerivedIXmlSerializable;
+        string id286_NCNameContent;
+        string id284_DateContent;
+        string id102_CustomElement;
+        string id49_TypeWithDateTimeStringProperty;
+        string id269_Item;
+        string id37_DefaultValuesSetToNaN;
+        string id170_LineTotal;
+        string id295_strfld;
+        string id160_P2;
+        string id41_TypeWithLinkedProperty;
+        string id226_NIntAProp;
+        string id84_ShortEnum;
+        string id181_Age;
+        string id58_anyType;
+        string id46_XElementWrapper;
+        string id225_IntAProp;
+        string id270_XmlAttributeForm;
+        string id135_ParameterOfString;
+        string id159_P1;
+        string id9_TypeWithXmlNodeArrayProperty;
+        string id281_IntArrayValue;
+        string id283_QNameContent;
+        string id255_DecimalNumber;
+        string id289_Base64BinaryContent;
+        string id211_IntValue;
+        string id199_ShipCost;
+        string id71_Item;
+        string id193_State;
         string id67_Item;
-        string id111_Item;
-        string id293_strfld;
-        string id130_Value1;
+        string id99_MyXmlType;
+        string id276_EmptyStringProperty;
+        string id114_Item;
+        string id262_EnumValue;
+        string id261_CustomXmlArrayProperty;
+        string id127_LastName;
+        string id40_RootElement;
+        string id187_value;
+        string id244_Int;
+        string id178_TimeSpanProperty;
+        string id229_Collection;
+        string id180_ByteProperty;
+        string id188_AttributeString;
         string id66_TypeHasArrayOfASerializedAsB;
-        string id217_F1;
-        string id16_BaseClass;
-        string id230_MyEnum1;
+        string id29_DerivedClass1;
+        string id13_Group;
+        string id291_Item;
+        string id115_Item;
+        string id162_Child;
+        string id227_IntLProp;
+        string id138_ArrayOfOrderedItem;
+        string id54_StructNotSerializable;
+        string id95_Item;
+        string id179_TimeSpanProperty2;
+        string id20_BaseIXmlSerializable;
+        string id87_LongEnum;
         string id12_DogBreed;
-        string id168_LineTotal;
-        string id194_OrderDate;
-        string id277_Foo;
-        string id239_Id;
-        string id6_TypeWithTimeSpanProperty;
-        string id140_string;
-        string id206_SingleField;
-        string id201_Z;
-        string id26_OrderedItem;
-        string id198_TotalCost;
-        string id240_IsLoaded;
-        string id94_Item;
-        string id89_AttributeTesting;
-        string id68_BaseClassWithSamePropertyName;
-        string id2_Item;
-        string id289_Item;
-        string id191_State;
-        string id237_ClassID;
+        string id172_Base64Content;
+        string id224_NIntLField;
+        string id77_ClassImplementsInterface;
+        string id132_Value1;
+        string id230_Data;
+        string id184_GroupName;
+        string id155_NoneParameter;
+        string id63_BuiltInTypes;
+        string id290_HexBinaryContent;
+        string id122_TypeClashB;
+        string id97_TypeWithPropertyNameSpecified;
+        string id191_Line1;
+        string id173_DTO;
+        string id129_ContainerType;
+        string id30_ArrayOfDateTime;
+        string id260_httpelement;
+        string id81_WithNullables;
         string id267_Item;
-        string id172_DTO2;
-        string id101_Item;
-        string id8_TypeWithByteProperty;
-        string id156_ArrayOfArrayOfSimpleType;
-        string id256_Item;
-        string id242_Int;
+        string id65_TypeB;
+        string id213_refs;
+        string id86_UIntEnum;
+        string id214_Parameters;
+        string id28_BaseClass1;
+        string id32_Orchestra;
+        string id34_Brass;
+        string id167_Description;
+        string id27_AliasedTestType;
+        string id296_TestProperty;
+        string id154_ArrayOfString1;
+        string id249_OptionullInt;
+        string id104_ServerSettings;
+        string id263_SimpleTypeValue;
+        string id205_Instruments;
+        string id259_XmlElementPropertyNode;
+        string id88_ULongEnum;
+        string id216_xelements;
+        string id215_xelement;
+        string id118_ComplexChoiceB;
+        string id107_Item;
+        string id15_Employee;
+        string id90_ItemChoiceType;
+        string id146_ArrayOfTypeWithLinkedProperty;
+        string id266_MyFieldIgnored;
+        string id48_XElementArrayWrapper;
+        string id163_Children;
+        string id89_AttributeTesting;
+        string id272_customElement;
+        string id42_Document;
+        string id14_Vehicle;
+        string id35_Trumpet;
+        string id106_TypeWith2DArrayProperty2;
+        string id72_TypeWithByteArrayAsXmlText;
+        string id36_Pet;
+        string id204_Prop;
+        string id134_XmlSerializerAttributes;
+        string id246_Optional;
+        string id243_Some;
+        string id147_ArrayOfParameter;
+        string id78_WithStruct;
+        string id123_TypeClashA;
+        string id33_Instrument;
+        string id69_DerivedClassWithSameProperty;
+        string id268_NoneSchemaFormListProperty;
+        string id234_Item;
+        string id75_Item;
+        string id292_Amount;
+        string id194_Zip;
+        string id164_IsValved;
+        string id277_CharProperty;
+        string id7_Item;
         string id43_httpexamplecom;
-        string id213_xelement;
+        string id3_TypeWithXmlDocumentProperty;
+        string id23_PurchaseOrder;
+        string id62_DCClassWithEnumAndStruct;
+        string id149_XElement;
+        string id11_Dog;
+        string id251_Struct2;
+        string id38_Item;
+        string id288_NMTOKENSContent;
+        string id258_Item;
+        string id203_Z;
+        string id236_IntProperty;
+        string id73_SimpleDC;
+        string id94_Item;
+        string id141_ArrayOfString;
+        string id60_TypeWithEnumMembers;
+        string id68_BaseClassWithSamePropertyName;
+        string id186_EmployeeName;
+        string id287_NMTOKENContent;
+        string id153_httpmynamespace;
+        string id39_Item;
+        string id158_ArrayOfArrayOfSimpleType;
+        string id198_SubTotal;
+        string id139_ArrayOfInt;
+        string id55_TypeWithMyCollectionField;
+        string id235_StringProperty;
+        string id231_MyStruct;
+        string id196_OrderDate;
+        string id59_MyEnum;
+        string id25_Address;
+        string id4_TypeWithBinaryProperty;
+        string id174_DTO2;
+        string id82_ByteEnum;
+        string id101_CustomDocument;
+        string id161_Value;
+        string id140_int;
+        string id93_SimpleKnownTypeValue;
+        string id113_Item;
+        string id124_Person;
+        string id51_TypeWithGetSetArrayMembers;
+        string id201_X;
+        string id241_Id;
+        string id24_httpwwwcontoso1com;
+        string id142_string;
+        string id278_EnumProperty;
+        string id85_IntEnum;
+        string id10_Animal;
+        string id130_A;
+        string id219_F1;
+        string id200_TotalCost;
+        string id125_FirstName;
+        string id31_dateTime;
+        string id152_ArrayOfItemChoiceType;
+        string id117_ComplexChoiceA;
+        string id257_XmlEnumProperty;
+        string id166_ItemName;
+        string id240_DisplayName;
+        string id185_GroupVehicle;
+        string id148_ArrayOfXElement;
+        string id105_TypeWithXmlQualifiedName;
+        string id274_MetricConfigUrl;
+        string id74_Item;
+        string id133_Value2;
+        string id165_Modulation;
+        string id79_SomeStruct;
+        string id83_SByteEnum;
+        string id112_Item;
+        string id21_Item;
+        string id120_Item;
+        string id108_Item;
+        string id128_Name;
         string id80_WithEnums;
-        string id127_ContainerType;
-        string id283_NameContent;
-        string id253_DecimalNumber;
+        string id156_ArrayOfBoolean;
+        string id294_IntField1;
+        string id168_UnitPrice;
+        string id126_MiddleName;
+        string id233_ByteArray;
+        string id210_FloatProp;
+        string id256_XmlIncludeProperty;
+        string id169_Quantity;
+        string id232_MyEnum1;
+        string id192_City;
+        string id98_TypeWithXmlSchemaFormAttribute;
+        string id183_LicenseNumber;
+        string id18_SimpleBaseClass;
+        string id176_NullableDTO;
+        string id254_Number;
+        string id103_Item;
+        string id222_NIntAField;
+        string id190_BoolValue;
+        string id8_TypeWithByteProperty;
+        string id119_TypeWithFieldsOrdered;
+        string id171_BinaryHexContent;
+        string id5_Item;
+        string id143_ArrayOfDouble;
+        string id61_DCStruct;
+        string id237_DateTimeProperty;
+        string id96_Item;
+        string id56_Item;
+        string id2_Item;
+        string id64_TypeA;
+        string id195_ShipTo;
+        string id6_TypeWithTimeSpanProperty;
+        string id52_TypeWithGetOnlyArrayProperties;
+        string id111_Item;
+        string id253_Word;
+        string id16_BaseClass;
+        string id238_ListProperty;
+        string id26_OrderedItem;
+        string id44_RootClass;
+        string id202_Y;
+        string id252_XmlAttributeName;
+        string id131_B;
+        string id70_DerivedClassWithSameProperty2;
+        string id264_StrProperty;
+        string id250_Struct1;
+        string id206_Comment2;
+        string id150_ArrayOfSimpleType;
+        string id245_Short;
+        string id53_TypeWithArraylikeMembers;
+        string id76_EnumFlags;
+        string id57_ArrayOfAnyType;
+        string id239_ClassID;
+        string id247_Optionull;
+        string id242_IsLoaded;
+        string id145_ArrayOfInstrument;
+        string id116_MoreChoices;
+        string id279_Foo;
+        string id157_QualifiedParameter;
+        string id220_F2;
+        string id212_id;
+        string id182_Breed;
+        string id285_NameContent;
+        string id223_IntLField;
+        string id189_DateTimeValue;
+        string id293_IntField2;
+        string id100_Item;
+        string id217_DateTimeString;
+        string id228_NIntLProp;
+        string id221_IntAField;
+        string id273_DS2Root;
+        string id136_MsgDocumentType;
+        string id110_TypeWithShouldSerializeMethod;
+        string id208_SingleField;
+        string id218_CurrentDateTime;
+        string id177_NullableDefaultDTO;
+        string id248_OptionalInt;
+        string id50_SimpleType;
+        string id137_Item;
 
         protected override void InitIDs() {
-            id288_HexBinaryContent = Reader.NameTable.Add(@"HexBinaryContent");
-            id160_Child = Reader.NameTable.Add(@"Child");
-            id86_UIntEnum = Reader.NameTable.Add(@"UIntEnum");
-            id167_Quantity = Reader.NameTable.Add(@"Quantity");
-            id292_IntField1 = Reader.NameTable.Add(@"IntField1");
-            id133_ParameterOfString = Reader.NameTable.Add(@"ParameterOfString");
-            id286_NMTOKENSContent = Reader.NameTable.Add(@"NMTOKENSContent");
-            id265_Item = Reader.NameTable.Add(@"UnqualifiedSchemaFormListProperty");
-            id263_MyField = Reader.NameTable.Add(@"MyField");
-            id88_ULongEnum = Reader.NameTable.Add(@"ULongEnum");
-            id24_httpwwwcontoso1com = Reader.NameTable.Add(@"http://www.contoso1.com");
-            id179_Age = Reader.NameTable.Add(@"Age");
-            id14_Vehicle = Reader.NameTable.Add(@"Vehicle");
-            id182_GroupName = Reader.NameTable.Add(@"GroupName");
-            id76_EnumFlags = Reader.NameTable.Add(@"EnumFlags");
-            id220_NIntAField = Reader.NameTable.Add(@"NIntAField");
-            id241_Some = Reader.NameTable.Add(@"Some");
-            id18_SimpleBaseClass = Reader.NameTable.Add(@"SimpleBaseClass");
-            id192_Zip = Reader.NameTable.Add(@"Zip");
-            id146_ArrayOfXElement = Reader.NameTable.Add(@"ArrayOfXElement");
-            id97_MyXmlType = Reader.NameTable.Add(@"MyXmlType");
-            id50_SimpleType = Reader.NameTable.Add(@"SimpleType");
-            id48_XElementArrayWrapper = Reader.NameTable.Add(@"XElementArrayWrapper");
-            id60_TypeWithEnumMembers = Reader.NameTable.Add(@"TypeWithEnumMembers");
-            id117_TypeWithFieldsOrdered = Reader.NameTable.Add(@"TypeWithFieldsOrdered");
-            id99_CustomDocument = Reader.NameTable.Add(@"CustomDocument");
-            id141_ArrayOfDouble = Reader.NameTable.Add(@"ArrayOfDouble");
-            id271_DS2Root = Reader.NameTable.Add(@"DS2Root");
-            id148_ArrayOfSimpleType = Reader.NameTable.Add(@"ArrayOfSimpleType");
-            id107_Item = Reader.NameTable.Add(@"TypeWithEnumFlagPropertyHavingDefaultValue");
-            id255_XmlEnumProperty = Reader.NameTable.Add(@"XmlEnumProperty");
-            id261_SimpleTypeValue = Reader.NameTable.Add(@"SimpleTypeValue");
-            id249_Struct2 = Reader.NameTable.Add(@"Struct2");
-            id29_DerivedClass1 = Reader.NameTable.Add(@"DerivedClass1");
-            id38_Item = Reader.NameTable.Add(@"DefaultValuesSetToPositiveInfinity");
-            id125_LastName = Reader.NameTable.Add(@"LastName");
-            id106_Item = Reader.NameTable.Add(@"TypeWithEnumPropertyHavingDefaultValue");
-            id215_DateTimeString = Reader.NameTable.Add(@"DateTimeString");
-            id118_Item = Reader.NameTable.Add(@"TypeWithKnownTypesOfCollectionsWithConflictingXmlName");
-            id124_MiddleName = Reader.NameTable.Add(@"MiddleName");
-            id257_XmlElementPropertyNode = Reader.NameTable.Add(@"XmlElementPropertyNode");
-            id74_Item = Reader.NameTable.Add(@"TypeWithXmlTextAttributeOnArray");
-            id81_WithNullables = Reader.NameTable.Add(@"WithNullables");
-            id54_StructNotSerializable = Reader.NameTable.Add(@"StructNotSerializable");
-            id195_Items = Reader.NameTable.Add(@"Items");
-            id132_XmlSerializerAttributes = Reader.NameTable.Add(@"XmlSerializerAttributes");
-            id70_DerivedClassWithSameProperty2 = Reader.NameTable.Add(@"DerivedClassWithSameProperty2");
-            id58_anyType = Reader.NameTable.Add(@"anyType");
-            id274_EmptyStringProperty = Reader.NameTable.Add(@"EmptyStringProperty");
-            id211_refs = Reader.NameTable.Add(@"refs");
-            id208_FloatProp = Reader.NameTable.Add(@"FloatProp");
-            id280_DateTimeContent = Reader.NameTable.Add(@"DateTimeContent");
-            id188_BoolValue = Reader.NameTable.Add(@"BoolValue");
-            id79_SomeStruct = Reader.NameTable.Add(@"SomeStruct");
-            id23_PurchaseOrder = Reader.NameTable.Add(@"PurchaseOrder");
-            id136_ArrayOfOrderedItem = Reader.NameTable.Add(@"ArrayOfOrderedItem");
-            id92_KnownTypesThroughConstructor = Reader.NameTable.Add(@"KnownTypesThroughConstructor");
-            id59_MyEnum = Reader.NameTable.Add(@"MyEnum");
-            id185_value = Reader.NameTable.Add(@"value");
-            id135_Item = Reader.NameTable.Add(@"TypeWithMismatchBetweenAttributeAndPropertyType");
-            id91_TypeWithAnyAttribute = Reader.NameTable.Add(@"TypeWithAnyAttribute");
-            id83_SByteEnum = Reader.NameTable.Add(@"SByteEnum");
-            id205_DoubleField = Reader.NameTable.Add(@"DoubleField");
-            id116_ComplexChoiceB = Reader.NameTable.Add(@"ComplexChoiceB");
-            id214_xelements = Reader.NameTable.Add(@"xelements");
+            id109_Item = Reader.NameTable.Add(@"TypeWithEnumFlagPropertyHavingDefaultValue");
+            id209_DoubleProp = Reader.NameTable.Add(@"DoubleProp");
+            id151_ArrayOfTypeA = Reader.NameTable.Add(@"ArrayOfTypeA");
             id19_SimpleDerivedClass = Reader.NameTable.Add(@"SimpleDerivedClass");
-            id150_ArrayOfItemChoiceType = Reader.NameTable.Add(@"ArrayOfItemChoiceType");
-            id159_Value = Reader.NameTable.Add(@"Value");
-            id234_IntProperty = Reader.NameTable.Add(@"IntProperty");
-            id202_Prop = Reader.NameTable.Add(@"Prop");
-            id41_TypeWithLinkedProperty = Reader.NameTable.Add(@"TypeWithLinkedProperty");
-            id149_ArrayOfTypeA = Reader.NameTable.Add(@"ArrayOfTypeA");
-            id115_ComplexChoiceA = Reader.NameTable.Add(@"ComplexChoiceA");
-            id22_DerivedIXmlSerializable = Reader.NameTable.Add(@"DerivedIXmlSerializable");
-            id184_EmployeeName = Reader.NameTable.Add(@"EmployeeName");
-            id245_Optionull = Reader.NameTable.Add(@"Optionull");
-            id36_Pet = Reader.NameTable.Add(@"Pet");
-            id62_DCClassWithEnumAndStruct = Reader.NameTable.Add(@"DCClassWithEnumAndStruct");
-            id254_XmlIncludeProperty = Reader.NameTable.Add(@"XmlIncludeProperty");
-            id56_Item = Reader.NameTable.Add(@"TypeWithReadOnlyMyCollectionProperty");
-            id90_ItemChoiceType = Reader.NameTable.Add(@"ItemChoiceType");
-            id209_IntValue = Reader.NameTable.Add(@"IntValue");
-            id196_SubTotal = Reader.NameTable.Add(@"SubTotal");
-            id281_QNameContent = Reader.NameTable.Add(@"QNameContent");
-            id17_DerivedClass = Reader.NameTable.Add(@"DerivedClass");
-            id84_ShortEnum = Reader.NameTable.Add(@"ShortEnum");
-            id145_ArrayOfParameter = Reader.NameTable.Add(@"ArrayOfParameter");
-            id49_TypeWithDateTimeStringProperty = Reader.NameTable.Add(@"TypeWithDateTimeStringProperty");
-            id164_ItemName = Reader.NameTable.Add(@"ItemName");
-            id69_DerivedClassWithSameProperty = Reader.NameTable.Add(@"DerivedClassWithSameProperty");
-            id10_Animal = Reader.NameTable.Add(@"Animal");
-            id268_XmlAttributeForm = Reader.NameTable.Add(@"XmlAttributeForm");
-            id40_RootElement = Reader.NameTable.Add(@"RootElement");
-            id272_MetricConfigUrl = Reader.NameTable.Add(@"MetricConfigUrl");
-            id183_GroupVehicle = Reader.NameTable.Add(@"GroupVehicle");
-            id163_Modulation = Reader.NameTable.Add(@"Modulation");
-            id246_OptionalInt = Reader.NameTable.Add(@"OptionalInt");
-            id75_Item = Reader.NameTable.Add(@"http://schemas.xmlsoap.org/ws/2005/04/discovery");
-            id204_Comment2 = Reader.NameTable.Add(@"Comment2");
-            id203_Instruments = Reader.NameTable.Add(@"Instruments");
-            id161_Children = Reader.NameTable.Add(@"Children");
-            id248_Struct1 = Reader.NameTable.Add(@"Struct1");
-            id193_ShipTo = Reader.NameTable.Add(@"ShipTo");
-            id200_Y = Reader.NameTable.Add(@"Y");
-            id55_TypeWithMyCollectionField = Reader.NameTable.Add(@"TypeWithMyCollectionField");
-            id77_ClassImplementsInterface = Reader.NameTable.Add(@"ClassImplementsInterface");
-            id33_Instrument = Reader.NameTable.Add(@"Instrument");
-            id9_TypeWithXmlNodeArrayProperty = Reader.NameTable.Add(@"TypeWithXmlNodeArrayProperty");
-            id153_NoneParameter = Reader.NameTable.Add(@"NoneParameter");
-            id264_MyFieldIgnored = Reader.NameTable.Add(@"MyFieldIgnored");
-            id73_SimpleDC = Reader.NameTable.Add(@"SimpleDC");
-            id5_Item = Reader.NameTable.Add(@"TypeWithDateTimeOffsetProperties");
-            id275_CharProperty = Reader.NameTable.Add(@"CharProperty");
-            id171_DTO = Reader.NameTable.Add(@"DTO");
-            id39_Item = Reader.NameTable.Add(@"DefaultValuesSetToNegativeInfinity");
-            id20_BaseIXmlSerializable = Reader.NameTable.Add(@"BaseIXmlSerializable");
-            id131_Value2 = Reader.NameTable.Add(@"Value2");
-            id259_CustomXmlArrayProperty = Reader.NameTable.Add(@"CustomXmlArrayProperty");
-            id199_X = Reader.NameTable.Add(@"X");
-            id96_TypeWithXmlSchemaFormAttribute = Reader.NameTable.Add(@"TypeWithXmlSchemaFormAttribute");
-            id233_StringProperty = Reader.NameTable.Add(@"StringProperty");
-            id44_RootClass = Reader.NameTable.Add(@"RootClass");
-            id216_CurrentDateTime = Reader.NameTable.Add(@"CurrentDateTime");
-            id120_TypeClashB = Reader.NameTable.Add(@"TypeClashB");
-            id61_DCStruct = Reader.NameTable.Add(@"DCStruct");
-            id114_MoreChoices = Reader.NameTable.Add(@"MoreChoices");
-            id154_ArrayOfBoolean = Reader.NameTable.Add(@"ArrayOfBoolean");
-            id7_Item = Reader.NameTable.Add(@"TypeWithDefaultTimeSpanProperty");
-            id109_Item = Reader.NameTable.Add(@"KnownTypesThroughConstructorWithArrayProperties");
-            id282_DateContent = Reader.NameTable.Add(@"DateContent");
-            id13_Group = Reader.NameTable.Add(@"Group");
-            id46_XElementWrapper = Reader.NameTable.Add(@"XElementWrapper");
-            id270_customElement = Reader.NameTable.Add(@"customElement");
-            id112_Item = Reader.NameTable.Add(@"TypeWithArrayPropertyHavingChoice");
-            id52_TypeWithGetOnlyArrayProperties = Reader.NameTable.Add(@"TypeWithGetOnlyArrayProperties");
-            id207_DoubleProp = Reader.NameTable.Add(@"DoubleProp");
-            id3_TypeWithXmlDocumentProperty = Reader.NameTable.Add(@"TypeWithXmlDocumentProperty");
-            id35_Trumpet = Reader.NameTable.Add(@"Trumpet");
-            id178_ByteProperty = Reader.NameTable.Add(@"ByteProperty");
-            id71_Item = Reader.NameTable.Add(@"TypeWithDateTimePropertyAsXmlTime");
-            id251_Word = Reader.NameTable.Add(@"Word");
-            id93_SimpleKnownTypeValue = Reader.NameTable.Add(@"SimpleKnownTypeValue");
-            id252_Number = Reader.NameTable.Add(@"Number");
-            id262_StrProperty = Reader.NameTable.Add(@"StrProperty");
-            id100_CustomElement = Reader.NameTable.Add(@"CustomElement");
-            id197_ShipCost = Reader.NameTable.Add(@"ShipCost");
-            id122_Person = Reader.NameTable.Add(@"Person");
-            id222_NIntLField = Reader.NameTable.Add(@"NIntLField");
-            id278_StringArrayValue = Reader.NameTable.Add(@"StringArrayValue");
-            id273_TwoDArrayOfSimpleType = Reader.NameTable.Add(@"TwoDArrayOfSimpleType");
-            id169_BinaryHexContent = Reader.NameTable.Add(@"BinaryHexContent");
-            id244_Optional = Reader.NameTable.Add(@"Optional");
-            id238_DisplayName = Reader.NameTable.Add(@"DisplayName");
-            id228_Data = Reader.NameTable.Add(@"Data");
-            id287_Base64BinaryContent = Reader.NameTable.Add(@"Base64BinaryContent");
-            id103_TypeWithXmlQualifiedName = Reader.NameTable.Add(@"TypeWithXmlQualifiedName");
-            id291_IntField2 = Reader.NameTable.Add(@"IntField2");
-            id181_LicenseNumber = Reader.NameTable.Add(@"LicenseNumber");
-            id229_MyStruct = Reader.NameTable.Add(@"MyStruct");
-            id175_NullableDefaultDTO = Reader.NameTable.Add(@"NullableDefaultDTO");
-            id28_BaseClass1 = Reader.NameTable.Add(@"BaseClass1");
-            id295_httptestcom = Reader.NameTable.Add(@"http://test.com");
-            id21_Item = Reader.NameTable.Add(@"http://example.com/serializer-test-namespace");
-            id173_DefaultDTO = Reader.NameTable.Add(@"DefaultDTO");
-            id266_NoneSchemaFormListProperty = Reader.NameTable.Add(@"NoneSchemaFormListProperty");
-            id157_P1 = Reader.NameTable.Add(@"P1");
-            id47_XElementStruct = Reader.NameTable.Add(@"XElementStruct");
-            id139_ArrayOfString = Reader.NameTable.Add(@"ArrayOfString");
-            id212_Parameters = Reader.NameTable.Add(@"Parameters");
-            id87_LongEnum = Reader.NameTable.Add(@"LongEnum");
-            id155_QualifiedParameter = Reader.NameTable.Add(@"QualifiedParameter");
-            id121_TypeClashA = Reader.NameTable.Add(@"TypeClashA");
-            id187_DateTimeValue = Reader.NameTable.Add(@"DateTimeValue");
-            id95_TypeWithPropertyNameSpecified = Reader.NameTable.Add(@"TypeWithPropertyNameSpecified");
-            id166_UnitPrice = Reader.NameTable.Add(@"UnitPrice");
-            id110_Item = Reader.NameTable.Add(@"KnownTypesThroughConstructorWithValue");
-            id236_ListProperty = Reader.NameTable.Add(@"ListProperty");
-            id11_Dog = Reader.NameTable.Add(@"Dog");
-            id247_OptionullInt = Reader.NameTable.Add(@"OptionullInt");
-            id276_EnumProperty = Reader.NameTable.Add(@"EnumProperty");
-            id232_Item = Reader.NameTable.Add(@"PropertyNameWithSpecialCharacters漢ñ");
-            id72_TypeWithByteArrayAsXmlText = Reader.NameTable.Add(@"TypeWithByteArrayAsXmlText");
-            id65_TypeB = Reader.NameTable.Add(@"TypeB");
-            id31_dateTime = Reader.NameTable.Add(@"dateTime");
-            id85_IntEnum = Reader.NameTable.Add(@"IntEnum");
-            id108_TypeWithShouldSerializeMethod = Reader.NameTable.Add(@"TypeWithShouldSerializeMethod");
-            id279_IntArrayValue = Reader.NameTable.Add(@"IntArrayValue");
-            id290_Amount = Reader.NameTable.Add(@"Amount");
-            id102_ServerSettings = Reader.NameTable.Add(@"ServerSettings");
-            id138_int = Reader.NameTable.Add(@"int");
-            id176_TimeSpanProperty = Reader.NameTable.Add(@"TimeSpanProperty");
-            id165_Description = Reader.NameTable.Add(@"Description");
-            id45_Parameter = Reader.NameTable.Add(@"Parameter");
-            id226_NIntLProp = Reader.NameTable.Add(@"NIntLProp");
-            id42_Document = Reader.NameTable.Add(@"Document");
-            id177_TimeSpanProperty2 = Reader.NameTable.Add(@"TimeSpanProperty2");
-            id82_ByteEnum = Reader.NameTable.Add(@"ByteEnum");
-            id269_name = Reader.NameTable.Add(@"name");
-            id225_IntLProp = Reader.NameTable.Add(@"IntLProp");
-            id126_Name = Reader.NameTable.Add(@"Name");
-            id151_httpmynamespace = Reader.NameTable.Add(@"http://mynamespace");
-            id32_Orchestra = Reader.NameTable.Add(@"Orchestra");
-            id180_Breed = Reader.NameTable.Add(@"Breed");
-            id224_NIntAProp = Reader.NameTable.Add(@"NIntAProp");
-            id235_DateTimeProperty = Reader.NameTable.Add(@"DateTimeProperty");
-            id113_Item = Reader.NameTable.Add(@"TypeWithPropertyHavingComplexChoice");
-            id51_TypeWithGetSetArrayMembers = Reader.NameTable.Add(@"TypeWithGetSetArrayMembers");
-            id174_NullableDTO = Reader.NameTable.Add(@"NullableDTO");
-            id142_double = Reader.NameTable.Add(@"double");
-            id129_B = Reader.NameTable.Add(@"B");
-            id37_DefaultValuesSetToNaN = Reader.NameTable.Add(@"DefaultValuesSetToNaN");
-            id162_IsValved = Reader.NameTable.Add(@"IsValved");
-            id250_XmlAttributeName = Reader.NameTable.Add(@"XmlAttributeName");
-            id27_AliasedTestType = Reader.NameTable.Add(@"AliasedTestType");
-            id285_NMTOKENContent = Reader.NameTable.Add(@"NMTOKENContent");
-            id144_ArrayOfTypeWithLinkedProperty = Reader.NameTable.Add(@"ArrayOfTypeWithLinkedProperty");
-            id57_ArrayOfAnyType = Reader.NameTable.Add(@"ArrayOfAnyType");
+            id91_TypeWithAnyAttribute = Reader.NameTable.Add(@"TypeWithAnyAttribute");
             id1_TypeWithXmlElementProperty = Reader.NameTable.Add(@"TypeWithXmlElementProperty");
-            id186_AttributeString = Reader.NameTable.Add(@"AttributeString");
-            id123_FirstName = Reader.NameTable.Add(@"FirstName");
-            id243_Short = Reader.NameTable.Add(@"Short");
-            id4_TypeWithBinaryProperty = Reader.NameTable.Add(@"TypeWithBinaryProperty");
-            id221_IntLField = Reader.NameTable.Add(@"IntLField");
-            id63_BuiltInTypes = Reader.NameTable.Add(@"BuiltInTypes");
-            id64_TypeA = Reader.NameTable.Add(@"TypeA");
-            id258_httpelement = Reader.NameTable.Add(@"http://element");
-            id134_MsgDocumentType = Reader.NameTable.Add(@"MsgDocumentType");
-            id190_City = Reader.NameTable.Add(@"City");
-            id189_Line1 = Reader.NameTable.Add(@"Line1");
-            id119_Root = Reader.NameTable.Add(@"Root");
-            id231_ByteArray = Reader.NameTable.Add(@"ByteArray");
-            id143_ArrayOfInstrument = Reader.NameTable.Add(@"ArrayOfInstrument");
-            id30_ArrayOfDateTime = Reader.NameTable.Add(@"ArrayOfDateTime");
-            id137_ArrayOfInt = Reader.NameTable.Add(@"ArrayOfInt");
-            id25_Address = Reader.NameTable.Add(@"Address");
-            id53_TypeWithArraylikeMembers = Reader.NameTable.Add(@"TypeWithArraylikeMembers");
-            id98_Item = Reader.NameTable.Add(@"TypeWithSchemaFormInXmlAttribute");
-            id227_Collection = Reader.NameTable.Add(@"Collection");
-            id218_F2 = Reader.NameTable.Add(@"F2");
-            id78_WithStruct = Reader.NameTable.Add(@"WithStruct");
-            id104_TypeWith2DArrayProperty2 = Reader.NameTable.Add(@"TypeWith2DArrayProperty2");
-            id170_Base64Content = Reader.NameTable.Add(@"Base64Content");
-            id147_XElement = Reader.NameTable.Add(@"XElement");
-            id260_EnumValue = Reader.NameTable.Add(@"EnumValue");
-            id223_IntAProp = Reader.NameTable.Add(@"IntAProp");
-            id15_Employee = Reader.NameTable.Add(@"Employee");
-            id105_Item = Reader.NameTable.Add(@"TypeWithPropertiesHavingDefaultValue");
-            id152_ArrayOfString1 = Reader.NameTable.Add(@"ArrayOfString1");
-            id128_A = Reader.NameTable.Add(@"A");
-            id284_NCNameContent = Reader.NameTable.Add(@"NCNameContent");
-            id219_IntAField = Reader.NameTable.Add(@"IntAField");
-            id210_id = Reader.NameTable.Add(@"id");
-            id34_Brass = Reader.NameTable.Add(@"Brass");
-            id158_P2 = Reader.NameTable.Add(@"P2");
-            id294_TestProperty = Reader.NameTable.Add(@"TestProperty");
+            id271_name = Reader.NameTable.Add(@"name");
+            id121_Root = Reader.NameTable.Add(@"Root");
+            id297_httptestcom = Reader.NameTable.Add(@"http://test.com");
+            id265_MyField = Reader.NameTable.Add(@"MyField");
+            id275_TwoDArrayOfSimpleType = Reader.NameTable.Add(@"TwoDArrayOfSimpleType");
+            id17_DerivedClass = Reader.NameTable.Add(@"DerivedClass");
+            id45_Parameter = Reader.NameTable.Add(@"Parameter");
+            id92_KnownTypesThroughConstructor = Reader.NameTable.Add(@"KnownTypesThroughConstructor");
+            id47_XElementStruct = Reader.NameTable.Add(@"XElementStruct");
+            id207_DoubleField = Reader.NameTable.Add(@"DoubleField");
+            id280_StringArrayValue = Reader.NameTable.Add(@"StringArrayValue");
+            id197_Items = Reader.NameTable.Add(@"Items");
+            id175_DefaultDTO = Reader.NameTable.Add(@"DefaultDTO");
+            id282_DateTimeContent = Reader.NameTable.Add(@"DateTimeContent");
+            id144_double = Reader.NameTable.Add(@"double");
+            id22_DerivedIXmlSerializable = Reader.NameTable.Add(@"DerivedIXmlSerializable");
+            id286_NCNameContent = Reader.NameTable.Add(@"NCNameContent");
+            id284_DateContent = Reader.NameTable.Add(@"DateContent");
+            id102_CustomElement = Reader.NameTable.Add(@"CustomElement");
+            id49_TypeWithDateTimeStringProperty = Reader.NameTable.Add(@"TypeWithDateTimeStringProperty");
+            id269_Item = Reader.NameTable.Add(@"QualifiedSchemaFormListProperty");
+            id37_DefaultValuesSetToNaN = Reader.NameTable.Add(@"DefaultValuesSetToNaN");
+            id170_LineTotal = Reader.NameTable.Add(@"LineTotal");
+            id295_strfld = Reader.NameTable.Add(@"strfld");
+            id160_P2 = Reader.NameTable.Add(@"P2");
+            id41_TypeWithLinkedProperty = Reader.NameTable.Add(@"TypeWithLinkedProperty");
+            id226_NIntAProp = Reader.NameTable.Add(@"NIntAProp");
+            id84_ShortEnum = Reader.NameTable.Add(@"ShortEnum");
+            id181_Age = Reader.NameTable.Add(@"Age");
+            id58_anyType = Reader.NameTable.Add(@"anyType");
+            id46_XElementWrapper = Reader.NameTable.Add(@"XElementWrapper");
+            id225_IntAProp = Reader.NameTable.Add(@"IntAProp");
+            id270_XmlAttributeForm = Reader.NameTable.Add(@"XmlAttributeForm");
+            id135_ParameterOfString = Reader.NameTable.Add(@"ParameterOfString");
+            id159_P1 = Reader.NameTable.Add(@"P1");
+            id9_TypeWithXmlNodeArrayProperty = Reader.NameTable.Add(@"TypeWithXmlNodeArrayProperty");
+            id281_IntArrayValue = Reader.NameTable.Add(@"IntArrayValue");
+            id283_QNameContent = Reader.NameTable.Add(@"QNameContent");
+            id255_DecimalNumber = Reader.NameTable.Add(@"DecimalNumber");
+            id289_Base64BinaryContent = Reader.NameTable.Add(@"Base64BinaryContent");
+            id211_IntValue = Reader.NameTable.Add(@"IntValue");
+            id199_ShipCost = Reader.NameTable.Add(@"ShipCost");
+            id71_Item = Reader.NameTable.Add(@"TypeWithDateTimePropertyAsXmlTime");
+            id193_State = Reader.NameTable.Add(@"State");
             id67_Item = Reader.NameTable.Add(@"__TypeNameWithSpecialCharacters漢ñ");
-            id111_Item = Reader.NameTable.Add(@"TypeWithTypesHavingCustomFormatter");
-            id293_strfld = Reader.NameTable.Add(@"strfld");
-            id130_Value1 = Reader.NameTable.Add(@"Value1");
+            id99_MyXmlType = Reader.NameTable.Add(@"MyXmlType");
+            id276_EmptyStringProperty = Reader.NameTable.Add(@"EmptyStringProperty");
+            id114_Item = Reader.NameTable.Add(@"TypeWithArrayPropertyHavingChoice");
+            id262_EnumValue = Reader.NameTable.Add(@"EnumValue");
+            id261_CustomXmlArrayProperty = Reader.NameTable.Add(@"CustomXmlArrayProperty");
+            id127_LastName = Reader.NameTable.Add(@"LastName");
+            id40_RootElement = Reader.NameTable.Add(@"RootElement");
+            id187_value = Reader.NameTable.Add(@"value");
+            id244_Int = Reader.NameTable.Add(@"Int");
+            id178_TimeSpanProperty = Reader.NameTable.Add(@"TimeSpanProperty");
+            id229_Collection = Reader.NameTable.Add(@"Collection");
+            id180_ByteProperty = Reader.NameTable.Add(@"ByteProperty");
+            id188_AttributeString = Reader.NameTable.Add(@"AttributeString");
             id66_TypeHasArrayOfASerializedAsB = Reader.NameTable.Add(@"TypeHasArrayOfASerializedAsB");
-            id217_F1 = Reader.NameTable.Add(@"F1");
-            id16_BaseClass = Reader.NameTable.Add(@"BaseClass");
-            id230_MyEnum1 = Reader.NameTable.Add(@"MyEnum1");
+            id29_DerivedClass1 = Reader.NameTable.Add(@"DerivedClass1");
+            id13_Group = Reader.NameTable.Add(@"Group");
+            id291_Item = Reader.NameTable.Add(@"Item");
+            id115_Item = Reader.NameTable.Add(@"TypeWithPropertyHavingComplexChoice");
+            id162_Child = Reader.NameTable.Add(@"Child");
+            id227_IntLProp = Reader.NameTable.Add(@"IntLProp");
+            id138_ArrayOfOrderedItem = Reader.NameTable.Add(@"ArrayOfOrderedItem");
+            id54_StructNotSerializable = Reader.NameTable.Add(@"StructNotSerializable");
+            id95_Item = Reader.NameTable.Add(@"StructImplementingIXmlSerializableWithoutParameterlessConstructor");
+            id179_TimeSpanProperty2 = Reader.NameTable.Add(@"TimeSpanProperty2");
+            id20_BaseIXmlSerializable = Reader.NameTable.Add(@"BaseIXmlSerializable");
+            id87_LongEnum = Reader.NameTable.Add(@"LongEnum");
             id12_DogBreed = Reader.NameTable.Add(@"DogBreed");
-            id168_LineTotal = Reader.NameTable.Add(@"LineTotal");
-            id194_OrderDate = Reader.NameTable.Add(@"OrderDate");
-            id277_Foo = Reader.NameTable.Add(@"Foo");
-            id239_Id = Reader.NameTable.Add(@"Id");
-            id6_TypeWithTimeSpanProperty = Reader.NameTable.Add(@"TypeWithTimeSpanProperty");
-            id140_string = Reader.NameTable.Add(@"string");
-            id206_SingleField = Reader.NameTable.Add(@"SingleField");
-            id201_Z = Reader.NameTable.Add(@"Z");
-            id26_OrderedItem = Reader.NameTable.Add(@"OrderedItem");
-            id198_TotalCost = Reader.NameTable.Add(@"TotalCost");
-            id240_IsLoaded = Reader.NameTable.Add(@"IsLoaded");
-            id94_Item = Reader.NameTable.Add(@"ClassImplementingIXmlSerializable");
+            id172_Base64Content = Reader.NameTable.Add(@"Base64Content");
+            id224_NIntLField = Reader.NameTable.Add(@"NIntLField");
+            id77_ClassImplementsInterface = Reader.NameTable.Add(@"ClassImplementsInterface");
+            id132_Value1 = Reader.NameTable.Add(@"Value1");
+            id230_Data = Reader.NameTable.Add(@"Data");
+            id184_GroupName = Reader.NameTable.Add(@"GroupName");
+            id155_NoneParameter = Reader.NameTable.Add(@"NoneParameter");
+            id63_BuiltInTypes = Reader.NameTable.Add(@"BuiltInTypes");
+            id290_HexBinaryContent = Reader.NameTable.Add(@"HexBinaryContent");
+            id122_TypeClashB = Reader.NameTable.Add(@"TypeClashB");
+            id97_TypeWithPropertyNameSpecified = Reader.NameTable.Add(@"TypeWithPropertyNameSpecified");
+            id191_Line1 = Reader.NameTable.Add(@"Line1");
+            id173_DTO = Reader.NameTable.Add(@"DTO");
+            id129_ContainerType = Reader.NameTable.Add(@"ContainerType");
+            id30_ArrayOfDateTime = Reader.NameTable.Add(@"ArrayOfDateTime");
+            id260_httpelement = Reader.NameTable.Add(@"http://element");
+            id81_WithNullables = Reader.NameTable.Add(@"WithNullables");
+            id267_Item = Reader.NameTable.Add(@"UnqualifiedSchemaFormListProperty");
+            id65_TypeB = Reader.NameTable.Add(@"TypeB");
+            id213_refs = Reader.NameTable.Add(@"refs");
+            id86_UIntEnum = Reader.NameTable.Add(@"UIntEnum");
+            id214_Parameters = Reader.NameTable.Add(@"Parameters");
+            id28_BaseClass1 = Reader.NameTable.Add(@"BaseClass1");
+            id32_Orchestra = Reader.NameTable.Add(@"Orchestra");
+            id34_Brass = Reader.NameTable.Add(@"Brass");
+            id167_Description = Reader.NameTable.Add(@"Description");
+            id27_AliasedTestType = Reader.NameTable.Add(@"AliasedTestType");
+            id296_TestProperty = Reader.NameTable.Add(@"TestProperty");
+            id154_ArrayOfString1 = Reader.NameTable.Add(@"ArrayOfString1");
+            id249_OptionullInt = Reader.NameTable.Add(@"OptionullInt");
+            id104_ServerSettings = Reader.NameTable.Add(@"ServerSettings");
+            id263_SimpleTypeValue = Reader.NameTable.Add(@"SimpleTypeValue");
+            id205_Instruments = Reader.NameTable.Add(@"Instruments");
+            id259_XmlElementPropertyNode = Reader.NameTable.Add(@"XmlElementPropertyNode");
+            id88_ULongEnum = Reader.NameTable.Add(@"ULongEnum");
+            id216_xelements = Reader.NameTable.Add(@"xelements");
+            id215_xelement = Reader.NameTable.Add(@"xelement");
+            id118_ComplexChoiceB = Reader.NameTable.Add(@"ComplexChoiceB");
+            id107_Item = Reader.NameTable.Add(@"TypeWithPropertiesHavingDefaultValue");
+            id15_Employee = Reader.NameTable.Add(@"Employee");
+            id90_ItemChoiceType = Reader.NameTable.Add(@"ItemChoiceType");
+            id146_ArrayOfTypeWithLinkedProperty = Reader.NameTable.Add(@"ArrayOfTypeWithLinkedProperty");
+            id266_MyFieldIgnored = Reader.NameTable.Add(@"MyFieldIgnored");
+            id48_XElementArrayWrapper = Reader.NameTable.Add(@"XElementArrayWrapper");
+            id163_Children = Reader.NameTable.Add(@"Children");
             id89_AttributeTesting = Reader.NameTable.Add(@"AttributeTesting");
-            id68_BaseClassWithSamePropertyName = Reader.NameTable.Add(@"BaseClassWithSamePropertyName");
-            id2_Item = Reader.NameTable.Add(@"");
-            id289_Item = Reader.NameTable.Add(@"Item");
-            id191_State = Reader.NameTable.Add(@"State");
-            id237_ClassID = Reader.NameTable.Add(@"ClassID");
-            id267_Item = Reader.NameTable.Add(@"QualifiedSchemaFormListProperty");
-            id172_DTO2 = Reader.NameTable.Add(@"DTO2");
-            id101_Item = Reader.NameTable.Add(@"TypeWithNonPublicDefaultConstructor");
-            id8_TypeWithByteProperty = Reader.NameTable.Add(@"TypeWithByteProperty");
-            id156_ArrayOfArrayOfSimpleType = Reader.NameTable.Add(@"ArrayOfArrayOfSimpleType");
-            id256_Item = Reader.NameTable.Add(@"XmlNamespaceDeclarationsProperty");
-            id242_Int = Reader.NameTable.Add(@"Int");
+            id272_customElement = Reader.NameTable.Add(@"customElement");
+            id42_Document = Reader.NameTable.Add(@"Document");
+            id14_Vehicle = Reader.NameTable.Add(@"Vehicle");
+            id35_Trumpet = Reader.NameTable.Add(@"Trumpet");
+            id106_TypeWith2DArrayProperty2 = Reader.NameTable.Add(@"TypeWith2DArrayProperty2");
+            id72_TypeWithByteArrayAsXmlText = Reader.NameTable.Add(@"TypeWithByteArrayAsXmlText");
+            id36_Pet = Reader.NameTable.Add(@"Pet");
+            id204_Prop = Reader.NameTable.Add(@"Prop");
+            id134_XmlSerializerAttributes = Reader.NameTable.Add(@"XmlSerializerAttributes");
+            id246_Optional = Reader.NameTable.Add(@"Optional");
+            id243_Some = Reader.NameTable.Add(@"Some");
+            id147_ArrayOfParameter = Reader.NameTable.Add(@"ArrayOfParameter");
+            id78_WithStruct = Reader.NameTable.Add(@"WithStruct");
+            id123_TypeClashA = Reader.NameTable.Add(@"TypeClashA");
+            id33_Instrument = Reader.NameTable.Add(@"Instrument");
+            id69_DerivedClassWithSameProperty = Reader.NameTable.Add(@"DerivedClassWithSameProperty");
+            id268_NoneSchemaFormListProperty = Reader.NameTable.Add(@"NoneSchemaFormListProperty");
+            id234_Item = Reader.NameTable.Add(@"PropertyNameWithSpecialCharacters漢ñ");
+            id75_Item = Reader.NameTable.Add(@"http://schemas.xmlsoap.org/ws/2005/04/discovery");
+            id292_Amount = Reader.NameTable.Add(@"Amount");
+            id194_Zip = Reader.NameTable.Add(@"Zip");
+            id164_IsValved = Reader.NameTable.Add(@"IsValved");
+            id277_CharProperty = Reader.NameTable.Add(@"CharProperty");
+            id7_Item = Reader.NameTable.Add(@"TypeWithDefaultTimeSpanProperty");
             id43_httpexamplecom = Reader.NameTable.Add(@"http://example.com");
-            id213_xelement = Reader.NameTable.Add(@"xelement");
+            id3_TypeWithXmlDocumentProperty = Reader.NameTable.Add(@"TypeWithXmlDocumentProperty");
+            id23_PurchaseOrder = Reader.NameTable.Add(@"PurchaseOrder");
+            id62_DCClassWithEnumAndStruct = Reader.NameTable.Add(@"DCClassWithEnumAndStruct");
+            id149_XElement = Reader.NameTable.Add(@"XElement");
+            id11_Dog = Reader.NameTable.Add(@"Dog");
+            id251_Struct2 = Reader.NameTable.Add(@"Struct2");
+            id38_Item = Reader.NameTable.Add(@"DefaultValuesSetToPositiveInfinity");
+            id288_NMTOKENSContent = Reader.NameTable.Add(@"NMTOKENSContent");
+            id258_Item = Reader.NameTable.Add(@"XmlNamespaceDeclarationsProperty");
+            id203_Z = Reader.NameTable.Add(@"Z");
+            id236_IntProperty = Reader.NameTable.Add(@"IntProperty");
+            id73_SimpleDC = Reader.NameTable.Add(@"SimpleDC");
+            id94_Item = Reader.NameTable.Add(@"ClassImplementingIXmlSerializable");
+            id141_ArrayOfString = Reader.NameTable.Add(@"ArrayOfString");
+            id60_TypeWithEnumMembers = Reader.NameTable.Add(@"TypeWithEnumMembers");
+            id68_BaseClassWithSamePropertyName = Reader.NameTable.Add(@"BaseClassWithSamePropertyName");
+            id186_EmployeeName = Reader.NameTable.Add(@"EmployeeName");
+            id287_NMTOKENContent = Reader.NameTable.Add(@"NMTOKENContent");
+            id153_httpmynamespace = Reader.NameTable.Add(@"http://mynamespace");
+            id39_Item = Reader.NameTable.Add(@"DefaultValuesSetToNegativeInfinity");
+            id158_ArrayOfArrayOfSimpleType = Reader.NameTable.Add(@"ArrayOfArrayOfSimpleType");
+            id198_SubTotal = Reader.NameTable.Add(@"SubTotal");
+            id139_ArrayOfInt = Reader.NameTable.Add(@"ArrayOfInt");
+            id55_TypeWithMyCollectionField = Reader.NameTable.Add(@"TypeWithMyCollectionField");
+            id235_StringProperty = Reader.NameTable.Add(@"StringProperty");
+            id231_MyStruct = Reader.NameTable.Add(@"MyStruct");
+            id196_OrderDate = Reader.NameTable.Add(@"OrderDate");
+            id59_MyEnum = Reader.NameTable.Add(@"MyEnum");
+            id25_Address = Reader.NameTable.Add(@"Address");
+            id4_TypeWithBinaryProperty = Reader.NameTable.Add(@"TypeWithBinaryProperty");
+            id174_DTO2 = Reader.NameTable.Add(@"DTO2");
+            id82_ByteEnum = Reader.NameTable.Add(@"ByteEnum");
+            id101_CustomDocument = Reader.NameTable.Add(@"CustomDocument");
+            id161_Value = Reader.NameTable.Add(@"Value");
+            id140_int = Reader.NameTable.Add(@"int");
+            id93_SimpleKnownTypeValue = Reader.NameTable.Add(@"SimpleKnownTypeValue");
+            id113_Item = Reader.NameTable.Add(@"TypeWithTypesHavingCustomFormatter");
+            id124_Person = Reader.NameTable.Add(@"Person");
+            id51_TypeWithGetSetArrayMembers = Reader.NameTable.Add(@"TypeWithGetSetArrayMembers");
+            id201_X = Reader.NameTable.Add(@"X");
+            id241_Id = Reader.NameTable.Add(@"Id");
+            id24_httpwwwcontoso1com = Reader.NameTable.Add(@"http://www.contoso1.com");
+            id142_string = Reader.NameTable.Add(@"string");
+            id278_EnumProperty = Reader.NameTable.Add(@"EnumProperty");
+            id85_IntEnum = Reader.NameTable.Add(@"IntEnum");
+            id10_Animal = Reader.NameTable.Add(@"Animal");
+            id130_A = Reader.NameTable.Add(@"A");
+            id219_F1 = Reader.NameTable.Add(@"F1");
+            id200_TotalCost = Reader.NameTable.Add(@"TotalCost");
+            id125_FirstName = Reader.NameTable.Add(@"FirstName");
+            id31_dateTime = Reader.NameTable.Add(@"dateTime");
+            id152_ArrayOfItemChoiceType = Reader.NameTable.Add(@"ArrayOfItemChoiceType");
+            id117_ComplexChoiceA = Reader.NameTable.Add(@"ComplexChoiceA");
+            id257_XmlEnumProperty = Reader.NameTable.Add(@"XmlEnumProperty");
+            id166_ItemName = Reader.NameTable.Add(@"ItemName");
+            id240_DisplayName = Reader.NameTable.Add(@"DisplayName");
+            id185_GroupVehicle = Reader.NameTable.Add(@"GroupVehicle");
+            id148_ArrayOfXElement = Reader.NameTable.Add(@"ArrayOfXElement");
+            id105_TypeWithXmlQualifiedName = Reader.NameTable.Add(@"TypeWithXmlQualifiedName");
+            id274_MetricConfigUrl = Reader.NameTable.Add(@"MetricConfigUrl");
+            id74_Item = Reader.NameTable.Add(@"TypeWithXmlTextAttributeOnArray");
+            id133_Value2 = Reader.NameTable.Add(@"Value2");
+            id165_Modulation = Reader.NameTable.Add(@"Modulation");
+            id79_SomeStruct = Reader.NameTable.Add(@"SomeStruct");
+            id83_SByteEnum = Reader.NameTable.Add(@"SByteEnum");
+            id112_Item = Reader.NameTable.Add(@"KnownTypesThroughConstructorWithValue");
+            id21_Item = Reader.NameTable.Add(@"http://example.com/serializer-test-namespace");
+            id120_Item = Reader.NameTable.Add(@"TypeWithKnownTypesOfCollectionsWithConflictingXmlName");
+            id108_Item = Reader.NameTable.Add(@"TypeWithEnumPropertyHavingDefaultValue");
+            id128_Name = Reader.NameTable.Add(@"Name");
             id80_WithEnums = Reader.NameTable.Add(@"WithEnums");
-            id127_ContainerType = Reader.NameTable.Add(@"ContainerType");
-            id283_NameContent = Reader.NameTable.Add(@"NameContent");
-            id253_DecimalNumber = Reader.NameTable.Add(@"DecimalNumber");
+            id156_ArrayOfBoolean = Reader.NameTable.Add(@"ArrayOfBoolean");
+            id294_IntField1 = Reader.NameTable.Add(@"IntField1");
+            id168_UnitPrice = Reader.NameTable.Add(@"UnitPrice");
+            id126_MiddleName = Reader.NameTable.Add(@"MiddleName");
+            id233_ByteArray = Reader.NameTable.Add(@"ByteArray");
+            id210_FloatProp = Reader.NameTable.Add(@"FloatProp");
+            id256_XmlIncludeProperty = Reader.NameTable.Add(@"XmlIncludeProperty");
+            id169_Quantity = Reader.NameTable.Add(@"Quantity");
+            id232_MyEnum1 = Reader.NameTable.Add(@"MyEnum1");
+            id192_City = Reader.NameTable.Add(@"City");
+            id98_TypeWithXmlSchemaFormAttribute = Reader.NameTable.Add(@"TypeWithXmlSchemaFormAttribute");
+            id183_LicenseNumber = Reader.NameTable.Add(@"LicenseNumber");
+            id18_SimpleBaseClass = Reader.NameTable.Add(@"SimpleBaseClass");
+            id176_NullableDTO = Reader.NameTable.Add(@"NullableDTO");
+            id254_Number = Reader.NameTable.Add(@"Number");
+            id103_Item = Reader.NameTable.Add(@"TypeWithNonPublicDefaultConstructor");
+            id222_NIntAField = Reader.NameTable.Add(@"NIntAField");
+            id190_BoolValue = Reader.NameTable.Add(@"BoolValue");
+            id8_TypeWithByteProperty = Reader.NameTable.Add(@"TypeWithByteProperty");
+            id119_TypeWithFieldsOrdered = Reader.NameTable.Add(@"TypeWithFieldsOrdered");
+            id171_BinaryHexContent = Reader.NameTable.Add(@"BinaryHexContent");
+            id5_Item = Reader.NameTable.Add(@"TypeWithDateTimeOffsetProperties");
+            id143_ArrayOfDouble = Reader.NameTable.Add(@"ArrayOfDouble");
+            id61_DCStruct = Reader.NameTable.Add(@"DCStruct");
+            id237_DateTimeProperty = Reader.NameTable.Add(@"DateTimeProperty");
+            id96_Item = Reader.NameTable.Add(@"StructImplementingIXmlSerializableWithParameterlessConstructor");
+            id56_Item = Reader.NameTable.Add(@"TypeWithReadOnlyMyCollectionProperty");
+            id2_Item = Reader.NameTable.Add(@"");
+            id64_TypeA = Reader.NameTable.Add(@"TypeA");
+            id195_ShipTo = Reader.NameTable.Add(@"ShipTo");
+            id6_TypeWithTimeSpanProperty = Reader.NameTable.Add(@"TypeWithTimeSpanProperty");
+            id52_TypeWithGetOnlyArrayProperties = Reader.NameTable.Add(@"TypeWithGetOnlyArrayProperties");
+            id111_Item = Reader.NameTable.Add(@"KnownTypesThroughConstructorWithArrayProperties");
+            id253_Word = Reader.NameTable.Add(@"Word");
+            id16_BaseClass = Reader.NameTable.Add(@"BaseClass");
+            id238_ListProperty = Reader.NameTable.Add(@"ListProperty");
+            id26_OrderedItem = Reader.NameTable.Add(@"OrderedItem");
+            id44_RootClass = Reader.NameTable.Add(@"RootClass");
+            id202_Y = Reader.NameTable.Add(@"Y");
+            id252_XmlAttributeName = Reader.NameTable.Add(@"XmlAttributeName");
+            id131_B = Reader.NameTable.Add(@"B");
+            id70_DerivedClassWithSameProperty2 = Reader.NameTable.Add(@"DerivedClassWithSameProperty2");
+            id264_StrProperty = Reader.NameTable.Add(@"StrProperty");
+            id250_Struct1 = Reader.NameTable.Add(@"Struct1");
+            id206_Comment2 = Reader.NameTable.Add(@"Comment2");
+            id150_ArrayOfSimpleType = Reader.NameTable.Add(@"ArrayOfSimpleType");
+            id245_Short = Reader.NameTable.Add(@"Short");
+            id53_TypeWithArraylikeMembers = Reader.NameTable.Add(@"TypeWithArraylikeMembers");
+            id76_EnumFlags = Reader.NameTable.Add(@"EnumFlags");
+            id57_ArrayOfAnyType = Reader.NameTable.Add(@"ArrayOfAnyType");
+            id239_ClassID = Reader.NameTable.Add(@"ClassID");
+            id247_Optionull = Reader.NameTable.Add(@"Optionull");
+            id242_IsLoaded = Reader.NameTable.Add(@"IsLoaded");
+            id145_ArrayOfInstrument = Reader.NameTable.Add(@"ArrayOfInstrument");
+            id116_MoreChoices = Reader.NameTable.Add(@"MoreChoices");
+            id279_Foo = Reader.NameTable.Add(@"Foo");
+            id157_QualifiedParameter = Reader.NameTable.Add(@"QualifiedParameter");
+            id220_F2 = Reader.NameTable.Add(@"F2");
+            id212_id = Reader.NameTable.Add(@"id");
+            id182_Breed = Reader.NameTable.Add(@"Breed");
+            id285_NameContent = Reader.NameTable.Add(@"NameContent");
+            id223_IntLField = Reader.NameTable.Add(@"IntLField");
+            id189_DateTimeValue = Reader.NameTable.Add(@"DateTimeValue");
+            id293_IntField2 = Reader.NameTable.Add(@"IntField2");
+            id100_Item = Reader.NameTable.Add(@"TypeWithSchemaFormInXmlAttribute");
+            id217_DateTimeString = Reader.NameTable.Add(@"DateTimeString");
+            id228_NIntLProp = Reader.NameTable.Add(@"NIntLProp");
+            id221_IntAField = Reader.NameTable.Add(@"IntAField");
+            id273_DS2Root = Reader.NameTable.Add(@"DS2Root");
+            id136_MsgDocumentType = Reader.NameTable.Add(@"MsgDocumentType");
+            id110_TypeWithShouldSerializeMethod = Reader.NameTable.Add(@"TypeWithShouldSerializeMethod");
+            id208_SingleField = Reader.NameTable.Add(@"SingleField");
+            id218_CurrentDateTime = Reader.NameTable.Add(@"CurrentDateTime");
+            id177_NullableDefaultDTO = Reader.NameTable.Add(@"NullableDefaultDTO");
+            id248_OptionalInt = Reader.NameTable.Add(@"OptionalInt");
+            id50_SimpleType = Reader.NameTable.Add(@"SimpleType");
+            id137_Item = Reader.NameTable.Add(@"TypeWithMismatchBetweenAttributeAndPropertyType");
         }
     }
 
@@ -16711,6 +16769,36 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
+    public sealed class StructImplementingIXmlSerializableWithoutParameterlessConstructorSerializer : XmlSerializer1 {
+
+        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
+            return xmlReader.IsStartElement(@"StructImplementingIXmlSerializableWithoutParameterlessConstructor", @"");
+        }
+
+        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
+            ((XmlSerializationWriter1)writer).Write202_Item(objectToSerialize);
+        }
+
+        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
+            return ((XmlSerializationReader1)reader).Read206_Item();
+        }
+    }
+
+    public sealed class StructImplementingIXmlSerializableWithParameterlessConstructorSerializer : XmlSerializer1 {
+
+        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
+            return xmlReader.IsStartElement(@"StructImplementingIXmlSerializableWithParameterlessConstructor", @"");
+        }
+
+        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
+            ((XmlSerializationWriter1)writer).Write203_Item(objectToSerialize);
+        }
+
+        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
+            return ((XmlSerializationReader1)reader).Read207_Item();
+        }
+    }
+
     public sealed class TypeWithPropertyNameSpecifiedSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
@@ -16718,11 +16806,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write202_TypeWithPropertyNameSpecified(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write204_TypeWithPropertyNameSpecified(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read206_TypeWithPropertyNameSpecified();
+            return ((XmlSerializationReader1)reader).Read208_TypeWithPropertyNameSpecified();
         }
     }
 
@@ -16733,11 +16821,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write203_TypeWithXmlSchemaFormAttribute(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write205_TypeWithXmlSchemaFormAttribute(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read207_TypeWithXmlSchemaFormAttribute();
+            return ((XmlSerializationReader1)reader).Read209_TypeWithXmlSchemaFormAttribute();
         }
     }
 
@@ -16748,11 +16836,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write204_MyXmlType(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write206_MyXmlType(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read208_MyXmlType();
+            return ((XmlSerializationReader1)reader).Read210_MyXmlType();
         }
     }
 
@@ -16763,11 +16851,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write205_Item(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write207_Item(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read209_Item();
+            return ((XmlSerializationReader1)reader).Read211_Item();
         }
     }
 
@@ -16778,11 +16866,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write206_CustomDocument(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write208_CustomDocument(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read210_CustomDocument();
+            return ((XmlSerializationReader1)reader).Read212_CustomDocument();
         }
     }
 
@@ -16793,11 +16881,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write207_CustomElement(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write209_CustomElement(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read211_CustomElement();
+            return ((XmlSerializationReader1)reader).Read213_CustomElement();
         }
     }
 
@@ -16808,11 +16896,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write208_Item(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write210_Item(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read212_Item();
+            return ((XmlSerializationReader1)reader).Read214_Item();
         }
     }
 
@@ -16823,11 +16911,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write209_Item(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write211_Item(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read213_Item();
+            return ((XmlSerializationReader1)reader).Read215_Item();
         }
     }
 
@@ -16838,11 +16926,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write210_ServerSettings(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write212_ServerSettings(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read214_ServerSettings();
+            return ((XmlSerializationReader1)reader).Read216_ServerSettings();
         }
     }
 
@@ -16853,11 +16941,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write211_TypeWithXmlQualifiedName(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write213_TypeWithXmlQualifiedName(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read215_TypeWithXmlQualifiedName();
+            return ((XmlSerializationReader1)reader).Read217_TypeWithXmlQualifiedName();
         }
     }
 
@@ -16868,11 +16956,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write212_TypeWith2DArrayProperty2(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write214_TypeWith2DArrayProperty2(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read216_TypeWith2DArrayProperty2();
+            return ((XmlSerializationReader1)reader).Read218_TypeWith2DArrayProperty2();
         }
     }
 
@@ -16880,36 +16968,6 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
             return xmlReader.IsStartElement(@"TypeWithPropertiesHavingDefaultValue", @"");
-        }
-
-        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write213_Item(objectToSerialize);
-        }
-
-        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read217_Item();
-        }
-    }
-
-    public sealed class TypeWithEnumPropertyHavingDefaultValueSerializer : XmlSerializer1 {
-
-        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithEnumPropertyHavingDefaultValue", @"");
-        }
-
-        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write214_Item(objectToSerialize);
-        }
-
-        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read218_Item();
-        }
-    }
-
-    public sealed class TypeWithEnumFlagPropertyHavingDefaultValueSerializer : XmlSerializer1 {
-
-        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithEnumFlagPropertyHavingDefaultValue", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
@@ -16921,25 +16979,25 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
-    public sealed class TypeWithShouldSerializeMethodSerializer : XmlSerializer1 {
+    public sealed class TypeWithEnumPropertyHavingDefaultValueSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithShouldSerializeMethod", @"");
+            return xmlReader.IsStartElement(@"TypeWithEnumPropertyHavingDefaultValue", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write216_TypeWithShouldSerializeMethod(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write216_Item(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read220_TypeWithShouldSerializeMethod();
+            return ((XmlSerializationReader1)reader).Read220_Item();
         }
     }
 
-    public sealed class KnownTypesThroughConstructorWithArrayPropertiesSerializer : XmlSerializer1 {
+    public sealed class TypeWithEnumFlagPropertyHavingDefaultValueSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"KnownTypesThroughConstructorWithArrayProperties", @"");
+            return xmlReader.IsStartElement(@"TypeWithEnumFlagPropertyHavingDefaultValue", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
@@ -16951,25 +17009,25 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
-    public sealed class KnownTypesThroughConstructorWithValueSerializer : XmlSerializer1 {
+    public sealed class TypeWithShouldSerializeMethodSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"KnownTypesThroughConstructorWithValue", @"");
+            return xmlReader.IsStartElement(@"TypeWithShouldSerializeMethod", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write218_Item(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write218_TypeWithShouldSerializeMethod(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read222_Item();
+            return ((XmlSerializationReader1)reader).Read222_TypeWithShouldSerializeMethod();
         }
     }
 
-    public sealed class TypeWithTypesHavingCustomFormatterSerializer : XmlSerializer1 {
+    public sealed class KnownTypesThroughConstructorWithArrayPropertiesSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithTypesHavingCustomFormatter", @"");
+            return xmlReader.IsStartElement(@"KnownTypesThroughConstructorWithArrayProperties", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
@@ -16981,10 +17039,10 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
-    public sealed class TypeWithArrayPropertyHavingChoiceSerializer : XmlSerializer1 {
+    public sealed class KnownTypesThroughConstructorWithValueSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithArrayPropertyHavingChoice", @"");
+            return xmlReader.IsStartElement(@"KnownTypesThroughConstructorWithValue", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
@@ -16996,10 +17054,10 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
-    public sealed class TypeWithPropertyHavingComplexChoiceSerializer : XmlSerializer1 {
+    public sealed class TypeWithTypesHavingCustomFormatterSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
-            return xmlReader.IsStartElement(@"TypeWithPropertyHavingComplexChoice", @"");
+            return xmlReader.IsStartElement(@"TypeWithTypesHavingCustomFormatter", @"");
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
@@ -17011,6 +17069,36 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
     }
 
+    public sealed class TypeWithArrayPropertyHavingChoiceSerializer : XmlSerializer1 {
+
+        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
+            return xmlReader.IsStartElement(@"TypeWithArrayPropertyHavingChoice", @"");
+        }
+
+        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
+            ((XmlSerializationWriter1)writer).Write222_Item(objectToSerialize);
+        }
+
+        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
+            return ((XmlSerializationReader1)reader).Read226_Item();
+        }
+    }
+
+    public sealed class TypeWithPropertyHavingComplexChoiceSerializer : XmlSerializer1 {
+
+        public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
+            return xmlReader.IsStartElement(@"TypeWithPropertyHavingComplexChoice", @"");
+        }
+
+        protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
+            ((XmlSerializationWriter1)writer).Write223_Item(objectToSerialize);
+        }
+
+        protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
+            return ((XmlSerializationReader1)reader).Read227_Item();
+        }
+    }
+
     public sealed class MoreChoicesSerializer : XmlSerializer1 {
 
         public override System.Boolean CanDeserialize(System.Xml.XmlReader xmlReader) {
@@ -17018,11 +17106,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write222_MoreChoices(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write224_MoreChoices(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read226_MoreChoices();
+            return ((XmlSerializationReader1)reader).Read228_MoreChoices();
         }
     }
 
@@ -17033,11 +17121,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write223_ComplexChoiceA(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write225_ComplexChoiceA(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read227_ComplexChoiceA();
+            return ((XmlSerializationReader1)reader).Read229_ComplexChoiceA();
         }
     }
 
@@ -17048,11 +17136,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write224_ComplexChoiceB(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write226_ComplexChoiceB(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read228_ComplexChoiceB();
+            return ((XmlSerializationReader1)reader).Read230_ComplexChoiceB();
         }
     }
 
@@ -17063,11 +17151,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write225_TypeWithFieldsOrdered(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write227_TypeWithFieldsOrdered(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read229_TypeWithFieldsOrdered();
+            return ((XmlSerializationReader1)reader).Read231_TypeWithFieldsOrdered();
         }
     }
 
@@ -17078,11 +17166,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write226_Item(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write228_Item(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read230_Item();
+            return ((XmlSerializationReader1)reader).Read232_Item();
         }
     }
 
@@ -17093,11 +17181,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write227_Root(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write229_Root(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read231_Root();
+            return ((XmlSerializationReader1)reader).Read233_Root();
         }
     }
 
@@ -17108,11 +17196,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write228_TypeClashB(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write230_TypeClashB(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read232_TypeClashB();
+            return ((XmlSerializationReader1)reader).Read234_TypeClashB();
         }
     }
 
@@ -17123,11 +17211,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write229_TypeClashA(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write231_TypeClashA(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read233_TypeClashA();
+            return ((XmlSerializationReader1)reader).Read235_TypeClashA();
         }
     }
 
@@ -17138,11 +17226,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         }
 
         protected override void Serialize(object objectToSerialize, System.Xml.Serialization.XmlSerializationWriter writer) {
-            ((XmlSerializationWriter1)writer).Write230_Person(objectToSerialize);
+            ((XmlSerializationWriter1)writer).Write232_Person(objectToSerialize);
         }
 
         protected override object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) {
-            return ((XmlSerializationReader1)reader).Read234_Person();
+            return ((XmlSerializationReader1)reader).Read236_Person();
         }
     }
 
@@ -17241,35 +17329,37 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                     _tmp[@"SerializationTypes.KnownTypesThroughConstructor::"] = @"Read203_KnownTypesThroughConstructor";
                     _tmp[@"SerializationTypes.SimpleKnownTypeValue::"] = @"Read204_SimpleKnownTypeValue";
                     _tmp[@"SerializationTypes.ClassImplementingIXmlSerializable::"] = @"Read205_Item";
-                    _tmp[@"SerializationTypes.TypeWithPropertyNameSpecified::"] = @"Read206_TypeWithPropertyNameSpecified";
-                    _tmp[@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:"] = @"Read207_TypeWithXmlSchemaFormAttribute";
-                    _tmp[@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::"] = @"Read208_MyXmlType";
-                    _tmp[@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::"] = @"Read209_Item";
-                    _tmp[@"SerializationTypes.CustomDocument::"] = @"Read210_CustomDocument";
-                    _tmp[@"SerializationTypes.CustomElement::"] = @"Read211_CustomElement";
-                    _tmp[@"SerializationTypes.CustomAttribute::"] = @"Read212_Item";
-                    _tmp[@"SerializationTypes.TypeWithNonPublicDefaultConstructor::"] = @"Read213_Item";
-                    _tmp[@"SerializationTypes.ServerSettings::"] = @"Read214_ServerSettings";
-                    _tmp[@"SerializationTypes.TypeWithXmlQualifiedName::"] = @"Read215_TypeWithXmlQualifiedName";
-                    _tmp[@"SerializationTypes.TypeWith2DArrayProperty2::"] = @"Read216_TypeWith2DArrayProperty2";
-                    _tmp[@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::"] = @"Read217_Item";
-                    _tmp[@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::"] = @"Read218_Item";
-                    _tmp[@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::"] = @"Read219_Item";
-                    _tmp[@"SerializationTypes.TypeWithShouldSerializeMethod::"] = @"Read220_TypeWithShouldSerializeMethod";
-                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::"] = @"Read221_Item";
-                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithValue::"] = @"Read222_Item";
-                    _tmp[@"SerializationTypes.TypeWithTypesHavingCustomFormatter::"] = @"Read223_Item";
-                    _tmp[@"SerializationTypes.TypeWithArrayPropertyHavingChoice::"] = @"Read224_Item";
-                    _tmp[@"SerializationTypes.TypeWithPropertyHavingComplexChoice::"] = @"Read225_Item";
-                    _tmp[@"SerializationTypes.MoreChoices::"] = @"Read226_MoreChoices";
-                    _tmp[@"SerializationTypes.ComplexChoiceA::"] = @"Read227_ComplexChoiceA";
-                    _tmp[@"SerializationTypes.ComplexChoiceB::"] = @"Read228_ComplexChoiceB";
-                    _tmp[@"SerializationTypes.TypeWithFieldsOrdered::"] = @"Read229_TypeWithFieldsOrdered";
-                    _tmp[@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::"] = @"Read230_Item";
-                    _tmp[@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:"] = @"Read231_Root";
-                    _tmp[@"SerializationTypes.TypeNameClashB.TypeNameClash::"] = @"Read232_TypeClashB";
-                    _tmp[@"SerializationTypes.TypeNameClashA.TypeNameClash::"] = @"Read233_TypeClashA";
-                    _tmp[@"Outer+Person::"] = @"Read234_Person";
+                    _tmp[@"SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor::"] = @"Read206_Item";
+                    _tmp[@"SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor::"] = @"Read207_Item";
+                    _tmp[@"SerializationTypes.TypeWithPropertyNameSpecified::"] = @"Read208_TypeWithPropertyNameSpecified";
+                    _tmp[@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:"] = @"Read209_TypeWithXmlSchemaFormAttribute";
+                    _tmp[@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::"] = @"Read210_MyXmlType";
+                    _tmp[@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::"] = @"Read211_Item";
+                    _tmp[@"SerializationTypes.CustomDocument::"] = @"Read212_CustomDocument";
+                    _tmp[@"SerializationTypes.CustomElement::"] = @"Read213_CustomElement";
+                    _tmp[@"SerializationTypes.CustomAttribute::"] = @"Read214_Item";
+                    _tmp[@"SerializationTypes.TypeWithNonPublicDefaultConstructor::"] = @"Read215_Item";
+                    _tmp[@"SerializationTypes.ServerSettings::"] = @"Read216_ServerSettings";
+                    _tmp[@"SerializationTypes.TypeWithXmlQualifiedName::"] = @"Read217_TypeWithXmlQualifiedName";
+                    _tmp[@"SerializationTypes.TypeWith2DArrayProperty2::"] = @"Read218_TypeWith2DArrayProperty2";
+                    _tmp[@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::"] = @"Read219_Item";
+                    _tmp[@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::"] = @"Read220_Item";
+                    _tmp[@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::"] = @"Read221_Item";
+                    _tmp[@"SerializationTypes.TypeWithShouldSerializeMethod::"] = @"Read222_TypeWithShouldSerializeMethod";
+                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::"] = @"Read223_Item";
+                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithValue::"] = @"Read224_Item";
+                    _tmp[@"SerializationTypes.TypeWithTypesHavingCustomFormatter::"] = @"Read225_Item";
+                    _tmp[@"SerializationTypes.TypeWithArrayPropertyHavingChoice::"] = @"Read226_Item";
+                    _tmp[@"SerializationTypes.TypeWithPropertyHavingComplexChoice::"] = @"Read227_Item";
+                    _tmp[@"SerializationTypes.MoreChoices::"] = @"Read228_MoreChoices";
+                    _tmp[@"SerializationTypes.ComplexChoiceA::"] = @"Read229_ComplexChoiceA";
+                    _tmp[@"SerializationTypes.ComplexChoiceB::"] = @"Read230_ComplexChoiceB";
+                    _tmp[@"SerializationTypes.TypeWithFieldsOrdered::"] = @"Read231_TypeWithFieldsOrdered";
+                    _tmp[@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::"] = @"Read232_Item";
+                    _tmp[@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:"] = @"Read233_Root";
+                    _tmp[@"SerializationTypes.TypeNameClashB.TypeNameClash::"] = @"Read234_TypeClashB";
+                    _tmp[@"SerializationTypes.TypeNameClashA.TypeNameClash::"] = @"Read235_TypeClashA";
+                    _tmp[@"Outer+Person::"] = @"Read236_Person";
                     if (readMethods == null) readMethods = _tmp;
                 }
                 return readMethods;
@@ -17367,35 +17457,37 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                     _tmp[@"SerializationTypes.KnownTypesThroughConstructor::"] = @"Write199_KnownTypesThroughConstructor";
                     _tmp[@"SerializationTypes.SimpleKnownTypeValue::"] = @"Write200_SimpleKnownTypeValue";
                     _tmp[@"SerializationTypes.ClassImplementingIXmlSerializable::"] = @"Write201_Item";
-                    _tmp[@"SerializationTypes.TypeWithPropertyNameSpecified::"] = @"Write202_TypeWithPropertyNameSpecified";
-                    _tmp[@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:"] = @"Write203_TypeWithXmlSchemaFormAttribute";
-                    _tmp[@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::"] = @"Write204_MyXmlType";
-                    _tmp[@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::"] = @"Write205_Item";
-                    _tmp[@"SerializationTypes.CustomDocument::"] = @"Write206_CustomDocument";
-                    _tmp[@"SerializationTypes.CustomElement::"] = @"Write207_CustomElement";
-                    _tmp[@"SerializationTypes.CustomAttribute::"] = @"Write208_Item";
-                    _tmp[@"SerializationTypes.TypeWithNonPublicDefaultConstructor::"] = @"Write209_Item";
-                    _tmp[@"SerializationTypes.ServerSettings::"] = @"Write210_ServerSettings";
-                    _tmp[@"SerializationTypes.TypeWithXmlQualifiedName::"] = @"Write211_TypeWithXmlQualifiedName";
-                    _tmp[@"SerializationTypes.TypeWith2DArrayProperty2::"] = @"Write212_TypeWith2DArrayProperty2";
-                    _tmp[@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::"] = @"Write213_Item";
-                    _tmp[@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::"] = @"Write214_Item";
-                    _tmp[@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::"] = @"Write215_Item";
-                    _tmp[@"SerializationTypes.TypeWithShouldSerializeMethod::"] = @"Write216_TypeWithShouldSerializeMethod";
-                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::"] = @"Write217_Item";
-                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithValue::"] = @"Write218_Item";
-                    _tmp[@"SerializationTypes.TypeWithTypesHavingCustomFormatter::"] = @"Write219_Item";
-                    _tmp[@"SerializationTypes.TypeWithArrayPropertyHavingChoice::"] = @"Write220_Item";
-                    _tmp[@"SerializationTypes.TypeWithPropertyHavingComplexChoice::"] = @"Write221_Item";
-                    _tmp[@"SerializationTypes.MoreChoices::"] = @"Write222_MoreChoices";
-                    _tmp[@"SerializationTypes.ComplexChoiceA::"] = @"Write223_ComplexChoiceA";
-                    _tmp[@"SerializationTypes.ComplexChoiceB::"] = @"Write224_ComplexChoiceB";
-                    _tmp[@"SerializationTypes.TypeWithFieldsOrdered::"] = @"Write225_TypeWithFieldsOrdered";
-                    _tmp[@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::"] = @"Write226_Item";
-                    _tmp[@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:"] = @"Write227_Root";
-                    _tmp[@"SerializationTypes.TypeNameClashB.TypeNameClash::"] = @"Write228_TypeClashB";
-                    _tmp[@"SerializationTypes.TypeNameClashA.TypeNameClash::"] = @"Write229_TypeClashA";
-                    _tmp[@"Outer+Person::"] = @"Write230_Person";
+                    _tmp[@"SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor::"] = @"Write202_Item";
+                    _tmp[@"SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor::"] = @"Write203_Item";
+                    _tmp[@"SerializationTypes.TypeWithPropertyNameSpecified::"] = @"Write204_TypeWithPropertyNameSpecified";
+                    _tmp[@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:"] = @"Write205_TypeWithXmlSchemaFormAttribute";
+                    _tmp[@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::"] = @"Write206_MyXmlType";
+                    _tmp[@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::"] = @"Write207_Item";
+                    _tmp[@"SerializationTypes.CustomDocument::"] = @"Write208_CustomDocument";
+                    _tmp[@"SerializationTypes.CustomElement::"] = @"Write209_CustomElement";
+                    _tmp[@"SerializationTypes.CustomAttribute::"] = @"Write210_Item";
+                    _tmp[@"SerializationTypes.TypeWithNonPublicDefaultConstructor::"] = @"Write211_Item";
+                    _tmp[@"SerializationTypes.ServerSettings::"] = @"Write212_ServerSettings";
+                    _tmp[@"SerializationTypes.TypeWithXmlQualifiedName::"] = @"Write213_TypeWithXmlQualifiedName";
+                    _tmp[@"SerializationTypes.TypeWith2DArrayProperty2::"] = @"Write214_TypeWith2DArrayProperty2";
+                    _tmp[@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::"] = @"Write215_Item";
+                    _tmp[@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::"] = @"Write216_Item";
+                    _tmp[@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::"] = @"Write217_Item";
+                    _tmp[@"SerializationTypes.TypeWithShouldSerializeMethod::"] = @"Write218_TypeWithShouldSerializeMethod";
+                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::"] = @"Write219_Item";
+                    _tmp[@"SerializationTypes.KnownTypesThroughConstructorWithValue::"] = @"Write220_Item";
+                    _tmp[@"SerializationTypes.TypeWithTypesHavingCustomFormatter::"] = @"Write221_Item";
+                    _tmp[@"SerializationTypes.TypeWithArrayPropertyHavingChoice::"] = @"Write222_Item";
+                    _tmp[@"SerializationTypes.TypeWithPropertyHavingComplexChoice::"] = @"Write223_Item";
+                    _tmp[@"SerializationTypes.MoreChoices::"] = @"Write224_MoreChoices";
+                    _tmp[@"SerializationTypes.ComplexChoiceA::"] = @"Write225_ComplexChoiceA";
+                    _tmp[@"SerializationTypes.ComplexChoiceB::"] = @"Write226_ComplexChoiceB";
+                    _tmp[@"SerializationTypes.TypeWithFieldsOrdered::"] = @"Write227_TypeWithFieldsOrdered";
+                    _tmp[@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::"] = @"Write228_Item";
+                    _tmp[@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:"] = @"Write229_Root";
+                    _tmp[@"SerializationTypes.TypeNameClashB.TypeNameClash::"] = @"Write230_TypeClashB";
+                    _tmp[@"SerializationTypes.TypeNameClashA.TypeNameClash::"] = @"Write231_TypeClashA";
+                    _tmp[@"Outer+Person::"] = @"Write232_Person";
                     if (writeMethods == null) writeMethods = _tmp;
                 }
                 return writeMethods;
@@ -17406,122 +17498,124 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             get {
                 if (typedSerializers == null) {
                     System.Collections.Hashtable _tmp = new System.Collections.Hashtable();
-                    _tmp.Add(@"SerializationTypes.SomeStruct::", new SomeStructSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithNonPublicDefaultConstructor::", new TypeWithNonPublicDefaultConstructorSerializer());
-                    _tmp.Add(@"XmlSerializableDerivedClass::", new XmlSerializableDerivedClassSerializer());
-                    _tmp.Add(@"SerializationTypes.EnumFlags::", new EnumFlagsSerializer());
-                    _tmp.Add(@"SerializationTypes.ComplexChoiceB::", new ComplexChoiceBSerializer());
-                    _tmp.Add(@"XmlSerializableBaseClass:http://example.com/serializer-test-namespace::True:", new XmlSerializableBaseClassSerializer());
-                    _tmp.Add(@"SerializationTypes.WithStruct::", new WithStructSerializer());
-                    _tmp.Add(@"Trumpet::", new TrumpetSerializer());
-                    _tmp.Add(@"SerializationTypes.DerivedClassWithSameProperty2::", new DerivedClassWithSameProperty2Serializer());
-                    _tmp.Add(@"SerializationTypes.MyList::", new MyListSerializer());
-                    _tmp.Add(@"SerializationTypes.SimpleDC::", new SimpleDCSerializer());
-                    _tmp.Add(@"Pet::", new PetSerializer());
-                    _tmp.Add(@"Brass::", new BrassSerializer());
-                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructor::", new KnownTypesThroughConstructorSerializer());
-                    _tmp.Add(@"SerializationTypes.ComplexChoiceA::", new ComplexChoiceASerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:", new TypeWithXmlSchemaFormAttributeSerializer());
-                    _tmp.Add(@"Employee::", new EmployeeSerializer());
-                    _tmp.Add(@"SerializationTypes.__TypeNameWithSpecialCharacters漢ñ::", new __TypeNameWithSpecialCharacters漢ñSerializer());
-                    _tmp.Add(@"DogBreed::", new DogBreedSerializer());
-                    _tmp.Add(@"DefaultValuesSetToPositiveInfinity::", new DefaultValuesSetToPositiveInfinitySerializer());
-                    _tmp.Add(@"AliasedTestType::", new AliasedTestTypeSerializer());
-                    _tmp.Add(@"SerializationTypes.SimpleKnownTypeValue::", new SimpleKnownTypeValueSerializer());
-                    _tmp.Add(@"XElementArrayWrapper::", new XElementArrayWrapperSerializer());
-                    _tmp.Add(@"Parameter::", new ParameterSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithDateTimeStringProperty::", new TypeWithDateTimeStringPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.UIntEnum::", new UIntEnumSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeA::", new TypeASerializer());
-                    _tmp.Add(@"SerializationTypes.DerivedClassWithSameProperty::", new DerivedClassWithSamePropertySerializer());
-                    _tmp.Add(@"DerivedClass::", new DerivedClassSerializer());
-                    _tmp.Add(@"Orchestra::", new OrchestraSerializer());
-                    _tmp.Add(@"SerializationTypes.ClassImplementingIXmlSerializable::", new ClassImplementingIXmlSerializableSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::", new TypeWithTypeNameInXmlTypeAttributeSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithEnumMembers::", new TypeWithEnumMembersSerializer());
-                    _tmp.Add(@"SerializationTypes.XmlSerializerAttributes::AttributeTesting:False:", new XmlSerializerAttributesSerializer());
-                    _tmp.Add(@"SerializationTypes.ServerSettings::", new ServerSettingsSerializer());
-                    _tmp.Add(@"SerializationTypes.SByteEnum::", new SByteEnumSerializer());
-                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructorWithValue::", new KnownTypesThroughConstructorWithValueSerializer());
-                    _tmp.Add(@"MyCollection1::", new MyCollection1Serializer());
-                    _tmp.Add(@"RootClass::", new RootClassSerializer());
-                    _tmp.Add(@"OrderedItem::", new OrderedItemSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeNameClashA.TypeNameClash::", new TypeNameClashSerializer1());
-                    _tmp.Add(@"SerializationTypes.WithEnums::", new WithEnumsSerializer());
-                    _tmp.Add(@"SerializationTypes.IntEnum::", new IntEnumSerializer());
-                    _tmp.Add(@"Outer+Person::", new PersonSerializer());
-                    _tmp.Add(@"XElementStruct::", new XElementStructSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithMyCollectionField::", new TypeWithMyCollectionFieldSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithGetOnlyArrayProperties::", new TypeWithGetOnlyArrayPropertiesSerializer());
-                    _tmp.Add(@"Instrument::", new InstrumentSerializer());
                     _tmp.Add(@"Address::", new AddressSerializer());
-                    _tmp.Add(@"SerializationTypes.StructNotSerializable::", new StructNotSerializableSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::", new TypeWithKnownTypesOfCollectionsWithConflictingXmlNameSerializer());
-                    _tmp.Add(@"TypeWithByteProperty::", new TypeWithBytePropertySerializer());
-                    _tmp.Add(@"SerializationTypes.BaseClassWithSamePropertyName::", new BaseClassWithSamePropertyNameSerializer());
-                    _tmp.Add(@"SimpleDerivedClass::", new SimpleDerivedClassSerializer());
-                    _tmp.Add(@"SerializationTypes.BuiltInTypes::", new BuiltInTypesSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::", new TypeWithEnumPropertyHavingDefaultValueSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithGetSetArrayMembers::", new TypeWithGetSetArrayMembersSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithArraylikeMembers::", new TypeWithArraylikeMembersSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithShouldSerializeMethod::", new TypeWithShouldSerializeMethodSerializer());
-                    _tmp.Add(@"SerializationTypes.ClassImplementsInterface::", new ClassImplementsInterfaceSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeHasArrayOfASerializedAsB::", new TypeHasArrayOfASerializedAsBSerializer());
-                    _tmp.Add(@"TypeWithLinkedProperty::", new TypeWithLinkedPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.CustomDocument::", new CustomDocumentSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithAnyAttribute::", new TypeWithAnyAttributeSerializer());
-                    _tmp.Add(@"SerializationTypes.ULongEnum::", new ULongEnumSerializer());
-                    _tmp.Add(@"SerializationTypes.SimpleType::", new SimpleTypeSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::", new TypeWithSchemaFormInXmlAttributeSerializer());
-                    _tmp.Add(@"SerializationTypes.ShortEnum::", new ShortEnumSerializer());
-                    _tmp.Add(@"SimpleBaseClass::", new SimpleBaseClassSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithFieldsOrdered::", new TypeWithFieldsOrderedSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithReadOnlyMyCollectionProperty::", new TypeWithReadOnlyMyCollectionPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithDateTimePropertyAsXmlTime::", new TypeWithDateTimePropertyAsXmlTimeSerializer());
-                    _tmp.Add(@"SerializationTypes.DCStruct::", new DCStructSerializer());
-                    _tmp.Add(@"SerializationTypes.CustomAttribute::", new CustomAttributeSerializer());
-                    _tmp.Add(@"BaseClass1::", new BaseClass1Serializer());
-                    _tmp.Add(@"SerializationTypes.TypeB::", new TypeBSerializer());
-                    _tmp.Add(@"Animal::", new AnimalSerializer());
-                    _tmp.Add(@"DefaultValuesSetToNaN::", new DefaultValuesSetToNaNSerializer());
-                    _tmp.Add(@"TypeWithXmlDocumentProperty::", new TypeWithXmlDocumentPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.CustomElement::", new CustomElementSerializer());
-                    _tmp.Add(@"XElementWrapper::", new XElementWrapperSerializer());
-                    _tmp.Add(@"TypeWithTimeSpanProperty::", new TypeWithTimeSpanPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.MyEnum::", new MyEnumSerializer());
-                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::", new KnownTypesThroughConstructorWithArrayPropertiesSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::", new TypeWithPropertiesHavingDefaultValueSerializer());
-                    _tmp.Add(@"Group::", new GroupSerializer());
-                    _tmp.Add(@"SerializationTypes.ByteEnum::", new ByteEnumSerializer());
-                    _tmp.Add(@"DerivedClass1::", new DerivedClass1Serializer());
-                    _tmp.Add(@"TypeWithDefaultTimeSpanProperty::", new TypeWithDefaultTimeSpanPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.ItemChoiceType::", new ItemChoiceTypeSerializer());
-                    _tmp.Add(@"PurchaseOrder:http://www.contoso1.com:PurchaseOrder:False:", new PurchaseOrderSerializer());
-                    _tmp.Add(@"TypeWithXmlElementProperty::", new TypeWithXmlElementPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.WithNullables::", new WithNullablesSerializer());
-                    _tmp.Add(@"BaseClass::", new BaseClassSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithByteArrayAsXmlText::", new TypeWithByteArrayAsXmlTextSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithTypesHavingCustomFormatter::", new TypeWithTypesHavingCustomFormatterSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithPropertyHavingComplexChoice::", new TypeWithPropertyHavingComplexChoiceSerializer());
-                    _tmp.Add(@"Dog::", new DogSerializer());
-                    _tmp.Add(@"MsgDocumentType:http://example.com:Document:True:", new MsgDocumentTypeSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithXmlTextAttributeOnArray:http://schemas.xmlsoap.org/ws/2005/04/discovery::False:", new TypeWithXmlTextAttributeOnArraySerializer());
-                    _tmp.Add(@"Vehicle::", new VehicleSerializer());
-                    _tmp.Add(@"TypeWithXmlNodeArrayProperty:::True:", new TypeWithXmlNodeArrayPropertySerializer());
-                    _tmp.Add(@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:", new NamespaceTypeNameClashContainerSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::", new TypeWithEnumFlagPropertyHavingDefaultValueSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithXmlQualifiedName::", new TypeWithXmlQualifiedNameSerializer());
-                    _tmp.Add(@"TypeWithDateTimeOffsetProperties::", new TypeWithDateTimeOffsetPropertiesSerializer());
+                    _tmp.Add(@"AliasedTestType::", new AliasedTestTypeSerializer());
                     _tmp.Add(@"SerializationTypes.TypeNameClashB.TypeNameClash::", new TypeNameClashSerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWith2DArrayProperty2::", new TypeWith2DArrayProperty2Serializer());
-                    _tmp.Add(@"TypeWithMismatchBetweenAttributeAndPropertyType::RootElement:True:", new TypeWithMismatchBetweenAttributeAndPropertyTypeSerializer());
+                    _tmp.Add(@"SerializationTypes.UIntEnum::", new UIntEnumSerializer());
                     _tmp.Add(@"DefaultValuesSetToNegativeInfinity::", new DefaultValuesSetToNegativeInfinitySerializer());
-                    _tmp.Add(@"SerializationTypes.TypeWithArrayPropertyHavingChoice::", new TypeWithArrayPropertyHavingChoiceSerializer());
-                    _tmp.Add(@"TypeWithBinaryProperty::", new TypeWithBinaryPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithPropertiesHavingDefaultValue::", new TypeWithPropertiesHavingDefaultValueSerializer());
+                    _tmp.Add(@"TypeWithXmlDocumentProperty::", new TypeWithXmlDocumentPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithFieldsOrdered::", new TypeWithFieldsOrderedSerializer());
+                    _tmp.Add(@"SerializationTypes.CustomAttribute::", new CustomAttributeSerializer());
+                    _tmp.Add(@"Employee::", new EmployeeSerializer());
+                    _tmp.Add(@"SerializationTypes.ShortEnum::", new ShortEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.NamespaceTypeNameClashContainer::Root:True:", new NamespaceTypeNameClashContainerSerializer());
+                    _tmp.Add(@"PurchaseOrder:http://www.contoso1.com:PurchaseOrder:False:", new PurchaseOrderSerializer());
+                    _tmp.Add(@"Outer+Person::", new PersonSerializer());
+                    _tmp.Add(@"TypeWithDateTimeOffsetProperties::", new TypeWithDateTimeOffsetPropertiesSerializer());
+                    _tmp.Add(@"SerializationTypes.ClassImplementingIXmlSerializable::", new ClassImplementingIXmlSerializableSerializer());
+                    _tmp.Add(@"Parameter::", new ParameterSerializer());
+                    _tmp.Add(@"SimpleBaseClass::", new SimpleBaseClassSerializer());
+                    _tmp.Add(@"SerializationTypes.ClassImplementsInterface::", new ClassImplementsInterfaceSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithMyCollectionField::", new TypeWithMyCollectionFieldSerializer());
+                    _tmp.Add(@"Brass::", new BrassSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithGetSetArrayMembers::", new TypeWithGetSetArrayMembersSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithGetOnlyArrayProperties::", new TypeWithGetOnlyArrayPropertiesSerializer());
+                    _tmp.Add(@"Animal::", new AnimalSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithEnumMembers::", new TypeWithEnumMembersSerializer());
+                    _tmp.Add(@"DerivedClass::", new DerivedClassSerializer());
+                    _tmp.Add(@"XElementWrapper::", new XElementWrapperSerializer());
+                    _tmp.Add(@"DefaultValuesSetToNaN::", new DefaultValuesSetToNaNSerializer());
                     _tmp.Add(@"SerializationTypes.TypeWithPropertyNameSpecified::", new TypeWithPropertyNameSpecifiedSerializer());
-                    _tmp.Add(@"SerializationTypes.LongEnum::", new LongEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.ComplexChoiceA::", new ComplexChoiceASerializer());
+                    _tmp.Add(@"TypeWithMismatchBetweenAttributeAndPropertyType::RootElement:True:", new TypeWithMismatchBetweenAttributeAndPropertyTypeSerializer());
+                    _tmp.Add(@"TypeWithTimeSpanProperty::", new TypeWithTimeSpanPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.StructNotSerializable::", new StructNotSerializableSerializer());
+                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructor::", new KnownTypesThroughConstructorSerializer());
+                    _tmp.Add(@"BaseClass1::", new BaseClass1Serializer());
+                    _tmp.Add(@"SerializationTypes.ServerSettings::", new ServerSettingsSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithArrayPropertyHavingChoice::", new TypeWithArrayPropertyHavingChoiceSerializer());
+                    _tmp.Add(@"SerializationTypes.WithEnums::", new WithEnumsSerializer());
+                    _tmp.Add(@"SerializationTypes.SByteEnum::", new SByteEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.ByteEnum::", new ByteEnumSerializer());
+                    _tmp.Add(@"Orchestra::", new OrchestraSerializer());
+                    _tmp.Add(@"MyCollection1::", new MyCollection1Serializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithDateTimeStringProperty::", new TypeWithDateTimeStringPropertySerializer());
+                    _tmp.Add(@"OrderedItem::", new OrderedItemSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithEnumFlagPropertyHavingDefaultValue::", new TypeWithEnumFlagPropertyHavingDefaultValueSerializer());
+                    _tmp.Add(@"SerializationTypes.DerivedClassWithSameProperty2::", new DerivedClassWithSameProperty2Serializer());
                     _tmp.Add(@"SerializationTypes.MoreChoices::", new MoreChoicesSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithXmlTextAttributeOnArray:http://schemas.xmlsoap.org/ws/2005/04/discovery::False:", new TypeWithXmlTextAttributeOnArraySerializer());
+                    _tmp.Add(@"SerializationTypes.LongEnum::", new LongEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithAnyAttribute::", new TypeWithAnyAttributeSerializer());
+                    _tmp.Add(@"XElementArrayWrapper::", new XElementArrayWrapperSerializer());
+                    _tmp.Add(@"SerializationTypes.BuiltInTypes::", new BuiltInTypesSerializer());
+                    _tmp.Add(@"SerializationTypes.MyList::", new MyListSerializer());
+                    _tmp.Add(@"SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor::", new StructImplementingIXmlSerializableWithParameterlessConstructorSerializer());
+                    _tmp.Add(@"SerializationTypes.ItemChoiceType::", new ItemChoiceTypeSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithReadOnlyMyCollectionProperty::", new TypeWithReadOnlyMyCollectionPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithNonPublicDefaultConstructor::", new TypeWithNonPublicDefaultConstructorSerializer());
+                    _tmp.Add(@"SerializationTypes.ULongEnum::", new ULongEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.WithStruct::", new WithStructSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeNameClashA.TypeNameClash::", new TypeNameClashSerializer1());
+                    _tmp.Add(@"SerializationTypes.IntEnum::", new IntEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithXmlSchemaFormAttribute:::True:", new TypeWithXmlSchemaFormAttributeSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithArraylikeMembers::", new TypeWithArraylikeMembersSerializer());
+                    _tmp.Add(@"SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor::", new StructImplementingIXmlSerializableWithoutParameterlessConstructorSerializer());
+                    _tmp.Add(@"TypeWithXmlNodeArrayProperty:::True:", new TypeWithXmlNodeArrayPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithPropertyHavingComplexChoice::", new TypeWithPropertyHavingComplexChoiceSerializer());
+                    _tmp.Add(@"SerializationTypes.__TypeNameWithSpecialCharacters漢ñ::", new __TypeNameWithSpecialCharacters漢ñSerializer());
+                    _tmp.Add(@"SerializationTypes.SimpleDC::", new SimpleDCSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithSchemaFormInXmlAttribute::", new TypeWithSchemaFormInXmlAttributeSerializer());
+                    _tmp.Add(@"TypeWithDefaultTimeSpanProperty::", new TypeWithDefaultTimeSpanPropertySerializer());
+                    _tmp.Add(@"Dog::", new DogSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithEnumPropertyHavingDefaultValue::", new TypeWithEnumPropertyHavingDefaultValueSerializer());
+                    _tmp.Add(@"SerializationTypes.BaseClassWithSamePropertyName::", new BaseClassWithSamePropertyNameSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithByteArrayAsXmlText::", new TypeWithByteArrayAsXmlTextSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithKnownTypesOfCollectionsWithConflictingXmlName::", new TypeWithKnownTypesOfCollectionsWithConflictingXmlNameSerializer());
+                    _tmp.Add(@"SimpleDerivedClass::", new SimpleDerivedClassSerializer());
+                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructorWithValue::", new KnownTypesThroughConstructorWithValueSerializer());
+                    _tmp.Add(@"RootClass::", new RootClassSerializer());
+                    _tmp.Add(@"TypeWithBinaryProperty::", new TypeWithBinaryPropertySerializer());
+                    _tmp.Add(@"XElementStruct::", new XElementStructSerializer());
+                    _tmp.Add(@"TypeWithByteProperty::", new TypeWithBytePropertySerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithTypeNameInXmlTypeAttribute::", new TypeWithTypeNameInXmlTypeAttributeSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeA::", new TypeASerializer());
+                    _tmp.Add(@"SerializationTypes.EnumFlags::", new EnumFlagsSerializer());
+                    _tmp.Add(@"Instrument::", new InstrumentSerializer());
+                    _tmp.Add(@"DerivedClass1::", new DerivedClass1Serializer());
+                    _tmp.Add(@"SerializationTypes.TypeB::", new TypeBSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithDateTimePropertyAsXmlTime::", new TypeWithDateTimePropertyAsXmlTimeSerializer());
+                    _tmp.Add(@"SerializationTypes.WithNullables::", new WithNullablesSerializer());
+                    _tmp.Add(@"SerializationTypes.MyEnum::", new MyEnumSerializer());
+                    _tmp.Add(@"SerializationTypes.SimpleKnownTypeValue::", new SimpleKnownTypeValueSerializer());
+                    _tmp.Add(@"SerializationTypes.XmlSerializerAttributes::AttributeTesting:False:", new XmlSerializerAttributesSerializer());
+                    _tmp.Add(@"Group::", new GroupSerializer());
+                    _tmp.Add(@"XmlSerializableBaseClass:http://example.com/serializer-test-namespace::True:", new XmlSerializableBaseClassSerializer());
+                    _tmp.Add(@"Vehicle::", new VehicleSerializer());
+                    _tmp.Add(@"MsgDocumentType:http://example.com:Document:True:", new MsgDocumentTypeSerializer());
+                    _tmp.Add(@"SerializationTypes.SimpleType::", new SimpleTypeSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithShouldSerializeMethod::", new TypeWithShouldSerializeMethodSerializer());
+                    _tmp.Add(@"Trumpet::", new TrumpetSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWith2DArrayProperty2::", new TypeWith2DArrayProperty2Serializer());
+                    _tmp.Add(@"TypeWithXmlElementProperty::", new TypeWithXmlElementPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.ComplexChoiceB::", new ComplexChoiceBSerializer());
+                    _tmp.Add(@"DogBreed::", new DogBreedSerializer());
                     _tmp.Add(@"SerializationTypes.DCClassWithEnumAndStruct::", new DCClassWithEnumAndStructSerializer());
+                    _tmp.Add(@"XmlSerializableDerivedClass::", new XmlSerializableDerivedClassSerializer());
+                    _tmp.Add(@"SerializationTypes.SomeStruct::", new SomeStructSerializer());
+                    _tmp.Add(@"TypeWithLinkedProperty::", new TypeWithLinkedPropertySerializer());
+                    _tmp.Add(@"SerializationTypes.DCStruct::", new DCStructSerializer());
+                    _tmp.Add(@"SerializationTypes.CustomDocument::", new CustomDocumentSerializer());
+                    _tmp.Add(@"DefaultValuesSetToPositiveInfinity::", new DefaultValuesSetToPositiveInfinitySerializer());
+                    _tmp.Add(@"SerializationTypes.CustomElement::", new CustomElementSerializer());
+                    _tmp.Add(@"SerializationTypes.DerivedClassWithSameProperty::", new DerivedClassWithSamePropertySerializer());
+                    _tmp.Add(@"BaseClass::", new BaseClassSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithTypesHavingCustomFormatter::", new TypeWithTypesHavingCustomFormatterSerializer());
+                    _tmp.Add(@"Pet::", new PetSerializer());
+                    _tmp.Add(@"SerializationTypes.KnownTypesThroughConstructorWithArrayProperties::", new KnownTypesThroughConstructorWithArrayPropertiesSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeHasArrayOfASerializedAsB::", new TypeHasArrayOfASerializedAsBSerializer());
+                    _tmp.Add(@"SerializationTypes.TypeWithXmlQualifiedName::", new TypeWithXmlQualifiedNameSerializer());
                     if (typedSerializers == null) typedSerializers = _tmp;
                 }
                 return typedSerializers;
@@ -17615,6 +17709,8 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             if (type == typeof(global::SerializationTypes.KnownTypesThroughConstructor)) return true;
             if (type == typeof(global::SerializationTypes.SimpleKnownTypeValue)) return true;
             if (type == typeof(global::SerializationTypes.ClassImplementingIXmlSerializable)) return true;
+            if (type == typeof(global::SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor)) return true;
+            if (type == typeof(global::SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor)) return true;
             if (type == typeof(global::SerializationTypes.TypeWithPropertyNameSpecified)) return true;
             if (type == typeof(global::SerializationTypes.TypeWithXmlSchemaFormAttribute)) return true;
             if (type == typeof(global::SerializationTypes.TypeWithTypeNameInXmlTypeAttribute)) return true;
@@ -17734,6 +17830,8 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
             if (type == typeof(global::SerializationTypes.KnownTypesThroughConstructor)) return new KnownTypesThroughConstructorSerializer();
             if (type == typeof(global::SerializationTypes.SimpleKnownTypeValue)) return new SimpleKnownTypeValueSerializer();
             if (type == typeof(global::SerializationTypes.ClassImplementingIXmlSerializable)) return new ClassImplementingIXmlSerializableSerializer();
+            if (type == typeof(global::SerializationTypes.StructImplementingIXmlSerializableWithoutParameterlessConstructor)) return new StructImplementingIXmlSerializableWithoutParameterlessConstructorSerializer();
+            if (type == typeof(global::SerializationTypes.StructImplementingIXmlSerializableWithParameterlessConstructor)) return new StructImplementingIXmlSerializableWithParameterlessConstructorSerializer();
             if (type == typeof(global::SerializationTypes.TypeWithPropertyNameSpecified)) return new TypeWithPropertyNameSpecifiedSerializer();
             if (type == typeof(global::SerializationTypes.TypeWithXmlSchemaFormAttribute)) return new TypeWithXmlSchemaFormAttributeSerializer();
             if (type == typeof(global::SerializationTypes.TypeWithTypeNameInXmlTypeAttribute)) return new TypeWithTypeNameInXmlTypeAttributeSerializer();
