@@ -717,6 +717,7 @@ private:
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
+    void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);

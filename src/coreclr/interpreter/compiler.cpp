@@ -2597,6 +2597,24 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
     return false;
 }
 
+void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
+{
+    if (entry->type != type)
+    {
+        if (entry->type != StackTypeR4 && entry->type != StackTypeR8)
+            NO_WAY("ConvertFloatingPointStackEntryToStackType: entry is not floating point");
+        
+        if (type == StackTypeR8 && entry->type == StackTypeR4)
+        {
+            EmitConv(entry, StackTypeR8, INTOP_CONV_R8_R4);
+        }
+        else if (type == StackTypeR4 && entry->type == StackTypeR8)
+        {
+            EmitConv(entry, StackTypeR4, INTOP_CONV_R4_R8);
+        }
+    }
+}
+
 bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     bool mustExpand = (method == m_methodHnd) && nonVirtualCall;
@@ -2613,27 +2631,44 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
 
+        case NI_System_Math_MultiplyAddEstimate:
+        {
+            CHECK_STACK(3);
+            InterpType estimateType = GetInterpType(sig.retType);
+            if (estimateType != InterpTypeR4 && estimateType != InterpTypeR8)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[estimateType]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[estimateType]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-3], g_stackTypeFromInterpType[estimateType]);
+
+            int32_t mulA = m_pStackPointer[-3].var;
+            int32_t mulB = m_pStackPointer[-2].var;
+            int32_t addC = m_pStackPointer[-1].var;
+            m_pStackPointer -= 3;
+
+            AddIns(estimateType == InterpTypeR4 ? INTOP_MUL_R4 : INTOP_MUL_R8);
+            m_pLastNewIns->SetSVars2(mulA, mulB);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            int32_t mulTemp = m_pStackPointer[-1].var;
+            m_pStackPointer--;
+
+            AddIns(estimateType == InterpTypeR4 ? INTOP_ADD_R4 : INTOP_ADD_R8);
+            m_pLastNewIns->SetSVars2(mulTemp, addC);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
         case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Sqrt:
         {
             CHECK_STACK(1);
             m_pStackPointer--;
             InterpType estimateType = GetInterpType(sig.retType);
-            if (g_stackTypeFromInterpType[estimateType] != m_pStackPointer[0].type)
-            {
-                if (estimateType == InterpTypeR8 && m_pStackPointer[0].type == StackTypeR4)
-                {
-                    EmitConv(m_pStackPointer, StackTypeR8, INTOP_CONV_R8_R4);
-                }
-                else if (estimateType == InterpTypeR4 && m_pStackPointer[0].type == StackTypeR8)
-                {
-                    EmitConv(m_pStackPointer, StackTypeR4, INTOP_CONV_R4_R8);
-                }
-                else
-                {
-                    goto FAIL_TO_EXPAND_INTRINSIC;
-                }
-            }
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
 
             int32_t argumentVar = m_pStackPointer[0].var;
             AddIns(estimateType == InterpTypeR4 ? INTOP_SQRT_R4 : INTOP_SQRT_R8);
@@ -2657,21 +2692,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             CHECK_STACK(1);
             m_pStackPointer--;
             InterpType estimateType = GetInterpType(sig.retType);
-            if (g_stackTypeFromInterpType[estimateType] != m_pStackPointer[0].type)
-            {
-                if (estimateType == InterpTypeR8 && m_pStackPointer[0].type == StackTypeR4)
-                {
-                    EmitConv(m_pStackPointer, StackTypeR8, INTOP_CONV_R8_R4);
-                }
-                else if (estimateType == InterpTypeR4 && m_pStackPointer[0].type == StackTypeR8)
-                {
-                    EmitConv(m_pStackPointer, StackTypeR4, INTOP_CONV_R4_R8);
-                }
-                else
-                {
-                    goto FAIL_TO_EXPAND_INTRINSIC;
-                }
-            }
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
 
             int32_t argumentVar = m_pStackPointer[0].var;
 
