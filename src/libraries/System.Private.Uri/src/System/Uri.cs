@@ -177,8 +177,8 @@ namespace System
                         Debug.Assert(offset.Path >= offset.Host);
                     }
 
-                    Debug.Assert(offset.Query == 0);
-                    Debug.Assert(offset.Fragment == 0);
+                    // We can't check that Query and Fragment offsets are 0 here as a different thread may have called
+                    // ParseRemaining after we've checked InFact(Flags.AllUriInfoSet).
                 }
             }
             else

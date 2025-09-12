@@ -411,7 +411,8 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
 namespace
 {
     // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
-#define ARG(i) *((int32_t*)(pArgs + (i * INTERP_STACK_SLOT_SIZE)))
+#define ARG_IND(i) ((int32_t)((int32_t*)(pArgs + (i * INTERP_STACK_SLOT_SIZE))))
+#define ARG(i) (*(int32_t*)ARG_IND(i))
 
     void CallFunc_Void_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
@@ -435,6 +436,12 @@ namespace
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
         (*fptr)(ARG(0), ARG(1), ARG(2));
+    }
+
+    void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
     }
 
     void CallFunc_Void_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
@@ -461,6 +468,51 @@ namespace
         *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2));
     }
 
+    void CallFunc_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
+    }
+
+    // Special thunks for signatures with indirect arguments.
+
+    void CallFunc_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
+        (*fptr)(ARG_IND(0));
+    }
+
+
+    void CallFunc_I32IND_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG(1));
+    }
+
+    void CallFunc_I32IND_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG(1), ARG(2));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+    }
+
+    void CallFunc_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+    }
+
 #undef ARG
 
     void* const RetVoidThunks[] =
@@ -469,6 +521,9 @@ namespace
         (void*)&CallFunc_I32_RetVoid,
         (void*)&CallFunc_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_RetVoid,
+        NULL,
+        NULL,
+        (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
     };
 
     void* const RetI32Thunks[] =
@@ -477,36 +532,133 @@ namespace
         (void*)&CallFunc_I32_RetI32,
         (void*)&CallFunc_I32_I32_RetI32,
         (void*)&CallFunc_I32_I32_I32_RetI32,
+        (void*)&CallFunc_I32_I32_I32_I32_RetI32,
     };
 
-    bool ConvertibleToI32(CorElementType argType)
+    enum class ConvertType
     {
-            // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
-            switch (argType)
+        NotConvertible,
+        ToI32,
+        ToI32Indirect
+    };
+
+    ConvertType ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
+    {
+        // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
+        switch (argType)
+        {
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_BYREF:
+            case ELEMENT_TYPE_CLASS:
+            case ELEMENT_TYPE_ARRAY:
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_SZARRAY:
+                return ConvertType::ToI32;
+            case ELEMENT_TYPE_TYPEDBYREF:
+                // Typed references are passed indirectly in WASM since they are larger than pointer size.
+                return ConvertType::ToI32Indirect;
+            case ELEMENT_TYPE_VALUETYPE:
             {
-                case ELEMENT_TYPE_BOOLEAN:
-                case ELEMENT_TYPE_CHAR:
-                case ELEMENT_TYPE_I1:
-                case ELEMENT_TYPE_U1:
-                case ELEMENT_TYPE_I2:
-                case ELEMENT_TYPE_U2:
-                case ELEMENT_TYPE_I4:
-                case ELEMENT_TYPE_U4:
-                case ELEMENT_TYPE_STRING:
-                case ELEMENT_TYPE_PTR:
-                case ELEMENT_TYPE_BYREF:
-                case ELEMENT_TYPE_VALUETYPE:
-                case ELEMENT_TYPE_CLASS:
-                case ELEMENT_TYPE_ARRAY:
-                case ELEMENT_TYPE_TYPEDBYREF:
-                case ELEMENT_TYPE_I:
-                case ELEMENT_TYPE_U:
-                case ELEMENT_TYPE_FNPTR:
-                case ELEMENT_TYPE_SZARRAY:
-                    return true;
-                default:
-                    return false;
+                // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
+                // WASMTODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
+                TypeHandle vt = isReturn
+                    ? sig.GetRetTypeHandleThrowing()
+                    : sig.GetLastTypeHandleThrowing();
+
+                if (!vt.IsTypeDesc()
+                    && vt.AsMethodTable()->GetNumInstanceFields() >= 2)
+                {
+                    return ConvertType::ToI32Indirect;
+                }
+
+                return vt.GetSize() <= sizeof(uint32_t)
+                    ? ConvertType::ToI32
+                    : ConvertType::ToI32Indirect;
             }
+            default:
+                return ConvertType::NotConvertible;
+        }
+    }
+
+    void* ComputeCalliSigThunkSpecial(bool isVoidReturn, uint32_t numArgs, ConvertType* args)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (isVoidReturn)
+        {
+            switch(numArgs)
+            {
+                case 1:
+                    if (args[0] == ConvertType::ToI32Indirect)
+                    {
+                        return (void*)&CallFunc_I32IND_RetVoid;
+                    }
+                    break;
+                case 2:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_RetVoid;
+                    }
+                    break;
+                case 3:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32 &&
+                        args[2] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_I32_RetVoid;
+                    }
+                    break;
+                case 7:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32 &&
+                        args[2] == ConvertType::ToI32 &&
+                        args[3] == ConvertType::ToI32 &&
+                        args[4] == ConvertType::ToI32 &&
+                        args[5] == ConvertType::ToI32 &&
+                        args[6] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid;
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            switch (numArgs) {
+                case 2:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_RetI32;
+                    }
+                    break;
+                case 6:
+                    if (args[0] == ConvertType::ToI32Indirect &&
+                        args[1] == ConvertType::ToI32 &&
+                        args[2] == ConvertType::ToI32 &&
+                        args[3] == ConvertType::ToI32 &&
+                        args[4] == ConvertType::ToI32 &&
+                        args[5] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32;
+                    }
+                    break;
+            }
+        }
+
+        return NULL;
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
@@ -530,21 +682,37 @@ namespace
                 return NULL;
         }
 
-        // Check return value
+        // Check return value. We only support void or i32 return types for now.
         bool returnsVoid = sig.IsReturnTypeVoid();
-        if (!returnsVoid && !ConvertibleToI32(sig.GetReturnType()))
+        if (!returnsVoid && ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */) != ConvertType::ToI32)
             return NULL;
 
+        ConvertType args[16];
+        _ASSERTE(sig.NumFixedArgs() < ARRAY_SIZE(args));
+
+        uint32_t i = 0;
         // Ensure all arguments are wasm i32 compatible types.
         for (CorElementType argType = sig.NextArg();
             argType != ELEMENT_TYPE_END;
             argType = sig.NextArg())
         {
-            if (!ConvertibleToI32(argType))
+            // If we have no conversion, immediately return.
+            ConvertType type = ConvertibleTo(argType, sig, false /* isReturn */);
+            if (type == ConvertType::NotConvertible)
                 return NULL;
+
+            args[i++] = type;
         }
 
-        UINT numArgs = sig.NumFixedArgs();
+        uint32_t numArgs = sig.NumFixedArgs();
+
+        // Check for homogeneous i32 argument types.
+        for (uint32_t j = 0; j < numArgs; j++)
+        {
+            if (args[j] != ConvertType::ToI32)
+                return ComputeCalliSigThunkSpecial(returnsVoid, numArgs, args);
+        }
+
         void* const * thunks;
         if (returnsVoid)
         {

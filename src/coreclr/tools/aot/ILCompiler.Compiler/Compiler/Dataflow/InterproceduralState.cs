@@ -78,7 +78,7 @@ namespace ILCompiler.Dataflow
             {
                 foreach (var stateMachineMethod in stateMachineType.GetMethods())
                 {
-                    Debug.Assert(!CompilerGeneratedNames.IsLambdaOrLocalFunction(stateMachineMethod.Name));
+                    Debug.Assert(!CompilerGeneratedNames.IsLambdaOrLocalFunction(stateMachineMethod.GetName()));
                     if (TryGetMethodBody(stateMachineMethod, out MethodIL? stateMachineMethodBody))
                     {
                         stateMachineMethodBody = GetInstantiatedMethodIL(stateMachineMethodBody);

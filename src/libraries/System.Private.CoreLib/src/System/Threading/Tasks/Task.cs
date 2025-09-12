@@ -1677,11 +1677,12 @@ namespace System.Threading.Tasks
             if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
 
-            if (TplEventSource.Log.IsEnabled() && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
+            if (TplEventSource.Log.IsEnabled() &&
+                (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0 &&
+                m_action is Delegate action)
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
-                Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + action.GetMethodName(), 0);
             }
 
             try
