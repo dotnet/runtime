@@ -202,7 +202,7 @@ namespace Internal.Runtime.TypeLoader
             arrayTypeHandle = default(RuntimeTypeHandle);
 
             Debug.Assert(isMdArray || rank == -1);
-            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
+            int arrayHashcode = VersionResilientHashCode.ArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank == -1 ? 1 : rank);
 
             // Note: ReflectionMapBlob.ArrayMap may not exist in the module that contains the element type.
             // So we must enumerate all loaded modules in order to find ArrayMap and the array type for
@@ -239,13 +239,13 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe bool TryGetByRefTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
-            int byRefHashcode = TypeHashingAlgorithms.ComputeByrefTypeHashCode(elementTypeHandle.GetHashCode());
+            int byRefHashcode = VersionResilientHashCode.ByrefTypeHashCode(elementTypeHandle.GetHashCode());
             return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, byRefHashcode, ReflectionMapBlob.ByRefTypeMap, out pointerTypeHandle);
         }
 
         public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
-            int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+            int pointerHashcode = VersionResilientHashCode.PointerTypeHashCode(elementTypeHandle.GetHashCode());
             return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, pointerHashcode, ReflectionMapBlob.PointerTypeMap, out pointerTypeHandle);
         }
 

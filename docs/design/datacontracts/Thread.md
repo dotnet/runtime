@@ -64,12 +64,16 @@ The contract depends on the following globals
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
 | `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
+| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct
 
 The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
+| `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
+| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `IdDispenser` | `HighestId` | Highest possible small thread ID |
@@ -94,6 +98,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
+| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -105,6 +110,13 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `BackgroundCount` | Number of background threads |
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
+
+The contract depends on the following other contracts
+
+| Contract |
+| --- |
+| Object |
+
 ``` csharp
 enum TLSIndexType
 {
@@ -112,6 +124,7 @@ enum TLSIndexType
     Collectible = 1,
     DirectOnThreadLocalData = 2,
 };
+
 
 ThreadStoreData GetThreadStoreData()
 {
@@ -240,4 +253,46 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     }
     return threadLocalStaticBase;
 }
+
+byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
+{
+    TargetPointer readFrom;
+    TargetPointer exceptionTrackerPtr = _target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return Array.Empty<byte>();
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+    TargetPointer throwableObjectPtr = target.ReadPointer(thrownObjectHandle);
+    if (throwableObjectPtr != TargetPointer.Null)
+    {
+        TargetPointer watsonBuckets = target.ReadPointer(throwableObjectPtr + /* Exception::WatsonBuckets offset */);
+        if (watsonBuckets != TargetPointer.Null)
+        {
+            readFrom = _target.Contracts.Object.GetArrayData(watsonBuckets, out _, out _, out _);
+        }
+        else
+        {
+            readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+            if (readFrom == TargetPointer.Null)
+            {
+                readFrom = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */);
+            }
+            else
+            {
+                return Array.Empty<byte>();
+            }
+        }
+    }
+    else
+    {
+        readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+    }
+
+    Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];
+    if (readFrom == TargetPointer.Null)
+        return Array.Empty<byte>();
+    
+    _target.ReadBuffer(readFrom, span);
+    return span.ToArray();
+}
+
 ```
