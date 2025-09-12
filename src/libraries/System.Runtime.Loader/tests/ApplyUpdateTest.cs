@@ -20,6 +20,28 @@ namespace System.Reflection.Metadata
     public class ApplyUpdateTest
     {
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        void DeleteMethodTest()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.ReflectionDeleteMethod).Assembly;
+
+                var t = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMethod");
+                Assert.NotNull(t);
+
+                var mi = t.GetProperty("FullName");
+                Assert.NotNull(mi);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // FullName should be filtered out now
+                mi = t.GetProperty("FullName");
+                Assert.Null(mi);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void StaticMethodBodyUpdate()
         {

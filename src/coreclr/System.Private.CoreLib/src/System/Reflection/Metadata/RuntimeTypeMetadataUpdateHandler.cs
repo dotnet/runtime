@@ -16,6 +16,8 @@ namespace System.Reflection.Metadata
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Clearing the caches on a Type isn't affected if a Type is trimmed, or has any of its members trimmed.")]
         public static void ClearCache(Type[]? types)
         {
+            RuntimeType.FilterDeletedMembers = true;
+
             if (RequiresClearingAllTypes(types))
             {
                 // TODO: This should ideally be in a QCall in the runtime.  As written here:
