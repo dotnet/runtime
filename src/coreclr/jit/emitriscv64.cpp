@@ -4576,7 +4576,6 @@ void emitter::emitDispInsName(
                     printf("fmv.%c.x        %s, %s\n", type, fd, xs1);
                     return;
                 default:
-                    printf("%#04x func\n", opcode2);
                     NYI_RISCV64("illegal ins within emitDisInsName!");
                     return;
             }
