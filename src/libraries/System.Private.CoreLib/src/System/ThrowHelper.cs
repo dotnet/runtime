@@ -78,9 +78,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]

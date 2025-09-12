@@ -10,7 +10,6 @@ void make_palstr_arr(size_t argc, const pal::char_t** argv, std::vector<pal::str
     out->reserve(argc);
     for (size_t i = 0; i < argc; ++i)
     {
-        trace::verbose(_X("    [%zu]: %s"), i, argv[i]);
         out->push_back(argv[i]);
     }
 }
@@ -33,16 +32,12 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
 
     if (input->version_lo >= offsetof(host_interface_t, host_mode) + sizeof(input->host_mode))
     {
-        trace::verbose(_X("  config keys [%zu], values: [%zu]"), input->config_keys.len, input->config_values.len);
         make_palstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
         make_palstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
         init->deps_file = input->deps_file;
         init->is_framework_dependent = input->is_framework_dependent;
-        trace::verbose(_X("  deps_file: %s"), init->deps_file.c_str());
-        trace::verbose(_X("  is_framework_dependent: %s"), init->is_framework_dependent ? _X("true") : _X("false"));
 
-        trace::verbose(_X("  probe paths [%zu]"), input->probe_paths.len);
         make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
 
         init->patch_roll_forward = input->patch_roll_forward;
@@ -61,22 +56,17 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
     if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
     {
         init->tfm = input->tfm;
-        trace::verbose(_X("  tfm: %s"), init->tfm.c_str());
     }
 
     if (input->version_lo >= offsetof(host_interface_t, fx_ver) + sizeof(input->fx_ver))
     {
         init->additional_deps_serialized = input->additional_deps_serialized;
         fx_requested_ver = input->fx_ver;
-        trace::verbose(_X("  additional_deps_serialized: %s"), init->additional_deps_serialized.c_str());
-        trace::verbose(_X("  fx_requested_ver: %s"), fx_requested_ver.c_str());
     }
 
     if (input->version_lo >= offsetof(host_interface_t, fx_names) + sizeof(input->fx_names))
     {
         size_t fx_count = input->fx_names.len;
-        trace::verbose(_X("  frameworks [%zu]"), fx_count);
-
         assert(fx_count > 0);
         assert(fx_count == input->fx_dirs.len);
         assert(fx_count == input->fx_requested_versions.len);
@@ -95,15 +85,12 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
         init->fx_definitions.reserve(fx_count);
         for (size_t i = 0; i < fx_count; ++i)
         {
-            trace::verbose(_X("    name='%s', dir='%s', requested_version='%s', found_version='%s'"),
-                fx_names[i].c_str(), fx_dirs[i].c_str(), fx_requested_versions[i].c_str(), fx_found_versions[i].c_str());
             auto fx = new fx_definition_t(fx_names[i], fx_dirs[i], fx_requested_versions[i], fx_found_versions[i]);
             init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
         }
     }
     else
     {
-        trace::verbose(_X("  older interface version: using fx_dir, fx_name, fx_requested_ver"));
         // Backward compat; create the fx_definitions[0] and [1] from the previous information
         init->fx_definitions.reserve(2);
 
@@ -130,7 +117,6 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
 
     // Initialize the host command
     init_host_command(input, init);
-    trace::verbose(_X("  host_command: %s"), init->host_command.c_str());
 
     if (input->version_lo >= offsetof(host_interface_t, host_info_host_path) + sizeof(input->host_info_host_path))
     {
@@ -138,14 +124,10 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
         init->host_info.dotnet_root = input->host_info_dotnet_root;
         init->host_info.app_path = input->host_info_app_path;
         // For the backwards compat case, this will be later initialized with argv[0]
-        trace::verbose(_X("  host_path: %s"), init->host_info.host_path.c_str());
-        trace::verbose(_X("  dotnet_root: %s"), init->host_info.dotnet_root.c_str());
-        trace::verbose(_X("  app_path: %s"), init->host_info.app_path.c_str());
     }
 
     if (input->version_lo >= offsetof(host_interface_t, single_file_bundle_header_offset) + sizeof(input->single_file_bundle_header_offset))
     {
-        trace::verbose(_X("  single_file_bundle_header_offset: %zu"), input->single_file_bundle_header_offset);
         if (input->single_file_bundle_header_offset != 0)
         {
             static bundle::runner_t bundle_runner(input->host_info_host_path, input->host_info_app_path, input->single_file_bundle_header_offset);

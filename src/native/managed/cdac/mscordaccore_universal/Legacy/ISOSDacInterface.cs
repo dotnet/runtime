@@ -662,12 +662,18 @@ internal unsafe partial interface ISOSDacInterface5
     int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
 };
 
+internal struct DacpMethodTableCollectibleData
+{
+    public ClrDataAddress LoaderAllocatorObjectHandle;
+    public int bCollectible;
+}
+
 [GeneratedComInterface]
 [Guid("11206399-4B66-4EDB-98EA-85654E59AD45")]
 internal unsafe partial interface ISOSDacInterface6
 {
     [PreserveSig]
-    int GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data);
+    int GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data);
 };
 
 [GeneratedComInterface]

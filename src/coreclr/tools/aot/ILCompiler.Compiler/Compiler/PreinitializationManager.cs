@@ -21,7 +21,7 @@ namespace ILCompiler
 
         public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
-            _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
+            _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "ClassConstructorRunner"u8, throwIfNotFound: false) != null;
             _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy, flowAnnotations);
         }
 

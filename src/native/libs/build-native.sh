@@ -16,11 +16,6 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
-        icudir|-icudir)
-            __icuDir="$2"
-            __ShiftArgs=1
-            ;;
-
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -43,7 +38,6 @@ __SkipConfigure=0
 __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
-__icuDir=""
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
@@ -124,10 +118,6 @@ elif [[ "$__TargetOS" == tvos ]]; then
         echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
     fi
-fi
-
-if [[ -n "$__icuDir" ]]; then
-    __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
 fi
 
 # Set the remaining variables based upon the determined build configuration

@@ -1577,7 +1577,7 @@ namespace System.ComponentModel.Tests
             alc.Unload();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
         // loaded in the default ALC, which causes problems for this test.
         [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
@@ -1621,7 +1621,7 @@ namespace System.ComponentModel.Tests
             Assert.True(!weakRef.IsAlive);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
         // loaded in the default ALC, which causes problems for this test.
         [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]

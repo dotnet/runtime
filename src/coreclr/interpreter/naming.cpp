@@ -3,11 +3,11 @@
 
 #include "interpreter.h"
 
-void AppendType(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
-void AppendCorInfoType(TArray<char>* printer, CorInfoType corInfoType);
-void AppendTypeOrJitAlias(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
+void AppendType(COMP_HANDLE comp, TArray<char, MallocAllocator>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
+void AppendCorInfoType(TArray<char, MallocAllocator>* printer, CorInfoType corInfoType);
+void AppendTypeOrJitAlias(COMP_HANDLE comp, TArray<char, MallocAllocator>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
 
-void AppendString(TArray<char>* array, const char* str)
+void AppendString(TArray<char, MallocAllocator>* array, const char* str)
 {
     if (str != nullptr)
     {
@@ -16,7 +16,7 @@ void AppendString(TArray<char>* array, const char* str)
     }
 }
 
-void AppendCorInfoTypeWithModModifiers(TArray<char>* printer, CorInfoTypeWithMod corInfoTypeWithMod)
+void AppendCorInfoTypeWithModModifiers(TArray<char, MallocAllocator>* printer, CorInfoTypeWithMod corInfoTypeWithMod)
 {
     if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) == CORINFO_TYPE_MOD_PINNED)
     {
@@ -28,7 +28,7 @@ void AppendCorInfoTypeWithModModifiers(TArray<char>* printer, CorInfoTypeWithMod
     }
 }
 
-void AppendCorInfoType(TArray<char>* printer, CorInfoType corInfoType)
+void AppendCorInfoType(TArray<char, MallocAllocator>* printer, CorInfoType corInfoType)
 {
     static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {
         // see the definition of enum CorInfoType in file inc/corinfo.h
@@ -66,7 +66,7 @@ void AppendCorInfoType(TArray<char>* printer, CorInfoType corInfoType)
     printer->Append(corInfoTypeName, static_cast<int32_t>(strlen(corInfoTypeName)));
 }
 
-void AppendTypeOrJitAlias(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
+void AppendTypeOrJitAlias(COMP_HANDLE comp, TArray<char, MallocAllocator>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
 {
     CorInfoType typ = comp->asCorInfoType(clsHnd);
     if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
@@ -79,7 +79,7 @@ void AppendTypeOrJitAlias(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS
     }
 }
 
-void AppendType(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
+void AppendType(COMP_HANDLE comp, TArray<char, MallocAllocator>* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
 {
     unsigned arrayRank = comp->getArrayRank(clsHnd);
     if (arrayRank > 0)
@@ -141,7 +141,7 @@ void AppendType(COMP_HANDLE comp, TArray<char>* printer, CORINFO_CLASS_HANDLE cl
 }
 
 void AppendMethodName(COMP_HANDLE comp,
-                            TArray<char>* printer,
+                            TArray<char, MallocAllocator>* printer,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE methHnd,
                             CORINFO_SIG_INFO*     sig,
@@ -153,7 +153,7 @@ void AppendMethodName(COMP_HANDLE comp,
                             bool                  includeReturnType,
                             bool                  includeThisSpecifier)
 {
-    TArray<char> result;
+    TArray<char, MallocAllocator> result(GetMallocAllocator());
 
     if (includeAssembly)
     {
@@ -273,7 +273,7 @@ void AppendMethodName(COMP_HANDLE comp,
     }
 }
 
-TArray<char> PrintMethodName(COMP_HANDLE comp,
+TArray<char, MallocAllocator> PrintMethodName(COMP_HANDLE comp,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE methHnd,
                             CORINFO_SIG_INFO*     sig,
@@ -285,7 +285,7 @@ TArray<char> PrintMethodName(COMP_HANDLE comp,
                             bool                  includeReturnType,
                             bool                  includeThisSpecifier)
 {
-    TArray<char> printer;
+    TArray<char, MallocAllocator> printer(GetMallocAllocator());
     AppendMethodName(comp, &printer, clsHnd, methHnd, sig,
                      includeAssembly, includeClass,
                      includeClassInstantiation, includeMethodInstantiation,

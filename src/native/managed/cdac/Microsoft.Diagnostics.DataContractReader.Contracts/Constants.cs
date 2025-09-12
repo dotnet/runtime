@@ -51,6 +51,7 @@ public static class Constants
         public const string SyncTableEntries = nameof(SyncTableEntries);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
+        public const string SizeOfGenericModeBlock = nameof(SizeOfGenericModeBlock);
 
         public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
         public const string DirectorySeparator = nameof(DirectorySeparator);

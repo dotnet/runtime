@@ -128,9 +128,9 @@ export type LoaderHelpers = {
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
     loadedAssemblies: string[],
-    scriptDirectory: string
-    scriptUrl: string
-    modulesUniqueQuery?: string
+    scriptDirectory: string,
+    scriptUrl: string,
+    modulesUniqueQuery?: string,
     preferredIcuAsset?: string | null,
     workerNextNumber: number,
 
@@ -308,7 +308,6 @@ export type GlobalObjects = {
 };
 export type EmscriptenReplacements = {
     fetch: any,
-    require: any,
     modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;

@@ -15,8 +15,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
@@ -42,10 +40,6 @@
     <Error Condition="'$(TargetOS)' != 'browser'" Text="Expected TargetOS==browser, got '$(TargetOS)'"/>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-  </ItemGroup>
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
@@ -307,12 +301,6 @@
           AfterTargets="Build"
           DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;InstallNpmPackages;BuildWithRollup">
 
-    <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
-      <ICULibFiles Include="$(ICULibDir)/*.dat" />
-    </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
@@ -338,7 +326,6 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -405,11 +392,6 @@
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);"
-          DestinationFolder="$(NativeBinDir)"
-          SkipUnchangedFiles="true" />
-
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"
@@ -446,10 +428,6 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

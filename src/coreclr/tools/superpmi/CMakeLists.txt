@@ -1,3 +1,6 @@
+include(configure.cmake)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 add_subdirectory(superpmi)
 add_subdirectory(mcs)
 add_subdirectory(superpmi-shim-collector)
