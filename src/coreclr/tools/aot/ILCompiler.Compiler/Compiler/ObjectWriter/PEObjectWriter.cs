@@ -4,6 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -31,15 +32,31 @@ namespace ILCompiler.ObjectWriter
         private uint _peFileAlignment;
         private uint _pdataRva;
         private uint _pdataSize;
+
+        // Add export directory fields
+        private uint _exportRva;
+        private uint _exportSize;
+
         // Grouping of object sections by base image section name. Populated by
         // EmitSectionsAndLayout so EmitObjectFile / EmitSections can consume
         // the grouping without recomputing it.
         private List<string> _groupOrder;
         private Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>> _groupMap;
 
+        private HashSet<string> _exportedSymbols = new();
+        private readonly Dictionary<string, SymbolDefinition> _exportedSymbolDefinitions = new(StringComparer.Ordinal);
+
         public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
+        }
+
+        public void AddExportedSymbol(string symbol)
+        {
+            if (!string.IsNullOrEmpty(symbol))
+            {
+                _exportedSymbols.Add(symbol);
+            }
         }
 
         private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
@@ -272,6 +289,18 @@ namespace ILCompiler.ObjectWriter
             Reserved = 15,
         }
 
+        private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols)
+        {
+            foreach (var (symbolName, symbolDefinition) in definedSymbols)
+            {
+                if (_exportedSymbols.Contains(symbolName))
+                {
+                    _exportedSymbolDefinitions[symbolName] = symbolDefinition;
+                }
+            }
+            base.EmitSymbolTable(definedSymbols, undefinedSymbols);
+        }
+
         private protected override void EmitSectionsAndLayout()
         {
             // Mirror layout logic previously performed inside EmitObjectFile so
@@ -417,6 +446,45 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
+            // If we have exports, create an export data section (.edata) and place it after other sections.
+            if (_exportedSymbolDefinitions.Count > 0)
+            {
+                var origToMerged = new Dictionary<int, int>();
+                for (int mi = 0; mi < _groupOrder.Count; mi++)
+                {
+                    foreach (var (sec, origIdx) in _groupMap[_groupOrder[mi]])
+                        origToMerged[origIdx] = mi;
+                }
+
+                uint edataRva = virtualAddress;
+                var exportDir = new ExportDirectory(_exportedSymbolDefinitions, origToMerged, _sections, edataRva);
+                var edataSection = exportDir.Section;
+                var edataHeader = edataSection.Header;
+
+                // Compute raw and virtual sizes and update pointers
+                edataHeader.SizeOfRawData = (uint)edataSection.Stream.Length;
+                uint edataRawAligned = (uint)AlignmentHelper.AlignUp((int)edataHeader.SizeOfRawData, (int)fileAlignment);
+                edataHeader.PointerToRawData = pointerToRawData;
+                pointerToRawData += edataRawAligned;
+                edataHeader.SizeOfRawData = edataRawAligned;
+
+                edataHeader.VirtualAddress = virtualAddress;
+                edataHeader.VirtualSize = Math.Max(edataHeader.VirtualSize, (uint)edataSection.Stream.Length);
+                virtualAddress += (uint)AlignmentHelper.AlignUp((int)edataHeader.VirtualSize, (int)sectionAlignment);
+
+                // Add to sections and bookkeeping
+                _sections.Add(edataSection);
+                _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
+                _groupOrder.Add(".edata");
+                _groupMap[".edata"] = new List<(SectionDefinition, int)> { (edataSection, -1) };
+
+                sizeOfInitializedData += edataHeader.SizeOfRawData;
+
+                // Set export directory fields for header
+                _exportRva = edataRva + (uint)exportDir.ExportDirectoryOffset;
+                _exportSize = (uint)exportDir.ExportDirectorySize;
+            }
+
             uint sizeOfImage = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)sectionAlignment);
 
             _peSizeOfHeaders = sizeOfHeaders;
@@ -533,6 +601,11 @@ namespace ILCompiler.ObjectWriter
             {
                 dataDirs.Set((int)ImageDirectoryEntry.Exception, _pdataRva, _pdataSize);
             }
+            // Populate export table if present
+            if (_exportSize != 0)
+            {
+                dataDirs.Set((int)ImageDirectoryEntry.Export, _exportRva, _exportSize);
+            }
             peOptional.Write(stream, dataDirs);
 
             CoffStringTable stringTable = new();
@@ -555,6 +628,29 @@ namespace ILCompiler.ObjectWriter
 
                 sectionIndex++;
             }
+
+            // Write section content and relocations
+            foreach (string baseName in _groupOrder)
+            {
+                foreach (var (section, _) in _groupMap[baseName])
+                {
+                    if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                    {
+                        Debug.Assert(stream.Position == section.Header.PointerToRawData);
+                        section.Stream.Position = 0;
+                        section.Stream.CopyTo(stream);
+                    }
+
+                    // TODO: We don't want to support COFF relocations here.
+                    if (section.Relocations.Count > 0)
+                    {
+                        foreach (var relocation in section.Relocations)
+                        {
+                            relocation.Write(stream);
+                        }
+                    }
+                }
+            }
         }
 
         private static unsafe void WriteLittleEndian<T>(Stream stream, T value)
@@ -563,6 +659,118 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = stackalloc byte[sizeof(T)];
             value.WriteLittleEndian(buffer);
             stream.Write(buffer);
+        }
+
+        private sealed class ExportDirectory
+        {
+            public SectionDefinition Section { get; }
+            public int ExportDirectoryOffset { get; }
+            public int ExportDirectorySize { get; }
+
+            public ExportDirectory(IDictionary<string, SymbolDefinition> exportedSymbolDefinitions, Dictionary<int, int> origToMerged, List<SectionDefinition> mergedSections, uint edataRva)
+            {
+                var exports = exportedSymbolDefinitions.Select(kv => (Name: kv.Key, Def: kv.Value)).OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
+
+                using var ms = new MemoryStream();
+
+                // Emit names
+                var nameRvas = new uint[exports.Length];
+                for (int i = 0; i < exports.Length; i++)
+                {
+                    nameRvas[i] = edataRva + (uint)ms.Position;
+                    ms.Write(System.Text.Encoding.UTF8.GetBytes(exports[i].Name));
+                    ms.WriteByte(0);
+                }
+
+                // DLL name
+                string dllName = "UNKNOWN";
+                uint dllNameRva = edataRva + (uint)ms.Position;
+                ms.Write(System.Text.Encoding.UTF8.GetBytes(dllName));
+                ms.WriteByte(0);
+
+                // Align to 4
+                while (ms.Position % 4 != 0)
+                    ms.WriteByte(0);
+
+                // Name pointer table
+                uint namePointerTableRva = edataRva + (uint)ms.Position;
+                int minOrdinal = 1;
+                int count = exports.Length;
+                int maxOrdinal = minOrdinal + count - 1;
+                var addressTable = new int[maxOrdinal - minOrdinal + 1];
+
+                for (int i = 0; i < exports.Length; i++)
+                {
+                    // name RVA
+                    WriteLittleEndian(ms, (int)nameRvas[i]);
+
+                    var def = exports[i].Def;
+                    int origIdx = def.SectionIndex;
+                    int mergedIdx = origToMerged.TryGetValue(origIdx, out var mi) ? mi : 0;
+                    uint targetRva = mergedSections[mergedIdx].Header.VirtualAddress + (uint)def.Value;
+                    addressTable[i] = (int)targetRva;
+                }
+
+                // Ordinal table
+                uint ordinalTableRva = edataRva + (uint)ms.Position;
+                Span<byte> tmp2 = stackalloc byte[2];
+                for (int i = 0; i < exports.Length; i++)
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(tmp2, (ushort)(i));
+                    ms.Write(tmp2);
+                }
+
+                // Address table
+                while (ms.Position % 4 != 0)
+                    ms.WriteByte(0);
+
+                uint addressTableRva = edataRva + (uint)ms.Position;
+                Span<byte> tmp4a = stackalloc byte[4];
+                for (int i = 0; i < addressTable.Length; i++)
+                {
+                    WriteLittleEndian(ms, addressTable[i]);
+                }
+
+                // Export directory table
+                while (ms.Position % 4 != 0)
+                    ms.WriteByte(0);
+                uint exportDirectoryTableRva = edataRva + (uint)ms.Position;
+
+                // +0x00: reserved
+                WriteLittleEndian(ms, 0);
+                // +0x04: time/date stamp
+                WriteLittleEndian(ms, 0);
+                // +0x08: major version
+                WriteLittleEndian<ushort>(ms, 0);
+                // +0x0A: minor version
+                WriteLittleEndian<ushort>(ms, 0);
+                // +0x0C: DLL name RVA
+                WriteLittleEndian(ms, (int)dllNameRva);
+                // +0x10: ordinal base
+                WriteLittleEndian(ms, minOrdinal);
+                // +0x14: number of entries in the address table
+                WriteLittleEndian(ms, addressTable.Length);
+                // +0x18: number of name pointers
+                WriteLittleEndian(ms, exports.Length);
+                // +0x1C: export address table RVA
+                WriteLittleEndian(ms, (int)addressTableRva);
+                // +0x20: name pointer RVA
+                WriteLittleEndian(ms, (int)namePointerTableRva);
+                // +0x24: ordinal table RVA
+                WriteLittleEndian(ms, (int)ordinalTableRva);
+
+                int exportDirectorySize = (int)(ms.Position - exportDirectoryTableRva);
+                int exportDirectoryOffset = (int)exportDirectoryTableRva - (int)edataRva;
+
+                var header = new CoffSectionHeader
+                {
+                    Name = ".edata",
+                    SectionCharacteristics = SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData
+                };
+                Section = new SectionDefinition(header, ms, new List<CoffRelocation>(), null, null, ".edata");
+                ExportDirectoryOffset = exportDirectoryOffset;
+                ExportDirectorySize = exportDirectorySize;
+            }
         }
     }
 }
