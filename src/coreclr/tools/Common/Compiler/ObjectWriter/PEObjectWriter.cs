@@ -42,7 +42,7 @@ namespace ILCompiler.ObjectWriter
         private uint _baseRelocSize;
 
         // Emitted Symbol Table info
-        private record PESymbol(string Name, uint Offset);
+        private sealed record PESymbol(string Name, uint Offset);
         private readonly List<PESymbol> _exportedPESymbols = new();
 
         // Grouping of object sections by base image section name. Populated by
