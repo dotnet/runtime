@@ -473,6 +473,12 @@ namespace System.Threading
             }
         }
 
+        internal static unsafe int ReentrantWaitAny(bool alertable, int timeout, int count, IntPtr* handles)
+        {
+            Debug.Assert(ReentrantWaitsEnabled);
+            return RuntimeImports.RhCompatibleReentrantWaitAny(alertable, timeout, count, handles);
+        }
+
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentType() == ApartmentType.STA;
 

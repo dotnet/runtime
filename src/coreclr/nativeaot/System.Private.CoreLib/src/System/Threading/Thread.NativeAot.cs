@@ -520,11 +520,5 @@ namespace System.Threading
             }
             s_allDone.WaitOne();
         }
-
-        internal static unsafe int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles)
-        {
-            Debug.Assert(ReentrantWaitsEnabled);
-            return RuntimeImports.RhCompatibleReentrantWaitAny(alertable, timeout, count, handles);
-        }
     }
 }
