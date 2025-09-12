@@ -2597,9 +2597,9 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
     return false;
 }
 
-bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
-    bool mustExpand = (method == m_methodHnd);
+    bool mustExpand = (method == m_methodHnd) && nonVirtualCall;
     if (!mustExpand && (ni == NI_Illegal))
         return false;
 
@@ -2612,6 +2612,96 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             PushStackType(StackTypeI4, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
+
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_System_Math_Sqrt:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            InterpType estimateType = GetInterpType(sig.retType);
+            if (g_stackTypeFromInterpType[estimateType] != m_pStackPointer[0].type)
+            {
+                if (estimateType == InterpTypeR8 && m_pStackPointer[0].type == StackTypeR4)
+                {
+                    EmitConv(m_pStackPointer, StackTypeR8, INTOP_CONV_R8_R4);
+                }
+                else if (estimateType == InterpTypeR4 && m_pStackPointer[0].type == StackTypeR8)
+                {
+                    EmitConv(m_pStackPointer, StackTypeR4, INTOP_CONV_R4_R8);
+                }
+                else
+                {
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+                }
+            }
+
+            int32_t argumentVar = m_pStackPointer[0].var;
+            AddIns(estimateType == InterpTypeR4 ? INTOP_SQRT_R4 : INTOP_SQRT_R8);
+            m_pLastNewIns->SetSVar(argumentVar);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            if (ni == NI_System_Math_Sqrt)
+            {
+                return true;
+            }
+            else
+            {
+                // This is the ReciprocalSqrtEstimate intrinsic. We need to compute 1.0 / sqrt(x)
+                goto RECIPROCAL_ESTIMATE;
+            }
+        }
+
+        case NI_System_Math_ReciprocalEstimate:
+        RECIPROCAL_ESTIMATE:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            InterpType estimateType = GetInterpType(sig.retType);
+            if (g_stackTypeFromInterpType[estimateType] != m_pStackPointer[0].type)
+            {
+                if (estimateType == InterpTypeR8 && m_pStackPointer[0].type == StackTypeR4)
+                {
+                    EmitConv(m_pStackPointer, StackTypeR8, INTOP_CONV_R8_R4);
+                }
+                else if (estimateType == InterpTypeR4 && m_pStackPointer[0].type == StackTypeR8)
+                {
+                    EmitConv(m_pStackPointer, StackTypeR4, INTOP_CONV_R4_R8);
+                }
+                else
+                {
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+                }
+            }
+
+            int32_t argumentVar = m_pStackPointer[0].var;
+
+            if (estimateType == InterpTypeR4)
+            {
+                AddIns(INTOP_LDC_R4);
+                PushInterpType(InterpTypeR4, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                float val = 1.0f;
+                int32_t val1Float = *(int32_t*)&val;
+                m_pLastNewIns->data[0] = val1Float;
+            }
+            else
+            {
+                AddIns(INTOP_LDC_R8);
+                PushInterpType(InterpTypeR8, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                double val = 1.0;
+                int64_t val1Double = *(int64_t*)&val;
+                m_pLastNewIns->data[0] = (int32_t)val1Double;
+                m_pLastNewIns->data[1] = (int32_t)(val1Double >> 32);
+            }
+            int32_t oneVar = m_pStackPointer[-1].var;
+            m_pStackPointer--;
+            AddIns(estimateType == InterpTypeR4 ? INTOP_DIV_R4 : INTOP_DIV_R8);
+            m_pLastNewIns->SetSVars2(oneVar, argumentVar);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
 
         case NI_Throw_PlatformNotSupportedException:
             AddIns(INTOP_THROW_PNSE);
@@ -2652,7 +2742,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
         }
 
+        case NI_System_Threading_Interlocked_MemoryBarrier:
         case NI_System_Threading_Volatile_ReadBarrier:
+        case NI_System_Threading_Volatile_WriteBarrier:
             AddIns(INTOP_MEMBAR);
             return true;
 
@@ -2728,6 +2820,36 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     break;
                 case InterpTypeI8:
                     opcode = INTOP_EXCHANGE_I8;
+                    break;
+                default:
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            AddIns(opcode);
+            m_pStackPointer -= 2;
+
+            int32_t addrVar = m_pStackPointer[0].var;
+            int32_t valueVar = m_pStackPointer[1].var;
+
+            PushInterpType(retType, nullptr);
+            m_pLastNewIns->SetSVars2(addrVar, valueVar);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
+        case NI_System_Threading_Interlocked_ExchangeAdd:
+        {
+            CHECK_STACK(2);
+            InterpType retType = GetInterpType(sig.retType);
+
+            int32_t opcode;
+            switch (retType)
+            {
+                case InterpTypeI4:
+                    opcode = INTOP_EXCHANGEADD_I4;
+                    break;
+                case InterpTypeI8:
+                    opcode = INTOP_EXCHANGEADD_I8;
                     break;
                 default:
                     goto FAIL_TO_EXPAND_INTRINSIC;
@@ -3213,7 +3335,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                 {
                     m_ip += 5;
                     return;

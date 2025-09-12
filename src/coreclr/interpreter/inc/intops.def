@@ -425,6 +425,10 @@ OPDEF(INTOP_EXCHANGE_I1, "exchange.i1", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGE_I2, "exchange.i2", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGE_I4, "exchange.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGE_I8, "exchange.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGEADD_I4, "exchangeadd.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed

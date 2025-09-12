@@ -3146,7 +3146,6 @@ do                                                                      \
                 case INTOP_EXCHANGE_I4:
                 {
                     EXCHANGE(int32_t);
-                    break;
                 }
 
                 case INTOP_EXCHANGE_I8:
@@ -3155,6 +3154,44 @@ do                                                                      \
                     break;
                 }
 #undef EXCHANGE
+
+                case INTOP_EXCHANGEADD_I4:
+                {
+                    LONG* dst = LOCAL_VAR(ip[2], LONG*);
+                    NULL_CHECK(dst);
+                    LONG newValue = LOCAL_VAR(ip[3], LONG);
+                    LONG old = InterlockedExchangeAdd(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGEADD_I8:
+                {
+                    LONG64* dst = LOCAL_VAR(ip[2], LONG64*);
+                    NULL_CHECK(dst);
+                    LONG64 newValue = LOCAL_VAR(ip[3], LONG64);
+                    LONG64 old = InterlockedExchangeAdd64(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG64) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_SQRT_R4:
+                {
+                    float value = LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], float) = sqrtf(value);
+                    ip += 3;
+                    break;
+                }
+
+                case INTOP_SQRT_R8:
+                {
+                    double value = LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], double) = sqrt(value);
+                    ip += 3;
+                    break;
+                }
 
                 case INTOP_CALL_FINALLY:
                 {
