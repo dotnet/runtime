@@ -2281,7 +2281,7 @@ MAIN_LOOP:
                     pFrame->ip = ip;
 
                     PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
-                    NULL_CHECK(calliFunctionPointer);
+                    NULL_CHECK((void *)calliFunctionPointer);
 
                     // Interpreter-FIXME: isTailcall
                     if (flags & (int32_t)CalliFlags::PInvoke)
