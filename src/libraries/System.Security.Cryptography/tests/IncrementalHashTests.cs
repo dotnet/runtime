@@ -803,13 +803,13 @@ namespace System.Security.Cryptography.Tests
                 incremental.AppendData(s_inputBytes);
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
-                incremental.AppendData(s_inputBytes); // Verfies previous call reset hash.
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
                 incremental.AppendData(s_inputBytes);
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
 
-                incremental.AppendData(s_inputBytes); // Verfies previous call reset hash.s
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
             }
         }
@@ -827,13 +827,13 @@ namespace System.Security.Cryptography.Tests
                 incremental.AppendData(s_inputBytes);
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
-                incremental.AppendData(s_inputBytes); // Verfies previous call reset hash.
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
                 incremental.AppendData(s_inputBytes);
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
 
-                incremental.AppendData(s_inputBytes); // Verfies previous call reset hash.
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
             }
         }
@@ -869,8 +869,8 @@ namespace System.Security.Cryptography.Tests
 
                 incremental.AppendData(s_inputBytes);
 
-                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(referenceHash));
-                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(referenceHash));
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
             }
         }
 
