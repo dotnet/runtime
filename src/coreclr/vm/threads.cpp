@@ -7688,6 +7688,17 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 {
     WRAPPER_NO_CONTRACT;
 
+    // HACK: FIXME: InterpreterStub can be called on a native thread with no managed Thread,
+    //  and when this happens it calls us with a null thisptr in order to populate everything
+    if (this == nullptr)
+    {
+        _ASSERTE(GetThreadNULLOk() == NULL);
+        Thread *actualThread = SetupThreadNoThrow();
+        if (actualThread == NULL)
+            COMPlusThrow(kOutOfMemoryException);
+        return actualThread->GetInterpThreadContext();
+    }
+
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new (nothrow) InterpThreadContext();
