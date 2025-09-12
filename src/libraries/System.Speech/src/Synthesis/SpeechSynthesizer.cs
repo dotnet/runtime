@@ -269,7 +269,7 @@ namespace System.Speech.Synthesis
         }
 
         #region public Events
-        public event EventHandler<SpeakStartedEventArgs> SpeakStarted
+        public event EventHandler<SpeakStartedEventArgs>? SpeakStarted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -284,7 +284,7 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer._speakStarted -= value;
             }
         }
-        public event EventHandler<SpeakCompletedEventArgs> SpeakCompleted
+        public event EventHandler<SpeakCompletedEventArgs>? SpeakCompleted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -299,7 +299,7 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer._speakCompleted -= value;
             }
         }
-        public event EventHandler<SpeakProgressEventArgs> SpeakProgress
+        public event EventHandler<SpeakProgressEventArgs>? SpeakProgress
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -314,7 +314,7 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
         }
-        public event EventHandler<BookmarkReachedEventArgs> BookmarkReached
+        public event EventHandler<BookmarkReachedEventArgs>? BookmarkReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -329,7 +329,7 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
         }
-        public event EventHandler<VoiceChangeEventArgs> VoiceChange
+        public event EventHandler<VoiceChangeEventArgs>? VoiceChange
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -346,7 +346,7 @@ namespace System.Speech.Synthesis
         }
 
         #region WinFx
-        public event EventHandler<PhonemeReachedEventArgs> PhonemeReached
+        public event EventHandler<PhonemeReachedEventArgs>? PhonemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -361,7 +361,7 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
         }
-        public event EventHandler<VisemeReachedEventArgs> VisemeReached
+        public event EventHandler<VisemeReachedEventArgs>? VisemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -378,7 +378,7 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-        public event EventHandler<StateChangedEventArgs> StateChanged
+        public event EventHandler<StateChangedEventArgs>? StateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add

@@ -350,9 +350,9 @@ namespace System.Speech.Recognition
         public int MaxAlternates { get { throw null; } set { } }
         public System.TimeSpan RecognizerAudioPosition { get { throw null; } }
         public System.Speech.Recognition.RecognizerInfo RecognizerInfo { get { throw null; } }
-        public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs> AudioLevelUpdated { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs> AudioStateChanged { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs>? AudioLevelUpdated { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs>? AudioSignalProblemOccurred { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs>? AudioStateChanged { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs>? EmulateRecognizeCompleted { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs>? LoadGrammarCompleted { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.RecognizeCompletedEventArgs>? RecognizeCompleted { add { } remove { } }
@@ -414,9 +414,9 @@ namespace System.Speech.Recognition
         public System.TimeSpan RecognizerAudioPosition { get { throw null; } }
         public System.Speech.Recognition.RecognizerInfo RecognizerInfo { get { throw null; } }
         public System.Speech.Recognition.RecognizerState State { get { throw null; } }
-        public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs> AudioLevelUpdated { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred { add { } remove { } }
-        public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs> AudioStateChanged { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioLevelUpdatedEventArgs>? AudioLevelUpdated { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioSignalProblemOccurredEventArgs>? AudioSignalProblemOccurred { add { } remove { } }
+        public event System.EventHandler<System.Speech.Recognition.AudioStateChangedEventArgs>? AudioStateChanged { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.EmulateRecognizeCompletedEventArgs>? EmulateRecognizeCompleted { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.LoadGrammarCompletedEventArgs>? LoadGrammarCompleted { add { } remove { } }
         public event System.EventHandler<System.Speech.Recognition.RecognizerUpdateReachedEventArgs>? RecognizerUpdateReached { add { } remove { } }
@@ -814,14 +814,14 @@ namespace System.Speech.Synthesis
         public System.Speech.Synthesis.SynthesizerState State { get { throw null; } }
         public System.Speech.Synthesis.VoiceInfo Voice { get { throw null; } }
         public int Volume { get { throw null; } set { } }
-        public event System.EventHandler<System.Speech.Synthesis.BookmarkReachedEventArgs> BookmarkReached { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.PhonemeReachedEventArgs> PhonemeReached { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.SpeakCompletedEventArgs> SpeakCompleted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.SpeakProgressEventArgs> SpeakProgress { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.SpeakStartedEventArgs> SpeakStarted { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.StateChangedEventArgs> StateChanged { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.VisemeReachedEventArgs> VisemeReached { add { } remove { } }
-        public event System.EventHandler<System.Speech.Synthesis.VoiceChangeEventArgs> VoiceChange { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.BookmarkReachedEventArgs>? BookmarkReached { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.PhonemeReachedEventArgs>? PhonemeReached { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.SpeakCompletedEventArgs>? SpeakCompleted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.SpeakProgressEventArgs>? SpeakProgress { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.SpeakStartedEventArgs>? SpeakStarted { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.StateChangedEventArgs>? StateChanged { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.VisemeReachedEventArgs>? VisemeReached { add { } remove { } }
+        public event System.EventHandler<System.Speech.Synthesis.VoiceChangeEventArgs>? VoiceChange { add { } remove { } }
         public void AddLexicon(System.Uri uri, string mediaType) { }
         public void Dispose() { }
         ~SpeechSynthesizer() { }

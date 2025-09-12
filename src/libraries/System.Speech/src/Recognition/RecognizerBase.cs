@@ -1235,7 +1235,7 @@ namespace System.Speech.Recognition
 
 #pragma warning disable 6504
         // Occurs when a spoken phrase is partially recognized.
-        internal event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
+        internal event EventHandler<SpeechHypothesizedEventArgs>? SpeechHypothesized
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -1257,7 +1257,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        internal event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
+        internal event EventHandler<AudioSignalProblemOccurredEventArgs>? AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -1279,7 +1279,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        internal event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
+        internal event EventHandler<AudioLevelUpdatedEventArgs>? AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -1301,7 +1301,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        internal event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
+        internal event EventHandler<AudioStateChangedEventArgs>? AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add

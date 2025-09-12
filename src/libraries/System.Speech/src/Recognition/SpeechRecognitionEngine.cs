@@ -434,7 +434,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        public event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
+        public event EventHandler<AudioSignalProblemOccurredEventArgs>? AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -458,7 +458,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        public event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
+        public event EventHandler<AudioLevelUpdatedEventArgs>? AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
@@ -482,7 +482,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        public event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
+        public event EventHandler<AudioStateChangedEventArgs>? AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             add
