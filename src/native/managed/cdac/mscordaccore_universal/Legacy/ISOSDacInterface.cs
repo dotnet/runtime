@@ -278,26 +278,6 @@ internal struct DacpMethodTableTransparencyData
     public int bIsTreatAsSafe;
 }
 
-internal enum JITTypes
-{
-    TYPE_UNKNOWN = 0,
-    TYPE_JIT,
-    TYPE_PJIT,
-    TYPE_INTERPRETER
-};
-
-internal struct DacpCodeHeaderData
-{
-    public ClrDataAddress GCInfo;
-    public JITTypes JITType;
-    public ClrDataAddress MethodDescPtr;
-    public ClrDataAddress MethodStart;
-    public uint MethodSize;
-    public ClrDataAddress ColdRegionStart;
-    public uint ColdRegionSize;
-    public uint HotRegionSize;
-};
-
 internal static class GCConstants
 {
     public const int DAC_NUMBERGENERATIONS = 4;
@@ -367,6 +347,26 @@ internal unsafe partial interface ISOSEnum
 
     [PreserveSig]
     int GetCount(uint* pCount);
+}
+
+internal enum JITTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT,
+    TYPE_PJIT,
+    TYPE_INTERPRETER
+}
+
+internal struct DacpCodeHeaderData
+{
+    public ClrDataAddress GCInfo;
+    public JITTypes JITType;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodStart;
+    public uint MethodSize;
+    public ClrDataAddress ColdRegionStart;
+    public uint ColdRegionSize;
+    public uint HotRegionSize;
 }
 
 [GeneratedComInterface]

@@ -157,7 +157,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = GetUnwindDataSize(runtimeFunction.UnwindData, imageBase);
+            uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, imageBase, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
@@ -176,13 +176,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 < 11 => 3,
                 >= 11 => 4,
             };
-        }
-
-        private uint GetUnwindDataSize(uint unwindData, TargetPointer moduleBase)
-        {
-            TargetPointer unwindInfo = unwindData + moduleBase;
-            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            return UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, moduleBase, arch);
         }
 
         #region RuntimeFunction Helpers
