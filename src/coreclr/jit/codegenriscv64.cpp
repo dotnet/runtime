@@ -6251,7 +6251,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
     assert(lea->HasBase());
     assert(!lea->HasIndex());
-    assert(lea->gtScale == 1);
+    assert(lea->gtScale <= 1);
     // Only [Base + Offset] supported, index and scale should be explicit nodes that calculate base
 
     regNumber memBaseReg = lea->Base()->GetRegNum();

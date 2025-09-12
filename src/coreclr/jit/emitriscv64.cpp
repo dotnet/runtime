@@ -4986,7 +4986,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     if (addr->isContained())
     {
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
-        assert(!addr->OperIs(GT_LEA) || (!addr->AsAddrMode()->HasIndex() && addr->AsAddrMode()->gtScale == 1));
+        assert(!addr->OperIs(GT_LEA) || (!addr->AsAddrMode()->HasIndex() && addr->AsAddrMode()->gtScale <= 1));
 
         ssize_t offset = indir->Offset();
 
