@@ -5,37 +5,45 @@
 #include <fcall.h>
 
 EXTERN_C Object* RhpGcAlloc(CORINFO_CLASS_HANDLE typeHnd_, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock);
 
 void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
 {
     PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
 
-static Object* _RhpNewObject(CORINFO_CLASS_HANDLE typeHnd_, uint32_t allocFlags)
+EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    Object* obj = RhpGcAlloc(typeHnd_, allocFlags, 0, nullptr);
+    Object* obj = RhpGcAlloc(typeHnd_, 0, 0, nullptr);
     if (obj == NULL)
     {
-        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0); // never returns
-        return nullptr; // unreachable
+        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
+        return nullptr;
     }
 
     return obj;
 }
 
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    return _RhpNewObject(typeHnd_, 0);
-}
-
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not yet implemented");
-    return nullptr;
+    Object* obj = RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, 0, nullptr);
+    if (obj == NULL)
+    {
+        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
+        return nullptr;
+    }
+
+    return obj;
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
-    PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not yet implemented");
-    return nullptr;
+    Object* obj = RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, size, nullptr);
+    if (obj == NULL)
+    {
+        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
+        return nullptr;
+    }
+
+    return obj;
 }
