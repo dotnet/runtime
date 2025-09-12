@@ -45,12 +45,12 @@ namespace ILCompiler.ObjectWriter
     /// the number of sections exceeds 2^16 the same file format is still used.
     /// The linker treats the CodeView relocations symbolically.
     /// </remarks>
-    internal sealed class CoffObjectWriter : ObjectWriter
+    internal class CoffObjectWriter : ObjectWriter
     {
-        private sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
+        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName, string OriginalName);
 
-        private readonly Machine _machine;
-        private readonly List<SectionDefinition> _sections = new();
+        protected readonly Machine _machine;
+        protected readonly List<SectionDefinition> _sections = new();
 
         // Symbol table
         private readonly List<CoffSymbolRecord> _symbols = new();
@@ -162,7 +162,8 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
+            string originalName = sectionHeader.Name;
+            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName, originalName));
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -194,7 +195,7 @@ namespace ILCompiler.ObjectWriter
 
             if (addend != 0)
             {
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
                     long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
                     Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
@@ -530,7 +531,7 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex++;
             }
 
-            // Writer section content and relocations
+            // Write section content and relocations
             foreach (SectionDefinition section in _sections)
             {
                 if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
@@ -672,7 +673,7 @@ namespace ILCompiler.ObjectWriter
             _debugFileTableBuilder.Write(_debugSymbolSectionWriter);
         }
 
-        private struct CoffHeader
+        protected struct CoffHeader
         {
             public Machine Machine { get; set; }
             public uint NumberOfSections { get; set; }
@@ -680,18 +681,18 @@ namespace ILCompiler.ObjectWriter
             public uint PointerToSymbolTable { get; set; }
             public uint NumberOfSymbols { get; set; }
             public ushort SizeOfOptionalHeader { get; set; }
-            public ushort Characteristics { get; set; }
+            public Characteristics Characteristics { get; set; }
 
             // Maximum number of section that can be handled Microsoft linker
             // before it bails out. We automatically switch to big object file
             // layout after that.
-            public bool IsBigObj => NumberOfSections > 65279;
+            public readonly bool IsBigObj => NumberOfSections > 65279;
 
-            private static ReadOnlySpan<byte> BigObjMagic => new byte[]
-            {
+            private static ReadOnlySpan<byte> BigObjMagic =>
+            [
                 0xC7, 0xA1, 0xBA, 0xD1, 0xEE, 0xBA, 0xA9, 0x4B,
                 0xAF, 0x20, 0xFA, 0xF6, 0x6A, 0xA4, 0xDC, 0xB8,
-            };
+            ];
 
             private const int RegularSize =
                 sizeof(ushort) + // Machine
@@ -731,7 +732,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), PointerToSymbolTable);
                     BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12), NumberOfSymbols);
                     BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), SizeOfOptionalHeader);
-                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), Characteristics);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), (ushort)Characteristics);
 
                     stream.Write(buffer);
                 }
@@ -757,7 +758,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class CoffSectionHeader
+        protected sealed class CoffSectionHeader
         {
             public string Name { get; set; }
             public uint VirtualSize { get; set; }
@@ -886,7 +887,7 @@ namespace ILCompiler.ObjectWriter
             IMAGE_REL_ARM64_REL32 = 17,
         }
 
-        private sealed class CoffRelocation
+        protected sealed class CoffRelocation
         {
             public uint VirtualAddress { get; set; }
             public uint SymbolTableIndex { get; set; }
@@ -1038,7 +1039,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class CoffStringTable : StringTableBuilder
+        protected sealed class CoffStringTable : StringTableBuilder
         {
             public new uint Size => (uint)(base.Size + 4);
 

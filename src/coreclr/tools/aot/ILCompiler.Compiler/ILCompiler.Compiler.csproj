@@ -631,6 +631,8 @@
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\PEObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\PETargetExtensions.cs" />
     <Compile Include="Compiler\ObjectWriter\SectionData.cs" />
     <Compile Include="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\StringTableBuilder.cs" />
