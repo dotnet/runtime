@@ -3011,7 +3011,7 @@ do {                                                                           \
                             continue;
                         }
                         // CompareExchange succeeded
-                        LOCAL_VAR(ip[1], uint8_t) = (uint8_t)(oldULONG >> shift);
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
                         break;
                     } while (true);
                     ip += 5;
@@ -3047,7 +3047,7 @@ do {                                                                           \
                             continue;
                         }
                         // CompareExchange succeeded
-                        LOCAL_VAR(ip[1], uint8_t) = (uint8_t)(oldULONG >> shift);
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
                         break;
                     } while (true);
                     ip += 5;
@@ -3106,7 +3106,7 @@ do                                                                      \
                         ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
                         if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
                         {
-                            LOCAL_VAR(ip[1], uint8_t) = (uint8_t)oldULONG >> shift;
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
                             break;
                         }
                     } while (true);
@@ -3135,7 +3135,7 @@ do                                                                      \
                         ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
                         if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
                         {
-                            LOCAL_VAR(ip[1], uint16_t) = (uint16_t)oldULONG >> shift;
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
                             break;
                         }
                     } while (true);
