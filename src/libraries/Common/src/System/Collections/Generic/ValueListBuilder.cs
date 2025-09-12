@@ -168,8 +168,6 @@ namespace System.Collections.Generic
 
             if (toReturn != null)
             {
-                _arrayFromPool = null;
-
 #if SYSTEM_PRIVATE_CORELIB
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
