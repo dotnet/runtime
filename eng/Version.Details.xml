@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25453.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25461.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>0df8449153b9b92de618c4c3f5b2590aae9d6ff2</Sha>
+      <Sha>14d2dd6de03ab7cdd95b8ca5dd47feeefa951103</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -54,14 +54,14 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25431.3">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25461.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>fe6e09f8a1f50c772f619a60d0940e0f0a47922a</Sha>
+      <Sha>026a4f32987a274633ed0885ea8b54e790fc94f4</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25431.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25461.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>fe6e09f8a1f50c772f619a60d0940e0f0a47922a</Sha>
+      <Sha>026a4f32987a274633ed0885ea8b54e790fc94f4</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.8-servicing.25353.1">
@@ -79,9 +79,9 @@
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.25272.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.25452.2">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>9859d82ffce48f49b5e93fa46a38bdddc4ba26be</Sha>
+      <Sha>745de7d839fdd3b5884d72e953badcfb15493d13</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
@@ -320,17 +320,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b030c4dfdfa1bf287f10f96006619a06bc2000ae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25375.3">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25426.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>604c13925074041a51e4533959477c8b6888dcf5</Sha>
+      <Sha>7b6f58237ff2355392960408f4d9fd98dfe58f9b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25375.3">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25426.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>604c13925074041a51e4533959477c8b6888dcf5</Sha>
+      <Sha>7b6f58237ff2355392960408f4d9fd98dfe58f9b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25375.3">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25426.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>604c13925074041a51e4533959477c8b6888dcf5</Sha>
+      <Sha>7b6f58237ff2355392960408f4d9fd98dfe58f9b</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.25366.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
