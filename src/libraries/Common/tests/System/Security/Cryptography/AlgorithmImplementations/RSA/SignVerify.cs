@@ -1104,7 +1104,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA256,
                 TestData.RSA2048Params.Modulus,
-                modulus2048Signature, RSASignaturePadding.Pss);
+                modulus2048Signature);
         }
 
         [Fact]
@@ -1180,7 +1180,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA16384Params,
                 HashAlgorithmName.SHA256,
                 TestData.RSA2048Params.Modulus,
-                modulus2048Signature, RSASignaturePadding.Pss);
+                modulus2048Signature);
         }
 
         [Fact]
@@ -1197,7 +1197,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters,
                 HashAlgorithmName.SHA384,
                 TestData.RSA16384Params.Modulus,
-                bigModulusSignature, RSASignaturePadding.Pss);
+                bigModulusSignature);
         }
 
         [Fact]
@@ -1217,7 +1217,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA512,
                 TestData.HelloBytes,
-                helloSignature, RSASignaturePadding.Pss);
+                helloSignature);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1249,7 +1249,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_256,
                 TestData.HelloBytes,
-                helloSignature, RSASignaturePadding.Pss);
+                helloSignature);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1281,7 +1281,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_384,
                 TestData.HelloBytes,
-                helloSignature, RSASignaturePadding.Pss);
+                helloSignature);
         }
 
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha3))]
@@ -1313,7 +1313,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA2048Params,
                 HashAlgorithmName.SHA3_512,
                 TestData.HelloBytes,
-                helloSignature, RSASignaturePadding.Pss);
+                helloSignature);
         }
 
         [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
@@ -1385,7 +1385,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             HashAlgorithmName hashAlgorithm,
             byte[] data,
             byte[] signature,
-            RSASignaturePadding padding,
             [System.Runtime.CompilerServices.CallerMemberName] string callerName = null)
         {
             RSAParameters publicParameters = new RSAParameters
@@ -1411,27 +1410,27 @@ namespace System.Security.Cryptography.Rsa.Tests
                 // Generator for new tests.
                 if (signature == null)
                 {
-                    signature = SignData(rsaPrivate, data, hashAlgorithm, padding);
+                    signature = SignData(rsaPrivate, data, hashAlgorithm, RSASignaturePadding.Pss);
                     Console.WriteLine($"{callerName}: {signature.ByteArrayToHex()}");
                 }
 
                 if (RSAFactory.SupportsPss)
                 {
                     Assert.True(
-                        VerifyData(rsaPublic, data, signature, hashAlgorithm, padding),
+                        VerifyData(rsaPublic, data, signature, hashAlgorithm, RSASignaturePadding.Pss),
                         "Public key verified the signature");
 
                     Assert.True(
-                        VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding),
+                        VerifyData(rsaPrivate, data, signature, hashAlgorithm, RSASignaturePadding.Pss),
                         "Private key verified the signature");
                 }
                 else
                 {
                     Assert.ThrowsAny<CryptographicException>(
-                        () => VerifyData(rsaPublic, data, signature, hashAlgorithm, padding));
+                        () => VerifyData(rsaPublic, data, signature, hashAlgorithm, RSASignaturePadding.Pss));
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding));
+                        () => VerifyData(rsaPrivate, data, signature, hashAlgorithm, RSASignaturePadding.Pss));
                 }
             }
         }
