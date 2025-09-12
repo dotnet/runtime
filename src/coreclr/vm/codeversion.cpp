@@ -919,27 +919,30 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
         PTR_Module pModule = GetModule();
         // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
         // Profilers can attach dynamic IL to methods with zero RVA.
-        TADDR pIL = pModule->GetDynamicIL(GetMethodDef());
+        mdMethodDef methodDef = GetMethodDef();
+        TADDR pIL = pModule->GetDynamicIL(methodDef);
         if (pIL == (TADDR)NULL)
         {
-            pIL = pModule->GetIL(GetRVA());
+            DWORD rva;
+            DWORD dwImplFlags;
+            if (methodDef & 0x00FFFFFF)
+            {
+                if (FAILED(pModule->GetMDImport()->GetMethodImplProps(methodDef, &rva, &dwImplFlags)))
+                {   // Class loader already asked for MethodImpls, so this should always succeed (unless there's a
+                    // bug or a new code path)
+                    _ASSERTE(!"If this ever fires, then this method should return HRESULT");
+                    rva = 0;
+                }
+            }
+            else
+            {
+                rva = 0;
+            }
+            pIL = pModule->GetIL(rva);
         }
-#ifdef _DEBUG_IMPL
-        if (pIL != (TADDR)NULL)
-        {
-            //
-            // This is convenient place to verify that COR_ILMETHOD_DECODER::GetOnDiskSize is in sync
-            // with our private DACized copy in PEDecoder::ComputeILMethodSize
-            //
-            COR_ILMETHOD_DECODER header((COR_ILMETHOD *)pIL);
-            SIZE_T size1 = header.GetOnDiskSize((COR_ILMETHOD *)pIL);
-            SIZE_T size2 = PEDecoder::ComputeILMethodSize(pIL);
-            _ASSERTE(size1 == size2);
-        }
-#endif
 
 #ifdef DACCESS_COMPILE
-        return (pIL != (TADDR)NULL) ? DacGetIlMethod(pIL) : NULL;
+        return (pIL != (TADDR)NULL) ? dac_cast<PTR_COR_ILMETHOD>(DacGetIlMethod(pIL)) : NULL;
 #else // !DACCESS_COMPILE
         return PTR_COR_ILMETHOD(pIL);
 #endif // !DACCESS_COMPILE
