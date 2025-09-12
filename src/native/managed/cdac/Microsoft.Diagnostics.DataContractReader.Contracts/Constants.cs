@@ -86,8 +86,16 @@ public static class Constants
         public const string NumHeaps = nameof(NumHeaps);
         public const string Heaps = nameof(Heaps);
         public const string CurrentGCState = nameof(CurrentGCState);
-        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string DynamicAdaptationMode = nameof(DynamicAdaptationMode);
+        public const string GCGlobalMechanisms = nameof(GCGlobalMechanisms);
+
         public const string TotalGenerationCount = nameof(TotalGenerationCount);
+        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string InterestingDataLength = nameof(InterestingDataLength);
+        public const string CompactReasonsLength = nameof(CompactReasonsLength);
+        public const string ExpandMechanismsLength = nameof(ExpandMechanismsLength);
+        public const string InterestingMechanismBitsLength = nameof(InterestingMechanismBitsLength);
+        public const string GlobalMechanismsLength = nameof(GlobalMechanismsLength);
 
         public const string GCHeapMarkArray = nameof(GCHeapMarkArray);
         public const string GCHeapNextSweepObj = nameof(GCHeapNextSweepObj);
@@ -100,6 +108,14 @@ public static class Constants
         public const string GCHeapGenerationTable = nameof(GCHeapGenerationTable);
         public const string GCHeapSavedSweepEphemeralSeg = nameof(GCHeapSavedSweepEphemeralSeg);
         public const string GCHeapSavedSweepEphemeralStart = nameof(GCHeapSavedSweepEphemeralStart);
+        public const string GCHeapOomData = nameof(GCHeapOomData);
+        public const string GCHeapInternalRootArray = nameof(GCHeapInternalRootArray);
+        public const string GCHeapInternalRootArrayIndex = nameof(GCHeapInternalRootArrayIndex);
+        public const string GCHeapHeapAnalyzeSuccess = nameof(GCHeapHeapAnalyzeSuccess);
+        public const string GCHeapInterestingData = nameof(GCHeapInterestingData);
+        public const string GCHeapCompactReasons = nameof(GCHeapCompactReasons);
+        public const string GCHeapExpandMechanisms = nameof(GCHeapExpandMechanisms);
+        public const string GCHeapInterestingMechanismBits = nameof(GCHeapInterestingMechanismBits);
     }
     public static class FieldNames
     {
