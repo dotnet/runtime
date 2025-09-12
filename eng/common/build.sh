@@ -238,7 +238,8 @@ function Build {
   if [[ "$build_check" == true ]]; then
     check="/check"
   fi
-
+  export DOTNET_CLI_USE_MSBUILD_SERVER=1
+  export MSBUILDUSESERVER=1
   MSBuild $_InitializeToolset \
     $bl \
     $check \

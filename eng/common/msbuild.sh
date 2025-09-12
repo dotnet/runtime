@@ -54,5 +54,8 @@ if [[ "$ci" == true ]]; then
   node_reuse=false
 fi
 
+export DOTNET_CLI_USE_MSBUILD_SERVER=1
+export MSBUILDUSESERVER=1
+
 MSBuild $extra_args
 ExitWithExitCode 0
