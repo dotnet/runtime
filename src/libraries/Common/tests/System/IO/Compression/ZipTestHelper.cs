@@ -339,11 +339,14 @@ namespace System.IO.Compression.Tests
             IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories);
             IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories);
 
-#if OS_IOS || OS_TVOS
-            actualEntries = actualEntries.Select(Path.GetFileName).Select(name => name.Normalize(NormalizationForm.FormC)).Order();
-#else
-            actualEntries = actualEntries.Select(Path.GetFileName).Order();
-#endif
+            if (PlatformDetection.IstvOS || PlatformDetection.IsiOS)
+            {
+                actualEntries = actualEntries.Select(Path.GetFileName).Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+            }
+            else
+            {
+                actualEntries = actualEntries.Select(Path.GetFileName).Order();
+            }
             expectedEntries = expectedEntries.Select(Path.GetFileName).Order();
 
             AssertExtensions.SequenceEqual(expectedEntries.ToArray(), actualEntries.ToArray());
