@@ -486,13 +486,19 @@ namespace System.Security.Cryptography
                 computedBuffer = new byte[ih.HashLengthInBytes];
             }
 
-            int written = getHashCallback(ih, computedBuffer);
-            Debug.Assert(written == ih.HashLengthInBytes);
-            Span<byte> computed = computedBuffer.Slice(0, written);
+            unsafe
+            {
+                fixed (byte* pComputedBuffer = computedBuffer) // Fixed to prevent GC moves.
+                {
+                    int written = getHashCallback(ih, computedBuffer);
+                    Debug.Assert(written == ih.HashLengthInBytes);
+                    Span<byte> computed = computedBuffer.Slice(0, written);
 
-            bool result = CryptographicOperations.FixedTimeEquals(hash, computed);
-            CryptographicOperations.ZeroMemory(computed);
-            return result;
+                    bool result = CryptographicOperations.FixedTimeEquals(hash, computed);
+                    CryptographicOperations.ZeroMemory(computed);
+                    return result;
+                }
+            }
         }
     }
 }

@@ -695,6 +695,8 @@ namespace System.Security.Cryptography
         public static bool TryHashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
         public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
         public static void ZeroMemory(System.Span<byte> buffer) { }
     }
