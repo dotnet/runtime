@@ -162,7 +162,7 @@ namespace System.Net.Test.Common
                 }
             }
 
-            internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
+            internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false, bool forceRsaCertificate = false)
             {
                 if (PlatformDetection.IsWindows && testName != null)
                 {
@@ -182,6 +182,8 @@ namespace System.Net.Test.Common
                     subjectName: targetName,
                     testName: testName,
                     forTls: true,
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119641")]
+                    keyFactory: !forceRsaCertificate ? null : CertificateAuthority.KeyFactory.RSASize(2048),
                     extensions: extensions);
 
                 if (!ephemeralKey && PlatformDetection.IsWindows)
