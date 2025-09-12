@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
@@ -28,7 +29,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                .And.HaveProperty(SharedTestState.AppTestPropertyName, SharedTestState.AppTestPropertyValue)
                 .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
@@ -39,7 +40,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.FrameworkTestPropertyValue}")
+                .And.HaveProperty(SharedTestState.FrameworkTestPropertyName, SharedTestState.FrameworkTestPropertyValue)
                 .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.FrameworkTestPropertyValue}");
         }
 
@@ -55,7 +56,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                .And.HaveProperty(SharedTestState.FrameworkTestPropertyName, SharedTestState.AppTestPropertyValue)
                 .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
@@ -67,7 +68,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.HostFxrPathPropertyName} = {dotnet.GreatestVersionHostFxrFilePath}");
+                .And.HaveProperty(SharedTestState.HostFxrPathPropertyName, dotnet.GreatestVersionHostFxrFilePath);
         }
 
         [Fact]
@@ -77,7 +78,55 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
+                .And.NotHaveProperty(SharedTestState.HostFxrPathPropertyName)
                 .And.HaveStdOutContaining($"Property '{SharedTestState.HostFxrPathPropertyName}' was not found.");
+        }
+
+        [Fact]
+        public void DotNetHostPathProperty_FrameworkDependentApp()
+        {
+            // DOTNET_HOST_PATH property should point to the dotnet executable in the dotnet root directory
+            sharedState.DotNet.Exec(sharedState.App.AppDll, PrintProperties, Constants.RuntimeProperty.DotnetHostPath)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, sharedState.DotNet.DotnetExecutablePath)
+                .And.HaveStdOutContaining($"AppContext.GetData({Constants.RuntimeProperty.DotnetHostPath}) = {sharedState.DotNet.DotnetExecutablePath}");
+
+            Command.Create(sharedState.App.AppExe, PrintProperties, Constants.RuntimeProperty.DotnetHostPath)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(sharedState.DotNet.BinPath)
+                .Execute()
+                .Should().Pass()
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, sharedState.DotNet.DotnetExecutablePath)
+                .And.HaveStdOutContaining($"AppContext.GetData({Constants.RuntimeProperty.DotnetHostPath}) = {sharedState.DotNet.DotnetExecutablePath}");
+        }
+
+        [Fact]
+        public void DotNetHostPathProperty_SDKCommand()
+        {
+            // DOTNET_HOST_PATH property should point to the dotnet executable used to run the command
+            var dotnet = sharedState.MockSDK;
+            dotnet.Exec("--info")
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, dotnet.DotnetExecutablePath);
+        }
+
+        [Fact]
+        public void DotNetHostPathProperty_SDKCommand_LocalInstall()
+        {
+            using TestArtifact workingDirectory = TestArtifact.Create("dotnetHostPath");
+            GlobalJson.Write(workingDirectory.Location, new GlobalJson.Sdk() { Paths = [ sharedState.MockSDK.BinPath ] });
+
+            // DOTNET_HOST_PATH should point to the dotnet executable in the local SDK install used to run the command
+            sharedState.DotNet.Exec("--info")
+                .EnableTracingAndCaptureOutputs()
+                .WorkingDirectory(workingDirectory.Location)
+                .Execute()
+                .Should().Pass()
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, sharedState.MockSDK.DotnetExecutablePath);
         }
 
         [Fact]
@@ -110,7 +159,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
+                .And.HaveProperty(SharedTestState.AppTestPropertyName, SharedTestState.AppTestPropertyValue)
                 .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
         }
 
