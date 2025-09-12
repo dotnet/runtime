@@ -2001,14 +2001,9 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        public static string DescribeSet(string set) => DescribeSet(set, forceBrackets: false);
-
-        /// <summary>
-        /// Produces a human-readable description for a set string.
-        /// </summary>
         /// <param name="set">The set string to describe.</param>
         /// <param name="forceBrackets">Whether to force brackets around the description even for single characters.</param>
-        public static string DescribeSet(string set, bool forceBrackets)
+        public static string DescribeSet(string set, bool forceBrackets = false)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
