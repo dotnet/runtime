@@ -4413,12 +4413,19 @@ void emitter::emitDispInsName(
         }
         case MajorOpcode::OpFp:
         {
-            unsigned int opcode2 = (code >> 25) & 0x7f;
+            unsigned int opcode2 = (code >> 27) & 0x1f;
+            unsigned int opType  = (code >> 25) & 0x3;
             unsigned int opcode3 = (code >> 20) & 0x1f;
             unsigned int opcode4 = (code >> 12) & 0x7;
-            const char*  fd      = RegNames[((code >> 7) & 0x1f) | 0x20];
-            const char*  fs1     = RegNames[((code >> 15) & 0x1f) | 0x20];
-            const char*  fs2     = RegNames[((code >> 20) & 0x1f) | 0x20];
+
+            if (opType > 1)
+                return emitDispIllegalInstruction(code); // half- and quad-precision FP instructions unsupported
+
+            char type = "sdhq"[opType];
+
+            const char* fd  = RegNames[((code >> 7) & 0x1f) | 0x20];
+            const char* fs1 = RegNames[((code >> 15) & 0x1f) | 0x20];
+            const char* fs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
 
             const char* xd  = RegNames[(code >> 7) & 0x1f];
             const char* xs1 = RegNames[(code >> 15) & 0x1f];
@@ -4426,273 +4433,150 @@ void emitter::emitDispInsName(
 
             switch (opcode2)
             {
-                case 0x00: // FADD.S
-                    printf("fadd.s         %s, %s, %s\n", fd, fs1, fs2);
+                case 0b00000: // FADD
+                    printf("fadd.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     return;
-                case 0x04: // FSUB.S
-                    printf("fsub.s         %s, %s, %s\n", fd, fs1, fs2);
+                case 0b00001: // FSUB
+                    printf("fsub.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     return;
-                case 0x08: // FMUL.S
-                    printf("fmul.s         %s, %s, %s\n", fd, fs1, fs2);
+                case 0b00010: // FMUL
+                    printf("fmul.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     return;
-                case 0x0C: // FDIV.S
-                    printf("fdiv.s         %s, %s, %s\n", fd, fs1, fs2);
+                case 0b00011: // FDIV
+                    printf("fdiv.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     return;
-                case 0x2C: // FSQRT.S
-                    printf("fsqrt.s        %s, %s\n", fd, fs1);
+                case 0b01011: // FSQRT
+                    if (opcode3 == 0)
+                    {
+                        printf("fsqrt.%c        %s, %s\n", type, fd, fs1);
+                    }
+                    else
+                    {
+                        emitDispIllegalInstruction(code);
+                    }
                     return;
-                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.s variant");
+                case 0b00100: // FSGNJ
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj variant");
                     if (fs1 != fs2)
                     {
-                        const char* variants[3] = {".s ", "n.s", "x.s"};
-                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
+                        const char* variants[2][3] = {{".s ", "n.s", "x.s"}, {".d ", "n.d", "x.d"}};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opType][opcode4], fd, fs1, fs2);
                     }
                     else // pseudos
                     {
-                        const char* names[3] = {"fmv.s ", "fneg.s", "fabs.s"};
-                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
+                        const char* names[2][3] = {{"fmv.s ", "fneg.s", "fabs.s"}, {"fmv.d ", "fneg.d", "fabs.d"}};
+                        printf("%s         %s, %s\n", names[opType][opcode4], fd, fs1);
                     }
                     return;
-                case 0x14:            // FMIN.S & FMAX.S
-                    if (opcode4 == 0) // FMIN.S
+                case 0b00101: // FMIN & FMAX
+                    if (opcode4 == 0)
                     {
-                        printf("fmin.s         %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmin.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FMAX.S
+                    else if (opcode4 == 1)
                     {
-                        printf("fmax.s         %s, %s, %s\n", fd, fs1, fs2);
+                        printf("fmax.%c         %s, %s, %s\n", type, fd, fs1, fs2);
                     }
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
-                case 0x60:            // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
-                    if (opcode3 == 0) // FCVT.W.S
-                    {
-                        printf("fcvt.w.s       %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 1) // FCVT.WU.S
-                    {
-                        printf("fcvt.wu.s      %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 2) // FCVT.L.S
-                    {
-                        printf("fcvt.l.s       %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 3) // FCVT.LU.S
-                    {
-                        printf("fcvt.lu.s      %s, %s\n", xd, fs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x70:            // FMV.X.W & FCLASS.S
-                    if (opcode4 == 0) // FMV.X.W
-                    {
-                        printf("fmv.x.w        %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode4 == 1) // FCLASS.S
-                    {
-                        printf("fclass.s       %s, %s\n", xd, fs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x50:            // FLE.S & FLT.S & FEQ.S
-                    if (opcode4 == 0) // FLE.S
-                    {
-                        printf("fle.s          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else if (opcode4 == 1) // FLT.S
-                    {
-                        printf("flt.s          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FEQ.S
-                    {
-                        printf("feq.s          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x68:            // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
-                    if (opcode3 == 0) // FCVT.S.W
-                    {
-                        printf("fcvt.s.w       %s, %s\n", fd, xs1);
-                    }
-                    else if (opcode3 == 1) // FCVT.S.WU
-                    {
-                        printf("fcvt.s.wu      %s, %s\n", fd, xs1);
-                    }
-                    else if (opcode3 == 2) // FCVT.S.L
-                    {
-                        printf("fcvt.s.l       %s, %s\n", fd, xs1);
-                    }
-                    else if (opcode3 == 3) // FCVT.S.LU
-                    {
-                        printf("fcvt.s.lu      %s, %s\n", fd, xs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x78: // FMV.W.X
-                    printf("fmv.w.x        %s, %s\n", fd, xs1);
-                    return;
-                case 0x1: // FADD.D
-                    printf("fadd.d         %s, %s, %s\n", fd, fs1, fs2);
-                    return;
-                case 0x5: // FSUB.D
-                    printf("fsub.d         %s, %s, %s\n", fd, fs1, fs2);
-                    return;
-                case 0x9: // FMUL.D
-                    printf("fmul.d         %s, %s, %s\n", fd, fs1, fs2);
-                    return;
-                case 0xd: // FDIV.D
-                    printf("fdiv.d         %s, %s, %s\n", fd, fs1, fs2);
-                    return;
-                case 0x2d: // FSQRT.D
-                    printf("fsqrt.d        %s, %s\n", fd, fs1);
-                    return;
-                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.d variant");
-                    if (fs1 != fs2)
-                    {
-                        const char* variants[3] = {".d ", "n.d", "x.d"};
-                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
-                    }
-                    else // pseudos
-                    {
-                        const char* names[3] = {"fmv.d ", "fneg.d", "fabs.d"};
-                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
-                    }
-                    return;
-                case 0x15:            // FMIN.D & FMAX.D
-                    if (opcode4 == 0) // FMIN.D
-                    {
-                        printf("fmin.d         %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 1) // FMAX.D
-                    {
-                        printf("fmax.d         %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x20:            // FCVT.S.D
-                    if (opcode3 == 1) // FCVT.S.D
-                    {
-                        printf("fcvt.s.d       %s, %s\n", fd, fs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x21:            // FCVT.D.S
-                    if (opcode3 == 0) // FCVT.D.S
-                    {
-                        printf("fcvt.d.s       %s, %s\n", fd, fs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x51:            // FLE.D & FLT.D & FEQ.D
-                    if (opcode4 == 0) // FLE.D
-                    {
-                        printf("fle.d          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else if (opcode4 == 1) // FLT.D
-                    {
-                        printf("flt.d          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FEQ.D
-                    {
-                        printf("feq.d          %s, %s, %s\n", xd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-                    return;
-                case 0x61: // FCVT.W.D & FCVT.WU.D & FCVT.L.D & FCVT.LU.D
+                case 0b01000: // FCVT (float-float)
+                    if (opcode3 > 1)
+                        return emitDispIllegalInstruction(code); // half- and quad-precision FP instructions unsupported
 
-                    if (opcode3 == 0) // FCVT.W.D
-                    {
-                        printf("fcvt.w.d       %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 1) // FCVT.WU.D
-                    {
-                        printf("fcvt.wu.d      %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 2) // FCVT.L.D
-                    {
-                        printf("fcvt.l.d       %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode3 == 3) // FCVT.LU.D
-                    {
-                        printf("fcvt.lu.d      %s, %s\n", xd, fs1);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
+                    printf("fcvt.%c.%c       %s, %s\n", type, "sdhq"[opcode3], fd, fs1);
                     return;
-                case 0x69:            // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
-                    if (opcode3 == 0) // FCVT.D.W
+                case 0b11000: // FCVT (to int)
+                    if (opcode3 == 0)
                     {
-                        printf("fcvt.d.w       %s, %s\n", fd, xs1);
+                        printf("fcvt.w.%c       %s, %s\n", type, xd, fs1);
                     }
-                    else if (opcode3 == 1) // FCVT.D.WU
+                    else if (opcode3 == 1)
                     {
-                        printf("fcvt.d.wu      %s, %s\n", fd, xs1);
+                        printf("fcvt.wu.%c      %s, %s\n", type, xd, fs1);
                     }
                     else if (opcode3 == 2)
                     {
-                        printf("fcvt.d.l       %s, %s\n", fd, xs1);
+                        printf("fcvt.l.%c       %s, %s\n", type, xd, fs1);
                     }
                     else if (opcode3 == 3)
                     {
-                        printf("fcvt.d.lu      %s, %s\n", fd, xs1);
-                    }
-
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
-                    }
-
-                    return;
-                case 0x71:            // FMV.X.D & FCLASS.D
-                    if (opcode4 == 0) // FMV.X.D
-                    {
-                        printf("fmv.x.d        %s, %s\n", xd, fs1);
-                    }
-                    else if (opcode4 == 1) // FCLASS.D
-                    {
-                        printf("fclass.d       %s, %s\n", xd, fs1);
+                        printf("fcvt.lu.%c      %s, %s\n", type, xd, fs1);
                     }
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
-                case 0x79: // FMV.D.X
-                    assert(opcode4 == 0);
-                    printf("fmv.d.x        %s, %s\n", fd, xs1);
+                case 0b11100: // FMV (to int) & FCLASS
+                    if (opcode3 != 0)
+                        emitDispIllegalInstruction(code);
+
+                    if (opcode4 == 0)
+                    {
+                        type = (type == 's') ? 'w' : type;
+                        printf("fmv.x.%c        %s, %s\n", type, xd, fs1);
+                    }
+                    else if (opcode4 == 1)
+                    {
+                        printf("fclass.%c       %s, %s\n", type, xd, fs1);
+                    }
+                    else
+                    {
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                    }
+                    return;
+                case 0b10100: // FCMP
+                    if (opcode4 == 0)
+                    {
+                        printf("fle.%c          %s, %s, %s\n", type, xd, fs1, fs2);
+                    }
+                    else if (opcode4 == 1)
+                    {
+                        printf("flt.%c          %s, %s, %s\n", type, xd, fs1, fs2);
+                    }
+                    else if (opcode4 == 2)
+                    {
+                        printf("feq.%c          %s, %s, %s\n", type, xd, fs1, fs2);
+                    }
+                    else
+                    {
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                    }
+                    return;
+                case 0b11010: // FCVT (from int)
+                    if (opcode3 == 0)
+                    {
+                        printf("fcvt.%c.w       %s, %s\n", type, fd, xs1);
+                    }
+                    else if (opcode3 == 1)
+                    {
+                        printf("fcvt.%c.wu      %s, %s\n", type, fd, xs1);
+                    }
+                    else if (opcode3 == 2)
+                    {
+                        printf("fcvt.%c.l       %s, %s\n", type, fd, xs1);
+                    }
+                    else if (opcode3 == 3)
+                    {
+                        printf("fcvt.%c.lu      %s, %s\n", type, fd, xs1);
+                    }
+                    else
+                    {
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                    }
+                    return;
+                case 0b11110: // FMV (from int)
+                    if (opcode3 != 0 || opcode4 != 0)
+                        emitDispIllegalInstruction(code);
+
+                    type = (type == 's') ? 'w' : type;
+                    printf("fmv.%c.x        %s, %s\n", type, fd, xs1);
                     return;
                 default:
+                    printf("%#04x func\n", opcode2);
                     NYI_RISCV64("illegal ins within emitDisInsName!");
                     return;
             }
