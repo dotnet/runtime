@@ -5390,6 +5390,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx) ||
                (ins == INS_cmpxchg)
+               // kmov instructions reach this path with EA_8BYTE size, even on x86
+               || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 

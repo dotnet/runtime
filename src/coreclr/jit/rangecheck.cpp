@@ -642,6 +642,77 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 //
 bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
 {
+    assert(pRange != nullptr);
+    assert(pRange->LowerLimit().IsUnknown());
+    assert(pRange->UpperLimit().IsUnknown());
+
+    if (num == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    //
+    // First, let's see if we can tighten the range based on VN information.
+    //
+
+    // If it's a constant, it's already as tight as it can get.
+    int cns;
+    if (comp->vnStore->IsVNIntegralConstant(num, &cns))
+    {
+        pRange->lLimit = Limit(Limit::keConstant, cns);
+        pRange->uLimit = Limit(Limit::keConstant, cns);
+        return true;
+    }
+
+    VNFuncApp funcApp;
+    if (comp->vnStore->GetVNFunc(num, &funcApp))
+    {
+        switch (funcApp.m_func)
+        {
+            case VNF_Cast:
+                // The logic matches IntegralRange::ForCastOutput for small types.
+                {
+                    var_types castToType;
+                    bool      srcIsUnsigned;
+                    comp->vnStore->GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+                    switch (castToType)
+                    {
+                        case TYP_UBYTE:
+                            pRange->lLimit = Limit(Limit::keConstant, UINT8_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, UINT8_MAX);
+                            break;
+
+                        case TYP_BYTE:
+                            pRange->lLimit = Limit(Limit::keConstant, INT8_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, INT8_MAX);
+                            break;
+
+                        case TYP_USHORT:
+                            pRange->lLimit = Limit(Limit::keConstant, UINT16_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, UINT16_MAX);
+                            break;
+
+                        case TYP_SHORT:
+                            pRange->lLimit = Limit(Limit::keConstant, INT16_MIN);
+                            pRange->uLimit = Limit(Limit::keConstant, INT16_MAX);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                break;
+
+            case VNF_ARR_LENGTH:
+                pRange->lLimit = Limit(Limit::keConstant, 0);
+                pRange->uLimit = Limit(Limit::keConstant, CORINFO_Array_MaxLength);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     MergeEdgeAssertions(comp, num, ValueNumStore::NoVN, assertions, pRange, false);
     assert(pRange->IsValid());
     return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();

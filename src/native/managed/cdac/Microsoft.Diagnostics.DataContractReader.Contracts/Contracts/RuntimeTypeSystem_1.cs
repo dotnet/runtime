@@ -556,7 +556,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public bool IsGenericTypeDefinition(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsGenericTypeDefinition;
-
+    public bool IsCollectible(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsCollectible;
     public bool HasTypeParam(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -770,6 +770,32 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
         CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
         return elemType == CorElementType.Ptr;
+    }
+
+    public TargetPointer GetLoaderModule(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
+                return fnPtrTypeDesc.LoaderModule;
+            }
+        }
+
+        MethodTable mt = _methodTables[typeHandle.Address];
+        Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
+        return mtAuxData.LoaderModule;
     }
 
     private sealed class FunctionPointerRetAndArgs : IData<FunctionPointerRetAndArgs>

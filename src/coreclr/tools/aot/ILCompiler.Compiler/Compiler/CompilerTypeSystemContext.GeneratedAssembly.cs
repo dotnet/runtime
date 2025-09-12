@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
+using Internal;
 using Internal.TypeSystem;
 
 using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
@@ -36,10 +37,12 @@ namespace ILCompiler
 
             public override IAssemblyDesc Assembly => this;
 
+            public ReadOnlySpan<byte> Name => "System.Private.CompilerGenerated"u8;
+
             public CompilerGeneratedAssembly(TypeSystemContext context)
                 : base(context, null)
             {
-                _globalModuleType = new CompilerGeneratedType(this, "<Module>");
+                _globalModuleType = new CompilerGeneratedType(this);
             }
 
             public override IEnumerable<MetadataType> GetAllTypes()
@@ -57,7 +60,7 @@ namespace ILCompiler
                 return new AssemblyNameInfo("System.Private.CompilerGenerated");
             }
 
-            public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+            public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
             {
                 Debug.Fail("Resolving a TypeRef in the compiler generated assembly?");
                 throw new NotImplementedException();
@@ -72,10 +75,9 @@ namespace ILCompiler
         {
             private int _hashcode;
 
-            public CompilerGeneratedType(ModuleDesc module, string name)
+            public CompilerGeneratedType(ModuleDesc module)
             {
                 Module = module;
-                Name = name;
             }
 
             public override TypeSystemContext Context
@@ -86,24 +88,27 @@ namespace ILCompiler
                 }
             }
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
-                get;
+                get
+                {
+                    return "<Module>"u8;
+                }
             }
 
             public override string DiagnosticName
             {
                 get
                 {
-                    return Name;
+                    return "<Module>";
                 }
             }
 
-            public override string Namespace
+            public override ReadOnlySpan<byte> Namespace
             {
                 get
                 {
-                    return "Internal.CompilerGenerated";
+                    return "Internal.CompilerGenerated"u8;
                 }
             }
 
@@ -124,14 +129,7 @@ namespace ILCompiler
 
             private int InitializeHashCode()
             {
-                string ns = Namespace;
-                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                _hashcode = hashCodeBuilder.ToHashCode();
-
-                return _hashcode;
+                return _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             public override bool IsCanonicalSubtype(CanonicalFormKind policy)
@@ -174,7 +172,7 @@ namespace ILCompiler
                 return Array.Empty<MethodImplRecord>();
             }
 
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
             {
                 return Array.Empty<MethodImplRecord>();
             }

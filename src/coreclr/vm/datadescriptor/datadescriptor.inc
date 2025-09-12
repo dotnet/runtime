@@ -25,6 +25,7 @@ CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_data<Thread>::TEB)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif
 CDAC_TYPE_END(Thread)
 
@@ -104,8 +105,11 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+#ifndef TARGET_UNIX
+CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
+#endif // TARGET_UNIX
 CDAC_TYPE_END(ExceptionInfo)
 
 
@@ -200,6 +204,7 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAll
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(PEAssembly)
@@ -981,6 +986,9 @@ CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
+#ifndef TARGET_UNIX
+CDAC_GLOBAL(SizeOfGenericModeBlock, uint32, sizeof(GenericModeBlock))
+#endif
 CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMASK)
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)

@@ -85,6 +85,7 @@ public interface IRuntimeTypeSystem : IContract
     #region TypeHandle inspection APIs
     TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
     TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
@@ -129,6 +130,7 @@ public interface IRuntimeTypeSystem : IContract
     public bool IsClassInited(TypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsInitError(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
 
     bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
 
