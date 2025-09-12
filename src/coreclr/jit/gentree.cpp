@@ -6939,7 +6939,7 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
         return true;
     }
 
-    if (tree->IsIconHandle(GTF_ICON_STATIC_HDL))
+    if (tree->IsCnsIntOrI())
     {
         FieldSeq* fldSeq = AsIntCon()->gtFieldSeq;
         if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
