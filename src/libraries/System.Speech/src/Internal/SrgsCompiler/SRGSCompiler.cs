@@ -164,7 +164,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 if (stream == null)
                 {
-                    throw new InvalidOperationException(SR.Get(SRID.NeitherStreamNorFileNameProvided));
+                    throw new ArgumentException();
                 }
                 try
                 {

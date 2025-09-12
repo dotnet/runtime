@@ -230,7 +230,6 @@ namespace System.Speech
         GrammarLoadingInProgress,
         GrammarLoadFailed,
         GrammarWrongRecognizer,
-        GrammarUnloaded,
         NotSupportedOnDictationGrammars,
         LocalFilesOnly,
         NotValidAudioFile,
@@ -413,9 +412,5 @@ namespace System.Speech
         SapiSisrAttributesNotAllowed, // 0x80045091
         SapiSisrMixedNotAllowed,      // 0x80045092
         SapiVoiceNotFound,             // 0x80045093 == SPERR_VOICE_NOT_FOUND == SPERR_LAST
-        NeitherStreamNorFileNameProvided,
-        SpeakHasNeitherTextNorAudioFile,
-        NoAudioDetected,
-        CannotRecognizeWithoutParameters
     }
 }

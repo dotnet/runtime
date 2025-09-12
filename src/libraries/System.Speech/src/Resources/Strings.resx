@@ -1336,19 +1336,4 @@ Possible constructors are: '{2}'.</value>
   <data name="SapiConfigInvalidData" xml:space="preserve">
     <value>The data in the CFG grammar is invalid or corrupted.</value>
   </data>
-  <data name="NeitherStreamNorFileNameProvided" xml:space="preserve">
-    <value>Either a Stream or a file name must be provided</value>
-  </data>
-  <data name="SpeakHasNeitherTextNorAudioFile" xml:space="preserve">
-    <value>Speak parameter has neither text to speak nor an audio file to play</value>
-  </data>
-  <data name="NoAudioDetected" xml:space="preserve">
-    <value>No audio detected</value>
-  </data>
-  <data name="GrammarUnloaded" xml:space="preserve">
-    <value>Grammar is unloaded</value>
-  </data>
-  <data name="CannotRecognizeWithoutParameters" xml:space="preserve">
-    <value>Cannot recognize without either '{0}' or '{1}'</value>
-  </data>
 </root>

@@ -303,8 +303,7 @@ namespace System.Speech.Recognition
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
 
-            InternalGrammarData internalData = grammar.InternalData ?? throw new InvalidOperationException(SR.Get(SRID.GrammarUnloaded));
-            SapiGrammar sapiGrammar = internalData._sapiGrammar;
+            SapiGrammar sapiGrammar = grammar.InternalData!._sapiGrammar;
             sapiGrammar.SetWordSequenceData(textString, selectionInfo);
         }
 
@@ -1900,12 +1899,7 @@ namespace System.Speech.Recognition
 
                 if (wordUnits == null)
                 {
-                    if (phrase == null)
-                    {
-                        throw new ArgumentException(string.Format(SR.Get(SRID.CannotRecognizeWithoutParameters), nameof(phrase), nameof(wordUnits)));
-                    }
-
-                    iSpPhrase = SPPHRASE.CreatePhraseFromText(phrase.Trim(), RecognizerInfo.Culture, out memHandles, out data);
+                    iSpPhrase = SPPHRASE.CreatePhraseFromText(phrase!.Trim(), RecognizerInfo.Culture, out memHandles, out data);
                 }
                 else
                 {
@@ -2584,6 +2578,8 @@ namespace System.Speech.Recognition
         private SpeechAudioFormatInfo GetSapiAudioFormat()
         {
             IntPtr waveFormatPtr = IntPtr.Zero;
+            SpeechAudioFormatInfo? formatInfo = null;
+            bool hasWaveFormat = false;
             try
             {
                 try
@@ -2592,18 +2588,20 @@ namespace System.Speech.Recognition
                     waveFormatPtr = SapiRecognizer.GetFormat(SPSTREAMFORMATTYPE.SPWF_SRENGINE);
                     if (waveFormatPtr != IntPtr.Zero)
                     {
-                        return AudioFormatConverter.ToSpeechAudioFormatInfo(waveFormatPtr);
-                    }
-                    else
-                    {
-                        // If for some reason we can't get a wave format, assume 16 Kb, 16 bits, Audio.
-                        return new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono);
+                        if ((formatInfo = AudioFormatConverter.ToSpeechAudioFormatInfo(waveFormatPtr)) != null)
+                        {
+                            hasWaveFormat = true;
+                        }
                     }
                 }
                 catch (COMException)
                 {
-                    // If for some reason the GetFormat fails, assume 16 Kb, 16 bits, Audio.
-                    return new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono);
+                }
+
+                if (!hasWaveFormat)
+                {
+                    // If for some reason the GetFormat fails OR we can't get a wave format, assume 16 Kb, 16 bits, Audio.
+                    formatInfo = new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono);
                 }
             }
             finally
@@ -2613,6 +2611,7 @@ namespace System.Speech.Recognition
                     Marshal.FreeCoTaskMem(waveFormatPtr);
                 }
             }
+            return formatInfo!;
         }
 
         // Convert a TimeSpan such as initialSilenceTimeout to a byte offset using the
@@ -2819,7 +2818,7 @@ namespace System.Speech.Recognition
 
                     lock (SapiRecognizer) // Lock to protect _audioStatus.
                     {
-                        SpeechAudioFormatInfo audioFormat = AudioFormat ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioDetected));
+                        SpeechAudioFormatInfo audioFormat = AudioFormat!;
                         audioPosition = audioFormat.AverageBytesPerSecond > 0 ? new TimeSpan((long)((recoStatus.AudioStatus.CurDevicePos * TimeSpan.TicksPerSecond) / (ulong)audioFormat.AverageBytesPerSecond)) : TimeSpan.Zero;
                         recognizerPosition = new TimeSpan((long)recoStatus.ullRecognitionStreamTime);
                     }

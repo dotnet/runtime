@@ -629,8 +629,15 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal TTSVoice CurrentVoice(bool switchContext)
         {
-            // If no voice defined then get the default voice
-            return _currentVoice ??= GetVoice(switchContext);
+            lock (_defaultVoiceLock)
+            {
+                // If no voice defined then get the default voice
+                if (_currentVoice == null)
+                {
+                    GetVoice(switchContext);
+                }
+                return _currentVoice!;
+            }
         }
 
         #endregion
@@ -766,13 +773,9 @@ namespace System.Speech.Internal.Synthesis
                                             SsmlParser.Parse(paramSpeak._textToSpeak, engine, speakInfo.Voice);
                                         }
                                     }
-                                    else if (paramSpeak._audioFile != null)
-                                    {
-                                        speakInfo.AddAudio(new AudioData(paramSpeak._audioFile, _resourceLoader));
-                                    }
                                     else
                                     {
-                                        throw new InvalidOperationException(SR.Get(SRID.SpeakHasNeitherTextNorAudioFile));
+                                        speakInfo.AddAudio(new AudioData(paramSpeak._audioFile!, _resourceLoader));
                                     }
 
                                     // Add the global synthesizer lexicon

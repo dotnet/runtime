@@ -65,9 +65,7 @@ namespace System.Speech.Recognition
             ArgumentNullException.ThrowIfNull(firstWord);
             ArgumentNullException.ThrowIfNull(lastWord);
 
-            var audio = Audio ?? throw new InvalidOperationException(SR.Get(SRID.NoAudioDetected));
-
-            return audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
+            return Audio!.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
 #pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
