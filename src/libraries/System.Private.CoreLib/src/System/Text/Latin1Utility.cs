@@ -619,7 +619,7 @@ namespace System.Text
                         }
 
                         // TODO: Is the below logic also valid for big-endian platforms?
-                        Vector<byte> latin1Vector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+                        Vector<byte> latin1Vector = Vector.NarrowNative(utf16VectorHigh, utf16VectorLow);
                         Unsafe.WriteUnaligned(pLatin1Buffer + currentOffset, latin1Vector);
 
                         currentOffset += SizeOfVector;
