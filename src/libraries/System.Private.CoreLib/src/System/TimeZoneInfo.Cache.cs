@@ -1042,7 +1042,7 @@ namespace System
                                 if (endOfCurrentYearUtc.Ticks < nextYearRule.DateStart.Ticks - 1)
                                 {
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearRule.DateStart.AddTicks(-1), _baseUtcOffset, false));
+                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearRule.DateStart.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false));
                                 }
 
                                 AddTransition(ref allTransitions, ref transitionCount,
