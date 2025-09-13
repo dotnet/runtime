@@ -781,10 +781,15 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         {
             if (!CheckIfPgoSchemaIsCompatibleAndSetOffsets(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
             {
-                return E_NOTIMPL;
+                // Assume existing data is stale static PGO.... remove it add add the new schema below
+                //
+                laPgoManagerThis->m_pgoDataLookup.Remove(pMD);
             }
-            *pInstrumentationData = existingData->header.GetData();
-            return S_OK;
+            else
+            {
+                *pInstrumentationData = existingData->header.GetData();
+                return S_OK;
+            }
         }
 
         AllocMemTracker loaderHeapAllocation;

@@ -754,6 +754,9 @@ RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)       // Pro
 RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)           // Profile edges instead of blocks
 RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0) // Collect counts as 64-bit values.
 
+CONFIG_INTEGER(JitInstrumentIfOptimizing, "JitInstrumentIfOptimizing", 0) // 1: Always add instrumentation if optimizing
+                                                                          // and not prejitting
+
 // Profile consumption options
 RELEASE_CONFIG_INTEGER(JitDisablePGO, "JitDisablePGO", 0)     // Ignore PGO data for all methods
 CONFIG_STRING(JitEnablePGORange, "JitEnablePGORange")         // Enable PGO data for only some methods

@@ -7022,6 +7022,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compSetOptimizationLevel();
 
+#ifdef DEBUG
+    if (JitConfig.JitInstrumentIfOptimizing() && opts.OptimizationEnabled() && !IsReadyToRun())
+    {
+        JITDUMP("\nForcibly enabling instrumentation\n");
+        opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+    }
+#endif
+
     if ((JitConfig.JitDisasmOnlyOptimized() != 0) && (!opts.OptimizationEnabled()))
     {
         // Disable JitDisasm for non-optimized code.
