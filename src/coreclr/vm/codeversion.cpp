@@ -935,7 +935,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
                 }
 
                 // RVA points to IL header only when the code type is IL
-                if (!IsMiIL((dwImplFlags))
+                if (!IsMiIL(dwImplFlags))
                 {
                     rva = 0;
                 }
