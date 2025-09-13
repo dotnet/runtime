@@ -1216,6 +1216,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.Debug.cs" Condition="'$(Configuration)' == 'Debug'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilderInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\TranscodingStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\TrimType.cs" />
@@ -1537,6 +1538,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.EnsureTerminated.cs" Condition="'$(TargetsWindows)' == 'true'">
+      <Link>Common\System\Text\ValueStringBuilder.EnsureTerminated.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
       <Link>Common\System\Threading\ITimer.cs</Link>
