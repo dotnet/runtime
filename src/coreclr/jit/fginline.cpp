@@ -1415,8 +1415,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
             // The following flags are lost when inlining.
             // (This is checked in Compiler::compInitOptions().)
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
