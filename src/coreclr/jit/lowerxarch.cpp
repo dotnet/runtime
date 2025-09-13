@@ -310,15 +310,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     }
 #endif // TARGET_AMD64
 
-    if (binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT))
-    {
-        GenTree* replacementNode = TryLowerMorphedModIfNotCsed(binOp);
-        if (replacementNode != nullptr)
-        {
-            return replacementNode->gtNext;
-        }
-    }
-
     return binOp->gtNext;
 }
 
@@ -10720,57 +10711,6 @@ void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
         isSafeToContainOp2 = IsSafeToMarkRegOptional(node, op2);
         SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
     }
-}
-
-GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
-{
-    assert(binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT));
-
-    GenTree* binOp1 = binOp->gtGetOp1();
-    GenTree* binOp2 = binOp->gtGetOp2();
-
-    if (binOp1->OperIs(GT_LCL_VAR) && binOp2->OperIs(GT_MUL) && binOp1->TypeIs(TYP_INT) && binOp2->TypeIs(TYP_INT))
-    {
-        GenTree* binOp21 = binOp2->gtGetOp1();
-        GenTree* binOp22 = binOp2->gtGetOp2();
-
-        if (binOp21->OperIs(GT_DIV, GT_UDIV) && binOp22->OperIs(GT_LCL_VAR) && binOp21->TypeIs(TYP_INT) &&
-            binOp22->TypeIs(TYP_INT))
-        {
-            GenTree* binOp211 = binOp21->gtGetOp1();
-            GenTree* binOp212 = binOp21->gtGetOp2();
-
-            if (binOp211->OperIs(GT_LCL_VAR) && binOp212->OperIs(GT_LCL_VAR) && binOp211->TypeIs(TYP_INT) &&
-                binOp212->TypeIs(TYP_INT) && binOp211->AsLclVar()->GetLclNum() == binOp1->AsLclVar()->GetLclNum() &&
-                binOp212->AsLclVar()->GetLclNum() == binOp22->AsLclVar()->GetLclNum())
-            {
-                LIR::Use use;
-                if (!BlockRange().TryGetUse(binOp, &use))
-                {
-                    return nullptr;
-                }
-
-                GenTree*   modeOp1 = comp->gtClone(binOp211);
-                GenTree*   modeOp2 = comp->gtClone(binOp212);
-                GenTreeOp* loweredNode =
-                    comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, TYP_INT, modeOp1, modeOp2);
-                BlockRange().InsertBefore(binOp->gtNext, loweredNode);
-                BlockRange().InsertBefore(loweredNode, modeOp2);
-                BlockRange().InsertBefore(modeOp2, modeOp1);
-                use.ReplaceWith(loweredNode);
-                BlockRange().Remove(binOp211);
-                BlockRange().Remove(binOp212);
-                BlockRange().Remove(binOp21);
-                BlockRange().Remove(binOp22);
-                BlockRange().Remove(binOp1);
-                BlockRange().Remove(binOp2);
-                BlockRange().Remove(binOp);
-                return loweredNode;
-            }
-        }
-    }
-
-    return nullptr;
 }
 
 #endif // TARGET_XARCH
