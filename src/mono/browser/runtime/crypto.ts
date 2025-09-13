@@ -7,7 +7,7 @@ import { isSharedArrayBuffer, localHeapViewU8 } from "./memory";
 const batchedQuotaMax = 65536;
 let warnOnce = true;
 
-export function dotnet_browser_entropy (bufferPtr: number, bufferLength: number): number {
+export function dotnet_browser_random_bytes (bufferPtr: number, bufferLength: number): number {
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
         if (warnOnce) {
             mono_log_warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");

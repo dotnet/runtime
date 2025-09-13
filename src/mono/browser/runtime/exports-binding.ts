@@ -13,7 +13,7 @@ import { dotnet_browser_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded, mono_wasm_process_current_pid } from "./startup";
 import { mono_log_warn, dotnet_browser_console_clear, mono_wasm_trace_logger } from "./logging";
-import { dotnet_browser_entropy } from "./crypto";
+import { dotnet_browser_random_bytes } from "./crypto";
 import { dotnet_browser_cancel_promise } from "./cancelable-promise";
 
 import {
@@ -81,7 +81,7 @@ export const mono_wasm_imports = [
     mono_wasm_set_entrypoint_breakpoint,
 
     // src/native/minipal/random.c
-    dotnet_browser_entropy,
+    dotnet_browser_random_bytes,
 
     // mono-proclib.c
     mono_wasm_process_current_pid,

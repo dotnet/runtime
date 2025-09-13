@@ -379,9 +379,9 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength)
+extern "C" int32_t dotnet_browser_random_bytes(uint8_t* buffer, int32_t bufferLength)
 {
-    PORTABILITY_ASSERT("dotnet_browser_entropy is not implemented");
+    PORTABILITY_ASSERT("dotnet_browser_random_bytes is not implemented");
     return -1;
 }
 
