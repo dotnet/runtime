@@ -1008,8 +1008,6 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 #endif
 }
 
-
-#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function :
     signal_ignore_handler
@@ -1024,8 +1022,11 @@ Parameters :
 static void signal_ignore_handler(int code, siginfo_t *siginfo, void *context)
 {
 }
-#endif // !HAVE_MACH_EXCEPTIONS
 
+void PAL_IgnoreAbortSignal()
+{
+    handle_signal(SIGABRT, signal_ignore_handler, 0);
+}
 
 void PAL_IgnoreProfileSignal(int signalNum)
 {
