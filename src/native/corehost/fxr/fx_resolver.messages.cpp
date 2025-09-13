@@ -110,13 +110,17 @@ void fx_resolver_t::display_missing_framework_error(
     trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &framework_infos);
     if (framework_infos.size())
     {
         trace::error(_X("The following frameworks were found:"));
         for (const framework_info& info : framework_infos)
         {
             trace::error(_X("  %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+            if (info.disabled)
+            {
+                trace::error(_X("    Disabled via DOTNET_DISABLE_RUNTIME_VERSIONS environment variable"));
+            }
         }
     }
     else
@@ -129,7 +133,7 @@ void fx_resolver_t::display_missing_framework_error(
         [&](pal::architecture arch, const pal::string_t& install_location, bool is_registered)
         {
             std::vector<framework_info> other_arch_infos;
-            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), disable_multilevel_lookup, &other_arch_infos);
+            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &other_arch_infos);
             if (!other_arch_infos.empty())
             {
                 other_arch_framework_infos.push_back(std::make_pair(arch, std::move(other_arch_infos)));
@@ -144,6 +148,10 @@ void fx_resolver_t::display_missing_framework_error(
             for (const framework_info& info : arch_info_pair.second)
             {
                 trace::error(_X("    %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+                if (info.disabled)
+                {
+                    trace::error(_X("      Disabled via DOTNET_DISABLE_RUNTIME_VERSIONS environment variable"));
+                }
             }
         }
     }
