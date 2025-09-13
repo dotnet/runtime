@@ -25,7 +25,6 @@ public static class Constants
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
         public const string StringMethodTable = nameof(StringMethodTable);
-
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
         public const string DacNotificationFlags = nameof(DacNotificationFlags);
@@ -50,6 +49,7 @@ public static class Constants
         public const string SyncTableEntries = nameof(SyncTableEntries);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
+        public const string CoreLib = nameof(CoreLib);
         public const string SizeOfGenericModeBlock = nameof(SizeOfGenericModeBlock);
 
         public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
@@ -63,6 +63,7 @@ public static class Constants
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
+        public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 

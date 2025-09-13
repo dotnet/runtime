@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -83,7 +85,6 @@ public interface IRuntimeTypeSystem : IContract
     #region TypeHandle inspection APIs
     TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
     TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
@@ -93,6 +94,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable) => throw new NotImplementedException();
     TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
+
 
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
@@ -139,8 +141,12 @@ public interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
+    TypeHandle IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
+    TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
+    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
+    bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 
@@ -191,6 +197,15 @@ public interface IRuntimeTypeSystem : IContract
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
+    #region FieldDesc inspection APIs
+    TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescMemberDef(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
+    TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    #endregion FieldDesc inspection APIs
 }
 
 public struct RuntimeTypeSystem : IRuntimeTypeSystem

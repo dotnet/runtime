@@ -7,6 +7,7 @@ using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -14,6 +15,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
     private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
+
+    private sealed class ModuleHandleBox
+    {
+        public ModuleHandle Value { get; }
+        public ModuleHandleBox(ModuleHandle value) => Value = value;
+    }
+    private static ConditionalWeakTable<MetadataReader, ModuleHandleBox> _moduleHandles = new();
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
@@ -37,16 +45,28 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     public MetadataReader? GetMetadata(ModuleHandle handle)
     {
+        MetadataReader? reader;
         if (_metadata.TryGetValue(handle, out MetadataReaderProvider? result))
         {
-            return result?.GetMetadataReader();
+            reader = result?.GetMetadataReader();
         }
         else
         {
             MetadataReaderProvider? provider = GetMetadataProvider(handle);
             _metadata.Add(handle, provider);
-            return provider?.GetMetadataReader();
+            reader = provider?.GetMetadataReader();
+            _moduleHandles.Add(reader!, new ModuleHandleBox(handle));
         }
+        return reader;
+    }
+
+    public static ModuleHandle? GetModuleFromMetadataReader(MetadataReader reader)
+    {
+        if (_moduleHandles.TryGetValue(reader, out ModuleHandleBox? box))
+        {
+            return box!.Value;
+        }
+        return null;
     }
 
     private MetadataReaderProvider? GetMetadataProvider(ModuleHandle handle)
