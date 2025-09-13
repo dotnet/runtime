@@ -270,7 +270,7 @@ namespace System.Security.AccessControl
 
                         case AccessControlModification.RemoveAll:
                             result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Allow, sid, -1, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, 0);
-                            if (result == false)
+                            if (!result)
                             {
                                 Debug.Fail("Invalid operation");
                                 throw new InvalidOperationException();
@@ -311,7 +311,7 @@ namespace System.Security.AccessControl
 
                         case AccessControlModification.RemoveAll:
                             result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Deny, sid, -1, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, 0);
-                            if (result == false)
+                            if (!result)
                             {
                                 Debug.Fail("Invalid operation");
                                 throw new InvalidOperationException();
@@ -394,7 +394,7 @@ namespace System.Security.AccessControl
 
                     case AccessControlModification.RemoveAll:
                         result = _securityDescriptor.SystemAcl.RemoveAudit(AuditFlags.Failure | AuditFlags.Success, sid, -1, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, 0);
-                        if (result == false)
+                        if (!result)
                         {
                             throw new InvalidOperationException();
                         }

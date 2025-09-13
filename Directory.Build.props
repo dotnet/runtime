@@ -269,10 +269,6 @@
     <WarningsNotAsErrors Condition="'$(OfficialBuild)' != 'true' OR '$(NuGetAuditWarnNotError)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Warnings to always disable -->
     <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
-    <!-- Don't warn about redundant equality -->
-    <NoWarn>$(NoWarn);IDE0100</NoWarn>
-    <!-- Don't warn about unused parameters -->
-    <NoWarn>$(NoWarn);IDE0060</NoWarn>
     <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->
     <NoWarn Condition="'$(IsPrivateAssembly)' == 'true'">$(NoWarn);CS1591</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
