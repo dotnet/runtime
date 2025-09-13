@@ -451,6 +451,7 @@ private:
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
+    GenTree* TryLowerMorphedModIfNotCsed(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool     IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
