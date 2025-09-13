@@ -135,9 +135,9 @@ static int run()
 
     coreclr_set_error_writer(log_error_info);
 
-    printf("BEGIN: call coreclr_initialize\n");
+    // printf("BEGIN: call coreclr_initialize\n");
     int retval = coreclr_initialize(exe_path.c_str(), app_domain_name.c_str(), (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
-    printf("END: call coreclr_initialize\n");
+    // printf("END: call coreclr_initialize\n");
 
     if (retval < 0)
     {
@@ -146,13 +146,13 @@ static int run()
     }
     else
     {
-        printf("coreclr_initialize succeeded - retval: 0x%08x\n", retval);
+        // printf("coreclr_initialize succeeded - retval: 0x%08x\n", retval);
     }
 
     int exit_code;
-    printf("BEGIN: call coreclr_execute_assembly\n");
+    // printf("BEGIN: call coreclr_execute_assembly\n");
     retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, app.c_str(), (uint32_t*)&exit_code);
-    printf("END: call coreclr_execute_assembly\n");
+    // printf("END: call coreclr_execute_assembly\n");
 
     if (retval < 0)
     {
@@ -161,9 +161,9 @@ static int run()
     }
 
     int latched_exit_code = 0;
-    printf("BEGIN: call coreclr_shutdown_2\n");
+    // printf("BEGIN: call coreclr_shutdown_2\n");
     retval = coreclr_shutdown_2(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
-    printf("END: call coreclr_shutdown_2\n");
+    // printf("END: call coreclr_shutdown_2\n");
     if (retval < 0)
     {
         std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", retval);
