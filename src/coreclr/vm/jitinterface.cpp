@@ -10867,7 +10867,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                 }
             }
 
-            if (IndirectionAllowedForJitHelper(ftnNum))
+            if (IndirectionAllowedForJitHelper(ftnNum) && helperMD->HasPrecode())
             {
                 if (helperMD->IsVersionable())
                 {
