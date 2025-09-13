@@ -26,16 +26,16 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         _runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
     }
     public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
-        => _runtimeTypeSystem.IterateTypeParams(elementType, CorElementType.Array, shape.Rank, default);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, ImmutableArray<TypeHandle>.Empty);
 
     public TypeHandle GetByReferenceType(TypeHandle elementType)
-        => _runtimeTypeSystem.IterateTypeParams(elementType, CorElementType.Byref, 0, default);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Byref, 0, ImmutableArray<TypeHandle>.Empty);
 
     public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
         => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
 
     public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
-        => _runtimeTypeSystem.IterateTypeParams(genericType, CorElementType.GenericInst, 0, typeArguments);
+        => _runtimeTypeSystem.GetConstructedType(genericType, CorElementType.GenericInst, 0, typeArguments);
 
     public TypeHandle GetGenericMethodParameter(T context, int index)
     {
@@ -63,13 +63,13 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => elementType;
 
     public TypeHandle GetPointerType(TypeHandle elementType)
-        => _runtimeTypeSystem.IterateTypeParams(elementType, CorElementType.Ptr, 0, default);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, ImmutableArray<TypeHandle>.Empty);
 
     public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
         => _runtimeTypeSystem.GetPrimitiveType((CorElementType)typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
-        =>  _runtimeTypeSystem.IterateTypeParams(elementType, CorElementType.SzArray, 1, default);
+        =>  _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, ImmutableArray<TypeHandle>.Empty);
 
     public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {

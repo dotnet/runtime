@@ -24,6 +24,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     // If we need to invalidate our view of memory, we should clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
+    private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
 
     internal struct MethodTable
     {
@@ -54,6 +55,45 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         // this MethodTable is a canonical MethodTable if its EEClassOrCanonMT is an EEClass
         internal bool IsCanonMT => MethodTableFlags_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == MethodTableFlags_1.EEClassOrCanonMTBits.EEClass;
+    }
+
+    internal readonly struct TypeKey : IEquatable<TypeKey>
+    {
+        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs)
+        {
+            TypeHandle = typeHandle;
+            ElementType = elementType;
+            Rank = rank;
+            TypeArgs = typeArgs;
+        }
+        public TypeHandle TypeHandle { get; }
+        public CorElementType ElementType { get; }
+        public int Rank { get; }
+        public ImmutableArray<TypeHandle> TypeArgs { get; }
+
+        public bool Equals(TypeKey other)
+        {
+            if (ElementType != other.ElementType || Rank != other.Rank || TypeArgs.Length != other.TypeArgs.Length)
+                return false;
+            for (int i = 0; i < TypeArgs.Length; i++)
+            {
+                if (!TypeArgs[i].Equals(other.TypeArgs[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public override bool Equals(object? obj) => obj is TypeKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank);
+            foreach (TypeHandle th in TypeArgs)
+            {
+                hash = HashCode.Combine(hash, th.GetHashCode());
+            }
+            return hash;
+        }
     }
 
     // Low order bits of TypeHandle address.
@@ -690,10 +730,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
-    TypeHandle IRuntimeTypeSystem.IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
         if (typeHandle.Address == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
+        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments), out TypeHandle existing))
+            return existing;
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
@@ -704,11 +746,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
                 {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
                     return potentialMatch;
                 }
             }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
             {
+                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
                 return potentialMatch;
             }
         }
