@@ -36,7 +36,7 @@ static  bool  trEnumGCRefs          = false;
 static  bool  dspPtr                = false; // prints the live ptrs as reported
 #endif
 
-__forceinline unsigned decodeUnsigned(PTR_CBYTE& src)
+FORCEINLINE unsigned decodeUnsigned(PTR_CBYTE& src)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -67,7 +67,7 @@ __forceinline unsigned decodeUnsigned(PTR_CBYTE& src)
     return value;
 }
 
-__forceinline int decodeSigned(PTR_CBYTE& src)
+FORCEINLINE int decodeSigned(PTR_CBYTE& src)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;

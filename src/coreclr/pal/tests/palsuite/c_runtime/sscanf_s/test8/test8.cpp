@@ -35,7 +35,7 @@ PALTEST(c_runtime_sscanf_s_test8_paltest_sscanf_test8, "c_runtime/sscanf_s/test8
     DoNumTest("65536", "%lu", 65536);
     DoNumTest("-1", "%Lu", -1);
     DoNumTest("65536", "%Lu", 65536);
-    DoI64NumTest("4294967296", "%I64u", I64(4294967296));
+    DoI64NumTest("4294967296", "%I64u", 4294967296LL);
 
     PAL_Terminate();
     return PASS;

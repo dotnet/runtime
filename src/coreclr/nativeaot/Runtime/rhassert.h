@@ -3,12 +3,6 @@
 #ifndef __RHASSERT_H__
 #define __RHASSERT_H__
 
-#ifdef _MSC_VER
-#define ASSUME(expr) __assume(expr)
-#else  // _MSC_VER
-#define ASSUME(expr) do { if (!(expr)) __builtin_unreachable(); } while (0)
-#endif // _MSC_VER
-
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 #define ASSERT(expr) \
@@ -50,15 +44,15 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
-    ASSUME(0); \
+    __UNREACHABLE(); \
 
 #define UNREACHABLE() \
     ASSERT_UNCONDITIONALLY("UNREACHABLE"); \
-    ASSUME(0); \
+    __UNREACHABLE(); \
 
 #define UNREACHABLE_MSG(message) \
     ASSERT_UNCONDITIONALLY(message); \
-    ASSUME(0);  \
+    __UNREACHABLE();  \
 
 #ifdef HOST_WINDOWS
 #define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)

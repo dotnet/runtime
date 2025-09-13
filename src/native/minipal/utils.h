@@ -38,6 +38,26 @@
 #  define FALLTHROUGH
 #endif
 
+#ifdef _MSC_VER
+#define __UNREACHABLE() __assume(0)
+#else
+#define __UNREACHABLE() __builtin_unreachable()
+#endif
+
+#if defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#define FORCEINLINE __forceinline
+#else
+#define NOINLINE __attribute__((noinline))
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+#ifdef _MSC_VER
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
+#endif
+
 #if defined(_MSC_VER)
 #define LIBC_CALLBACK __cdecl
 #else

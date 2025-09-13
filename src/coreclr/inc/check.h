@@ -12,7 +12,6 @@
 #define CHECK_H_
 
 #include "daccess.h"
-#include "unreachable.h"
 
 // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand)
 template <class... > struct make_void { using type = void; };

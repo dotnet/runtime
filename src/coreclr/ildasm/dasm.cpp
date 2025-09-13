@@ -5857,8 +5857,8 @@ IMetaDataTables *pITables = NULL;
 //int   size, size2;
 int   metaSize = 0;
 int64_t fTableSeen;
-inline void TableSeen(unsigned long n) { fTableSeen |= (I64(1) << n); }
-inline int IsTableSeen(unsigned long n) { return (fTableSeen & (I64(1) << n)) ? 1 : 0;}
+inline void TableSeen(unsigned long n) { fTableSeen |= (1LL << n); }
+inline int IsTableSeen(unsigned long n) { return (fTableSeen & (1LL << n)) ? 1 : 0;}
 inline void TableSeenReset() { fTableSeen = 0;}
 
 void DumpTable(unsigned long Table, const char *TableName, void* GUICookie)
