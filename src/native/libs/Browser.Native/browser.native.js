@@ -10,7 +10,6 @@ function captureEmscriptenInternals() {
 const DotnetSupportLib = {
     $DOTNET: { captureEmscriptenInternals },
     "$DOTNET__postset": `DOTNET.captureEmscriptenInternals();`,
-    icudt68_dat: function () { throw new Error('dummy link symbol') },
     BrowserNative_RandomBytes: function (bufferPtr, bufferLength) {
         // WASMTODO implementation
         return -1;
