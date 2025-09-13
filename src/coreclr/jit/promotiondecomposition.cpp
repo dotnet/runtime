@@ -1251,6 +1251,10 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     if (fldSeq != nullptr)
     {
         *fldSeq = nullptr;
+        if ((*addr)->IsCnsIntOrI())
+        {
+            *fldSeq = (*addr)->AsIntCon()->gtFieldSeq;
+        }
     }
 
     while (true)
