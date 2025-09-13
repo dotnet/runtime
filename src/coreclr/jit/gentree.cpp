@@ -6922,7 +6922,7 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
     GenTree* tree = const_cast<GenTree*>(this);
 
     target_ssize_t offset = 0;
-    FieldSeq* fldSeq = nullptr;
+    FieldSeq*      fldSeq = nullptr;
     comp->gtPeelOffsets(&tree, &offset, &fldSeq);
     if (comp->fgIsBigOffset(offset))
     {
@@ -6934,7 +6934,8 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
         return true;
     }
 
-    if ((fldSeq != nullptr) && fldSeq->IsStaticField() && comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle()))
+    if ((fldSeq != nullptr) && fldSeq->IsStaticField() &&
+        comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle()))
     {
         return true;
     }
