@@ -933,6 +933,12 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
                     _ASSERTE(!"If this ever fires, then this method should return HRESULT");
                     rva = 0;
                 }
+
+                // RVA points to IL header only for when the code type is IL
+                if (!IsMiIL((dwImplFlags))
+                {
+                    rva = 0;
+                }
             }
             else
             {
