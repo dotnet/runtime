@@ -18,9 +18,9 @@ namespace System.Speech.Internal.ObjectTokens
         {
         }
 
-        internal static ObjectTokenCategory Create(string sCategoryId)
+        internal static ObjectTokenCategory? Create(string sCategoryId)
         {
-            RegistryDataKey key = RegistryDataKey.Open(sCategoryId, true);
+            RegistryDataKey? key = RegistryDataKey.Open(sCategoryId, true);
             if (key != null)
             {
                 return new ObjectTokenCategory(sCategoryId, key);
@@ -33,7 +33,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region internal Methods
 
-        internal ObjectToken OpenToken(string keyName)
+        internal ObjectToken? OpenToken(string keyName)
         {
             // Check if the token is for a voice
             string tokenName = keyName;
@@ -45,11 +45,11 @@ namespace System.Speech.Internal.ObjectTokens
             return ObjectToken.Open(null, tokenName, false);
         }
 
-        internal List<ObjectToken> FindMatchingTokens(string requiredAttributes, string optionalAttributes)
+        internal List<ObjectToken> FindMatchingTokens(string? requiredAttributes, string? optionalAttributes)
         {
             var objectTokenList = new List<ObjectToken>();
-            ISpObjectTokenCategory category = null;
-            IEnumSpObjectTokens enumTokens = null;
+            ISpObjectTokenCategory? category = null;
+            IEnumSpObjectTokens? enumTokens = null;
 
             try
             {
@@ -62,7 +62,7 @@ namespace System.Speech.Internal.ObjectTokens
                 enumTokens.GetCount(out tokenCount);
                 for (uint index = 0; index < tokenCount; ++index)
                 {
-                    ISpObjectToken spObjectToken = null;
+                    ISpObjectToken? spObjectToken = null;
 
                     enumTokens.Item(index, out spObjectToken);
                     ObjectToken objectToken = ObjectToken.Open(spObjectToken);

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -32,6 +33,8 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
+
+        [MemberNotNull(nameof(_smlContent))]
         public IXPathNavigable ConstructSmlFromSemantics()
         {
             if (!string.IsNullOrEmpty(_smlContent))
@@ -57,11 +60,11 @@ namespace System.Speech.Recognition
             root.SetAttribute("utteranceConfidence", Confidence.ToString("f", nfo));
             root.SetAttribute("confidence", Confidence.ToString("f", nfo));
 
-            if (Semantics.Count > 0)
+            if (Semantics?.Count > 0)
             {
                 AppendPropertiesSML(document, root, Semantics, nfo);
             }
-            else if (Semantics.Value != null)
+            else if (Semantics?.Value != null)
             {
                 XmlText valueText = document.CreateTextNode(Semantics.Value.ToString());
                 root.AppendChild(valueText);
@@ -88,7 +91,7 @@ namespace System.Speech.Recognition
                 if (_text == null)
                 {
                     Collection<ReplacementText> replacements = ReplacementWordUnits;
-                    ReplacementText replacement;
+                    ReplacementText? replacement;
 
                     int iCurReplacementIndex = 0;
                     int iWordReplacement = NextReplacementWord(replacements, out replacement, ref iCurReplacementIndex);
@@ -96,9 +99,10 @@ namespace System.Speech.Recognition
                     for (int i = 0; i < Words.Count; i++)
                     {
                         DisplayAttributes displayAttribute;
-                        string text;
+                        string? text;
                         if (i == iWordReplacement)
                         {
+                            System.Diagnostics.Debug.Assert(replacement != null, "Non-negative iWordReplacement should yield a non-null replacement");
                             displayAttribute = replacement.DisplayAttributes;
                             text = replacement.Text;
                             i += replacement.CountOfWords - 1;
@@ -168,9 +172,9 @@ namespace System.Speech.Recognition
                         for (int i = 0; i < countOfElements; i++)
                         {
                             IntPtr elementBuffer = new((long)buffer + elementsOffset + i * sizeofPhraseElement);
-                            SPSERIALIZEDPHRASEELEMENT element = Marshal.PtrToStructure<SPSERIALIZEDPHRASEELEMENT>(elementBuffer);
+                            SPSERIALIZEDPHRASEELEMENT element = Marshal.PtrToStructure<SPSERIALIZEDPHRASEELEMENT>(elementBuffer)!;
 
-                            string displayForm = null, lexicalForm = null, pronunciation = null;
+                            string? displayForm = null, lexicalForm = null, pronunciation = null;
                             if (element.pszDisplayTextOffset != 0)
                             {
                                 IntPtr displayFormBuffer = new((long)buffer + (int)element.pszDisplayTextOffset);
@@ -185,7 +189,7 @@ namespace System.Speech.Recognition
                             if (element.pszPronunciationOffset != 0)
                             {
                                 IntPtr pronunciationBuffer = new((long)buffer + (int)element.pszPronunciationOffset);
-                                pronunciation = Marshal.PtrToStringUni(pronunciationBuffer);
+                                pronunciation = Marshal.PtrToStringUni(pronunciationBuffer)!;
                                 if (!_hasIPAPronunciation)
                                 {
                                     pronunciation = _recoResult.ConvertPronunciation(pronunciation, _serializedPhrase.LangID);
@@ -213,7 +217,7 @@ namespace System.Speech.Recognition
         }
 
         // Semantic data about result:
-        public SemanticValue Semantics
+        public SemanticValue? Semantics
         {
             get
             {
@@ -260,7 +264,7 @@ namespace System.Speech.Recognition
                 return _homophones;
             }
         }
-        public Grammar Grammar
+        public Grammar? Grammar
         {
             get
             {
@@ -294,8 +298,8 @@ namespace System.Speech.Recognition
                         IntPtr itnBuffer = new((long)buffer + _serializedPhrase.ReplacementsOffset);
                         for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (nint)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>())
                         {
-                            SPPHRASEREPLACEMENT replacement = (SPPHRASEREPLACEMENT)Marshal.PtrToStructure<SPPHRASEREPLACEMENT>(itnBuffer);
-                            string text = Marshal.PtrToStringUni(new IntPtr((long)buffer + replacement.pszReplacementText));
+                            SPPHRASEREPLACEMENT replacement = Marshal.PtrToStructure<SPPHRASEREPLACEMENT>(itnBuffer)!;
+                            string text = Marshal.PtrToStringUni(new IntPtr((long)buffer + replacement.pszReplacementText))!;
                             DisplayAttributes displayAttributes = RecognizedWordUnit.SapiAttributesToDisplayAttributes(replacement.bDisplayAttributes);
                             _replacementText.Add(new ReplacementText(displayAttributes, text, (int)replacement.ulFirstElement, (int)replacement.ulCountOfElements));
                         }
@@ -321,7 +325,7 @@ namespace System.Speech.Recognition
 
         internal static SPSERIALIZEDPHRASE GetPhraseHeader(IntPtr phraseBuffer, uint expectedPhraseSize, bool isSapi53Header)
         {
-            SPSERIALIZEDPHRASE serializedPhrase;
+            SPSERIALIZEDPHRASE? serializedPhrase;
 
             if (isSapi53Header)
             {
@@ -329,10 +333,12 @@ namespace System.Speech.Recognition
             }
             else
             {
-                SPSERIALIZEDPHRASE_Sapi51 legacyPhrase = Marshal.PtrToStructure<SPSERIALIZEDPHRASE_Sapi51>(phraseBuffer);
+                SPSERIALIZEDPHRASE_Sapi51? legacyPhrase = Marshal.PtrToStructure<SPSERIALIZEDPHRASE_Sapi51>(phraseBuffer);
+                System.Diagnostics.Debug.Assert(legacyPhrase != null);
                 serializedPhrase = new SPSERIALIZEDPHRASE(legacyPhrase);
             }
 
+            System.Diagnostics.Debug.Assert(serializedPhrase != null);
             if (serializedPhrase.ulSerializedSize > expectedPhraseSize)
             {
                 throw new FormatException(SR.Get(SRID.ResultInvalidFormat));
@@ -391,8 +397,8 @@ namespace System.Speech.Recognition
 
         #region Internal fields
 
-        internal SPSERIALIZEDPHRASE _serializedPhrase;
-        internal byte[] _phraseBuffer;
+        internal SPSERIALIZEDPHRASE _serializedPhrase = null!;
+        internal byte[]? _phraseBuffer;
         internal bool _isSapi53Header;
         internal bool _hasIPAPronunciation;
 
@@ -401,7 +407,7 @@ namespace System.Speech.Recognition
         #region Private Methods
 
         // Semantic data about result:
-        private void CalcSemantics(Grammar grammar)
+        private void CalcSemantics(Grammar? grammar)
         {
             if (_semantics == null && _serializedPhrase.SemanticErrorInfoOffset == 0)
             {
@@ -459,12 +465,12 @@ namespace System.Speech.Recognition
             return propertyList;
         }
 
-        private static SemanticValue RecursiveBuildSemanticProperties(IList<RecognizedWordUnit> words, List<ResultPropertiesRef> properties, RuleNode ruleTree, GrammarOptions semanticTag, ref Collection<SemanticValue> dupItems)
+        private static SemanticValue RecursiveBuildSemanticProperties(IList<RecognizedWordUnit> words, List<ResultPropertiesRef> properties, RuleNode ruleTree, GrammarOptions semanticTag, ref Collection<SemanticValue>? dupItems)
         {
             SemanticValue semanticValue = new(ruleTree._name, null, ruleTree._confidence);
 
             // Add the semantic values from the child rules
-            for (RuleNode children = ruleTree._child; children != null; children = children._next)
+            for (RuleNode? children = ruleTree._child; children != null; children = children._next)
             {
                 // Propagate up the semantic values calculated at the children level
                 SemanticValue childrenSemantics = RecursiveBuildSemanticProperties(words, properties, children, semanticTag, ref dupItems);
@@ -476,7 +482,7 @@ namespace System.Speech.Recognition
                     }
                     if (childrenSemantics.Value != null)
                     {
-                        if ((semanticTag & (GrammarOptions.MssV1 | GrammarOptions.W3cV1)) == 0 && semanticValue._valueFieldSet && !semanticValue.Value.Equals(childrenSemantics.Value))
+                        if ((semanticTag & (GrammarOptions.MssV1 | GrammarOptions.W3cV1)) == 0 && semanticValue._valueFieldSet && !semanticValue.Value!.Equals(childrenSemantics.Value))
                         {
                             throw new InvalidOperationException(SR.Get(SRID.DupSemanticValue, ruleTree._name));
                         }
@@ -514,10 +520,10 @@ namespace System.Speech.Recognition
                 }
             }
 
-            Exception exceptionThrown = null;
+            Exception? exceptionThrown = null;
 
             // Try to execute the semantic value if OnParse is defined
-            object newValue;
+            object? newValue;
             bool doneOnParse = TryExecuteOnParse(ruleTree, semanticValue, words, out newValue, ref exceptionThrown);
 
             if (exceptionThrown != null)
@@ -539,7 +545,7 @@ namespace System.Speech.Recognition
         private static void RecursivelyExtractSemanticProperties(List<ResultPropertiesRef> propertyList, int semanticsOffset, IntPtr phraseBuffer, RuleNode ruleTree, IList<RecognizedWordUnit> words, bool isSapi53Header)
         {
             IntPtr propertyBuffer = new((long)phraseBuffer + semanticsOffset);
-            SPSERIALIZEDPHRASEPROPERTY property = Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer);
+            SPSERIALIZEDPHRASEPROPERTY property = Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer)!;
 
             string propertyName;
             SemanticValue thisSemanticValue = ExtractSemanticValueInformation(semanticsOffset, property, phraseBuffer, isSapi53Header, out propertyName);
@@ -547,7 +553,7 @@ namespace System.Speech.Recognition
             RuleNode node = ruleTree.Find(property.ulFirstElement, property.ulCountOfElements);
             if (propertyName == "SemanticKey")
             {
-                node._name = (string)thisSemanticValue.Value;
+                node._name = (string)thisSemanticValue.Value!;
                 node._hasName = true;
             }
             else
@@ -572,7 +578,7 @@ namespace System.Speech.Recognition
         {
             IntPtr propertyBuffer = new((long)phraseBuffer + semanticsOffset);
             SPSERIALIZEDPHRASEPROPERTY property =
-                Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer);
+                Marshal.PtrToStructure<SPSERIALIZEDPHRASEPROPERTY>(propertyBuffer)!;
 
             string propertyName;
             SemanticValue thisSemanticValue = ExtractSemanticValueInformation(semanticsOffset, property, phraseBuffer, isSapi53Header, out propertyName);
@@ -589,6 +595,7 @@ namespace System.Speech.Recognition
             }
             else
             {
+                System.Diagnostics.Debug.Assert(semanticValue != null);
                 InsertSemanticValueToDictionary(semanticValue, propertyName, thisSemanticValue, semanticTag, ref _dupItems);
             }
 
@@ -605,14 +612,14 @@ namespace System.Speech.Recognition
             }
         }
 
-        private static void InsertSemanticValueToDictionary(SemanticValue semanticValue, string propertyName, SemanticValue thisSemanticValue, GrammarOptions semanticTag, ref Collection<SemanticValue> dupItems)
+        private static void InsertSemanticValueToDictionary(SemanticValue semanticValue, string propertyName, SemanticValue thisSemanticValue, GrammarOptions semanticTag, ref Collection<SemanticValue>? dupItems)
         {
             string key = propertyName;
             if ((key == "$" && semanticTag == GrammarOptions.MssV1)
                 || (key == "=" && (semanticTag == GrammarOptions.KeyValuePairSrgs || semanticTag == GrammarOptions.KeyValuePairs))
                 || (thisSemanticValue.Count == -1 && semanticTag == GrammarOptions.W3cV1))
             {
-                if ((semanticTag & (GrammarOptions.MssV1 | GrammarOptions.W3cV1)) == 0 && semanticValue._valueFieldSet && !semanticValue.Value.Equals(thisSemanticValue.Value))
+                if ((semanticTag & (GrammarOptions.MssV1 | GrammarOptions.W3cV1)) == 0 && semanticValue._valueFieldSet && !semanticValue.Value!.Equals(thisSemanticValue.Value))
                 {
                     throw new InvalidOperationException(SR.Get(SRID.DupSemanticValue, semanticValue.KeyName));
                 }
@@ -654,13 +661,13 @@ namespace System.Speech.Recognition
 
         private static SemanticValue ExtractSemanticValueInformation(int semanticsOffset, SPSERIALIZEDPHRASEPROPERTY property, IntPtr phraseBuffer, bool isSapi53Header, out string propertyName)
         {
-            object propertyValue;
+            object? propertyValue;
 
             bool isIdName = false;
             if (property.pszNameOffset > 0)
             {
                 IntPtr nameBuffer = new((long)phraseBuffer + (int)property.pszNameOffset);
-                propertyName = Marshal.PtrToStringUni(nameBuffer);
+                propertyName = Marshal.PtrToStringUni(nameBuffer)!;
             }
             else
             {
@@ -671,7 +678,7 @@ namespace System.Speech.Recognition
             if (property.pszValueOffset > 0)
             {
                 IntPtr valueStringBuffer = new((long)phraseBuffer + (int)property.pszValueOffset);
-                propertyValue = Marshal.PtrToStringUni(valueStringBuffer);
+                propertyValue = Marshal.PtrToStringUni(valueStringBuffer)!;
                 if (!isSapi53Header && isIdName && ((string)propertyValue).Contains("$"))
                 {
                     // SAPI 5.1 result that contains script fragments rather than output of executing script.
@@ -731,17 +738,17 @@ namespace System.Speech.Recognition
             return new SemanticValue(propertyName, propertyValue, property.SREngineConfidence);
         }
 
-        private static RuleNode ExtractRules(Grammar grammar, SPSERIALIZEDPHRASERULE rule, IntPtr phraseBuffer)
+        private static RuleNode ExtractRules(Grammar? grammar, SPSERIALIZEDPHRASERULE rule, IntPtr phraseBuffer)
         {
             // Get the rule name
             IntPtr nameBuffer = new((long)phraseBuffer + (int)rule.pszNameOffset);
 
             // Add the rule name to the proper element index
-            string name = Marshal.PtrToStringUni(nameBuffer);
+            string name = Marshal.PtrToStringUni(nameBuffer)!;
 
             // find the grammar for this rule. If the grammar does not belong to any existing ruleref then
             // it must be local.
-            Grammar ruleRef = grammar?.Find(name);
+            Grammar? ruleRef = grammar?.Find(name);
             if (ruleRef != null)
             {
                 grammar = ruleRef;
@@ -751,7 +758,7 @@ namespace System.Speech.Recognition
             if (rule.NextSiblingOffset > 0)
             {
                 IntPtr elementBuffer = new((long)phraseBuffer + rule.NextSiblingOffset);
-                SPSERIALIZEDPHRASERULE ruleNext = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer);
+                SPSERIALIZEDPHRASERULE ruleNext = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer)!;
 
                 node._next = ExtractRules(grammar, ruleNext, phraseBuffer);
             }
@@ -759,16 +766,17 @@ namespace System.Speech.Recognition
             if (rule.FirstChildOffset > 0)
             {
                 IntPtr elementBuffer = new((long)phraseBuffer + rule.FirstChildOffset);
-                SPSERIALIZEDPHRASERULE ruleFirst = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer);
+                SPSERIALIZEDPHRASERULE ruleFirst = Marshal.PtrToStructure<SPSERIALIZEDPHRASERULE>(elementBuffer)!;
 
                 node._child = ExtractRules(grammar, ruleFirst, phraseBuffer);
             }
             return node;
         }
 
+        [DoesNotReturn]
         private void ThrowInvalidSemanticInterpretationError()
         {
-            //string error;
+            string error;
             if (!_isSapi53Header)
             {
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
@@ -778,31 +786,32 @@ namespace System.Speech.Recognition
             {
                 IntPtr smlBuffer = gc.AddrOfPinnedObject();
 
-                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((nint)smlBuffer + (nint)_serializedPhrase.SemanticErrorInfoOffset);
+                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((nint)smlBuffer + (nint)_serializedPhrase.SemanticErrorInfoOffset)!;
 
-                string source = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszSourceOffset);
-                string description = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszDescriptionOffset);
-                string script = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszScriptLineOffset);
+                string? source = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszSourceOffset);
+                string? description = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszDescriptionOffset);
+                string? script = Marshal.PtrToStringUni((nint)smlBuffer + (nint)semanticError.pszScriptLineOffset);
 
-                string error = string.Format(CultureInfo.InvariantCulture, "Error while evaluating semantic interpretation:\n" +
+                error = string.Format(CultureInfo.InvariantCulture, "Error while evaluating semantic interpretation:\n" +
                                             "  HRESULT:     {0:x}\n" +
                                             "  Line:        {1}\n" +
                                             "  Source:      {2}\n" +
                                             "  Description: {3}\n" +
                                             "  Script:      {4}\n", semanticError.hrResultCode, semanticError.ulLineNumber, source, description, script);
-                throw new InvalidOperationException(error);
             }
             finally
             {
                 gc.Free();
             }
+
+            throw new InvalidOperationException(error);
         }
 
-        private static bool TryExecuteOnParse(RuleNode ruleRef, SemanticValue value, IList<RecognizedWordUnit> words, out object newValue, ref Exception exceptionThrown)
+        private static bool TryExecuteOnParse(RuleNode ruleRef, SemanticValue value, IList<RecognizedWordUnit> words, out object? newValue, ref Exception? exceptionThrown)
         {
             newValue = null;
             bool doneOnParse = false;
-            Grammar grammar = ruleRef._grammar;
+            Grammar? grammar = ruleRef._grammar;
 
             if (grammar != null && grammar._scripts != null)
             {
@@ -844,10 +853,11 @@ namespace System.Speech.Recognition
             return doneOnParse;
         }
 
-        private static bool ExecuteOnParse(Grammar grammar, RuleNode ruleRef, SemanticValue value, IList<RecognizedWordUnit> words, out object newValue)
+        private static bool ExecuteOnParse(Grammar grammar, RuleNode ruleRef, SemanticValue value, IList<RecognizedWordUnit> words, out object? newValue)
         {
             // Get the rule list
-            ScriptRef[] scripts = grammar._scripts;
+            ScriptRef[]? scripts = grammar._scripts;
+            System.Diagnostics.Debug.Assert(scripts != null);
             bool doneOnParse = false;
             newValue = null;
 
@@ -870,7 +880,7 @@ namespace System.Speech.Recognition
 
                         if (grammar._proxy != null)
                         {
-                            Exception appDomainException;
+                            Exception? appDomainException;
                             newValue = grammar._proxy.OnParse(script._rule, script._sMethod, parameters, out appDomainException);
 
                             if (appDomainException != null)
@@ -880,8 +890,8 @@ namespace System.Speech.Recognition
                         }
                         else
                         {
-                            MethodInfo onParse;
-                            System.Speech.Recognition.Grammar rule;
+                            MethodInfo? onParse;
+                            System.Speech.Recognition.Grammar? rule;
                             GetRuleInstance(grammar, script._rule, script._sMethod, out onParse, out rule);
 
                             // Execute the parse routine
@@ -897,7 +907,9 @@ namespace System.Speech.Recognition
         private static bool ExecuteOnError(Grammar grammar, RuleNode ruleRef, Exception e)
         {
             // Get the rule list
-            ScriptRef[] scripts = grammar._scripts;
+            ScriptRef[]? scripts = grammar._scripts;
+            System.Diagnostics.Debug.Assert(scripts != null);
+
             bool invoked = false;
 
             // Look if an OnParse exist for this method
@@ -913,7 +925,7 @@ namespace System.Speech.Recognition
 
                         if (grammar._proxy != null)
                         {
-                            Exception appDomainException;
+                            Exception? appDomainException;
                             grammar._proxy.OnError(script._rule, script._sMethod, parameters, out appDomainException);
                             if (appDomainException != null)
                             {
@@ -922,8 +934,8 @@ namespace System.Speech.Recognition
                         }
                         else
                         {
-                            MethodInfo onError;
-                            System.Speech.Recognition.Grammar rule;
+                            MethodInfo? onError;
+                            System.Speech.Recognition.Grammar? rule;
                             GetRuleInstance(grammar, script._rule, script._sMethod, out onError, out rule);
 
                             // Execute the parse routine
@@ -936,9 +948,9 @@ namespace System.Speech.Recognition
             return invoked;
         }
 
-        private static object TryExecuteOnRecognition(Grammar grammar, RecognitionResult result, string rootRule)
+        private static object? TryExecuteOnRecognition(Grammar? grammar, RecognitionResult result, string rootRule)
         {
-            object resultValue = result.Semantics.Value;
+            object? resultValue = result.Semantics?.Value;
             if (grammar != null && grammar._scripts != null)
             {
                 // Get the rule list
@@ -957,7 +969,7 @@ namespace System.Speech.Recognition
 
                             if (grammar._proxy != null)
                             {
-                                Exception appDomainException;
+                                Exception? appDomainException;
                                 resultValue = grammar._proxy.OnRecognition(script._sMethod, parameters, out appDomainException);
                                 if (appDomainException != null)
                                 {
@@ -967,7 +979,7 @@ namespace System.Speech.Recognition
                             else
                             {
                                 Type grammarType = grammar.GetType();
-                                MethodInfo onRecognition = grammarType.GetMethod(script._sMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                                MethodInfo onRecognition = grammarType.GetMethod(script._sMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
 
                                 // Execute the parse routine
                                 resultValue = onRecognition.Invoke(grammar, parameters);
@@ -980,20 +992,21 @@ namespace System.Speech.Recognition
             return resultValue;
         }
 
-        private static void GetRuleInstance(Grammar grammar, string rule, string method, out MethodInfo onParse, out Grammar ruleInstance)
+        private static void GetRuleInstance(Grammar grammar, string rule, string method, out MethodInfo onParse, out Grammar? ruleInstance)
         {
             Type grammarType = grammar.GetType();
             Assembly assembly = grammarType.Assembly;
-            Type ruleClass = rule == grammarType.Name ? grammarType : GetTypeForRule(assembly, rule);
+            Type? ruleClass = rule == grammarType.Name ? grammarType : GetTypeForRule(assembly, rule);
             if (ruleClass == null || !ruleClass.IsSubclassOf(typeof(System.Speech.Recognition.Grammar)))
             {
                 throw new FormatException(SR.Get(SRID.RecognizerInvalidBinaryGrammar));
             }
-            ruleInstance = ruleClass == grammarType ? grammar : (System.Speech.Recognition.Grammar)assembly.CreateInstance(ruleClass.FullName);
-            onParse = ruleInstance.MethodInfo(method);
+            ruleInstance = ruleClass == grammarType ? grammar : (System.Speech.Recognition.Grammar)assembly.CreateInstance(ruleClass.FullName!)!;
+            onParse = ruleInstance.MethodInfo(method)!;
+            System.Diagnostics.Debug.Assert(onParse != null);
         }
 
-        private static Type GetTypeForRule(Assembly assembly, string rule)
+        private static Type? GetTypeForRule(Assembly assembly, string rule)
         {
             Type[] types = assembly.GetTypes();
             for (int iType = 0; iType < types.Length; iType++)
@@ -1007,7 +1020,7 @@ namespace System.Speech.Recognition
             return null;
         }
 
-        private static int NextReplacementWord(Collection<ReplacementText> replacements, out ReplacementText replacement, ref int posInCollection)
+        private static int NextReplacementWord(Collection<ReplacementText> replacements, out ReplacementText? replacement, ref int posInCollection)
         {
             if (posInCollection < replacements.Count)
             {
@@ -1023,7 +1036,8 @@ namespace System.Speech.Recognition
 
         private void AppendSml(XmlDocument document, int i, NumberFormatInfo nfo)
         {
-            XmlElement root = document.DocumentElement;
+            XmlElement? root = document.DocumentElement;
+            System.Diagnostics.Debug.Assert(root != null, "Document should have had an element added");
             XmlElement alternateNode = document.CreateElement("alternate");
             root.AppendChild(alternateNode);
 
@@ -1032,6 +1046,7 @@ namespace System.Speech.Recognition
             alternateNode.SetAttribute("utteranceConfidence", Confidence.ToString("f", nfo));
             alternateNode.SetAttribute("confidence", Confidence.ToString("f", nfo));
 
+            System.Diagnostics.Debug.Assert(_semantics != null);
             if (_semantics.Value != null)
             {
                 XmlText valueText = document.CreateTextNode(_semantics.Value.ToString());
@@ -1042,7 +1057,7 @@ namespace System.Speech.Recognition
             AppendPropertiesSML(document, alternateNode, _semantics, nfo);
         }
 
-        private void AppendPropertiesSML(XmlDocument document, XmlElement alternateNode, SemanticValue semanticsNode, NumberFormatInfo nfo)
+        private void AppendPropertiesSML(XmlDocument document, XmlElement alternateNode, SemanticValue? semanticsNode, NumberFormatInfo nfo)
         {
             if (semanticsNode != null)
             {
@@ -1100,7 +1115,7 @@ namespace System.Speech.Recognition
             {
                 if (propertyNode.Attributes[kv.Key] == null)
                 {
-                    propertyNode.SetAttribute(kv.Key, kv.Value.Value.ToString());
+                    propertyNode.SetAttribute(kv.Key, kv.Value.Value?.ToString());
                 }
             }
         }
@@ -1111,7 +1126,7 @@ namespace System.Speech.Recognition
         [DebuggerDisplay("{DisplayDebugInfo()}")]
         private sealed class RuleNode
         {
-            internal RuleNode(Grammar grammar, string rule, float confidence, uint first, uint count)
+            internal RuleNode(Grammar? grammar, string rule, float confidence, uint first, uint count)
             {
                 _rule = _name = rule;
                 _firstElement = first;
@@ -1141,7 +1156,7 @@ namespace System.Speech.Recognition
                     lastWord = firstWord + (count - 1);
                 }
 
-                for (RuleNode child = _child; child != null; child = child._next)
+                for (RuleNode? child = _child; child != null; child = child._next)
                 {
                     float ruleFirstWord, ruleLastWord;
                     if (child._count == 0)
@@ -1165,7 +1180,7 @@ namespace System.Speech.Recognition
             {
                 return $"'rule = {_rule}";
             }
-            internal Grammar _grammar;
+            internal Grammar? _grammar;
             internal string _rule;
             internal string _name;
             internal uint _firstElement;
@@ -1173,8 +1188,8 @@ namespace System.Speech.Recognition
             internal float _confidence;
             internal bool _hasName;
 
-            internal RuleNode _next;
-            internal RuleNode _child;
+            internal RuleNode? _next;
+            internal RuleNode? _child;
         }
         [DebuggerDisplay("Name = {_name}, node = {_ruleNode._rule}, value = {_value != null && _value.Value != null ? _value.Value.ToString() : \"\"}")]
         private struct ResultPropertiesRef
@@ -1195,26 +1210,26 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private RecognitionResult _recoResult;
+        private RecognitionResult _recoResult = null!;
         private GrammarOptions _grammarOptions;
 
-        private string _text;
+        private string? _text;
         private float _confidence;
-        private SemanticValue _semantics;
-        private ReadOnlyCollection<RecognizedWordUnit> _words;
-        private Collection<ReplacementText> _replacementText;
+        private SemanticValue? _semantics;
+        private ReadOnlyCollection<RecognizedWordUnit>? _words;
+        private Collection<ReplacementText>? _replacementText;
 
         [NonSerializedAttribute]
         private ulong _grammarId = unchecked((ulong)(-1));
 #pragma warning disable 6524
         [NonSerializedAttribute]
-        private Grammar _grammar;
+        private Grammar? _grammar;
 #pragma warning restore 6524
         private int _homophoneGroupId;
-        private ReadOnlyCollection<RecognizedPhrase> _homophones;
-        private Collection<SemanticValue> _dupItems;
+        private ReadOnlyCollection<RecognizedPhrase>? _homophones;
+        private Collection<SemanticValue>? _dupItems;
 
-        private string _smlContent;
+        private string? _smlContent;
 
         private const int SpVariantSubsetOffset = 16;
 

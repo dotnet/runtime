@@ -68,7 +68,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
 
             // Write the tag format if any
-            string tagFormat = null;
+            string? tagFormat = null;
             switch (_tagFormat)
             {
                 case SrgsTagFormat.Default:
@@ -204,7 +204,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             return rule;
         }
 
-        void IElement.PostParse(IElement parent)
+        void IElement.PostParse(IElement? parent)
         {
             // Check that the root rule is defined
             if (_sRoot != null)
@@ -246,7 +246,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 #pragma warning disable 56507 // check for null or empty strings
 
         // Add a script to this grammar or to a rule
-        internal void AddScript(string rule, string code)
+        internal void AddScript(string? rule, string code)
         {
             if (rule == null)
             {
@@ -265,7 +265,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Sets the Root element
         /// </summary>
-        string IGrammar.Root
+        string? IGrammar.Root
         {
             get
             {
@@ -280,7 +280,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Base URI of grammar (xml:base)
         /// </summary>
-        public Uri XmlBase
+        public Uri? XmlBase
         {
             get
             {
@@ -343,7 +343,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>root
         /// Root rule (srgs:root)
         /// </summary>
-        public SrgsRule Root
+        public SrgsRule? Root
         {
             get
             {
@@ -388,7 +388,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// language
         /// </summary>
-        public string Language
+        public string? Language
         {
             get
             {
@@ -403,7 +403,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// namespace
         /// </summary>
-        public string Namespace
+        public string? Namespace
         {
             get
             {
@@ -643,7 +643,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         private bool _isSapiExtensionUsed;  // Set in *.Validate()
 
-        private Uri _xmlBase;
+        private Uri? _xmlBase;
 
         private CultureInfo _culture = CultureInfo.CurrentUICulture;
 
@@ -655,7 +655,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         private bool _hasPronunciation;
 
-        private SrgsRule _root;
+        private SrgsRule? _root;
 
         private SrgsTagFormat _tagFormat = SrgsTagFormat.Default;
 
@@ -665,18 +665,18 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         private SrgsRulesCollection _rules;
 
-        private string _sRoot;
+        private string? _sRoot;
 
         internal bool _fContainsCode;  // Set in *.Validate()
 
         // .NET Language for this grammar
-        private string _language;
+        private string? _language;
 
         // .NET Language for this grammar
         private Collection<string> _codebehind = new();
 
         // namespace for the code behind
-        private string _namespace;
+        private string? _namespace;
 
         // Insert #line statements in the sources code if set
         internal bool _fDebug;

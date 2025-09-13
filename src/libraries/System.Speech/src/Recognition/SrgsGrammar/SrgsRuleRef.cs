@@ -68,7 +68,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             _type = type;
         }
 
-        internal SrgsRuleRef(string semanticKey, string parameters, Uri uri)
+        internal SrgsRuleRef(string? semanticKey, string? parameters, Uri uri)
         {
             _uri = uri;
             _semanticKey = semanticKey;
@@ -79,7 +79,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region public Properties
         // Uri of the rule this rule reference references.
-        public Uri Uri
+        public Uri? Uri
         {
             get
             {
@@ -90,7 +90,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Set the semanticKey for a Ruleref
         /// </summary>
-        public string SemanticKey
+        public string? SemanticKey
         {
             get
             {
@@ -101,7 +101,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Set the init parameters for a Ruleref
         /// </summary>
-        public string Params
+        public string? Params
         {
             get
             {
@@ -240,7 +240,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Call by constructors. No check is made on the parameters except for the Uri
         /// </summary>
-        private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
+        private void UriInit(Uri uri, string? rule, string? semanticKey, string? initParameters)
         {
             ArgumentNullException.ThrowIfNull(uri);
 
@@ -282,15 +282,15 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         // if the uri is null then it is a special rule ref
-        private Uri _uri;
+        private Uri? _uri;
 
         private SpecialRuleRefType _type;
 
         // Alias string for the semantic dictionary
-        private string _semanticKey;
+        private string? _semanticKey;
 
         // Alias string for the semantic dictionary
-        private string _params;
+        private string? _params;
 
         #endregion
     }
