@@ -1483,7 +1483,7 @@ FOUND_AM:
                 mul = 0;
                 rv2 = nullptr;
             }
-            else if (index->IsIntCnsFitsInI32())
+            else if (index->IsIntCnsFitsInI32() && !op2->AsIntConCommon()->ImmedValNeedsReloc(compiler))
             {
                 ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
                 if (constantIndex == 0)
