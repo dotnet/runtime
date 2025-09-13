@@ -6922,30 +6922,21 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
     GenTree* tree = const_cast<GenTree*>(this);
 
     target_ssize_t offset = 0;
-    comp->gtPeelOffsets(&tree, &offset, nullptr);
+    FieldSeq* fldSeq = nullptr;
+    comp->gtPeelOffsets(&tree, &offset, &fldSeq);
     if (comp->fgIsBigOffset(offset))
     {
         return false;
     }
 
-    if (tree->IsIntegralConst(0) || tree->OperIs(GT_LCL_ADDR))
+    if (tree->IsIntegralConst(0) || tree->OperIs(GT_LCL_ADDR) || tree->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         return true;
     }
 
-    // Any NonGC object
-    if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if ((fldSeq != nullptr) && fldSeq->IsStaticField() && comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle()))
     {
         return true;
-    }
-
-    if (tree->IsCnsIntOrI())
-    {
-        FieldSeq* fldSeq = tree->AsIntCon()->gtFieldSeq;
-        if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
-        {
-            return comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle());
-        }
     }
 
     return false;

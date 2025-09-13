@@ -1682,25 +1682,26 @@ bool CEEInfo::canOmitPinning(CORINFO_FIELD_HANDLE fldHnd)
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = reinterpret_cast<FieldDesc*>(fldHnd);
-
     _ASSERT(field != NULL);
-    _ASSERT(field->IsStatic());
 
-    TypeHandle fieldOwnerType(field->GetEnclosingMethodTable());
-    if (!fieldOwnerType.GetLoaderAllocator()->CanUnload() && !fieldOwnerType.IsCanonicalSubtype())
+    if (field->IsStatic() && !field->IsThreadStatic())
     {
-        if (field->IsRVA())
+        TypeHandle fieldOwnerType(field->GetEnclosingMethodTable());
+        if (!fieldOwnerType.GetLoaderAllocator()->CanUnload() && !fieldOwnerType.IsCanonicalSubtype())
         {
-            result = true;
-        }
-        else
-        {
-            GCX_COOP();
-            void* pFieldAddr = field->GetCurrentStaticAddress();
-            if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(static_cast<Object*>(pFieldAddr)) ||
-                !GCHeapUtilities::GetGCHeap()->IsHeapPointer(pFieldAddr))
+            if (field->IsRVA())
             {
                 result = true;
+            }
+            else
+            {
+                GCX_COOP();
+                void* pFieldAddr = field->GetCurrentStaticAddress();
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(static_cast<Object*>(pFieldAddr)) ||
+                    !GCHeapUtilities::GetGCHeap()->IsHeapPointer(pFieldAddr))
+                {
+                    result = true;
+                }
             }
         }
     }
