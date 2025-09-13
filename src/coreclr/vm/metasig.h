@@ -526,9 +526,6 @@ DEFINE_METASIG_T(SM(Assembly_RetVoid, C(ASSEMBLY), v))
 DEFINE_METASIG_T(SM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))
 DEFINE_METASIG(SM(Str_RetArrStr, s, a(s)))
 
-// Execution Context
-DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT) a(I) F i, i))
-
 // Exception
 DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
 
