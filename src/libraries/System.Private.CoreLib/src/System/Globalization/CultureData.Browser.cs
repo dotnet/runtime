@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Globalization
 {
@@ -68,13 +69,13 @@ namespace System.Globalization
         }
     }
 
-    internal static class Helper
+    internal static unsafe class Helper
     {
         internal static int MarshalAndThrowIfException(nint exceptionPtr, bool failOnlyDebug = false, string failureMessage = "")
         {
             if (exceptionPtr != IntPtr.Zero)
             {
-                string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                string message = Utf16StringMarshaller.ConvertToManaged((ushort*)exceptionPtr)!;
                 Marshal.FreeHGlobal(exceptionPtr);
                 if (failOnlyDebug)
                 {

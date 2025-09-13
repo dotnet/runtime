@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
@@ -76,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         X509Certificate2 certificate = new X509Certificate2((IntPtr)(pChainElement->pCertContext));
                         X509ChainStatus[] chainElementStatus = GetChainStatusInformation(pChainElement->TrustStatus.dwErrorStatus);
-                        string information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo)!;
+                        string information = Utf16StringMarshaller.ConvertToManaged(pChainElement->pwszExtendedErrorInfo)!;
 
                         X509ChainElement chainElement = new X509ChainElement(certificate, chainElementStatus, information);
                         chainElements[i] = chainElement;

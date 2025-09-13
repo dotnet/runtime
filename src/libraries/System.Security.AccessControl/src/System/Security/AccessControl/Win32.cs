@@ -6,6 +6,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Principal;
@@ -20,7 +21,7 @@ namespace System.Security.AccessControl
         // Wrapper around advapi32.ConvertSecurityDescriptorToStringSecurityDescriptorW
         //
 
-        internal static int ConvertSdToSddl(
+        internal static unsafe int ConvertSdToSddl(
             byte[] binaryForm,
             int requestedRevision,
             SecurityInfos si,
@@ -40,7 +41,7 @@ namespace System.Security.AccessControl
             // Extract data from the returned pointer
             //
 
-            resultSddl = Marshal.PtrToStringUni(ByteArray)!;
+            resultSddl = Utf16StringMarshaller.ConvertToManaged((ushort*)ByteArray)!;
 
             //
             // Now is a good time to get rid of the returned pointer
