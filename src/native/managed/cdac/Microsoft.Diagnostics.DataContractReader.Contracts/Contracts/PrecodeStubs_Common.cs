@@ -138,7 +138,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         _codePointerFlags = codePointerFlags;
     }
 
-    TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
+    TargetPointer IPrecodeStubs.GetMethodDescFromPrecode(TargetCodePointer entryPoint)
     {
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 

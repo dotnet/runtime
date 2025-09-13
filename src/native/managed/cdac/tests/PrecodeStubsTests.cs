@@ -387,13 +387,13 @@ public class PrecodeStubsTests
 
         Assert.NotNull(precodeContract);
 
-        var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
+        var actualMethodDesc = precodeContract.GetMethodDescFromPrecode(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
 
         if (contractVersion >= 2)
         {
             // Implementation of this type of precode is only handled correctly in contract version 2 and higher
-            var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);
+            var actualMethodDesc2 = precodeContract.GetMethodDescFromPrecode(stub2);
             Assert.Equal(expectedMethodDesc2, actualMethodDesc2);
         }
     }
