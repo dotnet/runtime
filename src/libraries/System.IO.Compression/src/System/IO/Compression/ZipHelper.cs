@@ -207,6 +207,7 @@ internal static partial class ZipHelper
         if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
         {
             int totalCodePoints = 0;
+            int charIndex = 0;
             foreach (Rune rune in text.EnumerateRunes())
             {
                 if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
@@ -214,19 +215,27 @@ internal static partial class ZipHelper
                     break;
                 }
                 totalCodePoints += rune.Utf8SequenceLength;
+                charIndex += rune.Utf16SequenceLength;
             }
 
-            bytes = encoding.GetBytes(text);
+            byte[] rentedArray = ArrayPool<byte>.Shared.Rent(encoding.GetMaxByteCount(text.Length));
+            try
+            {
+                int actualByteCount = encoding.GetBytes(text, 0, charIndex, rentedArray, 0);
 
-            Debug.Assert(totalCodePoints > 0);
-            Debug.Assert(totalCodePoints <= bytes.Length);
+                Debug.Assert(totalCodePoints == actualByteCount);
 
-            return bytes[0..totalCodePoints];
+                bytes = new byte[actualByteCount];
+                Array.Copy(rentedArray, 0, bytes, 0, actualByteCount);
+                return bytes;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedArray, clearArray: true);
+            }
         }
 
         bytes = encoding.GetBytes(text);
         return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
     }
-
-
 }
