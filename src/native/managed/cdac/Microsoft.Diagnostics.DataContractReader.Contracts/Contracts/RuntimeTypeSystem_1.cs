@@ -692,6 +692,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     TypeHandle IRuntimeTypeSystem.IterateTypeParams(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
+        if (typeHandle.Address == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);

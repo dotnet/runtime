@@ -76,7 +76,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         Module module = _target.ProcessedData.GetOrAdd<Module>(_moduleHandle.Address);
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(module.TypeDefToMethodTableMap, (uint)token, out _);
-        return _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public TypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
@@ -84,7 +84,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         Module module = _target.ProcessedData.GetOrAdd<Module>(_moduleHandle.Address);
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(module.TypeRefToMethodTableMap, (uint)token, out _);
-        return _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public TypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)

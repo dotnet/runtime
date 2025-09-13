@@ -819,10 +819,17 @@ internal sealed unsafe partial class SOSDacImpl
             SignatureHeader header = blobReader.ReadSignatureHeader();
             if (header.Kind != SignatureKind.Field)
                 throw new BadImageFormatException();
-            CorElementType typeCode = (CorElementType)blobReader.ReadCompressedInteger();
-            if (typeCode == CorElementType.Class || typeCode == CorElementType.ValueType)
+            // read the top-level type
+            CorElementType typeCode;
+            EntityHandle entityHandle;
+            do
             {
-                EntityHandle entityHandle = blobReader.ReadTypeHandle();
+                typeCode = (CorElementType)blobReader.ReadByte();
+                entityHandle = blobReader.ReadTypeHandle(); // consume the type
+            } while (typeCode is CorElementType.CModReqd or CorElementType.CModOpt); // eat custom modifiers
+
+            if (typeCode is CorElementType.Class or CorElementType.ValueType)
+            {
                 data->TokenOfType = (uint)MetadataTokens.GetToken(entityHandle);
             }
             else
