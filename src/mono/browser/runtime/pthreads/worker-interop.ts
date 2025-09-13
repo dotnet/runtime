@@ -31,7 +31,7 @@ export function mono_wasm_install_js_worker_interop (context_gc_handle: GCHandle
     }
 }
 
-export function mono_wasm_uninstall_js_worker_interop (): void {
+export function dotnet_browser_uninstall_js_worker_interop (): void {
     if (!WasmEnableThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
     mono_assert(runtimeHelpers.proxyGCHandle, "JSSynchronizationContext is not installed on this worker.");

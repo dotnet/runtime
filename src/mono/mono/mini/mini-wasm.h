@@ -106,7 +106,7 @@ G_EXTERN_C int mono_wasm_get_debug_level (void);
 //JS functions imported that we use
 #ifdef DISABLE_THREADS
 void mono_wasm_execute_timer (void);
-void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
+void dotnet_browser_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
 #endif // DISABLE_THREADS
 
 void mono_wasm_print_stack_trace (void);

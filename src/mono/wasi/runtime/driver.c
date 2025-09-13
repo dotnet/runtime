@@ -33,8 +33,8 @@
 #include "driver.h"
 #include "runtime.h"
 
-int mono_wasm_register_root (char *start, size_t size, const char *name);
-void mono_wasm_deregister_root (char *addr);
+int dotnet_browser_register_root (char *start, size_t size, const char *name);
+void dotnet_browser_unregister_root (char *addr);
 
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);

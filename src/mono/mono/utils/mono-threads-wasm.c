@@ -326,10 +326,10 @@ GSList *jobs;
 GSList *jobs_ds;
 
 void
-mono_main_thread_schedule_background_job (background_job_cb cb)
+dotnet_browser_main_thread_schedule_background_job (background_job_cb cb)
 {
 	g_assert (cb);
-	THREADS_DEBUG ("mono_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
+	THREADS_DEBUG ("dotnet_browser_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
 	if (!jobs)
 		schedule_background_exec ();
@@ -401,7 +401,7 @@ mono_wasm_ds_exec (void)
 
 extern void mono_wasm_schedule_synchronization_context ();
 
-void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
+void dotnet_browser_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
 {
 	emscripten_dispatch_to_thread_async ((pthread_t) target_thread, EM_FUNC_SIG_V, mono_wasm_schedule_synchronization_context, NULL);
 }

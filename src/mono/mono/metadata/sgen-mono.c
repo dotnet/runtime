@@ -2888,7 +2888,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 void
 sgen_client_schedule_background_job (void (*cb)(void))
 {
-	mono_main_thread_schedule_background_job (cb);
+	dotnet_browser_main_thread_schedule_background_job (cb);
 }
 
 #endif
