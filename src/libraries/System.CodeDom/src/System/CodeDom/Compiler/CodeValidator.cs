@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.IO;
 
 namespace System.CodeDom.Compiler
@@ -12,7 +13,9 @@ namespace System.CodeDom.Compiler
     // You can pass in any node in the tree that is a subclass of CodeObject.
     internal sealed class CodeValidator
     {
-        private static readonly char[] s_newLineChars = new char[] { '\r', '\n', '\u2028', '\u2029', '\u0085' };
+        private static readonly SearchValues<char> s_newLineChars = SearchValues.Create("\r\n\u2028\u2029\u0085");
+        private static readonly SearchValues<char> s_invalidPathChars = SearchValues.Create(Path.GetInvalidPathChars());
+
         private CodeTypeDeclaration _currentClass;
 
         internal void ValidateIdentifiers(CodeObject e)
@@ -941,13 +944,13 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateChecksumPragma(CodeChecksumPragma e)
         {
-            if (e.FileName.IndexOfAny(Path.GetInvalidPathChars()) != -1)
+            if (e.FileName.AsSpan().ContainsAny(s_invalidPathChars))
                 throw new ArgumentException(SR.Format(SR.InvalidPathCharsInChecksum, e.FileName), nameof(e));
         }
 
         private static void ValidateRegionDirective(CodeRegionDirective e)
         {
-            if (e.RegionText.IndexOfAny(s_newLineChars) != -1)
+            if (e.RegionText.AsSpan().ContainsAny(s_newLineChars))
                 throw new ArgumentException(SR.Format(SR.InvalidRegion, e.RegionText), nameof(e));
         }
 
