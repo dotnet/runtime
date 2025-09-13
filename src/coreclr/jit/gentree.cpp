@@ -6934,6 +6934,11 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
         return true;
     }
 
+    if (tree->IsCnsIntOrI())
+    {
+        fldSeq = comp->m_fieldSeqStore->Append(fldSeq, tree->AsIntCon()->gtFieldSeq);
+    }
+
     if ((fldSeq != nullptr) && fldSeq->IsStaticField() &&
         comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle()))
     {
