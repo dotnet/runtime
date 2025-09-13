@@ -12,7 +12,6 @@ import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler } from "./profiler";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { init_polyfills_async } from "./polyfills";
 import { strings_init, stringToUTF8Ptr, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
@@ -58,7 +57,6 @@ export async function configureRuntimeStartup (module: DotnetModuleInternal): Pr
     }
     loaderHelpers.out = module.print;
     loaderHelpers.err = module.printErr;
-    await init_polyfills_async();
 }
 
 // we are making emscripten startup async friendly
@@ -191,7 +189,6 @@ async function preInitWorkerAsync () {
         runtimeHelpers.beforePreInit.promise_control.resolve();
         mono_wasm_pre_init_essential(true);
         await ensureUsedWasmFeatures();
-        await init_polyfills_async();
         if (loaderHelpers.config.exitOnUnhandledError) {
             loaderHelpers.installUnhandledErrorHandler();
         }

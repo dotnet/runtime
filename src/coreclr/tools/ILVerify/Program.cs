@@ -194,7 +194,7 @@ namespace ILVerify
 
         private static void PrintMethod(EcmaMethod method)
         {
-            Write(method.Name);
+            Write(method.GetName());
             Write("(");
             try
             {

@@ -30,7 +30,7 @@ namespace ILCompiler.Dataflow
         {
             Debug.Assert(fromMethod.IsTypicalMethodDefinition);
             Debug.Assert(toMethod.IsTypicalMethodDefinition);
-            Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.Name));
+            Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.GetName()));
             TrackCallInternal(fromMethod, toMethod);
         }
 
@@ -38,7 +38,7 @@ namespace ILCompiler.Dataflow
         {
             Debug.Assert(fromMethod.IsTypicalMethodDefinition);
             Debug.Assert(toType.IsTypeDefinition);
-            Debug.Assert(CompilerGeneratedNames.IsStateMachineType(toType.Name));
+            Debug.Assert(CompilerGeneratedNames.IsStateMachineType(toType.GetName()));
             TrackCallInternal(fromMethod, toType);
         }
 
@@ -46,8 +46,8 @@ namespace ILCompiler.Dataflow
         {
             Debug.Assert(fromType.IsTypeDefinition);
             Debug.Assert(toMethod.IsTypicalMethodDefinition);
-            Debug.Assert(CompilerGeneratedNames.IsStateMachineType(fromType.Name));
-            Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.Name));
+            Debug.Assert(CompilerGeneratedNames.IsStateMachineType(fromType.GetName()));
+            Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.GetName()));
             TrackCallInternal(fromType, toMethod);
         }
 

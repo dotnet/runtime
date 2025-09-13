@@ -517,9 +517,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             static string? GetMemberName(TypeSystemEntity? entity) => entity switch
             {
-                DefType defType => defType.Name,
-                MethodDesc method => method.Name,
-                FieldDesc field => field.Name,
+                DefType defType => defType.GetName(),
+                MethodDesc method => method.GetName(),
+                FieldDesc field => field.GetName(),
                 _ => null
             };
 
