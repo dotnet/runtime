@@ -489,12 +489,7 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
 #ifdef DEBUG
     TArray<char, MallocAllocator> m_methodName;
-#ifdef TARGET_WASM
-    // enable verbose output on wasm temporarily
-    bool m_verbose = true;
-#else
     bool m_verbose = false;
-#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;

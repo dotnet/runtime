@@ -8,5 +8,12 @@ Module.preRun = () => {
     for (const [key, value] of Object.entries(process.env)) {
         ENV[key] = value;
     }
-    ENV["CWD"] = process.cwd();
+    const cwd = process.cwd().replaceAll('\\', '/').replace(/[a-zA-Z]:[\\/]/, '/'); // unix vs windows, remove drive letter
+    const app = process.argv[2] || "HelloWorld.dll";
+    const dlls = fs.readdirSync(cwd).filter(f => f.endsWith('.dll'));
+    const tpa = dlls.map(f => `${cwd}/${f}`).join(':');
+    ENV["CWD"] = cwd;
+    ENV["APP"] = `${cwd}/${app}`;
+    ENV["TRUSTED_PLATFORM_ASSEMBLIES"] = tpa;
 };
+

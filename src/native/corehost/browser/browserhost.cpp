@@ -104,23 +104,27 @@ const void* pinvoke_override(const char* library_name, const char* entry_point_n
 static int run()
 {
     pal::string_t exe_path;
+    pal::string_t tpa;
+    pal::string_t app;
     pal::getenv("CWD", &exe_path);
+    pal::getenv("TRUSTED_PLATFORM_ASSEMBLIES", &tpa);
+    pal::getenv("APP", &app);
     const pal::string_t app_domain_name = "corehost";
 
     // Set base initialization properties.
     std::vector<const char*> propertyKeys;
     std::vector<const char*> propertyValues;
 
-    propertyKeys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
-    propertyValues.push_back("./HelloWorld.dll:./System.Private.CoreLib.dll:./System.Runtime.dll:./System.Console.dll:./System.Threading.dll:./System.Runtime.InteropServices.dll");
-    propertyKeys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
+    propertyKeys.push_back(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
+    propertyValues.push_back(tpa.c_str());
+    propertyKeys.push_back(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES);
     propertyValues.push_back(exe_path.c_str());
 
 
     host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
+    host_contract.get_runtime_property = &get_runtime_property;
     host_contract.bundle_probe = &bundle_probe;
     host_contract.pinvoke_override = &pinvoke_override;
-    host_contract.get_runtime_property = &get_runtime_property;
     host_contract.external_assembly_probe = &external_assembly_probe;
 
     pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
@@ -132,7 +136,7 @@ static int run()
     coreclr_set_error_writer(log_error_info);
 
     printf("BEGIN: call coreclr_initialize\n");
-    int retval = coreclr_initialize(exe_path.c_str(), app_domain_name.c_str(), 1, propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
+    int retval = coreclr_initialize(exe_path.c_str(), app_domain_name.c_str(), (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
     printf("END: call coreclr_initialize\n");
 
     if (retval < 0)
@@ -147,7 +151,7 @@ static int run()
 
     int exit_code;
     printf("BEGIN: call coreclr_execute_assembly\n");
-    retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, "HelloWorld.dll", (uint32_t*)&exit_code);
+    retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, app.c_str(), (uint32_t*)&exit_code);
     printf("END: call coreclr_execute_assembly\n");
 
     if (retval < 0)

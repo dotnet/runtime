@@ -37,7 +37,7 @@ static int run()
     wasm_add_pinvoke_override();
 
     printf("BEGIN: call coreclr_initialize\n");
-    int retval = coreclr_initialize(exe_path, app_domain_name, 1, propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
+    int retval = coreclr_initialize(exe_path, app_domain_name, (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
     printf("END: call coreclr_initialize\n");
 
     if (retval < 0)
