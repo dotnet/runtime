@@ -24,9 +24,11 @@ target_link_options(corewasmrun PRIVATE
   -sSTACK_SIZE=5MB
   -sFORCE_FILESYSTEM=1
   ${_WASM_PRELOAD_FILE}
+  --js-library ${CLR_SRC_NATIVE_DIR}/libs/Browser.Native/browser.native.js
   -Wl,-error-limit=0)
 target_link_libraries(corewasmrun PRIVATE
   coreclr_static
+  Browser.Native-Static
   System.Native-Static
   System.Native.TimeZoneData)
 

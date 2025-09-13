@@ -108,6 +108,10 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
+if (CLR_CMAKE_TARGET_BROWSER)
+    add_subdirectory(Browser.Native)
+endif ()
+
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 

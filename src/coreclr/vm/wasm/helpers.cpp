@@ -379,12 +379,6 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
-{
-    PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
-    return -1;
-}
-
 void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);

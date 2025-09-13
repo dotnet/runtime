@@ -39,7 +39,7 @@ else(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun PRIVATE -rdynamic)
 
     # Android implements pthread natively
-    if(NOT CLR_CMAKE_TARGET_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         target_link_libraries(corerun PRIVATE pthread)
     endif()
     # Static linking
@@ -52,6 +52,7 @@ else(CLR_CMAKE_HOST_WIN32)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
+            target_link_libraries(corerun PRIVATE Browser.Native-Static)
             target_link_options(corerun PRIVATE
                 -fwasm-exceptions
                 -sEXPORTED_RUNTIME_METHODS=FS
@@ -61,6 +62,7 @@ else(CLR_CMAKE_HOST_WIN32)
                 -lnoderawfs.js
                 -lnodefs.js
                 --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js
+                --js-library ${CLR_SRC_NATIVE_DIR}/libs/Browser.Native/browser.native.js
                 -Wl,-error-limit=0)
         endif()
     endif()

@@ -12,6 +12,10 @@ include_directories(${RUNTIME_DIR})
 # needed when zLib compression is used
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
+if(CLR_CMAKE_TARGET_BROWSER)
+    include_directories(${CLR_SRC_NATIVE_DIR}/libs/Browser.Native)
+endif(CLR_CMAKE_TARGET_BROWSER)
+
 
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
