@@ -456,7 +456,7 @@ EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
 extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
 #else
-extern void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
+extern void dotnet_browser_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
 G_END_DECLS
 
@@ -621,7 +621,7 @@ mono_wasm_execute_timer (void)
 }
 
 void
-mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
+dotnet_browser_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
 	// NOTE: here the `timerHandler` callback is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
 
@@ -637,10 +637,10 @@ mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
 #ifdef DISABLE_THREADS
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", dotnet_browser_main_thread_schedule_timer);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", dotnet_browser_main_thread_schedule_background_job);
 #else
-	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", mono_target_thread_schedule_synchronization_context);
+	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", dotnet_browser_target_thread_schedule_synchronization_context);
 #endif /* DISABLE_THREADS */
 #endif /* HOST_BROWSER */
 }
