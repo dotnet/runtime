@@ -128,6 +128,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(HighTemporalResolution))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
