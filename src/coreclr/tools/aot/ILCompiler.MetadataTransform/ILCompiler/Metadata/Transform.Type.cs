@@ -195,7 +195,7 @@ namespace ILCompiler.Metadata
 
             parentReferenceRecord = new TypeReference
             {
-                TypeName = HandleString(containingType.Name),
+                TypeName = HandleString(containingType.GetName()),
             };
 
             if (containingType.ContainingType != null)
@@ -204,7 +204,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.Namespace);
+                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.GetNamespace());
             }
 
             return parentReferenceRecord;
@@ -220,10 +220,10 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.Namespace);
+                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.GetNamespace());
             }
 
-            record.TypeName = HandleString(entity.Name);
+            record.TypeName = HandleString(entity.GetName());
         }
 
         private void InitializeTypeDef(Cts.MetadataType entity, TypeDefinition record)
@@ -238,12 +238,12 @@ namespace ILCompiler.Metadata
                 enclosingType.NestedTypes.Add(record);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.Namespace);
+                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.GetNamespace());
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
-                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.Namespace);
+                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.GetNamespace());
                 record.NamespaceDefinition = namespaceDefinition;
 
                 if (entity.IsModuleType)
@@ -257,7 +257,7 @@ namespace ILCompiler.Metadata
                 }
             }
 
-            record.Name = HandleString(entity.Name);
+            record.Name = HandleString(entity.GetName());
 
             Cts.ClassLayoutMetadata layoutMetadata = entity.GetClassLayout();
             record.Size = checked((uint)layoutMetadata.Size);

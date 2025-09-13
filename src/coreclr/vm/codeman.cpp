@@ -3398,6 +3398,10 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
                 _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
                 GCX_COOP();
                 declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
+                if (declaringType.IsNull())
+                {
+                    COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+                }
             }
 
             _ASSERTE(!declaringType.IsNull());
