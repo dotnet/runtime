@@ -1157,6 +1157,20 @@ class DebuggerController
 
     static int GetTotalMethodEnter() {LIMITED_METHOD_CONTRACT;  return g_cTotalMethodEnter; }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    static bool GetProcessingDetach() {LIMITED_METHOD_CONTRACT;  return g_fProcessingDetach; }
+    static void SetProcessingDetach(bool fProcessingDetach) {LIMITED_METHOD_CONTRACT;  g_fProcessingDetach = fProcessingDetach; }
+    static int GetActiveDispatchedExceptions() {LIMITED_METHOD_CONTRACT;  return g_cActiveDispatchedExceptions; }
+    static int IncrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedIncrement(&g_cActiveDispatchedExceptions); }
+    static int DecrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedDecrement(&g_cActiveDispatchedExceptions); }
+    static int GetDispatchedFlares() {LIMITED_METHOD_DAC_CONTRACT;  return g_cDispatchedFlares; }
+    static int IncrementDispatchedFlares() { LIMITED_METHOD_DAC_CONTRACT;  return (int)InterlockedIncrement(&g_cDispatchedFlares); }
+    static void ResetDispatchedFlares() { LIMITED_METHOD_DAC_CONTRACT;  g_cDispatchedFlares = 0; }
+    static bool CanSendDetach(bool fDecrementActiveExceptions = false);
+#else
+    static int GetDispatchedFlares() {LIMITED_METHOD_DAC_CONTRACT;  return 0; }
+#endif
+
 #if defined(_DEBUG)
     // Debug check that we only have 1 thread-starter per thread.
     // Check this new one against all existing ones.
@@ -1210,6 +1224,23 @@ private:
     // Write is protected by both Debugger + Controller Lock
     static int g_cTotalMethodEnter;
 
+    // When detach is initiated, the runtime is synchronized.
+    // However, it is possible that DC::DNE is still processing debugger events.
+    // This is a running count of exceptions running inside of DC::DNE
+    // Detach will use this to get an accurate count of
+    // SetThreadContextNeeded flares after continuing.
+    static Volatile<DWORD> g_cActiveDispatchedExceptions;
+
+    // During detach we need to wait until all flares have been processed
+    // before allowing the detach to proceed. Once this flag is set
+    // true, we will start tracking the number of dispatched flares.
+    static Volatile<BOOL> g_fProcessingDetach;
+
+    // This is the number of flares that have been sent 
+    // It will be sent to the right side to ensure that it stays attached
+    // long enough to process any SetThreadContextNeeded events
+    static Volatile<DWORD> g_cDispatchedFlares;
+
     static bool BindPatch(DebuggerControllerPatch *patch,
                           MethodDesc *fd,
                           CORDB_ADDRESS_TYPE *startAddr);
@@ -1223,7 +1254,7 @@ private:
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
-    virtual void DebuggerDetachClean();
+    virtual bool DebuggerDetachClean();
 
   public:
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
@@ -1525,7 +1556,7 @@ class DebuggerPatchSkip : public DebuggerController
 
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
-    void DebuggerDetachClean();
+    bool DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump

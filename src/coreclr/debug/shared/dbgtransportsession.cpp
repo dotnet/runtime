@@ -2440,6 +2440,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->CustomNotificationData);
         break;
 
+    case DB_IPCE_DETACH_FROM_PROCESS_RESULT:
+        cbAdditionalSize = sizeof(pEvent->DetachFromProcessResult);
+        break;
+
     default:
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
         _ASSERTE(!"Unknown debugger event type");

@@ -963,7 +963,10 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_writableMetadataUpdateMode(LegacyCompatPolicy)
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     ,
-    m_dwOutOfProcessStepping(0)
+    m_dwOutOfProcessStepping(0),
+    m_detachSetThreadContextNeededEvent(NULL),
+    m_fDetachInProgress(FALSE),
+    m_cProcessedFlares(0)
 #endif
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
@@ -1338,6 +1341,8 @@ void CordbProcess::Neuter()
     }
     m_unmanagedThreadHashTable.RemoveAll();
     m_dwOutOfProcessStepping = 0;
+    m_cProcessedFlares = 0;
+    m_fDetachInProgress = FALSE;
 #endif
 
     NeuterChildren();
@@ -1458,6 +1463,14 @@ void CordbProcess::CloseIPCHandles()
         CloseHandle(m_stopWaitEvent);
         m_stopWaitEvent = NULL;
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (m_detachSetThreadContextNeededEvent != NULL)
+    {
+        CloseHandle(m_detachSetThreadContextNeededEvent);
+        m_detachSetThreadContextNeededEvent = NULL;
+    }
+#endif
 }
 
 
@@ -1774,6 +1787,14 @@ HRESULT CordbProcess::Init()
         {
             ThrowLastError();
         }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        m_detachSetThreadContextNeededEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+        if (m_detachSetThreadContextNeededEvent == NULL)
+        {
+            ThrowLastError();
+        }
+#endif
 
         if (m_pShim != NULL)
         {
@@ -3104,13 +3125,67 @@ void CordbProcess::DetachShim()
             this->NeuterChildren();
         }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        class DetachInProgressGuard
+        {
+            CordbProcess * m_pProcess;
+        public:
+            DetachInProgressGuard(CordbProcess * pProcess) 
+            {
+                m_pProcess = pProcess;
+                pProcess->m_fDetachInProgress = TRUE;
+            }
+            ~DetachInProgressGuard() 
+            {
+                m_pProcess->m_fDetachInProgress = FALSE;
+            }
+        };
+        DetachInProgressGuard detachInProgressGuard(this);
+#endif
+
         // Go ahead and detach from the entire process now. This is like sending a "Continue".
         DebuggerIPCEvent * pIPCEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
         InitIPCEvent(pIPCEvent, DB_IPCE_DETACH_FROM_PROCESS, true, VMPTR_AppDomain::NullPtr());
 
         hr = m_cordb->SendIPCEvent(this, pIPCEvent, CorDBIPC_BUFFER_SIZE);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (hr == CORDBG_E_PROCESS_TERMINATED)
+        {
+            // The detach implementation in the left-side process is deferred until all breakpoints and single-step exceptions have been processed
+            // This increases the chances that the process has exited while we are still waiting for the detach to complete
+            // In the case where this occurs, CordbWin32EventThread should still get the exit process notification and so we will proceed from here
+            // as if detach had succeeded.
+            m_detached = true;
+            m_stopCount = 0;
+            return;
+        }
+#endif
         hr = WORST_HR(hr, pIPCEvent->hr);
         IfFailThrow(hr);
+
+        _ASSERTE(pIPCEvent->type == DB_IPCE_DETACH_FROM_PROCESS_RESULT);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        // block detach until all flares have been processed
+
+        _ASSERTE((int)pIPCEvent->DetachFromProcessResult.cDispatchedFlares >= 0);
+        DWORD cExpectedNumFlares = pIPCEvent->DetachFromProcessResult.cDispatchedFlares;
+
+        #define DETACH_WAIT_TIMEOUT 20000 // milliseconds
+
+        // Wait for the detach to complete
+        while (m_cProcessedFlares < cExpectedNumFlares)
+        {
+            // Wait for the flares to be processed
+            DWORD dwResult = WaitForSingleObject(m_detachSetThreadContextNeededEvent, DETACH_WAIT_TIMEOUT);
+            if (dwResult != WAIT_OBJECT_0)
+            {
+                // timeout
+                CONSISTENCY_CHECK_MSGF(false, ("WaitForSingleObject failed for m_detachSetThreadContextNeededEvent: %d", dwResult));
+                ThrowHR(CORDBG_E_TIMEOUT);
+            }
+        }
+#endif
     }
     else
     {
@@ -11115,6 +11190,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
+    DetachNotifications detachNotifications(this);
+
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     // Before we can read the left side context information, we must:
     // 1. obtain the thread handle
@@ -11343,6 +11420,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
 bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress)
 {
+    DetachNotifications detachNotifications(this);
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
     _ASSERTE(curThread != NULL);
     if (curThread != NULL &&

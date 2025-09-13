@@ -10189,6 +10189,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_ATTACHING:
         // In V3, Attach is atomic, meaning that there isn't a complex handshake back and forth between LS + RS.
         // the RS sends a single-attaching event and attaches at the first response from the Left-side.
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        DebuggerController::ResetDispatchedFlares();  // reset flare count on debugger attach
+        LOG((LF_CORDB, LL_INFO10000, "D:HIPCE: Resetting dispatched flares on debugger attach\n"));
+#endif
         StartCanaryThread();
 
         if (m_jitAttachInProgress)
@@ -10813,9 +10817,22 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
         }
 
-        // Reply to the detach message before we release any Runtime threads. This ensures that the debugger will get
-        // the detach reply before the process exits if the main thread is near exiting.
-        m_pRCThread->SendIPCReply();
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (DebuggerController::CanSendDetach())
+#endif
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::HIPCE Sending detach IPC response before continue\n"));
+            // Reply to the detach message before we release any Runtime threads. This ensures that the debugger will get
+            // the detach reply before the process exits if the main thread is near exiting.
+            DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
+            InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
+
+            pResult->DetachFromProcessResult.cDispatchedFlares = DebuggerController::GetDispatchedFlares();
+
+            m_pRCThread->SendIPCReply();
+        }
+
+        LOG((LF_CORDB, LL_INFO10000, "D::HIPCE Detach - resuming process\n"));
 
         if (this->m_isBlockedOnGarbageCollectionEvent)
         {
@@ -16244,6 +16261,23 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 {
     return m_fOutOfProcessSetContextEnabled;
 }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void Debugger::SendDetachComplete()
+{
+    int cDispatchedFlares = DebuggerController::GetDispatchedFlares();
+    int cActiveDispatchedExceptions = DebuggerController::GetActiveDispatchedExceptions();
+
+    LOG((LF_CORDB, LL_INFO1000000, "D::SendDetachComplete Sending detach complete event g_cDispatchedFlares=%d g_cActiveDispatchedExceptions=%d\n", cDispatchedFlares, cActiveDispatchedExceptions));
+
+    DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
+    InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
+
+    pResult->DetachFromProcessResult.cDispatchedFlares = cDispatchedFlares;
+
+    m_pRCThread->SendIPCReply();
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #else
 void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
