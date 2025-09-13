@@ -32,6 +32,13 @@ int64_t minipal_lowres_ticks()
     return GetTickCount64();
 }
 
+uint64_t minipal_get_system_time()
+{
+    FILETIME filetime;
+    GetSystemTimeAsFileTime(&filetime);
+    return ((uint64_t)filetime.dwHighDateTime << 32) | filetime.dwLowDateTime;
+}
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -68,6 +75,7 @@ inline static void YieldProcessor(void)
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
 #define tccSecondsToMilliSeconds 1000           // 10^3
 #define tccMilliSecondsToNanoSeconds 1000000    // 10^6
+#define tccSecondsTo100NS 10000000              // 10^7
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
@@ -123,6 +131,18 @@ int64_t minipal_lowres_ticks(void)
 #else
     #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
+}
+
+uint64_t minipal_get_system_time(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+    {
+        assert(!"clock_gettime(CLOCK_REALTIME) failed");
+    }
+
+    const uint64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+    return ((uint64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
 }
 
 #endif // HOST_WINDOWS
