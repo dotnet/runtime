@@ -384,6 +384,7 @@ private:
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
+    GenTree* TryLowerMorphedModIfNotCsed(GenTree* node);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
