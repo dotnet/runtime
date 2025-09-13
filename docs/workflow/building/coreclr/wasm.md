@@ -111,19 +111,32 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
                 "outputCapture": "std",
                 "program": "corerun.js",
                 "env": {
-                    "PAL_DBG_CHANNELS": "+all.all",
                     "CORE_ROOT":"/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
                 },
                 "args": [
                     "/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
                 ],
                 "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/"
+            },
+            {
+                "name": "browserhost",
+                "type": "node",
+                "request": "launch",
+                "skipFiles": [
+                    "<node_internals>/**"
+                ],
+                "args": [
+                    "HelloWorld.dll"
+                ],
+                "outputCapture": "std",
+                "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/corehost",
+                "program": "dotnet.native.js",
             }
         ]
     }
    ```
 
-Note that path in the `args` and `CORE_ROOT` need to be **absolute path** on your host file system in **unix format** (even on Windows).
+Note that for `corerun` path in the `args` and `CORE_ROOT` need to be **absolute path** on your host file system in **unix format** (even on Windows).
 
 3. **Copy managed DLLs** `System.Runtime.dll` and `helloworld.dll` into `artifacts/bin/coreclr/browser.wasm.Debug/IL/`.
 
