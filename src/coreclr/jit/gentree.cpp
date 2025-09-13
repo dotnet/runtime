@@ -6933,7 +6933,7 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
         return true;
     }
 
-    // Any NonGC object or NonGC object + any offset.
+    // Any NonGC object
     if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         return true;
@@ -6941,7 +6941,7 @@ bool GenTree::IsNotGcDef(Compiler* comp) const
 
     if (tree->IsCnsIntOrI())
     {
-        FieldSeq* fldSeq = AsIntCon()->gtFieldSeq;
+        FieldSeq* fldSeq = tree->AsIntCon()->gtFieldSeq;
         if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
         {
             return comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle());
