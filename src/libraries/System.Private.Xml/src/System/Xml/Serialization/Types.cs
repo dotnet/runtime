@@ -531,6 +531,16 @@ namespace System.Xml.Serialization
             AddNonXsdPrimitive(typeof(TimeSpan), "TimeSpan", UrtTypes.Namespace, "TimeSpan", new XmlQualifiedName("duration", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
             AddNonXsdPrimitive(typeof(DateTimeOffset), "dateTimeOffset", UrtTypes.Namespace, "DateTimeOffset", new XmlQualifiedName("dateTime", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
 
+            // DateOnly is more restrictive than xsd:date. It must be >= 0001-01-01 and cannot include timezone information.
+            // However, to make our pattern simpler, we can note that xsd:date requires 4-digit years, and 2-digit months and days.
+            XmlSchemaPatternFacet dateOnlyPattern = new XmlSchemaPatternFacet() { Value = @"([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" };
+            AddNonXsdPrimitive(typeof(DateOnly), "dateOnly", UrtTypes.Namespace, "DateOnly", new XmlQualifiedName("date", XmlSchema.Namespace), new XmlSchemaFacet[] { dateOnlyPattern }, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
+
+            // TimeOnly is more restrictive than xsd:time. It cannot include timezone information, cannot include leap seconds (:60) and is limited to 7 decimals of fractional seconds.
+            // However, to make our pattern simpler, we can note that xsd:time requires 2-digit hours, minutes and seconds.
+            XmlSchemaPatternFacet timeOnlyPattern = new XmlSchemaPatternFacet() { Value = @"([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?" };
+            AddNonXsdPrimitive(typeof(TimeOnly), "timeOnly", UrtTypes.Namespace, "TimeOnly", new XmlQualifiedName("time", XmlSchema.Namespace), new XmlSchemaFacet[] { timeOnlyPattern }, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
+
             AddSoapEncodedTypes(Soap.Encoding);
 
             // Unsuppoted types that we map to string, if in the future we decide

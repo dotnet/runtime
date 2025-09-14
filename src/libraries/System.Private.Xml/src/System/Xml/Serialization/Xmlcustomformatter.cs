@@ -80,6 +80,11 @@ namespace System.Xml.Serialization
             return XmlConvert.ToString(value, "yyyy-MM-dd");
         }
 
+        internal static string FromDateOnly(DateOnly value)
+        {
+            return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        }
+
         internal static string FromTime(DateTime value)
         {
             if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
@@ -90,6 +95,11 @@ namespace System.Xml.Serialization
             {
                 return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffzzzzzz");
             }
+        }
+
+        internal static string FromTimeOnly(TimeOnly value)
+        {
+            return value.ToString("HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
         }
 
         internal static string FromDateTime(DateTime value)
@@ -114,6 +124,16 @@ namespace System.Xml.Serialization
 
             // for mode DateTimeSerializationMode.Roundtrip and DateTimeSerializationMode.Default
             return XmlConvert.TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
+        }
+
+        internal static bool TryFormatDateOnly(DateOnly value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, "yyyy-MM-dd");
+        }
+
+        internal static bool TryFormatTimeOnly(TimeOnly value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, "HH:mm:ss.FFFFFFF");
         }
 
         internal static string FromChar(char value)
@@ -393,6 +413,11 @@ namespace System.Xml.Serialization
             return ToDateTime(value, s_allDateFormats);
         }
 
+        internal static DateOnly ToDateOnly(string value)
+        {
+            return DateOnly.ParseExact(value, "yyyy-MM-dd", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
         internal static DateTime ToTime(string value)
         {
             if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization)
@@ -403,6 +428,23 @@ namespace System.Xml.Serialization
             {
                 return DateTime.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite | DateTimeStyles.NoCurrentDateDefault);
             }
+        }
+
+        internal static TimeOnly ToTimeOnly(string value)
+        {
+            if (LocalAppContextSwitches.AllowXsdTimeToTimeOnlyWithOffsetLoss)
+            {
+                // Previous workarounds for lack of TimeOnly support included serializing a TimeOnly with 'DataType="time"'.
+                // xsd:time potentially contains an offset designation though, which TimeOnly does not. This would be considered
+                // a loss of data. If the intent was never to include that data, this switch allows for TimeOnly to receive
+                // data from an xsd:time, even if it contains offset information.
+                // Use DateTimeOffset so the time of day is not adjusted for the offset.
+                var dto = DateTimeOffset.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+            }
+
+            // Strictly parse the expected TimeOnly format.
+            return TimeOnly.ParseExact(value, "HH:mm:ss.FFFFFFF", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
         internal static char ToChar(string value)
