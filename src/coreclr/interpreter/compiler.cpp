@@ -1173,10 +1173,11 @@ public:
         }
 
         INTERP_DUMP(
-            "%s %s%sgcslot %u at %u\n",
+            "%s %s%s%sgcslot %u at %u\n",
             allocateNewSlot ? "Allocated" : "Reused",
             (flags & GC_SLOT_UNTRACKED) ? "global " : "",
             (flags & GC_SLOT_INTERIOR) ? "interior " : "",
+            (flags & GC_SLOT_PINNED) ? "pinned " : "",
             *pSlot,
             offsetBytes
         );
