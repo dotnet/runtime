@@ -760,22 +760,23 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
-        TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
+        TypeHandle potentialMatch;
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
             {
-                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
-                    break;
+                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
+                {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                    return potentialMatch;
+                }
             }
-            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
-                break;
-        }
-        if (IsLoaded(potentialMatch))
-        {
-            _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
-            return potentialMatch;
+            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
+            {
+                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                return potentialMatch;
+            }
         }
         return new TypeHandle(TargetPointer.Null);
     }
