@@ -1121,6 +1121,32 @@ public class TypeWithDateTimeOffsetProperties
     public DateTimeOffset? NullableDTOWithDefault { get; set; }
 }
 
+public class TypeWithDateAndTimeOnlyProperties
+{
+    public const string DefaultDateString = "1969-07-20";
+    public const string DefaultTimeString = "20:17:40";
+
+    public DateOnly Today { get; set; }
+    [XmlElement(ElementName = "MyDate")]
+    public DateOnly CustomDate { get; set; }
+    [DefaultValue(typeof(DateOnly), DefaultDateString)]
+    public DateOnly DefaultDate { get; set; } = DateOnly.Parse(DefaultDateString);
+    public DateOnly? NullableDate { get; set; }
+    public DateOnly? NullableDateWithValue { get; set; }
+    [DefaultValue(typeof(DateOnly?), DefaultDateString)]
+    public DateOnly? NullableDefaultDate { get; set; }
+
+    public TimeOnly Now { get; set; }
+    [XmlElement(ElementName = "MyTime")]
+    public TimeOnly CustomTime { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly DefaultTime { get; set; } = TimeOnly.Parse(DefaultTimeString);
+    public TimeOnly? NullableTime { get; set; }
+    public TimeOnly? NullableTimeWithValue { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly? NullableDefaultTime { get; set; }
+}
+
 public class TypeWithTimeSpanProperty
 {
     public TimeSpan TimeSpanProperty;
