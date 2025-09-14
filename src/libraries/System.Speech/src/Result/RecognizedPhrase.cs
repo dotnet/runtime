@@ -203,7 +203,7 @@ namespace System.Speech.Recognition
                             {
                                 element.SREngineConfidence = 1.0f;
                             }
-                            wordList.Add(new RecognizedWordUnit(displayForm, element.SREngineConfidence, pronunciation, lexicalForm, displayAttributes, new TimeSpan(element.ulAudioTimeOffset * TimeSpan.TicksPerMillisecond / 10000), new TimeSpan(element.ulAudioSizeTime * TimeSpan.TicksPerMillisecond / 10000)));
+                            wordList.Add(new RecognizedWordUnit(displayForm, element.SREngineConfidence, pronunciation, lexicalForm!, displayAttributes, new TimeSpan(element.ulAudioTimeOffset * TimeSpan.TicksPerMillisecond / 10000), new TimeSpan(element.ulAudioSizeTime * TimeSpan.TicksPerMillisecond / 10000)));
                         }
                         _words = new ReadOnlyCollection<RecognizedWordUnit>(wordList);
                     }

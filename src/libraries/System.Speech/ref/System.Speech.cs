@@ -11,7 +11,6 @@
 //------------------------------------------------------------------------------
 
 #nullable enable
-#pragma warning disable CS8777 // Parameter must have a non-null value when exiting.
 
 namespace System.Speech.AudioFormat
 {
@@ -242,7 +241,7 @@ namespace System.Speech.Recognition
     }
     public partial class RecognizedWordUnit
     {
-        public RecognizedWordUnit(string? text, float confidence, string? pronunciation, [System.Diagnostics.CodeAnalysis.NotNullAttribute] string? lexicalForm, System.Speech.Recognition.DisplayAttributes displayAttributes, System.TimeSpan audioPosition, System.TimeSpan audioDuration) { }
+        public RecognizedWordUnit(string? text, float confidence, string? pronunciation,string lexicalForm, System.Speech.Recognition.DisplayAttributes displayAttributes, System.TimeSpan audioPosition, System.TimeSpan audioDuration) { }
         public float Confidence { get { throw null; } }
         public System.Speech.Recognition.DisplayAttributes DisplayAttributes { get { throw null; } }
         public string LexicalForm { get { throw null; } }
