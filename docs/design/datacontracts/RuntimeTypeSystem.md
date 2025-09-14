@@ -759,27 +759,43 @@ Contracts used:
 
     }
 
-    public TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    private bool IsLoaded(TypeHandle typeHandle)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return false;
+        if (typeHandle.IsTypeDesc())
+        {
+            uint typeAndFlags = _target.Read<uint>(typeHandle.TypeDescAddress() + /* TypeDesc::TypeAndFlags offset */);
+            return (typeAndFlags & (uint)TypeDescFlags.IsNotFullyLoaded) == 0;
+        }
+
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        uint flags = _target.Read<uint>(methodTable.AuxiliaryData + /* AuxiliaryData::Flags offset */);
+        return (flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0;
+    }
+
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
         if (typeHandle.Address == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {
-            TypeHandle potentialMatch = GetTypeHandle(ptr);
+            potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
             {
                 if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
-                {
-                    return potentialMatch;
-                }
+                    break;
             }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
-            {
-                return potentialMatch;
-            }
+                break;
+        }
+        if (IsLoaded(potentialMatch))
+        {
+            return potentialMatch;
         }
         return new TypeHandle(TargetPointer.Null);
     }
@@ -992,6 +1008,12 @@ And the following enumeration definitions
     {
         Initialized = 0x0001,
         IsInitError = 0x0100,
+        IsNotFullyLoaded = 0x0040,
+    }
+
+    internal enum TypeDescFlags : uint
+    {
+        IsNotFullyLoaded = 0x00001000,
     }
 
 ```

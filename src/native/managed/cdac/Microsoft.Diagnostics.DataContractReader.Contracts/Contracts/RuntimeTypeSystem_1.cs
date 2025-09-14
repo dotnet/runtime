@@ -136,6 +136,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         Initialized = 0x0001,
         IsInitError = 0x0100,
+        IsNotFullyLoaded = 0x0040,
+    }
+
+    internal enum TypeDescFlags : uint
+    {
+        IsNotFullyLoaded = 0x00001000,
     }
 
     internal enum FieldDescFlags1 : uint
@@ -730,6 +736,21 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
+    private bool IsLoaded(TypeHandle typeHandle)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return false;
+        if (typeHandle.IsTypeDesc())
+        {
+            Data.TypeDesc typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
+            return (typeDesc.TypeAndFlags & (uint)TypeDescFlags.IsNotFullyLoaded) == 0; // IsUnloaded
+        }
+
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        Data.MethodTableAuxiliaryData auxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
+    }
+
     TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
     {
         if (typeHandle.Address == TargetPointer.Null)
@@ -739,22 +760,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {
-            TypeHandle potentialMatch = GetTypeHandle(ptr);
+            potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
             {
                 if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments))
-                {
-                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
-                    return potentialMatch;
-                }
+                    break;
             }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch))
-            {
-                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
-                return potentialMatch;
-            }
+                break;
+        }
+        if (IsLoaded(potentialMatch))
+        {
+            _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+            return potentialMatch;
         }
         return new TypeHandle(TargetPointer.Null);
     }
