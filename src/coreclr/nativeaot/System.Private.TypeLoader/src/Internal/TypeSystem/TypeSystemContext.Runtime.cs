@@ -287,7 +287,7 @@ namespace Internal.TypeSystem
                 _typeDefinition = typeDefinition;
                 _instantiation = instantiation;
 
-                _hashCode = instantiation.ComputeGenericInstanceHashCode(typeDefinition.GetHashCode());
+                _hashCode = VersionResilientHashCode.GenericInstanceHashCode(typeDefinition.GetHashCode(), _instantiation);
             }
 
             public bool Equals(GenericTypeInstanceKey other)
@@ -331,7 +331,7 @@ namespace Internal.TypeSystem
                 _owningType = owningType;
                 _methodNameAndSignature = nameAndSignature;
 
-                _hashCode = TypeHashingAlgorithms.ComputeMethodHashCode(owningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(nameAndSignature.GetName()));
+                _hashCode = owningType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(nameAndSignature.Name);
             }
 
             public class RuntimeMethodKeyHashtable : LockFreeReaderHashtable<RuntimeMethodKey, MethodDesc>

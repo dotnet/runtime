@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Internal
@@ -13,13 +14,66 @@ namespace Internal
     /// </summary>
     internal static partial class VersionResilientHashCode
     {
+        public struct HashCodeBuilder
+        {
+            private int _hash1;
+            private int _hash2;
+            private int _numCharactersHashed;
+
+            public HashCodeBuilder(ReadOnlySpan<byte> seed)
+            {
+                _hash1 = 0x6DA3B944;
+                _hash2 = 0;
+                _numCharactersHashed = 0;
+            }
+
+            public void Append(ReadOnlySpan<byte> src)
+            {
+                if (src.Length == 0)
+                    return;
+
+                int startIndex = 0;
+                if ((_numCharactersHashed & 1) == 1)
+                {
+                    _hash2 = unchecked(_hash2 + RotateLeft(_hash2, 5)) ^ (int)unchecked((sbyte)src[0]);
+                    startIndex = 1;
+                }
+
+                for (int i = startIndex; i < src.Length; i += 2)
+                {
+                    _hash1 = unchecked(_hash1 + RotateLeft(_hash1, 5)) ^ (int)unchecked((sbyte)src[i]);
+                    if (i + 1 < src.Length)
+                    {
+                        _hash2 = unchecked(_hash2 + RotateLeft(_hash2, 5)) ^ (int)unchecked((sbyte)src[i + 1]);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                _numCharactersHashed += src.Length;
+            }
+
+            public int ToHashCode()
+            {
+                if (_numCharactersHashed == 0)
+                    return 0;
+
+                int hash1 = unchecked(_hash1 + RotateLeft(_hash1, 8));
+                int hash2 = unchecked(_hash2 + RotateLeft(_hash2, 8));
+
+                return unchecked((int)(hash1 ^ hash2));
+            }
+        }
+
         /// <summary>
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L14">ComputeNameHashCode</a>
         /// </summary>
-        /// <param name="name">Name string to hash</param>
-        public static int NameHashCode(string name)
+        /// <param name="src">Name string to hash</param>
+        public static int NameHashCode(ReadOnlySpan<byte> src)
         {
-            if (string.IsNullOrEmpty(name))
+            if (src.Length == 0)
             {
                 return 0;
             }
@@ -27,8 +81,6 @@ namespace Internal
             int hash1 = 0x6DA3B944;
             int hash2 = 0;
 
-            // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
-            byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
                 hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ (int)unchecked((sbyte)src[i]);
@@ -51,15 +103,17 @@ namespace Internal
         /// <summary>
         /// Calculate hash code for a namespace - name combination.
         /// CoreCLR 2-parameter <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L41">ComputeNameHashCode</a>
-        /// DIFFERENT FROM NATIVEAOT: NativeAOT hashes the full name as one string ("namespace.name"),
-        /// as the full name is already available. In CoreCLR we normally only have separate
-        /// strings for namespace and name, thus we hash them separately.
         /// </summary>
         /// <param name="namespacePart">Namespace name</param>
         /// <param name="namePart">Type name within the namespace</param>
-        public static int NameHashCode(string namespacePart, string namePart)
+        public static int NameHashCode(ReadOnlySpan<byte> namespacePart, ReadOnlySpan<byte> namePart)
         {
-            return NameHashCode(namespacePart) ^ NameHashCode(namePart);
+            return NameHashCode(NameHashCode(namespacePart), NameHashCode(namePart));
+        }
+
+        public static int NameHashCode(int namespaceHashCode, int nameHashCode)
+        {
+            return namespaceHashCode ^ nameHashCode;
         }
 
         /// <summary>
@@ -67,7 +121,7 @@ namespace Internal
         /// </summary>
         /// <param name="enclosingTypeHashcode">Hash code of the enclosing type</param>
         /// <param name="nestedTypeNameHash">Hash code of the nested type name</param>
-        private static int NestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
+        public static int NestedTypeHashCode(int enclosingTypeHashcode, int nestedTypeNameHash)
         {
             return unchecked(enclosingTypeHashcode + RotateLeft(enclosingTypeHashcode, 11)) ^ nestedTypeNameHash;
         }
@@ -77,14 +131,12 @@ namespace Internal
         /// </summary>
         /// <param name="elementTypeHashcode">Hash code representing the array element type</param>
         /// <param name="rank">Array rank</param>
-        private static int ArrayTypeHashCode(int elementTypeHashcode, int rank)
+        public static int ArrayTypeHashCode(int elementTypeHashcode, int rank)
         {
-            // DIFFERENT FROM NATIVEAOT: This is much simplified compared to NativeAOT, to avoid converting rank to string.
-            // For single-dimensinal array, the result is identical to NativeAOT.
             int hashCode = unchecked((int)0xd5313556 + rank);
             if (rank == 1)
             {
-                Debug.Assert(hashCode == NameHashCode("System.Array`1"));
+                Debug.Assert(hashCode == NameHashCode("System.Array`1"u8));
             }
             hashCode = unchecked(hashCode + RotateLeft(hashCode, 13)) ^ elementTypeHashcode;
             return unchecked(hashCode + RotateLeft(hashCode, 15));
@@ -94,7 +146,7 @@ namespace Internal
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L65">ComputePointerTypeHashCode</a>
         /// </summary>
         /// <param name="pointeeTypeHashcode">Hash code of the pointee type</param>
-        private static int PointerTypeHashCode(int pointeeTypeHashcode)
+        public static int PointerTypeHashCode(int pointeeTypeHashcode)
         {
             return unchecked(pointeeTypeHashcode + RotateLeft(pointeeTypeHashcode, 5)) ^ 0x12D0;
         }
@@ -103,7 +155,7 @@ namespace Internal
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L72">ComputeByrefTypeHashCode</a>
         /// </summary>
         /// <param name="parameterTypeHashcode">Hash code representing the parameter type</param>
-        private static int ByrefTypeHashCode(int parameterTypeHashcode)
+        public static int ByrefTypeHashCode(int parameterTypeHashcode)
         {
             return unchecked(parameterTypeHashcode + RotateLeft(parameterTypeHashcode, 7)) ^ 0x4C85;
         }
@@ -151,4 +203,15 @@ namespace Internal
             return hash;
         }
     }
+}
+
+namespace System.Numerics
+{
+#if !NET
+    internal static class BitOperations
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
+    }
+#endif
 }
