@@ -9,6 +9,10 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
+
+#nullable enable
+#pragma warning disable CS8777 // Parameter must have a non-null value when exiting.
+
 namespace System.Speech.AudioFormat
 {
     public enum AudioBitsPerSample
