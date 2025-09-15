@@ -285,6 +285,7 @@ namespace System.ComponentModel
     {
         protected CustomTypeDescriptor() { }
         protected CustomTypeDescriptor(System.ComponentModel.ICustomTypeDescriptor? parent) { }
+        public virtual bool? RequireRegisteredTypes { get { throw null; } }
         public virtual System.ComponentModel.AttributeCollection GetAttributes() { throw null; }
         public virtual string? GetClassName() { throw null; }
         public virtual string? GetComponentName() { throw null; }
@@ -298,16 +299,15 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.")]
         public virtual object? GetEditor(System.Type editorBaseType) { throw null; }
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents() { throw null; }
-        public virtual System.ComponentModel.EventDescriptorCollection GetEventsFromRegisteredType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[]? attributes) { throw null; }
+        public virtual System.ComponentModel.EventDescriptorCollection GetEventsFromRegisteredType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties() { throw null; }
-        public virtual System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes) { throw null; }
+        public virtual System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType() { throw null; }
         public virtual object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
-        public virtual bool? RequireRegisteredTypes { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class DataObjectAttribute : System.Attribute
@@ -583,6 +583,7 @@ namespace System.ComponentModel
     }
     public partial interface ICustomTypeDescriptor
     {
+        bool? RequireRegisteredTypes { get { throw null; } }
         System.ComponentModel.AttributeCollection GetAttributes();
         string? GetClassName();
         string? GetComponentName();
@@ -604,7 +605,6 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes);
         System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType() { throw null; }
-        bool? RequireRegisteredTypes => throw null!;
         object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd);
     }
     public partial interface IDataErrorInfo
@@ -1046,7 +1046,7 @@ namespace System.ComponentModel
         public System.ComponentModel.TypeConverter UnderlyingTypeConverter { get { throw null; } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? destinationType) { throw null; }
-        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object? CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
@@ -1268,9 +1268,9 @@ namespace System.ComponentModel
     }
     public static partial class SyntaxCheck
     {
-        public static bool CheckMachineName(string value) { throw null; }
-        public static bool CheckPath(string value) { throw null; }
-        public static bool CheckRootedPath(string value) { throw null; }
+        public static bool CheckMachineName([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value) { throw null; }
+        public static bool CheckPath([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value) { throw null; }
+        public static bool CheckRootedPath([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value) { throw null; }
     }
     public partial class TimeOnlyConverter : System.ComponentModel.TypeConverter
     {
@@ -1394,7 +1394,6 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
-        public virtual void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] T>() { }
         public virtual bool? RequireRegisteredTypes { get { throw null; } }
         public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
@@ -1420,12 +1419,13 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance) { throw null; }
         public virtual bool IsRegisteredType(System.Type type) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
+        public virtual void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] T>() { }
     }
     public sealed partial class TypeDescriptor
     {
         internal TypeDescriptor() { }
-        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler {
             [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
             get { throw null; }
@@ -1447,7 +1447,6 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types specified in table may be trimmed, or have their static constructors trimmed.")]
         public static void AddEditorTable(System.Type editorBaseType, System.Collections.Hashtable table) { }
-        public static void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]T> () { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1545,8 +1544,8 @@ namespace System.ComponentModel
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type componentType, System.Attribute[]? attributes) { throw null; }
-        public static System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType(System.Type componentType) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType(object component) { throw null; }
+        public static System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType(System.Type componentType) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1561,6 +1560,7 @@ namespace System.ComponentModel
         public static void Refresh(System.Reflection.Assembly assembly) { }
         public static void Refresh(System.Reflection.Module module) { }
         public static void Refresh(System.Type type) { }
+        public static void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] T>() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
