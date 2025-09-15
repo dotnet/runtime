@@ -11,5 +11,6 @@ namespace ILCompiler.ObjectWriter
         GenerateDebugInfo = 0x01,
         ControlFlowGuard = 0x02,
         UseDwarf5 = 0x4,
+        GenerateUnwindInfo = 0x8,
     }
 }

@@ -1056,5 +1056,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
+
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        {
+            isHidden = false;
+            return null;
+        }
     }
 }

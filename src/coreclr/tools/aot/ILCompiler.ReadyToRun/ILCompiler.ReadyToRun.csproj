@@ -75,6 +75,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
@@ -137,6 +138,22 @@
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" Link="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiNative.cs" Link="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWriter.cs" Link="Compiler\ObjectWriter\ObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWritingOptions.cs" Link="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\MachNative.cs" Link="Compiler\ObjectWriter\MachNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\MachObjectWriter.cs" Link="Compiler\ObjectWriter\MachObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfNative.cs" Link="Compiler\ObjectWriter\ElfNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfObjectWriter.cs" Link="Compiler\ObjectWriter\ElfObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\UnixObjectWriter.cs" Link="Compiler\ObjectWriter\UnixObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\CoffObjectWriter.cs" Link="Compiler\ObjectWriter\CoffObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\PEObjectWriter.cs" Link="Compiler\ObjectWriter\PEObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\PETargetExtensions.cs" Link="Compiler\ObjectWriter\PETargetExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionData.cs" Link="Compiler\ObjectWriter\SectionData.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />

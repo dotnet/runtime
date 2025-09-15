@@ -10,13 +10,12 @@ using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
-using Internal.TypeSystem.TypesDebugInfo;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using static ILCompiler.DependencyAnalysis.RelocType;
 
 namespace ILCompiler.ObjectWriter
 {
-    public abstract class ObjectWriter
+    public abstract partial class ObjectWriter
     {
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
@@ -38,9 +37,6 @@ namespace ILCompiler.ObjectWriter
 
         // Symbol table
         private readonly Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
-
-        // Debugging
-        private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
         private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options)
         {
@@ -127,8 +123,7 @@ namespace ILCompiler.ObjectWriter
             if (node is not ISymbolNode)
                 return false;
 
-            // These intentionally clash with one another, but are merged with linker directives so should not be COMDAT folded
-            if (node is ModulesSectionNode)
+            if (node is IUniqueSymbolNode)
                 return false;
 
             return true;
@@ -266,43 +261,13 @@ namespace ILCompiler.ObjectWriter
             return symbolName;
         }
 
-        private protected abstract void EmitUnwindInfo(
-            SectionWriter sectionWriter,
-            INodeWithCodeInfo nodeWithCodeInfo,
-            string currentSymbolName);
-
-        private protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
-        {
-            uint typeIndex;
-            try
-            {
-                if (isStateMachineMoveNextMethod && debugVar.DebugVarInfo.VarNumber == 0)
-                {
-                    typeIndex = _userDefinedTypeDescriptor.GetStateMachineThisVariableTypeIndex(debugVar.Type);
-                    // FIXME
-                    // varName = "locals";
-                }
-                else
-                {
-                    typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
-                }
-            }
-            catch (TypeSystemException)
-            {
-                typeIndex = 0; // T_NOTYPE
-                // FIXME
-                // Debug.Fail();
-            }
-            return typeIndex;
-        }
-
         private protected virtual void EmitSectionsAndLayout()
         {
         }
 
         private protected abstract void EmitObjectFile(string objectFilePath);
 
-        private protected abstract void CreateEhSections();
+        partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
         private SortedSet<string> GetUndefinedSymbols()
         {
@@ -318,24 +283,6 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-        private protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
-
-        private protected abstract void EmitDebugFunctionInfo(
-            uint methodTypeIndex,
-            string methodName,
-            SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints);
-
-        private protected virtual void EmitDebugThunkInfo(
-            string methodName,
-            SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode)
-        {
-        }
-
-        private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
-
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
@@ -350,12 +297,9 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Create sections for exception handling
-            CreateEhSections();
-
-            // Debugging
-            if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
+            if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
             {
-                _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(CreateDebugInfoBuilder(), _nodeFactory);
+                PrepareForUnwindInfo();
             }
 
             ProgressReporter progressReporter = default;
@@ -385,12 +329,15 @@ namespace ILCompiler.ObjectWriter
                     continue;
 
                 ISymbolNode symbolNode = node as ISymbolNode;
+
+#if !READYTORUN
                 ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
                 if (deduplicatedSymbolNode != symbolNode)
                 {
                     dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
                     continue;
                 }
+#endif
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
@@ -464,9 +411,9 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 // Emit unwinding frames and LSDA
-                if (node is INodeWithCodeInfo nodeWithCodeInfo)
+                if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
                 {
-                    EmitUnwindInfo(sectionWriter, nodeWithCodeInfo, currentSymbolName);
+                    EmitUnwindInfoForNode(node, currentSymbolName, sectionWriter);
                 }
 
                 // Write the data. Note that this has to be done last as not to advance
@@ -478,7 +425,11 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
+#if READYTORUN
+                    ISymbolNode relocTarget = reloc.Target;
+#else
                     ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
+#endif
 
                     string relocSymbolName = GetMangledName(relocTarget);
 
@@ -490,13 +441,9 @@ namespace ILCompiler.ObjectWriter
                         relocSymbolName,
                         relocTarget.Offset);
 
-                    if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternFunctionSymbolNode)
+                    if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard))
                     {
-                        // For now consider all method symbols address taken.
-                        // We could restrict this in the future to those that are referenced from
-                        // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
-                        EmitReferencedMethod(relocSymbolName);
+                        HandleControlFlowForRelocation(relocTarget, relocSymbolName);
                     }
                 }
             }
@@ -506,56 +453,7 @@ namespace ILCompiler.ObjectWriter
 
             if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
             {
-                if (logger.IsVerbose)
-                    logger.LogMessage($"Emitting debug information");
-
-                foreach (DependencyNode depNode in nodes)
-                {
-                    ObjectNode node = depNode as ObjectNode;
-                    if (node is null || node.ShouldSkipEmittingObjectNode(_nodeFactory))
-                    {
-                        continue;
-                    }
-
-                    ISymbolNode symbolNode = node as ISymbolNode;
-                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
-                    if (deduplicatedSymbolNode != symbolNode)
-                    {
-                        continue;
-                    }
-
-                    // Ensure any allocated MethodTables have debug info
-                    if (node is ConstructedEETypeNode methodTable)
-                    {
-                        _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
-                    }
-
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
-                    {
-                        string methodName = GetMangledName(symbolDefinitionNode);
-                        if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
-                        {
-                            if (node is IMethodNode methodNode)
-                            {
-                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
-                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
-                            }
-                            else
-                            {
-                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
-                            }
-                        }
-                    }
-                }
-
-                // Ensure all fields associated with generated static bases have debug info
-                foreach (MetadataType typeWithStaticBase in _nodeFactory.MetadataManager.GetTypesWithStaticBases())
-                {
-                    _userDefinedTypeDescriptor.GetTypeIndex(typeWithStaticBase, needsCompleteType: true);
-                }
-
-                EmitDebugSections(_definedSymbols);
+                EmitDebugInfo(nodes, logger);
             }
 
             EmitSymbolTable(_definedSymbols, GetUndefinedSymbols());
@@ -569,6 +467,12 @@ namespace ILCompiler.ObjectWriter
 
             EmitObjectFile(objectFilePath);
         }
+
+        partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, string relocSymbolName);
+
+        partial void PrepareForUnwindInfo();
+
+        partial void EmitUnwindInfoForNode(ObjectNode node, string currentSymbolName, SectionWriter sectionWriter);
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {

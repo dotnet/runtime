@@ -73,6 +73,13 @@ namespace ILCompiler.DependencyAnalysis
         new int Offset { get; }
     }
 
+    /// <summary>
+    /// Represents a symbol that should not be shared with another symbol during writing of the object file.
+    /// </summary>
+    public interface IUniqueSymbolNode : ISymbolNode
+    {
+    }
+
     public static class ISymbolNodeExtensions
     {
         [ThreadStatic]

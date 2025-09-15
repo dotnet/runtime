@@ -293,6 +293,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
@@ -325,27 +326,9 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\Register.cs" Link="Compiler\DependencyAnalysis\Target_X86\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X86\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" Link="Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfCie.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfFde.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfFde.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfFileName.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfFileName.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfInfo.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfInfo.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfInfoWriter.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfInfoWriter.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfLineProgramTableWriter.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfLineProgramTableWriter.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfLineSequenceWriter.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfLineSequenceWriter.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfNative.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfNative.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeView\CodeViewFileTableBuilder.cs" Link="Compiler\ObjectWriter\CodeView\CodeViewFileTableBuilder.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeView\CodeViewNative.cs" Link="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" Link="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" Link="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" Link="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiNative.cs" Link="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" Link="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWriter.cs" Link="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWritingOptions.cs" Link="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\MachNative.cs" Link="Compiler\ObjectWriter\MachNative.cs" />
@@ -540,7 +523,6 @@
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GVMDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
@@ -641,6 +623,29 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewFileTableBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFde.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFileName.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfInfo.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfInfoWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineProgramTableWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineSequenceWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.Aot.cs" />
+    <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.Aot.cs" />
+    <Compile Include="Compiler\ObjectWriter\ObjectWriter.Aot.cs" />
+    <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.Aot.cs" />
+    <Compile Include="Compiler\ObjectWriter\MachObjectWriter.Aot.cs" />
     <Compile Include="Compiler\TypeMapMetadata.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
