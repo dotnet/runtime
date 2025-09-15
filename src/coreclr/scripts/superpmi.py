@@ -2213,9 +2213,9 @@ class SuperPMIReplayAsmDiffs:
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
 
                 if self.coreclr_args.details:
-                  details_info_file = self.coreclr_args.details
+                    details_info_file = self.coreclr_args.details
                 else:
-                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags = [
                     "-a",  # Asm diffs
@@ -3092,9 +3092,9 @@ class SuperPMIReplayThroughputDiff:
                 logging.info("Running throughput diff of %s", mch_file)
 
                 if self.coreclr_args.details:
-                  details_info_file = self.coreclr_args.details
+                    details_info_file = self.coreclr_args.details
                 else:
-                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
