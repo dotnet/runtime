@@ -12,8 +12,9 @@ void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
     PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
 
-EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT)
+EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
 {
+    MethodTable* pMT = (MethodTable*)typeHnd_;
     Object* obj = RhpGcAlloc(pMT, 0, 0, nullptr);
     if (obj == NULL)
     {
