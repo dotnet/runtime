@@ -996,7 +996,7 @@ mono_string_builder_to_utf16_impl (MonoStringBuilderHandle sb, MonoError *error)
 			MONO_HANDLE_GET (chunkChars, chunk, chunkChars);
 			const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 			g_assert (chunkOffset >= 0);
-			g_assertf ((chunkOffset + chunkLength) >= chunkLength, "integer overflow");
+			g_assertf (chunkOffset >= -chunkLength, "integer overflow");
 			g_assertf (GINT_TO_UINT(chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
 			memcpy (str + chunkOffset, MONO_HANDLE_RAW (chunkChars)->vector, chunkLength * sizeof (gunichar2));
 		}
