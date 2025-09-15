@@ -452,10 +452,7 @@ namespace System.Xml
                     bSetResolver = true;
 
                 XmlDocumentType? dtd = this.DocumentType;
-                if (dtd != null)
-                {
-                    dtd.DtdSchemaInfo = null;
-                }
+                dtd?.DtdSchemaInfo = null;
             }
         }
         internal override bool IsValidChildType(XmlNodeType type)

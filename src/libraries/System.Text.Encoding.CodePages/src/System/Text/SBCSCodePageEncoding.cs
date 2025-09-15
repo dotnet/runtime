@@ -811,8 +811,7 @@ namespace System.Text
                 }
 
                 // bytes & chars used are the same
-                if (decoder != null)
-                    decoder.m_bytesUsed = (int)(bytes - byteStart);
+                decoder?.m_bytesUsed = (int)(bytes - byteStart);
                 return (int)(chars - charStart);
             }
 
@@ -879,8 +878,7 @@ namespace System.Text
             }
 
             // Might have had decoder fallback stuff.
-            if (decoder != null)
-                decoder.m_bytesUsed = (int)(bytes - byteStart);
+            decoder?.m_bytesUsed = (int)(bytes - byteStart);
 
             // Expect Empty fallback buffer for GetChars
             Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,

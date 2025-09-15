@@ -6757,10 +6757,7 @@ namespace System.Data
             }
             ReadXmlSerializableInternal(reader);
 
-            if (textReader != null)
-            {
-                textReader.Normalized = fNormalization;
-            }
+            textReader?.Normalized = fNormalization;
         }
 
         [RequiresUnreferencedCode("DataTable.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]

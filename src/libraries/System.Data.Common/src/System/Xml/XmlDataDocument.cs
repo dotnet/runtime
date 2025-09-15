@@ -1469,8 +1469,7 @@ namespace System.Xml
                 {
                     //make sure that if rowElement has Attribute xsi:nil, its value is false
                     XmlAttribute? attr = rowElement.GetAttributeNode(XSI_NIL);
-                    if (attr != null)
-                        attr.Value = Keywords.FALSE;
+                    attr?.Value = Keywords.FALSE;
                 }
                 ReplaceInitialChildText(rowElement, col.ConvertObjectToXml(value));
                 goto lblDoNestedRelationSync;
@@ -1539,8 +1538,7 @@ namespace System.Xml
                                 ReplaceInitialChildText(e, col.ConvertObjectToXml(value));
                                 //make sure that if the Element has Attribute xsi:nil, its value is false
                                 XmlAttribute? attr = e.GetAttributeNode(XSI_NIL);
-                                if (attr != null)
-                                    attr.Value = Keywords.FALSE;
+                                attr?.Value = Keywords.FALSE;
                                 // no need to look any further.
                                 goto lblDoNestedRelationSync;
                             }
