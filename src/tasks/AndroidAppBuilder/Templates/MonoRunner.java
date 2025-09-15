@@ -91,6 +91,7 @@ public class MonoRunner extends Instrumentation
 
         // set environment variables
         setEnv("HOME", filesDir);
+        setEnv("ASSETS_DIR", filesDir);
         setEnv("TMPDIR", cacheDir);
         setEnv("TEST_RESULTS_DIR", testResultsDir);
 

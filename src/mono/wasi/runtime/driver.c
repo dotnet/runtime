@@ -41,9 +41,6 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 char *mono_method_get_full_name (MonoMethod *method);
-#ifndef INVARIANT_TIMEZONE
-extern void mono_register_timezones_bundle (void);
-#endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
 extern void mono_register_runtimeconfig_bin (void);
@@ -265,11 +262,6 @@ mono_wasm_load_runtime (int debug_level)
 	load_runtimeconfig();
 	monovm_initialize (2, appctx_keys, appctx_values);
 
-#ifndef INVARIANT_TIMEZONE
-	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
-	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
-		mono_register_timezones_bundle ();
-#endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 	mono_register_assemblies_bundle ();
 #endif

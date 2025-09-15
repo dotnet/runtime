@@ -562,6 +562,8 @@ namespace System
 
             static bool TryCompatParsing(ReadOnlySpan<TChar> guidString, ref GuidResult result)
             {
+                guidString = guidString.Slice(0, 36);
+
                 if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
                     TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
                 {
