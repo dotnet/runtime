@@ -195,7 +195,7 @@ class ComCallMethodDesc;
 #endif // FEATURE_COMINTEROP
 
 // Note: the value (-1) is used to generate the largest possible pointer value: this keeps frame addresses
-// increasing upward. Because we want to ensure that we don't accidentally change this, we have a C_ASSERT
+// increasing upward. Because we want to ensure that we don't accidentally change this, we have a static_assert
 // in stackwalk.cpp. Since it requires constant values as args, we need to define FRAME_TOP in two steps.
 // First we define FRAME_TOP_VALUE which we'll use when we do the compile-time check, then we'll define
 // FRAME_TOP in terms of FRAME_TOP_VALUE. Defining FRAME_TOP as a PTR_Frame means we don't have to type cast
@@ -592,7 +592,7 @@ protected:
 
 #ifndef DACCESS_COMPILE
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
-    static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
+    static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
 #endif // !TARGET_X86 || TARGET_UNIX
 #endif // DACCESS_COMPILE
 
@@ -2210,6 +2210,17 @@ public:
         return PTR_MethodDesc(*PTR_TADDR(addr));
     }
 
+#ifndef DACCESS_COMPILE
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+    void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
+#endif // !TARGET_X86 || TARGET_UNIX
+#endif // DACCESS_COMPILE
+
+#ifdef FEATURE_INTERPRETER
+    // Check if the InlinedCallFrame is in the interpreter code
+    BOOL IsInInterpreter();
+#endif
+
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
     // m_Datum contains PInvokeMethodDesc ptr or
@@ -2496,6 +2507,18 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+    void SetInterpExecMethodSP(TADDR sp)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_SP = sp;
+    }
+
+    TADDR GetInterpExecMethodSP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_SP;
+    }
+
     void SetIsFaulting(bool isFaulting)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2512,6 +2535,7 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
+    TADDR m_SP;
 };
 
 #endif // FEATURE_INTERPRETER

@@ -2877,7 +2877,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     if (requestInfo.IsDynamicDomain())
     {
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
-        static_assert_no_msg(CODE_SIZE_ALIGN >= sizeof(void*));
+        static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
     // Scope the lock
@@ -3358,6 +3358,67 @@ PTR_EXCEPTION_CLAUSE_TOKEN EECodeGenManager::GetNextEHClause(EH_CLAUSE_ENUMERATO
 }
 
 #ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_INTERPRETER
+TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
+                                         CrawlFrame *pCf)
+{
+    // We don't want to use a runtime contract here since this codepath is used during
+    // the processing of a hard SO. Contracts use a significant amount of stack
+    // which we can't afford for those cases.
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+
+    TypeHandle thResolved = EECodeGenManager::ResolveEHClause(pEHClause, pCf);
+
+    if (thResolved.IsSharedByGenericInstantiations())
+    {
+        _ASSERTE(!HasCachedTypeHandle(pEHClause));
+
+        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(pCf->GetRegisterSet(), pCf->GetCodeInfo());
+        _ASSERTE(SafeToReportGenericParamContext(pCf));
+        if (SafeToReportGenericParamContext(pCf))
+        {
+            MethodDesc *pMD = pCf->GetFunction();
+            TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
+
+            // Handle the case where the method is a static shared generic method and we need to keep the type
+            // of the generic parameters alive
+            if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
+            {
+                pMD = dac_cast<PTR_MethodDesc>(pCf->GetParamTypeArg());
+                declaringType = (TypeHandle)pMD->GetMethodTable();
+            }
+            else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
+            {
+                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetParamTypeArg());
+            }
+            else
+            {
+                _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
+                GCX_COOP();
+                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
+                if (declaringType.IsNull())
+                {
+                    COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+                }
+            }
+
+            _ASSERTE(!declaringType.IsNull());
+
+            SigTypeContext typeContext(pMD, declaringType);
+            
+            Module* pModule = pMD->GetModule();
+
+            thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
+                                                       ClassLoader::ReturnNullIfNotFound);
+        }
+    }
+
+    return thResolved;
+}
+#endif // FEATURE_INTERPRETER
+
 TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                          CrawlFrame *pCf)
 {
@@ -3541,7 +3602,12 @@ void EECodeGenManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAlloc
             {
                 pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
             }
-
+#ifdef FEATURE_INTERPRETER
+            if (pAllocator->m_pLastUsedInterpreterDynamicCodeHeap == ((void *) pHeapList))
+            {
+                pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+            }
+#endif // FEATURE_INTERPRETER
             break;
         }
     }

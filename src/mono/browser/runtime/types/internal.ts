@@ -128,9 +128,9 @@ export type LoaderHelpers = {
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
     loadedAssemblies: string[],
-    scriptDirectory: string
-    scriptUrl: string
-    modulesUniqueQuery?: string
+    scriptDirectory: string,
+    scriptUrl: string,
+    modulesUniqueQuery?: string,
     preferredIcuAsset?: string | null,
     workerNextNumber: number,
 
@@ -219,8 +219,6 @@ export type RuntimeHelpers = {
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
-    beforePreInit: PromiseAndController<void>,
-    afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<void>,
@@ -308,7 +306,6 @@ export type GlobalObjects = {
 };
 export type EmscriptenReplacements = {
     fetch: any,
-    require: any,
     modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
@@ -441,7 +438,6 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;

@@ -1161,8 +1161,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             // These intrinsics have variants that take op2 in a simd register and read a unique shift per element
             intrinsic = static_cast<NamedIntrinsic>(intrinsic + 1);
 
-            static_assert_no_msg(NI_AVX512_RotateLeftVariable == (NI_AVX512_RotateLeft + 1));
-            static_assert_no_msg(NI_AVX512_RotateRightVariable == (NI_AVX512_RotateRight + 1));
+            static_assert(NI_AVX512_RotateLeftVariable == (NI_AVX512_RotateLeft + 1));
+            static_assert(NI_AVX512_RotateRightVariable == (NI_AVX512_RotateRight + 1));
 
             impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
@@ -2270,9 +2270,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 // Check to see if it is possible to emulate the integer division
-                if (!(simdBaseType == TYP_INT &&
-                      ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512)))))
+                if (varTypeIsLong(simdBaseType))
                 {
                     break;
                 }

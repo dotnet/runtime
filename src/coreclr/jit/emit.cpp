@@ -1711,13 +1711,13 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #endif
 
     // Make sure that idAddrUnion is just a union of various pointer sized things
-    C_ASSERT(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
-    C_ASSERT(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
 #ifdef TARGET_XARCH
-    C_ASSERT(sizeof(emitter::emitAddrMode) <= sizeof(void*));
+    static_assert(sizeof(emitter::emitAddrMode) <= sizeof(void*));
 #endif // TARGET_XARCH
-    C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
-    C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
+    static_assert(sizeof(emitLclVarAddr) <= sizeof(void*));
+    static_assert(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
     emitInsCount++;
 
