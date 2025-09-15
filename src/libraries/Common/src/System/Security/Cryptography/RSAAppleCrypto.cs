@@ -397,13 +397,7 @@ namespace System.Security.Cryptography
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
 
-                // Apple does not support custom salt length for the PSS padding
-                if (padding.Mode == RSASignaturePaddingMode.Pss &&
-                    (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength &&
-                    padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
-                {
-                    throw new CryptographicException(SR.Cryptography_CustomPssSaltLengthNotSupported);
-                }
+                ValidatePaddingParameters(hashAlgorithm, padding);
 
                 ThrowIfDisposed();
 
@@ -475,6 +469,17 @@ namespace System.Security.Cryptography
                 }
             }
 
+            private static void ValidatePaddingParameters(HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+            {
+                // Apple does not support custom salt length for the PSS padding
+                if (padding.Mode == RSASignaturePaddingMode.Pss &&
+                    (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength &&
+                    padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
+                {
+                    throw new CryptographicException(SR.Cryptography_CustomPssSaltLengthNotSupported);
+                }
+            }
+
             public override bool VerifyHash(
                 byte[] hash,
                 byte[] signature,
@@ -491,6 +496,8 @@ namespace System.Security.Cryptography
             {
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
+
+                ValidatePaddingParameters(hashAlgorithm, padding);
 
                 ThrowIfDisposed();
 
