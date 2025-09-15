@@ -4,7 +4,7 @@
 
 #include <fcall.h>
 
-EXTERN_C Object* RhpGcAlloc(CORINFO_CLASS_HANDLE typeHnd_, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock);
 
 void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
@@ -12,12 +12,12 @@ void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
     PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
 
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
+EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT)
 {
-    Object* obj = RhpGcAlloc(typeHnd_, 0, 0, nullptr);
+    Object* obj = RhpGcAlloc(pMT, 0, 0, nullptr);
     if (obj == NULL)
     {
-        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
+        RhExceptionHandling_FailedAllocation(pMT, false /* isOverflow */);
         return nullptr;
     }
 
