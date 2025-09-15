@@ -292,7 +292,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         Assert.Equal(2, chain.ChainElements.Count);
                     }
-                    else if (PlatformDetection.IsApplePlatform)
+                    else if (PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                     }
