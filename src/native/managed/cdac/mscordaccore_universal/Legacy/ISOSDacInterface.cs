@@ -663,7 +663,7 @@ internal struct DacpReJitData2
         kUnknown = 0,
         kRequested = 1,
         kActive = 2,
-       kReverted = 3,
+        kReverted = 3,
     };
 
     public uint rejitID;

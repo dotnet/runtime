@@ -910,10 +910,6 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
-CDAC_TYPE_BEGIN(AsyncMethodData)
-CDAC_TYPE_FIELD(AsyncMethodData, /*uint32*/, Kind, offsetof(AsyncMethodData, kind))
-CDAC_TYPE_END(AsyncMethodData)
-
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

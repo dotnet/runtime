@@ -3154,7 +3154,6 @@ internal sealed unsafe partial class SOSDacImpl
         {
             if (methodDesc == 0 || pRejitData == null || rejitId < 0)
                 throw new ArgumentException();
-            pRejitData->rejitID = (uint)rejitId;
             ICodeVersions cv = _target.Contracts.CodeVersions;
             IReJIT rejitContract = _target.Contracts.ReJIT;
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
@@ -3166,6 +3165,7 @@ internal sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             else
             {
+                pRejitData->rejitID = (uint)rejitId;
                 switch (rejitContract.GetRejitState(ilCodeVersion))
                 {
                     case RejitState.Requested:

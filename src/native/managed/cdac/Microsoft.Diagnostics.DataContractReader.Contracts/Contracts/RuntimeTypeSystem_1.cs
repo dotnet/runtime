@@ -155,8 +155,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         private bool HasFlags(MethodDescFlags_1.MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
         private bool HasFlags(MethodDescFlags_1.MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
-        internal MethodDescFlags_1.MethodDescFlags Flags => (MethodDescFlags_1.MethodDescFlags)_desc.Flags;
-
         internal bool HasFlags(MethodDescChunkFlags flags) => (_chunk.FlagsAndTokenRange & (ushort)flags) != 0;
 
         public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsEligibleForTieredCompilation);

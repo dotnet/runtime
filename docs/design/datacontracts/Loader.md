@@ -106,6 +106,7 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 | `Module` | `MethodDefToDescMap` | Mapping table |
 | `Module` | `TypeDefToMethodTableMap` | Mapping table |
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
+| `Module` | `DynamicILBlobTable` | pointer to the table of dynamic IL |
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
@@ -148,6 +149,7 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `Buckets` | Pointer to hash table buckets |
 | `InstMethodHashTable` | `Count` | Count of elements in the hash table |
 | `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
+| `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
 | `DynamicILBlobTable` | `Table` | Pointer to IL blob table |
 | `DynamicILBlobTable` | `TableSize` | Number of entries in table |
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
