@@ -43,7 +43,7 @@ void SystemJSInterop_ReleaseCSOwnedObjectPost (pthread_t target_tid, int js_hand
 void SystemJSInterop_ResolveOrRejectPromisePost (pthread_t target_tid, void *args);
 void SystemJSInterop_CancelPromisePost (pthread_t target_tid, int task_holder_gc_handle);
 
-extern void SystemJSInterop_InstallWebWorkerInteropJs (int context_gc_handle);
+extern void SystemJSInterop_InstallWebWorkerInteropJS (int context_gc_handle);
 void SystemJSInterop_InstallWebWorkerInterop (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport, void* pumpHandler);
 extern void SystemJSInterop_UninstallWebWorkerInterop ();
 extern void SystemJSInterop_InvokeJSImportSync (void* signature, void* args);
@@ -256,7 +256,7 @@ void SystemJSInterop_InstallWebWorkerInterop (int context_gc_handle, void* befor
 	before_sync_js_import = beforeSyncJSImport;
 	after_sync_js_import = afterSyncJSImport;
 	synchronization_context_pump_handler = pumpHandler;
-	SystemJSInterop_InstallWebWorkerInteropJs (context_gc_handle);
+	SystemJSInterop_InstallWebWorkerInteropJS (context_gc_handle);
 }
 
 // async

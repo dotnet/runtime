@@ -316,7 +316,7 @@ mono_memory_barrier_process_wide (void)
 #ifdef HOST_BROWSER
 
 G_EXTERN_C
-extern void SystemJS_ScheduleBackgroundJobJs (void);
+extern void SystemJS_ScheduleBackgroundJobJS (void);
 
 // when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
@@ -332,7 +332,7 @@ SystemJS_ScheduleBackgroundJob (background_job_cb cb)
 	THREADS_DEBUG ("SystemJS_ScheduleBackgroundJob: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
 	if (!jobs)
-		SystemJS_ScheduleBackgroundJobJs ();
+		SystemJS_ScheduleBackgroundJobJS ();
 
 	if (!g_slist_find (jobs, (gconstpointer)cb))
 		jobs = g_slist_prepend (jobs, (gpointer)cb);

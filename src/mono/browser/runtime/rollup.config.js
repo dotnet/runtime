@@ -24,7 +24,7 @@ const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : 
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 // because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at with timers.mjs
-const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|SystemJS_ScheduleTimerJs_tick)/;
+const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|SystemJS_ScheduleTimerJS_tick)/;
 const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
 const terserConfig = {
     compress: {

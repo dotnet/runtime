@@ -57,7 +57,7 @@ function mono_background_exec_until_done () {
 }
 
 let lastScheduledBackground: any = undefined;
-export function SystemJS_ScheduleBackgroundJobJs (): void {
+export function SystemJS_ScheduleBackgroundJobJS (): void {
     if (WasmEnableThreads) return;
     if (!lastScheduledBackground) {
         lastScheduledBackground = Module.safeSetTimeout(mono_background_exec_until_done, 0);
@@ -65,16 +65,16 @@ export function SystemJS_ScheduleBackgroundJobJs (): void {
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function SystemJS_ScheduleTimerJs (shortestDueTimeMs: number): void {
+export function SystemJS_ScheduleTimerJS (shortestDueTimeMs: number): void {
     if (WasmEnableThreads) return;
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
     }
-    lastScheduledTimeoutId = Module.safeSetTimeout(SystemJS_ScheduleTimerJs_tick, shortestDueTimeMs);
+    lastScheduledTimeoutId = Module.safeSetTimeout(SystemJS_ScheduleTimerJS_tick, shortestDueTimeMs);
 }
 
-function SystemJS_ScheduleTimerJs_tick () {
+function SystemJS_ScheduleTimerJS_tick () {
     if (WasmEnableThreads) return;
     Module.maybeExit();
     forceThreadMemoryViewRefresh();
