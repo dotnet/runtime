@@ -135,6 +135,28 @@ const int StackOverflowFlag = 0x40000000;
 
 /*++
 Function :
+    RestoreDefaultSignalHandler
+
+    Restores the default signal handler for the specified signal
+
+Parameters :
+    signum - the signal number
+--*/
+void RestoreDefaultSignalHandler(int signum)
+{
+    struct sigaction action;
+    action.sa_handler = SIG_DFL;
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+    if (-1 == sigaction(signum, &action, NULL))
+    {
+        ASSERT("RestoreDefaultSignalHandler: sigaction() call failed with error code %d (%s)\n",
+            errno, strerror(errno));
+    }
+}
+
+/*++
+Function :
     SEHInitializeSignals
 
     Set up signal handlers to catch signals and translate them to exceptions
@@ -1008,6 +1030,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 #endif
 }
 
+#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function :
     signal_ignore_handler
@@ -1022,11 +1045,7 @@ Parameters :
 static void signal_ignore_handler(int code, siginfo_t *siginfo, void *context)
 {
 }
-
-void PAL_IgnoreAbortSignal()
-{
-    handle_signal(SIGABRT, signal_ignore_handler, 0);
-}
+#endif // !HAVE_MACH_EXCEPTIONS
 
 void PAL_IgnoreProfileSignal(int signalNum)
 {
@@ -1046,7 +1065,6 @@ void PAL_IgnoreProfileSignal(int signalNum)
     handle_signal(signalNum, signal_ignore_handler, 0);
 #endif
 }
-
 
 /*++
 Function :

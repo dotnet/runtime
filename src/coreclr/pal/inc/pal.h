@@ -343,11 +343,6 @@ PALAPI
 PAL_IgnoreProfileSignal(int signalNum);
 
 PALIMPORT
-void
-PALAPI
-PAL_IgnoreAbortSignal();
-
-PALIMPORT
 HINSTANCE
 PALAPI
 PAL_RegisterModule(

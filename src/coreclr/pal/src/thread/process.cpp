@@ -2794,7 +2794,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
 #if defined(TARGET_OSX)
     // Make sure the swift runtime doesn't trigger its own backtrace handler on abort
     // See https://github.com/dotnet/runtime/issues/118823
-    PAL_IgnoreAbortSignal();
+    RestoreDefaultSignalHandler(SIGABRT);
 #endif
 
     // Abort the process after waiting for the core dump to complete

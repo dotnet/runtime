@@ -121,6 +121,17 @@ void SEHCleanupSignals(bool isChildProcess);
 
 /*++
 Function :
+    RestoreDefaultSignalHandler
+
+    Restores the default signal handler for the specified signal
+
+Parameters :
+    signum - the signal number
+--*/
+void RestoreDefaultSignalHandler(int signum);
+
+/*++
+Function :
     UnmaskActivationSignal
 
     Unmask the INJECT_ACTIVATION_SIGNAL for the current thread
