@@ -58,10 +58,7 @@ private:
 
     static const int ELEMENT_ALIGN = sizeof(T) - 1;
     static const int N = sizeof(TV) / sizeof(T);
-    static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
-    static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
-    static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
-    static const int32_t SafeInnerUnroll = MaxInnerUnroll > Unroll ? Unroll : MaxInnerUnroll;
+    static const int32_t SafeInnerUnroll = MT::MaxInnerUnroll > Unroll ? Unroll : MT::MaxInnerUnroll;
     static const int32_t SLACK_PER_SIDE_IN_VECTORS = Unroll;
     static const size_t ALIGN = AH::ALIGN;
     static const size_t ALIGN_MASK = ALIGN - 1;
@@ -195,7 +192,7 @@ private:
         }
 
         // Go to insertion sort below this threshold
-        if (length <= SMALL_SORT_THRESHOLD_ELEMENTS) {
+        if (length <= MT::SMALL_SORT_THRESHOLD_ELEMENTS) {
 #ifdef VXSORT_STATS
             vxsort_stats<T>::bump_small_sorts();
             vxsort_stats<T>::record_small_sort_size(length);
@@ -204,6 +201,7 @@ private:
             bitonic<T, M>::sort(left, length);
 #else
             // Default to the scalar version
+            // TODO: For 32bit types this could use NEON instead
             bitonic<T, vector_machine::scalar>::sort(left, length);
 #endif
             return;
@@ -224,10 +222,10 @@ private:
 
         if (MT::supports_packing()) {
             if (MT::template can_pack<Shift>(right_hint - left_hint)) {
-                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::pack(left, length, left_hint);
+                packer<T, TPACK, M, Shift, 2, MT::SMALL_SORT_THRESHOLD_ELEMENTS>::pack(left, length, left_hint);
                 auto packed_sorter = vxsort<TPACK, M, Unroll>();
                 packed_sorter.sort((TPACK *) left, ((TPACK *) left) + length - 1);
-                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::unpack((TPACK *) left, length, left_hint);
+                packer<T, TPACK, M, Shift, 2, MT::SMALL_SORT_THRESHOLD_ELEMENTS>::unpack((TPACK *) left, length, left_hint);
                 return;
             }
         }
@@ -340,7 +338,7 @@ private:
 
     template<int InnerUnroll>
     T* vectorized_partition(T* const left, T* const right, const AH hint) {
-        assert(right - left >= SMALL_SORT_THRESHOLD_ELEMENTS);
+        assert(right - left >= MT::SMALL_SORT_THRESHOLD_ELEMENTS);
         assert((reinterpret_cast<size_t>(left) & ELEMENT_ALIGN) == 0);
         assert((reinterpret_cast<size_t>(right) & ELEMENT_ALIGN) == 0);
 

@@ -31,6 +31,10 @@ class vxsort_machine_traits<int32_t, AVX512> {
     typedef int32_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
+    static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
+    static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
+    static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
+
     static constexpr bool supports_compress_writes() { return true; }
 
     static constexpr bool supports_packing() { return false; }
@@ -88,6 +92,10 @@ class vxsort_machine_traits<int64_t, AVX512> {
     typedef __mmask8 TMASK;
     typedef int32_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
+
+    static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
+    static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
+    static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
 
     static constexpr bool supports_compress_writes() { return true; }
 

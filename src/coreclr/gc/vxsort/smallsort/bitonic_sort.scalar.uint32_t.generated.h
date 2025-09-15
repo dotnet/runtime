@@ -9,42 +9,42 @@
 // the code-generator that generated this source file instead.
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef BITONIC_SORT_SCALAR_UINT64_T_H
-#define BITONIC_SORT_SCALAR_UINT64_T_H
+#ifndef BITONIC_SORT_SCALAR_UINT32_T_H
+#define BITONIC_SORT_SCALAR_UINT32_T_H
 
 #include "bitonic_sort.h"
 
 namespace vxsort {
 namespace smallsort {
 
-struct uint64_t_v
+struct uint32_t_v
 {
- uint64_t a;
- uint64_t b;
+ uint32_t a;
+ uint32_t b;
 };
 
-template<> struct bitonic<uint64_t, scalar> {
+template<> struct bitonic<uint32_t, scalar> {
     static const int N = 2;
-    static constexpr uint64_t MAX = std::numeric_limits<uint64_t>::max();
+    static constexpr uint32_t MAX = std::numeric_limits<uint32_t>::max();
 public:
 
-    static INLINE void sort_01v_ascending(uint64_t_v& d01) {
+    static INLINE void sort_01v_ascending(uint32_t_v& d01) {
         if (d01.a > d01.b) std::swap(d01.a, d01.b);
     }
 
-    static INLINE void sort_01v_merge_ascending(uint64_t_v& d01) {
+    static INLINE void sort_01v_merge_ascending(uint32_t_v& d01) {
         if (d01.a > d01.b) std::swap(d01.a, d01.b);
     }
 
-    static INLINE void sort_01v_descending(uint64_t_v& d01) {
+    static INLINE void sort_01v_descending(uint32_t_v& d01) {
         if (d01.a < d01.b) std::swap(d01.a, d01.b);
     }
 
-    static INLINE void sort_01v_merge_descending(uint64_t_v& d01) {
+    static INLINE void sort_01v_merge_descending(uint32_t_v& d01) {
         if (d01.a < d01.b) std::swap(d01.a, d01.b);
     }
 
-    static INLINE void sort_02v_ascending(uint64_t_v& d01, uint64_t_v& d02) {
+    static INLINE void sort_02v_ascending(uint32_t_v& d01, uint32_t_v& d02) {
         sort_01v_ascending(d01);
         sort_01v_descending(d02);
 
@@ -55,7 +55,7 @@ public:
         sort_01v_merge_ascending(d02);
     }
 
-    static INLINE void sort_02v_descending(uint64_t_v& d01, uint64_t_v& d02) {
+    static INLINE void sort_02v_descending(uint32_t_v& d01, uint32_t_v& d02) {
         sort_01v_descending(d01);
         sort_01v_ascending(d02);
 
@@ -66,7 +66,7 @@ public:
         sort_01v_merge_descending(d02);
     }
 
-    static INLINE void sort_02v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02) {
+    static INLINE void sort_02v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02) {
 
         if (d01.a > d02.a) std::swap(d01.a, d02.a);
         if (d01.b > d02.b) std::swap(d01.b, d02.b);
@@ -75,7 +75,7 @@ public:
         sort_01v_merge_ascending(d02);
     }
 
-    static INLINE void sort_02v_merge_descending(uint64_t_v& d01, uint64_t_v& d02) {
+    static INLINE void sort_02v_merge_descending(uint32_t_v& d01, uint32_t_v& d02) {
 
         if (d01.a > d02.a) std::swap(d01.a, d02.a);
         if (d01.b > d02.b) std::swap(d01.b, d02.b);
@@ -84,7 +84,7 @@ public:
         sort_01v_merge_descending(d02);
     }
 
-    static INLINE void sort_03v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03) {
+    static INLINE void sort_03v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03) {
         sort_02v_ascending(d01, d02);
         sort_01v_descending(d03);
 
@@ -95,7 +95,7 @@ public:
         sort_01v_merge_ascending(d03);
     }
 
-    static INLINE void sort_03v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03) {
+    static INLINE void sort_03v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03) {
         sort_02v_descending(d01, d02);
         sort_01v_ascending(d03);
 
@@ -106,7 +106,7 @@ public:
         sort_01v_merge_descending(d03);
     }
 
-    static INLINE void sort_03v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03) {
+    static INLINE void sort_03v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03) {
 
         if (d01.a > d03.a) std::swap(d01.a, d03.a);
         if (d01.b > d03.b) std::swap(d01.b, d03.b);
@@ -115,7 +115,7 @@ public:
         sort_01v_merge_ascending(d03);
     }
 
-    static INLINE void sort_03v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03) {
+    static INLINE void sort_03v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03) {
 
         if (d01.a > d03.a) std::swap(d01.a, d03.a);
         if (d01.b > d03.b) std::swap(d01.b, d03.b);
@@ -124,7 +124,7 @@ public:
         sort_01v_merge_descending(d03);
     }
 
-    static INLINE void sort_04v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04) {
+    static INLINE void sort_04v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04) {
         sort_02v_ascending(d01, d02);
         sort_02v_descending(d03, d04);
 
@@ -138,7 +138,7 @@ public:
         sort_02v_merge_ascending(d03, d04);
     }
 
-    static INLINE void sort_04v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04) {
+    static INLINE void sort_04v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04) {
         sort_02v_descending(d01, d02);
         sort_02v_ascending(d03, d04);
 
@@ -152,7 +152,7 @@ public:
         sort_02v_merge_descending(d03, d04);
     }
 
-    static INLINE void sort_04v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04) {
+    static INLINE void sort_04v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04) {
 
         if (d01.a > d03.a) std::swap(d01.a, d03.a);
         if (d01.b > d03.b) std::swap(d01.b, d03.b);
@@ -164,7 +164,7 @@ public:
         sort_02v_merge_ascending(d03, d04);
     }
 
-    static INLINE void sort_04v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04) {
+    static INLINE void sort_04v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04) {
 
         if (d01.a > d03.a) std::swap(d01.a, d03.a);
         if (d01.b > d03.b) std::swap(d01.b, d03.b);
@@ -176,7 +176,7 @@ public:
         sort_02v_merge_descending(d03, d04);
     }
 
-    static INLINE void sort_05v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05) {
+    static INLINE void sort_05v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05) {
         sort_04v_ascending(d01, d02, d03, d04);
         sort_01v_descending(d05);
 
@@ -187,7 +187,7 @@ public:
         sort_01v_merge_ascending(d05);
     }
 
-    static INLINE void sort_05v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05) {
+    static INLINE void sort_05v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05) {
         sort_04v_descending(d01, d02, d03, d04);
         sort_01v_ascending(d05);
 
@@ -198,7 +198,7 @@ public:
         sort_01v_merge_descending(d05);
     }
 
-    static INLINE void sort_05v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05) {
+    static INLINE void sort_05v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -207,7 +207,7 @@ public:
         sort_01v_merge_ascending(d05);
     }
 
-    static INLINE void sort_05v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05) {
+    static INLINE void sort_05v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -216,7 +216,7 @@ public:
         sort_01v_merge_descending(d05);
     }
 
-    static INLINE void sort_06v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06) {
+    static INLINE void sort_06v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06) {
         sort_04v_ascending(d01, d02, d03, d04);
         sort_02v_descending(d05, d06);
 
@@ -230,7 +230,7 @@ public:
         sort_02v_merge_ascending(d05, d06);
     }
 
-    static INLINE void sort_06v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06) {
+    static INLINE void sort_06v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06) {
         sort_04v_descending(d01, d02, d03, d04);
         sort_02v_ascending(d05, d06);
 
@@ -244,7 +244,7 @@ public:
         sort_02v_merge_descending(d05, d06);
     }
 
-    static INLINE void sort_06v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06) {
+    static INLINE void sort_06v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -256,7 +256,7 @@ public:
         sort_02v_merge_ascending(d05, d06);
     }
 
-    static INLINE void sort_06v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06) {
+    static INLINE void sort_06v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -268,7 +268,7 @@ public:
         sort_02v_merge_descending(d05, d06);
     }
 
-    static INLINE void sort_07v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07) {
+    static INLINE void sort_07v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07) {
         sort_04v_ascending(d01, d02, d03, d04);
         sort_03v_descending(d05, d06, d07);
 
@@ -285,7 +285,7 @@ public:
         sort_03v_merge_ascending(d05, d06, d07);
     }
 
-    static INLINE void sort_07v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07) {
+    static INLINE void sort_07v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07) {
         sort_04v_descending(d01, d02, d03, d04);
         sort_03v_ascending(d05, d06, d07);
 
@@ -302,7 +302,7 @@ public:
         sort_03v_merge_descending(d05, d06, d07);
     }
 
-    static INLINE void sort_07v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07) {
+    static INLINE void sort_07v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -317,7 +317,7 @@ public:
         sort_03v_merge_ascending(d05, d06, d07);
     }
 
-    static INLINE void sort_07v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07) {
+    static INLINE void sort_07v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -332,7 +332,7 @@ public:
         sort_03v_merge_descending(d05, d06, d07);
     }
 
-    static INLINE void sort_08v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08) {
+    static INLINE void sort_08v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08) {
         sort_04v_ascending(d01, d02, d03, d04);
         sort_04v_descending(d05, d06, d07, d08);
 
@@ -352,7 +352,7 @@ public:
         sort_04v_merge_ascending(d05, d06, d07, d08);
     }
 
-    static INLINE void sort_08v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08) {
+    static INLINE void sort_08v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08) {
         sort_04v_descending(d01, d02, d03, d04);
         sort_04v_ascending(d05, d06, d07, d08);
 
@@ -372,7 +372,7 @@ public:
         sort_04v_merge_descending(d05, d06, d07, d08);
     }
 
-    static INLINE void sort_08v_merge_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08) {
+    static INLINE void sort_08v_merge_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -390,7 +390,7 @@ public:
         sort_04v_merge_ascending(d05, d06, d07, d08);
     }
 
-    static INLINE void sort_08v_merge_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08) {
+    static INLINE void sort_08v_merge_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08) {
 
         if (d01.a > d05.a) std::swap(d01.a, d05.a);
         if (d01.b > d05.b) std::swap(d01.b, d05.b);
@@ -408,7 +408,7 @@ public:
         sort_04v_merge_descending(d05, d06, d07, d08);
     }
 
-    static INLINE void sort_09v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09) {
+    static INLINE void sort_09v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_01v_descending(d09);
 
@@ -419,7 +419,7 @@ public:
         sort_01v_merge_ascending(d09);
     }
 
-    static INLINE void sort_09v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09) {
+    static INLINE void sort_09v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_01v_ascending(d09);
 
@@ -430,7 +430,7 @@ public:
         sort_01v_merge_descending(d09);
     }
 
-    static INLINE void sort_10v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10) {
+    static INLINE void sort_10v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_02v_descending(d09, d10);
 
@@ -444,7 +444,7 @@ public:
         sort_02v_merge_ascending(d09, d10);
     }
 
-    static INLINE void sort_10v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10) {
+    static INLINE void sort_10v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_02v_ascending(d09, d10);
 
@@ -458,7 +458,7 @@ public:
         sort_02v_merge_descending(d09, d10);
     }
 
-    static INLINE void sort_11v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11) {
+    static INLINE void sort_11v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_03v_descending(d09, d10, d11);
 
@@ -475,7 +475,7 @@ public:
         sort_03v_merge_ascending(d09, d10, d11);
     }
 
-    static INLINE void sort_11v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11) {
+    static INLINE void sort_11v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_03v_ascending(d09, d10, d11);
 
@@ -492,7 +492,7 @@ public:
         sort_03v_merge_descending(d09, d10, d11);
     }
 
-    static INLINE void sort_12v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12) {
+    static INLINE void sort_12v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_04v_descending(d09, d10, d11, d12);
 
@@ -512,7 +512,7 @@ public:
         sort_04v_merge_ascending(d09, d10, d11, d12);
     }
 
-    static INLINE void sort_12v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12) {
+    static INLINE void sort_12v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_04v_ascending(d09, d10, d11, d12);
 
@@ -532,7 +532,7 @@ public:
         sort_04v_merge_descending(d09, d10, d11, d12);
     }
 
-    static INLINE void sort_13v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13) {
+    static INLINE void sort_13v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_05v_descending(d09, d10, d11, d12, d13);
 
@@ -555,7 +555,7 @@ public:
         sort_05v_merge_ascending(d09, d10, d11, d12, d13);
     }
 
-    static INLINE void sort_13v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13) {
+    static INLINE void sort_13v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_05v_ascending(d09, d10, d11, d12, d13);
 
@@ -578,7 +578,7 @@ public:
         sort_05v_merge_descending(d09, d10, d11, d12, d13);
     }
 
-    static INLINE void sort_14v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14) {
+    static INLINE void sort_14v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_06v_descending(d09, d10, d11, d12, d13, d14);
 
@@ -604,7 +604,7 @@ public:
         sort_06v_merge_ascending(d09, d10, d11, d12, d13, d14);
     }
 
-    static INLINE void sort_14v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14) {
+    static INLINE void sort_14v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_06v_ascending(d09, d10, d11, d12, d13, d14);
 
@@ -630,7 +630,7 @@ public:
         sort_06v_merge_descending(d09, d10, d11, d12, d13, d14);
     }
 
-    static INLINE void sort_15v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14, uint64_t_v& d15) {
+    static INLINE void sort_15v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14, uint32_t_v& d15) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_07v_descending(d09, d10, d11, d12, d13, d14, d15);
 
@@ -659,7 +659,7 @@ public:
         sort_07v_merge_ascending(d09, d10, d11, d12, d13, d14, d15);
     }
 
-    static INLINE void sort_15v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14, uint64_t_v& d15) {
+    static INLINE void sort_15v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14, uint32_t_v& d15) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_07v_ascending(d09, d10, d11, d12, d13, d14, d15);
 
@@ -688,7 +688,7 @@ public:
         sort_07v_merge_descending(d09, d10, d11, d12, d13, d14, d15);
     }
 
-    static INLINE void sort_16v_ascending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14, uint64_t_v& d15, uint64_t_v& d16) {
+    static INLINE void sort_16v_ascending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14, uint32_t_v& d15, uint32_t_v& d16) {
         sort_08v_ascending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_08v_descending(d09, d10, d11, d12, d13, d14, d15, d16);
 
@@ -720,7 +720,7 @@ public:
         sort_08v_merge_ascending(d09, d10, d11, d12, d13, d14, d15, d16);
     }
 
-    static INLINE void sort_16v_descending(uint64_t_v& d01, uint64_t_v& d02, uint64_t_v& d03, uint64_t_v& d04, uint64_t_v& d05, uint64_t_v& d06, uint64_t_v& d07, uint64_t_v& d08, uint64_t_v& d09, uint64_t_v& d10, uint64_t_v& d11, uint64_t_v& d12, uint64_t_v& d13, uint64_t_v& d14, uint64_t_v& d15, uint64_t_v& d16) {
+    static INLINE void sort_16v_descending(uint32_t_v& d01, uint32_t_v& d02, uint32_t_v& d03, uint32_t_v& d04, uint32_t_v& d05, uint32_t_v& d06, uint32_t_v& d07, uint32_t_v& d08, uint32_t_v& d09, uint32_t_v& d10, uint32_t_v& d11, uint32_t_v& d12, uint32_t_v& d13, uint32_t_v& d14, uint32_t_v& d15, uint32_t_v& d16) {
         sort_08v_descending(d01, d02, d03, d04, d05, d06, d07, d08);
         sort_08v_ascending(d09, d10, d11, d12, d13, d14, d15, d16);
 
@@ -753,8 +753,8 @@ public:
     }
 
 
-    static NOINLINE void sort_01v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
+    static NOINLINE void sort_01v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
 
         d01.a = *(ptr + 0);
         d01.b = (remainder == 0) ? *(ptr + 1) : MAX;
@@ -765,9 +765,9 @@ public:
         if (remainder == 0) *(ptr + 1) = d01.b;
     }
 
-    static NOINLINE void sort_02v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
+    static NOINLINE void sort_02v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -782,10 +782,10 @@ public:
         if (remainder == 0) *(ptr + 3) = d02.b;
     }
 
-    static NOINLINE void sort_03v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
+    static NOINLINE void sort_03v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -804,11 +804,11 @@ public:
         if (remainder == 0) *(ptr + 5) = d03.b;
     }
 
-    static NOINLINE void sort_04v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
+    static NOINLINE void sort_04v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -831,12 +831,12 @@ public:
         if (remainder == 0) *(ptr + 7) = d04.b;
     }
 
-    static NOINLINE void sort_05v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
+    static NOINLINE void sort_05v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -863,13 +863,13 @@ public:
         if (remainder == 0) *(ptr + 9) = d05.b;
     }
 
-    static NOINLINE void sort_06v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
+    static NOINLINE void sort_06v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -900,14 +900,14 @@ public:
         if (remainder == 0) *(ptr + 11) = d06.b;
     }
 
-    static NOINLINE void sort_07v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
+    static NOINLINE void sort_07v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -942,15 +942,15 @@ public:
         if (remainder == 0) *(ptr + 13) = d07.b;
     }
 
-    static NOINLINE void sort_08v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
+    static NOINLINE void sort_08v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -989,16 +989,16 @@ public:
         if (remainder == 0) *(ptr + 15) = d08.b;
     }
 
-    static NOINLINE void sort_09v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
+    static NOINLINE void sort_09v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1041,17 +1041,17 @@ public:
         if (remainder == 0) *(ptr + 17) = d09.b;
     }
 
-    static NOINLINE void sort_10v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
+    static NOINLINE void sort_10v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1098,18 +1098,18 @@ public:
         if (remainder == 0) *(ptr + 19) = d10.b;
     }
 
-    static NOINLINE void sort_11v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
+    static NOINLINE void sort_11v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1160,19 +1160,19 @@ public:
         if (remainder == 0) *(ptr + 21) = d11.b;
     }
 
-    static NOINLINE void sort_12v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
-        uint64_t_v d12;
+    static NOINLINE void sort_12v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
+        uint32_t_v d12;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1227,20 +1227,20 @@ public:
         if (remainder == 0) *(ptr + 23) = d12.b;
     }
 
-    static NOINLINE void sort_13v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
-        uint64_t_v d12;
-        uint64_t_v d13;
+    static NOINLINE void sort_13v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
+        uint32_t_v d12;
+        uint32_t_v d13;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1299,21 +1299,21 @@ public:
         if (remainder == 0) *(ptr + 25) = d13.b;
     }
 
-    static NOINLINE void sort_14v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
-        uint64_t_v d12;
-        uint64_t_v d13;
-        uint64_t_v d14;
+    static NOINLINE void sort_14v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
+        uint32_t_v d12;
+        uint32_t_v d13;
+        uint32_t_v d14;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1376,22 +1376,22 @@ public:
         if (remainder == 0) *(ptr + 27) = d14.b;
     }
 
-    static NOINLINE void sort_15v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
-        uint64_t_v d12;
-        uint64_t_v d13;
-        uint64_t_v d14;
-        uint64_t_v d15;
+    static NOINLINE void sort_15v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
+        uint32_t_v d12;
+        uint32_t_v d13;
+        uint32_t_v d14;
+        uint32_t_v d15;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1458,23 +1458,23 @@ public:
         if (remainder == 0) *(ptr + 29) = d15.b;
     }
 
-    static NOINLINE void sort_16v_alt(uint64_t *ptr, int remainder) {
-        uint64_t_v d01;
-        uint64_t_v d02;
-        uint64_t_v d03;
-        uint64_t_v d04;
-        uint64_t_v d05;
-        uint64_t_v d06;
-        uint64_t_v d07;
-        uint64_t_v d08;
-        uint64_t_v d09;
-        uint64_t_v d10;
-        uint64_t_v d11;
-        uint64_t_v d12;
-        uint64_t_v d13;
-        uint64_t_v d14;
-        uint64_t_v d15;
-        uint64_t_v d16;
+    static NOINLINE void sort_16v_alt(uint32_t *ptr, int remainder) {
+        uint32_t_v d01;
+        uint32_t_v d02;
+        uint32_t_v d03;
+        uint32_t_v d04;
+        uint32_t_v d05;
+        uint32_t_v d06;
+        uint32_t_v d07;
+        uint32_t_v d08;
+        uint32_t_v d09;
+        uint32_t_v d10;
+        uint32_t_v d11;
+        uint32_t_v d12;
+        uint32_t_v d13;
+        uint32_t_v d14;
+        uint32_t_v d15;
+        uint32_t_v d16;
 
         d01.a = *(ptr + 0);
         d01.b = *(ptr + 1);
@@ -1544,7 +1544,7 @@ public:
         *(ptr + 30) = d16.a;
         if (remainder == 0) *(ptr + 31) = d16.b;
     }
-    static void sort(uint64_t *ptr, size_t length);
+    static void sort(uint32_t *ptr, size_t length);
 
 };
 }

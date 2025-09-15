@@ -8,11 +8,15 @@ using namespace std;
 #include "do_vxsort.h"
 
 uint8_t* START = (uint8_t*)0x1234567812345678;
+uint8_t  SHIFT = 3;
 
 std::vector<uint8_t*> generate_random_garbage(const uint64_t size) {
 
     auto vec = std::vector<uint8_t*>(size);
-    std::iota(vec.begin(), vec.end(), START);
+
+    for (uint64_t i = 0; i < size; ++i) {
+        vec[i] = reinterpret_cast<uint8_t*>(START + (i << SHIFT));
+    }
 
     std::random_device rd;
     std::mt19937 g(rd());
@@ -73,10 +77,10 @@ int main(int argc, char** argv) {
         return -2;
     }
 
-    auto prev = START - 1;
+    auto prev = START - (1 << SHIFT);
     for (auto & element : v) {
         fprintf(stderr, "%p\n", element);
-        assert(element == prev + 1);
+        assert(element == prev + (1 << SHIFT));
         prev = element;
     }
 

@@ -11,11 +11,15 @@ using namespace std;
 #include "../../../introsort.h"
 
 uint8_t* START = (uint8_t*)0x1234567812345678;
+uint8_t  SHIFT = 3;
 
 std::vector<uint8_t*> generate_random_garbage(const uint64_t size) {
 
     auto vec = std::vector<uint8_t*>(size);
-    std::iota(vec.begin(), vec.end(), START);
+
+    for (uint64_t i = 0; i < size; ++i) {
+        vec[i] = reinterpret_cast<uint8_t*>(START + (i << SHIFT));
+    }
 
     std::random_device rd;
     std::mt19937 g(rd());
@@ -23,7 +27,6 @@ std::vector<uint8_t*> generate_random_garbage(const uint64_t size) {
     std::shuffle(vec.begin(), vec.end(), g);
     return vec;
 }
-
 
 long demo_vxsort(std::vector<uint8_t*>* v, size_t vector_size)
 {
@@ -38,10 +41,10 @@ long demo_vxsort(std::vector<uint8_t*>* v, size_t vector_size)
 
     // Ensure not sorted
     bool sorted = true;
-    auto prev = START - 1;
+    auto prev = START - (1 << SHIFT);
     for (auto & element : vtemp) {
         // fprintf(stderr, "%p\n", element);
-        if (element != prev + 1)
+        if (element != prev + (1 << SHIFT))
         {
             sorted = false;
         }
@@ -77,10 +80,10 @@ long demo_vxsort(std::vector<uint8_t*>* v, size_t vector_size)
     long elapsed = (t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec;
 
     // Ensure sorted
-    prev = START - 1;
+    prev = START - (1 << SHIFT);
     for (auto & element : vtemp) {
         // fprintf(stderr, "%p\n", element);
-        assert(element == prev + 1);
+        assert(element == prev + (1 << SHIFT));
         prev = element;
     }
 
@@ -101,10 +104,9 @@ long demo_insertsort(std::vector<uint8_t*>* v, size_t vector_size)
 
     // Ensure not sorted
     bool sorted = true;
-    auto prev = START - 1;
+    auto prev = START - (1 << SHIFT);
     for (auto & element : vtemp) {
-        // fprintf(stderr, "%p\n", element);
-        if (element != prev + 1)
+        if (element != prev + (1 << SHIFT))
         {
             sorted = false;
         }
@@ -121,10 +123,9 @@ long demo_insertsort(std::vector<uint8_t*>* v, size_t vector_size)
     long elapsed = (t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec;
 
     // Ensure sorted
-    prev = START - 1;
+    prev = START - (1 << SHIFT);
     for (auto & element : vtemp) {
-        // fprintf(stderr, "%p\n", element);
-        assert(element == prev + 1);
+        assert(element == prev + (1 << SHIFT));
         prev = element;
     }
 
