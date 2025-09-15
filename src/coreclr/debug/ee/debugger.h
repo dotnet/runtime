@@ -1864,7 +1864,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, DWORD64 flag, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -3025,7 +3025,7 @@ private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
-    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool HasActivePatchSkip = false);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 
