@@ -12,9 +12,8 @@ void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
     PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
 }
 
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
+EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT)
 {
-    MethodTable* pMT = (MethodTable*)typeHnd_;
     Object* obj = RhpGcAlloc(pMT, 0, 0, nullptr);
     if (obj == NULL)
     {
@@ -25,12 +24,12 @@ EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
     return obj;
 }
 
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT)
 {
-    return RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, 0, nullptr);
+    return RhpGcAllocMaybeFrozen(pMT, 0, nullptr);
 }
 
-EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, MethodTable* pMT, INT_PTR size)
 {
-    return RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, size, nullptr);
+    return RhpGcAllocMaybeFrozen(pMT, size, nullptr);
 }
