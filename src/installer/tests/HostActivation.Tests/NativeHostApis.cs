@@ -215,7 +215,7 @@ namespace HostActivation.Tests
 
             string api = ApiNames.hostfxr_resolve_sdk2;
             string flags = do_not_print_errors ? "disallow_prerelease,do_not_print_errors" : "disallow_prerelease";
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "disallow_prerelease")
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, flags)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
