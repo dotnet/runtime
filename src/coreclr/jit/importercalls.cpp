@@ -1294,13 +1294,10 @@ DONE:
             compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
         }
 
-        // We only do these OSR checks in the root method because:
-        // * If we fail to import the root method entry when importing the root method, we can't go back
-        //    and import it during inlining. So instead of checking just for recursive tail calls we also
-        //    have to check for anything that might introduce a recursive tail call.
-        // * We only instrument root method blocks in OSR methods,
+        // If we might be instrumenting, flag blocks that might be tail call successors
+        // so we can relocate probes before the calls.
         //
-        if ((opts.IsInstrumentedAndOptimized() || opts.IsOSR()) && !compIsForInlining())
+        if (opts.IsInstrumentedAndOptimized() || opts.IsOSR())
         {
             // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile

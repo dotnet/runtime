@@ -2598,6 +2598,52 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   appropriate phase status
 //
 // Note:
+//   Wrapper around fgInstrumentMethodCore, which handles
+//   special cases when instrumenting inlinees.
+//
+PhaseStatus Compiler::fgInstrumentMethod()
+{
+    // If this is an inlinee that returns a value, and we don't have a return
+    // value temp, the return value tree may not be linked into the return block.
+    //
+    // Temporarily link it in so the passes below can operate on it as needed.
+    //
+    BasicBlock* retBB                 = nullptr;
+    Statement*  tempInlineeReturnStmt = nullptr;
+
+    if (compIsForInlining())
+    {
+        GenTreeRetExpr* const retExpr = impInlineInfo->inlineCandidateInfo->retExpr;
+
+        // If there's a retExpr but no gtSubstBB, we assume the retExpr is a temp
+        // and so not interesting to instrumentation.
+        //
+        if ((retExpr != nullptr) && (retExpr->gtSubstBB != nullptr))
+        {
+            assert(retExpr->gtSubstExpr != nullptr);
+            retBB                 = retExpr->gtSubstBB;
+            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, retExpr->gtSubstExpr);
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr), retBB->bbNum)
+        }
+    }
+
+    PhaseStatus status = fgInstrumentMethodCore();
+
+    if (tempInlineeReturnStmt != nullptr)
+    {
+        fgRemoveStmt(retBB, tempInlineeReturnStmt);
+    }
+
+    return status;
+}
+
+//------------------------------------------------------------------------
+// fgInstrumentMethodCore: add instrumentation probes to the method
+//
+// Returns:
+//   appropriate phase status
+//
+// Note:
 //
 //   By default this instruments each non-internal block with
 //   a counter probe.
@@ -2607,7 +2653,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   Probe structure is described by a schema array, which is created
 //   here based on flowgraph and IR structure.
 //
-PhaseStatus Compiler::fgInstrumentMethod()
+
+PhaseStatus Compiler::fgInstrumentMethodCore()
 {
     // Make post-import preparations.
     //
