@@ -3744,10 +3744,19 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #endif
 }
 
+static bool g_fIJWLoaded = false;
+
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
     InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    g_fIJWLoaded = true;
+}
+
+bool Module::HasAnyIJWBeenLoaded()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_fIJWLoaded;
 }
 #endif // !DACCESS_COMPILE
 

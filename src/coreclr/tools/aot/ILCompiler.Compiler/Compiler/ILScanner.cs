@@ -310,6 +310,15 @@ namespace ILCompiler
             return new ScannedTypeMapManager(_factory);
         }
 
+        public IEnumerable<string> GetAnalysisCharacteristics()
+        {
+            foreach (DependencyNodeCore<NodeFactory> n in MarkedNodes)
+            {
+                if (n is AnalysisCharacteristicNode acn)
+                    yield return acn.Characteristic;
+            }
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();

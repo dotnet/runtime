@@ -1522,6 +1522,8 @@ void Compiler::fgAllocEHTable()
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
+    memset(compHndBBtab, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
+
     compHndBBtabCount = info.compXcptnsCount;
 }
 
@@ -1882,6 +1884,10 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
         compHndBBtabAllocCount = newHndBBtabAllocCount;
 
         EHblkDsc* newTable = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
+
+        // Zero the storage
+
+        memset(newTable, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
 
         // Move over the stuff before the new entries
 
