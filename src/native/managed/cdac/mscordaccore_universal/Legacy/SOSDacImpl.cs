@@ -2047,17 +2047,12 @@ internal sealed unsafe partial class SOSDacImpl
                     }
                     catch
                     {
-                        try
+                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
+                        if (fallbackName != null)
                         {
-                            string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
-                            if (fallbackName != null)
-                            {
-                                methodTableName.Clear();
-                                methodTableName.Append(fallbackName);
-                            }
+                            methodTableName.Clear();
+                            methodTableName.Append(fallbackName);
                         }
-                        catch
-                        { }
                     }
                     OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
                 }
