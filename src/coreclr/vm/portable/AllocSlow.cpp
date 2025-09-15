@@ -21,3 +21,8 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_,
     PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not yet implemented");
     return nullptr;
 }
+
+void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
+{
+    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
+}

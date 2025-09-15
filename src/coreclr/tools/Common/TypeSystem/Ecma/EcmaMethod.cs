@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Internal.TypeSystem.Ecma
@@ -36,20 +38,16 @@ namespace Internal.TypeSystem.Ecma
         private MethodDefinitionHandle _handle;
 
         // Cached values
+        private unsafe volatile byte* _namePointer;
+        private int _nameLength;
         private ThreadSafeFlags _methodFlags;
         private MethodSignature _signature;
-        private string _name;
         private TypeDesc[] _genericParameters; // TODO: Optional field?
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-#endif
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -348,7 +346,7 @@ namespace Internal.TypeSystem.Ecma
                 return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
-                    && Name == ".ctor"
+                    && Name.SequenceEqual(".ctor"u8)
                     && !_type.IsAbstract;
             }
         }
@@ -365,7 +363,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Attributes.IsRuntimeSpecialName() && Name == ".cctor";
+                return Attributes.IsRuntimeSpecialName() && Name.SequenceEqual(".cctor"u8);
             }
         }
 
@@ -385,20 +383,24 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private string InitializeName()
+        public unsafe ReadOnlySpan<byte> InitializeName()
         {
-            var metadataReader = MetadataReader;
-            var name = metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).Name);
-            return (_name = name);
+            StringHandle handle = MetadataReader.GetMethodDefinition(_handle).Name;
+            _nameLength = MetadataReader.GetStringBytes(handle).Length;
+            _namePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override string Name
+        public override unsafe ReadOnlySpan<byte> Name
         {
             get
             {
-                if (_name == null)
-                    return InitializeName();
-                return _name;
+                byte* namePointer = _namePointer;
+                if (namePointer != null)
+                {
+                    return new ReadOnlySpan<byte>(namePointer, _nameLength);
+                }
+                return InitializeName();
             }
         }
 

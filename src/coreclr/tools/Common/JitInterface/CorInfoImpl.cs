@@ -1127,7 +1127,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (method.OwningType.IsDelegate && method.Name == "Invoke")
+            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8))
             {
                 // This is now used to emit efficient invoke code for any delegate invoke,
                 // including multicast.
@@ -1553,7 +1553,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc elementType = HandleToObject(elemType);
-            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System"u8, "SZGenericArrayEnumerator`1"u8, throwIfNotFound: false);
             if (placeholderType == null)
             {
                 return null;
@@ -1724,7 +1724,7 @@ namespace Internal.JitInterface
                     Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
-                        (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
+                        (owningMethod.Name.SequenceEqual("CreateDefaultInstance"u8) && methodContext.Name.SequenceEqual("CreateInstance"u8)));
                     Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
@@ -1856,7 +1856,7 @@ namespace Internal.JitInterface
                 // References to literal fields from IL body should never resolve.
                 // The CLR would throw a MissingFieldException while jitting and so should we.
                 if (field.IsLiteral)
-                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
+                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.GetName());
 
                 pResolvedToken.hField = ObjectToHandle(field);
 
@@ -2021,8 +2021,8 @@ namespace Internal.JitInterface
             else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(mdType.Namespace));
-                return (byte*)GetPin(StringToUTF8(mdType.Name));
+                    *namespaceName = (byte*)GetPin(SpanToPinnableBytes(mdType.Namespace));
+                return (byte*)GetPin(SpanToPinnableBytes(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -2503,8 +2503,8 @@ namespace Internal.JitInterface
             // not care about since they are considered primitives by the JIT.
             if (type.IsIntrinsic)
             {
-                string ns = type.Namespace;
-                if (ns == "System.Runtime.Intrinsics" || ns == "System.Numerics")
+                ReadOnlySpan<byte> ns = type.Namespace;
+                if (ns.SequenceEqual("System.Runtime.Intrinsics"u8) || ns.SequenceEqual("System.Numerics"u8))
                 {
                     parNode->simdTypeHnd = ObjectToHandle(type);
                     if (parentIndex != uint.MaxValue)
@@ -2803,7 +2803,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
 
                 case CorInfoClassId.CLASSID_RUNTIME_TYPE:
-                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType"));
+                    return ObjectToHandle(_compilation.TypeSystemContext.SystemModule.GetKnownType("System"u8, "RuntimeType"u8));
 
                 default:
                     throw new NotImplementedException();
@@ -3107,7 +3107,7 @@ namespace Internal.JitInterface
         private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             FieldDesc field = HandleToObject(fld);
-            return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
+            return PrintFromUtf16(field.GetName(), buffer, bufferSize, requiredBufferSize);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -3166,16 +3166,16 @@ namespace Internal.JitInterface
             var owningType = field.OwningType;
             if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
                     owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                        field.Name == "Zero")
+                        field.Name.SequenceEqual("Zero"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
             }
-            else if (owningType.IsString && field.Name == "Empty")
+            else if (owningType.IsString && field.Name.SequenceEqual("Empty"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
-            else if (owningType.Name == "BitConverter" && owningType.Namespace == "System" &&
-                field.Name == "IsLittleEndian")
+            else if (owningType.Name.SequenceEqual("BitConverter"u8) && owningType.Namespace.SequenceEqual("System"u8) &&
+                field.Name.SequenceEqual("IsLittleEndian"u8))
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
             }
@@ -3391,10 +3391,17 @@ namespace Internal.JitInterface
             return bytes;
         }
 
+        private static byte[] SpanToPinnableBytes(ReadOnlySpan<byte> s)
+        {
+            byte[] bytes = new byte[s.Length + 1];
+            s.CopyTo(bytes);
+            return bytes;
+        }
+
         private nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             MethodDesc method = HandleToObject(ftn);
-            return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
+            return PrintFromUtf16(method.GetName(), buffer, bufferSize, requiredBufferSize);
         }
 
         private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, string[] enclosingClassName)
@@ -3402,13 +3409,13 @@ namespace Internal.JitInterface
             className = null;
             namespaceName = null;
 
-            string result = method.Name;
+            string result = method.GetName();
 
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType != null)
             {
-                className = owningType.Name;
-                namespaceName = owningType.Namespace;
+                className = owningType.GetName();
+                namespaceName = owningType.GetNamespace();
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
@@ -3419,8 +3426,8 @@ namespace Internal.JitInterface
                     if (containingType == null)
                         break;
 
-                    enclosingClassName[i] = containingType.Name;
-                    namespaceName = containingType.Namespace;
+                    enclosingClassName[i] = containingType.GetName();
+                    namespaceName = containingType.GetNamespace();
                 }
             }
 
@@ -4443,7 +4450,7 @@ namespace Internal.JitInterface
                     // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
                     // but, they all prefix the qualified name of the interface first, so we'll check for that and
                     // skip the prefix before trying to resolve the method.
-                    ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
+                    ReadOnlySpan<char> methodName = MethodBeingCompiled.GetName().AsSpan();
 
                     if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System."))
                     {

@@ -2666,8 +2666,6 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
             assert(insScalableOptsNone(sopt));
 
             // imm is the number of bytes to offset by. The instruction requires a multiple of the
@@ -2685,6 +2683,8 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                 reg2 = rsvdReg;
                 imm  = 0;
             }
+
+            assert(isValidSimm<9>(imm));
 
             if (isVectorRegister(reg1))
             {
@@ -2701,8 +2701,6 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
             assert(insScalableOptsNone(sopt));
 
             // imm is the number of bytes to offset by. The instruction requires a multiple of the
@@ -2720,6 +2718,8 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                 reg2 = rsvdReg;
                 imm  = 0;
             }
+
+            assert(isValidSimm<9>(imm));
 
             if (isVectorRegister(reg1))
             {

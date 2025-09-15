@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -62,7 +63,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Context.GetHelperType("InteropHelpers").GetNestedType("MethodFixupCell");
+                return Context.GetHelperType("InteropHelpers"u8).GetNestedType("MethodFixupCell");
             }
         }
 
@@ -123,7 +124,7 @@ namespace Internal.IL.Stubs
             return false;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
