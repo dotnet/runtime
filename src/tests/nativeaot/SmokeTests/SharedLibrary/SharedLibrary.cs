@@ -4,15 +4,29 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace SharedLibrary
 {
     public class ClassLibrary
     {
+        static Thread s_setterThread;
+        static int s_primitiveInt;
+
+        [ModuleInitializer]
+        public static void CreateThreadInModuleInitializer()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/107699
+            // where creating threads in module initializer would lead to a deadlock.
+            s_setterThread = new Thread(() => { s_primitiveInt = 10; });
+            s_setterThread.Start();
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveInt", CallConvs = new Type[] { typeof(CallConvStdcall) })]
         public static int ReturnsPrimitiveInt()
         {
-            return 10;
+            s_setterThread.Join();
+            return s_primitiveInt;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveBool", CallConvs = new Type[] { typeof(CallConvStdcall) })]

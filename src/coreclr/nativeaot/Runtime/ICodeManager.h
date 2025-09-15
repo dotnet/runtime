@@ -99,7 +99,7 @@ enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,
     FailFast = 1,
-    UnhandledExceptionHandler = 2,
+    ThreadEntryPoint = 2,
     AppendExceptionStackFrame = 3,
     // unused = 4,
     GetSystemArrayEEType = 5,

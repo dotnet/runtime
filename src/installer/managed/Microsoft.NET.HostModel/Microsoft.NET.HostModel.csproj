@@ -24,6 +24,7 @@
     <PackageDownloadAndReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" Folder="lib/net461" />
     <PackageDownloadAndReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" Folder="lib/net462" />
     <PackageDownloadAndReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="Microsoft.IO.Redist" Version="$(MicrosoftIoRedistToolsetVersion)" Folder="lib/net472" />
   </ItemGroup>
 
   <ItemGroup>

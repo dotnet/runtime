@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
 {
@@ -23,5 +24,19 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             StdOut = stdOut;
             StdErr = stdErr;
         }
+
+        internal string GetDiagnosticsInfo()
+            => $"""
+
+                File Name: {StartInfo.FileName}
+                Arguments: {StartInfo.Arguments}
+                Environment:
+                {string.Join(Environment.NewLine, StartInfo.Environment.Where(i => i.Key.StartsWith("DOTNET_", OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).Select(i => $"  {i.Key} = {i.Value}"))}
+                Exit Code: 0x{ExitCode:x}
+                StdOut:
+                {StdOut}
+                StdErr:
+                {StdErr}
+                """;
     }
 }
