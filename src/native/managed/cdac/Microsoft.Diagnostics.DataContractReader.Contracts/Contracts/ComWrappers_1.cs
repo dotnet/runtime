@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct ComWrappers_1 : IComWrappers
+internal readonly struct ComWrappers_1 : IComWrappers
 {
     private readonly Target _target;
 

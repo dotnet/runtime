@@ -242,7 +242,7 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalStringValuesStart;
 
         uint32_t GlobalSubDescriptorsStart;
-        uint32_t ContractsStart;
+        uint32_t GlobalContractsStart;
         uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
@@ -298,7 +298,7 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
             /* .GlobalStringValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalStringValues),
             /* .GlobalSubDescriptorsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalSubDescriptorValues),
-            /* .ContractsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalContractValues),
+            /* .GlobalContractsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalContractValues),
             /* .NamesPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             /* .TypeCount = */ CDacBlobTypesCount,
             /* .FieldsPoolCount = */ CDacBlobFieldsPoolCount,

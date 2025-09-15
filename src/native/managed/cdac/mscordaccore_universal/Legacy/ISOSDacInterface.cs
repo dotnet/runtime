@@ -11,12 +11,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // See src/coreclr/inc/sospriv.idl
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-
-internal struct ComWrappersConstants
-{
-    public const ulong rcwMask = 1UL;
-}
-
 internal enum CLRDataOtherNotifyFlag
 {
     CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,

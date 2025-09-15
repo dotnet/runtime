@@ -3308,25 +3308,17 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
     {
         int hr = HResults.S_OK;
-        Contracts.IComWrappers comWrappersContract;
         try
         {
-            comWrappersContract = _target.Contracts.ComWrappers;
-        }
-        catch (System.Exception)
-        {
-            return HResults.E_NOTIMPL; // we return directly here because the legacy DAC method is empty so we can't compare
-        }
-
-        try
-        {
+            ulong rcwMask = 1UL;
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
             if (rcw == 0 || identity == null)
                 throw new ArgumentException();
-            else if ((rcw & ComWrappersConstants.rcwMask) == 0)
+            else if ((rcw & rcwMask) == 0)
                 *identity = 0;
             else if (identity != null)
             {
-                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~(ComWrappersConstants.rcwMask)));
+                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~rcwMask));
                 *identity = identityPtr.ToClrDataAddress(_target);
             }
         }

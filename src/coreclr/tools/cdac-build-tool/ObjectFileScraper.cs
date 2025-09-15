@@ -163,7 +163,7 @@ public class ObjectFileScraper
         public uint GlobalStringValuesStart;
 
         public uint GlobalSubDescriptorsStart;
-        public uint ContractsStart;
+        public uint GlobalContractsStart;
         public uint NamesStart;
 
         public uint TypesCount;
@@ -222,25 +222,26 @@ public class ObjectFileScraper
         var globalStringValuesStart = state.ReadUInt32();
 
         var globalSubDescriptorsStart = state.ReadUInt32();
-        var contractsStart = state.ReadUInt32();
+        var globalContractsStart = state.ReadUInt32();
+
         var namesStart = state.ReadUInt32();
-
         var typeCount = state.ReadUInt32();
+
         var fieldPoolCount = state.ReadUInt32();
-
         var globalLiteralValuesCount = state.ReadUInt32();
-        var globalPointerValuesCount = state.ReadUInt32();
 
+        var globalPointerValuesCount = state.ReadUInt32();
         var globalStringValuesCount = state.ReadUInt32();
+
         var globalSubDescriptorsCount = state.ReadUInt32();
         var globalContractsCount = state.ReadUInt32();
 
         var namesPoolCount = state.ReadUInt32();
-
         var typeSpecSize = state.ReadByte();
         var fieldSpecSize = state.ReadByte();
         var globalLiteralSpecSize = state.ReadByte();
         var globalPointerSpecSize = state.ReadByte();
+
         var globalStringSpecSize = state.ReadByte();
 
         return new HeaderDirectory {
@@ -251,7 +252,7 @@ public class ObjectFileScraper
             GlobalPointersStart = globalPointersStart,
             GlobalStringValuesStart = globalStringValuesStart,
             GlobalSubDescriptorsStart = globalSubDescriptorsStart,
-            ContractsStart = contractsStart,
+            GlobalContractsStart = globalContractsStart,
             NamesStart = namesStart,
 
             TypesCount = typeCount,
@@ -620,7 +621,7 @@ public class ObjectFileScraper
     private static GlobalContractSpec[] ReadGlobalContractSpecs(ScraperState state, HeaderDirectory header)
     {
         GlobalContractSpec[] globalSpecs = new GlobalContractSpec[header.GlobalContractsCount];
-        state.ResetPosition(state.HeaderStart + (long)header.ContractsStart);
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalContractsStart);
         for (int i = 0; i < header.GlobalContractsCount; i++)
         {
             int bytesRead = 0;
