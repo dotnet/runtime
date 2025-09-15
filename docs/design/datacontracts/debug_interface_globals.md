@@ -20,4 +20,3 @@ Global variables used
 | MaxClrNotificationArgs | uint32 | Identify the maximum number of CLR notification arguments |
 | ClrNotificationArguments | TargetPointer | Identify where the ClrNotificationArguments exists |
 | DefaultADID | uint | Identify the default AppDomain ID |
-| FeatureCOMWrappers | uint8 | Flag for if FeatureCOMWrappers is disabled (0) or enabled (1) |

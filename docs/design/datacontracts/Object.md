@@ -125,13 +125,4 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     ccw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
     return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
 }
-
-TargetPointer GetComWrappersRCWIdentity(TargetPointer rcw)
-{
-    if ((rcw.Value & 1) == 0)
-    {
-        return TargetPointer.Null;
-    }
-    return target.ReadPointer(new TargetPointer(rcw.Value & ~1UL) + /* NativeObjectWrapperObject::ExternalComObject offset */);
-}
 ```
