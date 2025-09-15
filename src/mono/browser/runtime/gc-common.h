@@ -67,7 +67,7 @@ copy_volatile (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source
 }
 
 EMSCRIPTEN_KEEPALIVE int
-SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name);
+SystemInteropJS_RegisterGCRoot (char *start, size_t size, const char *name);
 
 EMSCRIPTEN_KEEPALIVE void
-SystemJSInterop_UnregisterGCRoot (char *addr);
+SystemInteropJS_UnregisterGCRoot (char *addr);

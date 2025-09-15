@@ -31,8 +31,8 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
-    [true, "SystemJSInterop_RegisterGCRoot", "number", ["number", "number", "string"]],
-    [true, "SystemJSInterop_UnregisterGCRoot", null, ["number"]],
+    [true, "SystemInteropJS_RegisterGCRoot", "number", ["number", "number", "string"]],
+    [true, "SystemInteropJS_UnregisterGCRoot", null, ["number"]],
     [true, "mono_wasm_string_get_data_ref", null, ["number", "number", "number", "number"]],
     [true, "mono_wasm_set_is_debugger_attached", "void", ["bool"]],
     [true, "mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
@@ -158,8 +158,8 @@ export interface t_ProfilerCwraps {
 }
 
 export interface t_Cwraps {
-    SystemJSInterop_RegisterGCRoot(start: VoidPtr, size: number, name: string): number;
-    SystemJSInterop_UnregisterGCRoot(addr: VoidPtr): void;
+    SystemInteropJS_RegisterGCRoot(start: VoidPtr, size: number, name: string): number;
+    SystemInteropJS_UnregisterGCRoot(addr: VoidPtr): void;
     mono_wasm_string_get_data_ref(stringRef: MonoStringRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;

@@ -379,7 +379,7 @@ function _walk_exports_to_set_function (assembly: string, namespace: string, cla
     scope[`${methodname}.${signature_hash}`] = fn;
 }
 
-export async function SystemJSInterop_GetAssemblyExports (assembly: string): Promise<any> {
+export async function SystemInteropJS_GetAssemblyExports (assembly: string): Promise<any> {
     assert_js_interop();
     const result = exportsByAssembly.get(assembly);
     if (!result) {

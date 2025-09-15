@@ -105,7 +105,7 @@ export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
 }
 
 // note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
-export function SystemJSInterop_ReleaseCSOwnedObject (js_handle: JSHandle): void {
+export function SystemInteropJS_ReleaseCSOwnedObject (js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
         obj = _cs_owned_objects_by_js_handle[<any>js_handle];

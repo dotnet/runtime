@@ -517,7 +517,7 @@ function resolvedPromise (): Promise<void> | null {
         // passing synchronous `null` as value of the result of the async JSImport function is not possible when there is message sent across threads.
         const resolved = Promise.resolve();
         // the C# code in the BrowserWebSocket expects that promise returned from this code is instance of `ControllablePromise`
-        // so that C# side could call `SystemJSInterop_CancelPromise` on it.
+        // so that C# side could call `SystemInteropJS_CancelPromise` on it.
         // in practice the `resolve()` callback would arrive before the `reject()` of the cancelation.
         return wrap_as_cancelable<void>(resolved);
     }
