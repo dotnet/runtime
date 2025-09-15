@@ -5477,7 +5477,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     {
         // This does not return. Out-of-proc debugger will update the thread context
         // within this call.
-        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo, thread->HasActivePatchSkip());
     }
 #endif
     return retVal;
@@ -16168,7 +16168,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16223,10 +16223,15 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
 
     // send the context to the right side
-    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x fHasDebuggerPatchSkip=%d\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode, fHasDebuggerPatchSkip));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
+        DWORD flag = fIsInPlaceSingleStep ? 0x1 : 0;
+        if (fHasDebuggerPatchSkip)
+        {
+            flag |= 0x2;
+        }
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, flag, opcode);
     }
     EX_CATCH
     {
@@ -16245,7 +16250,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }
