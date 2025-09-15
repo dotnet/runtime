@@ -738,9 +738,17 @@ MAIN_LOOP:
                     ip++;
                     break;
                 case INTOP_STORESTUBCONTEXT:
-                    LOCAL_VAR(ip[1], void*) = GetMostRecentUMEntryThunkData();
+                {
+                    void *thunkData = GetMostRecentUMEntryThunkData();
+                    if (thunkData == nullptr)
+                    {
+                        assert(!"INTOP_STORESTUBCONTEXT failed to get MostRecentUMEntryThunkData");
+                        COMPlusThrow(kNullReferenceException);
+                    }
+                    LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
                     break;
+                }
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;

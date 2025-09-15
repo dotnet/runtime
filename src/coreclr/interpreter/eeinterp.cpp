@@ -156,6 +156,8 @@ void CILInterp::setTargetOS(CORINFO_OS os)
 {
 }
 
+bool IsInterpDumpActive();
+
 INTERPRETER_NORETURN void NO_WAY(const char* message)
 {
     throw InterpException(message, CORJIT_INTERNALERROR);
@@ -163,6 +165,8 @@ INTERPRETER_NORETURN void NO_WAY(const char* message)
 
 INTERPRETER_NORETURN void BADCODE(const char* message)
 {
+    if (IsInterpDumpActive())
+        printf("BADCODE('%s') during interpreter method compilation\n", message);
     throw InterpException(message, CORJIT_BADCODE);
 }
 
