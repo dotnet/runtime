@@ -8,7 +8,7 @@ export function log(message) {
 
 export function install() {
     const Module = globalThis.App.runtime.Module;
-    const measuredCallbackName = "SystemJS_ScheduleTimerJS_tick";
+    const measuredCallbackName = "mono_wasm_schedule_timer_tick";
     globalThis.registerCount = 0;
     globalThis.hitCount = 0;
     log("install")

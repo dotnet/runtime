@@ -34,7 +34,7 @@
 #include "runtime.h"
 
 int SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name);
-void SystemJSInterop_DeregisterGCRoot (char *addr);
+void SystemJSInterop_UnregisterGCRoot (char *addr);
 
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);

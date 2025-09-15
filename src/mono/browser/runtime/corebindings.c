@@ -43,7 +43,7 @@ void SystemJSInterop_ReleaseCSOwnedObjectPost (pthread_t target_tid, int js_hand
 void SystemJSInterop_ResolveOrRejectPromisePost (pthread_t target_tid, void *args);
 void SystemJSInterop_CancelPromisePost (pthread_t target_tid, int task_holder_gc_handle);
 
-extern void SystemJSInterop_InstallWebWorkerInteropJS (int context_gc_handle);
+extern void SystemJSInterop_InstallWebWorkerInteropImpl (int context_gc_handle);
 void SystemJSInterop_InstallWebWorkerInterop (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport, void* pumpHandler);
 extern void SystemJSInterop_UninstallWebWorkerInterop ();
 extern void SystemJSInterop_InvokeJSImportSync (void* signature, void* args);
@@ -66,7 +66,7 @@ void bindings_initialize_internals (void)
 {
 #ifndef	ENABLE_JS_INTEROP_BY_VALUE
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", SystemJSInterop_RegisterGCRoot);
-	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", SystemJSInterop_DeregisterGCRoot);
+	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", SystemJSInterop_UnregisterGCRoot);
 #endif /* ENABLE_JS_INTEROP_BY_VALUE */
 
 #ifndef DISABLE_THREADS
@@ -256,7 +256,7 @@ void SystemJSInterop_InstallWebWorkerInterop (int context_gc_handle, void* befor
 	before_sync_js_import = beforeSyncJSImport;
 	after_sync_js_import = afterSyncJSImport;
 	synchronization_context_pump_handler = pumpHandler;
-	SystemJSInterop_InstallWebWorkerInteropJS (context_gc_handle);
+	SystemJSInterop_InstallWebWorkerInteropImpl (context_gc_handle);
 }
 
 // async

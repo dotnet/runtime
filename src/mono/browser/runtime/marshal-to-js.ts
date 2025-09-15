@@ -338,9 +338,9 @@ function create_task_holder (res_converter?: MarshalerToJs) {
 
 export function SystemJSInterop_ResolveOrRejectPromise (args: JSMarshalerArguments): void {
     // rejection/resolution should not arrive earlier than the promise created by marshaling in SystemJSInterop_InvokeJSImportSync
-    invoke_later_when_on_ui_thread_async(() => SystemJSInterop_ResolveOrRejectPromise_impl(args));
+    invoke_later_when_on_ui_thread_async(() => SystemJSInterop_ResolveOrRejectPromiseImpl(args));
 }
-export function SystemJSInterop_ResolveOrRejectPromise_impl (args: JSMarshalerArguments): void {
+export function SystemJSInterop_ResolveOrRejectPromiseImpl (args: JSMarshalerArguments): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
         return;
@@ -506,7 +506,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         }
         if (!WasmEnableJsInteropByValue) {
             mono_assert(!WasmEnableThreads, "Marshaling string by reference is not supported in multithreaded mode");
-            cwraps.SystemJSInterop_DeregisterGCRoot(<any>buffer_ptr);
+            cwraps.SystemJSInterop_UnregisterGCRoot(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.Object) {
         result = new Array(length);
@@ -516,7 +516,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         }
         if (!WasmEnableJsInteropByValue) {
             mono_assert(!WasmEnableThreads, "Marshaling objects by reference is not supported in multithreaded mode");
-            cwraps.SystemJSInterop_DeregisterGCRoot(<any>buffer_ptr);
+            cwraps.SystemJSInterop_UnregisterGCRoot(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.JSObject) {
         result = new Array(length);

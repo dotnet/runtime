@@ -10,7 +10,7 @@ import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { SystemJSInterop_ResolveOrRejectPromise } from "./marshal-to-js";
-import { SystemJS_ScheduleTimerJS, SystemJS_ScheduleBackgroundJobJS } from "./scheduling";
+import { SystemJS_ScheduleTimerImpl, SystemJS_ScheduleBackgroundJobImpl } from "./scheduling";
 import { mono_wasm_asm_loaded, SystemJS_GetCurrentProcessId } from "./startup";
 import { mono_log_warn, SystemJS_ConsoleClear, mono_wasm_trace_logger } from "./logging";
 import { SystemJS_RandomBytes } from "./crypto";
@@ -19,7 +19,7 @@ import { SystemJSInterop_CancelPromise } from "./cancelable-promise";
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
-    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, SystemJSInterop_InstallWebWorkerInteropJS, SystemJSInterop_UninstallWebWorkerInterop, mono_wasm_start_io_thread_async, SystemJS_WarnAboutBlockingWait
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, SystemJSInterop_InstallWebWorkerInteropImpl, SystemJSInterop_UninstallWebWorkerInterop, mono_wasm_start_io_thread_async, SystemJS_WarnAboutBlockingWait
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
@@ -44,7 +44,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_dump_threads,
 
     // corebindings.c
-    SystemJSInterop_InstallWebWorkerInteropJS,
+    SystemJSInterop_InstallWebWorkerInteropImpl,
     SystemJSInterop_UninstallWebWorkerInterop,
     SystemJSInterop_InvokeJSImportSync,
     SystemJS_WarnAboutBlockingWait,
@@ -52,7 +52,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 
 export const mono_wasm_imports = [
     // mini-wasm.c
-    SystemJS_ScheduleTimerJS,
+    SystemJS_ScheduleTimerImpl,
 
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
@@ -61,7 +61,7 @@ export const mono_wasm_imports = [
     mono_wasm_fire_debugger_agent_message_with_data,
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
     // mono-threads-wasm.c
-    SystemJS_ScheduleBackgroundJobJS,
+    SystemJS_ScheduleBackgroundJobImpl,
 
     // interp.c and jiterpreter.c
     mono_interp_tier_prepare_jiterpreter,

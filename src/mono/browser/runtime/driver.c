@@ -87,7 +87,7 @@ SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-SystemJSInterop_DeregisterGCRoot (char *addr)
+SystemJSInterop_UnregisterGCRoot (char *addr)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);

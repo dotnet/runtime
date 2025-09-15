@@ -11,7 +11,7 @@ import { forceDisposeProxies } from "../gc-handles";
 import { GCHandleNull, WorkerToMainMessageType } from "../types/internal";
 import { monoThreadInfo, postMessageToMain, update_thread_info } from "./shared";
 
-export function SystemJSInterop_InstallWebWorkerInteropJS (context_gc_handle: GCHandle): void {
+export function SystemJSInterop_InstallWebWorkerInteropImpl (context_gc_handle: GCHandle): void {
     if (!WasmEnableThreads) return;
     bindings_init();
     mono_assert(!runtimeHelpers.proxyGCHandle, "JS interop should not be already installed on this worker.");

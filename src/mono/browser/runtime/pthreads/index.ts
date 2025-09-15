@@ -8,7 +8,7 @@ export {
     mono_wasm_main_thread_ptr,
     mono_wasm_pthread_ptr, update_thread_info, isMonoThreadMessage, monoThreadInfo,
 } from "./shared";
-export { SystemJSInterop_InstallWebWorkerInteropJS, SystemJSInterop_UninstallWebWorkerInterop } from "./worker-interop";
+export { SystemJSInterop_InstallWebWorkerInteropImpl, SystemJSInterop_UninstallWebWorkerInterop } from "./worker-interop";
 export {
     mono_wasm_dump_threads, postCancelThreads,
     populateEmscriptenPool, mono_wasm_init_threads,

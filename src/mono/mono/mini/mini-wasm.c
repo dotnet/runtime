@@ -454,7 +454,7 @@ G_BEGIN_DECLS
 EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
-extern void SystemJS_ScheduleTimerJS (int shortestDueTimeMs);
+extern void SystemJS_ScheduleTimerImpl (int shortestDueTimeMs);
 #else
 extern void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
@@ -627,7 +627,7 @@ SystemJS_ScheduleTimer (void *timerHandler, int shortestDueTimeMs)
 
 	g_assert (timerHandler);
 	timer_handler = timerHandler;
-    SystemJS_ScheduleTimerJS (shortestDueTimeMs);
+    SystemJS_ScheduleTimerImpl (shortestDueTimeMs);
 }
 #endif
 #endif

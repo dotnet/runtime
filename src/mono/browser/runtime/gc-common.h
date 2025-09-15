@@ -70,4 +70,4 @@ EMSCRIPTEN_KEEPALIVE int
 SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name);
 
 EMSCRIPTEN_KEEPALIVE void
-SystemJSInterop_DeregisterGCRoot (char *addr);
+SystemJSInterop_UnregisterGCRoot (char *addr);
