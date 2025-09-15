@@ -3146,6 +3146,7 @@ do                                                                      \
                 case INTOP_EXCHANGE_I4:
                 {
                     EXCHANGE(int32_t);
+                    break;
                 }
 
                 case INTOP_EXCHANGE_I8:

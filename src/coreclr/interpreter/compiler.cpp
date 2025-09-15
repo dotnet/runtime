@@ -2899,6 +2899,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
                     // The exchange returns the original value as an U2 zero extended to U4, but we need to return it as an I4
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
                     break;
+                default:
+                    // Nothing is needed
+                    break;
             }
             return true;
         }
@@ -2948,6 +2951,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
                 case InterpTypeI2:
                     // The exchange returns the original value as an U2 zero extended to U4, but we need to return it as an I4
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+                    break;
+                default:
+                    // Nothing is needed
                     break;
             }
             return true;
