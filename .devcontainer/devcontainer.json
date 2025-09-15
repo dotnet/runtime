@@ -9,7 +9,8 @@
 	},
 	"hostRequirements": {
 		"cpus": 4,
-		"memory": "8gb"
+		"memory": "8gb",
+		"storage": "64gb"
 	},
 
 	"features": {
@@ -22,7 +23,8 @@
 		"vscode": {
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
-				"ms-dotnettools.csharp"
+				"ms-dotnettools.csharp",
+				"ms-dotnettools.csdevkit"
 			],
 			"settings": {
 				// Loading projects on demand is better for larger codebases

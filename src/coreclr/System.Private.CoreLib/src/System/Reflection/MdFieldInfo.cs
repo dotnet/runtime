@@ -122,15 +122,9 @@ namespace System.Reflection
             }
         }
 
-        public override Type[] GetRequiredCustomModifiers()
-        {
-            return Type.EmptyTypes;
-        }
+        public override Type[] GetRequiredCustomModifiers() => [];
 
-        public override Type[] GetOptionalCustomModifiers()
-        {
-            return Type.EmptyTypes;
-        }
+        public override Type[] GetOptionalCustomModifiers() => [];
 
         #endregion
     }

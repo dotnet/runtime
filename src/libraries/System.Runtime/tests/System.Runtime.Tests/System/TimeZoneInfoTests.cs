@@ -57,7 +57,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT", null },
@@ -2051,9 +2051,9 @@ namespace System.Tests
         {
             bool isUtc = s_UtcAliases.Contains(timeZone.Id, StringComparer.OrdinalIgnoreCase);
 
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
             {
-                // Browser platform doesn't have full ICU names, but uses the IANA IDs and abbreviations instead.
+                // WASM platforms don't have full ICU names, but use the IANA IDs and abbreviations instead.
 
                 // The display name will be the offset plus the ID.
                 // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
@@ -2452,7 +2452,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [MemberData(nameof(AlternativeName_TestData))]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {

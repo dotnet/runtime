@@ -4,7 +4,6 @@
 #ifndef _COMPILER_H_
 #define _COMPILER_H_
 
-#include "static_assert.h"
 #include "intops.h"
 #include "datastructs.h"
 #include "enum_class_flags.h"
@@ -26,6 +25,15 @@ struct InterpException
 
 class InterpreterStackMap;
 class InterpCompiler;
+
+class MemPoolAllocator
+{
+    InterpCompiler* const m_compiler;
+    public:
+    MemPoolAllocator(InterpCompiler* compiler) : m_compiler(compiler) {}
+    void* Alloc(size_t sz) const;
+    void Free(void* ptr) const;
+};
 
 class InterpDataItemIndexMap
 {
@@ -53,7 +61,7 @@ class InterpDataItemIndexMap
     };
 
     dn_simdhash_ght_t* _hash = nullptr;
-    TArray<void*> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
+    TArray<void*, MemPoolAllocator> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
     InterpCompiler* _compiler = nullptr;
 
     static unsigned int HashVarSizedData(const void *voidKey)
@@ -91,7 +99,7 @@ public:
     InterpDataItemIndexMap(const InterpDataItemIndexMap&) = delete;
     InterpDataItemIndexMap& operator=(const InterpDataItemIndexMap&) = delete;
 
-    void Init(TArray<void*> *dataItems, InterpCompiler* compiler)
+    void Init(TArray<void*, MemPoolAllocator> *dataItems, InterpCompiler* compiler)
     {
         _compiler = compiler;
         _dataItems = dataItems;
@@ -107,7 +115,7 @@ public:
 
         const size_t sizeOfStruct = sizeof(InterpGenericLookup);
 
-        static_assert_no_msg(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
+        static_assert(sizeOfFieldsConcatenated == sizeOfStruct); // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
         return GetDataItemIndexForT(lookup);
     }
 
@@ -123,7 +131,7 @@ private:
     int32_t GetDataItemIndexForT(const T& lookup);
 };
 
-TArray<char> PrintMethodName(COMP_HANDLE comp,
+TArray<char, MallocAllocator> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
@@ -479,8 +487,8 @@ private:
     }
 
     CORINFO_CLASS_HANDLE m_classHnd;
-    #ifdef DEBUG
-    TArray<char> m_methodName;
+#ifdef DEBUG
+    TArray<char, MallocAllocator> m_methodName;
 #ifdef TARGET_WASM
     // enable verbose output on wasm temporarily
     bool m_verbose = true;
@@ -515,15 +523,19 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // If the method has a hidden argument, GenerateCode allocates a var to store it and
+    //  populates the var at method entry
+    int32_t m_hiddenArgumentVar;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
-    TArray<LeavesTableEntry> m_leavesTable;
+    TArray<LeavesTableEntry, MemPoolAllocator> m_leavesTable;
 
     // This represents a mapping from indexes to pointer sized data. During compilation, an
     // instruction can request an index for some data (like a MethodDesc pointer), that it
     // will then embed in the instruction stream. The data item table will be referenced
     // from the interpreter code header during execution.
-    TArray<void*> m_dataItems;
+    TArray<void*, MemPoolAllocator> m_dataItems;
 
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
@@ -612,10 +624,12 @@ private:
 
     void* AllocMethodData(size_t numBytes);
 public:
-    // FIXME Mempool allocation currently leaks. We need to add an allocator and then
+    // FIXME MemPool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
+    MemPoolAllocator GetMemPoolAllocator() { return MemPoolAllocator(this); }
+
 private:
     void* AllocTemporary(size_t numBytes);
     void* AllocTemporary0(size_t numBytes);
@@ -646,6 +660,9 @@ private:
     InterpBasicBlock**  m_ppOffsetToBB;
 
     ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+#ifdef DEBUG
+    int32_t* m_pNativeMapIndexToILOffset = NULL;
+#endif
     int32_t m_ILToNativeMapSize = 0;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
@@ -671,6 +688,8 @@ private:
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
+    bool m_shadowCopyOfThisPointerActuallyNeeded = false;
+    bool m_shadowCopyOfThisPointerHasVar = false;
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -708,6 +727,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
@@ -719,8 +739,8 @@ private:
     void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
 
     // Var Offset allocator
-    TArray<InterpInst*> *m_pActiveCalls;
-    TArray<int32_t> *m_pActiveVars;
+    TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
+    TArray<int32_t, MemPoolAllocator> *m_pActiveVars;
     TSList<InterpInst*> *m_pDeferredCalls;
 
     int32_t AllocGlobalVarOffset(int var);
@@ -740,9 +760,9 @@ private:
     int32_t ComputeCodeSize();
     uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
-    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs);
-    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
-    void PatchRelocations(TArray<Reloc*> *relocs);
+    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
+    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
+    void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
     InterpMethod* CreateInterpMethod();
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
@@ -777,15 +797,25 @@ public:
  *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
  */
 
- inline void* operator new(size_t sz, InterpCompiler* compiler)
- {
+inline void* operator new(size_t sz, InterpCompiler* compiler)
+{
     return compiler->AllocMemPool0(sz);
 }
 
- inline void* operator new[](size_t sz, InterpCompiler* compiler)
- {
-     return compiler->AllocMemPool0(sz);
- }
+inline void* operator new[](size_t sz, InterpCompiler* compiler)
+{
+    return compiler->AllocMemPool0(sz);
+}
+
+inline void operator delete(void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
+
+inline void operator delete[](void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
 
 template<typename T>
 int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
@@ -802,9 +832,9 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
     }
 
     // Assert that there is no padding in the struct, so a fixed size hash unaware of padding is safe to use
-    static_assert_no_msg(sizeof(VarSizedData) == sizeof(void*));
-    static_assert_no_msg(sizeof(T) % sizeof(void*) == 0);
-    static_assert_no_msg(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
+    static_assert(sizeof(VarSizedData) == sizeof(void*));
+    static_assert(sizeof(T) % sizeof(void*) == 0);
+    static_assert(sizeof(VarSizedDataWithPayload<T>) == sizeof(T) + sizeof(void*));
 
     void** LookupAsPtrs = (void**)&lookup;
     int32_t dataItemIndex = _dataItems->Add(LookupAsPtrs[0]);

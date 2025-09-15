@@ -1208,7 +1208,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // is beyond the limit.
     int stride = abs(iterInfo->IterConst());
 
-    static_assert_no_msg(INT32_MAX >= CORINFO_Array_MaxLength);
+    static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
     {
         // Array.MaxLength can have maximum of 0x7fffffc7 elements, so make sure

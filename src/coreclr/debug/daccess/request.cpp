@@ -3162,11 +3162,11 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     if (data == NULL)
         return E_INVALIDARG;
 
-    static_assert_no_msg(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
-    static_assert_no_msg(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
-    static_assert_no_msg(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
-    static_assert_no_msg(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
-    static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
+    static_assert(DAC_NUMBERGENERATIONS == NUMBERGENERATIONS);
+    static_assert(DAC_NUM_GC_DATA_POINTS == NUM_GC_DATA_POINTS);
+    static_assert(DAC_MAX_COMPACT_REASONS_COUNT == MAX_COMPACT_REASONS_COUNT);
+    static_assert(DAC_MAX_EXPAND_MECHANISMS_COUNT == MAX_EXPAND_MECHANISMS_COUNT);
+    static_assert(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
     *data = {};
@@ -3253,7 +3253,7 @@ ClrDataAccess::GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *analyzeDat
 
     SOSDacEnter();
 
-    analyzeData->internal_root_array = dac_cast<TADDR>(g_gcDacGlobals->internal_root_array);
+    analyzeData->internal_root_array = TO_CDADDR((TADDR)(*g_gcDacGlobals->internal_root_array));
     analyzeData->internal_root_array_index = *g_gcDacGlobals->internal_root_array_index;
     analyzeData->heap_analyze_success = *g_gcDacGlobals->heap_analyze_success;
 
@@ -3815,7 +3815,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                     do
                     {
                         pSyncBlockData->AdditionalThreadCount++;
-                        pLink = pBlock->m_Link.m_pNext;
+                        pLink = pLink->m_pNext;
                     }
                     while ((pLink != NULL) &&
                         (pSyncBlockData->AdditionalThreadCount < 1000));
