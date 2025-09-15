@@ -2211,13 +2211,17 @@ class SuperPMIReplayAsmDiffs:
                 logging.info("Running asm diffs of %s", mch_file)
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                if self.coreclr_args.details:
+                  details_info_file = self.coreclr_args.details
+                else:
+                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags = [
                     "-a",  # Asm diffs
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
-                    "-details", detailed_info_file,  # Detailed information about each context
+                    "-details", details_info_file,  # Detailed information about each context
                 ]
                 if self.coreclr_args.produce_repro:
                     flags += [
@@ -2265,7 +2269,7 @@ class SuperPMIReplayAsmDiffs:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2554,10 +2558,6 @@ class SuperPMIReplayAsmDiffs:
                     if os.path.isfile(fail_mcl_file):
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
-
-                    if os.path.isfile(detailed_info_file):
-                        os.remove(detailed_info_file)
-                        detailed_info_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -3091,7 +3091,10 @@ class SuperPMIReplayThroughputDiff:
 
                 logging.info("Running throughput diff of %s", mch_file)
 
-                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                if self.coreclr_args.details:
+                  details_info_file = self.coreclr_args.details
+                else:
+                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
@@ -3100,7 +3103,7 @@ class SuperPMIReplayThroughputDiff:
                 flags = [
                     "-applyDiff",
                     "-v", "ewi",
-                    "-details", detailed_info_file,
+                    "-details", details_info_file,
                 ]
                 flags += target_flags
                 flags += base_option_flags
@@ -3136,7 +3139,7 @@ class SuperPMIReplayThroughputDiff:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
+                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
@@ -3153,11 +3156,6 @@ class SuperPMIReplayThroughputDiff:
                         logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
-
-                if not self.coreclr_args.skip_cleanup:
-                    if os.path.isfile(detailed_info_file):
-                        os.remove(detailed_info_file)
-                        detailed_info_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -4773,6 +4771,11 @@ def setup_args(args):
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
                             modify_arg=lambda arg: os.environ["SUPERPMI_PRIVATE_STORE"].split(";") if arg is None and "SUPERPMI_PRIVATE_STORE" in os.environ else arg)
 
+        coreclr_args.verify(args,
+                            "details",
+                            lambda unused: True,
+                            "Unable to set details")
+
     def verify_base_diff_args():
 
         coreclr_args.verify(args,
@@ -5108,11 +5111,6 @@ def setup_args(args):
                             "jitoption",
                             lambda unused: True,
                             "Unable to set jitoption")
-
-        coreclr_args.verify(args,
-                            "details",
-                            lambda unused: True,
-                            "Unable to set details")
 
         jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
