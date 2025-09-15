@@ -225,8 +225,8 @@ void* DispatchCallSimple(
     callDescrData.pTarget = pTargetAddress;
 
 #ifdef TARGET_WASM
-    PORTABILITY_ASSERT("wasm need to fill call description data");
-#endif
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE);
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -519,9 +519,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
-#ifdef TARGET_WASM
-    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
-#endif
     _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
     callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
 #ifdef CALLDESCR_ARGREGS
@@ -539,9 +536,8 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
 #ifdef TARGET_WASM
-    callDescrData.pMD = m_pMD;
     callDescrData.nArgsSize = m_argIt.GetArgSize();
-#endif
+#endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
 

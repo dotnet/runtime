@@ -8,69 +8,101 @@
 #include "precode_portable.hpp"
 
 #ifdef HOST_64BIT
-    #define CANARY_VALUE 0x1234567812345678
+#define CANARY_VALUE 0x1234567812345678
 #else // HOST_64BIT
-    #define CANARY_VALUE 0x12345678
+#define CANARY_VALUE 0x12345678
 #endif // HOST_64BIT
 
-bool PortableEntryPoint::IsNativeEntryPoint(TADDR addr)
+bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
 {
-    STANDARD_VM_CONTRACT;
-
-    return false;
+    LIMITED_METHOD_CONTRACT;
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    return portableEntryPoint->HasNativeCode();
 }
 
-void* PortableEntryPoint::GetActualCode(TADDR addr)
+void* PortableEntryPoint::GetActualCode(PCODE addr)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pActualCode != NULL);
+    _ASSERTE(portableEntryPoint->HasNativeCode());
     return portableEntryPoint->_pActualCode;
 }
 
-MethodDesc* PortableEntryPoint::GetMethodDesc(TADDR addr)
+void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pMD != NULL);
+    _ASSERTE(actualCode != (PCODE)NULL);
+
+    // This is a lock free write. It can either be NULL or was already set to the same value.
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
+    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+}
+
+MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
+{
+    STANDARD_VM_CONTRACT;
+
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    _ASSERTE(portableEntryPoint->_pMD != nullptr);
     return portableEntryPoint->_pMD;
 }
 
-void* PortableEntryPoint::GetInterpreterData(TADDR addr)
+void* PortableEntryPoint::GetInterpreterData(PCODE addr)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pInterpreterData != NULL);
+    _ASSERTE(portableEntryPoint->HasInterpreterCode());
     return portableEntryPoint->_pInterpreterData;
 }
 
-void PortableEntryPoint::SetInterpreterData(TADDR addr, PCODE interpreterData)
+void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->_pInterpreterData == NULL);
+    _ASSERTE(!portableEntryPoint->HasInterpreterCode());
+    _ASSERTE(interpreterData != (PCODE)NULL);
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
 }
 
-PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(TADDR addr)
+PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(addr != NULL);
 
-    PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)addr;
-    _ASSERTE(portableEntryPoint->_canary == CANARY_VALUE);
+    PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)PCODEToPINSTR(addr);
+    _ASSERTE(portableEntryPoint->IsValid());
     return portableEntryPoint;
 }
+
+#ifdef _DEBUG
+bool PortableEntryPoint::IsValid() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return _canary == CANARY_VALUE;
+}
+#endif // _DEBUG
 
 void PortableEntryPoint::Init(MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
     _pActualCode = NULL;
     _pMD = pMD;
+    _pInterpreterData = NULL;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init(void* nativeEntryPoint)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(nativeEntryPoint != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = NULL;
     _pInterpreterData = NULL;
     INDEBUG(_canary = CANARY_VALUE);
 }

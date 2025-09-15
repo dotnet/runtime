@@ -937,14 +937,20 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static float Clamp(float value, float min, float max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return Min(Max(value, min), max);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static float ClampNative(float value, float min, float max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return MinNative(MaxNative(value, min), max);
         }
 

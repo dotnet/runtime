@@ -1644,7 +1644,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static Half ClampNative(Half value, Half min, Half max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return MinNative(MaxNative(value, min), max);
         }
 
