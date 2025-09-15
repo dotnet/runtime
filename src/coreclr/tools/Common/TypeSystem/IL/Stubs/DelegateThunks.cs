@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -68,7 +69,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("_extraFunctionPointerOrData");
+                return SystemDelegateType.GetKnownField("_extraFunctionPointerOrData"u8);
             }
         }
 
@@ -76,7 +77,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return SystemDelegateType.GetKnownField("_helperObject");
+                return SystemDelegateType.GetKnownField("_helperObject"u8);
             }
         }
 
@@ -84,7 +85,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return Name;
+                return GetName();
             }
         }
     }
@@ -127,11 +128,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeOpenStaticThunk";
+                return "InvokeOpenStaticThunk"u8;
             }
         }
     }
@@ -157,7 +158,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -211,7 +212,7 @@ namespace Internal.IL.Stubs
                 }
             }
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer"u8, null)));
 
             MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetSignature));
@@ -220,11 +221,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeOpenInstanceThunk";
+                return "InvokeOpenInstanceThunk"u8;
             }
         }
     }
@@ -280,11 +281,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeClosedStaticThunk";
+                return "InvokeClosedStaticThunk"u8;
             }
         }
     }
@@ -365,7 +366,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
             codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(delegateWrapperType));
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value")));
+            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value"u8)));
 
             // Call the delegate
             // delegateArrayLocal[iteratorLocal].Value(...)
@@ -415,11 +416,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeMulticastThunk";
+                return "InvokeMulticastThunk"u8;
             }
         }
     }
@@ -463,11 +464,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeInstanceClosedOverGenericMethodThunk";
+                return "InvokeInstanceClosedOverGenericMethodThunk"u8;
             }
         }
     }
@@ -492,7 +493,7 @@ namespace Internal.IL.Stubs
             {
                 var emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException"));
+                codeStream.EmitCallThrowHelper(emit, Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
                 return emit.Link(specializedMethod);
             }
 
@@ -562,7 +563,7 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray");
+                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers"u8, "GetEmptyObjectArray"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
                 codeStream.EmitStLoc(argsLocal);
             }
@@ -578,14 +579,14 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
 
-            MetadataType funcType = Context.SystemModule.GetKnownType("System", "Func`2");
+            MetadataType funcType = Context.SystemModule.GetKnownType("System"u8, "Func`2"u8);
             TypeDesc instantiatedFunc = funcType.MakeInstantiatedType(objectArrayType, objectType);
 
             codeStream.Emit(ILOpcode.castclass, emitter.NewToken(instantiatedFunc));
 
             codeStream.EmitLdLoc(argsLocal);
 
-            MethodDesc invokeMethod = instantiatedFunc.GetKnownMethod("Invoke", null);
+            MethodDesc invokeMethod = instantiatedFunc.GetKnownMethod("Invoke"u8, null);
             codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(invokeMethod));
 
             ILLocalVariable retLocal = (ILLocalVariable)(-1);
@@ -640,11 +641,11 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "InvokeObjectArrayThunk";
+                return "InvokeObjectArrayThunk"u8;
             }
         }
     }
@@ -757,11 +758,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "GetThunk";
+                return "GetThunk"u8;
             }
         }
 
