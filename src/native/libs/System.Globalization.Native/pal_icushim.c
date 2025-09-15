@@ -271,6 +271,99 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
     }
 }
 
+// Parses the ICU version override specified by DOTNET_ICU_VERSION_OVERRIDE environment variable.
+// The format of the string in this variable is majorVer[.minorVer[.subVer]] (the brackets
+// indicate optional parts).
+static int TryGetIcuVersionOverride(int* majorVer, int* minorVer, int* subVer)
+{
+    char* versionOverride = getenv("DOTNET_ICU_VERSION_OVERRIDE");
+    if (versionOverride != NULL)
+    {
+        if (strcmp(versionOverride, "build") == 0)
+        {
+            *majorVer = U_ICU_VERSION_MAJOR_NUM;
+            *minorVer = -1;
+            *subVer = -1;
+            return true;
+        }
+        else
+        {
+            int first = -1;
+            int second = -1;
+            int third = -1;
+
+            int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
+            if (matches > 0)
+            {
+                *majorVer = first;
+                *minorVer = second;
+                *subVer = third;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// Selects ICU libraries and their version based on DOTNET_ICU_ICUUC_PATH_OVERRIDE,
+// DOTNET_ICU_ICUI18N_PATH_OVERRIDE and DOTNET_ICU_VERSION_OVERRIDE environment variables
+static int FindLibUsingPathOverride(char* symbolName, char* symbolVersion)
+{
+    char* icuucPathOverride = getenv("DOTNET_ICU_ICUUC_PATH_OVERRIDE");
+    char* icui18nPathOverride = getenv("DOTNET_ICU_ICUI18N_PATH_OVERRIDE");
+    if(icuucPathOverride == NULL || icui18nPathOverride == NULL)
+    {
+        return false;
+    }
+
+    libicui18n = dlopen(icui18nPathOverride, RTLD_LAZY);
+
+    if (libicui18n == NULL)
+    {
+        fprintf(stderr, "Cannot load ICU library from path specified in DOTNET_ICU_ICUI18N_PATH_OVERRIDE: %s\n", icui18nPathOverride);
+        return false;
+    }
+
+    libicuuc = dlopen(icuucPathOverride, RTLD_LAZY);
+
+    if (libicuuc == NULL)
+    {
+        fprintf(stderr, "Cannot load ICU library from path specified in DOTNET_ICU_ICUUC_PATH_OVERRIDE: %s\n", icuucPathOverride);
+        dlclose(libicui18n);
+        libicui18n = NULL;
+        return false;
+    }
+
+    int majorVer = -1, minorVer = -1, subVer = -1;
+    if(TryGetIcuVersionOverride(&majorVer, &minorVer, &subVer))
+    {
+        if(FindSymbolVersion(majorVer, minorVer, subVer, symbolName, symbolVersion, MaxICUVersionStringWithSuffixLength, ""))
+        {
+            return true;
+        }
+        fprintf(stderr, "Unable to load symbols for env-specified ICU version %i.%i.%i for env-specified ICU-library.\n", majorVer, minorVer, subVer);
+    }
+    else
+    {
+        for (int i = MinICUVersion; i <= MaxICUVersion; i++)
+        {
+            if (FindSymbolVersion(i, -1, -1, symbolName, symbolVersion, MaxICUVersionStringLength, ""))
+            {
+                return true;
+            }
+        }
+
+        fprintf(stderr, "Cannot determine ICU version for env-specified ICU library.\n");
+    }
+    dlclose(libicui18n);
+    dlclose(libicuuc);
+    libicui18n = NULL;
+    libicuuc = NULL;
+    return false;
+}
+
+
 // Try to open the necessary ICU libraries
 static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
@@ -307,34 +400,12 @@ static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* 
 // indicate optional parts).
 static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    char* versionOverride = getenv("DOTNET_ICU_VERSION_OVERRIDE");
-    if (versionOverride != NULL)
-    {
-        if (strcmp(versionOverride, "build") == 0)
-        {
-            if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
-            {
-                return true;
-            }
-        }
-        else
-        {
-            int first = -1;
-            int second = -1;
-            int third = -1;
+    int majorVer = -1;
+    int minorVer = -1;
+    int subVer = -1;
 
-            int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
-            if (matches > 0)
-            {
-                if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
-                {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
+    return TryGetIcuVersionOverride(&majorVer, &minorVer, &subVer) &&
+           OpenICULibraries(majorVer, minorVer, subVer, versionPrefix, symbolName, symbolVersion);
 }
 
 // Search for library files with names including the major version.
@@ -397,7 +468,8 @@ static int FindLibWithMajorMinorSubVersion(const char* versionPrefix, char* symb
 
 static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    return FindLibUsingOverride(versionPrefix, symbolName, symbolVersion) ||
+    return FindLibUsingPathOverride(symbolName, symbolVersion) ||
+           FindLibUsingOverride(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
