@@ -893,6 +893,29 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyHashAndReset_Hash_InvalidSizeDoesNotReset(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyHashAndReset_HMAC_DoesNotVerify(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -908,6 +931,30 @@ namespace System.Security.Cryptography.Tests
 
                 incremental.AppendData(s_inputBytes);
                 AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyHashAndReset_HMAC_InvalidSizeDoesNotReset(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
             }
         }
 
