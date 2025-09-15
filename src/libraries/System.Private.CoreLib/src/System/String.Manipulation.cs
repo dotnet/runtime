@@ -540,7 +540,7 @@ namespace System
 
             var sb = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             sb.EnsureCapacity(format.Length + args.Length * 8);
-            sb.AppendFormat(provider, format, args);
+            sb.AppendFormatHelper(provider, format, args);
             return sb.ToString();
         }
 
