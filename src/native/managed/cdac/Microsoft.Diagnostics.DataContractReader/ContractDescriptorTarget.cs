@@ -772,12 +772,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     internal bool TryGetContractVersion(string contractName, out int version)
     {
-        foreach (var kvp in _contracts)
-        {
-            var name = kvp.Key;
-            var value = kvp.Value;
-            Console.WriteLine($"Contract: {name}, Version: {value}");
-        }
         return _contracts.TryGetValue(contractName, out version);
     }
 
