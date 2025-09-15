@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.Loader;
+using System.Text;
 using ILCompiler;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -58,7 +59,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         internal IEnumerable<(TypeSystemEntity member, CustomAttribute ca)> GetMemberAssertions(Type type)
         {
             var module = TypeSystemContext.GetModuleFromPath(type.Assembly.Location);
-            var t = module.GetType(type.Namespace, type.Name, throwIfNotFound: false);
+            var t = module.GetType(type.Namespace == null ? ""u8 : Encoding.UTF8.GetBytes(type.Namespace), Encoding.UTF8.GetBytes(type.Name), throwIfNotFound: false);
             if (t == null)
                 throw new InvalidOperationException($"type {type} not found in {module}");
             var results = new List<(TypeSystemEntity, CustomAttribute)>();
@@ -79,13 +80,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (attributeType == null)
                 return false;
 
-            if (attributeType.Namespace != "Mono.Linker.Tests.Cases.Expectations.Assertions")
+            if (!attributeType.Namespace.SequenceEqual("Mono.Linker.Tests.Cases.Expectations.Assertions"u8))
                 return false;
 
             MetadataType t = attributeType;
             while (t != null)
             {
-                if (t.Name == nameof(BaseMemberAssertionAttribute))
+                if (t.GetName() == nameof(BaseMemberAssertionAttribute))
                     return true;
 
                 t = t.MetadataBaseType;
