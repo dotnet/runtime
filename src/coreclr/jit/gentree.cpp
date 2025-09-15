@@ -20590,7 +20590,10 @@ bool GenTree::isEmbeddedMaskingCompatible() const
 // Return Value:
 //   true if the node lowering instruction has a EVEX embedded masking support
 //
-bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const
+bool GenTree::isEmbeddedMaskingCompatible(Compiler*    comp,
+                                          unsigned     tgtMaskSize,
+                                          CorInfoType& tgtSimdBaseJitType,
+                                          size_t*      broadcastOpIndex /* = nullptr */) const
 {
     if (!isEmbeddedMaskingCompatible())
     {
@@ -20660,8 +20663,16 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(2)))
                 {
-                    // We cannot change the base type if we've already contained a broadcast
+                    // If we haven't contained a broadcast, we can change the base type freely
                     supportsMaskBaseSize2Or4 = true;
+                }
+                else if (maskBaseSize == 4)
+                {
+                    assert(broadcastOpIndex != nullptr);
+
+                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    supportsMaskBaseSize2Or4 = true;
+                    *broadcastOpIndex        = 2;
                 }
                 break;
             }
@@ -20674,8 +20685,16 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(3)))
                 {
-                    // We cannot change the base type if we've already contained a broadcast
+                    // If we haven't contained a broadcast, we can change the base type freely
                     supportsMaskBaseSize2Or4 = true;
+                }
+                else if (maskBaseSize == 4)
+                {
+                    assert(broadcastOpIndex != nullptr);
+
+                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    supportsMaskBaseSize2Or4 = true;
+                    *broadcastOpIndex        = 3;
                 }
                 break;
             }
