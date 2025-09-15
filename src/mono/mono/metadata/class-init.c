@@ -1745,7 +1745,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	while (bitmap < end) {
 		if (*bitmap || numz == 255) {
 			if (dest) {
-				*dest++ = numz;
+				*dest++ = (uint8_t)numz;
 				*dest++ = *bitmap;
 			}
 			res += 2;
@@ -1759,7 +1759,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	if (numz) {
 		res += 2;
 		if (dest) {
-			*dest++ = numz;
+			*dest++ = (uint8_t)numz;
 			*dest++ = 0;
 		}
 	}

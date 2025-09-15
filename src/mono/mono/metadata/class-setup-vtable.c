@@ -344,10 +344,12 @@ publish:
 		}
 		if (!klass->interface_bitmap) {
 #ifdef COMPRESSED_INTERFACE_BITMAP
-			int i = mono_compress_bitmap (NULL, bitmap, bsize);
-			klass->interface_bitmap = mono_class_alloc0 (klass, i);
-			mono_compress_bitmap (klass->interface_bitmap, bitmap, bsize);
+			int len = mono_compress_bitmap (NULL, bitmap, bsize);
+			uint8_t *compressed_bitmap = mono_class_alloc0 (klass, len);
+			mono_compress_bitmap (compressed_bitmap, bitmap, bsize);
 			g_free (bitmap);
+
+			klass->interface_bitmap = compressed_bitmap;
 #else
 			klass->interface_bitmap = bitmap;
 #endif

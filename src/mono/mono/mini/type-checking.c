@@ -136,7 +136,7 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 #ifdef COMPRESSED_INTERFACE_BITMAP
 	MonoInst *args [2];
 	MonoInst *res, *ins;
-	NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, offset);
+	NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, (target_mgreg_t)offset);
 	MONO_ADD_INS (cfg->cbb, ins);
 	args [0] = ins;
 	args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_IID, klass);
