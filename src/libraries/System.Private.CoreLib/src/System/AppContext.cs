@@ -113,7 +113,7 @@ namespace System
             }
             else
             {
-                if (s_crashingThreadId == previousCrashingThreadId)
+                if (s_crashingThreadId == currentThreadId)
                 {
                     Environment.FailFast("OnUnhandledException called recursively");
                 }
