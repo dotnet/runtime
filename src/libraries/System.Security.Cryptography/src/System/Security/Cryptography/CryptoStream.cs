@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            // If the inner stream is a CryptoStream, then we want to call FlushFinalBlock on it too, otherwise just Flush.
+            // If the inner stream is a CryptoStream, then we want to call FlushFinalBlock on it too, otherwise just Flush if we're in write mode.
             if (_stream is CryptoStream innerCryptoStream)
             {
                 if (!innerCryptoStream.HasFlushedFinalBlock)
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
                     await innerCryptoStream.FlushFinalBlockAsync(useAsync, cancellationToken).ConfigureAwait(false);
                 }
             }
-            else
+            else if (_canWrite)
             {
                 if (useAsync)
                 {
