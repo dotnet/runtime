@@ -67,7 +67,7 @@ copy_volatile (PPVOLATILE(MonoObject) destination, PPVOLATILE(MonoObject) source
 }
 
 EMSCRIPTEN_KEEPALIVE int
-dotnet_browser_register_root (char *start, size_t size, const char *name);
+SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name);
 
 EMSCRIPTEN_KEEPALIVE void
-dotnet_browser_unregister_root (char *addr);
+SystemJSInterop_DeregisterGCRoot (char *addr);

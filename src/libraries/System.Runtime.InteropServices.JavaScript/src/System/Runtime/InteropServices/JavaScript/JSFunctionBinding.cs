@@ -478,7 +478,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // meaning JS side needs to dispose it
                 exc.slot.ReceiverShouldFree = true;
 
-                // this copy is freed in dotnet_browser_resolve_or_reject_promise
+                // this copy is freed in SystemJSInterop_ResolveOrRejectPromise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
                 void* cpy = (void*)Marshal.AllocHGlobal(bytes);
                 arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));

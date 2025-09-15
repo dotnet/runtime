@@ -31,8 +31,8 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
-    [true, "dotnet_browser_register_root", "number", ["number", "number", "string"]],
-    [true, "dotnet_browser_unregister_root", null, ["number"]],
+    [true, "SystemJSInterop_RegisterGCRoot", "number", ["number", "number", "string"]],
+    [true, "SystemJSInterop_DeregisterGCRoot", null, ["number"]],
     [true, "mono_wasm_string_get_data_ref", null, ["number", "number", "number", "number"]],
     [true, "mono_wasm_set_is_debugger_attached", "void", ["bool"]],
     [true, "mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
@@ -158,8 +158,8 @@ export interface t_ProfilerCwraps {
 }
 
 export interface t_Cwraps {
-    dotnet_browser_register_root(start: VoidPtr, size: number, name: string): number;
-    dotnet_browser_unregister_root(addr: VoidPtr): void;
+    SystemJSInterop_RegisterGCRoot(start: VoidPtr, size: number, name: string): number;
+    SystemJSInterop_DeregisterGCRoot(addr: VoidPtr): void;
     mono_wasm_string_get_data_ref(stringRef: MonoStringRef, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;

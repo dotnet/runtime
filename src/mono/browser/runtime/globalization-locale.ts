@@ -25,7 +25,7 @@ function normalizeLocale (locale: string | null) {
     }
 }
 
-export function dotnet_browser_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
+export function SystemJS_GetLocaleInfo (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
         const localeNameOriginal = utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
         const localeName = normalizeLocale(localeNameOriginal);

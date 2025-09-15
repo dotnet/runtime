@@ -77,17 +77,17 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-dotnet_browser_register_root (char *start, size_t size, const char *name)
+SystemJSInterop_RegisterGCRoot (char *start, size_t size, const char *name)
 {
 	int result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "dotnet_browser_register_root");
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "SystemJSInterop_RegisterGCRoot");
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
-dotnet_browser_unregister_root (char *addr)
+SystemJSInterop_DeregisterGCRoot (char *addr)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);

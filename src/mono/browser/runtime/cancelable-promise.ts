@@ -35,12 +35,12 @@ export function wrap_as_cancelable<T> (inner: Promise<T>): ControllablePromise<T
     return promise;
 }
 
-export function dotnet_browser_cancel_promise (task_holder_gc_handle: GCHandle): void {
-    // cancelation should not arrive earlier than the promise created by marshaling in dotnet_browser_invoke_jsimport_mt
-    invoke_later_when_on_ui_thread_async(() => dotnet_browser_cancel_promise_impl(task_holder_gc_handle));
+export function SystemJSInterop_CancelPromise (task_holder_gc_handle: GCHandle): void {
+    // cancelation should not arrive earlier than the promise created by marshaling in SystemJSInterop_InvokeJSImportSync
+    invoke_later_when_on_ui_thread_async(() => SystemJSInterop_CancelPromise_impl(task_holder_gc_handle));
 }
 
-export function dotnet_browser_cancel_promise_impl (task_holder_gc_handle: GCHandle): void {
+export function SystemJSInterop_CancelPromise_impl (task_holder_gc_handle: GCHandle): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise can't be canceled, mono runtime already exited.");
         return;

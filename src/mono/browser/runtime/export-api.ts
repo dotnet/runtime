@@ -3,7 +3,7 @@
 
 import type { MonoConfig, APIType } from "./types";
 
-import { dotnet_browser_get_assembly_exports } from "./invoke-cs";
+import { SystemJSInterop_GetAssemblyExports } from "./invoke-cs";
 import { mono_wasm_set_module_imports } from "./invoke-js";
 import { getB32, getB8, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU16, getU32, getU52, getU8, localHeapViewF32, localHeapViewF64, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewI8, localHeapViewU16, localHeapViewU32, localHeapViewU8, setB32, setB8, setF32, setF64, setI16, setI32, setI52, setI64Big, setI8, setU16, setU32, setU52, setU8 } from "./memory";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
@@ -16,7 +16,7 @@ export function export_api (): any {
         runMainAndExit: mono_run_main_and_exit,
         exit: loaderHelpers.mono_exit,
         setEnvironmentVariable: mono_wasm_setenv,
-        getAssemblyExports: dotnet_browser_get_assembly_exports,
+        getAssemblyExports: SystemJSInterop_GetAssemblyExports,
         setModuleImports: mono_wasm_set_module_imports,
         getConfig: (): MonoConfig => {
             return runtimeHelpers.config;

@@ -4,26 +4,26 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
-import { dotnet_browser_release_cs_owned_object } from "./gc-handles";
-import { dotnet_browser_bind_js_import_st, dotnet_browser_invoke_js_function, dotnet_browser_invoke_jsimport_mt, dotnet_browser_invoke_jsimport_st } from "./invoke-js";
+import { SystemJSInterop_ReleaseCSOwnedObject } from "./gc-handles";
+import { SystemJSInterop_BindJSImportST, SystemJSInterop_InvokeJSFunction, SystemJSInterop_InvokeJSImportSync, SystemJSInterop_InvokeJSImportST } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
-import { dotnet_browser_resolve_or_reject_promise } from "./marshal-to-js";
-import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
-import { mono_wasm_asm_loaded, mono_wasm_process_current_pid } from "./startup";
-import { mono_log_warn, dotnet_browser_console_clear, mono_wasm_trace_logger } from "./logging";
-import { dotnet_browser_random_bytes } from "./crypto";
-import { dotnet_browser_cancel_promise } from "./cancelable-promise";
+import { SystemJSInterop_ResolveOrRejectPromise } from "./marshal-to-js";
+import { SystemJS_ScheduleTimerJs, SystemJS_ScheduleBackgroundJobJs } from "./scheduling";
+import { mono_wasm_asm_loaded, SystemJS_GetCurrentProcessId } from "./startup";
+import { mono_log_warn, SystemJS_ConsoleClear, mono_wasm_trace_logger } from "./logging";
+import { SystemJS_RandomBytes } from "./crypto";
+import { SystemJSInterop_CancelPromise } from "./cancelable-promise";
 
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
-    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, dotnet_browser_uninstall_js_worker_interop, mono_wasm_start_io_thread_async, dotnet_browser_warn_about_blocking_wait
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, SystemJSInterop_InstallWebWorkerInteropJs, SystemJSInterop_UninstallWebWorkerInterop, mono_wasm_start_io_thread_async, SystemJS_WarnAboutBlockingWait
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { dotnet_browser_get_locale_info } from "./globalization-locale";
+import { SystemJS_GetLocaleInfo } from "./globalization-locale";
 
 import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
 import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
@@ -44,15 +44,15 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_dump_threads,
 
     // corebindings.c
-    mono_wasm_install_js_worker_interop,
-    dotnet_browser_uninstall_js_worker_interop,
-    dotnet_browser_invoke_jsimport_mt,
-    dotnet_browser_warn_about_blocking_wait,
+    SystemJSInterop_InstallWebWorkerInteropJs,
+    SystemJSInterop_UninstallWebWorkerInterop,
+    SystemJSInterop_InvokeJSImportSync,
+    SystemJS_WarnAboutBlockingWait,
 ];
 
 export const mono_wasm_imports = [
     // mini-wasm.c
-    mono_wasm_schedule_timer,
+    SystemJS_ScheduleTimerJs,
 
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
@@ -61,7 +61,7 @@ export const mono_wasm_imports = [
     mono_wasm_fire_debugger_agent_message_with_data,
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
     // mono-threads-wasm.c
-    schedule_background_exec,
+    SystemJS_ScheduleBackgroundJobJs,
 
     // interp.c and jiterpreter.c
     mono_interp_tier_prepare_jiterpreter,
@@ -81,20 +81,20 @@ export const mono_wasm_imports = [
     mono_wasm_set_entrypoint_breakpoint,
 
     // src/native/minipal/random.c
-    dotnet_browser_random_bytes,
+    SystemJS_RandomBytes,
 
     // mono-proclib.c
-    mono_wasm_process_current_pid,
+    SystemJS_GetCurrentProcessId,
 
     // corebindings.c
-    dotnet_browser_console_clear,
-    dotnet_browser_release_cs_owned_object,
-    dotnet_browser_bind_js_import_st,
-    dotnet_browser_invoke_js_function,
-    dotnet_browser_invoke_jsimport_st,
-    dotnet_browser_resolve_or_reject_promise,
-    dotnet_browser_cancel_promise,
-    dotnet_browser_get_locale_info,
+    SystemJS_ConsoleClear,
+    SystemJSInterop_ReleaseCSOwnedObject,
+    SystemJSInterop_BindJSImportST,
+    SystemJSInterop_InvokeJSFunction,
+    SystemJSInterop_InvokeJSImportST,
+    SystemJSInterop_ResolveOrRejectPromise,
+    SystemJSInterop_CancelPromise,
+    SystemJS_GetLocaleInfo,
 
     //event pipe
     ds_rt_websocket_create,

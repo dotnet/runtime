@@ -21,7 +21,7 @@ import { stringToUTF16Ptr } from "./strings";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
-export function dotnet_browser_bind_js_import_st (signature: JSFunctionSignature): VoidPtr {
+export function SystemJSInterop_BindJSImportST (signature: JSFunctionSignature): VoidPtr {
     if (WasmEnableThreads) return VoidPtrNull;
     assert_js_interop();
     signature = fixupPointer(signature, 0);
@@ -33,7 +33,7 @@ export function dotnet_browser_bind_js_import_st (signature: JSFunctionSignature
     }
 }
 
-export function dotnet_browser_invoke_jsimport_mt (signature: JSFunctionSignature, args: JSMarshalerArguments) {
+export function SystemJSInterop_InvokeJSImportSync (signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
     signature = fixupPointer(signature, 0);
@@ -73,7 +73,7 @@ export function dotnet_browser_invoke_jsimport_mt (signature: JSFunctionSignatur
     bound_fn(args);
 }
 
-export function dotnet_browser_invoke_jsimport_st (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
+export function SystemJSInterop_InvokeJSImportST (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
     loaderHelpers.assert_runtime_running();
     args = fixupPointer(args, 0);
@@ -360,11 +360,11 @@ type BindingClosure = {
     arg_cleanup: (Function | undefined)[]
 }
 
-export function dotnet_browser_invoke_js_function (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
-    invoke_later_when_on_ui_thread_sync(() => dotnet_browser_invoke_js_function_impl(bound_function_js_handle, args), args);
+export function SystemJSInterop_InvokeJSFunction (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+    invoke_later_when_on_ui_thread_sync(() => SystemJSInterop_InvokeJSFunction_impl(bound_function_js_handle, args), args);
 }
 
-export function dotnet_browser_invoke_js_function_impl (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+export function SystemJSInterop_InvokeJSFunction_impl (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);

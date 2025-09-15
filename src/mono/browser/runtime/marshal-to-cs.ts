@@ -464,7 +464,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
                 mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
-                cwraps.dotnet_browser_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+                cwraps.SystemJSInterop_RegisterGCRoot(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
@@ -475,7 +475,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
                 mono_assert(!WasmEnableThreads, "Marshaling objects by reference is not supported in multithreaded mode");
-                cwraps.dotnet_browser_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
+                cwraps.SystemJSInterop_RegisterGCRoot(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);

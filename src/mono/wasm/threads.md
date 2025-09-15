@@ -62,10 +62,10 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `dotnet_browser_main_thread_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `SystemJS_ScheduleBackgroundJob`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `dotnet_browser_main_thread_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `SystemJS_ScheduleBackgroundJob` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
 
 ## JS interop on dedicated threads ##

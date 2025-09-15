@@ -668,7 +668,7 @@ mono_gc_finalize_notify (void)
 #if defined(HOST_WASI) && defined(DISABLE_THREADS)
 	mono_runtime_do_background_work ();
 #elif defined(HOST_WASM) && defined(DISABLE_THREADS)
-	dotnet_browser_main_thread_schedule_background_job (mono_runtime_do_background_work);
+	SystemJS_ScheduleBackgroundJob (mono_runtime_do_background_work);
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif
