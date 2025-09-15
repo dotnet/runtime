@@ -1025,8 +1025,9 @@ Changes to signatures:
 ### III.1.1.5.2
 - Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
 - Remove the sentence "Managed pointers cannot be null."
-- Add a bullet point
-  - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable. Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
+- Add two bullet points
+  - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+  - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
