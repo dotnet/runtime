@@ -178,7 +178,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!method.IsGenericMethodDefinition &&
                         factory.CompilationModuleGroup.ContainsMethodBody(method, false))
                     {
-                        switch (method.Name)
+                        switch (method.GetName())
                         {
                             case "MoveNext":
                             case ".cctor":

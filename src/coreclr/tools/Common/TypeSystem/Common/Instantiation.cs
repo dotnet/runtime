@@ -50,15 +50,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        /// <summary>
-        /// Combines the given generic definition's hash code with the hashes
-        /// of the generic parameters in this instantiation
-        /// </summary>
-        public int ComputeGenericInstanceHashCode(int genericDefinitionHashCode)
-        {
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(genericDefinitionHashCode, _genericParameters);
-        }
-
         public static readonly Instantiation Empty = new Instantiation(TypeDesc.EmptyTypes);
 
         public Enumerator GetEnumerator()
@@ -132,6 +123,6 @@ namespace Internal.TypeSystem
                 return Equals(inst);
             return false;
         }
-        public override int GetHashCode() => ComputeGenericInstanceHashCode(1);
+        public override int GetHashCode() => VersionResilientHashCode.GenericInstanceHashCode(1, this);
     }
 }

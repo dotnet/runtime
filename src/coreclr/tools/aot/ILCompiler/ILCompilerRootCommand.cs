@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
+using System.Linq;
 
 using Internal.TypeSystem;
 
@@ -353,13 +354,13 @@ namespace ILCompiler
             Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
-                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'");
+                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx,aes,apx'");
 
             foreach (string arch in ValidArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
-                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
                     // Only instruction sets with are specifiable should be printed to the help text
                     if (instructionSet.Specifiable)
@@ -458,7 +459,7 @@ namespace ILCompiler
                 var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
 
                 Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
-                Console.Write($" --singlemethodname {failingMethod.Name}");
+                Console.Write($" --singlemethodname {failingMethod.GetName()}");
 
                 for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                     Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
