@@ -183,6 +183,7 @@ internal readonly struct StackWalk_1 : IStackWalk
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
 
         // if we are at a capital F Frame, we can get the method desc from the frame
+        // TODO(cdac): Support special fReportInteropMD case https://github.com/dotnet/runtime/issues/119724
         TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
         if (framePtr != TargetPointer.Null)
             return ((IStackWalk)this).GetMethodDescPtr(framePtr);
