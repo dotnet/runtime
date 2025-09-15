@@ -3120,6 +3120,10 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void* operator new(size_t size)
+        {
+            return ::operator new(size);
+        }
         static void operator delete(void* ptr)
         {
             ::operator delete(ptr);

@@ -32,14 +32,17 @@ namespace ILCompiler
 
         public static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
         {
-            TypeDesc typeDef = attrType.GetTypeDefinition();
-            return typeDef switch
+            var typeDef = attrType.GetTypeDefinition() as MetadataType;
+            if (typeDef != null && typeDef.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
             {
-                MetadataType { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAssemblyTargetAttribute`1", Instantiation.Length: 1 } => TypeMapAttributeKind.TypeMapAssemblyTarget,
-                MetadataType { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1", Instantiation.Length: 1 } => TypeMapAttributeKind.TypeMap,
-                MetadataType { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAssociationAttribute`1", Instantiation.Length: 1 } => TypeMapAttributeKind.TypeMapAssociation,
-                _ => TypeMapAttributeKind.None,
-            };
+                if (typeDef.Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMapAssemblyTarget;
+                else if (typeDef.Name.SequenceEqual("TypeMapAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMap;
+                else if (typeDef.Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMapAssociation;
+            }
+            return TypeMapAttributeKind.None;
         }
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
