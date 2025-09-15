@@ -26,24 +26,10 @@ EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT)
 
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    Object* obj = RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, 0, nullptr);
-    if (obj == NULL)
-    {
-        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
-        return nullptr;
-    }
-
-    return obj;
+    return RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, 0, nullptr);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
 {
-    Object* obj = RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, size, nullptr);
-    if (obj == NULL)
-    {
-        RhExceptionHandling_FailedAllocation((MethodTable*)typeHnd_, 0);
-        return nullptr;
-    }
-
-    return obj;
+    return RhpGcAllocMaybeFrozen((MethodTable*)typeHnd_, size, nullptr);
 }
