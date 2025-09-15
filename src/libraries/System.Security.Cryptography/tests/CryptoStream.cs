@@ -318,6 +318,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void DisposeReadOnlyStream_DoesNotFlush()
+        {
+            var memoryStream = new ReadOnlyStream(new byte[] { 1, 2, 3, 4, 5 });
+            var transform = new IdentityTransform(1, 1, false);
+
+            var cryptoStream = new MinimalCryptoStream(memoryStream, transform, CryptoStreamMode.Read);
+
+            // Dispose the CryptoStream - this should not call Flush on the underlying stream
+            cryptoStream.Dispose();
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public static void EnormousRead()
         {
@@ -479,6 +491,16 @@ namespace System.Security.Cryptography.Tests
             {
                 FlushCalled = true;
                 base.Flush();
+            }
+        }
+        
+        private class ReadOnlyStream : MemoryStream
+        {
+            public ReadOnlyStream(byte[] data) : base(data, false) { }
+            
+            public override void Flush()
+            {
+                throw new NotSupportedException("Cannot flush a read-only stream");
             }
         }
 
