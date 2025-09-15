@@ -45,12 +45,9 @@ namespace ILCompiler.ObjectWriter
         private sealed record PESymbol(string Name, uint Offset);
         private readonly List<PESymbol> _exportedPESymbols = new();
 
-        // Grouping of object sections by base image section name. Populated by
-        // EmitSectionsAndLayout so EmitObjectFile / EmitSections can consume
-        // the grouping without recomputing it.
-        private readonly List<string> _groupOrder = new();
-        private readonly Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>> _groupMap = new Dictionary<string, List<(SectionDefinition Section, int OriginalIndex)>>(StringComparer.Ordinal);
-        private readonly Dictionary<int, int> _origToMergedSectionIndex = new();
+        // Note: Sections are emitted in the order provided by _sections.
+        // Grouping/merging of sections by base name (suffixes like '$') has been
+        // removed to simplify layout and emission.
 
         private HashSet<string> _exportedSymbolNames = new();
 
@@ -309,8 +306,13 @@ namespace ILCompiler.ObjectWriter
                 {
                     continue;
                 }
-                int mergedIdx = _origToMergedSectionIndex.TryGetValue(symbolDefinition.SectionIndex, out var mi) ? mi : 0;
-                uint targetRva = _sections[mergedIdx].Header.VirtualAddress + (uint)symbolDefinition.Value;
+
+                // Use the section index directly now that merging is removed.
+                int sectionIdx = symbolDefinition.SectionIndex;
+                if (sectionIdx < 0 || sectionIdx >= _sections.Count)
+                    continue;
+
+                uint targetRva = _sections[sectionIdx].Header.VirtualAddress + (uint)symbolDefinition.Value;
                 PESymbol sym = new(symbolName, targetRva);
                 _exportedPESymbols.Add(sym);
             }
@@ -318,87 +320,12 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            // Mirror layout logic previously performed inside EmitObjectFile so
-            // that we can record section virtual addresses and sizes prior to
-            // emitting the headers (so data directories can reference them).
-            // Precompute grouping first so image header counts and the
-            // header size calculation below reflect the final number of
-            // image sections (base names without '$' suffix).
-            for (int i = 0; i < _sections.Count; i++)
-            {
-                var sec = _sections[i];
-                string fullName = sec.Header.Name;
-                int dollar = fullName.IndexOf('$');
-                string baseName = dollar >= 0 ? fullName.Substring(0, dollar) : fullName;
-                if (!_groupMap.TryGetValue(baseName, out var list))
-                {
-                    list = new List<(SectionDefinition, int)>();
-                    _groupMap[baseName] = list;
-                    _groupOrder.Add(baseName);
-                }
-                list.Add((sec, i));
-                _origToMergedSectionIndex.Add(i, _groupOrder.IndexOf(baseName));
-            }
-
-            // Build merged section definitions and grouped symbolic relocations
-            var mergedSections = new List<SectionDefinition>();
-            var groupedSymbolicRelocs = new List<List<SymbolicRelocation>>();
-
-            foreach (string baseName in _groupOrder)
-            {
-                var contributions = _groupMap[baseName]
-                    .OrderBy(c => c.Section.Header.Name, StringComparer.Ordinal)
-                    .ToList();
-
-                // Concatenate contribution streams
-                long totalSize = 0;
-                foreach (var (s, idx) in contributions)
-                    totalSize += s.Stream.Length;
-
-                var mergedStream = new MemoryStream((int)Math.Min(totalSize, int.MaxValue));
-
-                uint contributionOffset = 0u;
-                var groupSymbolic = new List<SymbolicRelocation>();
-
-                foreach (var (s, origIdx) in contributions)
-                {
-                    s.Stream.Position = 0;
-                    s.Stream.CopyTo(mergedStream);
-
-                    // Adjust symbolic relocations from the original section into
-                    // the group's address space
-                    foreach (var symRel in _sectionIndexToRelocations[origIdx])
-                    {
-                        groupSymbolic.Add(new SymbolicRelocation(symRel.Offset + contributionOffset, symRel.Type, symRel.SymbolName, symRel.Addend));
-                    }
-
-                    contributionOffset += (uint)s.Stream.Length;
-                }
-
-                // Create a new header for the merged section using the first contribution as a template
-                var template = contributions[0].Section.Header;
-                var mergedHeader = new CoffSectionHeader
-                {
-                    Name = baseName,
-                    SectionCharacteristics = contributions.Aggregate((SectionCharacteristics)0, (acc, t) => acc | t.Section.Header.SectionCharacteristics)
-                };
-
-                mergedSections.Add(new SectionDefinition(mergedHeader, mergedStream, new List<CoffRelocation>(), contributions[0].Section.ComdatName, contributions[0].Section.SymbolName, baseName));
-                groupedSymbolicRelocs.Add(groupSymbolic);
-            }
-
-            // Replace section lists with grouped versions for subsequent layout & relocation emission
-            _sections.Clear();
-            _sections.AddRange(mergedSections);
-            _sectionIndexToRelocations.Clear();
-            _sectionIndexToRelocations.AddRange(groupedSymbolicRelocs);
-
-            ushort numberOfSections = (ushort)_groupOrder.Count;
+            // Compute layout for sections directly from the _sections list
+            // without merging or grouping by name suffixes.
+            ushort numberOfSections = (ushort)_sections.Count;
             bool isPE32Plus = _nodeFactory.Target.PointerSize == 8;
             ushort sizeOfOptionalHeader = (ushort)(isPE32Plus ? 0xF0 : 0xE0);
 
-            // Determine file and section alignment following the same rules as
-            // the image writer.
             int fileAlignment = 0x200;
             bool isWindowsOr32bit = _nodeFactory.Target.IsWindows || !isPE32Plus;
             if (isWindowsOr32bit)
@@ -482,8 +409,6 @@ namespace ILCompiler.ObjectWriter
                 // Add to sections and bookkeeping
                 _sections.Add(edataSection);
                 _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
-                _groupOrder.Add(".edata");
-                _groupMap[".edata"] = new List<(SectionDefinition, int)> { (edataSection, -1) };
 
                 sizeOfInitializedData += edataHeader.SizeOfRawData;
 
@@ -601,8 +526,6 @@ namespace ILCompiler.ObjectWriter
 
                 _sections.Add(relocSection);
                 _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
-                _groupOrder.Add(".reloc");
-                _groupMap[".reloc"] = new List<(SectionDefinition, int)> { (relocSection, -1) };
 
                 _baseRelocRva = relocHeader.VirtualAddress;
                 _baseRelocSize = (uint)ms.Length;
@@ -620,7 +543,7 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteInt32LittleEndian(dos.AsSpan(0x3c), 0x80);
             stream.Write(dos);
 
-            ushort numberOfSections = (ushort)_groupOrder.Count;
+            ushort numberOfSections = (ushort)_sections.Count;
             bool isPE32Plus = _nodeFactory.Target.PointerSize == 8;
             ushort sizeOfOptionalHeader = (ushort)(isPE32Plus ? 0xF0 : 0xE0);
 
@@ -730,37 +653,22 @@ namespace ILCompiler.ObjectWriter
             peOptional.Write(stream, dataDirs);
 
             CoffStringTable stringTable = new();
-            int sectionIndex = 0;
-            // Emit headers for each group (baseName order preserved)
-            foreach (string baseName in _groupOrder)
+
+            // Emit headers for each section in the order they appear in _sections
+            for (int i = 0; i < _sections.Count; i++)
             {
-                var contributions = _groupMap[baseName];
-                // The header we will emit for this image section is based on
-                // the first contribution's header but needs to have the
-                // section name without the '$' suffix.
-                var groupHeader = contributions[0].Section.Header;
-                string savedName = groupHeader.Name;
-                groupHeader.Name = baseName;
-                groupHeader.Write(stream, stringTable);
-
-                // Restore the name to avoid affecting any other logic that
-                // may rely on the original value stored in the SectionDefinition.
-                groupHeader.Name = savedName;
-
-                sectionIndex++;
+                var hdr = _sections[i].Header;
+                hdr.Write(stream, stringTable);
             }
 
             // Write section content
-            foreach (string baseName in _groupOrder)
+            foreach (var section in _sections)
             {
-                foreach (var (section, _) in _groupMap[baseName])
+                if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
-                    if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
-                    {
-                        Debug.Assert(stream.Position == section.Header.PointerToRawData);
-                        section.Stream.Position = 0;
-                        section.Stream.CopyTo(stream);
-                    }
+                    Debug.Assert(stream.Position == section.Header.PointerToRawData);
+                    section.Stream.Position = 0;
+                    section.Stream.CopyTo(stream);
                 }
             }
         }
