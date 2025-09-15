@@ -1405,6 +1405,7 @@ namespace System
             private string? m_assemblyQualifiedName;
             private string? m_toString;
             private string? m_namespace;
+            private bool? m_isCollectible;
             private readonly bool m_isGlobal;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
@@ -1547,6 +1548,20 @@ namespace System
             }
 
             internal RuntimeType GetRuntimeType() => m_runtimeType;
+
+            internal bool IsCollectible
+            {
+                get
+                {
+                    if (!m_isCollectible.HasValue)
+                    {
+                        RuntimeType type = m_runtimeType;
+                        m_isCollectible = RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref type)) != Interop.BOOL.FALSE;
+                    }
+
+                    return m_isCollectible.Value;
+                }
+            }
 
             internal bool IsGlobal => m_isGlobal;
 
@@ -3227,14 +3242,7 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
-        {
-            get
-            {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
-            }
-        }
+        public sealed override bool IsCollectible => Cache.IsCollectible;
 
         public override MethodBase? DeclaringMethod
         {
