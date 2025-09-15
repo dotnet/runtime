@@ -184,9 +184,26 @@ enum InterpType {
 };
 
 #ifdef DEBUG
+extern thread_local bool t_interpDump;
+
+class InterpDumpScope
+{
+    bool m_prev;
+    public:
+    InterpDumpScope(bool enable)
+    {
+        m_prev = t_interpDump;
+        t_interpDump = enable;
+    }
+    ~InterpDumpScope()
+    {
+        t_interpDump = m_prev;
+    }
+};
+
 #define INTERP_DUMP(...)            \
     {                               \
-        if (m_verbose)              \
+        if (t_interpDump)           \
             printf(__VA_ARGS__);    \
     }
 #else
@@ -448,6 +465,9 @@ class InterpCompiler
     friend class InterpGcSlotAllocator;
 
 private:
+#ifdef DEBUG
+    InterpDumpScope m_dumpScope;
+#endif
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -489,12 +509,6 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
 #ifdef DEBUG
     TArray<char, MallocAllocator> m_methodName;
-#ifdef TARGET_WASM
-    // enable verbose output on wasm temporarily
-    bool m_verbose = true;
-#else
-    bool m_verbose = false;
-#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
