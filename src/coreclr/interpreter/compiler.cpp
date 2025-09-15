@@ -806,6 +806,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         *ip++ = srcOffset;
         if (opcode == INTOP_MOV_VT)
             *ip++ = fSize;
+
+        // NOTE: It is important to patch the opcode of the insn so that live end offsets are computed correctly.
+        // Otherwise the live end offset will be computed using the size of mov_src_off instead of the actual move,
+        //  which will break gc live range computations.
+        ins->opcode = opcode;
+        ins->data[0] = fSize;
     }
     else if (opcode == INTOP_LDLOCA)
     {
@@ -1063,11 +1069,11 @@ class InterpGcSlotAllocator
 #endif
 
             ConservativeRange newRange(start, end);
-            
+
             if (m_liveRanges.GetSize() != 0)
             {
                 // Find the first range which has a start offset greater or equal to the new ranges start offset
-                
+
                 int32_t hiBound = m_liveRanges.GetSize();
                 int32_t loBound = 0;
                 while (loBound < hiBound)
@@ -7288,6 +7294,8 @@ void InterpCompiler::PrintCompiledCode()
         PrintCompiledIns(ip, m_pMethodCode);
         ip = InterpNextOp(ip);
     }
+
+    printf("End of method: %04x: IR_%04x\n", (int32_t)ConvertOffset((int32_t)(ip - m_pMethodCode)), (int32_t)(ip - m_pMethodCode));
 }
 
 void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
@@ -7295,7 +7303,7 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
     int32_t opcode = *ip;
     int32_t insOffset = (int32_t)(ip - start);
 
-    printf("IR_%04x: %-14s", insOffset, InterpOpName(opcode));
+    printf("%04x: IR_%04x: %-14s", (int32_t)ConvertOffset(insOffset), insOffset, InterpOpName(opcode));
     ip++;
 
     if (g_interpOpDVars[opcode] > 0)
