@@ -655,7 +655,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.GetName()))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
                 {
                     return null;
                 }
