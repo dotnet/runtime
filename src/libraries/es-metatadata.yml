@@ -5,4 +5,4 @@ accountableOwners:
 routing:
   defaultAreaPath:
     org: devdiv
-    path: "DevDiv\NET Libraries"
+    path: DevDiv\NET Libraries
